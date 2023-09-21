@@ -7068,6 +7068,7 @@ function ChartVolStick()
         else    //太细了直接话线
         {
             var preKItem=null;
+            var barColor=null;
             for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) 
             {
                 var value = this.Data.Data[i];
@@ -7089,14 +7090,8 @@ function ChartVolStick()
 
                 if (x > chartright) break;
 
-                if (isMinute)
-                {
-                    var barColor=this.GetMinuteBarColor(kItem,preKItem);    //分时图颜色单独计算
-                }
-                else
-                {
-                    var barColor=this.GetBarColor(kItem);
-                }
+                if (isMinute) barColor=this.GetMinuteBarColor(kItem,preKItem);    //分时图颜色单独计算
+                else barColor=this.GetBarColor(kItem);
                 
                 this.Canvas.strokeStyle=barColor.Color;
 
@@ -7133,7 +7128,7 @@ function ChartVolStick()
         var xOffset = this.ChartBorder.GetTop() + distanceWidth / 2.0 + 2.0;
         var chartBottom = this.ChartBorder.GetBottom();
         var xPointCount = this.ChartFrame.XPointCount;
-
+        var isMinute=this.IsMinuteFrame();
         var yBottom = this.ChartFrame.GetYFromData(0);
 
         if (dataWidth >= this.MinBarWidth) 
@@ -7171,6 +7166,8 @@ function ChartVolStick()
         }
         else    //太细了直接话线
         {
+            var preKItem=null;
+            var barColor=null;
             for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) 
             {
                 var value = this.Data.Data[i];
@@ -7178,10 +7175,22 @@ function ChartVolStick()
                 if (value == null || kItem == null) continue;
 
                 var y = this.ChartFrame.GetYFromData(value);
-                var x = this.ChartFrame.GetXFromIndex(j);
+
+                if (isMinute)
+                {
+                    var x=this.ChartFrame.GetXFromIndex(j);
+                }
+                else
+                {
+                    var left=xOffset;
+                    var right=xOffset+dataWidth;
+                    var x=left+(right-left)/2;
+                }
                 if (x > chartBottom) break;
 
-                var barColor=this.GetBarColor(kItem);
+                if (isMinute) barColor=this.GetMinuteBarColor(kItem,preKItem);    //分时图颜色单独计算
+                else barColor=this.GetBarColor(kItem);
+                
                 this.Canvas.strokeStyle=barColor.Color;
 
                 //var x = this.ChartFrame.GetXFromIndex(j);
@@ -7189,6 +7198,8 @@ function ChartVolStick()
                 this.Canvas.moveTo(y, ToFixedPoint(x));
                 this.Canvas.lineTo(yBottom, ToFixedPoint(x));
                 this.Canvas.stroke();
+
+                preKItem=kItem;
             }
         }
     }

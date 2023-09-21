@@ -95,6 +95,12 @@ function IKLineInfo()
             MaxRequestMinuteDayCount:hqChart.MaxRequestMinuteDayCount,    //分钟数据请求的天数
             Period:hqChart.Period       //周期
         };
+
+        //K线数据范围
+        var hisData=null;
+        if (hqChart.ChartOperator_Temp_GetHistroyData)  hisData=hqChart.ChartOperator_Temp_GetHistroyData();
+        if (hisData)
+            obj.DateRange=hisData.GetDateRange();
         
         return obj;
     }
@@ -152,11 +158,16 @@ function InvestorInfo()
     this.newMethod();
     delete this.newMethod;
 
-    this.RequestData=function(hqChart)
+    this.ClassName="InvestorInfo";
+    this.Explain="互动易";
+
+    this.RequestData=function(hqChart, obj)
     {
         var self = this;
         var param={ HQChart:hqChart };
         this.Data=[];
+
+        if (this.NetworkFilter(hqChart,obj)) return; //已被上层替换,不调用默认的网络请求
 
         //请求数据
         wx.request({
@@ -303,11 +314,13 @@ function PforecastInfo()
     this.ClassName='PforecastInfo';
     this.Explain='业绩预告';
 
-    this.RequestData=function(hqChart)
+    this.RequestData=function(hqChart,obj)
     {
         var self = this;
         this.Data = [];
         var param={ HQChart:hqChart };
+
+        if (this.NetworkFilter(hqChart,obj)) return; //已被上层替换,不调用默认的网络请求
 
         //请求数据
         wx.request({
@@ -377,12 +390,14 @@ function ResearchInfo()
     this.ClassName='ResearchInfo';
     this.Explain='投资者关系';
 
-    this.RequestData=function(hqChart)
+    this.RequestData=function(hqChart,obj)
     {
         var self = this;
         var param= { HQChart:hqChart };
 
         this.Data=[];
+
+        if (this.NetworkFilter(hqChart,obj)) return; //已被上层替换,不调用默认的网络请求
 
         //请求数据
         wx.request({
@@ -441,11 +456,13 @@ function BlockTrading()
     this.ClassName='BlockTrading';
     this.Explain='大宗交易';
 
-    this.RequestData=function(hqChart)
+    this.RequestData=function(hqChart,obj)
     {
         var self = this;
         var param={ HQChart:hqChart,};
         this.Data=[];
+
+        if (this.NetworkFilter(hqChart,obj)) return; //已被上层替换,不调用默认的网络请求
 
         //请求数据
         wx.request({
@@ -521,12 +538,14 @@ function TradeDetail()
     this.ClassName='TradeDetail';
     this.Explain='龙虎榜';
 
-    this.RequestData=function(hqChart)
+    this.RequestData=function(hqChart,obj)
     {
         var self = this;
         var param={ HQChart:hqChart };
 
         this.Data=[];
+
+        if (this.NetworkFilter(hqChart,obj)) return; //已被上层替换,不调用默认的网络请求
 
         //请求数据
         wx.request({
@@ -609,13 +628,15 @@ function PolicyInfo()
         }
     }
 
-    this.RequestData = function (hqChart) 
+    this.RequestData = function (hqChart,obj) 
     {
         var self = this;
         this.Data = [];
         var param = { HQChart: hqChart };
 
         // setTimeout(function () { self.RecvData(null, param); }, 2000); //模拟数据到达
+
+        if (this.NetworkFilter(hqChart,obj)) return; //已被上层替换,不调用默认的网络请求
 
         //请求数据
         wx.request({

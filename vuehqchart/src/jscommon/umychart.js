@@ -3842,7 +3842,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                         Y:drag.LastMove.Y-uielement.getBoundingClientRect().top,
                         SelectData:selectData,   //区间选择的数据
                         RectSelectPaint:paint,    //区间选择背景
-                        IsShowMenu:true
+                        IsShowMenu:true,
+                        e,e
                     };
                     event.Callback(event,data,this);
                     isShowMenu=data.IsShowMenu;
@@ -9009,6 +9010,7 @@ function IChartFramePainting()
 
     this.LogoTextColor=g_JSChartResource.FrameLogo.TextColor;
     this.LogoTextFont=g_JSChartResource.FrameLogo.Font;
+    this.LogoBGColor=g_JSChartResource.FrameLogo.BGColor;
     this.GlobalOption;
 
     this.PtInButtons=function(x,y) //坐标是否在按钮上
@@ -9173,10 +9175,12 @@ function IChartFramePainting()
         var text=g_JSChartResource.FrameLogo.Text;
         if (!IFrameSplitOperator.IsString(text)) return;
 
-        this.Canvas.fillStyle=this.LogoTextColor;
+        
         this.Canvas.font=this.LogoTextFont;
         this.Canvas.textAlign = 'left';
         this.Canvas.textBaseline = 'bottom';
+        var height=this.Canvas.measureText("擎").width;
+        var width=this.Canvas.measureText(text).width;
         if (this.IsHScreen)
         {
             var x=border.Left+5;
@@ -9184,13 +9188,36 @@ function IChartFramePainting()
             this.Canvas.save();
             this.Canvas.translate(x,y);
             this.Canvas.rotate(90 * Math.PI / 180);
-            this.Canvas.fillText(text,0,0);
+
+            var rtBG={ Left:0, Bottom:0, Width:width+4, Height:height+4 };
+            rtBG.Top=rtBG.Bottom-rtBG.Height;
+            rtBG.Right=rtBG.Left+rtBG.Width;
+
+            if (this.LogoBGColor)
+            {
+                this.Canvas.fillStyle=this.LogoBGColor;
+                this.Canvas.fillRect(rtBG.Left,rtBG.Top,rtBG.Width,rtBG.Height);
+            }
+
+            this.Canvas.fillStyle=this.LogoTextColor;
+            this.Canvas.fillText(text,1,0);
             this.Canvas.restore();
         }
         else
         {
-            var x=border.Left+5;
-            var y=border.Bottom-5;
+            var rtBG={ Left:border.Left+5, Bottom:border.Bottom-5, Width:width+4, Height:height+4 };
+            rtBG.Top=rtBG.Bottom-rtBG.Height;
+            rtBG.Right=rtBG.Left+rtBG.Width;
+
+            if (this.LogoBGColor)
+            {
+                this.Canvas.fillStyle=this.LogoBGColor;
+                this.Canvas.fillRect(rtBG.Left,rtBG.Top,rtBG.Width,rtBG.Height);
+            }
+
+            var x=rtBG.Left+1;
+            var y=rtBG.Bottom-1;
+            this.Canvas.fillStyle=this.LogoTextColor;
             this.Canvas.fillText(text,x,y);
         }   
     }
@@ -29064,6 +29091,7 @@ function ChartVolStick()
         else    //太细了直接话线
         {
             var preKItem=null;
+            var barColor=null;
             for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
             {
                 var value=this.Data.Data[i];
@@ -29084,14 +29112,8 @@ function ChartVolStick()
 
                 if (x>chartright) break;
 
-                if (isMinute)
-                {
-                    var barColor=this.GetMinuteBarColor(kItem,preKItem);    //分时图颜色单独计算
-                }
-                else
-                {
-                    var barColor=this.GetBarColor(kItem);
-                }
+                if (isMinute) barColor=this.GetMinuteBarColor(kItem,preKItem);    //分时图颜色单独计算
+                else barColor=this.GetBarColor(kItem);
                 
                 this.Canvas.strokeStyle=barColor.Color;
                 
@@ -29117,6 +29139,7 @@ function ChartVolStick()
         var lockRect=this.GetLockRect();
         if (lockRect) chartBottom=lockRect.Top;
 
+        var isMinute=this.IsMinuteFrame();
         var yBottom=this.ChartFrame.GetYFromData(0);
 
         if (dataWidth>=4)
@@ -29153,6 +29176,8 @@ function ChartVolStick()
         }
         else    //太细了直接话线
         {
+            var preKItem=null;
+            var barColor=null;
             for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
             {
                 var value=this.Data.Data[i];
@@ -29160,10 +29185,23 @@ function ChartVolStick()
                 if (value==null || kItem==null) continue;
 
                 var y=this.ChartFrame.GetYFromData(value);
-                var x=this.ChartFrame.GetXFromIndex(j);
+
+                if (isMinute)
+                {
+                    var x=this.ChartFrame.GetXFromIndex(j);
+                }
+                else
+                {
+                    var left=xOffset;
+                    var right=xOffset+dataWidth;
+                    var x=left+(right-left)/2;
+                }
+
                 if (x>chartBottom) break;
 
-                var barColor=this.GetBarColor(kItem);
+                if (isMinute) barColor=this.GetMinuteBarColor(kItem,preKItem);    //分时图颜色单独计算
+                else barColor=this.GetBarColor(kItem);
+
                 var bUp=barColor.IsUp;
                 this.Canvas.strokeStyle=barColor.Color;
 
@@ -29172,6 +29210,8 @@ function ChartVolStick()
                 this.Canvas.moveTo(y,ToFixedPoint(x));
                 this.Canvas.lineTo(yBottom,ToFixedPoint(x));
                 this.Canvas.stroke();
+
+                preKItem=kItem;
             }
         }
     }
@@ -59608,7 +59648,8 @@ function JSChartResource()
     {
         TextColor:'rgb(178,34,34)',
         Font:"bold "+ 16*GetDevicePixelRatio() +"px 微软雅黑",
-        Text:"*仅学习使用*"     //不要修改声明, 任何修改声明产生的任何法律责任由修改者自行独立承担，与HQChart插件作者无关。
+        Text:"*仅学习使用*",     //不要修改声明, 任何修改声明产生的任何法律责任由修改者自行独立承担，与HQChart插件作者无关。
+        BGColor:"rgba(230,230,230, 0.5)",
     };
 
     //百分比坐标文字颜色
@@ -70566,7 +70607,8 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                     X:drag.LastMove.X-uielement.getBoundingClientRect().left,
                     Y:drag.LastMove.Y-uielement.getBoundingClientRect().top,
                     SelectData:selectData,   //区间选择的数据
-                    RectSelectPaint:paint    //区间选择背景
+                    RectSelectPaint:paint,    //区间选择背景
+                    e:e
                 };
                 event.Callback(event,data,this);
                 isShowDialog=false; //外部调用了区间选择事件，不弹框
@@ -71564,7 +71606,8 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                     Y:corssCursor.LastPoint.Y/pixelTatio,
                     Item:item,
                     Index:index,
-                    RectSelectPaint:paint    //区间选择背景
+                    RectSelectPaint:paint,    //区间选择背景
+                    e:e,
                 };
                 event.Callback(event,data,this);
             }
@@ -71580,7 +71623,8 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                     X:corssCursor.LastPoint.X/pixelTatio,
                     Y:corssCursor.LastPoint.Y/pixelTatio,
                     SelectData:selectData,   //区间选择的数据
-                    RectSelectPaint:paint    //区间选择背景
+                    RectSelectPaint:paint,    //区间选择背景
+                    e:e,
                 };
                 event.Callback(event,data,this);
             }
@@ -80497,6 +80541,7 @@ function PforecastInfo()
     delete this.newMethod;
 
     this.ClassName='PforecastInfo';
+    this.Explain='业绩预告';
 
     this.RequestData=function(hqChart,obj)
     {
@@ -80509,6 +80554,9 @@ function PforecastInfo()
         this.Data=[];
 
         var url=g_JSChartResource.Domain+g_JSChartResource.KLine.Info.Pforecast.ApiUrl;
+
+        if (this.NetworkFilter(hqChart, obj)) return; //已被上层替换,不调用默认的网络请求
+
         //请求数据
         JSNetwork.HttpRequest({
             url: url,
@@ -80575,6 +80623,7 @@ function ResearchInfo()
     delete this.newMethod;
 
     this.ClassName='ResearchInfo';
+    this.Explain='调研';
 
     this.RequestData=function(hqChart,obj)
     {
@@ -80586,6 +80635,9 @@ function ResearchInfo()
 
         this.Data=[];
         var url=g_JSChartResource.Domain+g_JSChartResource.KLine.Info.Research.ApiUrl;
+
+        if (this.NetworkFilter(hqChart, obj)) return; //已被上层替换,不调用默认的网络请求
+
         //请求数据
         JSNetwork.HttpRequest({
             url: url,
@@ -80639,6 +80691,7 @@ function BlockTrading()
     delete this.newMethod;
 
     this.ClassName='BlockTrading';
+    this.Explain='大宗交易';
 
     this.RequestData=function(hqChart,obj)
     {
@@ -80650,6 +80703,8 @@ function BlockTrading()
 
         this.Data=[];
         var url=g_JSChartResource.Domain+g_JSChartResource.KLine.Info.BlockTrading.ApiUrl;
+
+        if (this.NetworkFilter(hqChart, obj)) return; //已被上层替换,不调用默认的网络请求
 
         //请求数据
         JSNetwork.HttpRequest({
@@ -80722,7 +80777,8 @@ function TradeDetail()
     delete this.newMethod;
 
     this.ClassName='TradeDetail';
-
+    this.Explain='大宗交易';
+    
     this.RequestData=function(hqChart, obj)
     {
         var self = this;
@@ -80733,6 +80789,8 @@ function TradeDetail()
 
         this.Data=[];
         var url=g_JSChartResource.Domain+g_JSChartResource.KLine.Info.TradeDetail.ApiUrl;
+
+        if (this.NetworkFilter(hqChart, obj)) return; //已被上层替换,不调用默认的网络请求
 
         //请求数据
         JSNetwork.HttpRequest({
