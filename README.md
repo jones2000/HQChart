@@ -204,11 +204,13 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 # 3. 网页demo   
 * [K线图](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_kline.html)   
 * [K线图手机页面](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_kline_phone.html)   
-* [K线图手机横屏页面](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_kline_phone_hScreen.html)     
+* [K线图手机横屏页面](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_kline_phone_hScreen.html)    
+* [订单流样式1](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_orderflow.html)    
 
 * [走势图](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_minute.html)   
 * [走势图手机页面](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_minute_phone.html)   
-* [走势图手机横屏页面](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_minute_phone_hScreen.html)     
+* [走势图手机横屏页面](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_minute_phone_hScreen.html)    
+
 
 
 # 4.使用教程
