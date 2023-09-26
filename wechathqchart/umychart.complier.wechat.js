@@ -8574,7 +8574,7 @@ function JSDraw(errorHandler, symbolData)
     例如:
     DRAWICON(CLOSE>OPEN,LOW,1)表示当收阳时在最低价位置画1号图标.
     */
-    this.DRAWICON = function (condition, data, type) 
+    this.DRAWICON = function (condition, data, type, markID) 
     {
         if (IFrameSplitOperator.IsString(type)) //把ICO1=>1
         {
@@ -8586,6 +8586,7 @@ function JSDraw(errorHandler, symbolData)
         if (!icon) icon = { Symbol: '●', Color: 'rgb(0,139,69)'};
         let drawData = [];
         let result = { DrawData: drawData, DrawType: 'DRAWICON', Icon: icon , IconID:type};
+        if (markID) result.MarkID=markID;
         if (condition.length <= 0) return result;
 
         var IsNumber = typeof (data) == "number";
@@ -13254,7 +13255,7 @@ function JSExecute(ast,option)
                 node.Out=[];
                 break;
             case 'DRAWICON':
-                node.Draw = this.Draw.DRAWICON(args[0], args[1], args[2]);
+                node.Draw = this.Draw.DRAWICON(args[0], args[1], args[2], args[3]);
                 node.Out = [];
                 break;
             case "ICON":

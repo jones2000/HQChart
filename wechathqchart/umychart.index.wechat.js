@@ -935,6 +935,8 @@ function ScriptIndex(name, script, args, option)
         if (varItem.Color) chart.Color = this.GetColor(varItem.Color);
         else chart.Color = 'rgb(0,0,0)';
 
+        if (varItem.Draw.MarkID) chart.MarkID=varItem.Draw.MarkID;  //外部指定ID
+
         if (varItem.DrawVAlign>=0)
         {
             if (varItem.DrawVAlign==0) chart.TextBaseline="top";
@@ -961,6 +963,7 @@ function ScriptIndex(name, script, args, option)
         if (event && event.Callback)
         {
             var sendData={ FrameID:windowIndex, ID:id, Data:varItem, Callback:null };
+            if (varItem.Draw.MarkID) sendData.MarkID=varItem.Draw.MarkID;  //外部指定ID
             event.Callback(event, sendData,this);
             if (sendData.Callback)
             {
@@ -972,6 +975,7 @@ function ScriptIndex(name, script, args, option)
         let chartText = new ChartSingleText();
         chartText.Canvas = hqChart.Canvas;
         chartText.TextAlign = 'center';
+       
 
         chartText.Name = varItem.Name;
         chartText.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
@@ -983,6 +987,8 @@ function ScriptIndex(name, script, args, option)
         if (varItem.Color) chartText.Color = this.GetColor(varItem.Color);
         else if (varItem.Draw.Icon.Color) chartText.Color = varItem.Draw.Icon.Color;
         else chartText.Color = 'rgb(0,0,0)';
+
+       
 
         if (varItem.DrawVAlign>=0)
         {

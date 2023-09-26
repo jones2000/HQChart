@@ -9626,7 +9626,7 @@ function JSDraw(errorHandler,symbolData)
     {
         let drawData=[];
         let result={DrawData:drawData, DrawType:'POLYLINE'};
-        let isNumber=typeof(data)=='number';
+        let isNumber=IFrameSplitOperator.IsNumber(data);
 
         let bFirstPoint=false;
         let bSecondPont=false;
@@ -9643,10 +9643,10 @@ function JSDraw(errorHandler,symbolData)
                     }
                 }
             }
-            else
+            else if (Array.isArray(condition))
             {
                 var bFind=false;
-                for(var i in condition)
+                for(var i=0; i<condition.length; ++i)
                 {
                     drawData[i]=null;
                     if (bFind)
@@ -9665,39 +9665,77 @@ function JSDraw(errorHandler,symbolData)
         }
         else
         {
-            let lineCache={Start:{ },End:{ }, List:new Array()};
-            for(let i in condition)
+            if (IFrameSplitOperator.IsNumber(condition))
             {
-                drawData[i]=null;
-                if (bFirstPoint==false && bSecondPont==false)
+                if (!condition) return result;
+                let lineCache={Start:{ },End:{ }, List:[]};
+                for(var i=0;i<data.length;++i)
                 {
-                    if (condition[i]==null || !condition[i]) continue;
-                    if (i>=data.length || !this.IsNumber(data[i])) continue;
-
-                    bFirstPoint=true;
-                    lineCache.Start={ID:parseInt(i), Value:data[i]};  //第1个点
-                }
-                else if (bFirstPoint==true && bSecondPont==false)
-                {
-                    if (condition[i]==null || !condition[i]) continue;
-                    if (i>=data.length || !this.IsNumber(data[i])) continue;
-
-                    lineCache.End={ID:parseInt(i), Value:data[i]};   //第2个点
-                    //根据起始点和结束点 计算中间各个点的数据
-                    let lineData=this.CalculateDrawLine(lineCache);     //计算2个点的线上 其他点的数值
-
-                    for(let j in lineData)
+                    drawData[i]=null;
+                    if (bFirstPoint==false && bSecondPont==false)
                     {
-                        let item=lineData[j];
-                        drawData[item.ID]=item.Value;
+                        if (!this.IsNumber(data[i])) continue;
+
+                        bFirstPoint=true;
+                        lineCache.Start={ID:parseInt(i), Value:data[i]};  //第1个点
                     }
+                    else if (bFirstPoint==true && bSecondPont==false)
+                    {
+                        if (!this.IsNumber(data[i])) continue;
 
-                    let start={ ID:lineCache.End.ID,Value:lineCache.End.Value };
-                    lineCache={Start:start,End:{ } };
+                        lineCache.End={ID:parseInt(i), Value:data[i]};   //第2个点
+                        //根据起始点和结束点 计算中间各个点的数据
+                        let lineData=this.CalculateDrawLine(lineCache);     //计算2个点的线上 其他点的数值
+
+                        for(let j in lineData)
+                        {
+                            let item=lineData[j];
+                            drawData[item.ID]=item.Value;
+                        }
+
+                        let start={ ID:lineCache.End.ID,Value:lineCache.End.Value };
+                        lineCache={Start:start,End:{ } };
+                    }
                 }
-            }
 
-            this.CalculateDrawDataExtendLine(drawData);
+                this.CalculateDrawDataExtendLine(drawData);
+            }
+            else
+            {
+                let lineCache={Start:{ },End:{ }, List:[]};
+                for(let i in condition)
+                {
+                    drawData[i]=null;
+                    if (bFirstPoint==false && bSecondPont==false)
+                    {
+                        if (condition[i]==null || !condition[i]) continue;
+                        if (i>=data.length || !this.IsNumber(data[i])) continue;
+
+                        bFirstPoint=true;
+                        lineCache.Start={ID:parseInt(i), Value:data[i]};  //第1个点
+                    }
+                    else if (bFirstPoint==true && bSecondPont==false)
+                    {
+                        if (condition[i]==null || !condition[i]) continue;
+                        if (i>=data.length || !this.IsNumber(data[i])) continue;
+
+                        lineCache.End={ID:parseInt(i), Value:data[i]};   //第2个点
+                        //根据起始点和结束点 计算中间各个点的数据
+                        let lineData=this.CalculateDrawLine(lineCache);     //计算2个点的线上 其他点的数值
+
+                        for(let j in lineData)
+                        {
+                            let item=lineData[j];
+                            drawData[item.ID]=item.Value;
+                        }
+
+                        let start={ ID:lineCache.End.ID,Value:lineCache.End.Value };
+                        lineCache={Start:start,End:{ } };
+                    }
+                }
+
+                this.CalculateDrawDataExtendLine(drawData);
+            }
         }
 
         return result

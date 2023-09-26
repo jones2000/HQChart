@@ -47135,7 +47135,16 @@ function HistoryDataStringFormat()
 
         this.Width=157;
         if (this.LanguageID==JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID) this.Width=180;
+        var titleData=this.GetFormatTitle(data);
+        if (!titleData) return false;
+        var outData=this.GenerateTitleHtml(titleData);
+        if (!outData) return false;
 
+        this.Text=outData.Html;
+        this.Height=outData.LineCount*this.LineHeight;
+        return true;
+
+        /*
         var date=new Date(parseInt(data.Date/10000),(data.Date/100%100-1),data.Date%100);
         var strDate=IFrameSplitOperator.FormatDateString(data.Date);
         var title2=g_JSChartLocalization.GetText(WEEK_NAME[date.getDay()],this.LanguageID);
@@ -47225,6 +47234,178 @@ function HistoryDataStringFormat()
 
         this.Height=this.LineCount*this.LineHeight;
         return true;
+        */
+    }
+
+    this.GenerateTitleHtml=function(data)
+    {
+        var lineCount=0;
+        var strHtml="", text;
+        if (data.Name)
+        {
+            text=`<span style='color:rgb(0,0,0);font:微软雅黑;font-size:12px;text-align:center;display: block;'>${data.Name}</span>`;
+            strHtml+=text;
+            ++lineCount;
+        }
+
+        if (data.Title)
+        {
+            text=`<span class='tooltip-title'>${data.Title}</span>`;
+            strHtml+=text;
+            ++lineCount;
+        }
+
+        if (IFrameSplitOperator.IsNonEmptyArray(data.AryText))
+        {
+            for(var i=0;i<data.AryText.length;++i)
+            {
+                var item=data.AryText[i];
+                if (i>0) strHtml+='<br/>';
+                var text=`<span class='tooltip-con'>${item.Title}</span><span class='tooltip-num' style='color:${item.Color};'>${item.Text}</span>`;
+                strHtml+=text;
+                ++lineCount;
+            }
+        }
+
+        return { Html:strHtml, LineCount:lineCount };
+    }
+
+    this.GetFormatTitle=function(data)
+    {
+        if (!data) return null;
+
+        var upperSymbol=this.Symbol.toUpperCase();
+        var defaultfloatPrecision=GetfloatPrecision(this.Symbol);//价格小数位数
+        var date=new Date(parseInt(data.Date/10000),(data.Date/100%100-1),data.Date%100);
+        var strDate=IFrameSplitOperator.FormatDateString(data.Date);
+
+        var title2=g_JSChartLocalization.GetText(WEEK_NAME[date.getDay()],this.LanguageID);
+        var isTickPeriod=ChartData.IsTickPeriod(this.Value.ChartPaint.Data.Period);
+        if (ChartData.IsMinutePeriod(this.Value.ChartPaint.Data.Period,true)) // 分钟周期
+        {
+            title2=IFrameSplitOperator.FormatTimeString(data.Time);
+        }
+        else if (ChartData.IsSecondPeriod(this.Value.ChartPaint.Data.Period) || isTickPeriod)
+        {
+            title2=IFrameSplitOperator.FormatTimeString(data.Time,'HH:MM:SS');
+        }
+
+        var result={ AryText:null, Title:`${strDate}&nbsp&nbsp${title2}`, Name:null };
+        if (isTickPeriod)
+        {
+            var aryText=
+            [
+                { 
+                    Title:g_JSChartLocalization.GetText('DivTooltip-Price',this.LanguageID), 
+                    Text:IFrameSplitOperator.IsNumber(data.Open)? data.Open.toFixed(defaultfloatPrecision):'--',
+                    Color:this.GetColor(data.Open,data.YClose)
+                },
+            ];
+
+            if (IFrameSplitOperator.IsNumber(data.YClose)) 
+            {
+                var increase=(data.Close-data.YClose)/data.YClose*100;
+                var item=
+                {
+                    Title:g_JSChartLocalization.GetText('DivTooltip-Increase',this.LanguageID),
+                    Text:`${increase.toFixed(2)}%`,
+                    Color:this.GetColor(increase,0)
+                }
+                aryText.push(item);
+            }
+
+            result.AryText=aryText;
+        }
+        else if (data.IsNonTrade)
+        {
+
+        }
+        else
+        {
+            var vol=data.Vol;
+            if (upperSymbol && MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol)) vol/=100; //A股统一转成手
+            var eventUnchangeKLine=null;    //定制平盘K线颜色事件
+            if (this.GetEventCallback) eventUnchangeKLine=this.GetEventCallback(JSCHART_EVENT_ID.ON_CUSTOM_UNCHANGE_KLINE_TITLE_COLOR);
+
+            var aryText=
+            [
+                { 
+                    Title:g_JSChartLocalization.GetText('DivTooltip-Open',this.LanguageID), 
+                    Text:IFrameSplitOperator.IsNumber(data.Open)? data.Open.toFixed(defaultfloatPrecision):'--',
+                    Color:this.GetPriceColor("DivTooltip-Open",data.Open,data.YClose,data,eventUnchangeKLine),
+                },
+                {
+                    Title:g_JSChartLocalization.GetText('DivTooltip-High',this.LanguageID),
+                    Text:IFrameSplitOperator.IsNumber(data.High)? data.High.toFixed(defaultfloatPrecision):'--',
+                    Color:this.GetPriceColor("DivTooltip-High",data.High,data.YClose,data,eventUnchangeKLine)
+                },
+                {
+                    Title:g_JSChartLocalization.GetText('DivTooltip-Low',this.LanguageID),
+                    Text:IFrameSplitOperator.IsNumber(data.Low)? data.Low.toFixed(defaultfloatPrecision):'--',
+                    Color:this.GetPriceColor('DivTooltip-Low',data.Low,data.YClose,data,eventUnchangeKLine)
+                },
+                {
+                    Title:g_JSChartLocalization.GetText('DivTooltip-Close',this.LanguageID),
+                    Text:IFrameSplitOperator.IsNumber(data.Close)? data.Close.toFixed(defaultfloatPrecision):'--',
+                    Color:this.GetPriceColor('DivTooltip-Close',data.Close,data.YClose,data,eventUnchangeKLine)
+                },
+                {
+                    Title:g_JSChartLocalization.GetText('DivTooltip-Vol',this.LanguageID),
+                    Text:IFrameSplitOperator.IsNumber(vol)? IFrameSplitOperator.FormatValueString(vol,2,this.LanguageID):'--',
+                    Color:this.VolColor
+                },
+                {
+                    Title:g_JSChartLocalization.GetText('DivTooltip-Amount',this.LanguageID),
+                    Text:IFrameSplitOperator.IsNumber(data.Amount)? IFrameSplitOperator.FormatValueString(data.Amount,2,this.LanguageID):'--',
+                    Color:this.AmountColor
+                }
+            ];
+
+            if (IFrameSplitOperator.IsNumber(data.YClose)) 
+            {
+                var increase=(data.Close-data.YClose)/data.YClose*100;
+                var item=
+                {
+                    Title:g_JSChartLocalization.GetText('DivTooltip-Increase',this.LanguageID),
+                    Text:`${increase.toFixed(2)}%`,
+                    Color:this.GetColor(increase,0)
+                }
+                aryText.push(item);
+            }
+
+            if(MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol) && data.FlowCapital>0)  //换手率
+            {
+                var value=data.Vol/data.FlowCapital*100;
+                var item=
+                {
+                    Title:g_JSChartLocalization.GetText('DivTooltip-Exchange',this.LanguageID),
+                    Text:`${value.toFixed(2)}%`,
+                    Color:this.TurnoverRateColor
+                }
+                aryText.push(item);
+            }
+
+            if (MARKET_SUFFIX_NAME.IsFutures(upperSymbol) && IFrameSplitOperator.IsNumber(data.Position))
+            {
+                var item=
+                {
+                    Title:g_JSChartLocalization.GetText('DivTooltip-Position',this.LanguageID),
+                    Text:`${data.Position}`,
+                    Color:this.PositionColor
+                }
+            }
+
+            //叠加股票
+            if (this.Value.ChartPaint.Name=="Overlay-KLine")
+            {
+                result.Name=this.Value.ChartPaint.Title;
+            }
+
+            result.AryText=aryText;
+        }
+
+
+        return result;
     }
 
     this.GetColor=function(price,yclse)
