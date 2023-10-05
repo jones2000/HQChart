@@ -1,0 +1,348 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+
+    <title>K线图训练(手机)</title>  
+    <!-- 加载资源 -->
+    <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
+
+    <style>
+        .line-box{
+            height: 25px;
+        }
+        .btn-style{
+            padding: 3px 8px;
+            border: 1px solid #ececec;
+            border-radius: 5px;
+            background-color: #f5f5f5;
+            cursor: pointer;
+        }
+            
+    </style>
+</head>  
+<body>
+    <div id="kline" style="width: 900px;height:400px;position: relative;"></div>
+    <div class="line-box">
+        <span class="btn-style" id='nextkline'>下一K线</span>
+        <label>
+            <input type="checkbox" id='autorun' /> K线自动前进
+        </label>
+        <span class="btn-style" id='reset'>重新开始</span>
+    </div>
+    <div class="line-box">
+        <span class="btn-style" id='buy'>[ 买 ]</span>
+        <span class="btn-style" id='sell'>[ 卖 ]</span>
+    </div>
+    <div>
+        <span id='traininfo'>加载中......</span>
+       
+    </div>
+    <div>
+        <span id='traininfo2'>成绩:</span>
+    </div>
+
+    <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
+    <script src="../jscommon/umychart.resource/js/webfont.js"></script>
+    <script src='../jscommon/umychart.console.js'></script>     <!-- 日志输出 -->
+    <script src="../jscommon/umychart.network.js"></script>     <!-- 网络请求分装 -->
+    <script src="../jscommon/umychart.js"></script>             <!-- K线图形 -->
+    <script src="../jscommon/umychart.complier.js"></script>    <!-- 麦语言解析执行器 -->
+    <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
+    <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+    
+
+    <script src="../jscommon/umychart.NetworkFilterTest.js"></script> <!-- 本地测试数据 -->
+
+    <script>
+
+        //JSConsole.Chart.Log=() =>{}
+        //JSConsole.Complier.Log=()=>{}
+
+        //简单的把K线控件封装下
+        function KLineChart(divKLine)
+        {
+            this.DivKLine=divKLine;
+            this.Chart=JSChart.Init(divKLine);   //把K线图绑定到一个Div上
+            this.LatestKData;   //最新的K线数据
+            this.LatestTrade;   //最新一条交易记录
+            this.AryTrade=[];   //交易记录 {Buy:, Sell:} 成对
+
+            //K线配置信息
+            this.Option = {
+                Type: 'K线训练',
+                //Type: 'K线训练横屏',
+                Windows: //窗口指标
+                [
+                    //{Index:"EMPTY"},
+                    {Index:"MA", Modify:false,Change:false, IsDrawTitleBG:true,IsShowNameArrow:true },
+                    {Index:"VOL", Modify:false,Change:false, Close:false, MaxMin:false, TitlteWindow:false,IsDrawTitleBG:true, IsShowNameArrow:true }
+                ], 
+                Symbol: "600000.sh",
+                IsAutoUpate: false,       //是自动更新数据
+
+                IsShowRightMenu: true,    //右键菜单
+                //CorssCursorTouchEnd:true,  
+                
+                CorssCursorInfo:{ Left:0, Right:2, Bottom:1, IsShowCorss:true },
+
+                KLine:
+                {
+                    Right: 0,                    //复权 0 不复权 1 前复权 2 后复权
+                    Period: 0,                   //周期 0 日线 1 周线 2 月线 3 年线 
+                    MaxReqeustDataCount: 2000,   //数据个数
+                    PageSize: 50,               //一屏显示多少数据
+                    IsShowTooltip: false,                 //是否显示K线提示信息
+                    RightSpaceCount:2,
+                },
+
+                KLineTitle: //标题设置
+                {
+                    IsShowName: false,         //不显示股票名称
+                    IsShowSettingInfo: false, //不显示周期/复权
+                    IsShowDateTime:true
+                },
+
+                Border: //边框
+                {
+                    Top:1,
+                    Left: 1,    //左边间距
+                    Right: 20,     //右边间距
+                    AutoRight:{ Blank:10, MinWidth:40 },
+                },
+
+                Frame:  //子框架设置
+                [
+                    { SplitCount: 3, IsShowLeftText:false },
+                    { SplitCount: 2, IsShowLeftText:false }
+                ],
+
+                Train:
+                {
+                    DataCount:500,                   //训练数据
+                    //StartDate:{ Date:20180201 }
+                },
+
+                Overlay:
+                [
+                    //{Symbol:'399300.sz', DrawType:1, Color:'rgb(0,0,255)'},
+                    //{ Symbol:'000001.sh' }
+                ],
+
+                ExtendChart:    //扩展图形
+                [
+                    //{ Name:'KLineTooltip' },  //手机端tooltip
+                    { Name:'背景图', FrameID:0 },
+                    //{ Name:'筹码分布', ShowType:1, IsShowX:true , ShowXCount:3, Width:250 }
+                ],
+            }
+                 
+            this.Create=function()  //创建图形
+            {
+                var self=this;
+                $(window).resize(function() { self.OnSize(); });    //绑定窗口大小变化事件
+
+                var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID); //读取黑色风格配置
+                JSChart.SetStyle(blackStyle);
+                this.DivKLine.style.backgroundColor=blackStyle.BGColor; //设置最外面的div背景
+
+                var resource=JSChart.GetResource();
+                resource.ToolbarButtonStyle=1;
+
+                this.OnSize();  //让K线全屏
+
+                this.Option.NetworkFilter=(data, callback)=>{ HQData.NetworkFilter(data, callback); }
+
+                this.Chart.SetOption(this.Option);  //设置K线配置
+
+                this.Chart.AddEventCallback({ 
+                    event:JSCHART_EVENT_ID.RECV_TRAIN_MOVE_STEP, 
+                    callback:(event,data,obj)=> { this.OnKLineMove(event,data,obj); }
+                });
+            }
+
+            this.OnSize=function()  //自适应大小调整
+            {
+                var height= $(window).height()-90;
+                var width = $(window).width();
+                this.DivKLine.style.top='px';
+                this.DivKLine.style.left='px';
+                this.DivKLine.style.width=width+'px';
+                this.DivKLine.style.height=height+'px';
+                this.Chart.OnSize();
+            }
+
+            this.MoveNextKLine=function()
+            {
+                this.Chart.JSChartContainer.MoveNextKLineData();
+            }
+
+            this.Run=function()
+            {
+                this.Chart.JSChartContainer.Run();
+            }
+
+            this.Stop=function()
+            {
+                this.Chart.JSChartContainer.Stop();
+            }
+
+            this.OnKLineMove=function(event,data,obj)
+            {
+                console.log("[KLineChart::OnKLineMove] data", data);
+
+                this.LatestKData=data.LastShowData;
+
+                var dateTime=`日期:${this.LatestKData.Date}`;
+                if (this.LatestKData.Time)  dateTime=`日期:${this.LatestKData.Date} 时间:${this.LatestKData.Time}`;
+
+                //更新界面显示信息
+                var message=`状态:${data.Description} ${dateTime} 最新价格: ${this.LatestKData.Close.toFixed(2)} 剩余数据:${data.TrainDataCount}`;
+               
+                $("#traininfo")[0].innerText=message;
+
+                if (data.TrainDataCount<=0) this.LatestKData=null;
+            }
+
+            this.OrderID=10;        //模拟单号
+
+            this.Sell=function()    
+            {
+                if (!this.LatestKData) return;
+
+                ++this.OrderID;
+                //以最新价格卖出
+                var data={ Price:this.LatestKData.Close, Vol:10 ,Op:1 , ID:this.OrderID }; //{ Price:价格, Vol:数量, Op: 买/卖 0=buy 1=sell, ID:单号 }
+                this.LatestTrade=data;
+                var tradeItem=this.AryTrade[this.AryTrade.length-1];
+                tradeItem.Sell={ Price:data.Price, ID:data.ID , Date:this.LatestKData.Date, Time:this.LatestKData.Time };
+                this.CalulateScore();
+
+                $("#sell").hide();
+                $("#buy").show();
+
+                this.Chart.JSChartContainer.BuyOrSell(data, false);
+                this.Chart.JSChartContainer.MoveNextKLineData();
+            }
+
+            this.Buy=function()
+            {
+                if (!this.LatestKData) return;
+
+                ++this.OrderID;
+                //以最新价格买入
+                var data={ Price:this.LatestKData.Close, Vol:10 ,Op:0 , ID:this.OrderID }; //{ Price:价格, Vol:数量, Op: 买/卖 0=buy 1=sell, ID:单号 }
+                this.LatestTrade=data;
+
+                var tradeItem={ Buy:{Price:data.Price, ID:data.ID, Date:this.LatestKData.Date, Time:this.LatestKData.Time } };
+                this.AryTrade.push(tradeItem);
+
+                $("#buy").hide();
+                $("#sell").show();
+
+                this.Chart.JSChartContainer.BuyOrSell(data, false);
+                this.Chart.JSChartContainer.MoveNextKLineData();
+
+                this.CalulateScore();
+            }
+
+            //计算成绩
+            this.CalulateScore=function()
+            {
+                var count=0, success=0;
+                var aryBGData=[];   //背景颜色
+                for(var i in this.AryTrade)
+                {
+                    var item=this.AryTrade[i];
+                    if (!item.Buy || !item.Sell) continue;
+
+                    var bgItem={ Start:{Date:item.Buy.Date, Time:item.Buy.Time}, End:{ Date:item.Sell.Date, Time:item.Sell.Time } };
+                    if (item.Buy.Price<item.Sell.Price) 
+                    {
+                        ++success;
+                        bgItem.Color='rgba(250,128,114,0.5)';
+                    }
+                    else
+                    {
+                        bgItem.Color='rgba(152,251,152,0.5)';
+                    }
+
+                    aryBGData.push(bgItem);
+                    ++count;
+                }
+                
+                var result=0;
+                if (count>0) result=success/count;
+                var message=`成绩:交易次数${count} 成功次数${success} 胜率:${result.toFixed(2)}`;
+                $("#traininfo2")[0].innerText=message;
+
+                var bgPaint=this.GetBGChartPaint();
+                if (bgPaint) bgPaint.Data=aryBGData;
+            }
+
+            this.GetBGChartPaint=function()
+            {
+                for(var i in this.Chart.JSChartContainer.ExtendChartPaint)
+                {
+                    var item=this.Chart.JSChartContainer.ExtendChartPaint[i];
+                    if (item.ClassName=='BackgroundPaint') return item;
+                }
+
+                return null;
+            }
+
+            //重新开始训练
+            this.RestartTrain=function()   
+            {
+                this.AryTrade=[];
+                this.LatestKData=null;
+                this.LatestTrade=null;
+                $("#traininfo2")[0].innerText='成绩:';
+                $("#traininfo")[0].innerText='加载中......';
+                $("#buy").show();
+                $("#sell").hide();
+
+                var bgPaint=this.GetBGChartPaint();
+                if (bgPaint) bgPaint.Data=null;
+
+                var option=
+                { 
+                    Symbol:"000001.sz", 
+                    Train:{ DataCount:30, DateTime: { Date:20190301 } } ,
+                    Period:0,   //周期
+                    Right:1,    //复权
+                }
+                this.Chart.JSChartContainer.RestartTrain(option);
+            }
+        }
+
+        $(function () 
+        {
+            WebFont.load({ custom: { families: ['iconfont'] } });   //预加载下iconfont资源
+
+            var klineControl=new KLineChart(document.getElementById('kline'));
+            klineControl.Create();
+
+            $("#nextkline").click(function() { klineControl.MoveNextKLine()} );
+            $("#autorun").click(function() 
+            { 
+                if (this.checked) klineControl.Run();
+                else klineControl.Stop();
+            });
+
+            $("#buy").click(function() { klineControl.Buy()} );
+            $("#sell").click(function() { klineControl.Sell({ Price:8.2, Vol:14 , Op:1 })} );
+            $("#reset").click(function() { klineControl.RestartTrain()} );
+
+            $("#buy").show();
+            $("#sell").hide();
+        })
+
+    </script>  
+</body>  
+</html>
+
+
+
