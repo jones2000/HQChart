@@ -17,8 +17,8 @@
 
 function JSStockResource() 
 {
-  this.Domain = "https://opensource.zealink.com";               //API域名
-  this.CacheDomain = "https://opensourcecache.zealink.com";     //缓存域名
+    this.Domain = "http://127.0.0.1:8886";               //API域名
+    this.CacheDomain = "http://127.0.0.1:8886";          //缓存域名
 }
 
 var g_JSStockResource = new JSStockResource();

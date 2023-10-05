@@ -6290,6 +6290,13 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         return false;
     }
 
+    this.IsMinuteContainer=function()
+    {
+        if (this.ClassName=="MinuteChartContainer" || this.ClassName=="MinuteChartHScreenContainer") return true;
+
+        return false;
+    }
+
     this.UpdatePointByCursorIndex=function(type)    //type 1=根据十字光标更新 2=强制取消十字光标
     {
         var pt={X:null, Y:null};
@@ -20865,9 +20872,12 @@ function IChartPainting()
             }
             else if (valueType==3)
             {
-                var price=this.Data.Data[i].Close;
-                if (price==null) continue;
-                value=price/this.YClose*this.MainYClose;
+                var minItem=this.Data.Data[i];
+                var mainItem=this.MainData.Data[i];
+                if (!minItem || !IFrameSplitOperator.IsNumber(minItem.Close) || !IFrameSplitOperator.IsNumber(minItem.YClose)) continue;
+                if (!mainItem || !IFrameSplitOperator.IsNumber(mainItem.Close) || !IFrameSplitOperator.IsNumber(mainItem.YClose)) continue;
+                var price=minItem.Close;
+                var value=price/minItem.YClose*mainItem.YClose;
             }
             else if (valueType==4)
             {
@@ -20987,9 +20997,12 @@ function IChartPainting()
             }
             else if (valueType==3)
             {
-                var price=this.Data.Data[i].Close;
-                if (price==null) continue;
-                var value=price/this.YClose*this.MainYClose;
+                var minItem=this.Data.Data[i];
+                var mainItem=this.MainData.Data[i];
+                if (!minItem || !IFrameSplitOperator.IsNumber(minItem.Close) || !IFrameSplitOperator.IsNumber(minItem.YClose)) continue;
+                if (!mainItem || !IFrameSplitOperator.IsNumber(mainItem.Close) || !IFrameSplitOperator.IsNumber(mainItem.YClose)) continue;
+                var price=minItem.Close;
+                var value=price/minItem.YClose*mainItem.YClose;
             }
             else
             {
@@ -31639,18 +31652,15 @@ function ChartOverlayMinutePriceLine()
 
     this.Color="rgb(65,105,225)";
     this.MainData;                  //主图数据
-    this.MainYClose;                //主图股票的前收盘价
     this.SourceData;                //原始数据
 
     this.ClassName="ChartOverlayMinutePriceLine";
     this.Title;
     this.Symbol;                    //叠加的股票代码
-    this.YClose;                    //叠加的股票前收盘
     this.Status=OVERLAY_STATUS_ID.STATUS_NONE_ID;
 
     this.OverlayType=0; //叠加方式 0=百分比叠加  1=绝对叠加
     this.IsCalcuateMaxMin=true; //是否参与计算Y轴的最大最小值
-
 
     this.SetOption=function(option)
     {
@@ -31663,19 +31673,21 @@ function ChartOverlayMinutePriceLine()
 
     this.PtInChart=function(x,y)
     {
-        var option={ MinuteOverlayPrice:true, YClose:this.YClose, MainYClose:this.MainYClose, OverlayType:this.OverlayType };
+        var option={ MinuteOverlayPrice:true, OverlayType:this.OverlayType };
         return this.PtInLine(x, y, option);
     }
 
     this.DrawSelectedStatus=function()
     {
-        var option={ MinuteOverlayPrice:true, YClose:this.YClose, MainYClose:this.MainYClose, OverlayType:this.OverlayType };
+        var option={ MinuteOverlayPrice:true, OverlayType:this.OverlayType };
         this.DrawLinePoint(option);
     }
 
     this.Draw=function()
     {
         if (!this.Data) return;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return;
+
         if (this.NotSupportMessage)
         {
             this.DrawNotSupportmessage();
@@ -31696,37 +31708,53 @@ function ChartOverlayMinutePriceLine()
         var bFirstPoint=true;
         var drawCount=0;
         var xOffset=0, showValue=0;
+        var yClose=null, mainYClose=null;
+        var pointCount=0;
         for(var i=this.Data.DataOffset+xOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
-            var value=this.Data.Data[i].Close;
-            if (value==null) continue;
-
-            showValue=value;           //绝对叠加
-            if (this.OverlayType==0) showValue=value/this.YClose*this.MainYClose;   //百分比
-
-            var x=this.ChartFrame.GetXFromIndex(j);
-            var y=this.ChartFrame.GetYFromData(showValue, false);
-
-            if (bFirstPoint)
+            var item=this.Data.Data[i];
+            if (item && IFrameSplitOperator.IsNumber(item.Close)) 
             {
-                this.Canvas.strokeStyle=this.Color;
-                this.Canvas.beginPath();
-                if (isHScreen) this.Canvas.moveTo(y,x);
-                else this.Canvas.moveTo(x,y);
-                bFirstPoint=false;
-            }
-            else
-            {
-                if (isHScreen) this.Canvas.lineTo(y,x);
-                else this.Canvas.lineTo(x,y);
+                if (bFirstPoint)    //百分比使用每天的昨收计算
+                {
+                    yClose=item.YClose;
+                    var minItem=this.MainData.Data[i];
+                    mainYClose=minItem.YClose;
+                }
+
+                var value=item.Close;
+                showValue=value;           //绝对叠加
+
+                if (this.OverlayType==0) 
+                    showValue=value/yClose*mainYClose;   //百分比
+
+                var x=this.ChartFrame.GetXFromIndex(j);
+                var y=this.ChartFrame.GetYFromData(showValue, false);
+
+                if (bFirstPoint)
+                {
+                    this.Canvas.strokeStyle=this.Color;
+                    this.Canvas.beginPath();
+                    if (isHScreen) this.Canvas.moveTo(y,x);
+                    else this.Canvas.moveTo(x,y);
+                    bFirstPoint=false;
+                }
+                else
+                {
+                    if (isHScreen) this.Canvas.lineTo(y,x);
+                    else this.Canvas.lineTo(x,y);
+                }
+
+                ++drawCount;
             }
 
-            ++drawCount;
+            ++pointCount;
 
-            if (drawCount>=minuteCount) //上一天的数据和这天地数据线段要断开
+            if (pointCount>=minuteCount) //上一天的数据和这天地数据线段要断开
             {
                 bFirstPoint=true;
-                this.Canvas.stroke();
+                pointCount=0;
+                if (drawCount>0) this.Canvas.stroke();
                 drawCount=0;
             }
         }
@@ -31739,24 +31767,46 @@ function ChartOverlayMinutePriceLine()
     this.GetMaxMin=function()
     {
         var xPointCount=this.ChartFrame.XPointCount;
-        var range={};
+        var range={ Min:null, Max:null };
         if (!this.IsCalcuateMaxMin) return range;
-        if (this.YClose==null) return range;
 
-        range.Min=this.MainYClose;
-        range.Max=this.MainYClose;
+        var minuteCount=this.ChartFrame.MinuteCount;
+        var yClose=null, mainYClose=null;
+        var bFirstPoint=true;
+        var pointCount=0;
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
-            var value=this.Data.Data[i].Close;
-            if (value==null) continue;
+            var item=this.Data.Data[i];
+            if (!item || !IFrameSplitOperator.IsNumber(item.Close)) 
+            {
+                ++pointCount;
+                continue;
+            }
 
-            if (this.OverlayType==0) value=value/this.YClose*this.MainYClose;
+            if (bFirstPoint)
+            {
+                yClose=item.YClose;
+                var minItem=this.MainData.Data[i];
+                mainYClose=minItem.YClose;
+                bFirstPoint=false;
+            }
+
+            var value=item.Close;
+            if (this.OverlayType==0) value=value/yClose*mainYClose;
 
             if (range.Max==null) range.Max=value;
             if (range.Min==null) range.Min=value;
 
             if (range.Max<value) range.Max=value;
             if (range.Min>value) range.Min=value;
+
+            ++pointCount;
+
+            if (pointCount>=minuteCount)
+            {
+                bFirstPoint=true;
+                pointCount=0;
+            }
         }
 
         //JSConsole.Chart.Log(`[ChartOverlayMinutePriceLine::GetMaxMin] max=${range.Max} min=${range.Min}`);
@@ -72884,7 +72934,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
     //叠加股票
     this.OverlaySymbol=function(symbol,option)
     {
-        for(var i in this.OverlayChartPaint)
+        for(var i=0; i<this.OverlayChartPaint.length; ++i)
         {
             var item=this.OverlayChartPaint[i];
             if (item.Symbol==symbol)
@@ -72904,11 +72954,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         if (option && option.Color) paint.Color=option.Color; //外部设置颜色
         else paint.Color=g_JSChartResource.OverlaySymbol.Color[g_JSChartResource.OverlaySymbol.Random%g_JSChartResource.OverlaySymbol.Color.length];
         ++g_JSChartResource.OverlaySymbol.Random;
-        if (this.ChartPaint[0].YClose>0 && this.ChartPaint[0].Data) //绑定主图数据
-        {
-            paint.MainData=this.ChartPaint[0].Data; 
-            paint.MainYClose=this.ChartPaint[0].YClose;        
-        }
+        paint.MainData=this.SourceData; //绑定主图数据
 
         if (paint.SetOption) paint.SetOption(option);
 
@@ -73876,7 +73922,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         for(var i=0; i<this.OverlayChartPaint.length; ++i)
         {
             let item=this.OverlayChartPaint[i];
-            if (!item.MainData || !(item.MainYClose>0) ) continue;
+            if (!item.MainData) continue;
             if (item.Status!=OVERLAY_STATUS_ID.STATUS_NONE_ID) continue;
             var symbol=item.Symbol;
             if (!symbol) continue;
@@ -73937,7 +73983,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             for(var j=0; j<this.OverlayChartPaint.length; ++j)
             {
                 var item=this.OverlayChartPaint[j];
-                if (!item.MainData || !(item.MainYClose>0) ) continue;
+                if (!item.MainData) continue;
                 if (overlayData.symbol==item.Symbol)
                 {
                     this.RecvOverlayMinuteData(overlayData, item, { Redraw:false });
@@ -74098,6 +74144,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             {
                 var empytData=new ChartData();
                 empytData.Date=item.Date;
+                empytData.Data.length=item.Data.length;
                 overlayDayData.push(empytData);
             }
         }
@@ -74331,11 +74378,10 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             this.ExtendChartPaint[0].Name=this.Name;
         }
 
-        for(var i in this.OverlayChartPaint)
+        for(var i=0; i<this.OverlayChartPaint.length; ++i)
         {
             var item=this.OverlayChartPaint[i];
-            item.MainData=this.ChartPaint[0].Data;         //叠加股票
-            item.MainYClose=yClose;
+            item.MainData=minuteData;           //绑定主图数据
         }
     }
 

@@ -9568,6 +9568,36 @@ function JSDraw(errorHandler,symbolData)
         return result;
     }
 
+    //叠加一个K线
+    this.DRAWOVERLAYKLINE=function(open, high, low, close)
+    {
+        var drawData=[];
+        var result={DrawData:drawData, DrawType:'DRAWOVERLAYKLINE'};
+        var count=Math.max(high.length, open.length,low.length,close.length);
+
+        var kData=this.SymbolData.Data.Data;
+        for(var i=0;i<count;++i)
+        {
+            var item={Open:null,High:null, Low:null, Close:null};
+            var kItem=kData[i];
+            if (i<high.length && i<open.length && i<low.length && i<close.length && 
+                IFrameSplitOperator.IsNumber(open[i]) && IFrameSplitOperator.IsNumber(high[i]) && IFrameSplitOperator.IsNumber(low[i]) && IFrameSplitOperator.IsNumber(low[i]))
+            {
+
+                item.Open=open[i];
+                item.High=high[i];
+                item.Low=low[i];
+                item.Close=close[i];
+                item.Date=kItem.Date;
+                if (IFrameSplitOperator.IsNumber(kItem.Time)) item.Time=kItem.Time;
+            }
+
+            drawData[i]=item;
+        }
+
+        return result;
+    }
+
     /*
     DRAWCOLORKLINE 绘制K线
     用法：
@@ -11075,7 +11105,7 @@ JSDraw.prototype.IsDrawFunction=function(name)
 {
     let setFunctionName=new Set(
     [
-        "STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE',"DRAWKLINE1",'DRAWKLINE_IF',"DRAWCOLORKLINE",'PLOYLINE',
+        "STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE',"DRAWKLINE1",'DRAWKLINE_IF',"DRAWCOLORKLINE",'PLOYLINE',"DRAWOVERLAYKLINE",
         'POLYLINE','DRAWNUMBER',"DRAWNUMBER_FIX",'DRAWICON','DRAWCHANNEL','PARTLINE','DRAWTEXT_FIX','DRAWGBK','DRAWTEXT_LINE','DRAWRECTREL',"DRAWTEXTABS","DRAWTEXTREL",
         'DRAWOVERLAYLINE',"FILLRGN", "FILLRGN2","FILLTOPRGN", "FILLBOTTOMRGN", "FILLVERTICALRGN","FLOATRGN","DRAWSL", "DRAWGBK2","DRAWGBK_DIV",
         "VERTLINE","HORLINE","TIPICON"
@@ -17359,6 +17389,10 @@ function JSExecute(ast,option)
                 node.Draw=this.Draw.DRAWKLINE_IF(args[0],args[1],args[2],args[3],args[4]);
                 node.Out=[];
                 break;
+            case "DRAWOVERLAYKLINE":
+                node.Draw=this.Draw.DRAWOVERLAYKLINE(args[0],args[1],args[2],args[3]);
+                node.Out=[];
+                break;
             case "DRAWCOLORKLINE":
                 node.Draw=this.Draw.DRAWCOLORKLINE(args[0],args[1],args[2]);
                 node.Out=[];
@@ -19980,6 +20014,28 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateOverlayKLine=function(hqChart,windowIndex,varItem,id)
+    {
+        var chart=null;
+        if (hqChart.IsKLineContainer()) chart=new ChartOverlayKLine();
+        else if (hqChart.IsMinuteContainer()) chart=new ChartOverlayMinutePriceLine();
+        else return;
+
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.Identify=this.Guid;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        if (varItem.Color) chart.Color=this.GetColor(varItem.Color);    //如果设置了颜色,使用外面设置的颜色
+        else chart.Color=this.GetDefaultColor(id);
+
+        chart.Data.Data=varItem.Draw.DrawData;
+        chart.MainData=hqChart.ChartPaint[0].Data;//绑定K线
+
+        hqChart.ChartPaint.push(chart);
+    }
+
     this.CreateDrawColorKLine=function(hqChart,windowIndex,varItem,i)
     {
         let chart=new ChartColorKline();
@@ -20819,6 +20875,9 @@ function ScriptIndex(name,script,args,option)
                     case 'DRAWKLINE':
                     case "DRAWKLINE1":
                         this.CreateKLine(hqChart,windowIndex,item,i);
+                        break;
+                    case "DRAWOVERLAYKLINE":
+                        this.CreateOverlayKLine(hqChart,windowIndex,item,i);
                         break;
                     case "DRAWCOLORKLINE":
                         this.CreateDrawColorKLine(hqChart,windowIndex,item,i);

@@ -211,6 +211,9 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 * [走势图手机页面](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_minute_phone.html)   
 * [走势图手机横屏页面](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_minute_phone_hScreen.html)    
 
+* [K线训练手机](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_ktrain.html)    
+* [K线训练手机横屏](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_ktrain2.html)    
+
 
 
 # 4.使用教程

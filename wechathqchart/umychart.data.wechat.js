@@ -2191,6 +2191,7 @@ export
     CUSTOM_SECOND_PERIOD_END,
     Rect,
     DataPlus,
+    g_DataPlus,
     Guid,
     ToFixedPoint,
     ToFixedRect,
