@@ -216,6 +216,8 @@ function ScriptIndex(name, script, args, option)
     this.TitleFont=g_JSChartResource.DynamicTitleFont;      //标题字体
     this.IsShortTitle=false;                                //是否显示指标参数
 
+    this.IsShow=true;       //是否显示图形
+
     if (option) 
     {
         if (option.FloatPrecision >= 0) this.FloatPrecision = option.FloatPrecision;
@@ -1476,6 +1478,10 @@ function ScriptIndex(name, script, args, option)
     {
         if (this.Name) chart.IndexName=this.Name;
         else if (this.ID) chart.IndexName==this.ID;
+
+        if (this.ID) chart.IndexID=this.ID;
+        
+        chart.Script=this;  //指标内容绑定上去
     }
 }
 

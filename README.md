@@ -217,6 +217,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 
 
 # 4.使用教程
+## 画图工具列表
+[HQChart支持的画图工具列表](https://jones2000.blog.csdn.net/article/details/133781956)  
 ## 麦语法函数帮助文档
 [HQChart麦语法内置函数帮助文档](https://jones2000.blog.csdn.net/article/details/129125330)   
 ## H5教程
@@ -401,6 +403,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 11. [HQChart实战教程17-K线沙盘推演](https://blog.csdn.net/jones2000/article/details/106776837) <br>
 12. [HQChart实战教程18-多股同列](https://blog.csdn.net/jones2000/article/details/107193410)<br>
 13. [HQChart实战教程45-自定义指标窗口背景](https://jones2000.blog.csdn.net/article/details/119886468)<br>
+13. [HQChart实战教程66-动态调整HQChart布局大小](https://jones2000.blog.csdn.net/article/details/133800739)  
 
 ## 付费教程
 1. [HQChart对接火币完整教程](https://jones2000.github.io/HQChart/document/huobi_demo.html)   

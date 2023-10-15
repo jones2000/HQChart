@@ -9134,6 +9134,12 @@ function MinuteChartContainer(uielement)
 
     this.RecvMinuteData = function (data) 
     {
+        if (data.data && data.data.dataType===1)   //增量更新数据模式
+        {
+            this.RecvUpdateMinuteData(data.data);
+            return;
+        }
+
         var aryMinuteData = MinuteChartContainer.JsonDataToMinuteData(data.data);
 
         if (this.DayCount > 1)    //多日走势图
@@ -9203,6 +9209,134 @@ function MinuteChartContainer(uielement)
         if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvMinuteData', this);
 
         this.AutoUpdate();
+    }
+
+    this.RecvUpdateMinuteData=function(data)
+    {
+        var minuteData=MinuteChartContainer.JsonDataToUpdateMinuteData(data);
+
+        if (this.DayCount > 1)    //多日走势图
+        {
+            this.UpdateLatestMinuteDataV2(minuteData);
+            this.UpdateHistoryMinuteUI();
+            this.RecvMinuteDataEvent();
+            this.RequestOverlayMinuteData();    //更新最新叠加数据
+            this.BindAllOverlayIndexData(this.SourceData);
+            if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvMinuteData', this);
+            this.AutoUpdate();
+            return;
+        }
+
+        this.UpdateLatestMinuteDataV2(minuteData);
+        var sourceData=this.SourceData;
+        var aryMinuteData=this.SourceData.Data;
+        var upperSymbol = this.Symbol.toUpperCase();
+        var isFutures = MARKET_SUFFIX_NAME.IsFutures(upperSymbol);
+        if (data.stock[0].yclearing && isFutures) yClose = data.stock[0].yclearing; //期货使用前结算价
+        this.CaclutateLimitPrice(yClose, data.stock[0].limitprice); //计算涨停价格
+        var extendData = { High: data.stock[0].high, Low: data.stock[0].low };
+        this.BindMainData(sourceData, yClose, extendData);
+
+        for (var i=0;i<this.Frame.SubFrame.length;++i)  //把股票代码设置到X轴刻度类里
+        {
+            var item = this.Frame.SubFrame[i];
+            item.Frame.XSplitOperator.Symbol = this.Symbol;
+            item.Frame.XSplitOperator.DayCount = 1;
+            item.Frame.XSplitOperator.Operator();   //调整X轴个数
+            item.Frame.YSplitOperator.Symbol = this.Symbol;
+        }
+
+        //计算指标
+        if (this.Frame.SubFrame.length > 2) 
+        {
+            var bindData = new ChartData();
+            bindData.Data = aryMinuteData;
+            for (var i = 2; i < this.Frame.SubFrame.length; ++i) 
+            {
+                this.BindIndexData(i, bindData);
+            }
+        }
+
+        var chartInfo = this.GetChartMinuteInfo();
+        if (chartInfo) chartInfo.SourceData = this.SourceData;    //数据绑定到信息地雷上
+        this.RecvMinuteDataEvent();
+        this.RequestMinuteInfoData();
+        this.RequestOverlayMinuteData();//请求叠加数据 (主数据下载完再下载)
+
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Frame.SetSizeChage(true);
+        this.Draw();
+
+        this.BindAllOverlayIndexData(this.SourceData);
+
+        if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvMinuteData', this);
+
+        this.AutoUpdate();
+    }
+
+    //更新最新的几条数据
+    this.UpdateLatestMinuteDataV2=function(minuteData)
+    {
+        if (this.DayCount>1)
+        {
+            if (!this.DayData) return;
+
+            var findItem=null;
+            for(var i=0; i<this.DayData.length; ++i)
+            {
+                var item=this.DayData[i];
+                if (item.Date===date)  
+                {
+                    findItem=item;
+                    break;
+                }
+            }
+    
+            if (!findItem) return;
+    
+            var findIndex=-1;
+            var firstItem=minuteData.Data[0];
+            for(var i=0;i<findItem.Data.length;++i)
+            {
+                var item=findItem.Data[i];
+                
+                if (item.Date==firstItem.Date && item.Time==firstItem.Time)
+                {
+                    findIndex=i;
+                    break;
+                }
+            }
+    
+            if (findIndex<0) findIndex=findItem.Data.length;
+            for(var i=0, j=findIndex; i<minuteData.Data.length; ++i, ++j)
+            {
+                var item=minuteData.Data[i];
+                findItem.Data[j]=item;
+            }
+        }
+        else
+        {
+            if (!this.SourceData) return;
+            var findIndex=-1;
+            var firstItem=minuteData.Data[0];
+            for(var i=0;i<this.SourceData.Data.length;++i)
+            {
+                var item=this.SourceData.Data[i];
+                if (item.Date==firstItem.Date && item.Time==firstItem.Time)
+                {
+                    findIndex=i;
+                    break;
+                }
+            }
+
+            if (findIndex<0) findIndex=this.SourceData.Data.length;
+            for(var i=0, j=findIndex; i<minuteData.Data.length; ++i, ++j)
+            {
+                var item=minuteData.Data[i];
+                this.SourceData.Data[j]=item;
+            }
+        }
+        
     }
 
     //请求叠加数据 (主数据下载完再下载))
@@ -9936,6 +10070,67 @@ MinuteChartContainer.JsonDataToMinuteDataArray = function (data)
     }
 
     return result;
+}
+
+//分钟增量数据  stock: [ { date:, yclose:， yclearing: , minute:[ [],]}  0=日期 1=时间 2=开 3=高 4=低 5=收 6=均价 7=量 8=金额 9=涨幅 10=涨跌 11=领先指标 ]
+MinuteChartContainer.JsonDataToUpdateMinuteData=function(data)
+{
+    if (!data || !data.stock) return null;
+    var stock=data.stock[0];
+    if (!IFrameSplitOperator.IsNumber(stock.date)) return null;
+
+    var symbol=data.stock[0].symbol;
+    var upperSymbol=symbol.toUpperCase();
+    var isSHSZ=MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
+    var isFutures=MARKET_SUFFIX_NAME.IsFutures(upperSymbol);    //国内期货, 纽约期货交易所
+    var minuteData={ Date:stock.date,  Data:[] , Symbol:symbol, Name:stock.name };
+    var extendDataIndex=JSCHART_DATA_FIELD_ID.MINUTE_DAY_EXTENDDATA;  //扩展数据序号
+    if (IFrameSplitOperator.IsNumber(stock.high)) minuteData.High=stock.high;
+    if (IFrameSplitOperator.IsNumber(stock.low)) minuteData.Low=stock.low;
+    if (IFrameSplitOperator.IsNumber(stock.yclose)) minuteData.YClose=stock.yclose;
+    if (IFrameSplitOperator.IsNumber(stock.YClearing)) minuteData.YClearing=stock.yclearing;
+
+    if (IFrameSplitOperator.IsNumber(stock.high)) minuteData.High=stock.high;
+    if (IFrameSplitOperator.IsNumber(stock.low)) minuteData.Low=stock.low;
+    if (IFrameSplitOperator.IsNumber(stock.yclose)) minuteData.YClose=stock.yclose;
+    if (IFrameSplitOperator.IsNumber(stock.YClearing)) minuteData.YClearing=stock.yclearing;
+
+    if (!IFrameSplitOperator.IsNonEmptyArray(stock.minute)) return minuteData;
+
+    for(var i=0;i<stock.minute.length;++i)
+    {
+        var jsData=stock.minute[i];
+        var item=new MinuteData();
+
+        item.YClearing=minuteData.YClearing;
+        item.YClose=minuteData.YClose;
+        item.Date=jsData[0];
+        item.Time=jsData[1];
+        item.Open=jsData[2];
+        item.High=jsData[3];
+        item.Low=jsData[4];
+        item.Close=jsData[5];
+        item.AvPrice=jsData[6];
+        item.Vol=jsData[7];
+        item.Amount=jsData[8];
+        if (IFrameSplitOperator.IsNumber(jsData[9])) item.Increase=jsData[9];
+        if (IFrameSplitOperator.IsNumber(jsData[10])) item.Risefall=jsData[10];
+        if (IFrameSplitOperator.IsNumber(jsData[11])) item.Lead=jsData[11];
+
+        if (jsData[extendDataIndex]) item.ExtendData=jsData[extendDataIndex];
+        item.DateTime=item.Date.toString()+" "+item.Time.toString();
+        if (isSHSZ) item.Vol=item.Vol/100; //沪深股票原始单位股
+
+        if (IFrameSplitOperator.IsNumber(minuteData.YClose) && item.Close) 
+            item.Increase=(item.Close-minuteData.YClose)/minuteData.YClose*100; //涨幅 (最新价格-昨收)/昨收*100;
+
+        if (isFutures && minuteData.YClearing && item.Close) 
+            item.Increase=(item.Close-minuteData.YClearing)/minuteData.YClearing*100; //涨幅 (最新价格-昨结算价)/昨结算价*100;
+
+        minuteData.Data.push(item);
+    }
+
+    return minuteData;
 }
 
 /*

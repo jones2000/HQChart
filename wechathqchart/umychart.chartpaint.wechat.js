@@ -98,6 +98,7 @@ function IChartPainting()
     this.Name;                          //名称
     this.ClassName = 'IChartPainting';    //类名
     this.Data = new ChartData();          //数据区
+    this.Script;                        //图形对应的指标脚本 (只有指标图形才有)
 
     this.NotSupportMessage = null;
     this.MessageFont = g_JSChartPaintResource.Index.NotSupport.Font;
@@ -121,6 +122,13 @@ function IChartPainting()
             this.ChartFrame.ClassName=="OverlayMinuteFrame" || this.ChartFrame.ClassName=="OverlayMinuteHScreenFrame");
 
         return isMinute
+    }
+
+    //是否隐藏指标
+    this.IsHideScriptIndex=function()
+    {
+        if (this.Script && this.Script.IsShow==false) return true;
+        return false;
     }
 
     this.DrawNotSupportmessage = function () 
@@ -3303,6 +3311,7 @@ function ChartLine()
     this.Draw = function () 
     {
         if (!this.IsShow || this.ChartFrame.IsMinSize || !this.IsVisible) return;
+        if (this.IsHideScriptIndex()) return;
         if (this.NotSupportMessage)
         {
             this.DrawNotSupportmessage();
@@ -3804,6 +3813,7 @@ function ChartStick()
     this.DrawLine = function () 
     {
         if (this.ChartFrame.IsMinSize) return;
+        if (this.IsHideScriptIndex()) return;
         if (!this.Data || !this.Data.Data) return;
 
         var isHScreen = (this.ChartFrame.IsHScreen === true);
@@ -3915,7 +3925,7 @@ function ChartLineStick()
     this.Draw = function () 
     {
         if (!this.IsShow || this.ChartFrame.IsMinSize) return;
-
+        if (this.IsHideScriptIndex()) return;
         if (this.NotSupportMessage) 
         {
             this.DrawNotSupportmessage();
@@ -5936,6 +5946,7 @@ function ChartMACD()
     this.Draw = function () 
     {
         if (this.ChartFrame.IsMinSize || !this.IsVisible) return;
+        if (this.IsHideScriptIndex()) return;
         if (this.NotSupportMessage) 
         {
             this.DrawNotSupportmessage();
@@ -7010,6 +7021,7 @@ function ChartVolStick()
     this.Draw = function () 
     {
         if (!this.IsShow || this.ChartFrame.IsMinSize || !this.IsVisible) return;
+        if (this.IsHideScriptIndex()) return;
         if (this.ChartFrame.IsHScreen === true) 
         {
             this.HScreenDraw();
