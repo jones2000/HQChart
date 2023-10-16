@@ -9232,6 +9232,7 @@ function MinuteChartContainer(uielement)
         var aryMinuteData=this.SourceData.Data;
         var upperSymbol = this.Symbol.toUpperCase();
         var isFutures = MARKET_SUFFIX_NAME.IsFutures(upperSymbol);
+        var yClose=minuteData.YClose;
         if (data.stock[0].yclearing && isFutures) yClose = data.stock[0].yclearing; //期货使用前结算价
         this.CaclutateLimitPrice(yClose, data.stock[0].limitprice); //计算涨停价格
         var extendData = { High: data.stock[0].high, Low: data.stock[0].low };

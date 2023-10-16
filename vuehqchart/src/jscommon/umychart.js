@@ -51412,6 +51412,13 @@ function IChartDrawPicture()
                 pt2.Y=bottom;
                 return pt2;
             }
+            else if (b==0)
+            {
+                var pt2=new Point();
+                pt2.X=right;
+                pt2.Y=aryPoint[0].Y;
+                return pt2;
+            }
             else
             {
                 var b2=top-aryPoint[0].Y;
@@ -51447,6 +51454,13 @@ function IChartDrawPicture()
                 var pt2=new Point();
                 pt2.X=x;
                 pt2.Y=bottom;
+                return pt2;
+            }
+            else if (b==0)
+            {
+                var pt2=new Point();
+                pt2.X=left;
+                pt2.Y=aryPoint[0].Y;
                 return pt2;
             }
             else
@@ -59755,6 +59769,42 @@ function ChartFibSpeedResistanceFan()
         Opacity:0.3
     }
 
+    this.SetOption=function(option)
+    {
+        if (!option) return;
+
+        if (option.Font) this.Font=option.Font;
+        if (option.LineWidth) this.LineWidth=option.LineWidth;
+        if (IFrameSplitOperator.IsBool(option.EnableBGColor)) this.EnableBGColor=option.EnableBGColor;
+        if (option.AreaConfig) this.AreaConfig=option.AreaConfig;
+    }
+
+    //导出成存储格式
+    this.ExportStorageData=function()
+    {
+        var storageData=this.ExportBaseData();
+
+        storageData.Value=[];
+        for(var i=0;i<this.Value.length && i<this.PointCount;++i)
+        {
+            var item=this.Value[i];
+            storageData.Value.push( { XValue:item.XValue, YValue:item.YValue } );
+        }
+    
+        storageData.Font=this.Font;
+        storageData.EnableBGColor=this.EnableBGColor;
+        storageData.AreaConfig=CloneData(this.AreaConfig);
+
+        return storageData;
+    }
+
+    this.ImportStorageData=function(storageData)
+    {
+        if (storageData.Font) this.Font=storageData.Font;
+        if (IFrameSplitOperator.IsBool(storageData.EnableBGColor))  this.EnableBGColor=storageData.EnableBGColor;
+        if (storageData.AreaConfig) this.AreaConfig=storageData.AreaConfig;
+    }
+
     this.Draw=function()
     {
         this.LinePoint=[];
@@ -59797,6 +59847,13 @@ function ChartFibSpeedResistanceFan()
         var ptPre=null; //上一个点
         var clrArea=null;
         this.Canvas.font=this.Font;
+       
+        var border=this.Frame.GetBorder();
+        var ptLeftTop={ X:border.Left, Y:border.TopEx };
+        var ptRightTop={X:border.Right, Y:border.TopEx };
+        var ptLeftBottom={ X:border.Left, Y:border.BottomEx };
+        var ptRightBottom={ X:border.Right, Y:border.BottomEx };
+
         var textOffset=4;
         if (quadrant==1 || quadrant==4) 
         {
@@ -59808,6 +59865,8 @@ function ChartFibSpeedResistanceFan()
             this.Canvas.textAlign="left";
             textOffset=4;
         }
+
+
         this.Canvas.textBaseline="middle";
         for(var i=0;i<aryYData.length;++i)
         {
@@ -59821,6 +59880,36 @@ function ChartFibSpeedResistanceFan()
                 this.Canvas.beginPath();
                 this.Canvas.moveTo(center.X,center.Y);
                 this.Canvas.lineTo(ptPre.X,ptPre.Y);
+
+                if (quadrant==1)
+                {   
+                    if (ptPre.X>=ptRightTop.X && pt.X<ptRightTop.X)
+                    {
+                        this.Canvas.lineTo(ptRightTop.X,ptRightTop.Y);
+                    }
+                }
+                else if (quadrant==2)
+                {
+                    if (ptPre.X<=ptLeftTop.X && pt.X>ptLeftTop.X)
+                    {
+                        this.Canvas.lineTo(ptLeftTop.X,ptLeftTop.Y);
+                    }
+                }
+                else if (quadrant==3)
+                {
+                    if (ptPre.X<=ptLeftBottom.X && pt.X>ptLeftBottom.X)
+                    {
+                        this.Canvas.lineTo(ptLeftBottom.X,ptLeftBottom.Y);
+                    }
+                }
+                else if (quadrant==4)
+                {
+                    if (ptPre.X>=ptRightBottom.X && pt.X<ptRightBottom.X)
+                    {
+                        this.Canvas.lineTo(ptRightBottom.X,ptRightBottom.Y);
+                    }
+                }
+
                 this.Canvas.lineTo(pt.X,pt.Y);
                 this.Canvas.closePath();
                 this.Canvas.fillStyle=clrArea;
@@ -59879,6 +59968,36 @@ function ChartFibSpeedResistanceFan()
                 this.Canvas.beginPath();
                 this.Canvas.moveTo(center.X,center.Y);
                 this.Canvas.lineTo(ptPre.X,ptPre.Y);
+
+                if (quadrant==1)
+                {
+                    if (ptPre.X<ptRightTop.X && pt.X>=ptRightTop.X)
+                    {
+                        this.Canvas.lineTo(ptRightTop.X,ptRightTop.Y);
+                    }
+                }
+                else if (quadrant==2)
+                {
+                    if (ptPre.X>ptLeftTop.X && pt.X<=ptLeftTop.X)
+                    {
+                        this.Canvas.lineTo(ptLeftTop.X,ptLeftTop.Y);
+                    }
+                }
+                else if (quadrant==3)
+                {
+                    if (ptPre.X>ptLeftBottom.X && pt.X<=ptLeftBottom.X)
+                    {
+                        this.Canvas.lineTo(ptLeftBottom.X,ptLeftBottom.Y);
+                    }
+                }
+                else if (quadrant==4)
+                {
+                    if (ptPre.X<ptRightBottom.X && pt.X>=ptRightBottom.X)
+                    {
+                        this.Canvas.lineTo(ptRightBottom.X,ptRightBottom.Y);
+                    }
+                }
+
                 this.Canvas.lineTo(pt.X,pt.Y);
                 this.Canvas.closePath();
                 this.Canvas.fillStyle=clrArea;
