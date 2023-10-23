@@ -48784,7 +48784,19 @@ HQData.RequestMinuteRealtimeData=function(data,callback)
 
     console.log(`[HQData::RequestMinuteRealtimeData] Symbol=${symbol}`);
 
-    var hqchartData=KLINE_1MINUTE_DATA;
+    var hqchartData=JSON.parse(JSON.stringify(KLINE_1MINUTE_DATA));
+
+    var kItem=hqchartData.data[0];
+    var price=kItem[5];
+    var value=Math.ceil(Math.random()*10)/1000*price;
+    var bUp=Math.ceil(Math.random()*10)>=5;
+    
+    if (bUp) price+=value;
+    else price-=value;
+    kItem[5]=price;
+    kItem[3]=Math.max(price, kItem[3]);
+    kItem[4]=Math.min(price, kItem[4]);
+    
     hqchartData.name=symbol;
     hqchartData.symbol=symbol;
     callback(hqchartData);

@@ -22865,7 +22865,8 @@ function APIScriptIndex(name,script,args,option, isOverlay)
         }
         else
         {
-            hqChart.Draw();
+            if (this.IsSync===false)    //同步的指标不用刷新
+                hqChart.Draw();
         }
 
         if (hqChart.GetIndexEvent)
@@ -22996,7 +22997,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
             kdata.GetDateIndex(sourceData);
             return sourceData;
         }
-        else if (ChartData.IsMinutePeriod(hqChart.Period,true) || ChartData.IsTickPeriod(hqChart.Period) || ChartData.IsSecondPeriod(hqChart.Period)) //分钟线
+        else if (ChartData.IsMinutePeriod(hqChart.Period,true) || ChartData.IsTickPeriod(hqChart.Period) || ChartData.IsSecondPeriod(hqChart.Period) || ChartData.IsMilliSecondPeriod(hqChart.Period)) //分钟线
         {
             var kdata=hqChart.ChartPaint[0].Data;   //K线
 

@@ -8109,6 +8109,8 @@ function MinuteChartContainer(uielement)
     this.MinuteApiUrl = g_JSChartResource.Domain + "/API/Stock";
     this.HistoryMinuteApiUrl = g_JSChartResource.Domain + "/API/StockMinuteData";   //历史分钟数据
 
+    this.DataStatus={ MultiDay:false, LatestDay:false };      //MultiDay=多日  LatestDay:当天
+
     //手机拖拽
     this.ontouchstart = function (e) 
     {
@@ -8840,6 +8842,12 @@ function MinuteChartContainer(uielement)
         }
     }
 
+    this.ResetDataStatus=function()
+    {
+        this.DataStatus.MultiDay=false;
+        this.DataStatus.LatestDay=false;
+    }
+
     //切换股票代码
     this.ChangeSymbol = function (symbol) 
     {
@@ -8847,6 +8855,7 @@ function MinuteChartContainer(uielement)
         this.CancelAutoUpdate();    //先停止定时器
         this.ChartSplashPaint.SetTitle(this.LoadDataSplashTitle);
         this.ChartSplashPaint.EnableSplash(true);
+        this.ResetDataStatus();
         this.ClearIndexPaint();
         this.RequestData();
     }
@@ -8856,6 +8865,7 @@ function MinuteChartContainer(uielement)
         if (count < 0 || count > 10) return;
         this.DayCount = count;
         this.CancelAutoUpdate();    //先停止定时器
+        this.ResetDataStatus();
         this.ClearIndexPaint();
         this.RequestData();
     }
@@ -8962,6 +8972,7 @@ function MinuteChartContainer(uielement)
         this.DayData = MinuteChartContainer.JsonDataToMinuteDataArray(data);;
         this.Symbol = data.symbol;
         this.Name = data.name;
+        this.DataStatus.MultiDay=true;
 
         if (IFrameSplitOperator.IsNonEmptyArray(this.DayData))
         {
@@ -9141,7 +9152,8 @@ function MinuteChartContainer(uielement)
         }
 
         var aryMinuteData = MinuteChartContainer.JsonDataToMinuteData(data.data);
-
+        this.DataStatus.LatestDay=true;
+        
         if (this.DayCount > 1)    //多日走势图
         {
             this.UpdateLatestMinuteData(aryMinuteData, data.data.stock[0].date);

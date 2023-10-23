@@ -3178,7 +3178,7 @@ JSIndexScript.prototype.TEST = function ()
                 "DRAWBAND(OPEN,RGB(0,224,224),CLOSE,RGB(255,96,96));"
                 //"T2:IF(KDJ.J>-10,KDJ.J#WEEK,0);"
                 */
-            Script:"VOL:VOL,VOLSTICK, UPCOLOR(RGBA(255,0,0,0.3)), DOWNCOLOR(RGBA(0,255,0,0.3));"
+            Script:"DRAWICON(C>=H,H, 1, 'draw_1');"
             
             //"DRAWGBK_DIV(C>O,RGB(221 ,160 ,221),RGB(100 ,250, 250),1,1);"
             /*
