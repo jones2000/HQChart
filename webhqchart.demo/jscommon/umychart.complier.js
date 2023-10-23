@@ -21336,6 +21336,7 @@ function OverlayScriptIndex(name,script,args,option)
             if (titleData)
             {
                 if (this.FloatPrecision>=0) titleData.FloatPrecision=this.FloatPrecision;
+                if (IFrameSplitOperator.IsNumber(this.StringFormat)) titleData.StringFormat=this.StringFormat;
             }
         }
 

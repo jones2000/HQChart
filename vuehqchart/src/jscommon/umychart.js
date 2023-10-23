@@ -13563,14 +13563,14 @@ function KLineFrame()
         var distanceWidth=this.DistanceWidth;
         var dataWidth=this.DataWidth;
         var left=this.ChartBorder.GetLeft()+g_JSChartResource.FrameLeftMargin;
-
+        var maxDataCount=10000*50;
         if (isLimit==false)
         {
             if (x<this.ChartBorder.GetLeft())
             {
                 var index=-1;
                 var xPoint=this.ChartBorder.GetLeft()-(distanceWidth/2+dataWidth+distanceWidth);
-                while(index>-10000)
+                while(index>-maxDataCount)
                 {
                     if (xPoint<=x) 
                         break;
@@ -13584,7 +13584,7 @@ function KLineFrame()
             {
                 var index=0;
                 var xPoint=left+distanceWidth/2+dataWidth+distanceWidth;
-                while(index<10000)  //自己算x的数值
+                while(index<maxDataCount)  //自己算x的数值
                 {
                     if (xPoint>=x) break;
                     xPoint+=(dataWidth+distanceWidth);
@@ -13602,7 +13602,7 @@ function KLineFrame()
             var right=this.ChartBorder.GetRight()-g_JSChartResource.FrameRightMargin;
             var index=0;
             var xPoint=left+distanceWidth/2+dataWidth+distanceWidth;
-            while(xPoint<right && index<10000 && index+1<this.XPointCount)  //自己算x的数值
+            while(xPoint<right && index<maxDataCount && index+1<this.XPointCount)  //自己算x的数值
             {
                 if (xPoint>=x) break;
                 xPoint+=(dataWidth+distanceWidth);
@@ -15410,14 +15410,14 @@ function KLineHScreenFrame()
         var right=border.BottomEx;
         var distanceWidth=this.DistanceWidth;
         var dataWidth=this.DataWidth;
-
+        var maxDataCount=10000*10;
         if (isLimit==false)
         {
             if (y<left)
             {
                 var index=-1;
                 var xPoint=left-(distanceWidth/2+dataWidth+distanceWidth);
-                while(index>-10000)
+                while(index>-maxDataCount)
                 {
                     if (xPoint<=y) 
                         break;
@@ -15431,7 +15431,7 @@ function KLineHScreenFrame()
             {
                 var index=0;
                 var xPoint=left+distanceWidth/2+dataWidth+distanceWidth;
-                while(index<10000)  //自己算x的数值
+                while(index<maxDataCount)  //自己算x的数值
                 {
                     if (xPoint>=y) break;
                     xPoint+=(dataWidth+distanceWidth);
@@ -15448,7 +15448,7 @@ function KLineHScreenFrame()
 
             var index=0;
             var xPoint=left+distanceWidth/2+ dataWidth+distanceWidth;
-            while(xPoint<right && index<10000 && index+1<this.XPointCount)  //自己算x的数值
+            while(xPoint<right && index<maxDataCount && index+1<this.XPointCount)  //自己算x的数值
             {
                 if (xPoint>y) break;
                 xPoint+=(dataWidth+distanceWidth);
@@ -37839,13 +37839,13 @@ function KLineTooltipPaint()
 
         //涨幅
         title=g_JSChartLocalization.GetText('Tooltip-Increase',this.LanguageID);
-        if (item.YFClose!=0 && MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol))
+        if (IFrameSplitOperator.IsNumber(item.YFClose) && MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol))
         {
             var value=(item.Close-item.YFClose)/item.YFClose*100;
             color = this.KLineTitlePaint.GetColor(value, 0);
             text = value.toFixed(2)+'%';
         }
-        else if (item.YClose!=0)
+        else if (IFrameSplitOperator.IsNumber(item.YClose))
         {
             var value=(item.Close-item.YClose)/item.YClose*100;
             color = this.KLineTitlePaint.GetColor(value, 0);
@@ -47424,9 +47424,22 @@ function HistoryDataStringFormat()
 
         if (data.Title)
         {
-            text=`<span class='tooltip-title'>${data.Title}</span>`;
-            strHtml+=text;
-            ++lineCount;
+            if (Array.isArray(data.Title))
+            {
+                for(var i=0;i<data.Title.length;++i)
+                {
+                    var item=data.Title[i];
+                    text=`<span class='tooltip-title'>${item}</span>`;
+                    strHtml+=text;
+                    ++lineCount;
+                }
+            }
+            else
+            {
+                text=`<span class='tooltip-title'>${data.Title}</span>`;
+                strHtml+=text;
+                ++lineCount;
+            }
         }
 
         if (IFrameSplitOperator.IsNonEmptyArray(data.AryText))
@@ -47453,22 +47466,36 @@ function HistoryDataStringFormat()
         var date=new Date(parseInt(data.Date/10000),(data.Date/100%100-1),data.Date%100);
         var strDate=IFrameSplitOperator.FormatDateString(data.Date);
 
-        var title2=g_JSChartLocalization.GetText(WEEK_NAME[date.getDay()],this.LanguageID);
+        var title=strDate,value;
         var isTickPeriod=ChartData.IsTickPeriod(this.Value.ChartPaint.Data.Period);
-        if (ChartData.IsMinutePeriod(this.Value.ChartPaint.Data.Period,true)) // 分钟周期
+        if (ChartData.IsDayPeriod(this.Value.ChartPaint.Data.Period,true))  //日线
         {
-            title2=IFrameSplitOperator.FormatTimeString(data.Time);
+            value=g_JSChartLocalization.GetText(WEEK_NAME[date.getDay()],this.LanguageID);
+            title=`${strDate}&nbsp&nbsp${value}`;
+        }
+        else if (ChartData.IsMinutePeriod(this.Value.ChartPaint.Data.Period,true)) // 分钟周期
+        {
+            value=IFrameSplitOperator.FormatTimeString(data.Time);
+            title=`${strDate}&nbsp&nbsp${value}`;
         }
         else if (ChartData.IsSecondPeriod(this.Value.ChartPaint.Data.Period) || isTickPeriod)
         {
-            title2=IFrameSplitOperator.FormatTimeString(data.Time,'HH:MM:SS');
+            value=IFrameSplitOperator.FormatTimeString(data.Time,'HH:MM:SS');
+            title=`${strDate}&nbsp&nbsp${value}`;
         }
         else if (ChartData.IsMilliSecondPeriod(this.Value.ChartPaint.Data.Period))
         {
-            title2=IFrameSplitOperator.FormatTimeString(data.Time,'HH:MM:SS.fff');
+            value=IFrameSplitOperator.FormatTimeString(data.Time,'HH:MM:SS.fff');
+            title=
+            [
+                `${strDate}&nbsp&nbsp${g_JSChartLocalization.GetText(WEEK_NAME[date.getDay()],this.LanguageID)}`,
+                value
+            ];
         }
 
-        var result={ AryText:null, Title:`${strDate}&nbsp&nbsp${title2}`, Name:null };
+        var result={ AryText:null, Title:title, Name:null };
+
+
         if (isTickPeriod)
         {
             var aryText=
@@ -67899,6 +67926,7 @@ function KLineChartContainer(uielement,OffscreenElement)
             };
 
             if (IFrameSplitOperator.IsNumber(obj.FloatPrecision)) indexData.FloatPrecision=obj.FloatPrecision;
+            if (IFrameSplitOperator.IsNumber(obj.StringFormat)) indexData.StringFormat=obj.StringFormat;
 
             var scriptIndex=new OverlayScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
             scriptIndex.OverlayIndex={ IsOverlay:true, Identify:overlayFrame.Identify, WindowIndex:windowIndex, Frame:overlayFrame };    //叠加指标信息

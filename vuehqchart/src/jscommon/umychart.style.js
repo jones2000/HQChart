@@ -90,7 +90,7 @@ function GetBlackStyle()
         UpTextColor: "rgb(238,21,21)",
         DownTextColor: "rgb(25,158,0)",
         UnchagneTextColor: "rgb(190, 190 ,190)",
-        CloseLineColor: 'rgb(178,34,34)',
+        CloseLineColor: 'rgb(250,250,250)',
     
         Title:
         {
