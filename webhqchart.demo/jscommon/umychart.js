@@ -2793,6 +2793,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     //事件回调
     this.mapEvent=new Map();   //通知外部调用 key:JSCHART_EVENT_ID value:{Callback:回调,}
 
+    this.PhonePinch=null;       //手机双指操作信息
     this.IsOnTouch = false;     //是否再操作数据
     this.TouchDrawCount = 0;    //手势绘制次数
     this.DisableMouse=false;    //禁止鼠标事件
@@ -4446,8 +4447,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
             var touches=this.GetToucheData(e,this.IsForceLandscape);
 
-            phonePinch.Start={"X":touches[0].pageX,"Y":touches[0].pageY,"X2":touches[1].pageX,"Y2":touches[1].pageY};
-            phonePinch.Last={"X":touches[0].pageX,"Y":touches[0].pageY,"X2":touches[1].pageX,"Y2":touches[1].pageY};
+            phonePinch.Start={X:touches[0].pageX, Y:touches[0].pageY, X2:touches[1].pageX, Y2:touches[1].pageY};
+            phonePinch.Last={X:touches[0].pageX, Y:touches[0].pageY, X2:touches[1].pageX, Y2:touches[1].pageY};
 
             this.PhonePinch=phonePinch;
             this.SelectChartDrawPicture=null;
@@ -4586,6 +4587,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             var phonePinch=this.PhonePinch;
             if (!phonePinch) return;
 
+            phonePinch.Operator=null;
             if (this.EnableZoomUpDown && this.EnableZoomUpDown.Touch===false) return;
 
             var yHeight=Math.abs(touches[0].pageY-touches[1].pageY);
@@ -4605,6 +4607,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 var cursorIndex={ IsLockRight:this.IsZoomLockRight };
                 cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
                 if (!this.Frame.ZoomUp(cursorIndex)) return;
+                phonePinch.Operator="ZoomUp";
                 this.CursorIndex=cursorIndex.Index;
                 this.UpdatePointByCursorIndex();
                 this.UpdataDataoffset();
@@ -4618,6 +4621,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 var cursorIndex={ IsLockRight:this.IsZoomLockRight };
                 cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
                 if (!this.Frame.ZoomDown(cursorIndex)) return;
+                phonePinch.Operator="ZoomDown";
                 this.CursorIndex=cursorIndex.Index;
                 this.UpdataDataoffset();
                 this.UpdatePointByCursorIndex();
@@ -4627,7 +4631,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 this.StopDragTimer();
             }
 
-            phonePinch.Last={"X":touches[0].pageX,"Y":touches[0].pageY,"X2":touches[1].pageX,"Y2":touches[1].pageY};
+            phonePinch.Last={ X:touches[0].pageX, Y:touches[0].pageY, X2:touches[1].pageX, Y2:touches[1].pageY };
         }
 
         this.PreventTouchEvent(e);
@@ -4675,6 +4679,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         this.TouchEvent({ EventID:JSCHART_EVENT_ID.ON_PHONE_TOUCH, FunctionName:"OnTouchEnd"}, e);
         this.OnTouchFinished();
         this.TouchDrawCount=0;
+        this.PhonePinch=null;
     }
 
     this.OnTouchDBClick=function(points)

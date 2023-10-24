@@ -1517,6 +1517,7 @@ function JSChartContainer(uielement)
 
     this.UpdateUICallback;      //数据到达通知前端
     this.IsOnTouch = false;     //当前是否正式手势操作
+    this.PhonePinch=null;       //双指操作信息
     this.IsFullDraw=false;       //是否使用重绘模式 (可能会卡)
 
     this.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
@@ -1798,8 +1799,8 @@ function JSChartContainer(uielement)
         {
             var phonePinch = { "Start": {}, "Last": {} };
             var touches = this.GetToucheData(e, jsChart.IsForceLandscape);
-            phonePinch.Start = { "X": touches[0].pageX, "Y": touches[0].pageY, "X2": touches[1].pageX, "Y2": touches[1].pageY };
-            phonePinch.Last = { "X": touches[0].pageX, "Y": touches[0].pageY, "X2": touches[1].pageX, "Y2": touches[1].pageY };
+            phonePinch.Start = { X: touches[0].pageX, Y: touches[0].pageY, X2: touches[1].pageX, Y2: touches[1].pageY };
+            phonePinch.Last = { X: touches[0].pageX, Y: touches[0].pageY, X2: touches[1].pageX, Y2: touches[1].pageY };
             jsChart.PhonePinch = phonePinch;
         }
     }
@@ -1901,7 +1902,7 @@ function JSChartContainer(uielement)
         {
             var phonePinch = jsChart.PhonePinch;
             if (!phonePinch) return;
-
+            phonePinch.Operator=null;
             if (this.EnableZoomUpDown && this.EnableZoomUpDown.Touch===false) return;
 
             var yHeight = Math.abs(touches[0].pageY - touches[1].pageY);
@@ -1921,6 +1922,7 @@ function JSChartContainer(uielement)
                 var cursorIndex = { IsLockRight:this.IsZoomLockRight };
                 cursorIndex.Index = parseInt(Math.abs(jsChart.CursorIndex - 0.5).toFixed(0));
                 if (!jsChart.Frame.ZoomUp(cursorIndex)) return;
+                phonePinch.Operator="ZoomUp";
                 jsChart.CursorIndex = cursorIndex.Index;
                 jsChart.UpdatePointByCursorIndex();
                 jsChart.UpdataDataoffset();
@@ -1933,6 +1935,7 @@ function JSChartContainer(uielement)
                 var cursorIndex = { IsLockRight:this.IsZoomLockRight };
                 cursorIndex.Index = parseInt(Math.abs(jsChart.CursorIndex - 0.5).toFixed(0));
                 if (!jsChart.Frame.ZoomDown(cursorIndex)) return;
+                phonePinch.Operator="ZoomDown";
                 jsChart.CursorIndex = cursorIndex.Index;
                 jsChart.UpdataDataoffset();
                 jsChart.UpdatePointByCursorIndex();
@@ -1941,7 +1944,7 @@ function JSChartContainer(uielement)
                 jsChart.Draw();
             }
 
-            phonePinch.Last = { "X": touches[0].pageX, "Y": touches[0].pageY, "X2": touches[1].pageX, "Y2": touches[1].pageY };
+            phonePinch.Last = { X: touches[0].pageX, Y: touches[0].pageY, X2: touches[1].pageX, Y2: touches[1].pageY };
         }
     }
 
@@ -1968,6 +1971,7 @@ function JSChartContainer(uielement)
         this.TouchEvent({ EventID:JSCHART_EVENT_ID.ON_PHONE_TOUCH, FunctionName:"OnTouchEnd"}, e);
         this.OnTouchFinished();
         this.TouchDrawCount=0; 
+        this.PhonePinch=null;
     }
 
     this.OnTouchFinished=function()
