@@ -1,0 +1,438 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+
+<title>K线图-沙盘推演</title>  
+    <!-- 加载资源 -->
+    <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
+</head>  
+<body>
+    <div id="kline" style="width: 900px;height:400px;position: relative;"></div>
+
+    <div class="line-bottom line-box">
+        <span class="btn-style" id='start'>开始沙盘推演</span>
+        <span class="btn-style" id='stop'>结束沙盘推演</span>
+    </div>
+
+    <div class="line-bottom line-box">
+        <span class="title-style" id='current_date'>日期:</span>
+        <span class="btn-style" id='predata'>上一个数据</span>
+        <span class="btn-style" id='nextdata'>下一个数据</span>
+        <span class="btn-style" id='modifydata'>修改数据</span>
+        <span class="btn-style" id='deletedata'>减少数据</span>
+    </div>
+
+    <div class="line-bottom line-box">
+        <span class="title-style" >开盘价:</span>
+        <input class="klineData" type="text" id="kline_open" value=""/>
+        <span class="title-style" >收盘价:</span>
+        <input class="klineData" type="text" id="kline_close" value=""/>
+        <span class="title-style" >最高价:</span>
+        <input class="klineData" type="text" id="kline_high" value=""/>
+        <span class="title-style" >最低价:</span>
+        <input class="klineData" type="text" id="kline_low" value=""/>
+        <span class="title-style" >成交量:</span>
+        <input class="klineData" type="text" id="kline_vol" value=""/>
+        <span class="title-style" >成交额:</span>
+        <input class="klineData" type="text" id="kline_amount" value=""/>
+    </div>
+
+    <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
+    <script src="../jscommon/umychart.resource/js/webfont.js"></script>
+    <script src='../jscommon/umychart.console.js'></script>     <!-- 日志输出 -->
+    <script src="../jscommon/umychart.network.js"></script>     <!-- 网络请求分装 -->
+    <script src="../jscommon/umychart.js"></script>             <!-- K线图形 -->
+    <script src="../jscommon/umychart.complier.js"></script>    <!-- 麦语言解析执行器 -->
+    <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
+    <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+
+    <script src="../jscommon/umychart.NetworkFilterTest.js"></script>
+    
+    <script>
+
+        //JSConsole.Chart.Log=() =>{}
+        //JSConsole.Complier.Log=()=>{}
+
+        //MARKET_SUFFIX_NAME.GetMarketStatus = function (symbol)  { return 2; }
+        
+        //简单的把K线控件封装下
+        function KLineChart(divKLine)
+        {
+            this.DivKLine=divKLine;
+            this.Chart=JSChart.Init(divKLine);   //把K线图绑定到一个Div上
+            this.KData;     //原始数据
+            this.ShowRange;
+            this.CurIndex;  //当前编辑K线的索引
+            this.Period;
+            this.RightSpaceCount;
+
+            //K线配置信息
+            this.Option= {
+                Type:'历史K线图',   //创建图形类型
+                //Type:'历史K线图横屏',
+                
+                Windows: //窗口指标
+                [
+                    {Index:"MA", Modify:true,Change:false},
+                    {Index:"VOL", Modify:true,Change:true}
+                ], 
+
+                Symbol:'000001.sz',
+                IsAutoUpdate:true,       //是自动更新数据
+                AutoUpdateFrequency:1000,   //数据更新频率
+    
+                IsShowRightMenu:true,          //右键菜单
+
+                KLine:  //K线设置
+                {
+                    DragMode:1,                 //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
+                    Right:0,                    //复权 0 不复权 1 前复权 2 后复权
+                    Period:0,                   //周期 0 日线 1 周线 2 月线 3 年线 
+                    MaxReqeustDataCount:1000,   //数据个数
+                    MaxRequestMinuteDayCount:10, //分钟数据取5天
+                    PageSize:50,               //一屏显示多少数据
+                    IsShowTooltip:true,                 //是否显示K线提示信息
+                    DrawType:0,                 //K线类型 0=实心K线柱子 1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积图
+                    RightSpaceCount:5,
+                },
+
+                KLineTitle: //标题设置
+                {
+                    IsShowName:true,       //不显示股票名称
+                    IsShowSettingInfo:true //不显示周期/复权
+                },
+    
+                Border: //边框
+                {
+                    Left:0,         //左边间距
+                    Right:60,       //右边间距
+                    Bottom:25,      //底部间距
+                    Top:25          //顶部间距
+                },
+                
+                Frame:  //子框架设置
+                [
+                    {
+                        SplitCount:6,StringFormat:0, IsShowLeftText:false, 
+                        Custom:
+                        [
+                            { 
+                                Type:0,
+                                Position:'right',
+                            },
+                            { 
+                                Type:1, 
+                                Position:'right',IsShowLine:true,
+                                Data:
+                                [
+                                    {
+                                        Value:2800.55,
+                                        Color:'rgb(255,185,255)', TextColor:'rgb(255,255,255)',    //Color:线段及文字背景色 TextColor:文字颜色
+                                    },
+                                    {
+                                        Value:2789.11,
+                                        Color:'rgb(255,185,0)', TextColor:'rgb(255,255,255)',    //Color:线段及文字背景色 TextColor:文字颜色
+                                    }
+                                ] 
+                            }
+                        ]
+                    },
+
+                    { SplitCount:3,StringFormat:0, IsShowLeftText:false},
+                    {SplitCount:2,StringFormat:0, IsShowLeftText:false}
+                ],
+
+                ExtendChart:    //扩展图形
+                [
+                    //{Name:'KLineTooltip' }  //手机端tooltip
+                    { Name:'背景图', FrameID:0 }
+                ],
+            };
+                 
+            this.Create=function()  //创建图形
+            {
+                var self=this;
+                $(window).resize(function() { self.OnSize(); });    //绑定窗口大小变化事件
+
+                //var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID); //读取黑色风格配置
+                //JSChart.SetStyle(blackStyle);
+                //this.DivKLine.style.backgroundColor=blackStyle.BGColor; //设置最外面的div背景
+
+                this.OnSize();  //让K线全屏
+                this.Option.NetworkFilter=(data, callback)=>{ this.NetworkFilter(data, callback); }
+                this.Chart.SetOption(this.Option);  //设置K线配置
+            }
+
+            this.NetworkFilter=function(data, callback)
+            {
+                console.log('[NetworkFilter] data', data);
+
+                HQData.NetworkFilter(data, callback);
+            }
+
+            this.OnSize=function()  //自适应大小调整
+            {
+                var height= $(window).height()-80;
+                var width = $(window).width();
+                this.DivKLine.style.top='px';
+                this.DivKLine.style.left='px';
+                this.DivKLine.style.width=width+'px';
+                this.DivKLine.style.height=height+'px';
+                this.Chart.OnSize();
+            }
+
+            this.ChangeSymbol=function(symbol)
+            {
+                //var resource=JSChart.GetResource();     //获取全局资源
+                //resource.UpBarColor='rgb(0,0,205)';     //修改部分资源
+                //this.Chart.ReloadResource({Resource:null}); //重新加载全局资源
+                this.Chart.ChangeSymbol(symbol);
+            }
+
+            this.Start=function()
+            {
+                var klineInfo=this.Chart.JSChartContainer.GetKDataInfo();
+                this.KData=klineInfo.Data;
+                this.ShowRange=klineInfo.ShowRange;
+                this.Period=klineInfo.Period;
+                this.RightSpaceCount=klineInfo.RightSpaceCount;
+
+                this.AddNewKItem(); //插入一条新数据
+
+                var dataCount=this.ShowRange.ShowCount-this.RightSpaceCount; //当前一屏显示的数据个数
+                var dataOffset=this.KData.length-1-dataCount;
+
+                // DataOffset=当前屏显示的第1个数据索引
+                var obj={ ID:1 ,Data:this.KData, DataOffset:dataOffset };
+                this.Chart.JSChartContainer.SandTableOperator(obj);
+
+                this.CurIndex=this.KData.length-1;  //最后一个数据作为编辑数据
+                this.UpdateUI();
+                this.UpdataKLineBG(true);
+            }
+
+            this.Stop=function()
+            {
+                var obj={ ID:3 };
+                obj.IsAutoUpdate=true;  //开启自动更新
+                this.KData=null;
+                var bgPaint=this.GetBGPaint();
+                if (bgPaint) bgPaint.Data=null; //清空K线标记
+                this.Chart.JSChartContainer.SandTableOperator(obj);
+            }
+
+            //添加一条新的K线数据
+            this.AddNewKItem=function()
+            {
+                var newItem=HistoryData.Copy(this.KData[this.KData.length-1]); //取最后一条数据
+                newItem.YClose=newItem.Close;   //前收盘
+                newItem.Open=newItem.Close=newItem.High=newItem.Low=(newItem.Close*1.01); //修改价格
+                newItem.Date+=1;    //修改日期 自己修改为下一个交易日期
+                this.KData.push(newItem);
+            }
+
+            //删除最后一个数据
+            this.DeleteKData=function()
+            {
+                if (!this.KData) return;
+
+                var delIndex=this.KData.length-1;   //删除数据的索引
+                var dataOffset=null;
+                if (delIndex>=this.ShowRange.Start && delIndex<=this.ShowRange.End)
+                {
+                    dataOffset=this.ShowRange.Start;
+                    dataOffset-=1;
+                }
+
+                this.KData.pop();
+                if (this.CurIndex>=this.KData.length) 
+                {
+                    this.CurIndex=this.KData.length-1;
+                    this.UpdateUI();
+                    this.UpdataKLineBG(false);
+                }
+
+                var obj={ID:2, Data:this.KData };
+                if (dataOffset!=null) obj.DataOffset=dataOffset;
+                this.Chart.JSChartContainer.SandTableOperator(obj);
+            }
+
+            this.MarkNextData=function()
+            {
+                if (!this.KData) return;
+
+                if (this.CurIndex>=this.ShowRange.Start && this.CurIndex<=this.ShowRange.End)
+                {
+                    if (this.CurIndex>=this.KData.length-1) 
+                    {
+                        var dataOffset=this.ShowRange.Start;
+                        dataOffset+=1;
+                        this.AddNewKItem();
+                        this.CurIndex+=1;
+                        this.UpdateUI();
+                        this.UpdataKLineBG(false);
+
+                        var obj={ID:2, Data:this.KData, DataOffset:dataOffset };
+                        this.Chart.JSChartContainer.SandTableOperator(obj);
+                    }
+                    else if (this.CurIndex==this.ShowRange.End)
+                    {
+                        this.CurIndex+=1;
+                        this.UpdataKLineBG(false);
+                        this.Chart.JSChartContainer.ChartOperator({ID:1, Step:1});
+                        this.UpdateUI();
+                    }
+                    else
+                    {
+                        this.CurIndex+=1;
+                        this.UpdateUI();
+                        this.UpdataKLineBG(true);
+                    }
+                }
+                else    //选中的k线不在当前屏
+                {
+                    this.CurIndex+=1;
+                    this.UpdateUI();
+                    this.UpdataKLineBG(false);
+                }
+            }
+
+            this.MarkPreData=function()
+            {
+                if (!this.KData) return;
+
+                var index=this.CurIndex-1;
+                if (index<0) return;    //到头了
+
+                if (this.ShowRange.Start==this.CurIndex)
+                {
+                    this.CurIndex=index;
+                    this.UpdataKLineBG(false);
+                    this.Chart.JSChartContainer.ChartOperator({ID:2, Step:1});
+                    this.UpdateUI();
+                }
+                else
+                {
+                    this.CurIndex=index;
+                    this.UpdateUI();
+                    this.UpdataKLineBG(true);
+                } 
+            }
+
+            //修改K线
+            this.ModifyKData=function()
+            {
+                if (!this.KData) return;
+
+                var kItem=this.KData[this.CurIndex];
+
+                kItem.Open=parseFloat($("#kline_open")[0].value);
+                kItem.Close=parseFloat($("#kline_close")[0].value);
+                kItem.High=parseFloat($("#kline_high")[0].value);
+                kItem.Low=parseFloat($("#kline_low")[0].value);
+                kItem.Vol=parseFloat($("#kline_vol")[0].value);
+                kItem.Amount=parseFloat($("#kline_amount")[0].value);
+
+                var obj={ID:2, Data:this.KData }
+                this.Chart.JSChartContainer.SandTableOperator(obj);
+            }
+
+            this.GetBGPaint=function()
+            {
+                var bgPaint=null;
+                for(var i in this.Chart.JSChartContainer.ExtendChartPaint)
+                {
+                    var item=this.Chart.JSChartContainer.ExtendChartPaint[i];
+                    if (item.ClassName=='BackgroundPaint') 
+                        return item;
+                }
+
+                return null;
+            }
+
+            //标记当前编辑的K线
+            this.UpdataKLineBG=function(bDraw)
+            {
+                var bgPaint=this.GetBGPaint();
+                if (!bgPaint) return;
+
+                var kItem=this.KData[this.CurIndex];
+                var aryBGData=[];   //背景颜色
+                var bgItem={ Start:{Date:kItem.Date }, End:{ Date:kItem.Date}, Color:"rgba(255,165,0,0.5)" };
+                if (ChartData.IsMinutePeriod(this.Period, true)) 
+                {
+                    bgItem.Start.Time=kItem.Time;
+                    bgItem.End.Time=kItem.Time;
+                }
+                aryBGData.push(bgItem);
+                bgPaint.Data=aryBGData;
+                if (bDraw) this.Chart.JSChartContainer.Draw();
+            }
+
+            this.UpdateUI=function()
+            {
+                var kItem=this.KData[this.CurIndex];
+
+                if (ChartData.IsDayPeriod(this.Period, true)) $("#current_date")[0].innerText=`当前日期:${kItem.Date}`;
+                else $("#current_date")[0].innerText=`当前日期:${kItem.Date} 时间:${kItem.Time}`;
+
+                $("#kline_open")[0].value=kItem.Open.toFixed(2);
+                $("#kline_close")[0].value=kItem.Close.toFixed(2);
+                $("#kline_high")[0].value=kItem.High.toFixed(2);
+                $("#kline_low")[0].value=kItem.Low.toFixed(2);
+                $("#kline_vol")[0].value=kItem.Vol;
+                $("#kline_amount")[0].value=kItem.Amount;
+            }
+        }
+
+        $(function () 
+        {
+            WebFont.load({ custom: { families: ['iconfont'] } });   //预加载下iconfont资源
+
+            var klineControl=new KLineChart(document.getElementById('kline'));
+            klineControl.Create();
+
+            $("#start").click(function() { klineControl.Start(); } );
+            $("#stop").click(function() { klineControl.Stop(); } );
+
+            $("#predata").click(function() { klineControl.MarkPreData(); } );
+            $("#nextdata").click(function() { klineControl.MarkNextData(); } );
+            $("#modifydata").click(function() { klineControl.ModifyKData(); } );
+            $("#deletedata").click(function() { klineControl.DeleteKData(); } );
+            //$("#goto").click(function() { klineControl.GoTo({Date:20200515, Time:1140, PageSize:150 })} );
+        })
+
+    </script>  
+</body>  
+</html>
+
+
+
+<style>
+
+.klineData
+{
+    border:1px solid #a0b3d6;/*设置边框1px，实线，边框线色为#a0b3d6 */
+    width: 100px;
+    color: #333;
+    outline:0; /* 当元素获得焦点的时候，焦点框为0.去掉虚线框（或高亮框）*/
+}
+
+.line-box
+{
+    height: 25px;
+}
+
+.btn-style
+{
+    padding: 3px 8px;
+    border: 1px solid #ececec;
+    border-radius: 5px;
+    background-color: #f5f5f5;
+    cursor: pointer;
+}
+    
+</style>

@@ -2830,6 +2830,14 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
     this.CustomChartDrag;       //自定义图形的拖拽操作 { Type:, Data: }
 
+    this.StockCache={ Data:null };        //扩展数据缓存数据
+
+
+    this.ClearStockCache=function()
+    {
+        this.StockCache.Data=null;
+    }
+
     //obj={ Element:, Canvas: }
     this.SetCorssCursorElement=function(obj)
     {
@@ -68760,6 +68768,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.ResetScrollBar();
         this.ClearIndexRunCount();
         
+        
         this.Symbol=symbol;
         if (!symbol)
         {
@@ -68822,15 +68831,18 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.Frame.ClearUpDonwFrameYData();
         if (ChartData.IsDayPeriod(this.Period,true))
         {
+            this.ClearStockCache();
             this.RequestHistoryData();                  //请求日线数据
             //this.ReqeustKLineInfoData();
         }
         else if (ChartData.IsMinutePeriod(this.Period,true) || ChartData.IsSecondPeriod(this.Period) || ChartData.IsMilliSecondPeriod(this.Period))
         {
+            this.ClearStockCache();
             this.ReqeustHistoryMinuteData();            //请求分钟数据
         } 
         else if (ChartData.IsTickPeriod(this.Period))
         {
+            this.ClearStockCache();
             this.RequestTickData();
         } 
     }
@@ -73869,6 +73881,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         this.ResetOverlaySymbolStatus();
         this.ReloadChartDrawPicture();
         this.ClearIndexRunCount();
+        this.ClearStockCache();
 
         if (option)
         {
@@ -86093,6 +86106,17 @@ var MARKET_SUFFIX_NAME=
         return false;
     },
 
+    IsSHGEM:function(symbol)    //创业板(growth enterprise market) 30开头
+    {
+        if (!symbol) return false;
+        var upperSymbol=symbol.toUpperCase();
+        if (!this.IsSH(upperSymbol)) return false;
+        if (upperSymbol.charAt(0)=='3' && upperSymbol.charAt(1)=='0')
+            return true;
+        
+        return false;
+    },
+
     GetMarketStatus:function(symbol)    //获取市场状态 0=闭市 1=盘前 2=盘中 3=盘后
     {
         if (!symbol) return 0;
@@ -86217,7 +86241,8 @@ var MARKET_SUFFIX_NAME=
     GetLimitPriceRange:function(symbol, name) //涨停范围
     {
         if (!this.IsSHSZStockA(symbol)) return null;
-        if (this.IsSHStockSTAR(symbol)) return {Max:0.2 , Min:-0.2};    //科创板 [20%- -20%]
+        if (this.IsSHStockSTAR(symbol)) return {Max:0.2 , Min:-0.2};    //科创板 [20% - -20%]
+        if (this.IsSHGEM(symbol)) return { Max:0.2 , Min:-0.2};         //创业板 [20% - -20%]
         
         if (!name) return null;
         if (name.indexOf('ST')>=0) return { Max:0.05, Min:-0.05 }; //ST 股票 [5% - -5%]

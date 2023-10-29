@@ -12540,7 +12540,7 @@ function JSSymbolData(ast,option,jsExecute)
                 }
             });
         }
-        else if (ChartData.IsMinutePeriod(this.Period, true))               //请求分钟数据
+        else if (ChartData.IsMinutePeriod(this.Period, true) || ChartData.IsSecondPeriod(this.Period) || ChartData.IsMilliSecondPeriod(this.Period))               //请求分钟数据
         {
             if (this.NetworkFilter)
             {

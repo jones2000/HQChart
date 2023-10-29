@@ -217,6 +217,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 * [K线1分钟K线更新速度测试](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_updata_speed.html)   
 * [毫秒收盘价K线图](https://jones2000.github.io/HQChart/webhqchart.demo/samples/msecond_kline.html)   
 
+* [K线图沙盘推演](https://jones2000.github.io/HQChart/webhqchart.demo/samples/kline_sandtable.html)   
+
 
 
 # 4.使用教程
