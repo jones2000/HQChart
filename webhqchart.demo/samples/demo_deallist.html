@@ -1,0 +1,275 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+<title>成交明细</title>  
+    <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
+</head>  
+<body>
+    <div id="deal" style="width: 900px;height:400px;"></div>
+
+    <div class="line-box">
+        <span id='button_1' class="btn-style" onclick='OnChangeSymbol("000001.sz")'>平安银行</span>
+        <span id='button_2' class="btn-style" onclick='OnChangeSymbol("600519.sh")'>贵州茅台</span>
+        <span id='button_3' class="btn-style" onclick='OnFilterData(50000)'>只显示>50000</span>
+        <span id='button_3' class="btn-style" onclick='OnShowAll()'>显示全部</span>
+    </div>
+
+    <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
+    <script src='../jscommon/umychart.console.js'></script>     <!-- 日志输出 -->
+    <script src="../jscommon/umychart.network.js"></script>     <!-- 网络请求分装 -->
+    <script src="../jscommon/umychart.js"></script>             <!-- K线图形 -->
+    <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+    <script src="../jscommon//umychart.deal.js"></script>
+
+    <script src="./localdata/600000.sh.deal.js"></script>
+    
+    <script>
+
+        //JSConsole.Chart.Log=() =>{}
+        //JSConsole.Complier.Log=()=>{}
+
+        MARKET_SUFFIX_NAME.GetMarketStatus = function (symbol)  { return 2; }
+
+        //简单的把K线控件封装下
+        function DealChart(divDeal)
+        {
+            this.DivDeal=divDeal;
+            this.Chart=JSDealChart.Init(divDeal);   //把成交明细图绑定到一个Div上
+            
+            //K线配置信息
+            this.Option= 
+            {
+                Type:'成交明细',   //创建图形类型
+                
+                Symbol:'600000.sh',
+                IsAutoUpdate:true,          //是自动更新数据
+                AutoUpdateFrequency:1000,   //数据更新频率
+
+                Column:
+                [
+                   //{Type:DEAL_COLUMN_ID.STRING_TIME_ID }, //自定义时间格式
+                   //{Type:DEAL_COLUMN_ID.INDEX_ID },
+                   {Type:DEAL_COLUMN_ID.TIME_ID },
+                   {Type:DEAL_COLUMN_ID.PRICE_ID },
+                   {Type:DEAL_COLUMN_ID.UPDOWN_ID },
+                   {Type:DEAL_COLUMN_ID.VOL_ID },
+                   {Type:DEAL_COLUMN_ID.BS_ID, },
+                   //{Type:DEAL_COLUMN_ID.MULTI_BAR_ID , Title:"柱子1", DataIndex:8 },    //数据所在原始数据索引列
+                   {Type:DEAL_COLUMN_ID.CUSTOM_TEXT_ID , Title:"状态" },                //自定义文字
+                   //{Type:DEAL_COLUMN_ID.CENTER_BAR_ID , Title:"柱子2", DataIndex:9 },   //数据所在原始数据索引列
+                  
+                ],
+
+                //IsSingleTable:true,
+                //IsShowHeader:false,
+
+                //KeyDown:false,
+                //Wheel:false,
+
+                //BorderLine:0,
+
+                ShowOrder:0,
+               
+                Border: //边框
+                {
+                    Left:5,         //左边间距
+                    Right:5,       //右边间距
+                    Bottom:5,      //底部间距
+                    Top:5          //顶部间距
+                }
+            };
+                 
+            this.Create=function()  //创建图形
+            {
+                $(window).resize(()=> { this.OnSize(); });    //绑定窗口大小变化事件
+
+                this.OnSize();  //全屏
+
+                //黑色风格
+                var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID); //读取黑色风格配置
+                JSChart.SetStyle(blackStyle);
+                this.DivDeal.style.backgroundColor=blackStyle.BGColor; //设置最外面的div背景
+
+                this.Option.NetworkFilter=(data, callback)=>{ this.NetworkFilter(data, callback); };
+
+                this.Option.EventCallback= 
+                [ 
+                    {   //根据大小单显示成交量颜色
+                        event:JSCHART_EVENT_ID.ON_DRAW_DEAL_VOL_COLOR, 
+                        callback:(event, data, obj)=>{ this.GetVolColor(event, data, obj); }  
+                    },
+                    {   //自定义内容
+                        event:JSCHART_EVENT_ID.ON_DRAW_DEAL_TEXT, 
+                        callback:(event, data, obj)=>{ this.GetCustomText(event, data, obj); }  
+                    },
+                    {   //过滤数据
+                        event:JSCHART_EVENT_ID.ON_FILTER_DEAL_DATA, 
+                        callback:(event, data, obj)=>{ this.OnFilterData(event, data, obj); }  
+                    }
+                ];
+
+                this.Chart.SetOption(this.Option);  //设置配置
+            }
+
+            this.OnSize=function()  //自适应大小调整
+            {
+                var height= $(window).height()-50;
+                var width = $(window).width();
+                this.DivDeal.style.top='0px';
+                this.DivDeal.style.left='0px';
+                this.DivDeal.style.width=width+'px';
+                this.DivDeal.style.height=height+'px';
+                this.Chart.OnSize();
+            }
+
+            this.NetworkFilter=function(data, callback)
+            {
+                console.log('[DealChart::NetworkFilter] data', data);
+               
+                switch(data.Name)
+                {
+                    case 'JSDealChartContainer::RequestDealData':           //全量数据下载
+                        this.RequestDealData(data, callback);
+                        break;
+                    case "JSDealChartContainer::RequestDealUpdateData":
+                        this.RequestDealUpdateData(data, callback);
+                        break;
+                }
+            }
+
+            this.TestUpdateCount=0;
+            this.RequestDealData=function(data, callback)
+            {
+                var symbol=data.Request.Data.symbol;
+                data.PreventDefault=true;
+                this.TestUpdateCount=0;
+
+                var hqchartData={  detail:[], symbol:symbol, name:symbol, yclose: DEAL_600000_SH.yclose };
+                for(var i=0;i<DEAL_600000_SH.detail.length;++i)
+                {
+                    var item=DEAL_600000_SH.detail[i];
+
+                    //0=时间 1=价格 2=成交量 3=成交金额 4=BS 5=字符串时间 6=ID
+                    var newItem=[ item[0], item[1], item[2], item[3], item[4] ];
+                    //newItem[5]=item[0].toString();
+
+                    newItem[8]={ Value:[Math.random(),Math.random()], Color:[0,1]};
+                    newItem[9]={ Value:[Math.random(),Math.random()], Color:[2,3]};
+
+                    var testValue=Math.random();
+                    newItem[10]={Text:`${testValue>0.5?"多空":"利空"}`, Color:testValue>0.5?"rgb(255,140,0)":"rgb(138,43,226)"};
+
+                    hqchartData.detail.push(newItem);
+                }
+
+                console.log("[DealChart::RequestDealData] hqchartData=",hqchartData)
+                callback(hqchartData);
+            }
+
+
+            this.RequestDealUpdateData=function(data, callback)
+            {
+                data.PreventDefault=true;
+                var symbol=data.Request.Data.symbol;
+                var lastDeal=data.LastItem; //本地最后一条分笔数据, 增量从这条数据开始下载.
+                console.log("[DealChart::RequestDealUpdateData] lastDeal",lastDeal);
+
+                var hqchartData={ detail:[] , symbol:symbol, UpdateType:0 };
+
+                for(var i=0;this.TestUpdateCount<DEAL_UPDATE_600000_SH.detail.length && i<1;++this.TestUpdateCount, ++i)
+                {
+                    var item=DEAL_UPDATE_600000_SH.detail[this.TestUpdateCount];
+
+                    //0=时间 1=价格 2=成交量 3=成交金额 4=BS 5=字符串时间 6=ID
+                    var newItem=[ item[0], item[1], item[2], item[3], item[4] ];
+                    newItem[8]={ Value:[Math.random(),Math.random()], Color:[0,1]};
+                    newItem[9]={ Value:[Math.random(),Math.random()], Color:[2,3]};
+
+                    hqchartData.detail.push(newItem);
+                }
+
+                console.log("[DealChart::RequestDealUpdateData] hqchartData=",hqchartData)
+                callback(hqchartData);
+            }
+
+            //根据大小单显示成交量颜色
+            this.GetVolColor=function(event, data, obj) 
+            {
+                if (data.Data.Vol>50000) data.TextColor='rgb(128,0,128)';
+            }
+
+
+            this.FilterVol=50000;
+            this.OnFilterData=function(event, data, obj)
+            {
+                var sourceData=data.Data;
+
+                for(var i=0;i<sourceData.length;++i)
+                {
+                    var item=sourceData[i];
+                    if (item.Vol>this.FilterVol) data.Result.push(item);
+                }
+            }
+
+            this.GetCustomText=function(event, data, obj) 
+            {
+                var out=data.Data.Source[10];
+                if (!out ||!out.Text) return;
+
+                data.Out.Text=out.Text;
+                data.Out.TextColor=out.Color;
+                data.Out.TextAlign='center';
+            }
+        }
+
+        var g_dealCtrl;
+        $(function () 
+        {
+            var dealCtrl=new DealChart(document.getElementById('deal'));
+            dealCtrl.Create();
+            g_dealCtrl=dealCtrl;
+            //$("#button_1").click(function() { dealCtrl.Chart.ChangeSymbol("000001.sz"); } );
+        })
+
+
+        function OnChangeSymbol(symbol)
+        {
+            g_dealCtrl.Chart.ChangeSymbol(symbol); 
+        }
+
+        function OnFilterData(vol)
+        {
+            g_dealCtrl.FilterVol=vol;
+            g_dealCtrl.Chart.EnableFilter(true, { Redraw:true, GotoLastPage:true });    //开启数据过滤
+        }
+
+        function OnShowAll()
+        {
+            g_dealCtrl.Chart.EnableFilter(false,{ Redraw:true ,GotoLastPage:true });   //关闭数据过滤
+        }
+
+    </script>  
+</body>  
+</html>
+
+
+<style>
+
+.line-box
+{
+    height: 25px;
+}
+
+.btn-style
+{
+    margin:5px,8px;
+    border: 1px solid #ececec;
+    background-color: #f5f5f5;
+    cursor: pointer;
+}
+    
+        
+</style>

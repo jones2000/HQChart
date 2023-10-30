@@ -78,6 +78,8 @@ function JSDealChart(divElement)
         if (option.NetworkFilter) chart.NetworkFilter=option.NetworkFilter;
         if (IFrameSplitOperator.IsNonEmptyArray(option.Column))  chart.SetColumn(option.Column);
 
+        if (IFrameSplitOperator.IsNumber(option.ShowOrder)) chart.ChartPaint[0].ShowOrder=option.ShowOrder;
+
         this.SetChartBorder(chart, option);
 
         //是否自动更新
@@ -896,6 +898,7 @@ function ChartDealList()
     this.Decimal=2; //小数位数
     this.IsSingleTable=false;    //单表模式
     this.IsShowHeader=true;    //是否显示表头
+    this.ShowOrder=1;           //0=顺序 1=倒序
 
     this.SizeChange=true;
 
@@ -1182,18 +1185,42 @@ function ChartDealList()
         var left=this.RectClient.Left+this.HeaderMergin.Left;
         var dataCount=this.Data.Data.length;
         var index=this.Data.DataOffset;
-        for(var i=0,j=0;i<this.TableCount;++i)
+
+        if (this.ShowOrder==1)
         {
-            var tableLeft=left+(this.TableWidth*i);
-            var textLeft=tableLeft;
-            var textTop=top;
-            for(j=0;j<this.RowCount && index<dataCount;++j, ++index)
+            var index=this.Data.DataOffset+(this.TableCount*this.RowCount);
+            if (index>=dataCount) index=dataCount-1;
+            for(var i=0,j=0;i<this.TableCount;++i)
             {
-                var dataItem=this.Data.Data[index];
+                var tableLeft=left+(this.TableWidth*i);
+                var textLeft=tableLeft;
+                var textTop=top;
 
-                this.DrawRow(dataItem, textLeft, textTop, index);
-
-                textTop+=this.RowHeight;
+                for(j=0;j<this.RowCount && index>=0;++j, --index)
+                {
+                    var dataItem=this.Data.Data[index];
+    
+                    this.DrawRow(dataItem, textLeft, textTop, index);
+    
+                    textTop+=this.RowHeight;
+                }
+            }
+        }
+        else
+        {
+            for(var i=0,j=0;i<this.TableCount;++i)
+            {
+                var tableLeft=left+(this.TableWidth*i);
+                var textLeft=tableLeft;
+                var textTop=top;
+                for(j=0;j<this.RowCount && index<dataCount;++j, ++index)
+                {
+                    var dataItem=this.Data.Data[index];
+    
+                    this.DrawRow(dataItem, textLeft, textTop, index);
+    
+                    textTop+=this.RowHeight;
+                }
             }
         }
     }

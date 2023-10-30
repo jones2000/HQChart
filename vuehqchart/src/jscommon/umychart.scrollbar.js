@@ -942,8 +942,53 @@ function JSScrollBarFrame()
         var top=this.ChartBorder.GetTop();
         var bottom=this.ChartBorder.GetBottom();
         var preXText=0;
-        var isMinuteData=ChartData.IsMinutePeriod(this.Data.Period,true);
-        if (isMinuteData)
+        
+        if (ChartData.IsMilliSecondPeriod(this.Data.Period))
+        {
+            var preHour=null;
+            for(var i=0;i<this.Data.Data.length;++i)
+            {
+                var item=this.Data.Data[i];
+                var day=item.Date%10000;
+                var time=parseInt(item.Time/1000);
+                var hour=parseInt(time/10000);
+                if (i==0)
+                {
+                    var text=IFrameSplitOperator.FormatDateString(item.Date, "MM-DD");
+                    var x=this.ChartBorder.GetLeft();
+                    this.Canvas.textAlign="left";
+                    this.Canvas.fillText(text,x,yText);
+                    var textWidth=this.Canvas.measureText(text).width+2;
+                    preXText=x+textWidth;
+                    preDay=day;
+                    preHour=hour;
+                    continue;
+                }
+
+                if (hour!=preHour)
+                {
+                    var text=IFrameSplitOperator.FormatTimeString(item.Time, "HH:MM:SS.fff");
+                    var x=this.GetXFromIndex(i);
+                    var textWidth=this.Canvas.measureText(text).width+2;
+                    if (x-textWidth/2>preXText)
+                    {
+                        this.Canvas.textAlign="center";
+                        this.Canvas.fillText(text,x,yText);
+                        preXText=x+textWidth/2;
+                    }
+    
+                    x=ToFixedPoint(x);
+                    this.Canvas.strokeStyle=this.XSplitLineColor;
+                    this.Canvas.beginPath();
+                    this.Canvas.moveTo(x,top);
+                    this.Canvas.lineTo(x,bottom);
+                    this.Canvas.stroke();
+    
+                    preHour=hour;
+                }
+            }
+        }
+        else if (ChartData.IsMinutePeriod(this.Data.Period,true))
         {
             for(var i=0;i<this.Data.Data.length;++i)
             {
@@ -1140,9 +1185,17 @@ function SliderChart()
         var text=IFrameSplitOperator.FormatDateString(data.Data.Date);
         var top=this.ChartBorder.GetTop();
         var bottom=this.ChartBorder.GetBottom();
-        var isMinuteData=ChartData.IsMinutePeriod(this.Data.Period, true);
         var timeText=null;
-        if (isMinuteData) timeText=IFrameSplitOperator.FormatTimeString(data.Data.Time,"HH:MM");
+
+        if (ChartData.IsMilliSecondPeriod(this.Data.Period))
+        {
+            var time=parseInt(data.Data.Time/1000);
+            text=IFrameSplitOperator.FormatTimeString(time,"HH:MM:SS");
+        }
+        else if (ChartData.IsMinutePeriod(this.Data.Period, true)) 
+        {
+            timeText=IFrameSplitOperator.FormatTimeString(data.Data.Time,"HH:MM");
+        }
 
         if (data.Type==0) 
         {

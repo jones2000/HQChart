@@ -14103,7 +14103,6 @@ function KLineFrame()
             var dataWidth=item[0];
             var distanceWidth=item[1];
             var width=this.GetFrameWidth()-g_JSChartResource.FrameMargin-distanceWidth/2;
-
             var value=parseInt((width-distanceWidth/2)/(dataWidth + distanceWidth));
             if (value>=showCount)
             {
@@ -14112,7 +14111,7 @@ function KLineFrame()
                 this.ZoomIndex=index;
                 this.DataWidth=dataWidth;
                 this.DistanceWidth=distanceWidth;
-                if (dataWidth==1 && distanceWidth==0)
+                if (dataWidth<=1 && distanceWidth==0)
                     this.DataWidth=width/this.XPointCount;
                 this.LastCalculateStatus.XPointCount=this.XPointCount;
                 this.LastCalculateStatus.Width=width;
@@ -42488,7 +42487,7 @@ IFrameSplitOperator.FormatValueString=function(value, floatPrecision,languageID)
  {
      var absValue = Math.abs(value);
      if (absValue<100000) 
-         return absValue.toFixed(0);
+         return value.toFixed(0);
      else if (absValue<10000000)
          return (value/10000).toFixed(1)+"万";
      else if (absValue<100000000)

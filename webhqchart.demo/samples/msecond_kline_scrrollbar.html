@@ -1,0 +1,289 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+
+<title>毫秒K线图+滚动条</title>  
+    <!-- 加载资源 -->
+    <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
+</head>  
+<body>
+    <div id="kline" ></div>
+    <div id="kscrollbar"></div>
+    
+       
+    </div>
+
+    <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
+    <script src="../jscommon/umychart.resource/js/webfont.js"></script>
+    <script src='../jscommon/umychart.console.js'></script>     <!-- 日志输出 -->
+    <script src="../jscommon/umychart.network.js"></script>     <!-- 网络请求分装 -->
+    <script src="../jscommon/umychart.js"></script>             <!-- K线图形 -->
+    <script src="../jscommon/umychart.complier.js"></script>    <!-- 麦语言解析执行器 -->
+    <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
+    <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+    <script src="../jscommon/umychart.scrollbar.js"></script>   <!-- 滚动条 -->
+
+    <script src="../jscommon/umychart.testdata/if2312.cf.msecond.js"></script>
+
+    <script>
+
+        //MARKET_SUFFIX_NAME.GetMarketStatus = function (symbol) { return 2; }
+
+        //简单的把K线控件封装下
+        function KLineChart(divKLine,divScrollBar)
+        {
+            this.DivKLine=divKLine;
+            this.Chart=JSChart.Init(divKLine);   //把K线图绑定到一个Div上
+
+            this.DivScrollBar=divScrollBar;
+            this.Scrollbar=JSScrollBarChart.Init(divScrollBar); //滚动条
+
+            //K线配置信息
+            this.Option= {
+                Type:'历史K线图',   //创建图形类型
+                //Type:'历史K线图横屏',
+
+                
+                Windows: //窗口指标
+                [
+                    { Index:"EMPTY" },
+                    { Index:"VOL", Script:'成交量:VOL,COLORSTICK,UPCOLOR(RGB(255,215,0))', IsSync:true, FloatPrecision:0, StringFormat:2, IsShowTitleArrow:false },
+                ], 
+
+                
+                OverlayIndex:
+                [
+                    { Index:'持仓', Windows:1, Script:"持仓量:VOLINSTK,RGB(178,58,238);", ShowRightText:false, FloatPrecision:0, StringFormat:2 },
+                ],  //叠加指标
+                
+                Symbol:"if2312.SHFE",
+                IsAutoUpdate:false,       //是自动更新数据
+                AutoUpdateFrequency:10000,   //数据更新频率
+                //TradeIndex: {Index:'交易系统-BIAS'},    //交易系统
+
+                IsShowRightMenu:true,          //右键菜单
+                //CorssCursorTouchEnd:true,
+                //IsClickShowCorssCursor:true,
+                //IsCorssOnlyDrawKLine:true,
+
+                CorssCursorInfo: { Right:2, DateFormatType:3, HPenType:1, VPenType:1 ,VLineType:0, RightButton:{ Enable:true }, IsShowCorss:true, PriceFormatType:0, DataFormatType:0 },
+                EnableZoomIndexWindow:true,
+    
+                KLine:  //K线设置
+                {
+                    DragMode:1,                 //拖拽模式 0=禁止拖拽 1=数据拖拽 2=区间选择
+                    Right:0,                    //复权 0 不复权 1 前复权 2 后复权
+                    Period:50500,               //周期 0 日线 1 周线 2 月线 3 年线 
+                    MaxRequestDataCount:600,   //数据个数
+                    MaxRequestMinuteDayCount:5, //分钟数据获取几天数据  默认取5天数据
+                    PageSize:30,               //一屏显示多少数据 
+                    IsShowTooltip:true,                 //是否显示K线提示信息
+                    DrawType:1,      //K线类型 0=实心K线柱子 1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积图
+                    //FirstShowDate:20161201,
+                    KLineDoubleClick:false, //禁止双击弹框
+                    RightSpaceCount:0,
+                    ZoomType:0,
+
+                },
+
+
+                EnableIndexChartDrag:true,
+    
+                KLineTitle: //标题设置
+                {
+                    IsShowName:true,       //不显示股票名称
+                    IsShowSettingInfo:true //不显示周期/复权
+                },
+    
+                Border: //边框
+                {
+                    Left:50,         //左边间距
+                    Right:90,       //右边间距
+                    Bottom:25,      //底部间距
+                    Top:25,         //顶部间距
+
+                    AutoLeft:{ Blank:10, MinWidth:30 },
+                    AutoRight:{ Blank:5, MinWidth:40 },
+                },
+                
+                Frame:  //子框架设置
+                [
+                    {
+                        SplitCount:6
+                    },
+
+                    { 
+                        SplitCount:8, 
+                        
+                    },
+                    
+                ],
+
+                ExtendChart:    //扩展图形
+                [
+                    //{Name:'KLineTooltip' },  //手机端tooltip
+                ],
+
+
+                Overlay:
+                [
+                   
+                ],
+            };
+
+            //滚动条配置
+            this.ScrollbarOption=
+            {
+                Border: //边框
+                {
+                    Left:50,         //左边间距
+                    Right:50,       //右边间距
+                    Bottom:25,      //底部间距
+                    Top:1,         //顶部间距
+
+                    AutoLeft:true,
+                    AutoRight:true
+
+                },
+
+                DelayDragFrequency:50,
+            }
+
+                 
+            this.Create=function()  //创建图形
+            {
+                var self=this;
+                //$(window).resize(function() { self.OnSize( {Type:1} ); });    //绑定窗口大小变化事件
+                $(window).resize(function() { self.OnSize( ); });    //绑定窗口大小变化事件
+
+                var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID); //读取黑色风格配置
+                JSChart.SetStyle(blackStyle);
+                this.DivKLine.style.backgroundColor=blackStyle.BGColor; //设置最外面的div背景
+                this.DivScrollBar.style.backgroundColor=blackStyle.BGColor; //设置最外面的div背景
+
+                //JSChart.GetResource().FrameLogo.Text=null;
+                JSChart.GetResource().ToolbarButtonStyle=1;
+
+                var zoom=JSChart.GetKLineZoom();
+                zoom.push([0.8,0]);
+                zoom.push([0.4,0]);
+                zoom.push([0.2,0]);
+                zoom.push([0.08,0]);
+
+
+                this.OnSize();  //让K线全屏
+
+                this.ScrollbarOption.OnCreatedCallback=(chart)=> { this.OnCreateScrollBar(chart); }
+                this.Scrollbar.SetOption(this.ScrollbarOption);
+
+                this.Option.OnCreatedCallback=(chart)=> { this.OnCreateHQChart(chart); }
+                this.Option.NetworkFilter=(data, callback)=>{ this.NetworkFilter(data, callback); }
+                this.Chart.SetOption(this.Option);  //设置K线配置
+            }
+
+            this.OnCreateHQChart=function(chart)
+            {
+                chart.ScrollBar=this.Scrollbar;
+            }
+
+            this.OnCreateScrollBar=function(chart)
+            {
+                chart.HQChart=this.Chart;
+            }
+
+            this.NetworkFilter=function(data, callback)
+            {
+                console.log(`[KLineChart::NetworkFilter] ${data.Explain}`, data);
+
+                switch(data.Name) 
+                {
+                    case 'KLineChartContainer::ReqeustHistoryMinuteData':           //分钟全量数据下载
+                        this.RequestHistoryMinuteData(data, callback);
+                        break;
+                }
+            }
+
+            this.RequestHistoryMinuteData=function(data, callback)
+            {
+                data.PreventDefault=true;
+                var symbol=data.Request.Data.symbol; //请求的股票代码
+
+                console.log(`[KLineChart::RequestHistoryMinuteData] Symbol=${symbol}`);
+
+                var hqchartData=MSECOND_TEST_DATA;
+                hqchartData.name=symbol;
+                hqchartData.symbol=symbol;
+                callback(hqchartData);
+
+            }
+
+
+            this.OnSize=function(option)  //自适应大小调整
+            {
+                var height= $(window).height()-100;
+                var width = $(window).width();
+                this.DivKLine.style.top='0px';
+                this.DivKLine.style.left='0px';
+                this.DivKLine.style.width=width+'px';
+                this.DivKLine.style.height=height+'px';
+                this.Chart.OnSize(option);
+
+
+                this.DivScrollBar.style.left='0px';
+                this.DivScrollBar.style.top=height+'px';
+                this.DivScrollBar.style.width=width+'px';
+                this.DivScrollBar.style.height='100px';
+                this.Scrollbar.OnSize(option);
+            }
+
+            this.ChangeSymbol=function(symbol)
+            {
+                this.Chart.ChangeSymbol(symbol);
+            }
+
+           
+            this.ChangeIndex=function(windowIndex,indexName,option)
+            {
+                this.Chart.ChangeIndex(windowIndex,indexName,option);
+            }
+
+        }
+
+       
+        $(function () 
+        {
+            var klineControl=new KLineChart(document.getElementById('kline'),document.getElementById('kscrollbar'));
+            klineControl.Create();
+        })
+
+       
+    </script>  
+</body>  
+</html>
+
+
+
+<style>
+
+#kline
+{
+    width: 900px;
+    height:400px;
+    position: relative;
+    /*margin-top: 100px;*/
+}
+
+.btn-style
+{
+    padding: 3px 8px;
+    border: 1px solid #ececec;
+    border-radius: 5px;
+    background-color: #f5f5f5;
+    cursor: pointer;
+}
+
+    
+</style>

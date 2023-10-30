@@ -440,6 +440,24 @@ IFrameSplitOperator.FormatValueColor = function (value, value2)
     else return 'PriceDown';
 }
 
+ //成交量显示
+ IFrameSplitOperator.FormatVolString=function(value,languageID)
+ {
+     var absValue = Math.abs(value);
+     if (absValue<100000) 
+         return value.toFixed(0);
+     else if (absValue<10000000)
+         return (value/10000).toFixed(1)+"万";
+     else if (absValue<100000000)
+         return (value/10000).toFixed(0)+"万";
+     else if (absValue<1000000000)
+         return (value/100000000).toFixed(2)+"亿";
+     else if (absValue < 1000000000000)
+         return (value/100000000).toFixed(1)+"亿";
+     else
+         return (value/1000000000000).toFixed(1)+"万亿";
+ }
+
 IFrameSplitOperator.IsNumber=function(value)
 {
     if (value==null) return false;
