@@ -26,8 +26,8 @@ function JSSampleScriptWorker()
             {
                 var symbol=requestData.symbol;
                 symbol=symbol.replace(".sh","");
-                //http://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=sz000001&scale=5&ma=5&datalen=1023
-                var url=`http://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=${symbol}&scale=5&ma=5&datalen=1023`;
+                //https://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=sz000001&scale=5&ma=5&datalen=1023
+                var url=`https://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=${symbol}&scale=5&ma=5&datalen=1023`;
 
                 console.log(`[JSSampleScriptWorker::NetworkFilter] url=${url}`);
 
