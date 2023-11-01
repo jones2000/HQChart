@@ -1,0 +1,195 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+
+<title>工作线程计算</title>  
+    
+</head>  
+<body>
+    <div id="range_title">5分钟周期指标计算</div>
+    <br/>
+    <div>
+        <div class="table_row">
+            <span class="item_symbol">600000.sh</span>
+            <span class="item_indexname">MA</span>
+            <div id="item_result_1">计算结果</div>
+        </div>
+
+        <div class="table_row">
+            <span class="item_symbol">605166.sh</span>
+            <span class="item_indexname">RSI</span>
+            <div id="item_result_2">计算结果</div>
+        </div>
+
+        <div class="table_row">
+            <span class="item_symbol">601169.sh</span>
+            <span class="item_indexname">MACD</span>
+            <div id="item_result_3">计算结果</div>
+        </div>
+    </div>
+
+    <br/>
+    <div>
+        <span id="button_1" class="btn-style">开始计算</span>
+    </div>
+
+    <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
+    <script src='../jscommon/umychart.console.js'></script>     <!-- 日志输出 -->
+    <script src="../jscommon/umychart.network.js"></script>     <!-- 网络请求分装 -->
+    <script src="../jscommon/umychart.js"></script>             <!-- K线图形 -->
+    <script src="../jscommon/umychart.complier.js"></script>    <!-- 麦语言解析执行器 -->
+    <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
+    <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+
+   
+    <script>
+        
+        var g_HQWorker=new Worker("hqchart_worker_sina.js");
+        var EndTimestamp=Date.now();
+        g_HQWorker.onmessage=(e)=>{ OnRecvWorkerMessage(e); }
+
+        var jobCount=1;
+        var job_list=
+        [
+            { Symbol:"sh600000.sh", Index:"MA", OutDomID:"item_result_1" },
+            { Symbol:"sh605166.sh", Index:"RSI", OutDomID:"item_result_2" },
+            { Symbol:"sh601169.sh", Index:"MACD", OutDomID:"item_result_3" },
+        ];
+
+        function OnRecvWorkerMessage(e)
+        {
+            if (e.data.ID==JSCHART_WORKER_MESSAGE_ID.FINISH_EXECUTE_SCRIPT)
+            {
+                console.log("[OnRecvWorkerMessage] data=", e.data);
+                var jobID=e.data.JobInfo.Guid;
+
+                var aryDate=e.data.Data.Date;
+                var aryTime=e.data.Data.Time;
+
+                var index=aryTime.length-10; //输出最后条记录
+                var aryResult=[];
+                var outText="";
+                for(var i=index;i<aryTime.length;++i)
+                {
+                    var date=aryDate[i];
+                    var time=aryTime[i];
+
+                    var text=`Date=${date}, Time:${time} `;
+                    for(var j=0;j<e.data.Data.Out.length;++j)
+                    {
+                        var name=e.data.Data.Out[j].Name;
+                        var value=e.data.Data.Out[j].Data[i];
+
+                        text+=`${name}=${value.toFixed(4)}, `;
+                    }
+                    aryResult.push(text);
+
+                    outText+=text;
+                    outText+='<br>';
+                }
+
+                var domID=null;
+                for(var i=0;i<job_list.length;++i)
+                {
+                    var item=job_list[i];
+                    if (item.JobID==jobID)
+                    {
+                        domID=item.OutDomID;
+                        break;
+                    }
+                }
+
+                if (!domID) return;
+
+                $("#"+domID)[0].innerHTML=outText;
+            }
+        }
+
+        
+        function RunIndexScript(symbol, index, jobID)
+        {
+            var message=
+            {
+                ID:JSCHART_WORKER_MESSAGE_ID.EXECUTE_SCRIPT,
+                AryIndex:
+                [
+                    {Index:index},
+                    //{Index:"MACD"},
+                    //{Index:"TEST", Name:"测试脚本", Script:'T:MA((L+H)/2,10)'}
+                ],
+
+                Symbol:symbol,
+                Name:symbol,
+                Period:5,   //5分钟K线
+                Right:0,
+                HQDataType:HQ_DATA_TYPE.KLINE_ID,
+                Guid:jobID,
+                EndTimestamp:EndTimestamp,
+            };
+
+            g_HQWorker.postMessage(message);
+        }
+
+        function RunAll()
+        {
+            for(var i=0;i<job_list.length;++i)
+            {
+                var item=job_list[i];
+                item.JobID=++jobCount;
+
+                RunIndexScript(item.Symbol, item.Index, item.JobID);
+            }
+        }
+
+        $(function () 
+        {
+            $("#button_1").click(function() { RunAll(); } );
+        })
+
+      
+    </script>  
+</body>  
+</html>
+
+
+
+<style>
+
+.btn-style
+{
+    padding: 3px 8px;
+    border: 1px solid #ececec;
+    border-radius: 5px;
+    background-color: #f5f5f5;
+    cursor: pointer;
+}
+
+.item_symbol
+{
+    display:block;
+    line-height: 50px;
+    width:100px;
+    align-items: center;
+}
+
+.item_indexname
+{
+    display:block;
+    line-height: 50px;
+    width:100px;
+    align-items: center;
+}
+
+.table_row
+{
+    display: flex; 
+    height: 200px;
+    border-style:solid;
+    border-width:1px;
+    border-color:#BEBEBE;
+}
+
+    
+</style>

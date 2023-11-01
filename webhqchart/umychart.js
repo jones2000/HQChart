@@ -42421,6 +42421,7 @@ IFrameSplitOperator.FormatValueThousandsString=function(value,floatPrecision)
 //数据输出格式化 floatPrecision=小数位数
 IFrameSplitOperator.FormatValueString=function(value, floatPrecision,languageID)
 {
+    /*
     if (value==null || isNaN(value))
     {
         if (floatPrecision>0)
@@ -42476,6 +42477,71 @@ IFrameSplitOperator.FormatValueString=function(value, floatPrecision,languageID)
             return (value/100000000).toFixed(floatPrecision)+"亿";
         else
             return (value/1000000000000).toFixed(floatPrecision)+"万亿";
+    }
+    */
+    
+
+    return IFrameSplitOperator.FormatValueStringV2(value, floatPrecision, floatPrecision, languageID);
+}
+
+//数据输出格式化 floatPrecision=原始小数位数 floatPrecision2=转换成'万','亿'..的小数位
+IFrameSplitOperator.FormatValueStringV2=function(value, floatPrecision, floatPrecision2, languageID)
+{
+    if (value==null || isNaN(value))
+    {
+        if (floatPrecision>0)
+        {
+            var nullText='-.';
+            for(var i=0;i<floatPrecision;++i)
+                nullText+='-';
+            return nullText;
+        }
+
+        return '--';
+    }
+
+    if (value<0.00000000001 && value>-0.00000000001)
+    {
+        return "0";
+    }
+
+    var absValue = Math.abs(value);
+    if (languageID===JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID)
+    {
+        if (absValue < 10000)
+            return value.toFixed(floatPrecision);
+        else if (absValue < 1000000)
+            return (value/1000).toFixed(floatPrecision2)+"K";
+        else if (absValue < 1000000000)
+            return (value/1000000).toFixed(floatPrecision2)+"M";
+        else if (absValue < 1000000000000)
+            return (value/1000000000).toFixed(floatPrecision2)+"B";
+        else 
+            return (value/1000000000000).toFixed(floatPrecision2)+"T";
+    }
+    else if (languageID===JSCHART_LANGUAGE_ID.LANGUAGE_TRADITIONAL_CHINESE_ID)  //繁体
+    {
+        if (absValue < 10000)
+            return value.toFixed(floatPrecision);
+        else if (absValue < 100000000)
+            return (value/10000).toFixed(floatPrecision2)+"萬";
+        else if (absValue < 1000000000000)
+            return (value/100000000).toFixed(floatPrecision2)+"億";
+        else
+            return (value/1000000000000).toFixed(floatPrecision2)+"萬億";
+    }
+    else
+    {
+        if (absValue < 10000)
+            return value.toFixed(floatPrecision);
+        else if (absValue<1000000)
+            return (value/10000).toFixed(floatPrecision2)+"万";
+        else if (absValue < 100000000)
+            return (value/10000).toFixed(floatPrecision2)+"万";
+        else if (absValue < 1000000000000)
+            return (value/100000000).toFixed(floatPrecision2)+"亿";
+        else
+            return (value/1000000000000).toFixed(floatPrecision2)+"万亿";
     }
 
     return '';
@@ -74940,8 +75006,15 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
         this.BindAllOverlayIndexData(this.SourceData);
         
-        this.AutoUpdateEvent(true, "MinuteChartContainer::RecvMinuteData");
-        this.AutoUpdate();
+        if (data.AutoUpdate===false)    //不执行自动更新
+        {
+
+        }   
+        else
+        {
+            this.AutoUpdateEvent(true, "MinuteChartContainer::RecvMinuteData");
+            this.AutoUpdate();
+        }
     }
 
     this.CaclutateLimitPrice=function(yClose, limitData)

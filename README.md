@@ -226,6 +226,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 
 * [K线图滚动条](https://jones2000.github.io/HQChart/webhqchart.demo/samples/kline_scrrollbar.html)   
 
+* [前端工作线程批量计算指标](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_workerthread_sina.html)   
+
 
 
 # 4.使用教程
@@ -318,6 +320,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 84. [HQChart使用教程92-如何创建分笔明细表](https://blog.csdn.net/jones2000/article/details/124360747)<br>
 85. [HQChart使用教程94-如何创建报价列表](https://blog.csdn.net/jones2000/article/details/124544643)<br>
 86. [HQChart使用教程96-指标图形双击](https://blog.csdn.net/jones2000/article/details/125735141)<br>
+87. [HQChart使用教程97-K线X轴滚动条](https://jones2000.blog.csdn.net/article/details/134133670)   
 
 ##  微信小程序教程
 1. [HQChart小程序教程1-如何快速的创建一个K线图](https://developers.weixin.qq.com/community/develop/article/doc/0006c451ac81589915b89d1c55bc13) <br>
