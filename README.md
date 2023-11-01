@@ -419,6 +419,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 12. [HQChart实战教程18-多股同列](https://blog.csdn.net/jones2000/article/details/107193410)<br>
 13. [HQChart实战教程45-自定义指标窗口背景](https://jones2000.blog.csdn.net/article/details/119886468)<br>
 13. [HQChart实战教程66-动态调整HQChart布局大小](https://jones2000.blog.csdn.net/article/details/133800739)  
+14. [HQChart实战教程67-worker批量计算股票指标](https://jones2000.blog.csdn.net/article/details/134163955)    
 
 ## 付费教程
 1. [HQChart对接火币完整教程](https://jones2000.github.io/HQChart/document/huobi_demo.html)   
