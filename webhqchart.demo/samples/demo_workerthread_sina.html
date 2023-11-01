@@ -47,7 +47,6 @@
     <script>
         
         var g_HQWorker=new Worker("hqchart_worker_sina.js");
-        var EndTimestamp=Date.now();
         g_HQWorker.onmessage=(e)=>{ OnRecvWorkerMessage(e); }
 
         var jobCount=1;
@@ -126,7 +125,7 @@
                 Right:0,
                 HQDataType:HQ_DATA_TYPE.KLINE_ID,
                 Guid:jobID,
-                EndTimestamp:EndTimestamp,
+                IsApiPeriod:true,
             };
 
             g_HQWorker.postMessage(message);

@@ -42,6 +42,7 @@ function HQChartScriptWorker()
         }
 
         if (indexData.Args) scriptObj.Args=indexData.Args;
+        if (IFrameSplitOperator.IsBool(message.IsApiPeriod)) scriptObj.IsApiPeriod=message.IsApiPeriod;
 
         var indexInfo={ Name:scriptObj.Name, ID:scriptObj.ID, Script:scriptObj.Script, Args:scriptObj.Args, Guid:message.Guid };
         scriptObj.ErrorCallback=(error)=>{ this.OnExecuteError(error, indexInfo, message); };
@@ -73,6 +74,7 @@ function HQChartScriptWorker()
         };
 
         if (IFrameSplitOperator.IsNumber(message.HQDataType)) stockObj.HQDataType=message.HQDataType;
+       
 
         indexConsole.ExecuteScript(stockObj);
     }
