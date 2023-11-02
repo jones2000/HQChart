@@ -492,6 +492,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 10. [HQChart实战教程63-自定义手机端K线tooltip显示数据](https://jones2000.blog.csdn.net/article/details/131206706)    
 11. [HQChart实战教程64-自定义分时图标题栏](https://jones2000.blog.csdn.net/article/details/131319341)  
 12. [HQChart实战教程65-自定义手机端分时图tooltip显示数据](https://jones2000.blog.csdn.net/article/details/131325837)   
+13. [HQChart实战教程68-自定义分时图PC端tooltip显示数据](https://blog.csdn.net/jones2000/article/details/134182120)    
 
 ## HQChart报价列表高级应用教程(付费文章)
 1. [HQChart报价列表高级应用教程1-雪球数据对接报价列表](https://blog.csdn.net/jones2000/article/details/124759574)<br>
