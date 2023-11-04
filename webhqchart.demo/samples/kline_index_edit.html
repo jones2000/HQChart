@@ -424,10 +424,12 @@
                     {
                         console.log("[Explain] data ", data);
                         var strLog="";
-                        for(var i in data)
+                        for(var i=0;i<data.length;++i)
                         {
                             var item=data[i];
-                            strLog+=item.Data+'\n';
+                            if (item.Type==0) strLog+=item.Data+'\n';
+                            else if (item.Type==1) strLog+=item.Draw+'\n';
+                            
                             if (i>30) 
                             {
                                 strLog+='......';   //太多了就不显示了
