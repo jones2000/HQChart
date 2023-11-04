@@ -30520,6 +30520,108 @@ function ChartSingleText()
 }
 
 
+function ChartTradeIcon()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartTradeIcon';    //类名
+    this.TextAlign='center';
+    this.TextBaseline='middle';
+    this.SVG={ Family:"iconfont", Size:12 };
+    this.AryIcon;
+
+    this.Draw=function()
+    {
+        if (!this.IsShow || this.ChartFrame.IsMinSize || !this.IsVisible) return;
+        if (this.IsShowIndexTitleOnly()) return;
+        if (this.IsHideScriptIndex()) return;
+
+        if(!this.Data || !this.Data.Data) return;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.AryIcon)) return;
+
+        this.Canvas.font=`${this.SVG.Size}px ${this.SVG.Family}`;
+        this.Canvas.textAlign=this.TextAlign;
+        this.Canvas.textBaseline='middle';
+        var yOffset=0;
+        if (this.TradeType=="BUY" || this.TradeType=="BUYSHORT") 
+        {
+            this.Canvas.textBaseline="bottom";
+            yOffset=-2;
+        }
+        else if (this.TradeType=="SELL" || this.TradeType=="SELLSHORT")
+        {
+            this.Canvas.textBaseline="top";
+            yOffset+2;
+        }
+
+        var bHScreen=(this.ChartFrame.IsHScreen===true);
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var chartright=this.ChartBorder.GetRight();
+        if (bHScreen) chartright=this.ChartBorder.GetBottom();
+        var xPointCount=this.ChartFrame.XPointCount;
+        var border=this.ChartFrame.GetBorder();
+        var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var value=this.Data.Data[i];
+            if (!IFrameSplitOperator.IsNumber(value)) continue;
+            if (value<=0) continue;
+
+            var iconItem=this.AryIcon[i];
+            if (!IFrameSplitOperator.IsNumber(iconItem.Value) || !iconItem.Icon) continue;
+
+            var left=xOffset;
+            var right=xOffset+dataWidth;
+            if (right>chartright) break;
+
+
+            var x=left+(right-left)/2;
+            var y=this.GetYFromData(iconItem.Value, false);
+
+            this.Canvas.fillStyle=iconItem.Color;
+            this.Canvas.fillText(iconItem.Icon,x,y+yOffset);
+        }
+    }
+
+    this.GetMaxMin=function()
+    {
+        var range={Max:null, Min:null };
+        if(!this.Data || !this.Data.Data) return range;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.AryIcon)) return range;
+
+        var xPointCount=this.ChartFrame.XPointCount;
+        var start=this.Data.DataOffset;
+        if (this.ChartFrame.GlobalOption && this.ChartFrame.GlobalOption.IsValueFullRange)
+        {
+            start=0;
+            xPointCount=this.Data.Data.length;
+        }
+
+        for(var i=start,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        {
+            var value=this.Data.Data[i];
+            if (!IFrameSplitOperator.IsNumber(value)) continue;
+            if (value<=0) continue;
+
+            var iconItem=this.AryIcon[i];
+            if (!IFrameSplitOperator.IsNumber(iconItem.Value) || !iconItem.Icon) continue;
+
+            if (range.Max==null) range.Max=iconItem.Value;
+            else if (range.Max<iconItem.Value) range.Max=iconItem.Value;
+
+            if (range.Min==null) range.Min=iconItem.Value;
+            else if (range.Min>iconItem.Value) range.Min=iconItem.Value;
+        }
+
+        return range;
+    }
+}
+
+
 function ChartDrawText()
 {
     this.newMethod=IChartPainting;   //派生

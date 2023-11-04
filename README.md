@@ -201,7 +201,9 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 
 
 
-# 3. 网页demo   
+# 3. 网页demo  
+* [仿通达信公式编辑器](https://jones2000.github.io/HQChart/webhqchart.demo/samples/kline_index_edit.html)  
+
 * [K线图](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_kline.html)   
 * [K线图手机页面](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_kline_phone.html)   
 * [K线图手机横屏页面](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_kline_phone_hScreen.html)    

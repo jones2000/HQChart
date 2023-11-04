@@ -11056,6 +11056,82 @@ function JSDraw(errorHandler,symbolData)
         
         return drawData;
     }
+
+
+    //多头建仓(买入开仓).
+    //参数1为触发条件,参数2为标记放置位置.此函数只适用于特定版本交易模式下.
+    //例如: BUY(CROSS(A,B),LOW),当A上穿B时,在LOW处画标记,同时突出提示或直接下单,如果LOW改为DRAWNULL,就不画标记.(分时图上不支持)
+    this.BUY=function(condition, data, iconSymbol, color)
+    {
+        var iconInfo={ Color:"rgb(0,255,0)", Type:"SVG", Icon:'\ue660' };
+        if (IFrameSplitOperator.IsString(iconSymbol)) iconInfo.Icon=iconSymbol;
+        if (color) iconInfo.Color=color;
+        var result=this.CalculateTradeData(condition, data, iconInfo);
+        result.DrawType='BUY';
+        return result;
+    }
+
+    this.BUYSHORT=function(condition, data, iconSymbol, color)
+    {
+        var iconInfo={ Color:"rgb(0,255,0)", Type:"SVG", Icon:'\ue660' };
+        if (IFrameSplitOperator.IsString(iconSymbol)) iconInfo.Icon=iconSymbol;
+        if (color) iconInfo.Color=color;
+        var result=this.CalculateTradeData(condition, data, iconInfo);
+        result.DrawType='BUYSHORT';
+        return result;
+    }
+
+    //多头平仓(卖出平仓).
+    //参数1为触发条件,参数2为标记放置位置.此函数只适用于特定版本交易模式下.
+    //例如: SELL(CROSS(A,B),HIGH),当A上穿B时,在HIGH处画标记,同时突出提示或直接下单,如果HIGH改为DRAWNULL,就不画标记.(分时图上不支持)
+    this.SELL=function(condition, data, iconSymbol,color)
+    {
+        var iconInfo={ Color:"rgb(255,0,0)", Type:"SVG", Icon:'\ue661' };
+        if (IFrameSplitOperator.IsString(iconSymbol)) iconInfo.Icon=iconSymbol;
+        if (color) iconInfo.Color=color;
+        var result=this.CalculateTradeData(condition, data, iconInfo);
+        result.DrawType='SELL';
+        return result;
+    }
+
+    this.SELLSHORT=function(condition, data, iconSymbol,color)
+    {
+        var iconInfo={ Color:"rgb(255,0,0)", Type:"SVG", Icon:'\ue661' };
+        if (IFrameSplitOperator.IsString(iconSymbol)) iconInfo.Icon=iconSymbol;
+        if (color) iconInfo.Color=color;
+        var result=this.CalculateTradeData(condition, data, iconInfo);
+        result.DrawType='SELLSHORT';
+        return result;
+    }
+
+    this.CalculateTradeData=function(condition, data, IconInfo)
+    {
+        var aryData=[];
+        var aryIcon=[];
+        var result={ DrawData:{ Data:aryData, Icons:aryIcon } };
+
+        if (Array.isArray(condition))
+        {
+            var isAryPosition=Array.isArray(data);
+            for(var i=0;i<condition.length;++i)
+            {
+                aryData[i]=0;
+                aryIcon[i]=null
+                if (!condition[i]) continue;
+
+                aryData[i]=1;
+
+                if (isAryPosition) aryIcon[i]={ Value:data[i], Type:IconInfo.Type, Color:IconInfo.Color, Icon:IconInfo.Icon };
+                else aryIcon[i]={ Value:data, Type:IconInfo.Type, Color:IconInfo.Color, Icon:IconInfo.Icon };
+            }
+        }
+        else if (IFrameSplitOperator.IsNumber(condition) && condition>0)
+        {
+            
+        }
+
+        return result;
+    }
 }
 
 
@@ -11108,7 +11184,8 @@ JSDraw.prototype.IsDrawFunction=function(name)
         "STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE',"DRAWKLINE1",'DRAWKLINE_IF',"DRAWCOLORKLINE",'PLOYLINE',"DRAWOVERLAYKLINE",
         'POLYLINE','DRAWNUMBER',"DRAWNUMBER_FIX",'DRAWICON','DRAWCHANNEL','PARTLINE','DRAWTEXT_FIX','DRAWGBK','DRAWTEXT_LINE','DRAWRECTREL',"DRAWTEXTABS","DRAWTEXTREL",
         'DRAWOVERLAYLINE',"FILLRGN", "FILLRGN2","FILLTOPRGN", "FILLBOTTOMRGN", "FILLVERTICALRGN","FLOATRGN","DRAWSL", "DRAWGBK2","DRAWGBK_DIV",
-        "VERTLINE","HORLINE","TIPICON"
+        "VERTLINE","HORLINE","TIPICON",
+        "BUY","SELL","SELLSHORT","BUYSHORT",
     ]);
     if (setFunctionName.has(name)) return true;
 
@@ -17582,6 +17659,24 @@ function JSExecute(ast,option)
                 }
                 break;
 
+            //交易函数
+            case "BUY":
+                node.Draw=this.Draw.BUY(args[0],args[1],args[2],args[3]);
+                node.Out=node.Draw.DrawData.Data;
+                break;
+            case "SELL":
+                node.Draw=this.Draw.SELL(args[0],args[1],args[2],args[3]);
+                node.Out=node.Draw.DrawData.Data;
+                break;
+            case "SELLSHORT":
+                node.Draw=this.Draw.SELLSHORT(args[0],args[1],args[2],args[3]);
+                node.Out=node.Draw.DrawData.Data;
+                break;
+            case "BUYSHORT":
+                node.Draw=this.Draw.BUYSHORT(args[0],args[1],args[2],args[3]);
+                node.Out=node.Draw.DrawData.Data;
+                break;
+
             default:
                 node.Out=this.Algorithm.CallFunction(funcName, args, node, this.SymbolData);
                 break;
@@ -20244,6 +20339,23 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateTradeIcon=function(hqChart,windowIndex,varItem,id)
+    {
+        var chart=new ChartTradeIcon();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        chart.Data.Data=varItem.Draw.DrawData.Data;
+        chart.AryIcon=varItem.Draw.DrawData.Icons;
+        chart.TradeType=varItem.Draw.DrawType;
+
+        if (varItem.DrawFontSize>0) chart.SVG.Size=varItem.DrawFontSize;    //图标大小
+
+        hqChart.ChartPaint.push(chart);
+    }
+
     this.CreateTextLine=function(hqChart,windowIndex,varItem,id)
     {
         let chart=new ChartTextLine();
@@ -20969,6 +21081,13 @@ function ScriptIndex(name,script,args,option)
                     case "MULTI_POINT_LINE":
                         this.CreateLineMultiData(hqChart,windowIndex,item,i);
                         break;
+                    case "BUY":
+                    case "SELL":
+                    case "SELLSHORT":
+                    case "BUYSHORT":
+                        this.CreateTradeIcon(hqChart,windowIndex,item,i);
+                        break;
+
                     case SCRIPT_CHART_NAME.OVERLAY_BARS:
                         this.CreateStackedBar(hqChart,windowIndex,item,i);
                         break;
