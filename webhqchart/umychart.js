@@ -48593,7 +48593,7 @@ function DynamicKLineTitlePainting()
                 var item=this.OverlayChartPaint[i];
                 if (!item.Symbol || !item.Title) continue;
             
-                data.OverlayStock.push({ Symbol:item.Symbol, Name:item.Title });
+                data.OverlayStock.push({ Symbol:item.Symbol, Name:item.Title, Data:item.Data });
             }
         }
         
@@ -52981,7 +52981,8 @@ function ChartDrawPictureHorizontalLine()
         this.DrawPoint(drawPoint);
 
         //显示价格
-        
+        this.LineText(drawPoint[0])
+        /*
         this.Canvas.fillStyle=this.LineColor;
         this.Canvas.font=this.Font;
         if (isHScreen)
@@ -53014,8 +53015,52 @@ function ChartDrawPictureHorizontalLine()
             }
             this.Canvas.fillText(text,left,drawPoint[0].Y);
         }
+        */
         
         this.Canvas.restore();
+    }
+
+    this.LineText=function(point)
+    {
+        if (!point) return;
+
+        var isHScreen=this.Frame.IsHScreen;
+        var left=this.Frame.ChartBorder.GetLeft();
+
+        this.Canvas.fillStyle=this.LineColor;
+        this.Canvas.font=this.Font;
+
+        if (isHScreen)
+        {
+            left=this.Frame.ChartBorder.GetTop();
+            this.Canvas.textAlign="left";
+            this.Canvas.textBaseline="bottom";
+            var xText=point.X;
+            var yText=left;
+            this.Canvas.translate(xText, yText);
+            this.Canvas.rotate(90 * Math.PI / 180); //数据和框子旋转180度
+            var yValue=this.Frame.GetYData(point.X);
+            var text=yValue.toFixed(2);
+            if (this.Label)
+            {
+                if (this.Label.Position==0) text=this.Label.Text+yValue.toFixed(2);
+                else if (this.Label.Position==1) text=yValue.toFixed(2)+this.Label.Text;
+            }
+            this.Canvas.fillText(text,2,0);
+        }
+        else
+        {
+            this.Canvas.textAlign="left";
+            this.Canvas.textBaseline="bottom";
+            var yValue=this.Frame.GetYData(point.Y);
+            var text=yValue.toFixed(2);
+            if (this.Label)
+            {
+                if (this.Label.Position==0) text=this.Label.Text+yValue.toFixed(2);
+                else if (this.Label.Position==1) text=yValue.toFixed(2)+this.Label.Text;
+            }
+            this.Canvas.fillText(text,left,point.Y);
+        }
     }
 }
 
@@ -74086,6 +74131,53 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                             this.WindowIndex[index]=new ScriptIndex(indexInfo.Name,indexInfo.Script,indexInfo.Args,indexInfo);    //脚本执行
                         }
                     }
+                }
+            }
+
+            //清空叠加股票
+            if (option.ClearOverlay===true)
+            {
+                for(var i=0; i<this.OverlayChartPaint.length; ++i)
+                {
+                    var item=this.OverlayChartPaint[i];
+                    item.IsDelete=true;
+                }
+
+                this.OverlayChartPaint=[];
+                this.Frame.SubFrame[0].Frame.YSplitOperator.OverlayChartPaint=this.OverlayChartPaint;
+                this.TitlePaint[0].OverlayChartPaint=this.OverlayChartPaint;    //绑定叠加
+            }
+
+            //叠加股票
+            if (option.Overlay && IFrameSplitOperator.IsNonEmptyArray(option.Overlay))
+            {
+                var setSymbol=new Set();
+                for(var i=0;i<this.OverlayChartPaint.length;++i)    //已有的叠加
+                {
+                    var item=this.OverlayChartPaint[i];
+                    setSymbol.add(item.Symbol);
+                }
+
+                for(var i=0;i<option.Overlay.length;++i)
+                {
+                    var item=option.Overlay[i];
+                    if (setSymbol.has(item.Symbol)) continue;
+
+                    var paint=new ChartOverlayMinutePriceLine();
+                    paint.Canvas=this.Canvas;
+                    paint.ChartBorder=this.Frame.SubFrame[0].Frame.ChartBorder;
+                    paint.ChartFrame=this.Frame.SubFrame[0].Frame;
+                    paint.Name="Overlay-Minute";
+                    paint.Symbol=item.Symbol;
+                    paint.Identify=`Overlay-Minute-${item.Symbol}`;
+                    if (item.Color) paint.Color=item.Color; //外部设置颜色
+                    else paint.Color=g_JSChartResource.OverlaySymbol.Color[g_JSChartResource.OverlaySymbol.Random%g_JSChartResource.OverlaySymbol.Color.length];
+                    ++g_JSChartResource.OverlaySymbol.Random;
+                    paint.MainData=this.SourceData; //绑定主图数据
+            
+                    if (paint.SetOption) paint.SetOption(item);
+            
+                    this.OverlayChartPaint.push(paint);
                 }
             }
         }

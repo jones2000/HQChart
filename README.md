@@ -230,6 +230,9 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 
 * [前端工作线程批量计算指标](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_workerthread_sina.html)   
 
+* [K线图画图工具](https://jones2000.github.io/HQChart/webhqchart.demo/samples/kline_drawtool.html)   
+* [K线图画图工具-横屏](https://jones2000.github.io/HQChart/webhqchart.demo/samples/kline_drawtool.hScreen.html)   
+
 
 
 # 4.使用教程

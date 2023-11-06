@@ -1,0 +1,221 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>手机端画图工具</title>  
+    <!-- 加载资源 -->
+    <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
+</head>  
+<body>
+    <div id="kline" style="width: 900px;height:400px;position: relative;"></div>
+    <div>
+        <span id='klinedraw'>开始画图</span>
+        <span id='klinedraw2'>完成画图</span>
+    </div>
+    <div>
+        <span class='line1'>线段</span>
+        <span class='line2'>射线</span>
+        <span class='line3'>水平线</span>
+        <span class='line4'>趋势线</span>
+        <span class='line5'>矩形</span>
+        <span class='line6'>圆弧线</span>
+        <span class='line7'>M头W底</span>
+        <span class='line8'>黄金分割</span>
+    </div>
+    <div>
+        <span class='line9'>波段线</span>
+        <span class='line10'>斐波那契周期线</span>
+        <span class='line11'>上涨</span>
+        <span class='line12'>下跌</span>
+        <span class='line13'>左边</span>
+        <span class='line14'>右边</span>
+    </div>
+
+    <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
+    <script src="../jscommon/umychart.resource/js/webfont.js"></script>
+    <script src='../jscommon/umychart.console.js'></script>     <!-- 日志输出 -->
+    <script src="../jscommon/umychart.network.js"></script>     <!-- 网络请求分装 -->
+    <script src="../jscommon/umychart.js"></script>             <!-- K线图形 -->
+    <script src="../jscommon/umychart.complier.js"></script>    <!-- 麦语言解析执行器 -->
+    <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
+    <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+
+    <script src="../jscommon/umychart.NetworkFilterTest.js"></script>
+    
+    <script>
+
+        //var vConsole = new VConsole();
+        //console.log('create VConsole');
+
+        //简单的把K线控件封装下
+        function KLineChart(divKLine)
+        {
+            this.DivKLine=divKLine;
+
+            //K线配置信息
+            this.Option= {
+                Type:'历史K线图',   //创建图形类型
+                
+                Windows: //窗口指标
+                [
+                    {Index:"MA", Modify:false,Change:false},
+                    {Index:"VOL", Modify:false,Change:false},
+                    {Index:"RSI", Modify:false,Change:false}, 
+                ], 
+                
+                Symbol:'600000.sh',
+                IsAutoUpdate:true,       //是自动更新数据
+                AutoUpdateFrequency:3000,  
+                IsShowRightMenu:false,          //右键菜单
+                CorssCursorTouchEnd:true,
+                EnableScrollUpDown:true,
+                IsClickShowCorssCursor:true,
+    
+                KLine:  //K线设置
+                {
+                    DragMode:1,                 //拖拽模式 0=禁止拖拽 1=数据拖拽 2=区间选择 3=点击模式
+                    Right:0,                    //复权 0 不复权 1 前复权 2 后复权
+                    Period:0,                   //周期 0 日线 1 周线 2 月线 3 年线 
+                    MaxReqeustDataCount:1000,   //数据个数
+                    MaxRequestMinuteDayCount:10, //分钟数据取5天
+                    PageSize:50,               //一屏显示多少数据
+                    //Info:["互动易","大宗交易",'龙虎榜',"调研","业绩预告","公告"],       //信息地雷
+                    IsShowTooltip:false,                 //是否显示K线提示信息
+                },
+    
+                KLineTitle: //标题设置
+                {
+                    IsShowName:true,       //不显示股票名称
+                    IsShowSettingInfo:true //不显示周期/复权
+                },
+    
+                Border: //边框
+                {
+                    Left:5,         //左边间距
+                    Right:50,       //右边间距
+                    Bottom:25,      //底部间距
+                    Top:25          //顶部间距
+                },
+                
+                Frame:  //子框架设置
+                [
+                    {SplitCount:3,StringFormat:0, IsShowLeftText:false},
+                    {SplitCount:2,StringFormat:0, IsShowLeftText:false},
+                    {SplitCount:2,StringFormat:0, IsShowLeftText:false}
+                ],
+
+                ExtendChart:    //扩展图形
+                [
+                    {Name:'KLineTooltip' }  //手机端tooltip
+                ],
+            };
+                 
+            this.Create=function()  //创建图形
+            {
+                var self=this;
+                $(window).resize(function() { self.OnSize(); });    //绑定窗口大小变化事件
+
+                //var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID); //读取黑色风格配置
+                //JSChart.SetStyle(blackStyle);
+                //this.DivKLine.style.backgroundColor=blackStyle.BGColor; //设置最外面的div背景
+
+                this.OnSize();  //让K线全屏
+                this.Chart=JSChart.Init(this.DivKLine);     //把K线图绑定到一个Div上
+                this.Option.NetworkFilter=(data, callback)=>{ HQData.NetworkFilter(data, callback); }
+                this.Chart.SetOption(this.Option);          //设置K线配置
+
+                //选中图形事件
+                this.Chart.AddEventCallback( {
+                    event:JSCHART_EVENT_ID.ON_CLICK_DRAWPICTURE, 
+                    callback:(event,data,obj)=>{ this.OnClickDrawPicture(event,data,obj); }
+                });
+
+                //完成图形事件
+                this.Chart.AddEventCallback( {
+                    event:JSCHART_EVENT_ID.ON_FINISH_DRAWPICTURE, 
+                    callback:(event,data,obj)=>{ this.OnFinishDrawPicture(event,data,obj); }
+                });
+
+                
+            }
+
+            this.OnSize=function()  //自适应大小调整
+            {
+                var height= $(window).height();
+                var width = $(window).width();
+                this.DivKLine.style.top='px';
+                this.DivKLine.style.left='px';
+                this.DivKLine.style.width=width+'px';
+                this.DivKLine.style.height=(height-50)+'px';
+                if (this.Chart) this.Chart.OnSize();
+            }
+
+            this.OnClickDrawPicture=function(event,data,obj)
+            {
+                console.log('[KLineChart::OnClickDrawPicture] data', data);
+            }
+            
+            this.OnFinishDrawPicture=function(event,data,obj)
+            {
+                console.log('[KLineChart::OnFinishDrawPicture] data', data);
+                document.getElementsByClassName(this.TagName)[0].style.color='rgb(0,0,0)';
+            }
+
+            this.TagName;
+            this.CreateDrawPciture=function(name, tagName)
+            {
+                this.TagName=tagName;
+                document.getElementsByClassName( this.TagName)[0].style.color='rgb(255,0,0)';
+                //TODO:把其他按钮颜色清空
+
+                var drawOption=
+                {
+                    LineColor:'#4169E1',    //线段颜色
+                    LineWidth:2,            //线段宽度
+                    PointColor:'rgb(255,130,71)'    //点颜色
+                };
+
+                this.Chart.CreateChartDrawPicture(name,drawOption);
+            }
+
+            this.StartDraw=function()
+            {
+                this.Chart.SetChartDrawOption({IsLockScreen:true, Zoom:35});    //手机端使用锁屏模式
+            }
+
+            this.StopDraw=function()
+            {
+                this.Chart.SetChartDrawOption({IsLockScreen:false, Zoom:1});    //手机端取消锁屏模式
+            }
+        }
+
+        $(function () 
+        {
+
+            var klineControl=new KLineChart(document.getElementById('kline'));
+            klineControl.Create();
+
+            $(".line1").click(function() { klineControl.CreateDrawPciture('线段', "line1");} );
+            $(".line2").click(function() { klineControl.CreateDrawPciture('射线',"line2")} );
+            $(".line3").click(function() { klineControl.CreateDrawPciture('水平线',"line3")} );
+            $(".line4").click(function() { klineControl.CreateDrawPciture('趋势线', "line4")} );
+            $(".line5").click(function() { klineControl.CreateDrawPciture('矩形', "line5")} );
+            $(".line6").click(function() { klineControl.CreateDrawPciture('圆弧线', "line6")} );
+            $(".line7").click(function() { klineControl.CreateDrawPciture('M头W底', "line7")} );
+            $(".line8").click(function() { klineControl.CreateDrawPciture('黄金分割', "line8")} );
+            $(".line9").click(function() { klineControl.CreateDrawPciture('波段线', "line9")} );
+            $(".line10").click(function() { klineControl.CreateDrawPciture('斐波那契周期线', "line10")} );
+            $(".line11").click(function() { klineControl.CreateDrawPciture('icon-arrow_up', "line11")} );
+            $(".line12").click(function() { klineControl.CreateDrawPciture('icon-arrow_down', "line12")} );
+            $(".line13").click(function() { klineControl.CreateDrawPciture('icon-arrow_right', "line13")} );
+            $(".line14").click(function() { klineControl.CreateDrawPciture('icon-arrow_left', "line14")} );
+
+            $("#klinedraw").click(function() { klineControl.StartDraw()} );
+            $("#klinedraw2").click(function() { klineControl.StopDraw()} );
+        })
+
+    </script>  
+</body>  
+</html>
