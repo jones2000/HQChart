@@ -8611,10 +8611,10 @@ function JSAlgorithm(errorHandler,symbolData)
     }
 
 
-    //格式化字符串 "{0}-{1}", C, O;
+    //格式化字符串 "{0}-{1}", C, O;  小数位数 {0:0.00}
     this.STRFORMAT=function(strFormat,args,node)
     {
-        var aryParam=strFormat.match(/{\d+}/g);
+        var aryParam=strFormat.match(/{[0-9.:]+}/g);
 
         if (!IFrameSplitOperator.IsNonEmptyArray(aryParam)) return null;
 
@@ -8626,9 +8626,47 @@ function JSAlgorithm(errorHandler,symbolData)
             if (item.length<3) continue;
 
             var value=item.slice(1, item.length-1);
-            var index=parseInt(value);
+            var index=-1,decimal=-1;
+            if (value.indexOf(":")>0)
+            {
+                var aryTemp=value.split(":");
+                if (aryTemp)
+                {
+                    if (aryTemp[0])
+                        index=parseInt(aryTemp[0]);
 
-            var paramItem={ Src:item, Index:index, Text:null};
+                    if (aryTemp[1])
+                    {
+                        if (aryTemp[1].indexOf(".")>=0)
+                        {
+                            var zeroCount=0;
+                            var strTemp=aryTemp[1];
+                            for(var j=strTemp.length-1; j>=0; --j)
+                            {
+                                if (strTemp[j]=="0") ++zeroCount;
+                                else break;
+                            }
+    
+                            if (zeroCount>0) decimal=zeroCount;
+                        }
+                        else if (aryTemp[1]=="0")
+                        {
+                            decimal=0;
+                        }
+                    }
+                    
+                }
+                
+            }
+            else
+            {
+                index=parseInt(value);
+            }
+
+            if (index<0) continue;
+
+            var paramItem={ Src:item, Index:index, Text:null, Decimal:null };
+            if (decimal>=0) paramItem.Decimal=decimal;
 
             if (maxIndex<index) maxIndex=index;
 
@@ -8665,7 +8703,13 @@ function JSAlgorithm(errorHandler,symbolData)
                         if (Array.isArray(paramItem))
                         {
                             var value=paramItem[i];
-                            if (value) text=`${value}`;
+                            if (value) 
+                            {
+                                if (IFrameSplitOperator.IsNumber(paramInfo.Decimal))
+                                    text=`${value.toFixed(paramInfo.Decimal)}`;
+                                else
+                                    text=`${value}`;
+                            }
                         }
                         else
                         {

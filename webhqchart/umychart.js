@@ -51289,7 +51289,7 @@ function IChartDrawPicture()
     //xStep,yStep 移动的偏移量
     this.Move=function(xStep,yStep)
     {
-        if (this.Status!=20) return fasle;
+        if (this.Status!=20) return false;
         if (!this.Frame) return false;
         var data=this.Frame.Data;
         if (!data) return false;
@@ -54714,7 +54714,7 @@ function ChartDrawPictureParallelChannel()
     //xStep,yStep 移动的偏移量
     this.Move=function(xStep,yStep)
     {
-        if (this.Status!=20) return fasle;
+        if (this.Status!=20) return false;
         if (!this.Frame) return false;
         var data=this.Frame.Data;
         if (!data) return false;
@@ -74153,34 +74153,55 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         this.RequestData();
     }
 
-    //叠加股票
+    //叠加股票 symbol支持数据 ["600000.sh", "0000001.sz"]
     this.OverlaySymbol=function(symbol,option)
     {
-        for(var i=0; i<this.OverlayChartPaint.length; ++i)
+        var arySymbol=null;
+        if (IFrameSplitOperator.IsString(symbol)) arySymbol=[symbol];
+        else if (Array.isArray(symbol)) arySymbol=symbol;
+        if (!IFrameSplitOperator.IsNonEmptyArray(arySymbol)) return false;
+
+        var aryNewSymbol=[];
+        for(var i=0, j=0;i<arySymbol.length;++i)
         {
-            var item=this.OverlayChartPaint[i];
-            if (item.Symbol==symbol)
+            var strSymbol=arySymbol[i];
+            var bFind=false;
+            for(j=0;j<this.OverlayChartPaint.length; ++j)
             {
-                console.warn(`[MinuteChartContainer::OverlaySymbol] overlay symbol=${symbol} exist.`);
-                return false;
+                var item=this.OverlayChartPaint[j];
+                if (item.Symbol==strSymbol)
+                {
+                    bFind=true;
+                    console.warn(`[MinuteChartContainer::OverlaySymbol] overlay symbol=${strSymbol} exist.`);
+                    break;
+                }
             }
+
+            if (!bFind) aryNewSymbol.push(strSymbol);
         }
 
-        var paint=new ChartOverlayMinutePriceLine();
-        paint.Canvas=this.Canvas;
-        paint.ChartBorder=this.Frame.SubFrame[0].Frame.ChartBorder;
-        paint.ChartFrame=this.Frame.SubFrame[0].Frame;
-        paint.Name="Overlay-Minute";
-        paint.Symbol=symbol;
-        paint.Identify=`Overlay-Minute-${symbol}`;
-        if (option && option.Color) paint.Color=option.Color; //外部设置颜色
-        else paint.Color=g_JSChartResource.OverlaySymbol.Color[g_JSChartResource.OverlaySymbol.Random%g_JSChartResource.OverlaySymbol.Color.length];
-        ++g_JSChartResource.OverlaySymbol.Random;
-        paint.MainData=this.SourceData; //绑定主图数据
+        if (!IFrameSplitOperator.IsNonEmptyArray(arySymbol)) return true;
 
-        if (paint.SetOption) paint.SetOption(option);
+        for(var i=0;i<aryNewSymbol.length;++i)
+        {
+            var strSymbol=aryNewSymbol[i];
 
-        this.OverlayChartPaint.push(paint);
+            var paint=new ChartOverlayMinutePriceLine();
+            paint.Canvas=this.Canvas;
+            paint.ChartBorder=this.Frame.SubFrame[0].Frame.ChartBorder;
+            paint.ChartFrame=this.Frame.SubFrame[0].Frame;
+            paint.Name="Overlay-Minute";
+            paint.Symbol=strSymbol;
+            paint.Identify=`Overlay-Minute-${strSymbol}`;
+            if (option && option.Color) paint.Color=option.Color; //外部设置颜色
+            else paint.Color=g_JSChartResource.OverlaySymbol.Color[g_JSChartResource.OverlaySymbol.Random%g_JSChartResource.OverlaySymbol.Color.length];
+            ++g_JSChartResource.OverlaySymbol.Random;
+            paint.MainData=this.SourceData; //绑定主图数据
+    
+            if (paint.SetOption) paint.SetOption(option);
+    
+            this.OverlayChartPaint.push(paint);
+        }
 
         if (this.DayCount<=1) this.RequestOverlayMinuteData();               //请求数据
         else this.RequestOverlayHistoryMinuteData();
