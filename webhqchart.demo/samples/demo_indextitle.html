@@ -1,0 +1,464 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+
+<title>自定义指标标题信息</title>  
+    <!-- 加载资源 -->
+    <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
+</head>  
+<body>
+    <div id="kline" ></div>
+
+    <div>
+        <span id='button_2'>切换股票</span>
+        <span id='button_3'>窗口个数</span>
+        <span id='button_4'>叠加指标</span>
+        <span id='button_5'>切换指标</span>
+        <span id='button_6'>切换自定义指标</span>
+    </div>
+
+    <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
+    <script src="../jscommon/umychart.resource/js/webfont.js"></script>
+    <script src='../jscommon/umychart.console.js'></script>     <!-- 日志输出 -->
+    <script src="../jscommon/umychart.network.js"></script>     <!-- 网络请求分装 -->
+    <script src="../jscommon/umychart.js"></script>             <!-- K线图形 -->
+    <script src="../jscommon/umychart.complier.js"></script>    <!-- 麦语言解析执行器 -->
+    <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
+    <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+
+    <script src="../jscommon/umychart.NetworkFilterTest.js"></script>
+    
+    <script>
+        //简单的把K线控件封装下
+        function KLineChart(divKLine)
+        {
+            this.DivKLine=divKLine;
+            this.Chart=JSChart.Init(divKLine);   //把K线图绑定到一个Div上
+            this.DivIndexTitle=[];
+
+            this.ClearDivDOM=function()     
+            {
+                var childList = this.DivKLine.childNodes;
+                for(var i in childList)
+                {
+                    this.DivKLine.removeChild(childList[i]);
+                }
+            }
+
+            //K线配置信息
+            this.Option= {
+                Type:'历史K线图',   //创建图形类型
+                //Type:'历史K线图横屏',
+
+                //EnableBorderDrag:false,
+                
+                Windows: //窗口指标
+                [
+                    //{Index:"EMPTY"},
+                    {Index:"BOLL"},
+                    
+                    /*{
+                        Name:'MA测试', Description:'均线', IsMainIndex:true, KLineType:0,
+                        Args:[ { Name:'M1', Value:5}, { Name:'M2', Value:10 }, { Name:'M3', Value:20} ],
+                        OutName:[ {Name:'MA1',DynamicName:"MA1(%)" },  {Name:'MA2', DynamicValue:"++{Value}--%" },{Name:'MA3',DynamicName:"MA{M3}" }],
+                        Script: //脚本
+                        "MA1:MA(C,10), NODRAW;\r\n"+
+                        "MA2:MA(C,4);\r\n"  
+                    },
+                    */
+                    
+                    //{Index:"放心股-操盘BS点"},
+                    //{Index:'MA', Change:true,IsShowOverlayIndexName:true, Overlay:true },
+                    {Index:"AMO", Modify:false, Change:false, Close:false,StringFormat:2, },
+                    //{Name:"dddd",Script:testindex, Modify:false,Change:false, Close:false},
+                    //{Index:"测试", Script:"T:(L+H)/2;", KLineType:0, Modify:true,Change:false},
+                    {Index:"MACD", Modify:false,Change:false,Overlay:true }, 
+                ], 
+
+                
+                OverlayIndex:
+                [
+                    //{ Index:'两融余额', Windows:1 ,Args:[ { Name:'N', Value:5} ] , ShowRightText:false},
+                    {Index:'MA', Windows:0 , IsShareY:true,ShowRightText:false },
+                    //{Index:'RSI', Windows:1 },
+                    //{Windows:0, IndexName:"指标ID", Name:"自定义指标", Script:"T:MA(O,20);", Identify:"guid_66990"}
+                    //{Index:'北上资金', Windows:0 ,ShowRightText:false}
+                ],  //叠加指标
+
+                OverlayIndexFrameWidth:1,
+
+                DragDownload: { Day:{ Enable:true } , Minute:{ Enable:true }}, 
+
+                EnableZoomUpDown:
+                {
+                    //Wheel:false,
+                    //Keyboard:false,
+                    //Touch:false,
+                },
+
+                EnableYDrag:
+                {
+                    Right:true,
+                    Left:true,
+                },
+
+                
+                Symbol:'600000.sh',
+                IsAutoUpdate:true,       //是自动更新数据
+                AutoUpdateFrequency:10000,   //数据更新频率
+                //TradeIndex: {Index:'交易系统-BIAS'},    //交易系统
+
+                SplashTitle:"加载数据中......",
+    
+                IsShowRightMenu:true,          //右键菜单
+                //CorssCursorTouchEnd:true,
+                IsCorssOnlyDrawKLine:true,
+
+                CorssCursorInfo: { DateFormatType:2, HPenType:1, VPenType:1 },
+    
+                KLine:  //K线设置
+                {
+                    DragMode:1,                 //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
+                    Right:1,                    //复权 0 不复权 1 前复权 2 后复权
+                    Period:0,                   //周期 0 日线 1 周线 2 月线 3 年线 
+                    MaxReqeustDataCount:200,   //数据个数
+                    MaxRequestMinuteDayCount:5, //分钟数据获取几天数据  默认取5天数据
+                    PageSize:50,               //一屏显示多少数据
+                    //Info:["互动易","大宗交易",'龙虎榜',"调研","业绩预告","公告"],       //信息地雷
+                    //Info:["公告"], 
+                    IsShowTooltip:true,                 //是否显示K线提示信息
+                    DrawType:0,      //K线类型 0=实心K线柱子 1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积图
+                    //FirstShowDate:20161201,
+                    KLineDoubleClick:false, //禁止双击弹框
+                    RightSpaceCount:5,
+                    ZoomType:1,
+                    StepPixel:10,
+                    //DataWidth:5
+                    ShowKLine:false,
+                    IsShowTooltip:true,
+                },
+
+                Listener:
+                {
+                    //KeyDown:false,
+                    //Wheel:false
+                },
+
+                EnableFlowCapital:
+                {
+                    BIT:true
+                },
+    
+                KLineTitle: //标题设置
+                {
+                    IsShowName:true,       //不显示股票名称
+                    IsShowSettingInfo:true //不显示周期/复权
+                },
+    
+                Border: //边框
+                {
+                    Left:50,         //左边间距
+                    Right:50,       //右边间距
+                    Bottom:25,      //底部间距
+                    Top:25         //顶部间距
+                },
+                
+                Frame:  //子框架设置
+                [
+                    {
+                        SplitCount:6,StringFormat:0, IsShowLeftText:true,
+                        IsShowIndexTitle:false,
+                        //YCoordinateType:5,
+                        //TopSpace:0,BottomSpace:0,
+                        //IsYReverse:true,
+                        IsShowYLine:true,YTextBaseline:1,
+                        IsShowXLine:true,
+                        //SplitType:1,
+                        DefaultYMaxMin:
+                        { 
+                            //Min:2, 
+                            //Max:50
+                        },
+                        //BorderLine:8|2,
+                        /*
+                        Custom:
+                        [
+                            { 
+                                Type:0,
+                                Position:'right',LineType:2,
+                            },
+
+                            { 
+                                Type:1, 
+                                Position:'right',IsShowLine:true, LineType:0,
+                                Data:
+                                [
+                                    {
+                                        Value:2800.55,
+                                        Color:'rgb(255,185,255)', TextColor:'rgb(255,255,255)',    //Color:线段及文字背景色 TextColor:文字颜色
+                                    },
+                                    {
+                                        Value:2789.11,
+                                        Color:'rgb(255,185,0)', TextColor:'rgb(255,255,255)',    //Color:线段及文字背景色 TextColor:文字颜色
+                                    }
+                                ] 
+                            },
+
+                            { 
+                                Type:1, 
+                                Position:'right',IsShowLine:true,LineType:2,
+                                Data:
+                                [
+                                    {
+                                        Value:2860.55,
+                                        Color:'rgb(255,185,255)', TextColor:'rgb(255,255,255)',    //Color:线段及文字背景色 TextColor:文字颜色
+                                    },
+                                    {
+                                        Value:2799.11,
+                                        Color:'rgb(255,185,0)', TextColor:'rgb(255,255,255)',    //Color:线段及文字背景色 TextColor:文字颜色
+                                    }
+                                ] 
+                            }
+                        ]
+                        */
+                        
+                    },
+
+                    { SplitCount:5, IsShowLeftText:false, IsShowIndexTitle:false },
+                    { SplitCount:4,StringFormat:0, IsShowLeftText:false, IsShowIndexTitle:false}
+                ],
+
+                ExtendChart:    //扩展图形
+                [
+                    //{Name:'KLineTooltip' }  //手机端tooltip
+                ],
+
+
+                Overlay:
+                [
+                   // {Symbol:'399300.sz', DrawType:1, Color:'rgb(0,0,255)'}
+                ],
+            };
+                 
+            this.Create=function()  //创建图形
+            {
+                var self=this;
+                //$(window).resize(function() { self.OnSize( {Type:1} ); });    //绑定窗口大小变化事件
+                $(window).resize(function() { self.OnSize( ); });    //绑定窗口大小变化事件
+
+                var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID); //读取黑色风格配置
+                //blackStyle.DRAWICON={ MinSize:20 , MaxSize:60};
+                //JSChart.SetStyle(blackStyle);
+                //this.DivKLine.style.backgroundColor=blackStyle.BGColor; //设置最外面的div背景
+
+                //MARKET_SUFFIX_NAME.GetCustomDecimal=(symbol)=>{ return 4; }
+                //MARKET_SUFFIX_NAME.GetDefaultDecimal=(symbol)=>{ return 3;}
+                
+                this.OnSize();  //让K线全屏
+                this.Option.NetworkFilter=(data, callback)=>{ this.NetworkFilter(data, callback); }
+                this.Chart.SetOption(this.Option);  //设置K线配置
+
+                this.Chart.AddEventCallback(
+                    {
+                        event:JSCHART_EVENT_ID.ON_INDEXTITLE_DRAW,
+                        callback:(event, data, obj)=>{ this.OnIndexTitleDraw(event, data, obj); }
+                    }
+                );
+
+                dom=document.createElement("div");
+                dom.style.position = "absolute";
+                dom.style.background='rgba(255,228,181,0.8)';
+
+            }
+
+            this.NetworkFilter=function(data, callback)
+            {
+                console.log('[NetworkFilter] data', data);
+                HQData.NetworkFilter(data, callback);
+            }
+
+            this.OnIndexTitleDraw=function(event, data, obj)
+            {
+                console.log('[KLineChart::OnIndexTitleDraw] event, data', event , data);
+
+                var frameID=data.FrameID;
+                if (!this.DivIndexTitle[frameID])
+                {
+                    var dom=document.createElement("div");
+                    dom.style.position = "absolute";
+                    dom.style.background='rgba(255,228,181,0.3)';
+                    dom.className="indexTitle";
+                    dom.style["pointer-events"]="none";
+                    this.DivKLine.appendChild(dom);
+                    this.DivIndexTitle[frameID]=dom;
+                }
+                else
+                {
+                    var dom=this.DivIndexTitle[frameID];
+                }
+
+                dom.style.left =data.Left + "px";
+                dom.style.top=data.Top+"px";
+
+                var log=`${data.Title},`;
+                for(var i in data.Data)
+                {
+                    var item=data.Data[i];
+                    if (!item || !item.Data || !item.Data.Data) continue;
+                    if (item.Data.Data.length<=0) continue;
+
+                    var dataIndex=item.Data.DataOffset+data.Index;
+                    if (dataIndex>=item.Data.Data.length) dataIndex=item.Data.Data.length-1;
+                    if (dataIndex<0) continue;
+                    value=item.Data.Data[dataIndex];
+                    if (value==null) continue;
+
+                    log+=`${item.Name}=${value.toFixed(2)} `;
+                }
+
+                var mainIndex=`<span>${log}</span>`;
+                console.log("[KLineChart::OnIndexTitleDraw] ",mainIndex);
+                var htmlContent=mainIndex;
+                if (data.OverlayIndex.size>0)   //叠加指标
+                {
+                    for(var overlayIndexItem of data.OverlayIndex)
+                    {
+                        var indexItem=overlayIndexItem[1];
+                        var log=`叠加指标:${indexItem.Title}`;
+                        for(var i in indexItem.Data)
+                        {
+                            var item=indexItem.Data[i];
+                            if (!item || !item.Data || !item.Data.Data) continue;
+                            if (item.Data.Data.length<=0) continue;
+
+                            var dataIndex=item.Data.DataOffset+data.Index;
+                            if (dataIndex>=item.Data.Data.length) dataIndex=item.Data.Data.length-1;
+                            if (dataIndex<0) continue;
+                            value=item.Data.Data[dataIndex];
+                            if (value==null) continue;
+
+                            log+=`${item.Name}=${value.toFixed(2)} `;
+                        }
+
+                        var overlayIndexTitle=`<br><span>${log}</span>`;
+                        console.log("[KLineChart::OnIndexTitleDraw] ",overlayIndexTitle);
+                        htmlContent+=overlayIndexTitle
+                    }
+                }
+
+                dom.innerHTML=htmlContent;
+                dom.style.display = "block";
+                //dom.style.display="none";
+            }
+
+            this.OnSize=function(option)  //自适应大小调整
+            {
+                var height= $(window).height()-50;
+                var width = $(window).width();
+                this.DivKLine.style.top='0px';
+                this.DivKLine.style.left='0px';
+                this.DivKLine.style.width=width+'px';
+                this.DivKLine.style.height=height+'px';
+                this.Chart.OnSize(option);
+            }
+
+            this.ChangeSymbol=function(symbol)
+            {
+                for(var i in this.DivIndexTitle)
+                {
+                    var item=this.DivIndexTitle[i];
+                    if (item) item.style.display="none";
+                }
+
+                this.Chart.ChangeSymbol(symbol);
+            }
+
+            this.ChangeIndexCount=function()
+            {
+                //已经存在的指标不会改变，新的窗口使用option的配置指标
+                var option=
+                { 
+                    Windows:
+                    [
+                        {Index:"MA", Modify:true,Change:false},
+                        {Index:"MACD2"},
+                        {Index:"MACD",Modify:false, Change:true, Close:true},
+                        {Index:"VOL", Args:[ { Name:'M1', Value:6} ,{ Name:'M2', Value:8}] , IsShowIndexTitle:false, Modify:false,Change:false, Close:true },
+                    ],
+                };
+
+                this.Chart.ChangeIndexWindowCount(4,option);
+            }
+
+            this.OverlayIndex=function()
+            {
+                var option={WindowIndex:0, IndexName:"指标ID", Name:"自定义指标", Args:[{Name:"T", Value:5}],
+                Script:"T:MA(O,20);DRAWTEXT_LINE(O>C,13,'13.00',RGB(0,33,3), 10,1, RGB(0,255,0));", Identify:"guid_66990"};
+                //var option={WindowIndex:0, IndexName:"MACD", Identify:"guid_66990"};
+                this.Chart.AddOverlayIndex(option);
+            }
+
+            this.ChangeIndex=function(windowIndex,indexName,option)
+            {
+                this.Chart.ChangeIndex(windowIndex,indexName,option);
+            }
+
+            this.ChangeScriptIndex=function(windowIndex,indexInfo)
+            {
+                this.Chart.ChangeScriptIndex( 0, { Name:"test", Script:"T:MA(C,10)" } );
+            }
+
+            
+        }
+
+        $(function () 
+        {
+            WebFont.load({ custom: { families: ['iconfont'] } });   //预加载下iconfont资源
+            //LoadCustomIndex();
+
+            var klineControl=new KLineChart(document.getElementById('kline'));
+            klineControl.Create();
+
+            $("#button_2").click(function() { klineControl.ChangeSymbol("000001.sz"); } );
+            $("#button_3").click(function() { klineControl.ChangeIndexCount(); } );
+            $('#button_4').click(()=>{klineControl.OverlayIndex();});
+            $('#button_5').click(()=>{
+                var option={Window:{ Close:false, Change:false, Overlay:true, Close:true}};
+                klineControl.ChangeIndex(1,"RSI",option);
+            });
+
+            $('#button_6').click(()=>{
+
+                klineControl.ChangeScriptIndex();
+                return;
+                var indexData=
+                {
+                    API:{Name:'多线段指标',Script:null,Args:null, Url:'http://127.0.0.1:18080/api/jsindex' },
+                    Window:{ Close:false, Change:false, Overlay:true, Close:true}
+                };
+                klineControl.ChangeIndex(1,"指标1",indexData);
+            });
+        })
+
+    </script>  
+
+</body>  
+</html>
+
+
+
+<style>
+
+#kline
+{
+    width: 900px;
+    height:400px;
+    position: relative;
+    /*margin-top: 100px;*/
+}
+
+    
+</style>
