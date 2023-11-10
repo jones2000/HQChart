@@ -934,6 +934,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
                 if (IFrameSplitOperator.IsBool(item.IsShowXLine)) chart.Frame.SubFrame[i].Frame.IsShowXLine=item.IsShowXLine;
                 if (IFrameSplitOperator.IsBool(item.IsShowYLine)) chart.Frame.SubFrame[i].Frame.IsShowYLine=item.IsShowYLine;
                 if (IFrameSplitOperator.IsNumber(item.YTextBaseline)) chart.Frame.SubFrame[i].Frame.YTextBaseline=item.YTextBaseline;
+                if (IFrameSplitOperator.IsBool(item.IsShowIndexTitle)) chart.Frame.SubFrame[i].Frame.IsShowIndexTitle=item.IsShowIndexTitle;
 
                 if (item.TopSpace>=0) chart.Frame.SubFrame[i].Frame.ChartBorder.TopSpace=item.TopSpace;
                 if (item.BottomSpace>=0) chart.Frame.SubFrame[i].Frame.ChartBorder.BottomSpace=item.BottomSpace;
@@ -30541,29 +30542,35 @@ function ChartTradeIcon()
         if(!this.Data || !this.Data.Data) return;
         if (!IFrameSplitOperator.IsNonEmptyArray(this.AryIcon)) return;
 
+        var bHScreen=(this.ChartFrame.IsHScreen===true);
         this.Canvas.font=`${this.SVG.Size}px ${this.SVG.Family}`;
         this.Canvas.textAlign=this.TextAlign;
         this.Canvas.textBaseline='middle';
         var yOffset=0;
         if (this.TradeType=="BUY" || this.TradeType=="BUYSHORT") 
         {
-            this.Canvas.textBaseline="bottom";
-            yOffset=-2;
+            this.Canvas.textBaseline="top";
+            yOffset+=(bHScreen?-2:2);
         }
         else if (this.TradeType=="SELL" || this.TradeType=="SELLSHORT")
         {
-            this.Canvas.textBaseline="top";
-            yOffset+2;
+            this.Canvas.textBaseline="bottom";
+            yOffset=(bHScreen?2:-2);
         }
-
-        var bHScreen=(this.ChartFrame.IsHScreen===true);
+       
         var dataWidth=this.ChartFrame.DataWidth;
         var distanceWidth=this.ChartFrame.DistanceWidth;
         var chartright=this.ChartBorder.GetRight();
-        if (bHScreen) chartright=this.ChartBorder.GetBottom();
         var xPointCount=this.ChartFrame.XPointCount;
         var border=this.ChartFrame.GetBorder();
         var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        if (bHScreen) 
+        {
+            chartright=this.ChartBorder.GetBottom();
+            //top=this.ChartBorder.GetRightEx();
+            //bottom=this.ChartBorder.GetLeftEx();
+            xOffset=this.ChartBorder.GetTop()+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        }
 
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
         {
@@ -30578,12 +30585,30 @@ function ChartTradeIcon()
             var right=xOffset+dataWidth;
             if (right>chartright) break;
 
-
             var x=left+(right-left)/2;
             var y=this.GetYFromData(iconItem.Value, false);
 
             this.Canvas.fillStyle=iconItem.Color;
-            this.Canvas.fillText(iconItem.Icon,x,y+yOffset);
+
+            if (dataWidth>2) x=ToFixedPoint(x);
+
+            this.DrawTradeIcon(iconItem.Icon,x,y+yOffset, bHScreen);
+        }
+    }
+
+    this.DrawTradeIcon=function(text,x,y,isHScreen)
+    {
+        if (isHScreen)
+        {
+            this.Canvas.save(); 
+            this.Canvas.translate(y, x);
+            this.Canvas.rotate(90 * Math.PI / 180);
+            this.Canvas.fillText(text,0,0);
+            this.Canvas.restore();
+        }
+        else
+        {
+            this.Canvas.fillText(text,x,y);
         }
     }
 
@@ -48593,7 +48618,7 @@ function DynamicKLineTitlePainting()
                 var item=this.OverlayChartPaint[i];
                 if (!item.Symbol || !item.Title) continue;
             
-                data.OverlayStock.push({ Symbol:item.Symbol, Name:item.Title, Data:item.Data });
+                data.OverlayStock.push({ Symbol:item.Symbol, Name:item.Title, Data:item.Data, Color:item.Color });
             }
         }
         
@@ -53149,6 +53174,7 @@ function ChartDrawHLine()
     this.IsPointIn=this.IsPointIn_XYValue_Line;
     
 
+    /*
     this.GetXYCoordinate=function()
     {
         if (this.IsFrameMinSize()) return null;
@@ -53156,6 +53182,7 @@ function ChartDrawHLine()
 
         return this.PointRange(drawPoint);
     }
+    */
 
     this.IsDrawMain=function()  //选中绘制在动态绘图上， 没有选中绘制在背景上
     {

@@ -103,8 +103,10 @@
 
         //默认显示的指标代码
         var DEFAULT_CODE='MA1:MA(CLOSE,M1);\n\MA2:MA(CLOSE,M2);\n\MA3:MA(CLOSE,M3);\n\MA4:MA(CLOSE,M4);\nDRAWICON(C>O,H,5);';
-        //DEFAULT_CODE="BUY(C>O,H);";
-        
+        DEFAULT_CODE="BUY(C>O,L);";
+        //DEFAULT_CODE=`TIPICON(C>O, L, 1, STRFORMAT("低开高走<BR>收盘:{0:0.00}<BR>开盘:{1:.000}", C,O )), COLORRED, YMOVE(5), FONTSIZE15,VALIGN0`;
+        DEFAULT_CODE=`DRAWTEXT(CLOSE>OPEN,LOW,'看多'),ALIGN1,VALIGN0,YMOVE(5),FONTSIZE14,BACKGROUND(RGBA(255, 69, 0,0.5),RGB(255,0,0), 1,1,1,1),RGB(230,230,230);`;
+
         //简单的把K线控件封装下
         function KLineChart(divKLine)
         {
@@ -428,8 +430,8 @@
                         {
                             var item=data[i];
                             if (item.Type==0) strLog+=item.Data+'\n';
-                            else if (item.Type==1) strLog+=item.Draw+'\n';
-                            
+                            else strLog+=item.Draw+'\n';
+
                             if (i>30) 
                             {
                                 strLog+='......';   //太多了就不显示了
