@@ -23,7 +23,7 @@
 
             <button class="toolsButton" id="index_run">执行</button>
             <button class="toolsButton" id="index_check">语法检测</button>
-            <!--<button class="toolsButton" v-on:click="save()">保存指标</button>-->
+            <button class="toolsButton" id="index_save">保存指标</button>
 
             <a href="https://jones2000.blog.csdn.net/article/details/129125330" target="_blank">函数帮助</a>
 
@@ -76,8 +76,8 @@
             <textarea id="tools_code"></textarea>
         </div>
         <div class="cache" id="tools_cache">
-            <ul>
-               
+            <ul id="local_index">
+              <li>ddddd <span class="toolsButton">ddsfds</span></li> 
             </ul>
         </div>
     </div>
@@ -112,6 +112,9 @@
         {
             this.DivKLine=divKLine;
             this.Chart=JSChart.Init(divKLine, false, true);   //把K线图绑定到一个Div上
+            this.IndexEdit;
+
+            this.MapIndex=new Map();    //本地指标
           
             //K线配置信息
             this.Option= {
@@ -372,10 +375,11 @@
                 console.log('[ComplierError]', error);
             }
 
-            this.GetIndexInfo=function(code)
+            this.GetIndexInfo=function()
             {
                 //指标名称
                 var indexName=document.getElementById('index_name').value;
+                var code=this.IndexEdit.getValue();
 
                 var PARAM_LIST=
                 [ 
@@ -407,18 +411,18 @@
             }
 
             //执行指标
-            this.ExecuteIndexScript=function(code)
+            this.ExecuteIndexScript=function()
             {
-                var indexInfo=this.GetIndexInfo(code);
+                var indexInfo=this.GetIndexInfo();
                 var windowIndex=parseInt(document.getElementById('window_index').value);
 
                 this.Chart.ChangeScriptIndex(windowIndex,indexInfo)
             }
 
              //语法检测
-            this.CheckIndexScript=function(code)
+            this.CheckIndexScript=function()
             {
-                var indexInfo=this.GetIndexInfo(code);
+                var indexInfo=this.GetIndexInfo();
 
                 var option=
                 {
@@ -445,18 +449,161 @@
                     Arguments: indexInfo.Args,
                 };
                 
-                JSComplier.Explain(code, option, (error, data)=>
+                JSComplier.Explain(indexInfo.Script, option, (error, data)=>
                 {
                     console.log("[Explain] error, data ", error, data);
                     alert(`语法错误: 行号:${error.LineNumber}, ${error.Description}`);
                 });
             }
+        
+
+            //本地指标
+            this.LoadLocalIndex=function()
+            {
+                var cache=localStorage.getItem("HQChart_Local_Index");
+                if (typeof(cache) != "string") return;
+
+                var saveData=JSON.parse(cache);
+                if (!IFrameSplitOperator.IsNonEmptyArray(saveData)) return;
+
+                var mapIndex=new Map();
+                for(var i=0;i<saveData.length;++i)
+                {
+                    var item=saveData[i];
+                    mapIndex.set(item.Key, item.Data);    
+                }
+                
+                this.MapIndex=mapIndex;
+
+                this.UpdateIndexList();
+            }
+
+            this.SaveLocalIndex=function()
+            {
+                var indexInfo=this.GetIndexInfo();
+                var windowIndex=parseInt(document.getElementById('window_index').value);
+                indexInfo.WindowIndex=windowIndex;
+
+                if (!indexInfo.Script)
+                {
+                    alert("指标脚本不能为空!");
+                    return;
+                }
+
+                if (this.MapIndex.has(indexInfo.Name))
+                {
+                    if (!window.confirm(`是否覆盖指标[${indexInfo.Name}]`)) return;
+                }
+
+                this.MapIndex.set(indexInfo.Name, indexInfo);
+
+                this.UpdateIndexList();
+
+                this.localStorageSave();
+            }
+
+            this.localStorageSave=function()
+            {
+                var aryIndex=[];
+                for(var mapItem of this.MapIndex)
+                {
+                    var key=mapItem[0];
+                    var value=mapItem[1];
+                    var item={ Key:key, Data:value};
+                    aryIndex.push(item);
+                }
+
+                var strData=JSON.stringify(aryIndex);
+                localStorage.setItem("HQChart_Local_Index",strData);
+            }
+
+            this.UpdateIndexList=function()
+            {
+                var strData="";
+                for(var mapItem of this.MapIndex)
+                {
+                    var key=mapItem[0];
+                    var value=mapItem[1];
+
+                    var strItem=`<li onclick="SelectLocalIndex(event, '${key}')">${key}<span onclick="DeleteLocalIndex(event, '${key}')">删除</span></li>`;
+
+                    strData+=strItem;
+                }
+
+                document.getElementById('local_index').innerHTML=strData;
+            }
+
+
+            this.DeleteLocalIndex=function(e, name)
+            {
+                e.stopPropagation();
+                if (!this.MapIndex.has(name)) return;
+
+                if (!window.confirm(`是否删除指标[${name}]`)) return;
+                
+                this.MapIndex.delete(name);
+
+                this.UpdateIndexList();
+
+                this.localStorageSave();
+            }
+
+            this.SelectLocalIndex=function(e, name)
+            {
+                if (!this.MapIndex.has(name)) return;
+                var item=this.MapIndex.get(name);
+
+                this.IndexEdit.setValue(item.Script);
+                document.getElementById('index_name').value=item.Name;
+
+                var PARAM_LIST=
+                [ 
+                    {Name:"param_name", Value:"param_value"}, 
+                    {Name:"param_name_1", Value:"param_value_1"},
+                    {Name:"param_name_2", Value:"param_value_2"},
+                    {Name:"param_name_3", Value:"param_value_3"}
+                ];
+
+                //指标参数
+                var aryParam=[];
+                for(var i=0;i<PARAM_LIST.length && i<item.Args.length;++i)
+                {
+                    var paramItem=PARAM_LIST[i];
+                    var argItem=item.Args[i];
+                    document.getElementById(paramItem.Name).value=argItem.Name;
+                    document.getElementById(paramItem.Value).value=argItem.Value;
+                }
+
+                document.getElementById('window_index').value=item.WindowIndex;
+            }
+        
+        }
+
+        function DeleteLocalIndex(e, name)
+        {
+            alert(`[DeleteLocalIndex]${name}`);
+            e.stopPropagation();
+        }
+
+        function SelectLocalIndex(e, name)
+        {
+            alert(`[SelectLocalIndex]${name}`);
         }
 
         $(function () 
         {
+            const font = new FontFace("iconfont",`url('../jscommon/umychart.resource/font/iconfont.woff?t=1690947130935') format('woff')`);
+            document.fonts.add(font);    //把字体添加到 document.font（FontFaceSet）中
+            font.load();    // 加载字体
+
             var klineControl=new KLineChart(document.getElementById('kline'));
-            klineControl.Create();
+             // 等待到所有的字体都加载完毕
+             document.fonts.ready.then(() => 
+            {
+                klineControl.Create();
+            });
+
+            klineControl.LoadLocalIndex();
 
             var jsEditor;
             $('#tools_code').val(DEFAULT_CODE);
@@ -468,10 +615,16 @@
             jsEditor.setSize('99.8%', 257);
             jsEditor.gutter = true;
 
-            //执行指标
-            $("#index_run").click(function() { klineControl.ExecuteIndexScript(jsEditor.doc.getValue()); } );
-            $("#index_check").click(function() { klineControl.CheckIndexScript(jsEditor.doc.getValue()); } );
+            klineControl.IndexEdit=jsEditor;
 
+            //执行指标
+            $("#index_run").click(function() { klineControl.ExecuteIndexScript(); } );
+            $("#index_check").click(function() { klineControl.CheckIndexScript(); } );
+            $("#index_save").click(function() { klineControl.SaveLocalIndex(); } );
+
+
+            DeleteLocalIndex=(e, name)=>{ klineControl.DeleteLocalIndex(e, name); }
+            SelectLocalIndex=(e, name)=> { klineControl.SelectLocalIndex(e, name); }
 
         })
 

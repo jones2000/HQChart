@@ -202,36 +202,46 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 
 
 # 3. 网页demo  
+## 公式编辑器
 * [仿通达信公式编辑器](https://jones2000.github.io/HQChart/webhqchart.demo/samples/kline_index_edit.html)  
 
+## K线图
 * [K线图](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_kline.html)   
 * [K线图手机页面](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_kline_phone.html)   
 * [K线图手机横屏页面](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_kline_phone_hScreen.html)    
-* [订单流样式1](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_orderflow.html)    
+* [K线1分钟K线更新速度测试](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_updata_speed.html)  
+* [K线图滚动条](https://jones2000.github.io/HQChart/webhqchart.demo/samples/kline_scrrollbar.html)    
+* [毫秒收盘价K线图](https://jones2000.github.io/HQChart/webhqchart.demo/samples/msecond_kline.html)   
+* [毫秒收盘价K线图滚动条模式](https://jones2000.github.io/HQChart/webhqchart.demo/samples/msecond_kline_scrrollbar.html)   
+* [K线图沙盘推演](https://jones2000.github.io/HQChart/webhqchart.demo/samples/kline_sandtable.html)   
 
+## 订单流
+* [订单流样式1](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_orderflow.html)    
+* [订单流样式2](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_orderflow_v2(type=7).html)    
+* [订单流样式3](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_orderflow_v2(type=8).html)    
+* [订单流样式4](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_orderflow_v2(type=17).html)    
+
+## 走势图
 * [走势图](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_minute.html)   
 * [走势图手机页面](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_minute_phone.html)   
 * [走势图手机横屏页面](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_minute_phone_hScreen.html)    
 
+## K线训练
 * [K线训练手机](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_ktrain.html)    
 * [K线训练手机横屏](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_ktrain2.html)    
 
-* [K线1分钟K线更新速度测试](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_updata_speed.html)   
-
-* [毫秒收盘价K线图](https://jones2000.github.io/HQChart/webhqchart.demo/samples/msecond_kline.html)   
-* [毫秒收盘价K线图滚动条模式](https://jones2000.github.io/HQChart/webhqchart.demo/samples/msecond_kline_scrrollbar.html)   
-
-* [K线图沙盘推演](https://jones2000.github.io/HQChart/webhqchart.demo/samples/kline_sandtable.html)   
-
+## 分笔
 * [分笔列表](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_deallist.html)   
 * [分笔列表-小窗口模式](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_deallist_small.html)   
 
-* [K线图滚动条](https://jones2000.github.io/HQChart/webhqchart.demo/samples/kline_scrrollbar.html)   
 
-* [前端工作线程批量计算指标](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_workerthread_sina.html)   
-
+## 画图工具
 * [K线图画图工具](https://jones2000.github.io/HQChart/webhqchart.demo/samples/kline_drawtool.html)   
 * [K线图画图工具-横屏](https://jones2000.github.io/HQChart/webhqchart.demo/samples/kline_drawtool.hScreen.html)   
+
+
+## 指标计算
+* [前端工作线程批量计算指标](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_workerthread_sina.html)   
 
 
 
@@ -582,4 +592,5 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 |单次技术支持| 500  |   |
 |基础技术支持| 2000 |回答插件相关问题，如有对应的教程，提供对应的教程地址 |  
 |高级技术支持| 5000 |回答插件相关问题，如有对应的教程，提供对应的教程地址, 对复杂的问题，可以提供demo示例. 如需自己定制图形，提供外挂图形接口.(定制图形由客户自己开发) |  
+|图形定制开发| 5000起 |具体费用看具体的需求, 定制的部分提供源码，和开源的代码是分开的，以HQChart扩展插件的方式挂接进去。 |  
 
