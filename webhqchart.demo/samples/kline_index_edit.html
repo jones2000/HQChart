@@ -397,7 +397,8 @@
                     var paramName=document.getElementById(item.Name).value;
                     var value=document.getElementById(item.Value).value;
 
-                    aryParam.push({Name:paramName, Value:parseInt(value)});
+                    if (paramName || value)
+                        aryParam.push({Name:paramName, Value:parseInt(value)});
                 }
 
                 var  indexInfo=
@@ -566,12 +567,21 @@
 
                 //指标参数
                 var aryParam=[];
-                for(var i=0;i<PARAM_LIST.length && i<item.Args.length;++i)
+                for(var i=0;i<PARAM_LIST.length;++i)
                 {
                     var paramItem=PARAM_LIST[i];
                     var argItem=item.Args[i];
-                    document.getElementById(paramItem.Name).value=argItem.Name;
-                    document.getElementById(paramItem.Value).value=argItem.Value;
+                    if (argItem)
+                    {
+                        document.getElementById(paramItem.Name).value=argItem.Name;
+                        document.getElementById(paramItem.Value).value=argItem.Value;
+                    }
+                    else
+                    {
+                        document.getElementById(paramItem.Name).value="";
+                        document.getElementById(paramItem.Value).value="";
+                    }
+                    
                 }
 
                 document.getElementById('window_index').value=item.WindowIndex;
