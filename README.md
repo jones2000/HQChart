@@ -130,12 +130,24 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 * 支持指标图形拖拽
 ![指标图形拖拽](/小程序行情模块用例/image/hqchart_dragindechart.gif)
 * Y轴拖拽缩放
-![Y轴缩放](/小程序行情模块用例/image/hqchart_ydrag.gif)
-* 订单流
-![订单流](/小程序行情模块用例/image/hqchart_ordeflow.png)
-![订单流样式2](/小程序行情模块用例/image/hqchart_ordeflow2.png)
-![订单流样式3](/小程序行情模块用例/image/hqchart_ordeflow3.png)
-![订单流样式4](/小程序行情模块用例/image/hqchart_ordeflow4.png)
+![Y轴缩放](/小程序行情模块用例/image/hqchart_ydrag.gif)  
+
+* 订单流  
+![订单流](/小程序行情模块用例/image/hqchart_ordeflow.png)  
+[https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_orderflow.html](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_orderflow.html)  
+
+* 订单流2   
+![订单流样式2](/小程序行情模块用例/image/hqchart_ordeflow2.png)  
+[https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_orderflow_v2(type=7).html](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_orderflow_v2(type=7).html)    
+
+* 订单流3   
+![订单流样式3](/小程序行情模块用例/image/hqchart_ordeflow3.png)  
+[https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_orderflow_v2(type=8).html](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_orderflow_v2(type=8).html)    
+
+* 订单流4   
+![订单流样式4](/小程序行情模块用例/image/hqchart_ordeflow4.png)    
+[https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_orderflow_v2(type=17).html](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_orderflow_v2(type=17).html) 
+
 * 固定范围成交量分布图
 ![成交量分布图](/小程序行情模块用例/image/hqchart_volprofile.gif)
 * 可视范围成交量分布图
@@ -204,6 +216,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 # 3. 网页demo  
 ## 公式编辑器
 * [仿通达信公式编辑器](https://jones2000.github.io/HQChart/webhqchart.demo/samples/kline_index_edit.html)  
+* [仿通达信公式编辑器-分时图](https://jones2000.github.io/HQChart/webhqchart.demo/samples/minute_index_edit.html)  
 
 ## K线图
 * [K线图](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_kline.html)   
