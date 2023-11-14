@@ -2025,6 +2025,8 @@ function HQPriceStringFormat()
                 this.Text=IFrameSplitOperator.FormatValueThousandsString(this.Value,defaultfloatPrecision);
             else
                 this.Text = this.Value.toFixed(defaultfloatPrecision);
+
+            if (this.YClose>0) this.PercentageText=((this.Value-this.YClose)*100/this.YClose).toFixed(2);   //走势图右边坐标显示百分比
         }
         else 
         {

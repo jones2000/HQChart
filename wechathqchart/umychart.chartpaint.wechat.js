@@ -8543,6 +8543,7 @@ function ChartCorssCursor()
 
     this.IsShow = true;       //是否显示
     this.ShowTextMode = { Left: 1, Right: 1, Bottom: 1 }; //0=不显示  1=显示在框架外 2=显示在框架内
+    this.TextFormat= { Right:0 };               //0=默认 1=价格显示(分时图才有用)
     this.IsShowCorss = true;    //是否显示十字光标
     this.IsShowClose = false;     //Y轴始终显示收盘价
     this.IsFixXLastTime=false;    //是否修正X轴,超出当前时间的,X轴调整到当前最后的时间.
@@ -8724,6 +8725,15 @@ function ChartCorssCursor()
                 this.Canvas.textBaseline = "middle";
                 this.Canvas.fillStyle = this.TextColor;
                 this.Canvas.fillText(text, left + 2, y, textWidth);
+            }
+
+            if (this.StringFormatY.PercentageText)
+            {
+                if (this.TextFormat.Right==0)
+                {
+                    text=this.StringFormatY.PercentageText+'%';
+                    var textWidth=this.Canvas.measureText(text).width+4;    //前后各空2个像素
+                }
             }
 
             if (this.StringFormatY.RText) 

@@ -397,7 +397,7 @@
                     var paramName=document.getElementById(item.Name).value;
                     var value=document.getElementById(item.Value).value;
 
-                    if (paramName || value)
+                    if (paramName && value)
                         aryParam.push({Name:paramName, Value:parseInt(value)});
                 }
 

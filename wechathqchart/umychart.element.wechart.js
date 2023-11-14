@@ -30,7 +30,7 @@ function JSCanvasElement()
 
     //获取画布
     this.GetContext = function () 
-	  {
+	{
         var canvas;
         if (this.IsDingTalk)
         {

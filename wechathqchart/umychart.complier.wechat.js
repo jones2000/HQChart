@@ -3591,6 +3591,48 @@ function JSAlgorithm(errorHandler, symbolData)
         return result;
     }
 
+    //STDDEV(X,N) 返回标准偏差
+    //将标准差除以样本大小N的平方根即可得出标准误差。标准误差 = σ/sqrt(n)
+    this.STDDEV=function(data,n)
+    {
+        var result=[];
+        
+        if (!Array.isArray(data)) return result;
+        var nStart=this.GetFirstVaildIndex(data);
+        if (!IFrameSplitOperator.IsNumber(n)) return result;
+        if(nStart+n>data.length || n<1) return result;
+
+        var i=nStart, j=0, bFirst=true, dTotal=0, dAvg=0;
+        for(i+=n-1;i<data.length;++i)
+        {
+            dTotal = 0;
+            if(bFirst)
+            {
+                bFirst = false;
+                for(j=i-n+1;j<=i;++j)
+                {
+                    dAvg += data[j];
+                }
+                    
+                dAvg /= n;
+            }
+            else
+            {
+                dAvg += (data[i]-data[i-n])/n;
+            }
+
+            for(j=i-n+1;j<=i;++j)
+            {
+                dTotal += (data[j]-dAvg)*(data[j]-dAvg);
+            }
+			
+
+		    result[i] = Math.sqrt(dTotal/(n-1))/Math.sqrt(n);
+        }
+
+        return result;
+    }
+
     //平均绝对方差
     this.AVEDEV=function(data,n)
     {
@@ -7709,6 +7751,8 @@ function JSAlgorithm(errorHandler, symbolData)
                 return this.AVEDEV(args[0], args[1]);
             case 'STD':
                 return this.STD(args[0], args[1]);
+            case "STDDEV":
+                return this.STDDEV(args[0], args[1]);
             case 'IF':
             case 'IFF':
             case "IFELSE":

@@ -109,6 +109,7 @@ function JSIndexScript()
             ['EMPTY', this.EMPTY],  //什么都不显示的指标
             ['神奇九转', this.NineTurns],
             ['EMA', this.EMA3], ['EMA4', this.EMA4], ['EMA5', this.EMA5],['EMA6', this.EMA6],
+            ["ICHIMOKU",this.ICHIMOKU],["CDP-STD", this.CDP_STD],["TBP-STD",this.TBP_STD],
 
             //通达信特色指标
             ["散户线", this.ShareholderCount],["NXTS", this.NXTS],["FKX", this.FKX],["两融资金", this.Margin4],
@@ -4049,6 +4050,69 @@ DRAWTEXT(D9,H*1.010,'9'),COLORGREEN;"
     return data;
 }
 
+JSIndexScript.prototype.ICHIMOKU=function()
+{
+    let data =
+    {
+        Name: 'ICHIMOKU', Description: '一目均衡图', IsMainIndex: true,
+        Args: [{ Name: 'SHORT', Value: 7 },{ Name: 'MID', Value: 22 },{ Name: 'LONG', Value: 44 }],
+        Script: //脚本
+"转换线:(HHV(H,SHORT)+LLV(L,SHORT))/2,COLORRED,LINETHICK2;\n\
+基准线:(HHV(H,MID)+LLV(L,MID))/2,COLORFF8040,LINETHICK2;\n\
+迟行带:REFXV(C,MID),COLORGRAY,LINETHICK2;\n\
+A:=REF((转换线+基准线)/2,MID);\n\
+B:=REF((HHV(H,LONG)+LLV(L,LONG))/2,MID);\n\
+STICKLINE(A<B,A,B,2,1),COLOR339933;\n\
+STICKLINE(A>=B,A,B,2,1),COLOR0033CC;\n\
+先行带A:PLOYLINE(1,A),COLORBROWN;\n\
+先行带B:PLOYLINE(1,B),COLORLIGREEN;"
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.CDP_STD=function()
+{
+    let data =
+    {
+        Name: 'CDP-STD', Description: '逆势操作', IsMainIndex: true,
+        Script: //脚本
+"CH:=REF(H,1);\n\
+CL:=REF(L,1);\n\
+CC:=REF(C,1);\n\
+CDP:(CH+CL+CC)/3;\n\
+AH:2*CDP+CH-2*CL;\n\
+NH:CDP+CDP-CL;\n\
+NL:CDP+CDP-CH;\n\
+AL:2*CDP-2*CH+CL;"
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.TBP_STD=function()
+{
+    let data =
+    {
+        Name: 'TBP-STD', Description: '趋势平衡点', IsMainIndex: true,
+        Script: //脚本
+"APX:=(H+L+C)/3;\n\
+TR0:=MAX(H-L,MAX(ABS(H-REF(C,1)),ABS(L-REF(C,1))));\n\
+MF0:=C-REF(C,2);\n\
+MF1:=REF(MF0,1);\n\
+MF2:=REF(MF0,2);\n\
+DIRECT1:=BARSLAST(MF0>MF1 AND MF0>MF2);\n\
+DIRECT2:=BARSLAST(MF0<MF1 AND MF0<MF2);\n\
+DIRECT0:=IF(DIRECT1<DIRECT2,100,-100);\n\
+TBP:REF(REF(C,1)+IF(DIRECT0>50,MIN(MF0,MF1),MAX(MF0,MF1)),1);\n\
+多头获利:REF(IF(DIRECT0>50,APX*2-L,DRAWNULL),1),NODRAW;\n\
+多头停损:REF(IF(DIRECT0>50,APX-TR0,DRAWNULL),1),NODRAW;\n\
+空头回补:REF(IF(DIRECT0<-50,APX*2-H,DRAWNULL),1),NODRAW;\n\
+空头停损:REF(IF(DIRECT0<-50,APX+TR0,DRAWNULL),1),NODRAW;"
+    };
+
+    return data;
+}
 
 
 JSIndexScript.prototype.TEST = function () 
