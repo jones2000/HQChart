@@ -1,0 +1,340 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+
+<title>K线图-DRAWBAND</title>  
+    <!-- 加载资源 -->
+    <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
+</head>  
+<body>
+    <div id="kline"></div>
+
+
+    <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
+    <script src="../jscommon/umychart.resource/js/webfont.js"></script>
+    <script src='../jscommon/umychart.console.js'></script>     <!-- 日志输出 -->
+    <script src="../jscommon/umychart.network.js"></script>     <!-- 网络请求分装 -->
+    <script src="../jscommon/umychart.js"></script>             <!-- K线图形 -->
+    <script src="../jscommon/umychart.complier.js"></script>    <!-- 麦语言解析执行器 -->
+    <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
+    <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+
+    <script src="../jscommon/umychart.NetworkFilterTest.js"></script>
+
+    <script>
+
+        //JSConsole.Chart.Log=() =>{}
+        //JSConsole.Complier.Log=()=>{}
+       
+        MARKET_SUFFIX_NAME.GetMarketStatus = function (symbol) { return 2; }
+
+        //简单的把K线控件封装下
+        function KLineChart(divKLine)
+        {
+            this.DivKLine=divKLine;
+            this.Chart=JSChart.Init(divKLine);   //把K线图绑定到一个Div上
+
+            //K线配置信息
+            this.Option= 
+            {
+                Type:'历史K线图',   //创建图形类型
+                //Type:'历史K线图横屏',   //创建图形类型
+               
+                Windows: //窗口指标
+                [
+                    {Index:"MA"},
+                    //{Index:"MACD"},
+                    
+                    { API: { Name:'API-DRAWBAND', Args:null, Url:'http://xxxxx' } },
+                    { API: { Name:'API-DRAWBAND2', Args:null, Url:'http://xxxxx' } },
+                ], 
+
+                Symbol:"600000.sh",
+                IsAutoUpdate:false,         //是自动更新数据
+                AutoUpdateFrequency:10000,   //数据更新频率
+
+                KLine:  //K线设置
+                {
+                    DragMode:1,                 //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
+                    Right:0,                    //复权 0 不复权 1 前复权 2 后复权
+                    Period:0,                   //周期 0 日线 1 周线 2 月线 3 年线 
+                    MaxRequestDataCount:5000,   //数据个数
+                    MaxRequestMinuteDayCount:5, //分钟数据获取几天数据  默认取5天数据
+                    PageSize:30,               //一屏显示多少数据
+                    IsShowTooltip:true,                 //是否显示K线提示信息
+                    DrawType:0,      //K线类型 0=实心K线柱子 1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积图
+                    KLineDoubleClick:false, //禁止双击弹框
+                    RightSpaceCount:5,
+                    ZoomType:0
+                    //DataWidth:5
+                },
+
+                KLineTitle: //标题设置
+                {
+                    IsShowName:true,       //不显示股票名称
+                    IsShowSettingInfo:true //不显示周期/复权
+                },
+    
+                Border: //边框
+                {
+                    Left:50,         //左边间距
+                    Right:50,       //右边间距
+                    Bottom:25,      //底部间距
+                    Top:25,         //顶部间距
+
+                    AutoLeft:{ Blank:10, MinWidth:30 },
+                    AutoRight:{ Blank:5, MinWidth:40 },
+                },
+                
+                Frame:  //子框架设置
+                [
+                    { SplitCount:6 },
+                    { SplitCount:5  },
+                ]
+
+            };
+                 
+            this.Create=function()  //创建图形
+            {
+                var self=this;
+                //$(window).resize(function() { self.OnSize( {Type:1} ); });    //绑定窗口大小变化事件
+                $(window).resize(function() { self.OnSize( ); });    //绑定窗口大小变化事件
+
+                this.OnSize();  //让K线全屏
+                this.Option.NetworkFilter=(data, callback)=>{ this.NetworkFilter(data, callback); }
+                this.Chart.SetOption(this.Option);  //设置K线配置
+            }
+
+            this.NetworkFilter=function(data, callback)
+            {
+                console.log('[KLineChart::NetworkFilter] data', data);
+                switch(data.Name)
+                {
+                    case "APIScriptIndex::ExecuteScript":
+                        return this.ExecuteScript(data, callback);
+                    default:
+                        HQData.NetworkFilter(data, callback);
+                        break;
+                }
+            }
+
+            this.ExecuteScript=function(data, callback)
+            {
+                var request=data.Request;
+                if (request.Data.indexname=='API-DRAWBAND')
+                {
+                    data.PreventDefault=true;
+                    var hqchart=data.HQChart;
+                    var kData=hqchart.ChartPaint[0].Data;
+
+                    var aryClose=kData.GetClose();
+                    var aryOpen=kData.GetOpen();
+
+                    var TopBandData=
+                    { 
+                        name:"DRAWBAND", type:1, 
+                        Draw:
+                        { 
+                            Name:"DRAWBAND",
+                            DrawType:"DRAWBAND",
+                            DrawData:[],
+                            Color:["rgba(220,20,60)","rgb(34,139,34)"]
+                        }
+                    };
+
+                    for(var i=0;i<aryClose.length;++i)
+                    {
+                        TopBandData.Draw.DrawData[i]={ Value:aryClose[i], Value2:aryOpen[i] };
+                    }
+
+                    var closeLine={ Name:'收', Type:0, Data:aryClose };
+                    var openLine={ Name:'开', Type:0, Data:aryOpen};
+
+                    var hqchartData={ outdata:{ date:kData.GetDate(), time:kData.GetTime(), 
+                        outvar:
+                        [
+                            TopBandData, 
+                        ] } , 
+                        code:0};
+
+                    callback(hqchartData);
+
+                    /*
+                    data.PreventDefault=true;
+                    var hqchart=data.HQChart;
+                    var kData=hqchart.ChartPaint[0].Data;
+
+                    var aryClose=kData.GetClose();
+                    var aryOpen=kData.GetOpen();
+
+                    var TopBandData=
+                    { 
+                        DrawType:"DRAWBAND", Type:1 , 
+                        Draw:
+                        { 
+                            Color1: "rgba(220,20,60)", 
+                            Color2: "rgb(34,139,34)",
+                            Val1:[], Val2:[]
+                        }
+                    };
+
+                    for(var i=0;i<aryClose.length;++i)
+                    {
+                        TopBandData.Draw.Val2[i]=aryClose[i];
+                        TopBandData.Draw.Val1[i]=aryOpen[i];
+                    }
+
+                    var BottomBandData=
+                    { 
+                        DrawType:"DRAWBAND", Type:1 , 
+                        Draw:
+                        { 
+                            Color1: null, //"rgba(0,224,224)", 
+                            Color2: "rgb(34,139,34)",
+                            Val1:[], Val2:[]
+                        }
+                    };
+
+                    for(var i=0;i<aryClose.length;++i)
+                    {
+                        BottomBandData.Draw.Val2[i]=aryClose[i];
+                        BottomBandData.Draw.Val1[i]=12;
+                    }
+
+                    var closeLine={ Name:'收', Type:0, Data:aryClose };
+                    var openLine={ Name:'开', Type:0, Data:aryOpen};
+
+                    var hqchartData={ Date:kData.GetDate(), Time:kData.GetTime(), OutVar:[TopBandData] , Period:request.Data.period, Right:request.Data.right };
+                    callback(hqchartData);
+                    */
+                }
+                else if (request.Data.indexname=='API-DRAWBAND2')
+                {
+                    data.PreventDefault=true;
+                    var hqchart=data.HQChart;
+                    var kData=hqchart.ChartPaint[0].Data;
+
+                    var aryClose=kData.GetClose();
+                    var aryOpen=kData.GetOpen();
+
+                    var closeLine=
+                    {
+                        name:"收盘价", type:0,
+                        data:aryClose
+                    };
+
+                    var TopBandData=
+                    { 
+                        name:"DRAWBAND", type:1 , 
+                        Draw:
+                        { 
+                            Name:"DRAWBAND",
+                            DrawType:"DRAWBAND",
+                            DrawData:[],
+                            Color:["rgba(220,20,60)",null, "rgb(34,139,34)"]
+                        }
+                    };
+
+                    var aryTopLine=[];
+                    for(var i=0;i<aryClose.length;++i)
+                    {
+                        TopBandData.Draw.DrawData[i]={ Value:9, Value2:aryClose[i] };
+                        aryTopLine[i]=9;
+                    }
+                    var topLine=
+                    {
+                        name:"顶部", type:0,
+                        data:aryTopLine
+                    }
+
+                    var BottomBandData=
+                    { 
+                        name:"DRAWBAND", type:1 , 
+                        Draw:
+                        { 
+                            Name:"DRAWBAND",
+                            DrawType:"DRAWBAND",
+                            DrawData:[],
+                            Color:[null, "rgb(34,139,34)"]
+                        }
+                    };
+
+                    var aryBottomLine=[];
+                    for(var i=0;i<aryClose.length;++i)
+                    {
+                        BottomBandData.Draw.DrawData[i]={ Value:8, Value2:aryClose[i] };
+                        aryBottomLine[i]=8;
+                    }
+                    var bottomLine=
+                    {
+                        name:"底部", type:0,
+                        data:aryBottomLine
+                    }
+
+                    var hqchartData={ outdata:{ date:kData.GetDate(), time:kData.GetTime(), 
+                        outvar:
+                        [
+                            TopBandData, 
+                            BottomBandData, 
+                            closeLine,
+                            topLine,bottomLine
+                        ] } , 
+                        code:0};
+
+                    console.log("[ExecuteScript] hqchartData=",hqchartData);
+                    callback(hqchartData);
+                }
+               
+            }
+
+
+            this.OnSize=function(option)  //自适应大小调整
+            {
+                var height= $(window).height()-50;
+                var width = $(window).width();
+                this.DivKLine.style.top='0px';
+                this.DivKLine.style.left='0px';
+                this.DivKLine.style.width=width+'px';
+                this.DivKLine.style.height=height+'px';
+                this.Chart.OnSize(option);
+            }
+
+        }
+
+        $(function () 
+        {
+            WebFont.load({ custom: { families: ['iconfont'] } });   //预加载下iconfont资源
+            var klineControl=new KLineChart(document.getElementById('kline'));
+            klineControl.Create();
+        })
+
+    </script>  
+</body>  
+</html>
+
+
+
+<style>
+
+#kline
+{
+    width: 900px;
+    height:400px;
+    position: relative;
+    /*margin-top: 100px;*/
+}
+
+.btn-style
+{
+    padding: 3px 8px;
+    border: 1px solid #ececec;
+    border-radius: 5px;
+    background-color: #f5f5f5;
+    cursor: pointer;
+}
+
+    
+</style>

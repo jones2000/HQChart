@@ -123,8 +123,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![K线图](/小程序行情模块用例/image/hqchart_kline3.png)
 * 支持K线面积图
 ![K线图](/小程序行情模块用例/image/hqchart_kline_area.png)
-* 支持深度图
-![深度图](/小程序行情模块用例/image/depth_demo.png)
+* 支持深度图    
+![深度图](/小程序行情模块用例/image/depth_demo.png)    
 * 支持ox图
 ![ox图](/小程序行情模块用例/image/hqchart_ox.png)
 * 支持指标图形拖拽
@@ -227,6 +227,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 * [毫秒收盘价K线图](https://jones2000.github.io/HQChart/webhqchart.demo/samples/msecond_kline.html)   
 * [毫秒收盘价K线图滚动条模式](https://jones2000.github.io/HQChart/webhqchart.demo/samples/msecond_kline_scrrollbar.html)   
 * [K线图沙盘推演](https://jones2000.github.io/HQChart/webhqchart.demo/samples/kline_sandtable.html)   
+* [K线对接后台指标(DRAWBAND)示例1](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_DRAWBAND.html)  
 
 ## 订单流
 * [订单流样式1](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_orderflow.html)    
