@@ -555,6 +555,17 @@ function FrameSplitKLinePriceY()
         splitData.Max = this.Frame.HorizontalMax;
         splitData.Min = this.Frame.HorizontalMin;
         splitData.Count = this.SplitCount;
+
+        if (this.Frame.YMaxMin) //原始的数据范围
+        {
+            var item=this.Frame.YMaxMin;
+            if (IFrameSplitOperator.IsNumber(item.Max) && IFrameSplitOperator.IsNumber(item.Min))
+            {
+                splitData.Max=item.Max;
+                splitData.Min=item.Min;
+            }
+        }
+
         if (splitData.Max==splitData.Min)   //如果一样上下扩大下
 		{
 			splitData.Max+=splitData.Max*0.01;
@@ -794,6 +805,16 @@ function FrameSplitY()
         var splitData = {};
         splitData.Max = this.Frame.HorizontalMax;
         splitData.Min = this.Frame.HorizontalMin;
+
+        if (this.Frame.YMaxMin) //原始的数据范围
+        {
+            var item=this.Frame.YMaxMin;
+            if (IFrameSplitOperator.IsNumber(item.Max) && IFrameSplitOperator.IsNumber(item.Min))
+            {
+                splitData.Max=item.Max;
+                splitData.Min=item.Min;
+            }
+        }
 
         if (splitData.Max==splitData.Min)   //如果一样上下扩大下
 		{

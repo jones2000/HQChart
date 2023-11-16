@@ -68,7 +68,8 @@ function IChartFramePainting()
 
     this.HorizontalMax;                 //Y轴最大值
     this.HorizontalMin;                 //Y轴最小值
-    this.XPointCount = 10;                //X轴数据个数
+    this.XPointCount = 10;              //X轴数据个数
+    this.YMaxMin={ Max:null, Min:null };     //Y轴原始的最大值 最小值
 
     this.YSplitOperator;               //Y轴分割
     this.XSplitOperator;               //X轴分割

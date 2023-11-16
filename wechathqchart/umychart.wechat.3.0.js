@@ -2630,8 +2630,135 @@ function JSChartContainer(uielement)
         if (typeof (this.Frame.ResetXYSplit) == 'function') this.Frame.ResetXYSplit();
     }
 
+    this.UpdateFrameMaxMinV2=function()
+    {
+        var mapFrame=new Map(); //key=frameid, value:{ ChartPaint:[] }
+        for(var i=0;i<this.Frame.SubFrame.length;++i)
+        {
+            var subItem=this.Frame.SubFrame[i];
+            if (!subItem || !subItem.Frame) continue;
+
+            var frame=subItem.Frame;
+            var key=frame.Identify;
+            var item=
+            { 
+                ID:key, Frame:frame, ChartPaint:[] , Max:null, Min:null, 
+                OverlayFrame:[],        //共享坐标
+                SingleOverlay:[]        //独立坐标
+            };
+
+            for(var j=0;j<subItem.OverlayIndex.length;++j)
+            {
+                var overlayItem=subItem.OverlayIndex[j];
+                var overlayFrame=overlayItem.Frame;
+                if (overlayFrame.IsShareY)
+                {
+                    if (!overlayFrame.MainFrame) continue;
+                    if (overlayFrame.IsCalculateYMaxMin===false) continue;  //叠加坐标Y轴不调整
+                    item.OverlayFrame.push(overlayFrame);
+                    for(var k=0; k<overlayItem.ChartPaint.length; ++k)
+                    {
+                        var chart=overlayItem.ChartPaint[k];
+                        item.ChartPaint.push(chart);
+                    }
+                }
+                else
+                {
+                    item.SingleOverlay.push(overlayItem);
+                }
+                
+            }
+
+            mapFrame.set(key, item);
+        }
+
+        for(var i=0;i<this.ChartPaint.length;++i)
+        {
+            var chart=this.ChartPaint[i];
+            var key=chart.ChartFrame.Identify;
+            if (!mapFrame.has(key)) continue;
+
+            var finder=mapFrame.get(key);
+            finder.ChartPaint.push(chart);
+        }
+
+        for(var i=0;i<this.OverlayChartPaint.length;++i)
+        {
+            var chart=this.OverlayChartPaint[i];
+            if (!chart.ChartFrame) continue;
+            var key=chart.ChartFrame.Identify;
+            if (!mapFrame.has(key)) continue;
+
+            var finder=mapFrame.get(key);
+            finder.ChartPaint.push(chart);
+        }
+
+        for(var mapItem of mapFrame)
+        {
+            var item=mapItem[1];
+            var frame=item.Frame;
+            //计算主框架最大最小
+            for(var i=0;i<item.ChartPaint.length;++i)   
+            {
+                var chart=item.ChartPaint[i];
+                if (chart.IsShow==false) continue;      //隐藏的图形不计算
+                if (chart.NotSupportMessage)  continue;
+                if (!chart.ChartFrame) continue;
+
+                var range=chart.GetMaxMin();
+                if (range==null || range.Max==null || range.Min==null) continue;
+
+                if (item.Max==null || item.Max<range.Max) item.Max=range.Max;
+                if (item.Min==null || item.Min>range.Min) item.Min=range.Min;
+            }
+
+            if (item.Frame.YSpecificMaxMin) //固定坐标
+            {
+                item.Min=item.Frame.YSpecificMaxMin.Max;
+                item.Max=item.Frame.YSpecificMaxMin.Min;
+            }
+
+            if (!IFrameSplitOperator.IsNumber(frame.YMaxMin.Max) || frame.YMaxMin.Max!=item.Max)
+            {
+                frame.YMaxMin.Max=item.Max;
+                frame.XYSplit=true;
+            }
+
+            if (!IFrameSplitOperator.IsNumber(frame.YMaxMin.Min) || frame.YMaxMin.Min!=item.Min)
+            {
+                frame.YMaxMin.Min=item.Min
+                frame.XYSplit=true;
+            }
+
+            if (frame.XYSplit)
+            {
+                var max=10, min=0;
+                if (item.Max!=null) max=item.Max;
+                if (item.Min!=null) min=item.Min;
+    
+                frame.HorizontalMax=max;
+                frame.HorizontalMin=min;  
+            }
+
+            //共享Y轴叠加指标坐标同步
+            for(var j=0;j<item.OverlayFrame.length;++j)
+            {
+                item.OverlayFrame[j].XYSplit=true;
+            }
+
+            //独立坐标叠加指标
+            for(var i=0;i<item.SingleOverlay.length;++i)
+            {
+                var overlayItem=item.SingleOverlay[i];
+                overlayItem.UpdateFrameMaxMin();
+            }
+        }
+    }
     this.UpdateFrameMaxMin = function () 
     {
+        this.UpdateFrameMaxMinV2();
+        return;
+        
         var frameMaxMinData = new Array();
         var chartPaint = new Array();
 
