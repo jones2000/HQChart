@@ -21,10 +21,15 @@
                 <option value="0">主图</option>
             </select>
 
-            <button class="toolsButton" id="index_run">执行</button>
+            <button class="toolsButton" id="index_run">执行(切换指标)</button>
             <button class="toolsButton" id="index_check">语法检测</button>
             <button class="toolsButton" id="index_save">保存指标</button>
 
+            <input type="checkbox" id="overlay_y" name="overlay_y"/>
+            <label for="overlay_y">叠加指标使用独立坐标 </label>
+
+            <button class="toolsButton" id="overlayindex_run">执行(叠加指标)</button>
+            
             <a href="https://jones2000.blog.csdn.net/article/details/129125330" target="_blank">函数帮助</a>
 
         </div>
@@ -176,7 +181,7 @@
 
                 //EnableVerifyRecvData:true,
 
-                CorssCursorInfo: { Right:2, DateFormatType:3, HPenType:1, VPenType:1, IsShowClose:false, VLineType:0,RightButton:{ Enable:true }, IsShowCorss:true, PriceFormatType:0, DataFormatType:0 },
+                CorssCursorInfo: { Right:1, DateFormatType:3, HPenType:1, VPenType:1, IsShowClose:false, VLineType:0,RightButton:{ Enable:true }, IsShowCorss:true, PriceFormatType:0, DataFormatType:0 },
                 EnableZoomIndexWindow:true,
 
                 DrawTool:       //画图工具
@@ -233,7 +238,7 @@
                 
                 Border: //边框
                 {
-                    Left:50,         //左边间距
+                    Left:1,         //左边间距
                     Right:90,       //右边间距
                     Bottom:25,      //底部间距
                     Top:25,         //顶部间距
@@ -256,6 +261,7 @@
                                 //PositionEx:1,
                             },
                             
+                            /*
                             { 
                                 Type:1, 
                                 Position:'right',IsShowLine:true, LineType:0,
@@ -289,6 +295,7 @@
                                     }
                                 ] 
                             }
+                            */
                         ]
                         
                         
@@ -322,13 +329,29 @@
                 var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID); //读取黑色风格配置
                 JSChart.SetStyle(blackStyle);
                 this.DivKLine.style.backgroundColor=blackStyle.BGColor; //设置最外面的div背景
-                JSChart.GetResource().ToolbarButtonStyle=1;
+                var resource=JSChart.GetResource();
+                resource.ToolbarButtonStyle=1;
+                resource.FrameYLineDash=[2,2];
+
+                this.Option.EventCallback=
+                [
+                    {
+                        event:JSCHART_EVENT_ID.ON_CREATE_FRAME,
+                        callback:(event, data, obj)=>{ this.OnCreateFrame(event, data, obj); }
+                    }
+                ];
 
                 this.OnSize();  //让K线全屏
                 this.Option.ScriptError=(error)=> { this.ExecuteScriptError(error); }
                 this.Option.NetworkFilter=(data, callback)=>{ HQData.NetworkFilter(data, callback); }
                 this.Chart.SetOption(this.Option);  //设置K线配置
 
+            }
+
+            this.OnCreateFrame=function(event, data, obj)
+            {
+                data.SubFrame.Frame.IsShowYText[0]=false;
+                data.SubFrame.Frame.IsShowXLine=false;
             }
 
             this.OnSize=function(option)  //自适应大小调整
@@ -418,6 +441,17 @@
                 var windowIndex=parseInt(document.getElementById('window_index').value);
 
                 this.Chart.ChangeScriptIndex(windowIndex,indexInfo)
+            }
+
+            //叠加指标
+            this.ExecuteOverlayIndexScript=function()
+            {
+                var indexInfo=this.GetIndexInfo();
+                var windowIndex=parseInt(document.getElementById('window_index').value);
+                var value=document.getElementById("overlay_y").checked;
+
+                var option={ Script:indexInfo.Script, WindowIndex:windowIndex, Name:indexInfo.Name, Args:indexInfo.Args, IsShareY:!value };
+                this.Chart.AddOverlayIndex(option);
             }
 
              //语法检测
@@ -631,6 +665,7 @@
             $("#index_run").click(function() { klineControl.ExecuteIndexScript(); } );
             $("#index_check").click(function() { klineControl.CheckIndexScript(); } );
             $("#index_save").click(function() { klineControl.SaveLocalIndex(); } );
+            $("#overlayindex_run").click(function(){ klineControl.ExecuteOverlayIndexScript(); })
 
 
             DeleteLocalIndex=(e, name)=>{ klineControl.DeleteLocalIndex(e, name); }

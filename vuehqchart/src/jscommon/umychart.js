@@ -4630,6 +4630,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 this.UpdatePointByCursorIndex();
                 this.UpdataDataoffset();
                 this.UpdateFrameMaxMin();
+                //this.ResetFrameXSplit();
                 this.Draw();
                 this.ShowTooltipByKeyDown();
                 this.StopDragTimer();
@@ -4644,6 +4645,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 this.UpdataDataoffset();
                 this.UpdatePointByCursorIndex();
                 this.UpdateFrameMaxMin();
+                //this.ResetFrameXSplit();
                 this.Draw();
                 this.ShowTooltipByKeyDown();
                 this.StopDragTimer();
@@ -5995,6 +5997,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                     this.UpdataDataoffset();
                     this.UpdatePointByCursorIndex();
                     this.UpdateFrameMaxMin();
+                    this.ResetFrameXSplit();
                     this.Draw();
                     this.ShowTooltipByKeyDown();
                     this.OnKLinePageChange("keydown");
@@ -6023,6 +6026,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                     this.UpdataDataoffset();
                     this.UpdatePointByCursorIndex();
                     this.UpdateFrameMaxMin();
+                    this.ResetFrameXSplit();
                     this.Draw();
                     this.ShowTooltipByKeyDown();
                     this.OnKLinePageChange("keydown");
@@ -6051,6 +6055,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 this.UpdatePointByCursorIndex();
                 this.UpdataDataoffset();
                 this.UpdateFrameMaxMin();
+                this.ResetFrameXSplit();
                 this.Draw();
                 this.ShowTooltipByKeyDown();
                 this.OnKLinePageChange("keydown");
@@ -6064,6 +6069,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 this.UpdataDataoffset();
                 this.UpdatePointByCursorIndex();
                 this.UpdateFrameMaxMin();
+                this.ResetFrameXSplit();
                 this.Draw();
                 this.ShowTooltipByKeyDown();
                 this.OnKLinePageChange("keydown");
@@ -6671,6 +6677,12 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             this.Frame.ResetXYSplit();
     }
 
+    this.ResetFrameXSplit=function()
+    {
+        if (typeof(this.Frame.ResetXSplit)=='function')
+            this.Frame.ResetXSplit();
+    }
+
     this.UpdateFrameMaxMinV2=function()
     {
         var mapFrame=new Map(); //key=frameid, value:{ ChartPaint:[] }
@@ -6779,6 +6791,10 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     
                 frame.HorizontalMax=max;
                 frame.HorizontalMin=min;  
+            }
+            else
+            {
+                frame.XSplit=true;
             }
 
             //共享Y轴叠加指标同步下坐标
@@ -9170,6 +9186,7 @@ function IChartFramePainting()
     this.IsShow=true;                   //是否显示
     this.SizeChange=true;               //大小是否改变
     this.XYSplit=true;                  //XY轴坐标信息改变
+    this.XSplit=true;                   //X轴变化
 
     this.HorizontalMax;                 //Y轴最大值
     this.HorizontalMin;                 //Y轴最小值
@@ -9242,6 +9259,7 @@ function IChartFramePainting()
 
         this.SizeChange=false;
         this.XYSplit=false;
+        this.XSplit=false;
     }
 
     this.DrawFrame=function() { }
@@ -13927,7 +13945,15 @@ function KLineFrame()
     //分割x,y轴坐标信息
     this.SplitXYCoordinate=function()
     {
-        if (this.XYSplit==false) return;
+        if (this.XYSplit==false) 
+        {
+            if (this.XSplit)
+            {
+                if (this.XSplitOperator!=null) this.XSplitOperator.Operator();
+            }
+            return;
+        }
+
         if (this.YSplitOperator!=null) this.YSplitOperator.Operator();
         if (this.XSplitOperator!=null) this.XSplitOperator.Operator();
         if (this.Logarithmic) this.SplitLogarithmicXYCoordinate();
@@ -14603,6 +14629,7 @@ function OverlayKLineFrame()
         
         this.SizeChange=false;
         this.XYSplit=false;
+        this.XSplit=false;
     }
 
     this.DrawTitle=function()   //画标题
@@ -17138,6 +17165,14 @@ function HQTradeFrame()
         for(let i in this.SubFrame)
         {
             this.SubFrame[i].Frame.XYSplit=true;
+        }
+    }
+
+    this.ResetXSplit=function()
+    {
+        for(let i in this.SubFrame)
+        {
+            this.SubFrame[i].Frame.XSplit=true;
         }
     }
 
@@ -65023,6 +65058,7 @@ function KLineChartContainer(uielement,OffscreenElement)
             this.UpdataDataoffset();
             this.UpdatePointByCursorIndex();
             this.UpdateFrameMaxMin();
+            this.ResetFrameXSplit();
             this.Draw();
         }
         else if (id===JSCHART_OPERATOR_ID.OP_GOTO_HOME)
@@ -65478,6 +65514,7 @@ function KLineChartContainer(uielement,OffscreenElement)
     {
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.ResetFrameXSplit();
         this.Frame.SetSizeChage(true);
         this.Draw();
         this.UpdatePointByCursorIndex();   //更新十字光标位子
@@ -65516,6 +65553,7 @@ function KLineChartContainer(uielement,OffscreenElement)
                     this.UpdataDataoffset();
                     this.UpdatePointByCursorIndex();
                     this.UpdateFrameMaxMin();
+                    this.ResetFrameXSplit();
                     this.Draw();
                     this.OnKLinePageChange("wheel");
                 }
@@ -65532,6 +65570,7 @@ function KLineChartContainer(uielement,OffscreenElement)
                     this.UpdatePointByCursorIndex();
                     this.UpdataDataoffset();
                     this.UpdateFrameMaxMin();
+                    this.ResetFrameXSplit();
                     this.Draw();
                     this.OnKLinePageChange("wheel");
                 }
@@ -68425,6 +68464,7 @@ function KLineChartContainer(uielement,OffscreenElement)
     {
         if (!this.DeleteOverlayIndex(identify, null)) return;
 
+        this.UpdateFrameMaxMin();   //重新计算坐标范围
         this.Frame.ResetXYSplit(true);
         this.Draw();
     }

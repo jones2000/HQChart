@@ -2739,6 +2739,10 @@ function JSChartContainer(uielement)
                 frame.HorizontalMax=max;
                 frame.HorizontalMin=min;  
             }
+            else
+            {
+                frame.XSplit=true;
+            }
 
             //共享Y轴叠加指标坐标同步
             for(var j=0;j<item.OverlayFrame.length;++j)

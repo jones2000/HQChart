@@ -65,6 +65,7 @@ function IChartFramePainting()
     this.IsShow = true;                   //是否显示
     this.SizeChange = true;               //大小是否改变
     this.XYSplit = true;                  //XY轴坐标信息改变
+    this.XSplit=true;                     //X轴坐标信息改变
 
     this.HorizontalMax;                 //Y轴最大值
     this.HorizontalMin;                 //Y轴最小值
@@ -100,6 +101,7 @@ function IChartFramePainting()
 
         this.SizeChange = false;
         this.XYSplit = false;
+        this.XSplit=false;
     }
 
     this.DrawFrame = function () { }
@@ -1557,6 +1559,7 @@ function OverlayMinuteFrame()
 
         this.SizeChange=false;
         this.XYSplit=false;
+        this.XSplit=false;
     }
 
     this.GetScaleTextWidth=function()
@@ -2011,7 +2014,15 @@ function KLineFrame()
     //分割x,y轴坐标信息
     this.SplitXYCoordinate = function () 
     {
-        if (this.XYSplit == false) return;
+        if (this.XYSplit == false) 
+        {
+            if (this.XSplit)
+            {
+                if (this.XSplitOperator!=null) this.XSplitOperator.Operator();
+            }
+            return;
+        }
+
         if (this.YSplitOperator != null) this.YSplitOperator.Operator();
         if (this.XSplitOperator != null) this.XSplitOperator.Operator();
     }
