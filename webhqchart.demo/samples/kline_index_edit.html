@@ -108,9 +108,9 @@
 
         //默认显示的指标代码
         var DEFAULT_CODE='MA1:MA(CLOSE,M1);\n\MA2:MA(CLOSE,M2);\n\MA3:MA(CLOSE,M3);\n\MA4:MA(CLOSE,M4);\nDRAWICON(C>O,H,5);';
-        DEFAULT_CODE="BUY(C>O,L);";
+        //DEFAULT_CODE="BUY(C>O,L);";
         //DEFAULT_CODE=`TIPICON(C>O, L, 1, STRFORMAT("低开高走<BR>收盘:{0:0.00}<BR>开盘:{1:.000}", C,O )), COLORRED, YMOVE(5), FONTSIZE15,VALIGN0`;
-        DEFAULT_CODE=`DRAWTEXT(CLOSE>OPEN,LOW,'看多'),ALIGN1,VALIGN0,YMOVE(5),FONTSIZE14,BACKGROUND(RGBA(255, 69, 0,0.5),RGB(255,0,0), 1,1,1,1),RGB(230,230,230);`;
+        //DEFAULT_CODE=`DRAWTEXT(CLOSE>OPEN,LOW,'看多'),ALIGN1,VALIGN0,YMOVE(5),FONTSIZE14,BACKGROUND(RGBA(255, 69, 0,0.5),RGB(255,0,0), 1,1,1,1),RGB(230,230,230);`;
 
         //简单的把K线控件封装下
         function KLineChart(divKLine)
@@ -166,7 +166,7 @@
                 //Language:'EN',
 
                 Symbol:"600000.sh",
-                IsAutoUpdate:true,       //是自动更新数据
+                IsAutoUpdate:false,       //是自动更新数据
                 AutoUpdateFrequency:3000,   //数据更新频率
                 //TradeIndex: {Index:'交易系统-BIAS'},    //交易系统
 
@@ -239,7 +239,7 @@
                 Border: //边框
                 {
                     Left:1,         //左边间距
-                    Right:90,       //右边间距
+                    Right:180,       //右边间距
                     Bottom:25,      //底部间距
                     Top:25,         //顶部间距
 
@@ -332,12 +332,22 @@
                 var resource=JSChart.GetResource();
                 resource.ToolbarButtonStyle=1;
                 resource.FrameYLineDash=[2,2];
+                resource.UpBarColor='rgb(248,41,71)';
+                resource.DownBarColor='rgb(84,255,255)';
 
                 this.Option.EventCallback=
                 [
                     {
                         event:JSCHART_EVENT_ID.ON_CREATE_FRAME,
                         callback:(event, data, obj)=>{ this.OnCreateFrame(event, data, obj); }
+                    },
+                    {
+                        event:JSCHART_EVENT_ID.ON_SPLIT_YCOORDINATE, 
+                        callback:(event, data, obj)=>{ this.OnSplitYCoordinate(event, data, obj); }
+                    },
+                    {
+                        event:JSCHART_EVENT_ID.ON_CREATE_OVERLAY_FRAME, 
+                        callback:(event, data, obj)=>{ this.OnCreateOverlayFrame(event, data, obj); }
                     }
                 ];
 
@@ -350,8 +360,30 @@
 
             this.OnCreateFrame=function(event, data, obj)
             {
-                data.SubFrame.Frame.IsShowYText[0]=false;
-                data.SubFrame.Frame.IsShowXLine=false;
+                var frame=data.SubFrame.Frame;
+                frame.IsShowYText[0]=false;
+                frame.IsShowXLine=false;
+                frame.IsDrawRightBorder=true;
+                frame.YTextPadding[1]=5;
+                frame.YLineExtend=[null, { Width:5, Color:frame.PenBorder} ];
+                frame.YTextExtend=[null, { Align:2} ];
+            }
+
+            this.OnCreateOverlayFrame=function(event, data, obj)
+            {
+                var mainFrame=data.SubFrame.Frame;
+                var frame=data.OverlayFrame.Frame;
+                frame.PenBorder=mainFrame.PenBorder;
+                frame.YTextPadding[1]=5;
+                //frame.Style=1;
+                //frame.YLineExtend=[ { Width:5 }, null];
+                frame.YLineExtend=[null, { Width:5 } ];
+                frame.YTextExtend=[null, { Align:2}  ];
+            }
+
+            this.OnSplitYCoordinate=function(event, data ,obj)
+            {
+               
             }
 
             this.OnSize=function(option)  //自适应大小调整

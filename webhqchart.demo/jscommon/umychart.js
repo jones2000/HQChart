@@ -633,7 +633,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         }
         
         //叠加指标宽度
-        if (option.OverlayIndexFrameWidth>40) chart.OverlayIndexFrameWidth=option.OverlayIndexFrameWidth;
+        if (option.OverlayIndexFrameWidth>40) chart.Frame.FixedRightWidth.Overlay=option.OverlayIndexFrameWidth;
 
         //叠加指标
         if (IFrameSplitOperator.IsNonEmptyArray(option.OverlayIndex))
@@ -2517,7 +2517,9 @@ var JSCHART_EVENT_ID=
     ON_CUSTOM_DRAG_DOC_MOUSE_UP:115,
     ON_CUSTOM_DRAG_MOUSE_MOVE:116,
 
-    ON_KEYDOWN:117
+    ON_KEYDOWN:117,
+
+    ON_CREATE_OVERLAY_FRAME:118,        //创建叠加框架回调
 }
 
 var JSCHART_OPERATOR_ID=
@@ -8358,7 +8360,6 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         else
         {
             var subFrame=this.Frame.SubFrame[dest.WindowIndex];
-            subFrame.Interval=this.OverlayIndexFrameWidth;
             var overlayFrame=new OverlayIndexItem();
             var frame=this.CreateOverlayFrame();
             frame.Canvas=this.Canvas;
@@ -8375,6 +8376,15 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             frame.YSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); };
     
             overlayFrame.Frame=frame;
+
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CREATE_OVERLAY_FRAME);
+            if (event && event.Callback)
+            {
+                var sendData={ OverlayFrame:overlayFrame, WindowIndex:dest.WindowIndex, SubFrame:subFrame };
+                event.Callback(event, sendData, this);
+            }
+
+
             var scriptIndex;
             if (findItem) 
             {
@@ -8865,7 +8875,7 @@ function CoordinateInfo()
     this.Font=g_JSChartResource.FrameSplitTextFont;             //字体
     this.LineColor=g_JSChartResource.FrameSplitPen;             //线段颜色
     this.LineDash=null;                                         //当线段类型==2时 可以设置虚线样式
-    this.LineType=1;                                            //线段类型 -1 不画线段 2 虚线 8,9=集合竞价坐标
+    this.LineType=1;                                            //线段类型 -1=不画线段 2=虚线, 8,9=集合竞价坐标
     this.LineWidth;                                             //线段宽度
     this.ExtendData;                                            //扩展属性
                                                                 //百分比 { PriceColor:, PercentageColor:, SplitColor:, Font: }
@@ -9225,6 +9235,9 @@ function IChartFramePainting()
     this.LogoBGColor=g_JSChartResource.FrameLogo.BGColor;
     this.GlobalOption;
 
+    //this.IsDrawLeftBorder;
+    this.IsDrawRightBorder=false;   //是否绘制右侧刻度空白的边框
+
     this.PtInButtons=function(x,y) //坐标是否在按钮上
     {
         for(var i=0;i<this.Buttons.length;++i)
@@ -9304,8 +9317,22 @@ function IChartFramePainting()
         //JSConsole.Chart.Log(`[IChartFramePainting.DrawBorder] left=${left} `);
         if (this.BorderLine==null)
         {
-            this.Canvas.strokeStyle=this.PenBorder;
-            this.Canvas.strokeRect(left,top,width,height);
+            if (this.IsDrawRightBorder)
+            {
+                var xRight=ToFixedPoint(border.ChartWidth);
+                this.Canvas.strokeStyle=this.PenBorder;
+                this.Canvas.strokeRect(left,top,xRight-left,height);
+
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(right,top);
+                this.Canvas.lineTo(right,bottom);
+                this.Canvas.stroke();
+            }
+            else
+            {
+                this.Canvas.strokeStyle=this.PenBorder;
+                this.Canvas.strokeRect(left,top,width,height);
+            }
         }
         else if (IFrameSplitOperator.IsPlusNumber(this.BorderLine)) //单独绘制每个边框
         {
@@ -9339,7 +9366,20 @@ function IChartFramePainting()
             this.Canvas.stroke();
         }
 
-        
+        /*
+        if (this.IsDrawRightBorder)
+        {
+            var xRight=ToFixedPoint(border.ChartWidth);
+            var xLeft=right;
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(xLeft,top);
+            this.Canvas.lineTo(xRight,top);
+            this.Canvas.lineTo(xRight,bottom);
+            this.Canvas.lineTo(xLeft,bottom);
+
+            this.Canvas.stroke();
+        }
+        */
     }
 
     //画标题背景色
@@ -9584,6 +9624,11 @@ function AverageWidthFrame()
 
     this.ButtonTooltip=CloneData(g_JSChartResource.Buttons.Tooltip);
 
+    //Y轴刻度长线
+    this.YLineExtend;    //[0]=左 [1]=右     { Width:5, Color:颜色,  }
+    this.YTextExtend;    //[0]=左 [1]=右     { Align:0=默认  1=左对齐 2=右对齐 }
+    this.YRightTextInfo;
+
     //画图工具刻度
     
     this.DrawPicture={ 
@@ -9822,6 +9867,18 @@ function AverageWidthFrame()
         var isDrawLeft=borderLeft>10 && this.IsShowYText[0]===true && this.YTextPosition[0]!=2;
         var isDrawRight=borderRight>10 && this.IsShowYText[1]===true && this.YTextPosition[1]!=2;
 
+        var rightExtendLine=null;   //右侧延长线
+        if (IFrameSplitOperator.IsNonEmptyArray(this.YLineExtend)) 
+        {
+            rightExtendLine=this.YLineExtend[1];
+        }
+
+        var rightExtendText=null;   //右侧文字设置
+        if (IFrameSplitOperator.IsNonEmptyArray(this.YTextExtend))
+        {
+            rightExtendText=this.YTextExtend[1];
+        }
+
         var yPrev=null; //上一个坐标y的值
         var pixelRatio=GetDevicePixelRatio();
         var itemHeight=(border.BottomEx-border.TopEx)/this.HorizontalInfo.length;
@@ -9835,6 +9892,7 @@ function AverageWidthFrame()
             if (y!=null && yPrev!=null && Math.abs(y-yPrev)<this.MinYDistance) continue;  //两个坐标在近了 就不画了
             
             var yFixed=ToFixedPoint(y);
+            //绘制刻度线
             if (y!=bottom && this.IsShowYLine)
             {
                 var bChangeLineWidth=false;
@@ -9911,7 +9969,7 @@ function AverageWidthFrame()
                 textBaseline=1;
             }
 
-            //坐标信息 左边 间距小于10 不画坐标
+            //左边 坐标信息  间距小于10 不画坐标
             this.Canvas.strokeStyle=item.TextColor;
             this.Canvas.fillStyle=item.TextColor;
 
@@ -9928,7 +9986,7 @@ function AverageWidthFrame()
                 }
             }
 
-            //坐标信息 右边 间距小于10 不画坐标
+            //右边 坐标信息  间距小于10 不画坐标
             if (item.Message[1]!=null && isDrawRight)
             {
                 if (item.Font!=null) this.Canvas.font=item.Font;
@@ -9944,6 +10002,21 @@ function AverageWidthFrame()
 
                     xText+=lineLength;
                 }
+
+                //右侧延长线
+                if (rightExtendLine && rightExtendLine.Width>1)
+                {
+                    var lineLength=rightExtendLine.Width;
+                    if (rightExtendLine.Color) this.Canvas.strokeStyle=rightExtendLine.Color;
+                    else this.Canvas.strokeStyle=item.LineColor;
+                    this.Canvas.beginPath();
+                    this.Canvas.moveTo(xText,yFixed);
+                    this.Canvas.lineTo(xText+lineLength,yFixed);
+                    this.Canvas.stroke();
+
+                    xText+=lineLength+2;
+                }
+                
 
                 this.Canvas.textAlign="left";
                 if (Array.isArray(item.Message[1]))
@@ -9987,7 +10060,17 @@ function AverageWidthFrame()
                     if (!rtPreRight || (rtRight && !this.IsTextTopBottomOverlap(rtRight,rtPreRight)))
                     {
                         if (item.TextColor2) this.Canvas.fillStyle=item.TextColor2;
-                        this.Canvas.fillText(item.Message[1],xText+this.YTextPadding[1],yText);
+                        if (rightExtendText && rightExtendText.Align && this.YRightTextInfo)
+                        {
+                            this.Canvas.textAlign="right";
+                            var xRight=this.YRightTextInfo.MainTextWidth+right-this.YTextPadding[1];
+                            this.Canvas.fillText(item.Message[1],xRight,yText);
+                        }
+                        else
+                        {
+                            this.Canvas.fillText(item.Message[1],xText+this.YTextPadding[1],yText);
+                        }
+                        
                         rtPreRight=rtRight;
                     }
                 }
@@ -9996,7 +10079,33 @@ function AverageWidthFrame()
             yPrev=y;
         }
 
-        if (IFrameSplitOperator.IsNonEmptyArray(aryMultiText) && this.MultiTextFormat==1) this.DrawHorizontalMuText(aryMultiText)
+        if (IFrameSplitOperator.IsNonEmptyArray(aryMultiText) && this.MultiTextFormat==1) this.DrawHorizontalMuText(aryMultiText);
+
+        if (isDrawRight && this.IsDrawRightBorder && this.YRightTextInfo)
+        {  
+            var xRight=this.YRightTextInfo.MainTextWidth+right; 
+            xLine=ToFixedPoint(xRight);
+            this.Canvas.strokeStyle=this.PenBorder;
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(xLine,top);
+            this.Canvas.lineTo(xLine,bottom);
+            this.Canvas.stroke();
+
+            if (IFrameSplitOperator.IsNonEmptyArray(this.YRightTextInfo.AryOverlayWidth))
+            {
+                this.Canvas.beginPath();
+                for(var i=0;i<this.YRightTextInfo.AryOverlayWidth.length;++i)
+                {
+                    var width=this.YRightTextInfo.AryOverlayWidth[i];
+                    xRight+=width;
+                    xLine=ToFixedPoint(xRight);
+                    this.Canvas.moveTo(xLine,top);
+                    this.Canvas.lineTo(xLine,bottom);
+                }
+                this.Canvas.stroke();
+
+            }
+        }
     }
 
     //上下区域是否重叠
@@ -10660,7 +10769,9 @@ function AverageWidthFrame()
                 {
                     var value=this.Canvas.measureText(text[i].Text).width;
                     if (value>width) width=value;
-                    aryText.push({Text:text[i].Text, Width:value+2*pixelTatio});
+                    var outItem={ Text:text[i].Text, Width:value+2*pixelTatio };
+                    if (item.TextColor) outItem.TextColor=item.TextColor;
+                    aryText.push(outItem);
                 }
             }
 
@@ -10885,7 +10996,8 @@ function AverageWidthFrame()
                             var textLeft=right-itemText.Width;
                             this.Canvas.fillStyle=bgColor;
                             this.Canvas.fillRect(textLeft,bgTop,itemText.Width,textHeight);  //文本背景区域
-                            this.Canvas.fillStyle = item.TextColor;
+                            if (itemText.TextColor) this.Canvas.fillStyle=itemText.TextColor;
+                            else this.Canvas.fillStyle = item.TextColor;
                             this.Canvas.fillText(itemText.Text, textLeft + 1*pixelTatio, yText);
                             if (i==0) this.DrawLine(left,textLeft,yText,item.LineColor,item.LineType,item);
                             yText+=textHeight+1*pixelTatio;
@@ -10997,7 +11109,8 @@ function AverageWidthFrame()
                             {
                                 this.Canvas.fillStyle=item.LineColor;
                                 this.Canvas.fillRect(textLeft,bgTop,itemText.Width,textHeight);
-                                this.Canvas.fillStyle = item.TextColor;
+                                if (itemText.TextColor) this.Canvas.fillStyle=itemText.TextColor;
+                                else this.Canvas.fillStyle = item.TextColor;
                                 this.Canvas.fillText(itemText.Text, textLeft + 1*pixelTatio, yText);
                             }
                            
@@ -14591,8 +14704,13 @@ function OverlayKLineFrame()
     this.Title=null;
     this.TitleColor=g_JSChartResource.OverlayFrame.TitleColor;
     this.TitleFont=g_JSChartResource.OverlayFrame.TitleFont;
+    this.IsShowTitle=true;
 
     this.IsYDrawMainFrame=false;  //Y轴自定刻度绘制在主图框架上
+    this.BlankWidth=0;
+    this.Style=0;       //0=Y轴在BlankWidth 1=Y轴在左边
+
+    this.YLineExtend=[ { Width:2 }, null];    //[0]=左 [1]=右     { Width:5, Color:颜色,  }
 
     this.Buttons=[];
 
@@ -14632,21 +14750,69 @@ function OverlayKLineFrame()
         this.XSplit=false;
     }
 
+
+    //Y轴刻度线 x坐标
+    this.GetXHorizontal=function()
+    {
+        var border=this.ChartBorder.GetBorder();
+        var x=border.Right;
+        x+=this.RightOffset;
+
+        if (this.Style==1)
+        {
+
+        }
+        else
+        {
+            x+=this.BlankWidth;
+        }
+
+        return x;
+    }
+
+    this.GetHorizontalWidth=function()
+    {
+        var width=null;
+        if (this.YRightTextInfo && IFrameSplitOperator.IsNumber(this.TextWidthIndex))
+            width=this.YRightTextInfo.AryOverlayWidth[this.TextWidthIndex];
+
+        return width;
+    }
+
     this.DrawTitle=function()   //画标题
     {
+        if (!this.IsShowTitle) return;
         if (!this.Title) return;
         var border=this.ChartBorder.GetBorder();
         var top = this.ChartBorder.GetTopTitle();
         var bottom = border.Bottom;
-        var right=border.Right;
-        right+=this.RightOffset;
-
+        
+        var xText=this.GetXHorizontal();
+        var leftLine=null, rightLine=null;
+        if (IFrameSplitOperator.IsNonEmptyArray(this.YLineExtend))
+        {
+            rightLine=this.YLineExtend[1];
+            leftLine=this.YLineExtend[0];
+        }
+        
+        if (this.Style==1)
+        {
+            this.Canvas.textBaseline="bottom";
+            if (rightLine && rightLine.Width>0) xText+=rightLine.Width+1;
+            else xText+=1;
+        }
+        else
+        {
+            this.Canvas.textBaseline="top";
+            if (leftLine && leftLine.Width>0) xText-=leftLine.Width;
+            else xText-=2;
+        }
+        
+        var yText=top+(bottom-top)/2;
         this.Canvas.fillStyle=this.TitleColor;
         this.Canvas.font=this.TitleFont;
         this.Canvas.textAlign="center";
-        this.Canvas.textBaseline="top";
-
-        var xText=right-2,yText=top+(bottom-top)/2;
+       
         this.Canvas.save();
         this.Canvas.translate(xText, yText);
         this.Canvas.rotate(90 * Math.PI / 180);
@@ -14685,8 +14851,16 @@ function OverlayKLineFrame()
                 if (item.Font!=null) this.Canvas.font=item.Font;
 
                 textWidth=this.Canvas.measureText(item.Message[1]).width;
+                if (this.YTextPadding && IFrameSplitOperator.IsNumber(this.YTextPadding[1]))
+                    textWidth+=this.YTextPadding[1];
                 if (width.Right<textWidth) width.Right=textWidth;
             }
+        }
+
+        if (IFrameSplitOperator.IsNonEmptyArray(this.YLineExtend))
+        {
+            var line=this.YLineExtend[1];
+            if (line && line.Width>0) width.Right+=line.Width;
         }
 
         return { TextWidth:width };
@@ -14728,7 +14902,23 @@ function OverlayKLineFrame()
         var top = this.ChartBorder.GetTopTitle();
         var borderRight=this.ChartBorder.Right;
         right+=this.RightOffset;
+        var xLine=this.GetXHorizontal();
+        if (IFrameSplitOperator.IsNumber(this.BlankWidth)) right+=this.BlankWidth;
 
+        var rightExtendText=null;   //右侧文字设置
+        if (IFrameSplitOperator.IsNonEmptyArray(this.YTextExtend))
+        {
+            rightExtendText=this.YTextExtend[1];
+        }
+
+        var leftLine=null, rightLine=null;
+        if (IFrameSplitOperator.IsNonEmptyArray(this.YLineExtend))
+        {
+            rightLine=this.YLineExtend[1];
+            leftLine=this.YLineExtend[0];
+        }
+
+        var rightWidth=this.GetHorizontalWidth();  //右侧宽度
         var yPrev=null; //上一个坐标y的值
         for(var i=this.HorizontalInfo.length-1; i>=0; --i)  //从上往下画分割线
         {
@@ -14740,11 +14930,24 @@ function OverlayKLineFrame()
             else if (y <= top + 2) this.Canvas.textBaseline = 'top';
             else this.Canvas.textBaseline = "middle";
 
-            this.Canvas.strokeStyle=this.PenBorder;
-            this.Canvas.beginPath();
-            this.Canvas.moveTo(right-2,ToFixedPoint(y));
-            this.Canvas.lineTo(right,ToFixedPoint(y));
-            this.Canvas.stroke();
+        
+            if (leftLine && leftLine.Width>0)   //左边
+            {
+                this.Canvas.strokeStyle=this.PenBorder;
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(xLine-leftLine.Width,ToFixedPoint(y));
+                this.Canvas.lineTo(xLine,ToFixedPoint(y));
+                this.Canvas.stroke();
+            }
+               
+            if (rightLine && rightLine.Width>0)
+            {
+                this.Canvas.strokeStyle=this.PenBorder;
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(xLine+rightLine.Width,ToFixedPoint(y));
+                this.Canvas.lineTo(xLine,ToFixedPoint(y));
+                this.Canvas.stroke();
+            }
 
             //坐标信息 右边 间距小于10 不画坐标
             if (item.Message[1]!=null && borderRight>10)
@@ -14753,10 +14956,22 @@ function OverlayKLineFrame()
 
                 var text=item.Message[1];
                 if (Array.isArray(item.Message[1])) text=item.Message[1][0];
-               
-                this.Canvas.fillStyle=item.TextColor;
-                this.Canvas.textAlign="left";
-                this.Canvas.fillText(text,right+2,y);
+
+                if (rightExtendText && rightExtendText.Align)
+                {
+                    var textWidth=rightWidth;
+                    this.Canvas.textAlign="right";
+                    var xRight=border.Right+this.RightOffset+textWidth-this.YTextPadding[1];
+                    this.Canvas.fillText(text,xRight,y);
+                }
+                else
+                {
+                    var xText=right+2;
+                    if (rightLine && rightLine.Width>0) xText+=rightLine.Width;
+                    this.Canvas.fillStyle=item.TextColor;
+                    this.Canvas.textAlign="left";
+                    this.Canvas.fillText(text,xText,y);
+                }
             }
 
             yPrev=y;
@@ -14768,10 +14983,8 @@ function OverlayKLineFrame()
     {
         var border=this.ChartBorder.GetBorder();
         var top=border.TopEx;
-        //var left=this.ChartBorder.GetLeft();
-        var right=border.Right;
         var bottom=border.BottomEx;
-        right+=this.RightOffset;
+        var right=this.GetXHorizontal();
 
         this.Canvas.strokeStyle=this.PenBorder;
         this.Canvas.beginPath();
@@ -14817,14 +15030,15 @@ function OverlayKLineFrame()
 
         var border=this.ChartBorder.GetBorder();
         var yButton=border.Top+this.ChartBorder.TitleHeight/2;
-        var xBotton=border.Right+this.RightOffset+this.CloseButton.MerginLeft;
+        var rightWidth=this.GetHorizontalWidth();
+        var xBotton=border.Right+this.RightOffset+rightWidth-this.CloseButton.MerginLeft;
 
-        for(var i=0;i<aryButton.length;++i)
+        for(var i=aryButton.length-1;i>=0;--i)
         {
             var item=aryButton[i];
             var size=item.Style.Size;
             var font=`${size}px ${item.Style.Family}`;
-            var rtButton={ Left:xBotton, Top:yButton-size/2, Right:xBotton+size+item.Style.MerginLeft, Bottom:yButton+size/2, Width:size+item.Style.MerginLeft, Height:size };
+            var rtButton={ Left:xBotton-size-item.Style.MerginLeft, Top:yButton-size/2, Right:xBotton, Bottom:yButton+size/2, Width:size+item.Style.MerginLeft, Height:size };
             var color=this.CloseButton.Color;
             if (moveonPoint && (moveonPoint.X>=rtButton.Left && moveonPoint.X<rtButton.Right && moveonPoint.Y>=rtButton.Top && moveonPoint.Y<=rtButton.Bottom))
             {
@@ -14835,13 +15049,13 @@ function OverlayKLineFrame()
 
             this.Canvas.fillStyle=color;
             this.Canvas.font=font;
-            this.Canvas.textAlign="left";
+            this.Canvas.textAlign="right";
             this.Canvas.textBaseline="middle";
             this.Canvas.fillText(item.Style.Text, xBotton, yButton);
 
             this.Buttons.push({ ID:item.ID, Rect:rtButton });
 
-            xBotton=rtButton.Right;
+            xBotton=rtButton.Left;
         }
     }
 
@@ -15918,7 +16132,7 @@ function SubFrameItem()
     this.Frame;
     this.Height;
     this.OverlayIndex=[];   //叠加指标
-    this.Interval=60;       //子坐标间间距
+    //this.Interval=60;       //子坐标间间距
 }
 
 function OverlayIndexItem()
@@ -15986,8 +16200,11 @@ function HQTradeFrame()
 
     this.AutoLeftBorder=null;       //{ Blank:10 留白宽度, MinWidth:最小宽度 }
     this.AutoRightBorder=null;      //{ Blank:10 留白宽度, MinWidth:最小宽度 } 
-    this.OverlayBlankWidth=40;
-    this.AuotRightWidth;            //右边主坐标刻度宽度
+    this.OverlayBlankWidth=30;
+    this.AuotRightWidth;            //右边主坐标刻度宽度 (自动模式)
+
+    //固定模式右侧宽度
+    this.FixedRightWidth={ Main:60, Overlay:80 };
 
     this.ZoomWindowsInfo=null;      //附图指标缩放,备份信息
     this.ZoomStartWindowIndex=1;    //允许缩放窗口起始位置
@@ -16496,7 +16713,7 @@ function HQTradeFrame()
 
                     overlayItem.Frame.YSplitOperator.Operator();
                     var value=overlayItem.Frame.GetScaleTextWidth();
-
+                    
                     overlayItem.Frame.HorizontalMax=maxValue;
                     overlayItem.Frame.HorizontalMin=minValue;
 
@@ -16553,6 +16770,8 @@ function HQTradeFrame()
             width.OverlayRight+=value;
         }
 
+        width.AryOverlayWidth=overlayWidth;
+
         return width;
     }
 
@@ -16607,59 +16826,104 @@ function HQTradeFrame()
                 }
             }
 
-            if (IFrameSplitOperator.IsNumber(textWidth.Right) && this.AutoRightBorder)
+            if (IFrameSplitOperator.IsNumber(textWidth.Right))
             {
-                var blank=0;
-                if (IFrameSplitOperator.IsNumber(this.AutoRightBorder.Blank)) blank=this.AutoRightBorder.Blank;
-                var value=textWidth.Right+blank;
-                if (IFrameSplitOperator.IsNumber(this.AutoRightBorder.MinWidth))
+                if (this.AutoRightBorder)   //自动调整右侧间距
                 {
-                    if (this.AutoRightBorder.MinWidth>value) value=this.AutoRightBorder.MinWidth;
-                }
-
-                this.AuotRightWidth=value;
-                if (IFrameSplitOperator.IsPlusNumber(textWidth.OverlayRight))
-                {
-                    value+=this.OverlayBlankWidth;
-                    this.AuotRightWidth=value;
-                    value+=textWidth.OverlayRight;
-                }
-
-                if (this.GetExtendChartRightWidth)
-                {
-                    var extendWidth=this.GetExtendChartRightWidth();
-
-                    if (this.GetExtendChartByClassName)
+                    var rightTextInfo={ };
+                    var blank=0;
+                    if (IFrameSplitOperator.IsNumber(this.AutoRightBorder.Blank)) blank=this.AutoRightBorder.Blank;
+                    var value=textWidth.Right+blank;
+                    if (IFrameSplitOperator.IsNumber(this.AutoRightBorder.MinWidth))
                     {
-                        var finder=this.GetExtendChartByClassName("StockChip");
-                        if (finder && finder.Chart) 
-                        {
-                            finder.Chart.Left=value;
-                        }
+                        if (this.AutoRightBorder.MinWidth>value) value=this.AutoRightBorder.MinWidth;
                     }
 
-                    value+=extendWidth;
-                }
+                    this.AuotRightWidth=value;
+                    rightTextInfo.MainTextWidth=value;  //主图坐标宽度
+                    if (IFrameSplitOperator.IsNonEmptyArray(textWidth.AryOverlayWidth)) rightTextInfo.AryOverlayWidth=textWidth.AryOverlayWidth;
 
-                if (this.IsHScreen) 
-                {
-                    if (this.ChartBorder.Bottom!=value) bSizeChange=true;
-                    this.ChartBorder.Bottom=value;
-                }
-                else  
-                {
-                    if (this.ChartBorder.Right!=value) bSizeChange=true;
-                    this.ChartBorder.Right=value;
-                }
+                    if (IFrameSplitOperator.IsPlusNumber(textWidth.OverlayRight))
+                    {
+                        this.AuotRightWidth=value;
+                        value+=textWidth.OverlayRight;
+                    }
 
-                for(var i=0; i<this.SubFrame.length; ++i)
-                {
-                    var item=this.SubFrame[i];
-                    if (this.IsHScreen) item.Frame.ChartBorder.Bottom=value;
-                    else item.Frame.ChartBorder.Right=value;
+                    if (this.GetExtendChartRightWidth)
+                    {
+                        var extendWidth=this.GetExtendChartRightWidth();
 
-                    item.Frame.ReDrawToolbar=true;
-                    item.Interval=this.AuotRightWidth;
+                        if (this.GetExtendChartByClassName)
+                        {
+                            var finder=this.GetExtendChartByClassName("StockChip");
+                            if (finder && finder.Chart) 
+                            {
+                                finder.Chart.Left=value;
+                            }
+                        }
+
+                        value+=extendWidth;
+                    }
+
+                    if (this.IsHScreen) 
+                    {
+                        if (this.ChartBorder.Bottom!=value) bSizeChange=true;
+                        this.ChartBorder.Bottom=value;
+                    }
+                    else  
+                    {
+                        if (this.ChartBorder.Right!=value) bSizeChange=true;
+                        this.ChartBorder.Right=value;
+                    }
+
+                    for(var i=0; i<this.SubFrame.length; ++i)
+                    {
+                        var item=this.SubFrame[i];
+                        if (this.IsHScreen) item.Frame.ChartBorder.Bottom=value;
+                        else item.Frame.ChartBorder.Right=value;
+
+                        item.Frame.ReDrawToolbar=true;
+                        item.Frame.YRightTextInfo=rightTextInfo;
+
+                        for(var j=0;j<item.OverlayIndex.length;++j)
+                        {
+                            var overlayItem=item.OverlayIndex[j];
+                            overlayItem.Frame.YRightTextInfo=rightTextInfo;
+                        }
+                    }
+                }
+                else
+                {
+                    var rightTextInfo={ };
+                    rightTextInfo.MainTextWidth=this.FixedRightWidth.Main;
+                    if (textWidth.OverlayRight==0) //无叠加直接最右边
+                    {
+                        if (this.IsHScreen)
+                            rightTextInfo.MainTextWidth=this.ChartBorder.Bottom;
+                        else 
+                            rightTextInfo.MainTextWidth=this.ChartBorder.Right;
+                    }
+                    else if (IFrameSplitOperator.IsNonEmptyArray(textWidth.AryOverlayWidth))
+                    {
+                        for(var i=0;i<textWidth.AryOverlayWidth.length;++i) 
+                            textWidth.AryOverlayWidth[i]=this.FixedRightWidth.Overlay;
+
+                        rightTextInfo.AryOverlayWidth=textWidth.AryOverlayWidth;
+                    }
+
+                    for(var i=0; i<this.SubFrame.length; ++i)
+                    {
+                        var item=this.SubFrame[i];
+
+                        item.Frame.ReDrawToolbar=true;
+                        item.Frame.YRightTextInfo=rightTextInfo;
+
+                        for(var j=0;j<item.OverlayIndex.length;++j)
+                        {
+                            var overlayItem=item.OverlayIndex[j];
+                            overlayItem.Frame.YRightTextInfo=rightTextInfo;
+                        }
+                    }
                 }
             }
 
@@ -16677,39 +16941,47 @@ function HQTradeFrame()
             {
                 var rightOffset=this.AuotRightWidth;
 
-                for(var j=0; j<item.OverlayIndex.length; ++j)
+                for(var j=0, index=0; j<item.OverlayIndex.length; ++j)
                 {
                     var overlayItem=item.OverlayIndex[j];
                     //把主坐标部分设置给子坐标下来
                     overlayItem.Frame.DataWidth=item.Frame.DataWidth;
                     overlayItem.Frame.DistanceWidth=item.Frame.DistanceWidth;
                     overlayItem.Frame.XPointCount=item.Frame.XPointCount;
-                    if (overlayItem.ChartPaint.length>0 && overlayItem.Frame) 
-                    {
-                        overlayItem.Frame.RightOffset=rightOffset;
-                        overlayItem.Frame.Draw();
-                        rightOffset+=overlayItem.RightWidth.Width;
-                    }
+                    overlayItem.Frame.RightOffset=rightOffset;
+                    overlayItem.Frame.BlankWidth=0;
+                    overlayItem.Frame.TextWidthIndex=index;
+                    if (IFrameSplitOperator.IsNumber(this.OverlayBlankWidth)) overlayItem.Frame.BlankWidth=this.OverlayBlankWidth;
+                    
+                    overlayItem.Frame.Draw();
+                    rightOffset+=overlayItem.RightWidth.Width;
+                    if (overlayItem.Frame.IsShow) ++index;
                 }
-
             }
             else
             {
-                var rightOffset=item.Interval;
+                var rightOffset=this.FixedRightWidth.Main;
                 if (item.Frame.RightTextMaxWidth>rightOffset) rightOffset=item.Frame.RightTextMaxWidth;
-                for(var j in item.OverlayIndex)
+
+                for(var j =0, index=0; j<item.OverlayIndex.length;++j)
                 {
                     var overlayItem=item.OverlayIndex[j];
                     //把主坐标部分设置给子坐标下来
                     overlayItem.Frame.DataWidth=item.Frame.DataWidth;
                     overlayItem.Frame.DistanceWidth=item.Frame.DistanceWidth;
                     overlayItem.Frame.XPointCount=item.Frame.XPointCount;
-                    if (overlayItem.ChartPaint.length>0 && overlayItem.Frame) 
+                    overlayItem.Frame.RightOffset=rightOffset;
+                    overlayItem.Frame.BlankWidth=0;
+                    overlayItem.Frame.TextWidthIndex=index;
+                    if (IFrameSplitOperator.IsNumber(this.OverlayBlankWidth)) overlayItem.Frame.BlankWidth=this.OverlayBlankWidth;
+
+                    overlayItem.Frame.Draw();
+                    if (overlayItem.Frame.IsShow) 
                     {
-                        overlayItem.Frame.RightOffset=rightOffset;
-                        overlayItem.Frame.Draw();
-                        if (overlayItem.Frame.IsShow) rightOffset+=item.Interval;
+                        rightOffset+=this.FixedRightWidth.Overlay;
+                        ++index;
                     }
+                    
                 }
             }
         }
@@ -16916,6 +17188,7 @@ function HQTradeFrame()
             {
                 var overlayItem=item.OverlayIndex[j];
                 var overlayFrame=overlayItem.Frame;
+                if (!overlayFrame.IsShow) continue;
                 if (overlayFrame.DrawToolbar) overlayFrame.DrawToolbar(moveonPoint, frame.IsMinSize, mouseStatus);
             }
         }
@@ -46401,36 +46674,35 @@ function ChartCorssCursor()
         if (yValueExtend.FrameID>=0)
         {
             var frame=this.Frame.SubFrame[yValueExtend.FrameID];
-            var isAutoRightBorder=false;
-            if (this.Frame.AutoRightBorder) isAutoRightBorder=true;
             var overlayLeft=right;
-            if (isAutoRightBorder) overlayLeft=right+this.Frame.AuotRightWidth;
             this.Canvas.font=this.Font;
-            for(var i in frame.OverlayIndex)
+            for(var i=0; i<frame.OverlayIndex.length; ++i)
             {
                 var item=frame.OverlayIndex[i];
                 if (item.Frame.IsShow===false) continue;
 
-                if (!isAutoRightBorder) overlayLeft+=frame.Interval;
+                overlayLeft=item.Frame.GetXHorizontal();
 
-                if (overlayLeft+30>chartRight) break;
+                //if (overlayLeft+30>chartRight) break;
                 var yValue=item.Frame.GetYData(y);
-
-                for(var i=2;i>=0;--i)
+                var text=IFrameSplitOperator.FormatValueString(yValue,2);
+                var textWidth=this.Canvas.measureText(text).width+4;    //前后各空2个像素
+                
+                /*
+                for(var j=2;j>=0;--j)
                 {
-                    var text=IFrameSplitOperator.FormatValueString(yValue,i);
+                    var text=IFrameSplitOperator.FormatValueString(yValue,j);
                     var textWidth=this.Canvas.measureText(text).width+4;    //前后各空2个像素
                     if (textWidth<frame.Interval) break;
                 }
+                */
 
                 this.Canvas.fillStyle=this.TextBGColor;
-                this.Canvas.fillRect(overlayLeft+2,y-this.TextHeight/2,textWidth,this.TextHeight);
+                this.Canvas.fillRect(overlayLeft+1,y-this.TextHeight/2,textWidth,this.TextHeight);
                 this.Canvas.textAlign="left";
                 this.Canvas.textBaseline="middle";
                 this.Canvas.fillStyle=this.TextColor;
                 this.Canvas.fillText(text,overlayLeft+4,y,textWidth);
-
-                if (isAutoRightBorder) overlayLeft+=item.RightWidth.Width;
             }
         }
 
@@ -62487,6 +62759,14 @@ function JSChartResource()
             if (item.EmptyBGColor) this.FrameLatestPrice.EmptyBGColor = item.EmptyBGColor;
         }
 
+        if (style.OverlayFrame)
+        {
+            var item=style.OverlayFrame;
+            if (style.OverlayFrame.BolderPen) this.OverlayFrame.BolderPen = style.OverlayFrame.BolderPen;
+            if (style.OverlayFrame.TitleColor) this.OverlayFrame.TitleColor = style.OverlayFrame.TitleColor;
+            if (style.OverlayFrame.TitleFont) this.OverlayFrame.TitleFont = style.OverlayFrame.TitleFont;
+        }
+
         if (style.CorssCursorBGColor) this.CorssCursorBGColor = style.CorssCursorBGColor;
         if (style.CorssCursorTextColor) this.CorssCursorTextColor = style.CorssCursorTextColor;
         if (style.CorssCursorTextFont) this.CorssCursorTextFont = style.CorssCursorTextFont;
@@ -64774,7 +65054,6 @@ function KLineChartContainer(uielement,OffscreenElement)
     this.CtrlMoveStep=5;                //Ctrl+(Left/Right) 移动数据个数  
 
     this.CustomShow=null;               //首先显示的K线的起始日期 { Date:日期 PageSize:}
-    this.OverlayIndexFrameWidth=60;     //叠加指标框架宽度
     this.ZoomType=0;                    //缩放模式 0=最右边固定缩放, 1=十字光标两边缩放
     this.IsZoomLockRight=false;         
     this.KLineSize=null;                //{ DataWidth:, }
@@ -68385,10 +68664,10 @@ function KLineChartContainer(uielement,OffscreenElement)
         }
 
         var subFrame=this.Frame.SubFrame[windowIndex];
-        subFrame.Interval=this.OverlayIndexFrameWidth;
         var overlayFrame=new OverlayIndexItem();
         if (obj.Identify) overlayFrame.Identify=obj.Identify;   //由外部指定id
-        var frame= this.ClassName==='KLineChartHScreenContainer' ? new OverlayKLineHScreenFrame() : new OverlayKLineFrame();
+        //var frame= this.ClassName==='KLineChartHScreenContainer' ? new OverlayKLineHScreenFrame() : new OverlayKLineFrame();
+        var frame=this.CreateOverlayFrame();
         frame.Canvas=this.Canvas;
         frame.MainFrame=subFrame.Frame;
         frame.ChartBorder=subFrame.Frame.ChartBorder;
@@ -68417,10 +68696,17 @@ function KLineChartContainer(uielement,OffscreenElement)
             var item=obj.Frame;
             if (item.Custom) frame.YSplitOperator.Custom=item.Custom;
             if (IFrameSplitOperator.IsBool(item.IsYDrawMainFrame)) frame.IsYDrawMainFrame=item.IsYDrawMainFrame;    //自定义刻度绘制在主图上
-            if (IFrameSplitOperator.IsBool(item.IsShowToolbar)) frame.IsShowToolbar=item.IsShowToolbar;    //自定义刻度绘制在主图上
+            if (IFrameSplitOperator.IsBool(item.IsShowToolbar)) frame.IsShowToolbar=item.IsShowToolbar;             //是否显示工具栏
         }
         
         overlayFrame.Frame=frame;
+
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CREATE_OVERLAY_FRAME);
+        if (event && event.Callback)
+        {
+            var sendData={ OverlayFrame:overlayFrame, WindowIndex:windowIndex, SubFrame:subFrame };
+            event.Callback(event, sendData, this);
+        }
 
         if (apiItem)
         {
@@ -76228,7 +76514,6 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         }
 
         var subFrame=this.Frame.SubFrame[windowIndex];
-        subFrame.Interval=this.OverlayIndexFrameWidth;
         var overlayFrame=new OverlayIndexItem();
         if (obj.Identify) overlayFrame.Identify=obj.Identify;   //由外部指定id
         var frame=null;

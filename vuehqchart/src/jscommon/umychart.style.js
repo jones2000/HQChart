@@ -106,10 +106,10 @@ function GetBlackStyle()
             PositionColor:"rgb(101,104,112)"       //持仓
         },
     
-        FrameBorderPen: "rgba(236,236,236,0.13)",     //边框
+        FrameBorderPen: "rgb(47,51,62)",     //边框
         MultiDayBorderPen:"rgba(236,236,236,0.5)",
         FrameSplitPen: "rgba(236,236,236,0.13)",          //分割线
-        FrameSplitTextColor: "rgb(101,104,112)",     //刻度文字颜色
+        FrameSplitTextColor: "rgb(220,220,220)",     //刻度文字颜色
         FrameSplitTextFont: 12*GetDevicePixelRatio() +"px 微软雅黑",        //坐标刻度文字字体
         FrameTitleBGColor: "rgb(0,0,0)",      //标题栏背景色
         OverlayIndexTitleBGColor:'rgba(0,0,0,0.7)', //叠加指标背景色
@@ -125,8 +125,15 @@ function GetBlackStyle()
                 SplitColor:"rgb(101,104,112)",
                 Font:14*GetDevicePixelRatio() +"px 微软雅黑"
             }
-        },   
-    
+        }, 
+        
+        //叠加指标框架
+        OverlayFrame:
+        {
+            BolderPen:'rgb(130,130,130)',                       //指标边框线
+            TitleColor:'rgb(181,181,181)',                      //指标名字颜色
+            TitleFont:11*GetDevicePixelRatio() +'px arial',     //指标名字字体
+        },
     
         FrameLatestPrice : {
             TextColor:'rgb(255,255,255)',   //最新价格文字颜色

@@ -21521,11 +21521,13 @@ function OverlayScriptIndex(name,script,args,option)
         var titleIndex=windowIndex+1;
         var titlePaint=hqChart.TitlePaint[titleIndex];
         titlePaint.OverlayIndex.set(this.OverlayIndex.Identify,titleInfo);
-        this.OverlayIndex.Frame.Frame.Title=titleInfo.Title;    //给子框架设置标题
+        
         if (this.OutName && this.OutName.length>0 && this.Arguments && this.Arguments.length>0)
         {
             titlePaint.SetDynamicTitle(this.OutName,this.Arguments, this.OverlayIndex.Identify);
         }
+
+        this.OverlayIndex.Frame.Frame.Title=this.Name;    //给子框架设置标题
 
         for(var i=0; i<this.OutVar.length; ++i)
         {
