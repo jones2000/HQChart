@@ -1,0 +1,431 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+
+<title>K线图彩色K线</title>  
+    <!-- 加载资源 -->
+    <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
+</head>  
+<body>
+    <div id="kline" ></div>
+
+    <div>
+        <span id='button_1' class="btn-style">K线图</span>
+        <span id='button_2' class="btn-style">自定义线图</span>
+        <span id='button_3' class="btn-style">日线</span>
+        <span id='button_4' class="btn-style">15分钟线</span>
+    </div>
+
+    <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
+    <script src="../jscommon/umychart.resource/js/webfont.js"></script>
+    <script src='../jscommon/umychart.console.js'></script>     <!-- 日志输出 -->
+    <script src="../jscommon/umychart.network.js"></script>     <!-- 网络请求分装 -->
+    <script src="../jscommon/umychart.js"></script>             <!-- K线图形 -->
+    <script src="../jscommon/umychart.complier.js"></script>    <!-- 麦语言解析执行器 -->
+    <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
+    <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+
+    <script src="./localdata/orderflow_testdata.js"></script> 
+    
+    <script>
+
+        MARKET_SUFFIX_NAME.GetMarketStatus = function (symbol) { return 2; }
+
+        //简单的把K线控件封装下
+        function KLineChart(divKLine)
+        {
+            this.DivKLine=divKLine;
+            this.Chart=JSChart.Init(divKLine);   //把K线图绑定到一个Div上
+            this.Barrage;                       //弹幕输出控制器
+
+            //K线配置信息
+            this.Option= {
+                Type:'历史K线图',   //创建图形类型
+                //Type:'历史K线图横屏',
+
+                //EnableBorderDrag:false,
+                
+                Windows: //窗口指标
+                [
+                    {Index:"MA"},
+                    //{Index:"MACD"}
+                ], 
+
+                DragDownload: { Day:{ Enable:true } , Minute:{ Enable:true }}, 
+
+                EnableZoomUpDown:
+                {
+                    //Wheel:false,
+                    //Keyboard:false,
+                    //Touch:false,
+                },
+
+                OverlayIndex:
+                [
+                   
+                    //{Index:'BOLL', Windows:0 , IsShareY:true,ShowRightText:true },
+                    
+                ],  //叠加指标
+                
+
+                EnableYDrag:
+                {
+                    Right:true,
+                    Left:true,
+                },
+
+                Symbol:'CM_114.DCE',
+                IsAutoUpdate:true,       //是自动更新数据
+                AutoUpdateFrequency:5000,   //数据更新频率
+                IsApiPeriod:true,
+
+                SplashTitle:'加载数据中......',
+    
+                IsShowRightMenu:true,          //右键菜单
+                //CorssCursorTouchEnd:true,
+                //IsClickShowCorssCursor:true,
+                //IsCorssOnlyDrawKLine:true,
+
+                CorssCursorInfo: { DateFormatType:3, HPenType:1, VPenType:1 ,VLineType:0,RightButton:{ Enable:true } },
+                EnableZoomIndexWindow:true,
+                IsDrawPictureXY:true,
+
+                KLine:  //K线设置
+                {
+                    DragMode:1,                 //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
+                    Right:1,                    //复权 0 不复权 1 前复权 2 后复权
+                    Period:0,                   //周期 0 日线 1 周线 2 月线 3 年线 
+                    MaxReqeustDataCount:3000,   //数据个数
+                    MaxRequestMinuteDayCount:5, //分钟数据获取几天数据  默认取5天数据
+                    PageSize:25,               //一屏显示多少数据
+                    //Info:["互动易","大宗交易",'龙虎榜',"调研","业绩预告","公告"],       //信息地雷
+                    //Info:["公告"], 
+                    IsShowTooltip:true,                 //是否显示K线提示信息
+                    DrawType:9,      //K线类型 0=实心K线柱子 1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积图
+                    //FirstShowDate:20161201,
+                    KLineDoubleClick:false, //禁止双击弹框
+                    RightSpaceCount:5,
+                    ZoomType:1,
+                    //DataWidth:5
+                    ShowKLine:true,
+                    IsShowTooltip:true,
+                },
+
+                StepPixel:10,
+
+                Listener:
+                {
+                    //KeyDown:false,
+                    //Wheel:false
+                },
+
+                EnableFlowCapital:
+                {
+                    BIT:true
+                },
+    
+                KLineTitle: //标题设置
+                {
+                    IsShowName:true,       //不显示股票名称
+                    IsShowSettingInfo:true //不显示周期/复权
+                },
+    
+                Border: //边框
+                {
+                    Left:1,         //左边间距
+                    Right:20,       //右边间距
+                    Bottom:20,      //底部间距
+                    Top:25,         //顶部间距
+
+                    AutoLeft:{ Blank:10, MinWidth:30 },
+                    AutoRight:{ Blank:10, MinWidth:30 },
+                },
+                
+                Frame:  //子框架设置
+                [
+                    {
+                        SplitCount:6,StringFormat:0, IsShowLeftText:false,SplitType:2,
+                        PercentageTextFormat:0,
+                        //IsShowIndexTitle:false,
+                        YCoordinateType:0,
+                        //TopSpace:0,BottomSpace:0,
+                        //IsYReverse:true,
+                        IsShowYLine:true,YTextBaseline:1,
+                        IsShowXLine:true,
+                        //SplitType:1,
+                        DefaultYMaxMin:
+                        { 
+                            //Min:2, 
+                            //Max:50
+                        },
+                        //BorderLine:8|2,
+                        
+                        
+                    },
+
+                    { SplitCount:5 },
+                    { SplitCount:4,StringFormat:0, IsShowLeftText:false, IsShowYLine:true}
+                ],
+
+                ExtendChart:    //扩展图形
+                [
+                    //{Name:'KLineTooltip' },  //手机端tooltip
+                    //{Name:"FrameSplitPaint", LineColor:"rgb(200,0,0)" }
+                ],
+
+
+                Overlay:
+                [
+                    //{Symbol:'399300.sz', DrawType:0, Color:'rgb(0,0,255)'}
+                ],
+            };
+                 
+            this.Create=function()  //创建图形
+            {
+                var self=this;
+                //$(window).resize(function() { self.OnSize( {Type:1} ); });    //绑定窗口大小变化事件
+                $(window).resize(function() { self.OnSize( ); });    //绑定窗口大小变化事件
+
+                var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID); //读取黑色风格配置
+                //blackStyle.DRAWICON={ MinSize:20 , MaxSize:60};
+                JSChart.SetStyle(blackStyle);
+                this.DivKLine.style.backgroundColor=blackStyle.BGColor; //设置最外面的div背景
+                
+                var zoom=JSChart.GetKLineZoom();
+                //zoom.length=0;
+                for(var i=58;i<=160;i+=10)
+                {
+                    zoom.splice(0,0,[i,4]);
+                }
+                
+                this.OnSize();  //让K线全屏
+                this.Option.NetworkFilter=(data, callback)=>{ this.NetworkFilter(data, callback); }
+                this.Chart.SetOption(this.Option);  //设置K线配置
+
+            }
+            
+            this.NetworkFilter=function(data, callback)
+            {
+                console.log('[NetworkFilter] data', data);
+                switch(data.Name) 
+                {
+                    case 'KLineChartContainer::RequestHistoryData':                 //日线全量数据下载
+                        this.RequestHistoryData(data, callback);
+                        break;
+                    case 'KLineChartContainer::RequestRealtimeData':                //日线实时数据更新
+                        this.RequestRealtimeData(data, callback);
+                        break;
+                    case 'KLineChartContainer::RequestFlowCapitalData':             //流通股本
+                        EastMoney.HQData.NetworkFilter(data, callback);
+                        break;
+                    case 'KLineChartContainer::ReqeustHistoryMinuteData':           //分钟全量数据下载
+                        this.ReqeustHistoryMinuteData(data, callback);
+                        break;
+                    case 'KLineChartContainer::RequestMinuteRealtimeData':          //分钟增量数据更新
+                        this.RequestMinuteRealtimeData(data, callback);
+                        break;
+                }   
+            }
+
+           
+            this.RequestHistoryData=function(data, callback)    //全量日K线
+            {
+                data.PreventDefault=true;
+                var requestData=data.Request.Data;
+                var symbol=requestData.symbol; //请求的股票代码
+                var period=requestData.period;    //周期
+                var right=requestData.right;      //复权
+                var kLinedrawType=requestData.klineDrawType;    //K线类型
+                
+                console.log(`[KLineChart::RequestHistoryData] 代码:${symbol}, 周期:${period}, K线类型:${kLinedrawType}`);
+
+                setTimeout(()=>
+                {
+                    var hqchartData=CM_114_K_Day_Data;
+                    var count=hqchartData.data.length;
+                    for(var i=0;i<count;++i)
+                    {
+                        var item=hqchartData.data[i];
+
+                        if (i%10<3)
+                            item[JSCHART_DATA_FIELD_ID.KLINE_COLOR_DATA]={Type:0, Line:{Color:'rgb(128,0,128)'}, Border:{Color:this.GetTextBorderColor()} };
+                        else if (i%10<6)
+                            item[JSCHART_DATA_FIELD_ID.KLINE_COLOR_DATA]={Type:1, Line:{Color:'rgb(128,128,128)'}, BarColor:this.GetTestBarColor() };
+                        else if (i%10<8)
+                            item[JSCHART_DATA_FIELD_ID.KLINE_COLOR_DATA]={Type:1, Line:{Color:'rgb(128,0,128)'}, Border:{Color:this.GetTextBorderColor()}, BarColor:this.GetTestBarColor() };
+                        else
+                            item[JSCHART_DATA_FIELD_ID.KLINE_COLOR_DATA]={Type:1, Line:{Color:'rgb(128,128,128)'}, Border:{Color:this.GetTextBorderColor()}, BarColor:this.GetTestBarColor() };
+                    }
+
+                    console.log('[KLineChart::RequestHistoryData] hqchartData=', hqchartData);
+                    callback(hqchartData);
+                }, 600);
+               
+            }
+
+            this.ReqeustHistoryMinuteData=function(data, callback)  //全量分钟K线
+            {
+                data.PreventDefault=true;
+                var requestData=data.Request.Data;
+                var symbol=requestData.symbol; //请求的股票代码
+                var period=requestData.period;    //周期
+                var right=requestData.right;      //复权
+                var kLinedrawType=requestData.klineDrawType;    //K线类型
+
+                console.log(`[KLineChart::ReqeustHistoryMinuteData] 代码:${symbol}, 周期:${period}, K线类型:${kLinedrawType}`);
+
+                setTimeout(()=>
+                {
+                    var hqchartData=CM_114_K_15Minute_Data;
+                    var count=hqchartData.data.length;
+                    for(var i=0;i<count;++i)
+                    {
+                        var item=hqchartData.data[i];
+
+                        if (i%10<3)
+                            item[JSCHART_DATA_FIELD_ID.KLINE_COLOR_DATA]={Type:0, Line:{Color:'rgb(128,0,128)'}, Border:{Color:this.GetTextBorderColor()} };
+                        else if (i%10<6)
+                            item[JSCHART_DATA_FIELD_ID.KLINE_COLOR_DATA]={Type:1, Line:{Color:'rgb(128,128,128)'}, BarColor:this.GetTestBarColor() };
+                        else
+                            item[JSCHART_DATA_FIELD_ID.KLINE_COLOR_DATA]={Type:1, Line:{Color:'rgb(128,128,128)'}, Border:{Color:this.GetTextBorderColor()}, BarColor:this.GetTestBarColor() };
+                    }
+
+                    console.log('[KLineChart::ReqeustHistoryMinuteData] hqchartData=', hqchartData);
+                    callback(hqchartData);
+                },600);
+                
+            }
+
+            this.RequestMinuteRealtimeData=function(data, callback) //增量分钟K
+            {
+                data.PreventDefault=true;
+                var requestData=data.Request.Data;
+                var symbol=requestData.symbol[0];     //请求的股票代码
+                var period=requestData.period;      //周期
+                var right=requestData.right;        //复权
+                var kLinedrawType=requestData.klineDrawType;    //K线类型
+
+                console.log(`[KLineChart::RequestMinuteRealtimeData] 代码:${symbol}, 周期:${period}, K线类型:${kLinedrawType}`);
+
+                var hqchartData=CM_114_K_15Minute_Update_Data;
+
+                var item=hqchartData.data[0];
+                item[JSCHART_DATA_FIELD_ID.KLINE_COLOR_DATA]={Type:0, Line:{Color:'rgb(128,0,128)'}, Border:{Color:this.GetTextBorderColor()} };
+
+                console.log('[KLineChart::RequestMinuteRealtimeData] hqchartData=', hqchartData);
+
+                callback(hqchartData);
+            }
+
+            this.RequestRealtimeData=function(data, callback)
+            {
+                data.PreventDefault=true;
+                var requestData=data.Request.Data;
+                var symbol=requestData.symbol[0];   //请求的股票代码
+                var period=requestData.period;      //周期
+                var right=requestData.right;        //复权
+                var kLinedrawType=requestData.klineDrawType;    //K线类型
+                
+                console.log(`[KLineChart::RequestRealtimeData] 代码:${symbol}, 周期:${period}, K线类型:${kLinedrawType}`);
+
+                var hqchartData=CM_114_K_Day_Update_Data;
+                hqchartData.stock[0].colordata={Type:1, Line:{ Color:'rgb(128,128,128)'}, BarColor:this.GetTestBarColor()};
+                hqchartData.stock[0].high=hqchartData.stock[0].low=hqchartData.stock[0].price=hqchartData.stock[0].open;
+
+                console.log('[KLineChart::RequestRealtimeData] hqchartData=', hqchartData);
+                callback(hqchartData);
+            }
+
+
+            this.GetRandomTestData=function(min, max)   //测试数据
+            {
+                min = Math.ceil(min);
+                max = Math.floor(max);
+                return Math.floor(Math.random() * (max - min + 1)) + min; //含最大值，含最小值 
+            }
+
+            this.GetTestBarColor=function()
+            {
+                var ARRAY_COLOR=["rgb(255,192,203)", "rgb(255,0,255)", "rgb(123,104,238)", "rgb(30,144,255)", "rgb(0,255,127)", "rgb(255,215,0)"];
+                var index=this.GetRandomTestData(0,ARRAY_COLOR.length-1);
+
+                return ARRAY_COLOR[index];
+            }
+
+            this.GetTextBorderColor=function()
+            {
+                var ARRAY_COLOR=["rgb(186,85,211)","rgb(30,230,250)","rgb(175,238,238)","rgb(0,100,0)","rgb(255,248,220)","rgb(139,69,19)","rgb(255,255,0)","rgb(205,92,92)",];
+                var index=this.GetRandomTestData(0,ARRAY_COLOR.length-1);
+
+                return ARRAY_COLOR[index];
+            }
+
+            this.OnSize=function(option)  //自适应大小调整
+            {
+                var height= $(window).height()-50;
+                var width = $(window).width();
+                //width=50000;
+                this.DivKLine.style.top='0px';
+                this.DivKLine.style.left='0px';
+                this.DivKLine.style.width=width+'px';
+                this.DivKLine.style.height=height+'px';
+                this.Chart.OnSize(option);
+            }
+
+            this.ChangeSymbol=function(symbol)
+            {
+                this.Chart.ChangeSymbol(symbol,option);
+            }
+
+            this.ChangeKLineDrawType=function(type)
+            {
+                this.Chart.ChangeKLineDrawType(type);
+            }
+
+        }
+
+        $(function () 
+        {
+            WebFont.load({ custom: { families: ['iconfont'] } });   //预加载下iconfont资源
+            //LoadCustomIndex();
+
+            var klineControl=new KLineChart(document.getElementById('kline'));
+            klineControl.Create();  
+
+            $("#button_1").click(function() { klineControl.ChangeKLineDrawType(0); } );
+            $("#button_2").click(function() { klineControl.ChangeKLineDrawType(9); } );
+
+            $("#button_3").click(function() { klineControl.Chart.ChangePeriod(0); } );
+            $("#button_4").click(function() { klineControl.Chart.ChangePeriod(6); } );
+        })
+
+    </script>  
+</body>  
+</html>
+
+
+
+<style>
+
+#kline
+{
+    width: 900px;
+    height:400px;
+    position: relative;
+    /*margin-top: 100px;*/
+}
+
+.btn-style
+{
+    padding: 3px 8px;
+    border: 1px solid #ececec;
+    border-radius: 5px;
+    background-color: #f5f5f5;
+    cursor: pointer;
+}
+
+    
+</style>

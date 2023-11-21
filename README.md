@@ -153,7 +153,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 * 可视范围成交量分布图
 ![成交量分布图](/小程序行情模块用例/image/hqchart_vol2.gif)
 * 彩色K线柱子
-![彩色K线柱子](/小程序行情模块用例/image/kline_color.gif)
+![彩色K线柱子](/小程序行情模块用例/image/kline_color.gif)  
+[https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_color_kline_v2.html](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_color_kline_v2.html)   
 * 指标窗口最大，最小化
 ![指标窗口最大，最小化](/小程序行情模块用例/image/index_title.gif)
 * 区间选择支持拖拽移动
@@ -230,7 +231,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 * [K线对接后台指标(DRAWBAND)示例1](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_DRAWBAND.html)  
 * [K线对接后台指标(MULTI_LINE)示例2](https://jones2000.github.io/HQChart/webhqchart.demo/samples/kline_MULTI_LINE_index.html)  
 * [自定义K线指标标题栏](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_indextitle.html)   
-
+* [自定义彩色K线图](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_color_kline_v2.html)   
 
 ## 订单流
 * [订单流样式1](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_orderflow.html)    
