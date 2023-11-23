@@ -238,13 +238,13 @@
                 
                 Border: //边框
                 {
-                    Left:1,         //左边间距
-                    Right:180,       //右边间距
+                    Left:10,         //左边间距
+                    Right:20,       //右边间距
                     Bottom:25,      //底部间距
                     Top:25,         //顶部间距
 
-                    AutoLeft:{ Blank:10, MinWidth:60 },
-                    AutoRight:{ Blank:5, MinWidth:60 },
+                    AutoLeft:{ Blank:10, MinWidth:10 },
+                    AutoRight:{ Blank:5, MinWidth:10 },
                 },
                 
                 Frame:  //子框架设置
@@ -334,6 +334,8 @@
                 resource.FrameYLineDash=[2,2];
                 resource.UpBarColor='rgb(248,41,71)';
                 resource.DownBarColor='rgb(84,255,255)';
+                resource.Frame.XBottomOffset=4;
+                resource.IndexTitleMerginLeft=3*GetDevicePixelRatio();
 
                 this.Option.EventCallback=
                 [
@@ -364,9 +366,30 @@
                 frame.IsShowYText[0]=false;
                 frame.IsShowXLine=false;
                 frame.IsDrawRightBorder=true;
+                frame.IsDrawLeftBorder=false;
+                frame.YTextPadding[0]=5;
                 frame.YTextPadding[1]=5;
-                frame.YLineExtend=[null, { Width:5, Color:frame.PenBorder} ];
-                frame.YTextExtend=[null, { Align:2} ];
+                frame.YLineExtend=[{ Width:5, Color:frame.PenBorder}, { Width:5, Color:frame.PenBorder} ];
+                frame.YTextExtend=[{ Align:1 }, { Align:2} ];
+
+                var button =
+				{
+					ID: 8888,
+                    IsLeft:true,
+					Style:  //按钮样式 使用iconfont， 可以放全局的资源配置里面
+					{
+						MoveOnColor: "rgb(255,255,255)",
+						Color: "rgb(156,156,156)",
+						Family: "iconfont",
+						Text: "\ue691",
+						Size: 13 *GetDevicePixelRatio(),
+						MerginLeft: 2,
+                        YMoveOffset:-1,
+					},
+					TooltipText: "指标按钮-左侧",
+				};
+
+                frame.CustomToolbar = [button];   //按钮添加
             }
 
             this.OnCreateOverlayFrame=function(event, data, obj)
@@ -375,10 +398,30 @@
                 var frame=data.OverlayFrame.Frame;
                 frame.PenBorder=mainFrame.PenBorder;
                 frame.YTextPadding[1]=5;
-                //frame.Style=1;
+                frame.Style=1;
+                frame.IsShowTitle=false;
                 //frame.YLineExtend=[ { Width:5 }, null];
                 frame.YLineExtend=[null, { Width:5 } ];
                 frame.YTextExtend=[null, { Align:2}  ];
+
+                var button =
+				{
+					ID: 8888,
+                    IsLeft:true,
+					Style:  //按钮样式 使用iconfont， 可以放全局的资源配置里面
+					{
+						MoveOnColor: "rgb(255,255,255)",
+						Color: "rgb(156,156,156)",
+						Family: "iconfont",
+						Text: "\ue698",
+						Size: 13 *GetDevicePixelRatio(),
+						MerginLeft: 2,
+                        YMoveOffset:-2,
+					},
+					TooltipText: "叠加指标按钮-左侧",
+				};
+
+                frame.CustomToolbar = [button];   //按钮添加
             }
 
             this.OnSplitYCoordinate=function(event, data ,obj)

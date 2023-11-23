@@ -10381,6 +10381,11 @@ function JSDraw(errorHandler,symbolData)
         return offset;
     }
 
+    this.FIRSTDRAW=function(value)
+    {
+        return value;
+    }
+
 
     /*
     SOUND 播放声音。用法：SOUND(NAME)，播放NAME
@@ -17012,6 +17017,7 @@ function JSExecute(ast,option)
                 var fontSize=-1;
                 var bgConfig=null;    //背景设置
                 var vLineConfig=null;
+                var isFirstDraw=null;
                 let xOffset=null, yOffset=null;
                 for(let j=0; j<item.Expression.Expression.length; ++j)
                 {
@@ -17135,6 +17141,11 @@ function JSExecute(ast,option)
                             {
                                 yOffset=itemExpression.Out;
                             }
+                            else if (itemExpression.Callee.Name=="FIRSTDRAW")
+                            {
+                                if (itemExpression.Out===0) isFirstDraw=false;
+                                else if (itemExpression.Out===1) isFirstDraw=true;
+                            }
                             else if (itemExpression.Callee.Name=="SOUND")
                             {
                                 var event=this.GetSoundEvent();
@@ -17230,6 +17241,7 @@ function JSExecute(ast,option)
                     if (color) value.Color=color;
                     if (upColor) value.UpColor=upColor;
                     if (downColor) value.DownColor=downColor;
+                    if (lineWidth) value.LineWidth=lineWidth;
                     this.OutVarTable.push(value);
                 }
                 else if (lineArea && varName)   //LINEAREA 面积
@@ -17283,6 +17295,7 @@ function JSExecute(ast,option)
                     if (vLineConfig) outVar.VerticalLine=vLineConfig;
                     if (IFrameSplitOperator.IsNumber(xOffset)) outVar.XOffset=xOffset;
                     if (IFrameSplitOperator.IsNumber(yOffset)) outVar.YOffset=yOffset;
+                    if (IFrameSplitOperator.IsBool(isFirstDraw)) outVar.IsFirstDraw=isFirstDraw;
                     this.OutVarTable.push(outVar);
                 }
                 else if (varName)
@@ -17650,6 +17663,9 @@ function JSExecute(ast,option)
                 break;
             case "YMOVE":
                 node.Out=this.Draw.YMOVE(args[0]);
+                break;
+            case "FIRSTDRAW":
+                node.Out=this.Draw.FIRSTDRAW(args[0]);
                 break;
             case 'PARTLINE':
                 node.Draw=this.Draw.PARTLINE(args);
@@ -18576,12 +18592,12 @@ function JSExplainer(ast,option)
             ["SUBSTR", { Name:"SUBSTR", Param:{ Count:3 }, ToString:function(args) { return `字符串${args[0]}中取一部分`; } } ],
             ["STRCMP", { Name:"STRCMP", Param:{ Count:2 }, ToString:function(args) { return `字符串${args[0]}和字符串${args[1]}比较`; } } ],
             ["FINDSTR", { Name:"FINDSTR", Param:{ Count:2 }, ToString:function(args) { return `字符串${args[0]}中查找字符串${args[1]}`; } } ],
-            ["NAMEINCLUD", { Name:"NAMEINCLUD", Param:{ Count:1 }, ToString:function(args) { return `查找品种名称中包含${args[0]}`; } } ],
+            ["NAMEINCLUDE", { Name:"NAMEINCLUDE", Param:{ Count:1 }, ToString:function(args) { return `查找品种名称中包含${args[0]}`; } } ],
             ["CODELIKE", { Name:"CODELIKE", Param:{ Count:1 }, ToString:function(args) { return `查找品种名称中包含${args[0]}`; } } ],
             ["INBLOCK", { Name:"AVEDEV", Param:{ Count:1 }, ToString:function(args) { return `属于${args[0]}板块`; } } ],
             ["STKINDI",{ Name:"STKINDI", Param:{ Dynamic:true }, ToString:function(args) { return "指标引用"; } }],
             ["STRFORMAT",{ Name:"STRFORMAT", Param:{ Dynamic:true }, ToString:function(args) { return `格式化${args[0]}字符串`; } }],
-            
+            ["NAMELIKE",{ Name:"NAMELIKE", Param:{ Count:1 }, ToString:function(args) { return `品种名称是否以'${args[0]}'开头`; } }],
 
             [
                 "HHVBARS", 
@@ -18721,6 +18737,9 @@ function JSExplainer(ast,option)
                 return `上涨颜色${args[0]}`;
             case "DOWNCOLOR":
                 return `下跌颜色${args[0]}`;
+            case "FIRSTDRAW":
+                return "";
+
 
             default:
                 this.ThrowUnexpectedNode(node,`函数${funcName}不存在`);
@@ -20208,6 +20227,11 @@ function ScriptIndex(name,script,args,option)
 
         if (varItem.UpColor) chart.UpColor=varItem.UpColor;
         if (varItem.DownColor) chart.DownColor=varItem.DownColor;
+        if (varItem.LineWidth) 
+        {
+            let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
+            if (IFrameSplitOperator.IsPlusNumber(width)) chart.BarWidth=width;
+        }
 
         let titleIndex=windowIndex+1;
         chart.Data.Data=varItem.Data;
@@ -20232,6 +20256,8 @@ function ScriptIndex(name,script,args,option)
         chart.FirstColor = varItem.Draw.Color[0];
         chart.SecondColor = varItem.Draw.Color[1];
         chart.Data.Data=varItem.Draw.DrawData;
+
+        if (IFrameSplitOperator.IsBool(varItem.IsFirstDraw)) chart.IsDrawFirst=varItem.IsFirstDraw;
 
         hqChart.ChartPaint.push(chart);
     }
@@ -21566,6 +21592,10 @@ function OverlayScriptIndex(name,script,args,option)
                     case 'POLYLINE':
                         this.CreatePolyLine(hqChart,windowIndex,item,i);
                         break;
+                    case 'DRAWGBK':
+                    case "DRAWGBK2":
+                        this.CreateBackgroud(hqChart,windowIndex,item,i);
+                        break;
                     case 'DRAWNUMBER':
                     case "DRAWNUMBER_FIX":  
                     case 'DRAWTEXT_FIX':  
@@ -22067,6 +22097,11 @@ function OverlayScriptIndex(name,script,args,option)
 
         if (varItem.UpColor) chart.UpColor=varItem.UpColor;
         if (varItem.DownColor) chart.DownColor=varItem.DownColor;
+        if (varItem.LineWidth) 
+        {
+            let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
+            if (IFrameSplitOperator.IsPlusNumber(width)) chart.BarWidth=width;
+        }
 
         let titleIndex=windowIndex+1;
         chart.Data.Data=varItem.Data;
@@ -22074,7 +22109,8 @@ function OverlayScriptIndex(name,script,args,option)
         this.ReloadChartResource(hqChart, windowIndex, chart);
         
         var titlePaint=hqChart.TitlePaint[titleIndex];
-        titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=new DynamicTitleData(chart.Data,varItem.Name,chart.Color);
+        var titleData=new DynamicTitleData(chart.Data,varItem.Name,chart.Color);
+        titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=titleData;
 
         this.SetTitleData(titleData,chart);
 
@@ -22096,6 +22132,8 @@ function OverlayScriptIndex(name,script,args,option)
         chart.FirstColor = varItem.Draw.Color[0];
         chart.SecondColor = varItem.Draw.Color[1];
         chart.Data.Data=varItem.Draw.DrawData;
+
+        if (IFrameSplitOperator.IsBool(varItem.IsFirstDraw)) chart.IsDrawFirst=varItem.IsFirstDraw;
 
         frame.ChartPaint.push(chart);
     }
