@@ -881,8 +881,9 @@ function Node()
             "CAPITAL","TOTALCAPITAL","EXCHANGE",
             "HYBLOCK","DYBLOCK","GNBLOCK","FGBLOCK","ZSBLOCK","ZHBLOCK","ZDBLOCK","HYZSCODE",
             "GNBLOCKNUM","FGBLOCKNUM","ZSBLOCKNUM","ZHBLOCKNUM","ZDBLOCKNUM",
-            "HYSYL","HYSJL"
+            "HYSYL","HYSJL","FROMOPEN"
         ]);
+        
         if (setVariantName.has(varName))
         {
             var item={ ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_VARIANT, VariantName:varName };
@@ -12369,6 +12370,7 @@ function JSExecute(ast,option)
         ['INDEXA',null],['INDEXC',null],['INDEXH',null],['INDEXL',null],['INDEXO',null],['INDEXV',null],
         ['INDEXADV', null], ['INDEXDEC', null],
 
+        ['FROMOPEN',null],      //已开盘有多长分钟
         ['TOTALFZNUM', null],   //该品种的每天的总交易分钟数.
 
         ['CURRBARSCOUNT', null], //到最后交易日的周期数
@@ -12579,6 +12581,8 @@ function JSExecute(ast,option)
         
             case "HYSYL":
             case "HYSJL":
+
+            case 'FROMOPEN':
                 return this.SymbolData.GetStockCacheData({ VariantName:name, Node:node });
             case 'SETCODE':
                 return this.SymbolData.SETCODE();

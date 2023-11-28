@@ -48691,6 +48691,10 @@ HQData.NetworkFilter=function(data, callback)
         case 'KLineChartContainer::RequestMinuteRealtimeData':          //分钟增量数据更新
             HQData.RequestMinuteRealtimeData(data,callback);
             break;
+
+        case "JSSymbolData::GetVariantData":                            //额外的变量数据
+            HQData.RequestIndexVariantData(data,callback);
+            break;
     }
 }
 
@@ -48800,4 +48804,19 @@ HQData.RequestMinuteRealtimeData=function(data,callback)
     hqchartData.name=symbol;
     hqchartData.symbol=symbol;
     callback(hqchartData);
+}
+
+
+HQData.RequestIndexVariantData=function(data,callback)
+{
+    var varName=data.Request.Data.VariantName;  //变量名称
+    if (varName=="FROMOPEN") 
+    {
+        var hqchartData={  };
+        //单数据
+        hqchartData.Data={ Date:20230707, Value:240 };
+        hqchartData.DataType=1;
+        callback(hqchartData);
+    }
+
 }

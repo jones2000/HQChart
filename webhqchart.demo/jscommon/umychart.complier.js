@@ -1074,7 +1074,7 @@ function Node(ErrorHandler)
             "CAPITAL","TOTALCAPITAL","EXCHANGE",
             "HYBLOCK","DYBLOCK","GNBLOCK","FGBLOCK","ZSBLOCK","ZHBLOCK","ZDBLOCK","HYZSCODE",
             "GNBLOCKNUM","FGBLOCKNUM","ZSBLOCKNUM","ZHBLOCKNUM","ZDBLOCKNUM",
-            "HYSYL","HYSJL"
+            "HYSYL","HYSJL","FROMOPEN"
         ]);
 
         if (setVariantName.has(varName))
@@ -1082,12 +1082,6 @@ function Node(ErrorHandler)
             var item={ ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_VARIANT, VariantName:varName };
             if (token) item.Token={ Index:token.Start, Line:token.LineNumber };
             this.FunctionData.push(item);
-            return;
-        }
-
-        if (varName=='FROMOPEN')
-        {
-            this.IsNeedLatestIndexData=true;
             return;
         }
 
@@ -11615,31 +11609,6 @@ function JSSymbolData(ast,option,jsExecute)
         JSConsole.Complier.Log('[JSSymbolData::RecvLatestIndexData]', this.LatestIndexData);
     }
 
-    this.GetLatestIndexCacheData=function(dataname)
-    {
-        if (!this.LatestIndexData) return  null;
-
-        switch(dataname)
-        {
-            case 'FROMOPEN':
-                {
-                    var value=parseInt(this.LatestIndexData.Time/100);
-                    var time=parseInt(value/100)*60+(value%100);    //转化为分钟个数
-                    var index=0;
-                    if(time <= 9 * 60 + 25) index=0;
-                    else if(time < 9 * 60 + 30) index=1;
-                    else if(time <= 11 * 60 + 30) index=(time - (9 * 60 + 30) + 1);
-                    else if(time < 13 * 60) index=121;
-                    else if(time <= 15 * 60) index=(122 + time - 13 * 60);
-                    else index=242;
-                    return index;
-                }
-            default:
-                return null;
-        }
-    }
-    
-
     this.GetVolRateData=function(job,node)
     {
         var volrKey=job.ID.toString()+'-VolRate-'+this.Symbol;
@@ -16704,6 +16673,8 @@ function JSExecute(ast,option)
 
             case "HYSYL":
             case "HYSJL":
+
+            case 'FROMOPEN':
                 return this.SymbolData.GetStockCacheData({ VariantName:name, Node:node });
             case 'SETCODE':
                 return this.SymbolData.SETCODE();
@@ -16731,8 +16702,6 @@ function JSExecute(ast,option)
                 return this.SymbolData.DAY();
             case 'PERIOD':
                 return this.SymbolData.PERIOD();
-            case 'FROMOPEN':
-                return this.SymbolData.GetLatestIndexCacheData('FROMOPEN');
 
             case "HOUR":
                 return this.SymbolData.HOUR();

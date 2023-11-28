@@ -10614,7 +10614,7 @@ function AverageWidthFrame()
                     {
                         this.Canvas.strokeStyle=this.VerticalInfo[i].LineColor;
                         this.Canvas.beginPath();
-                        this.Canvas.moveTo(xFiixed,top);
+                        this.Canvas.moveTo(xFixed,top);
                         this.Canvas.lineTo(xFixed,bottom);
                         this.Canvas.stroke();
                     }
