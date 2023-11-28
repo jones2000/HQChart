@@ -116,7 +116,7 @@ function GetBlackStyle()
     
         Frame:
         { 
-            XBottomOffset:1*GetDevicePixelRatio(), //X轴文字向下偏移
+            XBottomOffset:2*GetDevicePixelRatio(), //X轴文字向下偏移
            
             PercentageText:      //百分比坐标文字颜色
             { 
