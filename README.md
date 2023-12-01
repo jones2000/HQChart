@@ -188,7 +188,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 * 支持指数领先指标(2019-7-15  新加功能)  <br>
 ![领先指标](/小程序行情模块用例/image/hqchart_kline_lock3.png)
 * 支持信息标识 <br>
-![信息标识](/小程序行情模块用例/image/hqchart_minute_info.png)
+![信息标识](/小程序行情模块用例/image/hqchart_minute_info.png)   
+[https://jones2000.github.io/HQChart/webhqchart.demo/samples/minute_mines.html](https://jones2000.github.io/HQChart/webhqchart.demo/samples/minute_mines.html)   
 * 支持涨停坐标 <br>
 
 # 3. 其他图形
@@ -242,7 +243,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ## 走势图
 * [走势图](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_minute.html)   
 * [走势图手机页面](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_minute_phone.html)   
-* [走势图手机横屏页面](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_minute_phone_hScreen.html)    
+* [走势图手机横屏页面](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_minute_phone_hScreen.html)   
+* [走势图-异动信息标示](https://jones2000.github.io/HQChart/webhqchart.demo/samples/minute_mines.html)  
 
 ## K线训练
 * [K线训练手机](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_ktrain.html)    
