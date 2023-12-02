@@ -1,0 +1,773 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+
+<title>页面行情(K线图)</title>  
+    <!-- 加载资源 -->
+    <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
+</head>  
+<body>
+    <div id="kline" >
+       
+    </div>
+
+    <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
+    <script src="../jscommon/umychart.resource/js/webfont.js"></script>
+    <script src='../jscommon/umychart.console.js'></script>     <!-- 日志输出 -->
+    <script src="../jscommon/umychart.network.js"></script>     <!-- 网络请求分装 -->
+    <script src="../jscommon/umychart.js"></script>             <!-- K线图形 -->
+    <script src="../jscommon/umychart.complier.js"></script>    <!-- 麦语言解析执行器 -->
+    <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
+    <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+
+    <script>
+
+        MARKET_SUFFIX_NAME.GetMarketStatus = function (symbol)  { return 0; }
+        
+        //简单的把K线控件封装下
+        function KLineChart(divKLine)
+        {
+            this.DivKLine=divKLine;
+            this.Chart=JSChart.Init(divKLine, false, true);   //把K线图绑定到一个Div上
+          
+            //K线配置信息
+            this.Option= {
+                Type:'历史K线图',   //创建图形类型
+                //Type:'历史K线图横屏',
+
+                //EnableBorderDrag:false,
+                
+                Windows: //窗口指标
+                [
+                    {Index:"SAR",},
+                ], 
+
+                
+                OverlayIndex:
+                [
+                  
+                ],  //叠加指标
+               
+                DragDownload: { Day:{ Enable:true } , Minute:{ Enable:true }}, 
+
+                EnableZoomUpDown:
+                {
+                    //Wheel:false,
+                    //Keyboard:false,
+                    //Touch:false,
+                },
+
+                EnableYDrag:
+                {
+                    Right:true,
+                    Left:true,
+                },
+
+                //Language:'EN',
+
+                Symbol:"600000.sh",
+                IsAutoUpdate:true,       //是自动更新数据
+                AutoUpdateFrequency:3000,   //数据更新频率
+                IsApiPeriod:true,
+                //TradeIndex: {Index:'交易系统-BIAS'},    //交易系统
+
+                SplashTitle:'加载数据中......',
+    
+                IsShowRightMenu:true,          //右键菜单
+                //CorssCursorTouchEnd:true,
+                //IsClickShowCorssCursor:true,
+                //IsCorssOnlyDrawKLine:true,
+
+                CtrlMoveStep:10,
+
+                //EnableVerifyRecvData:true,
+
+                CorssCursorInfo: { Right:2, DateFormatType:3, HPenType:1, VPenType:1, IsShowClose:false, VLineType:0,RightButton:{ Enable:true }, IsShowCorss:true, PriceFormatType:0, DataFormatType:0 },
+                EnableZoomIndexWindow:true,
+
+                DrawTool:       //画图工具
+                {
+                    //StorageKey:'4E7EA133-D6C8-4776-9869-1DDDCC5FA744'
+                },
+    
+                KLine:  //K线设置
+                {
+                    DragMode:1,                 //拖拽模式 0=禁止拖拽 1=数据拖拽 2=区间选择
+                    Right:0,                    //复权 0 不复权 1 前复权 2 后复权
+                    Period:5,                   //周期 0 日线 1 周线 2 月线 3 年线 
+                    
+                    IsShowTooltip:true,                 //是否显示K线提示信息
+                    DrawType:0,      //K线类型 0=实心K线柱子 1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积图
+                    
+                    KLineDoubleClick:false, //禁止双击弹框
+                    RightSpaceCount:2,
+                    
+                    //PageSize:30,               //一屏显示多少数据
+                    DataWidth:10,
+                },
+
+                KLineTitle: //标题设置
+                {
+                    IsShowName:true,       //不显示股票名称
+                    IsShowSettingInfo:true, //不显示周期/复权
+                    IsTitleShowLatestData:true,
+                },
+    
+                EnableYDrag:
+                {
+                    Right:true,
+                    Left:true,
+                },
+                
+                Border: //边框
+                {
+                    Left:50,         //左边间距
+                    Right:90,       //右边间距
+                    Bottom:25,      //底部间距
+                    Top:25,         //顶部间距
+
+                    AutoLeft:{ Blank:10, MinWidth:60 },
+                    AutoRight:{ Blank:5, MinWidth:60 },
+                },
+                
+                Frame:  //子框架设置
+                [
+                    {
+                        SplitCount:6,
+                    },
+
+                    { SplitCount:5 },
+                    { SplitCount:4 }
+                ],
+
+                ExtendChart:    //扩展图形
+                [
+                    
+                ],
+
+
+                Overlay:
+                [
+                    
+                ],
+            };
+                 
+            this.Create=function()  //创建图形
+            {
+                var self=this;
+                //$(window).resize(function() { self.OnSize( {Type:1} ); });    //绑定窗口大小变化事件
+                $(window).resize(function() { self.OnSize( ); });    //绑定窗口大小变化事件
+
+                var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID); //读取黑色风格配置
+                JSChart.SetStyle(blackStyle);
+                this.DivKLine.style.backgroundColor=blackStyle.BGColor; //设置最外面的div背景
+                JSChart.GetResource().ToolbarButtonStyle=1;
+
+                this.OnSize();  //让K线全屏
+                this.Option.NetworkFilter=(data, callback)=>{ this.NetworkFilter(data, callback); }
+                this.Chart.SetOption(this.Option);  //设置K线配置
+
+            }
+
+            this.OnSize=function(option)  //自适应大小调整
+            {
+                var height= $(window).height()-10;
+                var width = $(window).width();
+                this.DivKLine.style.top='0px';
+                this.DivKLine.style.left='0px';
+                this.DivKLine.style.width=width+'px';
+                this.DivKLine.style.height=height+'px';
+                if (this.Chart) this.Chart.OnSize(option);
+            }
+
+            this.ChangeSymbol=function(symbol)
+            {
+                this.Chart.ChangeSymbol(symbol);
+            }
+
+
+            this.NetworkFilter=function(data, callback)
+            {
+                console.log(`[HQData::NetworkFilter] ${data.Explain}`, data);
+                switch(data.Name) 
+                {
+                    case 'KLineChartContainer::ReqeustHistoryMinuteData':           //分钟全量数据下载
+                        this.RequestHistoryMinuteData(data, callback);
+                        break;
+                    case 'KLineChartContainer::RequestFlowCapitalData':             //流通股本
+                        data.PreventDefault=true;
+                        var hqChartData={code:0, stock:[]}; //如果没有数据就填空
+                        callback(hqChartData);
+                        break;
+                    case "KLineChartContainer::RequestDragMinuteData":
+                        this.RequestDragMinuteData(data, callback);
+                        break;
+                }
+            }
+
+
+            this.RequestHistoryMinuteData=function(data, callback)
+            {
+                data.PreventDefault=true;
+                var symbol=data.Request.Data.symbol; //请求的股票代码
+
+                var hqchartData={  symbol: symbol, name: symbol, version: 2.0, code: 0, data:[] };
+
+                for(var i=19;i<TEST_ALL_PART.length;++i)
+                //for(var i=0;i<TEST_ALL_PART.length;++i)
+                {
+                    hqchartData.data.push(TEST_ALL_PART[i]);
+                }
+
+                callback(hqchartData);
+            }
+
+
+            this.RequestDragMinuteData=function(data, callback)
+            {
+                data.PreventDefault=true;
+                var symbol=data.Request.Data.symbol; //请求的股票代码
+
+                var hqchartData={  symbol: symbol, name: symbol, version: 2.0, code: 0, data:[] };
+                for(var i=0;i<TEST_ALL_PART.length && i<19;++i)
+                {
+                    hqchartData.data.push(TEST_ALL_PART[i]);
+                }
+
+                callback(hqchartData);
+            }
+            
+
+
+        }
+
+        $(function () 
+        {
+            var klineControl=new KLineChart(document.getElementById('kline'));
+            klineControl.Create();
+           
+        })
+
+
+
+        var TEST_ALL_PART=[
+        [
+            20231130,
+            4.315,
+            4.315,
+            4.315,
+            4.315,
+            4.315,
+            8,
+            35.1209,
+            1245,
+            0.08
+        ],
+        [
+            20231130,
+            4.315,
+            4.315,
+            4.315,
+            4.315,
+            4.315,
+            0,
+            0,
+            1250,
+            0.08
+        ],
+        [
+            20231130,
+            4.315,
+            4.315,
+            4.315,
+            4.315,
+            4.315,
+            0,
+            0,
+            1255,
+            0.08
+        ],
+        [
+            20231130,
+            4.315,
+            4.315,
+            4.315,
+            4.315,
+            4.315,
+            17,
+            74.545,
+            1300,
+            0.08
+        ],
+        [
+            20231130,
+            4.315,
+            4.4591,
+            4.4591,
+            4.4591,
+            4.4591,
+            200,
+            891.82,
+            1305,
+            0.08
+        ],
+        [
+            20231130,
+            4.4591,
+            4.385,
+            4.385,
+            4.385,
+            4.385,
+            100,
+            438.5,
+            1310,
+            0.08
+        ],
+        [
+            20231130,
+            4.385,
+            4.385,
+            4.385,
+            4.385,
+            4.385,
+            4,
+            17.3303,
+            1315,
+            0.08
+        ],
+        [
+            20231130,
+            4.385,
+            4.45,
+            4.4538,
+            4.45,
+            4.4538,
+            1182,
+            5262.504,
+            1320,
+            0.08
+        ],
+        [
+            20231130,
+            4.4538,
+            4.4538,
+            4.4538,
+            4.41,
+            4.41,
+            129,
+            568.925,
+            1325,
+            0.08
+        ],
+        [
+            20231130,
+            4.41,
+            4.41,
+            4.41,
+            4.41,
+            4.41,
+            50,
+            220,
+            1330,
+            0.08
+        ],
+        [
+            20231130,
+            4.41,
+            4.41,
+            4.41,
+            4.41,
+            4.41,
+            1,
+            4.46,
+            1335,
+            0.08
+        ],
+        [
+            20231130,
+            4.41,
+            4.41,
+            4.41,
+            4.41,
+            4.41,
+            9,
+            39.53,
+            1340,
+            0.08
+        ],
+        [
+            20231130,
+            4.41,
+            4.41,
+            4.41,
+            4.41,
+            4.41,
+            2,
+            8.77,
+            1345,
+            0.08
+        ],
+        [
+            20231130,
+            4.41,
+            4.3501,
+            4.3501,
+            4.3501,
+            4.3501,
+            500,
+            2175.05,
+            1350,
+            0.08
+        ],
+        [
+            20231130,
+            4.3501,
+            4.4,
+            4.4,
+            4.4,
+            4.4,
+            206,
+            906.595,
+            1355,
+            0.08
+        ],
+        [
+            20231130,
+            4.4,
+            4.4,
+            4.4,
+            4.4,
+            4.4,
+            0,
+            0,
+            1400,
+            0.08
+        ],
+        [
+            20231130,
+            4.4,
+            4.3917,
+            4.3917,
+            4.3917,
+            4.3917,
+            100,
+            439.17,
+            1405,
+            0.08
+        ],
+        [
+            20231130,
+            4.3917,
+            4.4,
+            4.4,
+            4.4,
+            4.4,
+            131,
+            575.871,
+            1410,
+            0.08
+        ],
+        [
+            20231130,
+            4.4,
+            4.3526,
+            4.3526,
+            4.3526,
+            4.3526,
+            482,
+            2097.9532,
+            1415,
+            0.08
+        ],
+        [
+            20231130,
+            4.3526,
+            4.3526,
+            4.3526,
+            4.3526,
+            4.3526,
+            6,
+            26.125,
+            1420,
+            0.08
+        ],
+        [
+            20231130,
+            4.3526,
+            4.3526,
+            4.3526,
+            4.3526,
+            4.3526,
+            26,
+            113.6222,
+            1425,
+            0.08
+        ],
+        [
+            20231130,
+            4.3526,
+            4.3526,
+            4.3526,
+            4.3526,
+            4.3526,
+            75,
+            326.25,
+            1430,
+            0.08
+        ],
+        [
+            20231130,
+            4.3526,
+            4.3526,
+            4.3526,
+            4.3526,
+            4.3526,
+            0,
+            0,
+            1435,
+            0.08
+        ],
+        [
+            20231130,
+            4.3526,
+            4.3526,
+            4.3526,
+            4.3526,
+            4.3526,
+            19,
+            83.011,
+            1440,
+            0.08
+        ],
+        [
+            20231130,
+            4.3526,
+            4.3526,
+            4.3526,
+            4.3526,
+            4.3526,
+            0,
+            0,
+            1445,
+            0.08
+        ],
+        [
+            20231130,
+            4.3526,
+            4.3526,
+            4.3526,
+            4.3526,
+            4.3526,
+            0,
+            0,
+            1450,
+            0.08
+        ],
+        [
+            20231130,
+            4.3526,
+            4.3348,
+            4.3348,
+            4.3348,
+            4.3348,
+            200,
+            866.96,
+            1455,
+            0.08
+        ],
+        [
+            20231130,
+            4.3348,
+            4.3348,
+            4.3348,
+            4.3348,
+            4.3348,
+            5,
+            21.4245,
+            1500,
+            0.08
+        ],
+        [
+            20231130,
+            4.3348,
+            4.3348,
+            4.3348,
+            4.3348,
+            4.3348,
+            2,
+            8.7336,
+            1505,
+            0.08
+        ],
+        [
+            20231130,
+            4.3348,
+            4.271,
+            4.28,
+            4.26,
+            4.26,
+            1556,
+            6646.06,
+            1510,
+            0.08
+        ],
+        [
+            20231130,
+            4.26,
+            4.2605,
+            4.2605,
+            4.2605,
+            4.2605,
+            1000,
+            4260.5,
+            1515,
+            0.08
+        ],
+        [
+            20231130,
+            4.2605,
+            4.2605,
+            4.2605,
+            4.2605,
+            4.2605,
+            0,
+            0,
+            1520,
+            0.08
+        ],
+        [
+            20231130,
+            4.2605,
+            4.261,
+            4.261,
+            4.261,
+            4.261,
+            1000,
+            4261,
+            1525,
+            0.08
+        ],
+        [
+            20231130,
+            4.261,
+            4.261,
+            4.261,
+            4.261,
+            4.261,
+            2,
+            8.66,
+            1530,
+            0.08
+        ],
+        [
+            20231130,
+            4.261,
+            4.261,
+            4.261,
+            4.261,
+            4.261,
+            6,
+            25.5696,
+            1535,
+            0.08
+        ],
+        [
+            20231130,
+            4.261,
+            4.261,
+            4.261,
+            4.261,
+            4.261,
+            0,
+            0,
+            1540,
+            0.08
+        ],
+        [
+            20231130,
+            4.261,
+            4.261,
+            4.261,
+            4.261,
+            4.261,
+            0,
+            0,
+            1545,
+            0.08
+        ],
+        [
+            20231130,
+            4.261,
+            4.261,
+            4.261,
+            4.261,
+            4.261,
+            35,
+            149.45,
+            1550,
+            0.08
+        ],
+        [
+            20231130,
+            4.261,
+            4.261,
+            4.261,
+            4.261,
+            4.261,
+            0,
+            0,
+            1555,
+            0.08
+        ],
+        [
+            20231130,
+            4.261,
+            4.27,
+            4.27,
+            4.26,
+            4.27,
+            359,
+            1532.32,
+            1600,
+            0.08
+        ]
+    ]
+
+      
+    </script>  
+</body>  
+</html>
+
+
+
+<style>
+
+#kline
+{
+    width: 100%;
+    height:80%;
+    position: relative;
+    /*margin-top: 100px;*/
+}
+
+#kline2
+{
+    width: 100%;
+    height:80%;
+    position: relative;
+}
+
+.btn-style
+{
+    padding: 3px 8px;
+    border: 1px solid #ececec;
+    border-radius: 5px;
+    background-color: #f5f5f5;
+    cursor: pointer;
+}
+
+    
+</style>
