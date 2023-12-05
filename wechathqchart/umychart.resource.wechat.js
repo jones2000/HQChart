@@ -10,6 +10,8 @@
     全局配置颜色
 */
 
+import { IFrameSplitOperator } from "./umychart.framesplit.wechat";
+
 
 function JSChartResource() 
 {
@@ -29,6 +31,7 @@ function JSChartResource()
     this.Minute = {};
     this.Minute.VolBarColor = null;
     this.Minute.PriceColor = "rgb(50,171,205)";
+    this.Minute.PriceLineWidth=1; //价格线宽度
     this.Minute.AreaPriceColor = 'rgba(50,171,205,0.1)';
     this.Minute.AvPriceColor = "rgb(238,127,9)";
 
@@ -399,6 +402,8 @@ function JSChartResource()
             if (style.Minute.PriceColor) this.Minute.PriceColor = style.Minute.PriceColor;
             if (style.Minute.AvPriceColor) this.Minute.AvPriceColor = style.Minute.AvPriceColor;
             if (style.Minute.AreaPriceColor) this.Minute.AreaPriceColor = style.Minute.AreaPriceColor;
+            if (IFrameSplitOperator.IsNumber(style.Minute.PriceLineWidth)) this.Minute.PriceLineWidth = style.Minute.PriceLineWidth;
+            
         }
         if (style.DefaultTextColor) this.DefaultTextColor = style.DefaultTextColor;
         if (style.DefaultTextFont) this.DefaultTextFont = style.DefaultTextFont;

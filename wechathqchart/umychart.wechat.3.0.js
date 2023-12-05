@@ -5742,7 +5742,7 @@ function KLineChartContainer(uielement)
         }
     }
 
-    this.ReqeustHistoryMinuteData = function () 
+    this.RequestHistoryMinuteData = function () 
     {
         var self = this;
         this.CancelAutoUpdate();
@@ -5798,6 +5798,8 @@ function KLineChartContainer(uielement)
             }
         });
     }
+
+    this.ReqeustHistoryMinuteData=this.RequestHistoryMinuteData;
 
     this.RecvMinuteHistoryData = function (recvData) 
     {
@@ -6345,7 +6347,7 @@ function KLineChartContainer(uielement)
             this.ClearIndexPaint();
             this.CancelAutoUpdate();                    //先停止更新
             this.AutoUpdateEvent(false,"KLineChartContainer::ChangePeriod");
-            this.ReqeustHistoryMinuteData();            //请求分钟数据
+            this.RequestHistoryMinuteData();            //请求分钟数据
         }
     }
 
@@ -6378,7 +6380,7 @@ function KLineChartContainer(uielement)
             {
                 this.CancelAutoUpdate();                    //先停止更新
                 this.AutoUpdateEvent(false,"KLineChartContainer::ChangeRight");
-                this.ReqeustHistoryMinuteData();            //请求分钟数据
+                this.RequestHistoryMinuteData();            //请求分钟数据
             }
         }
     }
@@ -7022,7 +7024,7 @@ function KLineChartContainer(uielement)
         }
         else if (ChartData.IsMinutePeriod(this.Period, true) || ChartData.IsSecondPeriod(this.Period))
         {
-            this.ReqeustHistoryMinuteData();            //请求分钟数据
+            this.RequestHistoryMinuteData();            //请求分钟数据
         }
     }
 
@@ -8682,6 +8684,7 @@ function MinuteChartContainer(uielement)
         minuteLine.ChartFrame = this.Frame.SubFrame[0].Frame;
         minuteLine.Name = "Minute-Line";
         minuteLine.Color = g_JSChartResource.Minute.PriceColor;
+        minuteLine.LineWidth=g_JSChartResource.Minute.PriceLineWidth;
         minuteLine.AreaColor = g_JSChartResource.Minute.AreaPriceColor;
         this.ChartPaint[0] = minuteLine;
 

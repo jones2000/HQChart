@@ -17680,6 +17680,21 @@ function HQTradeFrame()
         }
     }
 
+    //清空Y轴坐标的最大最小值
+    this.ClearYCoordinateMaxMin=function()
+    {
+        for(var i=0;i<this.SubFrame.length;++i)
+        {
+            var subItem=this.SubFrame[i];
+            var frame=subItem.Frame;
+            if (frame.YMaxMin)
+            {
+                frame.YMaxMin.Max=null;
+                frame.YMaxMin.Min=null;
+            }
+        }
+    }
+
     this.SetLanguage=function(languageID)
     {
         for(let i in this.SubFrame)
@@ -67250,7 +67265,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.Draw();
     }
 
-    this.ReqeustHistoryMinuteData=function()
+    this.RequestHistoryMinuteData=function()
     {
         var self=this;
         this.ChartSplashPaint.SetTitle(this.LoadDataSplashTitle);
@@ -67328,6 +67343,8 @@ function KLineChartContainer(uielement,OffscreenElement)
         });
     }
 
+    //支持老版本
+    this.ReqeustHistoryMinuteData=this.RequestHistoryMinuteData;
 
     this.RecvMinuteHistoryData=function(data)
     {
@@ -68488,6 +68505,7 @@ function KLineChartContainer(uielement,OffscreenElement)
             this.ResetScrollBar();
             this.ResetOverlaySymbolStatus();
             this.ClearIndexRunCount();
+            this.Frame.ClearYCoordinateMaxMin();
             this.RequestHistoryData();                  //请求日线数据
             //this.ReqeustKLineInfoData();
         }
@@ -68498,7 +68516,8 @@ function KLineChartContainer(uielement,OffscreenElement)
             this.ResetScrollBar();
             this.ResetOverlaySymbolStatus();
             this.ClearIndexRunCount();
-            this.ReqeustHistoryMinuteData();            //请求分钟数据
+            this.Frame.ClearYCoordinateMaxMin();
+            this.RequestHistoryMinuteData();            //请求分钟数据
         }  
         else if (ChartData.IsTickPeriod(this.Period))
         {
@@ -68506,6 +68525,7 @@ function KLineChartContainer(uielement,OffscreenElement)
             this.AutoUpdateEvent(false,'KLineChartContainer::ChangePeriod');
             this.ResetScrollBar();
             this.ClearIndexRunCount();
+            this.Frame.ClearYCoordinateMaxMin();
             this.RequestTickData();                     //请求分笔数据
         }
     }
@@ -68547,7 +68567,7 @@ function KLineChartContainer(uielement,OffscreenElement)
                 this.ClearIndexPaint();
                 this.ResetOverlaySymbolStatus();
                 this.ResetScrollBar();
-                this.ReqeustHistoryMinuteData();            //请求分钟数据
+                this.RequestHistoryMinuteData();            //请求分钟数据
             }  
         }
     }
@@ -69038,7 +69058,7 @@ function KLineChartContainer(uielement,OffscreenElement)
             else if (ChartData.IsMinutePeriod(this.Period,true) || ChartData.IsSecondPeriod(this.Period) || ChartData.IsMilliSecondPeriod(this.Period))
             {
                 this.ResetOverlaySymbolStatus();
-                this.ReqeustHistoryMinuteData();            //请求分钟数据
+                this.RequestHistoryMinuteData();            //请求分钟数据
             }
 
             return;
@@ -69816,6 +69836,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.HideTooltip();
         this.ResetScrollBar();
         this.ClearIndexRunCount();
+        this.Frame.ClearYCoordinateMaxMin();
         
         
         this.Symbol=symbol;
@@ -69887,7 +69908,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         else if (ChartData.IsMinutePeriod(this.Period,true) || ChartData.IsSecondPeriod(this.Period) || ChartData.IsMilliSecondPeriod(this.Period))
         {
             this.ClearStockCache();
-            this.ReqeustHistoryMinuteData();            //请求分钟数据
+            this.RequestHistoryMinuteData();            //请求分钟数据
         } 
         else if (ChartData.IsTickPeriod(this.Period))
         {
@@ -74931,6 +74952,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         this.ReloadChartDrawPicture();
         this.ClearIndexRunCount();
         this.ClearStockCache();
+        this.Frame.ClearYCoordinateMaxMin();
 
         if (option)
         {
@@ -75078,6 +75100,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
         this.ResetDataStatus();
         this.ClearIndexPaint();             //清空指标
+        this.Frame.ClearYCoordinateMaxMin();
         this.ResetOverlaySymbolStatus();
         this.RequestData();
     }

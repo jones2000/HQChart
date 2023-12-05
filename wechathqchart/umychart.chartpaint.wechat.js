@@ -9103,6 +9103,10 @@ function ChartMinutePriceLine()
         var ptFirst = {}; //第1个点
         var drawCount = 0;
         var pointCount=0;
+
+        this.Canvas.save();
+        if (IFrameSplitOperator.IsPlusNumber(this.LineWidth>0)) this.Canvas.lineWidth=this.LineWidth;
+
         for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
         {
             var value = this.Data.Data[i];
@@ -9174,6 +9178,8 @@ function ChartMinutePriceLine()
                 this.Canvas.fill();
             }
         }
+
+        this.Canvas.restore();
     }
 
     this.GetMaxMin = function () 
