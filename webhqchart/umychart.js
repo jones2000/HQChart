@@ -3121,7 +3121,16 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         if (!this.Frame || !this.Frame.PtInFrameY) return null;
 
         var dragY=this.Frame.PtInFrameY(x,y);
-        if (!dragY || dragY.Index<0 || dragY.IsOverlay==true) return null;
+        if (!dragY || dragY.Index<0 ) return null;
+
+        if (dragY.IsOverlay===true)
+        {
+            if (!dragY.Right || !this.EnableYDrag.Right) return null;
+
+            if (this.Frame.IsEnableOverlayDragY(dragY.Index, dragY.OverlayIndex)) return dragY;
+
+            return null;
+        }
 
         if (dragY.Left && this.EnableYDrag.Left && this.Frame.IsEnableDragY(dragY.Index))
         {
@@ -3595,7 +3604,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             drag.CurrentMove.Y=e.clientY;
         }
 
-        if (this.BorderDrag && this.BorderDrag.Index>=0)
+        if (this.BorderDrag && this.BorderDrag.Index>=0)    //边框拖动
         {
             if(Math.abs(drag.LastMove.Y-e.clientY)<5) return;
 
@@ -3606,7 +3615,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             drag.LastMove.X=e.clientX;
             drag.LastMove.Y=e.clientY;
         }
-        else if (this.YDrag && this.YDrag.Index>=0)
+        else if (this.YDrag && this.YDrag.Index>=0) //Y轴缩放
         {
             if(moveSetpY<5) return;
 
@@ -14964,6 +14973,7 @@ function OverlayKLineFrame()
     {
         this.Buttons=[];
         if (this.ChartBorder.IsShowTitleOnly) return;
+
         this.SplitXYCoordinate();
 
         if (this.IsShow)
@@ -15094,6 +15104,31 @@ function OverlayKLineFrame()
         return { TextWidth:width };
     }
 
+    //同步主图坐标
+    this.SyncMainHorizontalInfo=function()
+    {
+        if (!this.MainFrame) return false;
+
+        if (this.MainFrame.YMaxMin)
+        {
+            this.YMaxMin.Max=this.MainFrame.YMaxMin.Max;
+            this.YMaxMin.Min=this.MainFrame.YMaxMin.Min;
+        }
+
+        this.HorizontalMax=this.MainFrame.HorizontalMax;
+        this.HorizontalMin=this.MainFrame.HorizontalMin;
+        this.HorizontalInfo=[];
+        for(var i=0;i<this.MainFrame.HorizontalInfo.length; ++i)
+        {
+            var item=this.MainFrame.HorizontalInfo[i];
+            this.HorizontalInfo.push(item);
+        }
+
+        this.CoordinateType=this.MainFrame.CoordinateType;
+
+        return true;
+    }
+
     //分割x,y轴坐标信息
     this.SplitXYCoordinate=function()
     {
@@ -15101,16 +15136,7 @@ function OverlayKLineFrame()
 
         if (this.IsShareY)  //和主图指标共享Y轴坐标
         {
-            this.HorizontalMax=this.MainFrame.HorizontalMax;
-            this.HorizontalMin=this.MainFrame.HorizontalMin;
-            this.HorizontalInfo=[];
-            for(var i in this.MainFrame.HorizontalInfo)
-            {
-                var item=this.MainFrame.HorizontalInfo[i];
-                this.HorizontalInfo.push(item);
-            }
-
-            this.CoordinateType=this.MainFrame.CoordinateType;
+            this.SyncMainHorizontalInfo();
         }
         else    //独立Y轴坐标
         {
@@ -16388,10 +16414,12 @@ function OverlayIndexItem()
         }
         else
         {
-            for(var i in this.ChartPaint)
+            for(var i=0;i<this.ChartPaint.length;++i)
             {
                 var paint=this.ChartPaint[i];
+                if (paint.IsShow==false) continue;      //隐藏的图形不计算
                 var range=paint.GetMaxMin();
+                if (range==null || range.Max==null || range.Min==null) continue;
 
                 if (IFrameSplitOperator.IsNumber(range.Max))
                 {
@@ -16405,10 +16433,29 @@ function OverlayIndexItem()
             }
         }
 
-        if (value.Max!=null && value.Min!=null)
+        if (!IFrameSplitOperator.IsNumber(this.Frame.YMaxMin.Max) || this.Frame.YMaxMin.Max!=value.Max)
         {
-            this.Frame.HorizontalMax=value.Max;
-            this.Frame.HorizontalMin=value.Min;
+            this.Frame.YMaxMin.Max=value.Max;
+            this.Frame.XYSplit=true;
+        }
+
+        if (!IFrameSplitOperator.IsNumber(this.Frame.YMaxMin.Min) || this.Frame.YMaxMin.Min!=value.Min)
+        {
+            this.Frame.YMaxMin.Min=value.Min;
+            this.Frame.XYSplit=true;
+        }
+
+        if (this.Frame.XYSplit)
+        {
+            var max=10, min=0;
+            if (value.Max!=null) max=value.Max;
+            if (value.Min!=null) min=value.Min;
+
+            this.Frame.HorizontalMax=max;
+            this.Frame.HorizontalMin=min;  
+        }
+        else
+        {
             this.Frame.XYSplit=true;
         }
     }
@@ -16509,6 +16556,12 @@ function HQTradeFrame()
 
         var subFrame=this.SubFrame[index];
         var frame=subFrame.Frame;
+        if (obj.IsOverlay)
+        {
+            var overlayItem=subFrame.OverlayIndex[obj.OverlayIndex];
+            if (!overlayItem) return false;
+            if (!overlayItem.Frame.IsShareY) frame=overlayItem.Frame;
+        }
         var splitOper=frame.YSplitOperator;
 
         if (splitOper.FixedYMaxMin)
@@ -16537,6 +16590,13 @@ function HQTradeFrame()
 
         var subFrame=this.SubFrame[index];
         var frame=subFrame.Frame;
+        if (obj.IsOverlay)
+        {
+            var overlayItem=subFrame.OverlayIndex[obj.OverlayIndex];
+            if (!overlayItem) return false;
+            if (!overlayItem.Frame.IsShareY) frame=overlayItem.Frame;
+        }
+       
         var top=frame.ChartBorder.GetTopEx();
         var bottom=frame.ChartBorder.GetBottomEx();
 
@@ -16575,7 +16635,7 @@ function HQTradeFrame()
             splitOper.EnableZoomUpDown=true;
             frame.XYSplit=true;
 
-            for(var i in subFrame.OverlayIndex)
+            for(var i=0;i<subFrame.OverlayIndex.length;++i)
             {
                 var item=subFrame.OverlayIndex[i];
                 if (item.Frame.IsShareY) item.Frame.XYSplit=true;
@@ -16939,14 +16999,25 @@ function HQTradeFrame()
                     var overlayItem=item.OverlayIndex[j];
                     if (!overlayItem.Frame) continue;
 
-                    var maxValue=overlayItem.Frame.HorizontalMax;   //最大最小要还原
-                    var minValue=overlayItem.Frame.HorizontalMin;
+                    if (overlayItem.Frame.IsShareY)
+                    {
+                        if (overlayItem.Frame.SyncMainHorizontalInfo)
+                            overlayItem.Frame.SyncMainHorizontalInfo();
 
-                    overlayItem.Frame.YSplitOperator.Operator();
-                    var value=overlayItem.Frame.GetScaleTextWidth();
-                    
-                    overlayItem.Frame.HorizontalMax=maxValue;
-                    overlayItem.Frame.HorizontalMin=minValue;
+                        var value=overlayItem.Frame.GetScaleTextWidth();
+                    }
+                    else
+                    {
+                        var maxValue=overlayItem.Frame.HorizontalMax;   //最大最小要还原
+                        var minValue=overlayItem.Frame.HorizontalMin;
+    
+                        overlayItem.Frame.YSplitOperator.Operator();
+                        var value=overlayItem.Frame.GetScaleTextWidth();
+                        
+                        //数据原始范围存储在YMaxMin, 不需要还原HorizontalMax,HorizontalMin
+                        //overlayItem.Frame.HorizontalMax=maxValue;
+                        //overlayItem.Frame.HorizontalMin=minValue;
+                    }
 
                     overlayItem.RightWidth={ Index:-1, Width:0 }; 
                     if (!value || !value.TextWidth) continue;
@@ -17790,6 +17861,22 @@ function HQTradeFrame()
         if (!item || !item.Frame || !item.Frame.YSplitOperator) return false;
         var split=item.Frame.YSplitOperator;
         if (typeof(split.IsEnableDragY)!='function') return false;
+
+        return split.IsEnableDragY();
+    }
+
+    this.IsEnableOverlayDragY=function(index, overlayIndex)
+    {
+        if (!this.SubFrame) return false;
+        var item=this.SubFrame[index];
+        var overlayItem=item.OverlayIndex[overlayIndex];
+        if (!overlayItem || !overlayItem.Frame) return false;
+
+        var split=overlayItem.Frame.YSplitOperator;
+        if (overlayItem.Frame.IsShareY)
+            split=overlayItem.Frame.MainFrame.YSplitOperator;
+        
+        if (!split || typeof(split.IsEnableDragY)!='function') return false;
 
         return split.IsEnableDragY();
     }
@@ -36605,24 +36692,36 @@ function ChartDrawSVG()
             if (item.Line)
             {
                 var lineItem=item.Line;
-                var price;
+                var price=null, yPrice=null;
                 var kItem=this.Data.Data[item.Index];
-                switch(lineItem.Value)
+                if (lineItem.Value=="Bottom")
                 {
-                    case "C":
-                        price=kItem.Close;
-                        break;
-                    case "H":
-                        price=kItem.High;
-                        break;
-                    case "L":
-                        price=kItem.Low;
-                        break;
+                    yPrice=bottom;
                 }
-
-                if (!IFrameSplitOperator.IsNumber(price)) continue;
+                else if (lineItem.Value=="Top")
+                {
+                    yPrice=top;
+                }
+                else
+                {
+                    switch(lineItem.Value)
+                    {
+                        case "C":
+                            price=kItem.Close;
+                            break;
+                        case "H":
+                            price=kItem.High;
+                            break;
+                        case "L":
+                            price=kItem.Low;
+                            break;    
+                    }
+    
+                    if (!IFrameSplitOperator.IsNumber(price)) continue;
+                    
+                    yPrice=this.ChartFrame.GetYFromData(price);
+                }
                 
-                var yPrice=this.ChartFrame.GetYFromData(price);
                 if (yPrice>=rtSVG.Top && yPrice<=rtSVG.Bottom) continue;
 
                 var yText;
@@ -71122,7 +71221,7 @@ function KLineChartContainer(uielement,OffscreenElement)
             var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
             var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
             var dragY=this.Frame.PtInFrameY(x,y);
-            if (dragY && dragY.Index>=0 && dragY.IsOverlay==false)
+            if (dragY && dragY.Index>=0)
             {
                 this.CancelZoomUpDownFrameY(dragY);
             }
@@ -74938,6 +75037,16 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         this.DataStatus.LatestDay=false;
     }
 
+    this.ClearOverlaySymbolData=function()
+    {
+        for(var i=0; i<this.OverlayChartPaint.length; ++i)
+        {
+            var chart=this.OverlayChartPaint[i];
+            chart.Status=OVERLAY_STATUS_ID.STATUS_NONE_ID;  //重置状态
+            chart.Data.Data=[]; //清空数据
+        }
+    }
+
     //切换股票代码
     this.ChangeSymbol=function(symbol,option)
     {
@@ -75103,6 +75212,68 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         this.Frame.ClearYCoordinateMaxMin();
         this.ResetOverlaySymbolStatus();
         this.RequestData();
+    }
+
+    //[{ Symbol: , Color, Option: }]
+    this.OverlaySymbols=function(aryData, option)
+    {
+        if (option && option.ClearAll===true)   //全部清空
+        {
+            for(var i=0; i<this.OverlayChartPaint.length; ++i)
+            {
+                var item=this.OverlayChartPaint[i];
+                item.IsDelete=true;
+            }
+            this.OverlayChartPaint=[];
+        }
+
+        var aryNewOverlay=[];
+        for(var i=0, j=0;i<aryData.length;++i)  //去重，已经叠加过的不用在叠加
+        {
+            var overlayItem=aryData[i];
+            var strSymbol=overlayItem.Symbol;
+            var bFind=false;
+            for(j=0;j<this.OverlayChartPaint.length; ++j)
+            {
+                var item=this.OverlayChartPaint[j];
+                if (item.Symbol==strSymbol)
+                {
+                    bFind=true;
+                    console.warn(`[MinuteChartContainer::OverlaySymbols] overlay symbol=${strSymbol} exist.`);
+                    break;
+                }
+            }
+
+            if (!bFind) aryNewOverlay.push(overlayItem);
+        }
+
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryNewOverlay)) return true;
+
+        for(var i=0;i<aryNewOverlay.length;++i)
+        {
+            var overlayItem=aryNewOverlay[i];
+            var strSymbol=overlayItem.Symbol;
+            var paint=new ChartOverlayMinutePriceLine();
+            paint.Canvas=this.Canvas;
+            paint.ChartBorder=this.Frame.SubFrame[0].Frame.ChartBorder;
+            paint.ChartFrame=this.Frame.SubFrame[0].Frame;
+            paint.Name="Overlay-Minute";
+            paint.Symbol=strSymbol;
+            paint.Identify=`Overlay-Minute-${strSymbol}`;
+            if (overlayItem.Option && overlayItem.Option.Color) paint.Color=overlayItem.Option.Color; //外部设置颜色
+            else paint.Color=g_JSChartResource.OverlaySymbol.Color[g_JSChartResource.OverlaySymbol.Random%g_JSChartResource.OverlaySymbol.Color.length];
+            ++g_JSChartResource.OverlaySymbol.Random;
+            paint.MainData=this.SourceData; //绑定主图数据
+    
+            if (paint.SetOption) paint.SetOption(overlayItem.Option);
+    
+            this.OverlayChartPaint.push(paint);
+        }
+
+        if (this.DayCount<=1) this.RequestOverlayMinuteData();               //请求数据
+        else this.RequestOverlayHistoryMinuteData();
+        
+        return true;
     }
 
     //叠加股票 symbol支持数据 ["600000.sh", "0000001.sz"]
@@ -76120,6 +76291,50 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         JSConsole.Chart.Log(`[MinuteChartContainer::CaclutateLimitPrice] ${this.Symbol} tofixed(2) max:${this.LimitPrice.Max} min:${this.LimitPrice.Min}`);
     }
 
+    this.RequestSingleOverlayMinuteData=function(symbol, date, item)
+    {
+        var self = this;
+        item.Status=OVERLAY_STATUS_ID.STATUS_REQUESTDATA_ID;
+
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'MinuteChartContainer::RequestOverlayMinuteData', //类名::函数名
+                Explain:'叠加股票最新分时数据',
+                Request:{ Url:this.HistoryMinuteApiUrl, Data:{days:[date], symbol:symbol}, Type:'POST' }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                item.Status=OVERLAY_STATUS_ID.STATUS_RECVDATA_ID;
+                self.RecvOverlayMinuteData(data,item);
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+        //请求数据
+        JSNetwork.HttpRequest({
+            url: this.HistoryMinuteApiUrl,
+            data:
+            {
+                "symbol":symbol,
+                "days": [date],
+            },
+            type:"post",
+            dataType: "json",
+            async:true,
+            success: function (data)
+            {
+                item.Status=OVERLAY_STATUS_ID.STATUS_RECVDATA_ID;
+                //self.RecvMultiOverlayMinuteData([data]);
+                self.RecvOverlayMinuteData(data,item);
+            }
+        });
+    }
+
     //请求叠加数据 (主数据下载完再下载))
     this.RequestOverlayMinuteData=function()
     {
@@ -76134,6 +76349,9 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             var symbol=item.Symbol;
             if (!symbol) continue;
 
+            this.RequestSingleOverlayMinuteData(symbol, date, item);
+
+            /*
             item.Status=OVERLAY_STATUS_ID.STATUS_REQUESTDATA_ID;
 
             if (this.NetworkFilter)
@@ -76173,6 +76391,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                     self.RecvOverlayMinuteData(data,item);
                 }
             });
+            */
         }
     }
 
@@ -76265,6 +76484,44 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         }
     }
 
+    this.RequestSingleOverlayHistoryMinuteData=function(symbol, days, item)
+    {
+        var self = this;
+        item.Status=OVERLAY_STATUS_ID.STATUS_REQUESTDATA_ID;
+
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'MinuteChartContainer::RequestOverlayHistoryMinuteData', //类名::函数名
+                Explain:'叠加股票多日分时数据',
+                Request:{ Url:self.HistoryMinuteApiUrl, Data:{days:days, symbol:symbol}, Type:'POST' }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                item.Status=OVERLAY_STATUS_ID.STATUS_RECVDATA_ID;
+                self.RecvOverlayHistoryMinuteData(data,item);
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+        JSNetwork.HttpRequest({
+            url: self.HistoryMinuteApiUrl,
+            data:{ "symbol": symbol, "days": days },
+            type:"post",
+            dataType: "json",
+            async:true,
+            success: function (data)
+            {
+                item.Status=OVERLAY_STATUS_ID.STATUS_RECVDATA_ID;
+                self.RecvOverlayHistoryMinuteData(data,item);
+            }
+        });
+    }
+
     this.RequestOverlayHistoryMinuteData=function()
     {
         if (!IFrameSplitOperator.IsNonEmptyArray(this.DayData)) return;
@@ -76280,11 +76537,14 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
         for(var i=0; i<this.OverlayChartPaint.length; ++i)
         {
-            let item=this.OverlayChartPaint[i]
+            var item=this.OverlayChartPaint[i]
             var symbol=item.Symbol;
             if (!symbol) continue;
             if (item.Status!=OVERLAY_STATUS_ID.STATUS_NONE_ID) continue;
 
+            this.RequestSingleOverlayHistoryMinuteData(symbol, days, item);
+
+            /*
             item.Status=OVERLAY_STATUS_ID.STATUS_REQUESTDATA_ID;
 
             if (this.NetworkFilter)
@@ -76318,6 +76578,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                     self.RecvOverlayHistoryMinuteData(data,item);
                 }
             });
+            */
         }
     }
 
