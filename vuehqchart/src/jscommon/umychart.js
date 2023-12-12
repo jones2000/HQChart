@@ -307,6 +307,8 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             var item=option.EnableYDrag;
             if (IFrameSplitOperator.IsBool(item.Left)) chart.EnableYDrag.Left=item.Left;
             if (IFrameSplitOperator.IsBool(item.Right)) chart.EnableYDrag.Right=item.Right;
+            if (IFrameSplitOperator.IsBool(item.Wheel)) chart.EnableYDrag.Wheel=item.Wheel;
+            if (IFrameSplitOperator.IsNumber(item.WheelYMove)) chart.EnableYDrag.WheelYMove=item.WheelYMove;
         }
 
         if (option.KLine)   //k线图的属性设置
@@ -2260,6 +2262,11 @@ JSChart.GetKLineZoom=function() //K线缩放配置
     return ZOOM_SEED;
 }
 
+JSChart.SetKLineZoom=function(aryZoom)  //设置K线缩放比例
+{
+    ZOOM_SEED=aryZoom;
+}
+
 JSChart.GetDivTooltipDataFormat=function()  //div tooltip数据格式化
 {
     return g_DivTooltipDataForamt;
@@ -2838,7 +2845,12 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     this.ClickDownPoint;         //鼠标点击坐标 {X, Y}, 鼠标放开以后清空为null
     this.IsDestroy=false;        //是否已经销毁了
 
-    this.EnableYDrag={ Left:false, Right:false };   //是否可以拖拽Y轴,放大缩小Y轴最大最小值
+    this.EnableYDrag=
+    { 
+        Left:false, Right:false,    //是否可以拖拽缩放Y轴最大最小值
+        Wheel:false, WheelYMove:5  //是否可以滚轴缩放Y轴最大最小值
+    };  
+
     this.EnableZoomIndexWindow=false;               //是否支持双击缩放附图窗口
     this.EnableVerifyRecvData=false;                //是否检测接收到的数据
 
@@ -66229,10 +66241,45 @@ function KLineChartContainer(uielement,OffscreenElement)
             }
         }
 
-        if (!isInClient) return;
+        if (!isInClient) 
+        {
+           if (!this.OnWheel_ZoomUpDownFrameY(e,x,y)) return;
+        }
 
         if(e.preventDefault) e.preventDefault();
         else e.returnValue = false;
+    }
+
+    //通过滚轴缩放Y轴
+    this.OnWheel_ZoomUpDownFrameY=function(e, x, y)
+    {
+        if (!this.EnableYDrag.Wheel) return false;
+
+        var dragY=this.TryYDrag(x,y);
+        if (!dragY) return false;
+       
+        if ((dragY.Left && !dragY.IsOverlay) || dragY.Right)
+        {
+            
+        }
+        else
+        {
+            return false;
+        }
+
+        var wheelValue=e.wheelDelta;
+        if (!IFrameSplitOperator.IsObjectExist(e.wheelDelta))
+            wheelValue=e.deltaY* -0.01;
+
+        var yMove=this.EnableYDrag.WheelYMove;
+        if (wheelValue>0) yMove*=-1;
+        dragY.Position=0;   //只能两边缩放
+        if (!this.Frame.OnZoomUpDownFrameY(dragY, yMove)) return false;
+
+        this.Frame.SetSizeChage(true);
+        this.Draw();
+
+        return true;
     }
 
     //创建

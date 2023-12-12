@@ -1175,6 +1175,13 @@ function SliderChart()
         this.Canvas.fillRect(rtBar.Left, rtBar.Top, rtBar.Width, rtBar.Height);
         this.AryRect.push({ Rect:rtBar, Type:2});
 
+        //最右边可能是空白区 要处理下
+        if (endData.Type==1)
+        {
+            var dataIndex=this.OffsetData.End;
+            if (dataIndex>=this.Data.Data.length) endData.Data=this.Data.Data[this.Data.Data.length-1];
+        }
+
         this.DrawDateTime(startData);
         this.DrawDateTime(endData);
     }
