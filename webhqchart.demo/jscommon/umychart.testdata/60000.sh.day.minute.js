@@ -5,6 +5,17 @@ var MINUTE_1DAY_DATA={
             "minute": [
                 {
                     "date": 20230707,
+                    "time": 925,
+                    "open": 7.21,
+                    "high": 7.21,
+                    "low": 7.21,
+                    "price": 7.21,
+                    "vol": 2500,
+                    "amount": 6425,
+                    "avprice": 7.21
+                },
+                {
+                    "date": 20230707,
                     "time": 930,
                     "open": 7.21,
                     "high": 7.21,
@@ -1332,6 +1343,17 @@ var MINUTE_1DAY_DATA={
                     "price": 7.19,
                     "vol": 41900,
                     "amount": 301635,
+                    "avprice": 7.212
+                },
+                {
+                    "date": 20230707,
+                    "time": 1300,
+                    "open": 7.21,
+                    "high": 7.21,
+                    "low": 7.21,
+                    "price": 7.2,
+                    "vol": 700,
+                    "amount": 8986,
                     "avprice": 7.212
                 },
                 {

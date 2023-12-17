@@ -19500,7 +19500,7 @@ function ScriptIndex(name,script,args,option)
     //是否超出执行的最大次数
     this.IsExcessRunCount=function()
     {
-        if (this.MaxRunCount<=0) return false;   //没有限制
+        if (this.MaxRunCount<0) return false;   //没有限制
 
         return this.RunCount>=this.MaxRunCount;
     }
