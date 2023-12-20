@@ -71729,6 +71729,12 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         if (!this.IsApiPeriod)
         {
+            if (bindData.Right>0 && this.RightFormula>=1)   //复权
+            {
+                var rightData=bindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula } );
+                bindData.Data=rightData;
+            }
+
             if (ChartData.IsDayPeriod(bindData.Period,false) || ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据 (0= 日线,4=1分钟线 不需要处理)
             {
                 var periodData=bindData.GetPeriodData(bindData.Period);
@@ -71938,6 +71944,7 @@ function KLineChartContainer(uielement,OffscreenElement)
                 Explain:funcExplain,
                 Request:{ Url:url,  Type:'POST' , Data: postData, Period:this.Period, Right:this.Right }, 
                 DragDownload:download,
+                Option:option,
                 Self:this,
                 PreventDefault:false,
                 ZoomData:option.ZoomData
@@ -72015,6 +72022,12 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         if (!this.IsApiPeriod)
         {
+            if (bindData.Right>0)    //复权
+            {
+                var rightData=bindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula });
+                bindData.Data=rightData;
+            }
+
             if (ChartData.IsDayPeriod(bindData.Period,false) || ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据 (0= 日线,4=1分钟线 不需要处理)
             {
                 var periodData=bindData.GetPeriodData(bindData.Period);
@@ -72032,12 +72045,20 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         //绑定数据
         this.UpdateMainData(bindData,lastDataCount);
-        if (option && option.ZoomData)  //缩放需要调整当前屏的位置
+        if (option)  //缩放需要调整当前屏的位置
         {
-            var zoomData=option.ZoomData;
-            var showCount=zoomData.PageSize-zoomData.RightSpaceCount;   //一屏显示的数据个数
-            bindData.DataOffset= bindData.Data.length-showCount;
-            if (bindData.DataOffset<0) bindData.DataOffset=0;
+            if (option.ZoomData)
+            {
+                var zoomData=option.ZoomData;
+                var showCount=zoomData.PageSize-zoomData.RightSpaceCount;   //一屏显示的数据个数
+                bindData.DataOffset= bindData.Data.length-showCount;
+                if (bindData.DataOffset<0) bindData.DataOffset=0;
+            }
+            else if (IFrameSplitOperator.IsNumber(option.DataOffset))
+            {
+                bindData.DataOffset+=option.DataOffset;
+                if (bindData.DataOffset<0) bindData.DataOffset=0;
+            }
         }
 
         this.UpdateOverlayDragDayData(data);
@@ -72076,6 +72097,7 @@ function KLineChartContainer(uielement,OffscreenElement)
             RecvFuncName:"RecvZoomDayData",
             Download:this.ZoomDownload.Day,
             Url:this.ZoomKLineApiUrl,
+            XShowCount:this.Frame.GetXShowCount(),
             Count:count,
             ZoomData:zoomData
         };
@@ -72093,7 +72115,8 @@ function KLineChartContainer(uielement,OffscreenElement)
             RecvFuncName:"RecvDragDayData",
             Download:this.DragDownload.Day,
             Url:this.DragKLineApiUrl,
-            Count:this.MaxRequestDataCount
+            Count:this.MaxRequestDataCount,
+            XShowCount:this.Frame.GetXShowCount(),
         };
 
         this.RequestPreviousDayData(option);

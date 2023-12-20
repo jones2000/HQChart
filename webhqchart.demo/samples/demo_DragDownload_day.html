@@ -4,7 +4,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
 
-<title>拖动下载历史数据</title>  
+<title>拖动下载历史数据-日线</title>  
     <!-- 加载资源 -->
     <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
     <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
@@ -27,7 +27,7 @@
     <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
     <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
 
-    <script src="../jscommon/umychart.testdata/if2206.cf.1minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/60000.sh.day.kline.js"></script>
 
     <script>
 
@@ -56,10 +56,10 @@
                     
                 ],  //叠加指标
                 
-                Symbol:"if2206.cfe",
-                IsAutoUpdate:true,       //是自动更新数据
+                Symbol:"600000.sh",
+                //IsAutoUpdate:true,       //是自动更新数据
                 AutoUpdateFrequency:10000,   //数据更新频率
-                IsApiPeriod:true,
+                //IsApiPeriod:true,
                 //TradeIndex: {Index:'交易系统-BIAS'},    //交易系统
     
                 IsShowRightMenu:true,          //右键菜单
@@ -67,8 +67,8 @@
                 //IsClickShowCorssCursor:true,
                 //IsCorssOnlyDrawKLine:true,
 
-                DragDownload: { Minute: { Enable:true } },   //拖拽下载
-                ZoomDownload:{ Minute: { Enable:true } },
+                DragDownload: { Day: { Enable:true } },   //拖拽下载
+                ZoomDownload:{ Day: { Enable:true } },
 
                 CorssCursorInfo: { RightButton:{ Enable:true } },
 
@@ -78,11 +78,11 @@
                 {
                     DragMode:1,                 //拖拽模式 0=禁止拖拽 1=数据拖拽 2=区间选择
                     Right:0,                    //复权 0 不复权 1 前复权 2 后复权
-                    Period:4,                   //周期 0 日线 1 周线 2 月线 3 年线 
+                    Period:0,                   //周期 0 日线 1 周线 2 月线 3 年线 
                     MaxRequestDataCount:600,   //数据个数
                     MaxRequestMinuteDayCount:5, //分钟数据获取几天数据  默认取5天数据
                     IsShowTooltip:true,                 //是否显示K线提示信息
-                    DrawType:1,      //K线类型 0=实心K线柱子 1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积图
+                    DrawType:0,      //K线类型 0=实心K线柱子 1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积图
                     //FirstShowDate:20161201,
                     KLineDoubleClick:false, //禁止双击弹框
                     RightSpaceCount:3,
@@ -155,16 +155,6 @@
                 zoom.push([0.7,0]);
                 zoom.push([0.6,0]);
                 zoom.push([0.5,0]);
-                zoom.push([0.4,0]);
-                zoom.push([0.3,0]);
-                zoom.push([0.2,0]);
-                zoom.push([0.1,0]);
-                zoom.push([0.09,0]);
-                zoom.push([0.08,0]);
-                zoom.push([0.07,0]);
-                zoom.push([0.06,0]);
-                zoom.push([0.05,0]);
-
 
                 this.OnSize();  //让K线全屏
                 this.Option.NetworkFilter=(data, callback)=>{ this.NetworkFilter(data, callback); }
@@ -177,37 +167,41 @@
                 console.log(`[KLine::NetworkFilter] Name=${data.Name}`);
                 switch(data.Name) 
                 {
-                    case 'KLineChartContainer::ReqeustHistoryMinuteData':           //分钟全量数据下载
-                        this.RequestHistoryMinuteData(data, callback);
+                    case 'KLineChartContainer::RequestHistoryData':                 //日线全量数据下载
+                        this.RequestHistoryData(data,callback);
                         break;
-                    case 'KLineChartContainer::RequestMinuteRealtimeData':          //分钟增量数据更新
-                        this.RequestMinuteRealtimeData(data,callback);
+                    case 'KLineChartContainer::RequestRealtimeData':                //日线实时数据更新
+                        this.RequestRealtimeData(data,callback);
                         break;
-                    case "KLineChartContainer::RequestDragMinuteData":              //拖动下载
-                        this.RequestDragMinuteData(data, callback);
+                    case 'KLineChartContainer::RequestFlowCapitalData':             //流通股本
+                        this.RequestFlowCapitalData(data,callback);
                         break;
-                    case "KLineChartContainer::RequestZoomMinuteData":
-                        this.RequestZoomMinuteData(data, callback);
+
+                    case "KLineChartContainer::RequestDragDayData":              //拖动下载
+                        this.RequestDragDayData(data, callback);
+                        break;
+                    case "KLineChartContainer::RequestZoomDayData":
+                        this.RequestZoomDayData(data, callback);
                         break;
                 }
             }
 
-            this.RequestHistoryMinuteData=function(data, callback)
+            this.RequestHistoryData=function(data, callback)
             {
                 data.PreventDefault=true;
                 var symbol=data.Request.Data.symbol; //请求的股票代码
 
-                console.log(`[KLineChart::RequestHistoryMinuteData] Symbol=${symbol}`);
+                console.log(`[KLineChart::RequestHistoryData] Symbol=${symbol}`);
 
                 setTimeout(()=>
                 { 
                     var hqchartData={ name:symbol, symbol:symbol, code:0, ver:2, data:[] };
 
-                    var dataCount=2000;
-                    var startIndex=KLINE_1MINUTE_DATA.data.length-dataCount;
-                    for(var i=startIndex; i<KLINE_1MINUTE_DATA.data.length; ++i)
+                    var dataCount=500;
+                    var startIndex=KLINE_DAY_DATA.data.length-dataCount;
+                    for(var i=startIndex; i<KLINE_DAY_DATA.data.length; ++i)
                     {
-                        hqchartData.data.push(KLINE_1MINUTE_DATA.data[i]);
+                        hqchartData.data.push(KLINE_DAY_DATA.data[i]);
                     }
 
                     callback(hqchartData);
@@ -215,44 +209,74 @@
                 }, 1000)
             }
 
-            this.RequestMinuteRealtimeData=function(data,callback)
+            this.RequestRealtimeData=function(data,callback)
             {
                 data.PreventDefault=true;
                 var symbol=data.Request.Data.symbol[0]; //请求的股票代码
 
                 setTimeout(()=>
                 {
-                    var hqchartData={ name:symbol, symbol:symbol, code:0, ver:2, data:[] };
-                    var dataIndex=KLINE_1MINUTE_DATA.data.length-1;
-                    hqchartData.data.push(KLINE_1MINUTE_DATA.data[dataIndex]);
+                    var dataIndex=KLINE_DAY_DATA.data.length-1;
+                    var kItem=KLINE_DAY_DATA.data[dataIndex];
+                    
+                    var stockItem=
+                    { 
+                        time:kItem[8], 
+                        date:kItem[0], 
+                        price:kItem[5], 
+                        open:kItem[2], 
+                        high:kItem[3], 
+                        low:kItem[4], 
+                        yclose:kItem[1], 
+                        vol:kItem[6], 
+                        amount:kItem[7],
+                        name:symbol, 
+                        symbol:symbol 
+                    };
+
+                    var hqchartData={ code:0, ver:2, stock:[stockItem] };
 
                     callback(hqchartData);
                 }, 1000);
             }
 
-            this.RequestDragMinuteData=function(data, callback)
+            this.RequestFlowCapitalData=function(data,callback)
+            {
+                data.PreventDefault=true;
+                var symbol=data.Request.Data.symbol; //请求的股票代码
+
+                console.log(`[KLineChart::RequestFlowCapitalData] Symbol=${symbol}`);
+
+                setTimeout(()=>
+                {
+                    var hqchartData={code:0, stock:[]}; //如果没有数据就填空
+                    callback(hqchartData);
+                },1000);
+            }
+
+            this.RequestDragDayData=function(data, callback)
             {
                 data.PreventDefault=true;
                 var dataCount=data.Option.XShowCount;
                 var symbol=data.Request.Data.symbol; //请求的股票代码
                 var firstDateTime=data.Request.Data.first;
 
-                console.log(`[KLineChart::RequestDragMinuteData] Symbol=${symbol} date=${firstDateTime.date} time=${firstDateTime.time}`);
+                console.log(`[KLineChart::RequestDragDayData] Symbol=${symbol} date=${firstDateTime.date} time=${firstDateTime.time}`);
 
                 var self=data.Self;
                 var option=data.Option;
-                var title=`拖动下载数据中...... 起始位置 ${IFrameSplitOperator.FormatDateString(firstDateTime.date)} ${IFrameSplitOperator.FormatTimeString(firstDateTime.time, "HH:MM")}, 下载数据个数${dataCount}`
+                var title=`拖动下载数据中...... 起始位置 ${IFrameSplitOperator.FormatDateString(firstDateTime.date)}, 下载数据个数${dataCount}`
                 self.EnableSplashScreen(true, {Title:title});
 
                 setTimeout(()=>
                 {
                     var findIndex=-1;
-                    var dateTime=firstDateTime.date*10000+firstDateTime.time;
-                    for(var i=0;i<KLINE_1MINUTE_DATA.data.length;++i)
+                    var date=firstDateTime.date;
+                    for(var i=0;i<KLINE_DAY_DATA.data.length;++i)
                     {
-                        var kItem=KLINE_1MINUTE_DATA.data[i];
-                        var value=kItem[0]*10000+kItem[8];
-                        if (value>=dateTime)
+                        var kItem=KLINE_DAY_DATA.data[i];
+                        var value=kItem[0];
+                        if (value>=date)
                         {
                             findIndex=i;
                             break;
@@ -273,43 +297,43 @@
                     var hqchartData={ name:symbol, symbol:symbol, code:0, ver:2, data:[] };
                     for(var i=startIndex; i<findIndex; ++i)
                     {
-                        hqchartData.data.push(KLINE_1MINUTE_DATA.data[i]);
+                        hqchartData.data.push(KLINE_DAY_DATA.data[i]);
                     }
 
                     option.DataOffset=-parseInt(dataCount/2); //当前屏数据往前移动
 
                     self.ChartSplashPaint.EnableSplash(false);
 
-                    console.log('[KLineChart::RequestDragMinuteData] ', hqchartData);
+                    console.log('[KLineChart::RequestDragDayData] ', hqchartData);
 
                     callback(hqchartData);
 
                 },1000);
             }
 
-            this.RequestZoomMinuteData=function(data, callback)
+            this.RequestZoomDayData=function(data, callback)
             {
                 data.PreventDefault=true;
                 var dataCount=data.Option.XShowCount;
                 var symbol=data.Request.Data.symbol; //请求的股票代码
                 var firstDateTime=data.Request.Data.first;
 
-                console.log(`[KLineChart::RequestZoomMinuteData] Symbol=${symbol} date=${firstDateTime.date} time=${firstDateTime.time}`);
+                console.log(`[KLineChart::RequestZoomDayData] Symbol=${symbol} date=${firstDateTime.date}`);
 
                 var self=data.Self;
                 var option=data.Option;
-                var title=`缩放下载数据中...... 起始位置 ${IFrameSplitOperator.FormatDateString(firstDateTime.date)} ${IFrameSplitOperator.FormatTimeString(firstDateTime.time, "HH:MM")}, 下载数据个数${dataCount}`
+                var title=`缩放下载数据中...... 起始位置 ${IFrameSplitOperator.FormatDateString(firstDateTime.date)}, 下载数据个数${dataCount}`
                 self.EnableSplashScreen(true, {Title:title});
 
                 setTimeout(()=>
                 {
                     var findIndex=-1;
-                    var dateTime=firstDateTime.date*10000+firstDateTime.time;
-                    for(var i=0;i<KLINE_1MINUTE_DATA.data.length;++i)
+                    var date=firstDateTime.date;
+                    for(var i=0;i<KLINE_DAY_DATA.data.length;++i)
                     {
-                        var kItem=KLINE_1MINUTE_DATA.data[i];
-                        var value=kItem[0]*10000+kItem[8];
-                        if (value>=dateTime)
+                        var kItem=KLINE_DAY_DATA.data[i];
+                        var value=kItem[0]
+                        if (value>=date)
                         {
                             findIndex=i;
                             break;
@@ -330,14 +354,14 @@
                     var hqchartData={ name:symbol, symbol:symbol, code:0, ver:2, data:[] };
                     for(var i=startIndex; i<findIndex; ++i)
                     {
-                        hqchartData.data.push(KLINE_1MINUTE_DATA.data[i]);
+                        hqchartData.data.push(KLINE_DAY_DATA.data[i]);
                     }
 
                     option.DataOffset=-parseInt(dataCount/2); //当前屏数据往前移动
 
                     self.ChartSplashPaint.EnableSplash(false);
 
-                    console.log('[KLineChart::RequestDragMinuteData] ', hqchartData);
+                    console.log('[KLineChart::RequestZoomDayData] ', hqchartData);
 
                     callback(hqchartData);
 
