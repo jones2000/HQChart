@@ -47880,8 +47880,8 @@ function ChartSplashPaint()
 {
     this.Frame;
     this.Canvas;                            //画布
-    this.Font=g_JSChartResource.DefaultTextFont;            //字体
-    this.TextColor=g_JSChartResource.DefaultTextColor;      //文本颜色
+    this.Font=g_JSChartResource.SplashScreen.Font;                  //字体
+    this.TextColor=g_JSChartResource.SplashScreen.TextColor;        //文本颜色
     this.IsEnableSplash=false;
     this.SplashTitle='数据加载中';
     this.HQChart;
@@ -62064,7 +62064,9 @@ function JSChartResource()
     this.SplashScreen=
     {
         BGColor:"rgba(112,128,144,0.5)",
-        Title:"下载数据中......"
+        Title:"下载数据中......",
+        TextColor:"rgb(43,54,69)",
+        Font:14*GetDevicePixelRatio() +'px 微软雅黑'
     }
 
     this.HLCArea=
@@ -63145,6 +63147,8 @@ function JSChartResource()
             var item=style.SplashScreen;
             if (item.BGColor) this.SplashScreen.BGColor=item.BGColor;
             if (item.Title) this.SplashScreen.Title=item.Title;
+            if (item.TextColor) this.SplashScreen.TextColor=item.TextColor;
+            if (item.Font) this.SplashScreen.Font=item.Font;
         }
 
         if (style.HLCArea)
@@ -67112,7 +67116,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         item.BindData(this,windowIndex,hisData);
     }
 
-    //叠加指标
+    //叠加指标 option={ CheckRunCount:执行次数检测 ,SyncExecute:同步|异步检测 }
     this.BindOverlayIndexData=function(overlayItem, windowIndex, hisData, option)
     {
         if (!overlayItem.Script) return;
@@ -67125,8 +67129,20 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         if (typeof(overlayItem.Script.ExecuteScript)=='function')
         {
-            if (option && option.CheckRunCount)
-                if (overlayItem.Script.IsExcessRunCount()) return;
+            if (option) 
+            {
+                if (option.CheckRunCount)   //检测执行次数
+                {
+                    if (overlayItem.Script.IsExcessRunCount()) 
+                        return;
+                }
+
+                if (IFrameSplitOperator.IsBool(option.SyncExecute)) //异步|同步
+                {
+                    if (overlayItem.Script.IsSync!=option.SyncExecute) 
+                        return;
+                }
+            }
                 
             overlayItem.Script.ExecuteScript(this,windowIndex,hisData);
             return;
@@ -67302,7 +67318,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         for(var i=0;i<this.Frame.SubFrame.length;++i)
         {
             var item=this.Frame.SubFrame[i];
-            for(var j in item.OverlayIndex)
+            for(var j=0; j<item.OverlayIndex.length; ++j)
             {
                 var overlayItem=item.OverlayIndex[j];
                 this.BindOverlayIndexData(overlayItem,i,hisData,option)
@@ -67385,11 +67401,13 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         if (page.Enable) page.Index=1;    //第一页下载完成
 
-        this.BindInstructionIndexData(bindData);    //执行指示脚本
+        this.BindInstructionIndexData(bindData);        //执行指示脚本
         for(var i=0; i<this.Frame.SubFrame.length; ++i) //执行指标
         {
             this.BindIndexData(i,bindData);
         }
+
+        this.BindAllOverlayIndexData(bindData, { SyncExecute:true });   //同步模式叠加指标
 
         //刷新画图
         this.UpdataDataoffset();           //更新数据偏移
@@ -67398,8 +67416,8 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.UpdatePointByCursorIndex(2);   //取消十字光标
         this.Draw();
 
-        //叠加指标
-        this.BindAllOverlayIndexData(bindData);
+        
+        this.BindAllOverlayIndexData(bindData,{ SyncExecute:false } );  //异步模式叠加指标
 
         if (this.mapEvent.has(JSCHART_EVENT_ID.RECV_HISTROY_DATA))
         {
@@ -67693,6 +67711,8 @@ function KLineChartContainer(uielement,OffscreenElement)
             this.BindIndexData(i,bindData);
         }
 
+        this.BindAllOverlayIndexData(bindData, { SyncExecute:true });   //同步模式叠加指标
+
         //刷新画图
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdatePointByCursorIndex(2);  //切换周期了取消十字光标
@@ -67701,7 +67721,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.Draw();
         
         //叠加指标
-        this.BindAllOverlayIndexData(bindData);
+        this.BindAllOverlayIndexData(bindData, { SyncExecute:false } );  //异步模式叠加指标
 
         if (this.mapEvent.has(JSCHART_EVENT_ID.RECV_HISTROY_DATA))
         {
@@ -67993,6 +68013,8 @@ function KLineChartContainer(uielement,OffscreenElement)
             this.BindIndexData(i,bindData, { CheckRunCount:true });
         }
 
+        this.BindAllOverlayIndexData(bindData, {  CheckRunCount:true, SyncExecute:true });   //同步模式叠加指标
+
         //刷新画图
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdatePointByCursorIndex(1);  //更新十字光标位子
@@ -68000,10 +68022,10 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.Frame.SetSizeChage(true);
         this.Draw();
 
-        this.SendKLineUpdateEvent(bindData);
+        this.SendKLineUpdateEvent(bindData);    
 
         //叠加指标计算
-        this.BindAllOverlayIndexData(bindData,{ CheckRunCount:true });
+        this.BindAllOverlayIndexData(bindData, { CheckRunCount:true,SyncExecute:false });     //异步模式叠加指标
 
         if (this.mapEvent.has(JSCHART_EVENT_ID.ON_RECV_REALTIME_DATA))
         {
@@ -68241,6 +68263,8 @@ function KLineChartContainer(uielement,OffscreenElement)
             this.BindIndexData(i,bindData);
         }
 
+        this.BindAllOverlayIndexData(bindData, {  CheckRunCount:true, SyncExecute:true });   //同步模式叠加指标
+
         //刷新画图
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdatePointByCursorIndex(1);  //更新十字光标位子
@@ -68251,7 +68275,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.SendKLineUpdateEvent(bindData);
 
         //更新叠加指标
-        this.BindAllOverlayIndexData(bindData);
+        this.BindAllOverlayIndexData(bindData, { CheckRunCount:true,SyncExecute:false });     //异步模式叠加指标
 
         if (this.mapEvent.has(JSCHART_EVENT_ID.ON_RECV_REALTIME_DATA))
         {
@@ -68317,6 +68341,8 @@ function KLineChartContainer(uielement,OffscreenElement)
             this.BindIndexData(i,bindData);
         }
 
+        this.BindAllOverlayIndexData(bindData, { CheckRunCount:true, SyncExecute:true });   //同步模式叠加指标
+
         //刷新画图
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdatePointByCursorIndex(1);  //更新十字光标位子
@@ -68327,7 +68353,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.SendKLineUpdateEvent(bindData);
 
         //更新叠加指标
-        this.BindAllOverlayIndexData(bindData);
+        this.BindAllOverlayIndexData(bindData, { CheckRunCount:true, SyncExecute:false });  //异步模式叠加指标
     }
 
     //更新当天的全量分钟数据
@@ -69262,7 +69288,7 @@ function KLineChartContainer(uielement,OffscreenElement)
 
             if (IFrameSplitOperator.IsNumber(obj.FloatPrecision)) indexData.FloatPrecision=obj.FloatPrecision;
             if (IFrameSplitOperator.IsNumber(obj.StringFormat)) indexData.StringFormat=obj.StringFormat;
-
+            if (IFrameSplitOperator.IsBool(obj.IsSync)) indexData.IsSync=obj.IsSync;
             var scriptIndex=new OverlayScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
             scriptIndex.OverlayIndex={ IsOverlay:true, Identify:overlayFrame.Identify, WindowIndex:windowIndex, Frame:overlayFrame };    //叠加指标信息
             overlayFrame.Script=scriptIndex;
@@ -71776,6 +71802,8 @@ function KLineChartContainer(uielement,OffscreenElement)
             this.BindIndexData(i,bindData);
         }
 
+        this.BindAllOverlayIndexData(bindData, { SyncExecute:true });   //同步模式叠加指标
+
         //刷新画图
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdatePointByCursorIndex();   //更新十字光标位子
@@ -71785,7 +71813,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.Draw();
 
         //叠加指标计算
-        this.BindAllOverlayIndexData(bindData);
+        this.BindAllOverlayIndexData(bindData, { SyncExecute:false });  //异步模式叠加指标
     }
 
     this.RequestZoomMinuteData=function(requestData)
@@ -72069,6 +72097,8 @@ function KLineChartContainer(uielement,OffscreenElement)
             this.BindIndexData(i,bindData);
         }
 
+        this.BindAllOverlayIndexData(bindData, { SyncExecute:true });   //同步模式叠加指标
+
         //刷新画图
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdatePointByCursorIndex();   //更新十字光标位子
@@ -72081,7 +72111,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.ReqeustKLineInfoData( { FunctionName:option.RecvFuncName, StartDate:firstData.Date } );
 
         //叠加指标计算
-        this.BindAllOverlayIndexData(bindData);
+        this.BindAllOverlayIndexData(bindData, { SyncExecute:false });  //异步模式叠加指标
     }
 
     this.RequestZoomDayData=function(requestData)
@@ -77329,7 +77359,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         for(var i=0;i<this.Frame.SubFrame.length;++i)
         {
             var item=this.Frame.SubFrame[i];
-            for(var j in item.OverlayIndex)
+            for(var j=0;j<item.OverlayIndex.length; ++j)
             {
                 var overlayItem=item.OverlayIndex[j];
                 this.BindOverlayIndexData(overlayItem,i,hisData,option)

@@ -16936,6 +16936,7 @@ function JSExecute(ast,option)
                     outVar=this.SymbolData.GetOtherSymolCacheData({ Literal:outVar });
                 varName="__temp_li_"+i+"__";
                 var type=0;
+                if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
                 this.OutVarTable.push({Name:varName, Data:outVar, Type:type, NoneName:true});
             }
             else if (item.Expression.Type==Syntax.BinaryExpression)
@@ -21702,7 +21703,9 @@ function OverlayScriptIndex(name,script,args,option)
 
         param.HQChart.UpdataDataoffset();           //更新数据偏移
         param.HQChart.UpdateFrameMaxMin();          //调整坐标最大 最小值
-        param.HQChart.Draw();
+
+        if (param.Self.IsSync===false)    //异步需要马上刷新，同步主图数据更新的时候会刷新的
+            param.HQChart.Draw();
 
         var event=hqChart.GetOverlayIndexEvent();  //指标计算完成回调
         if (event)

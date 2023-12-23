@@ -31,7 +31,7 @@
 
     <script>
 
-       //MARKET_SUFFIX_NAME.GetMarketStatus = function (symbol) { return 2; }
+       MARKET_SUFFIX_NAME.GetMarketStatus = function (symbol) { return 2; }
 
         //简单的把K线控件封装下
         function KLineChart(divKLine)
@@ -46,19 +46,22 @@
                 
                 Windows: //窗口指标
                 [
-                    {Index:"MA" },
-                    {Index:"VOL"},
+                    {Index:"MA", IsSync:true },
+                    {Index:"VOL", IsSync:true },
+                    {Index:"MACD", IsSync:true },
                 ], 
 
                 
                 OverlayIndex:
                 [
+                    {Index:'RSI', Windows:1, ShowRightText:true, IsSync:true },
+                    {Index:'VOL', Windows:2, ShowRightText:true, IsSync:false },
                     
                 ],  //叠加指标
                 
                 Symbol:"600000.sh",
-                //IsAutoUpdate:true,       //是自动更新数据
-                AutoUpdateFrequency:10000,   //数据更新频率
+                IsAutoUpdate:true,       //是自动更新数据
+                AutoUpdateFrequency:3000,   //数据更新频率
                 //IsApiPeriod:true,
                 //TradeIndex: {Index:'交易系统-BIAS'},    //交易系统
     
@@ -143,8 +146,8 @@
                 $(window).resize(function() { self.OnSize( ); });    //绑定窗口大小变化事件
 
                 var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID); //读取黑色风格配置
-                JSChart.SetStyle(blackStyle);
-                this.DivKLine.style.backgroundColor=blackStyle.BGColor; //设置最外面的div背景
+                //JSChart.SetStyle(blackStyle);
+                //this.DivKLine.style.backgroundColor=blackStyle.BGColor; //设置最外面的div背景
 
                 JSChart.GetResource().ToolbarButtonStyle=1;
 

@@ -110,6 +110,7 @@ function JSIndexScript()
             ['神奇九转', this.NineTurns],
             ['EMA', this.EMA3], ['EMA4', this.EMA4], ['EMA5', this.EMA5],['EMA6', this.EMA6],
             ["ICHIMOKU",this.ICHIMOKU],["CDP-STD", this.CDP_STD],["TBP-STD",this.TBP_STD],
+            ["ADX", this.ADX],
 
             //通达信特色指标
             ["散户线", this.ShareholderCount],["NXTS", this.NXTS],["FKX", this.FKX],["两融资金", this.Margin4],
@@ -4109,6 +4110,28 @@ TBP:REF(REF(C,1)+IF(DIRECT0>50,MIN(MF0,MF1),MAX(MF0,MF1)),1);\n\
 多头停损:REF(IF(DIRECT0>50,APX-TR0,DRAWNULL),1),NODRAW;\n\
 空头回补:REF(IF(DIRECT0<-50,APX*2-H,DRAWNULL),1),NODRAW;\n\
 空头停损:REF(IF(DIRECT0<-50,APX+TR0,DRAWNULL),1),NODRAW;"
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.ADX = function () 
+{
+    let data =
+    {
+        Name: 'ADX', Description: '均趋向指标', IsMainIndex: true,
+        Args: [{ Name: 'N', Value: 14 }],
+        Script: //脚本
+`TR1:=SMA(MAX(MAX(HIGH-LOW,ABS(HIGH-REF(CLOSE,1))),ABS(LOW-REF(CLOSE,1))),N,1);
+HD:=HIGH-REF(HIGH,1);
+LD:=REF(LOW,1)-LOW;
+DMP:=SMA(IF(HD>0 AND HD>LD,HD,0),N,1);
+DMM:=SMA(IF(LD>0 AND LD>HD,LD,0),N,1);
+PDI:DMP*100/TR1,COLORRED,DOTLINE;
+MDI:DMM*100/TR1,COLORGREEN,DOTLINE;
+ADX:SMA(ABS(MDI-PDI)/(MDI+PDI)*100,N,1),COLORYELLOW,LINETHICK2;
+20;
+40;`
     };
 
     return data;

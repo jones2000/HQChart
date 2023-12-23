@@ -41,6 +41,12 @@ function GetBlackStyle()
         UnchagneBarColor: "rgb(228,228,228)", //平盘
         EmptyBarBGColor:'rgb(0,0,0)',   //空心柱子背景色
 
+        SplashScreen:
+        {
+            BGColor:"rgba(112,128,144,0.5)",
+            TextColor:"rgb(230,230,230)",
+        },
+
         HLCArea:
         {
             HighLineColor:'rgb(238,21,21)',
