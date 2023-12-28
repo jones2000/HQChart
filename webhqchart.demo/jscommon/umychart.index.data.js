@@ -4119,7 +4119,7 @@ JSIndexScript.prototype.ADX = function ()
 {
     let data =
     {
-        Name: 'ADX', Description: '均趋向指标', IsMainIndex: true,
+        Name: 'ADX', Description: '均趋向指标', IsMainIndex: false,
         Args: [{ Name: 'N', Value: 14 }],
         Script: //脚本
 `TR1:=SMA(MAX(MAX(HIGH-LOW,ABS(HIGH-REF(CLOSE,1))),ABS(LOW-REF(CLOSE,1))),N,1);

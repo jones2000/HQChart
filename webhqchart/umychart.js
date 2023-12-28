@@ -3607,7 +3607,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     this.DocOnMouseMove=function(e)
     {
         //加载数据中,禁用鼠标事件
-        if (this.ChartSplashPaint && this.IsEnableSplash == true) return;
+        if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash) return;
         
         var drag=this.MouseDrag;
         if (!drag) return;
@@ -3835,7 +3835,11 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                     }
                     else if (!bUpDownY)
                     {
-                        if (this.DragDownloadData) this.DragDownloadData();
+                        if (this.DragDownloadData) 
+                        {
+                            this.DragDownloadData();
+                            if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash) return;
+                        }
                     }
                 }
                 //this.UIElement.style.cursor=cursorStatus;
@@ -29362,10 +29366,22 @@ function ChartPartLine()
         var bHScreen=(this.ChartFrame.IsHScreen===true);
         var dataWidth=this.ChartFrame.DataWidth;
         var distanceWidth=this.ChartFrame.DistanceWidth;
-        var chartright=this.ChartBorder.GetRight();
-        if (bHScreen) chartright=this.ChartBorder.GetBottom();
+        if (bHScreen)
+        {
+            var border=this.ChartBorder.GetHScreenBorder();
+            var chartright=border.BottomEx;
+            var xOffset=border.TopEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        }
+        else
+        {
+            var border=this.ChartBorder.GetBorder();
+            var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.RightEx;
+        }
+
         var xPointCount=this.ChartFrame.XPointCount;
-        
+        var isMinute=this.IsMinuteFrame();
+
         this.Canvas.save();
         if (this.LineWidth>0) this.Canvas.lineWidth=this.LineWidth * GetDevicePixelRatio();
         var bFirstPoint=true;
@@ -29373,7 +29389,7 @@ function ChartPartLine()
         var lastColor;
         var lastPoint={X:null,Y:null};
         var isPerNull=false;
-        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
         {
             var item=this.Data.Data[i];
             if (item==null || item.Value==null) 
@@ -29384,9 +29400,20 @@ function ChartPartLine()
                 continue;
             }
 
+            if (isMinute)
+            {
+                var x=this.ChartFrame.GetXFromIndex(j);
+            }
+            else
+            {
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                if (right>chartright) break;
+                var x=left+(right-left)/2;
+            }
+
             var value=item.Value;
             var color=item.RGB;
-            var x=this.ChartFrame.GetXFromIndex(j);
             var y=this.ChartFrame.GetYFromData(value);
 
             if (x>chartright) break;
@@ -33777,6 +33804,7 @@ function ChartBand()
             return;
         }
 
+        var isMinute=this.IsMinuteFrame();
         var isHScreen=this.ChartFrame.IsHScreen;
         var dataWidth=this.ChartFrame.DataWidth;
         var distanceWidth=this.ChartFrame.DistanceWidth;
@@ -33795,7 +33823,18 @@ function ChartBand()
             {
                 var value=this.Data.Data[i];
                 if (value==null || value.Value==null || value.Value2 == null) break;
-                x=this.ChartFrame.GetXFromIndex(j);
+
+                if (isMinute)
+                {
+                    x=this.ChartFrame.GetXFromIndex(j);
+                }
+                else
+                {
+                    var left=xOffset;
+                    var right=xOffset+dataWidth;
+                    x=left+(right-left)/2;
+                }
+
                 y=this.ChartFrame.GetYFromData(value.Value);
                 y2 = this.ChartFrame.GetYFromData(value.Value2);
 
@@ -65518,11 +65557,11 @@ function LineBreakCalcuate()
 //  this.ChartPaint[0] K线画法 这个不要修改
 //
 //
-function KLineChartContainer(uielement,OffscreenElement)
+function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 {
     var _self =this;
     this.newMethod=JSChartContainer;   //派生
-    this.newMethod(uielement,OffscreenElement);
+    this.newMethod(uielement,OffscreenElement,cacheElement);
     delete this.newMethod;
 
     this.ClassName='KLineChartContainer';
@@ -66762,7 +66801,7 @@ function KLineChartContainer(uielement,OffscreenElement)
 
         if (this.KLineSize)
         {
-            if (this.KLineSize.DataWidth==null)
+            if (!IFrameSplitOperator.IsNumber(this.KLineSize.DataWidth))
             {
                 showCount=this.Frame.SubFrame[0].Frame.XPointCount-this.RightSpaceCount;
             }
@@ -66774,7 +66813,7 @@ function KLineChartContainer(uielement,OffscreenElement)
             }
         }
 
-        for(var i in this.Frame.SubFrame)
+        for(var i=0;i<this.Frame.SubFrame.length;++i)
         {
             var item =this.Frame.SubFrame[i].Frame;
             item.XPointCount=showCount+this.RightSpaceCount;
@@ -66792,7 +66831,7 @@ function KLineChartContainer(uielement,OffscreenElement)
         this.ChartCorssCursor.StringFormatX.Data=this.ChartPaint[0].Data;   //十字光标
         this.Frame.Data=this.ChartPaint[0].Data;
 
-        for(var i in this.OverlayChartPaint)   //K线叠加 主图股票数据绑定到叠加上
+        for(var i=0; i<this.OverlayChartPaint.length; ++i)   //K线叠加 主图股票数据绑定到叠加上
         {
             var item=this.OverlayChartPaint[i];
             item.MainData=this.ChartPaint[0].Data;
