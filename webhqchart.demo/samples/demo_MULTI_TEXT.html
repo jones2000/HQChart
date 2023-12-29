@@ -1,0 +1,319 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+
+<title>K线图-绘制文字</title>  
+    <!-- 加载资源 -->
+    <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
+</head>  
+<body>
+    <div id="kline" >
+       
+    </div>
+
+    <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
+    <script src='../jscommon/umychart.console.js'></script>     <!-- 日志输出 -->
+    <script src="../jscommon/umychart.network.js"></script>     <!-- 网络请求分装 -->
+    <script src="../jscommon/umychart.js"></script>             <!-- K线图形 -->
+    <script src="../jscommon/umychart.complier.js"></script>    <!-- 麦语言解析执行器 -->
+    <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
+    <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+    
+    <script src="../jscommon/umychart.NetworkFilterTest.js"></script>
+
+    <script>
+
+        MARKET_SUFFIX_NAME.GetMarketStatus = function (symbol) { return 2; }
+
+        //简单的把K线控件封装下
+        function KLineChart(divKLine)
+        {
+            this.DivKLine=divKLine;
+            this.Chart=JSChart.Init(divKLine);   //把K线图绑定到一个Div上
+
+            //K线配置信息
+            this.Option= {
+                Type:'历史K线图',   //创建图形类型
+                //Type:'历史K线图横屏',
+
+                //EnableBorderDrag:false,
+                
+                Windows: //窗口指标
+                [
+                    {Index:"MA"}                
+                ], 
+
+                
+                OverlayIndex:
+                [
+                    {   
+                        Index:'文字标记',
+                        API: 
+                        {
+                            Name:'文字标记',
+                            Script:null,
+                            Args:null, 
+                            Url:'http://local' 
+                        }, 
+
+                        Windows:0,
+                        IsShareY:true,
+                        ShowRightText:false,
+                    },
+                ],  //叠加指标
+                
+
+                OverlayIndexFrameWidth:1,
+
+                //DragDownload: { Day:{ Enable:true } , Minute:{ Enable:true }}, 
+
+                EnableYDrag:
+                {
+                    Right:true,
+                    Left:true,
+                },
+
+                Symbol:"000001.sz",
+                IsAutoUpdate:true,       //是自动更新数据
+                AutoUpdateFrequency:3000,   //数据更新频率
+                //TradeIndex: {Index:'交易系统-BIAS'},    //交易系统
+
+                SplashTitle:'加载数据中......',
+    
+                IsShowRightMenu:true,          //右键菜单
+                //CorssCursorTouchEnd:true,
+                //IsClickShowCorssCursor:true,
+                //IsCorssOnlyDrawKLine:true,
+
+                EnableVerifyRecvData:true,
+
+                CtrlMoveStep:10,
+
+                CorssCursorInfo: { Right:2, DateFormatType:3, HPenType:1, VPenType:1 ,VLineType:0,RightButton:{ Enable:true }, IsShowCorss:true, PriceFormatType:0, DataFormatType:0 },
+                EnableZoomIndexWindow:true,
+
+                KLine:  //K线设置
+                {
+                    DragMode:1,                 //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
+                    Right:0,                    //复权 0 不复权 1 前复权 2 后复权
+                    Period:0,                   //周期 0 日线 1 周线 2 月线 3 年线 
+                    MaxRequestDataCount:5000,   //数据个数
+                    MaxRequestMinuteDayCount:5, //分钟数据获取几天数据  默认取5天数据
+                    PageSize:30,               //一屏显示多少数据
+                    //Info:["互动易","大宗交易",'龙虎榜',"调研","业绩预告","公告"],       //信息地雷
+                    //Info:["公告"], 
+                    IsShowTooltip:true,                 //是否显示K线提示信息
+                    DrawType:0,      //K线类型 0=实心K线柱子 1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积图
+                    //FirstShowDate:20161201,
+                    KLineDoubleClick:false, //禁止双击弹框
+                    RightSpaceCount:5,
+                    ZoomType:0,
+                    
+                    //DataWidth:5
+                    ShowKLine:true,
+                    IsShowTooltip:true,
+                },
+
+                StepPixel:0,
+
+                IsDrawPictureXY:true,
+
+                Listener:
+                {
+                    //KeyDown:false,
+                    //Wheel:false
+                },
+
+                EnableFlowCapital:
+                {
+                    BIT:true
+                },
+
+                SelectedChart:{ EnableSelected: true, EnableMoveOn:true },
+                EnableIndexChartDrag:true,
+    
+                KLineTitle: //标题设置
+                {
+                    IsShowName:true,       //不显示股票名称
+                    IsShowSettingInfo:true //不显示周期/复权
+                },
+    
+                Border: //边框
+                {
+                    Left:50,         //左边间距
+                    Right:50,       //右边间距
+                    Bottom:25,      //底部间距
+                    Top:25,         //顶部间距
+
+                    AutoLeft:{ Blank:10, MinWidth:30 },
+                    AutoRight:{ Blank:5, MinWidth:40 },
+                },
+                
+                Frame:  //子框架设置
+                [
+                    
+                ],
+
+
+                Overlay:
+                [
+                   
+                ],
+
+               
+            };
+                 
+            this.Create=function()  //创建图形
+            {
+                var self=this;
+                //$(window).resize(function() { self.OnSize( {Type:1} ); });    //绑定窗口大小变化事件
+                $(window).resize(function() { self.OnSize( ); });    //绑定窗口大小变化事件
+
+                var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID); //读取黑色风格配置
+                JSChart.SetStyle(blackStyle);
+                this.DivKLine.style.backgroundColor=blackStyle.BGColor; //设置最外面的div背景
+                JSChart.GetResource().ToolbarButtonStyle=1;
+
+                this.OnSize();  //让K线全屏
+                this.Option.NetworkFilter=(data, callback)=>{ this.NetworkFilter(data, callback); }
+                this.Chart.SetOption(this.Option);  //设置K线配置
+            }
+
+            this.NetworkFilter=function(data, callback)
+            {
+                console.log('[NetworkFilter] data', data);
+
+                switch(data.Name)
+                {
+                    case "APIScriptIndex::ExecuteScript":
+                        this.RequestExecuteScript(data, callback);
+                        break;
+                    default:
+                        HQData.NetworkFilter(data, callback);
+                        break;
+                }
+            }
+
+            this.TextIndexTest=function(data, callback)
+            {
+                data.PreventDefault=true;
+                var hqchart=data.HQChart;
+                var kData=hqchart.ChartPaint[0].Data;
+                var kCount=kData.Data.length;
+
+                var SVGData= 
+                { 
+                    name:'MULTI_TEXT', type:1, 
+                    Draw: 
+                    { 
+                        DrawType:'MULTI_TEXT', 
+                        DrawData: []
+                    } //绘制文字
+                };
+
+                var ARRAY_COLOR=['rgb(255,248,220)','rgb(230,230,250)','rgb(100,149,237)','rgb(32,178,170)','rgb(152,251,152)','rgb(128,128,0)','rgb(255,165,0)','rgb(255,160,122)','rgb(205,92,92)']
+
+                for(var i=0;i<kCount;++i)
+                {
+                    var item=kData.Data[i];
+                    if (i%5!=3) continue;
+
+                    var colorIndex=Math.ceil(Math.random()*ARRAY_COLOR.length-1);
+                    var drawItem=
+                    { 
+                        Date:item.Date, Time:item.Time, Value:"H", Text:`${item.High.toFixed(2)}`,Color:ARRAY_COLOR[colorIndex], Baseline:2, YMove:-2
+                    };
+
+                    var colorIndex=Math.ceil(Math.random()*ARRAY_COLOR.length-1);
+                    var drawItem2=
+                    { 
+                        Date:item.Date, Time:item.Time, Value:item.Low, Text:`${item.Low.toFixed(2)}`,Color:ARRAY_COLOR[colorIndex], Baseline:1, YMove:2
+                    };
+
+                    SVGData.Draw.DrawData.push(drawItem);
+                    SVGData.Draw.DrawData.push(drawItem2);
+                }
+
+                var apiData=
+                {
+                    code:0, 
+                    stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+                    outdata: { date:kData.GetDate(), time:kData.GetTime(), outvar:[SVGData] } 
+                };
+
+                console.log('[KLineChart::TextIndexTest] apiData ', apiData);
+                callback(apiData);
+            }
+
+            this.RequestExecuteScript=function(data,callback)
+            {
+                var request=data.Request;
+                if (request.Data.indexname=='文字标记')
+                    this.TextIndexTest(data, callback);
+            }
+
+            this.OnSize=function(option)  //自适应大小调整
+            {
+                var height= $(window).height()-50;
+                var width = $(window).width();
+                //width=50000;
+                this.DivKLine.style.top='0px';
+                this.DivKLine.style.left='0px';
+                this.DivKLine.style.width=width+'px';
+                this.DivKLine.style.height=height+'px';
+                this.Chart.OnSize(option);
+            }
+
+            this.ChangeSymbol=function(symbol)
+            {
+                this.Chart.ChangeSymbol(symbol);
+            }
+
+        }
+
+        $(function () 
+        {
+            const font = new FontFace("iconfont",`url('../jscommon/umychart.resource/font/iconfont.woff?t=1690947130935') format('woff')`);
+            document.fonts.add(font);    //把字体添加到 document.font（FontFaceSet）中
+            font.load();    // 加载字体
+
+            var klineControl=new KLineChart(document.getElementById('kline'));
+            // 等待到所有的字体都加载完毕
+            document.fonts.ready.then(() => 
+            {
+                klineControl.Create(); 
+            });
+            
+        })
+
+
+    </script>  
+</body>  
+</html>
+
+
+
+<style>
+
+#kline
+{
+    width: 900px;
+    height:400px;
+    position: relative;
+    /*margin-top: 100px;*/
+}
+
+.btn-style
+{
+    padding: 3px 8px;
+    border: 1px solid #ececec;
+    border-radius: 5px;
+    background-color: #f5f5f5;
+    cursor: pointer;
+}
+
+    
+</style>
