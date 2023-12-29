@@ -1394,7 +1394,11 @@ JSChart.GetKLineZoom = function () //K线缩放配置
 
 JSChart.SetKLineZoom=function(aryZoom)  //设置K线缩放比例
 {
-    ZOOM_SEED=aryZoom;
+    ZOOM_SEED.length=0;
+	for(var i=0;i<aryZoom.length;++i)
+	{
+		ZOOM_SEED[i]=aryZoom[i];
+	}
 }
 
 JSChart.SetUSATimeType=function(type)    //设置 0=标准时间 1=夏令时间 3=美国时间

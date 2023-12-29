@@ -232,6 +232,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 * [K线对接后台指标(DRAWBAND)示例](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_DRAWBAND.html)  
 * [K线对接后台指标(MULTI_LINE)示例](https://jones2000.github.io/HQChart/webhqchart.demo/samples/kline_MULTI_LINE_index.html)  
 * [K线对接后台指标(MULTI_SVGICON)示例](https://jones2000.github.io/HQChart/webhqchart.demo/samples/kline_MULTI_SVGICON.html)  
+* [K线对接后台指标(MULTI_TEXT)示例](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_MULTI_TEXT.html)  
 * [自定义K线指标标题栏](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_indextitle.html)   
 * [自定义彩色K线图](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_color_kline_v2.html)   
 * [分钟K线拖动下载历史数据页面](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_DragDownload.html)  

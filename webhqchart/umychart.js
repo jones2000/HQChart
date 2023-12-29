@@ -35950,38 +35950,95 @@ function ChartMultiText()
     this.Color=g_JSChartResource.DefaultTextColor;
     this.IsHScreen=false;   //是否横屏
 
-    this.Draw=function()
+    this.BuildKey=function(item)
     {
-        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
-        if (!this.Data || this.Data.length<=0) return;
-        if (!this.Texts) return;
+        if (IFrameSplitOperator.IsNumber(item.Time))
+        {
+            var key=`${kItem.Date}-${item.Time}`;
+        }
+        else
+        {
+            var key=`${item.Date}`;
+        }
+        
+        return key;
+    }
 
-        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
+    this.GetShowTextData=function()
+    {
         var xPointCount=this.ChartFrame.XPointCount;
         var offset=this.Data.DataOffset;
-        var left=this.ChartBorder.GetLeft();
-        var right=this.ChartBorder.GetRight();
-        var top=this.ChartBorder.GetTopEx();
-        var bottom=this.ChartBorder.GetBottomEx();
 
-        if (this.IsHScreen)
-        {
-            left=this.ChartBorder.GetTop();
-            right=this.ChartBorder.GetBottom();
-        }
-
-        var y=0;
+        var mapText=new Map();  //key='date-time' value={ Data:[] }
         for(var i=0; i<this.Texts.length; ++i)
         {
             var item=this.Texts[i];
-
             if (!item.Text) continue;
             if (!IFrameSplitOperator.IsNumber(item.Index)) continue;
 
             var index=item.Index-offset;
             if (index>=0 && index<xPointCount)
             {
-                var x=this.ChartFrame.GetXFromIndex(index);
+                var key=this.BuildKey(item);
+                if (mapText.has(key))
+                {
+                    var textItem=mapText.get(key);
+                    textItem.Data.push(item);
+                }
+                else
+                {
+                    var textItem={ Data:[item] };
+                    mapText.set(key, textItem);
+                }
+            }
+        }
+
+        return mapText;
+    }
+
+    this.DrawAllText=function(mapText)
+    {
+        var bHScreen=(this.ChartFrame.IsHScreen===true);
+        var isMinute=this.IsMinuteFrame();
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xPointCount=this.ChartFrame.XPointCount;
+
+        if (bHScreen)
+        {
+            var border=this.ChartBorder.GetHScreenBorder();
+            var chartright=border.BottomEx;
+            var xOffset=border.TopEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var left=this.ChartBorder.GetTop();
+            var right=this.ChartBorder.GetBottom();
+        }
+        else
+        {
+            var border=this.ChartBorder.GetBorder();
+            var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.RightEx;
+            var left=this.ChartBorder.GetLeft();
+            var right=this.ChartBorder.GetRight();
+        }
+
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var kItem=this.Data.Data[i];
+            if (!kItem) continue;
+
+            var key=this.BuildKey(kItem);
+            if (!mapText.has(key)) continue;
+
+            var left=xOffset;
+            var right=xOffset+dataWidth;
+            if (right>chartright) break;
+            var x=left+(right-left)/2;
+
+            var textItem=mapText.get(key);
+            for(var k=0;k<textItem.Data.length;++k)
+            {
+                var item=textItem.Data[k];
+
                 if (item.Value=="TOP") y=top;
                 else if (item.Value=="BOTTOM") y=bottom;
                 else y=this.ChartFrame.GetYFromData(item.Value);
@@ -36061,6 +36118,20 @@ function ChartMultiText()
                 }
             }
         }
+    }
+
+    this.Draw=function()
+    {
+        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
+        if (!this.Data || this.Data.length<=0) return;
+        if (!this.Texts) return;
+
+        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
+
+        var mapText=this.GetShowTextData();
+        if (mapText.size<=0) return;
+
+        this.DrawAllText(mapText);
     }
 
     this.GetMaxMin=function()
