@@ -48717,6 +48717,29 @@ HQData.NetworkFilter=function(data, callback)
         case "JSSymbolData::GetVariantData":                            //额外的变量数据
             HQData.RequestIndexVariantData(data,callback);
             break;
+
+        case "AnnouncementInfo::RequestData":
+            HQData.AnnouncementInfo_RequestData(data,callback);
+            break;
+
+        case "PforecastInfo::RequestData":
+            HQData.PforecastInfo_RequestData(data,callback);
+            break;
+
+        case "InvestorInfo::RequestData":
+            HQData.InvestorInfo_RequestData(data,callback);
+            break;
+
+        case "ResearchInfo::RequestData":
+            break;
+
+        case "BlockTrading::RequestData":
+            HQData.BlockTrading_RequestData(data,callback);
+            break;
+
+        case "TradeDetail::RequestData":
+            HQData.TradeDetail_RequestData(data,callback);
+            break;
     }
 }
 
@@ -48841,4 +48864,75 @@ HQData.RequestIndexVariantData=function(data,callback)
         callback(hqchartData);
     }
 
+}
+
+HQData.AnnouncementInfo_RequestData=function(data,callback)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Symbol;
+
+    var hqchartData={ symbol:symbol, report:[] };
+
+    var kData=data.HQChart.ChartPaint[0].Data;
+    for(var i=0, j=1;i<kData.Data.length;++i)
+    {
+        var kItem=kData.Data[i];
+        if (i%10!=4) continue;
+
+        var itemReport={ releasedate:kItem.Date, time:kItem.Time, title:`公告(${j}) xxxx`, }
+
+        hqchartData.report.push(itemReport);
+
+        ++j;
+    }
+
+    callback(hqchartData);
+}
+
+
+HQData.PforecastInfo_RequestData=function(data,callback)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Symbol;
+
+    var hqchartData={ symbol:symbol, report:[] };
+
+    var kData=data.HQChart.ChartPaint[0].Data;
+    for(var i=0, j=1;i<kData.Data.length;++i)
+    {
+        var kItem=kData.Data[i];
+        if (i%10!=4) continue;
+
+        var itemReport={ date:kItem.Date, time:kItem.Time, title:`公告(${j}) xxxx`, }
+
+        hqchartData.report.push(itemReport);
+
+        ++j;
+    }
+
+    callback(hqchartData);
+}
+
+HQData.InvestorInfo_RequestData=function(data,callback)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Symbol;
+
+    callback(TEST_NEWSINTERACT_DATA);
+}
+
+HQData.BlockTrading_RequestData=function(data,callback)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Symbol;
+
+    callback(TEST_BLOCK_TRADING_DATA);
+}
+
+HQData.TradeDetail_RequestData=function(data,callback)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Symbol;
+
+    callback(TEST_TRADE_DETAL_DATA);
 }

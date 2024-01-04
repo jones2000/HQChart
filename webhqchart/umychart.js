@@ -33555,6 +33555,62 @@ function ChartMACD()
         return this.PtInBar(x, y, { BarWidth:barWidth })
     }
 
+    this.DrawBars=function(lineWidth, bUpBar)
+    {
+        var isMinute=this.IsMinuteFrame();
+        var border=this.ChartBorder.GetBorder();
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xPointCount=this.ChartFrame.XPointCount;
+        var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+
+        var chartright=border.RightEx;
+        var lockRect=this.GetLockRect();
+        if (lockRect) chartright=lockRect.Left;
+
+        if (bUpBar) this.Canvas.strokeStyle=this.UpColor;
+        else this.Canvas.strokeStyle=this.DownColor;
+
+        var yBottom=this.ChartFrame.GetYFromData(0);
+        this.Canvas.beginPath();
+        var drawCount=0;
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var value=this.Data.Data[i];
+            if (value==null) continue;
+            if (bUpBar)
+            {
+                if (value<0) continue;
+            }
+            else
+            {
+                if (value>=0) continue;
+            }
+
+            if (isMinute)
+            {
+                var x=this.ChartFrame.GetXFromIndex(j);
+            }
+            else
+            {
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                if (right>chartright) break;
+                var x=left+(right-left)/2;
+            }
+
+            if (x>chartright) break;
+
+            var y=this.ChartFrame.GetYFromData(value);
+            var xFix=ToFixedPoint2(lineWidth, x); //毛边修正
+            this.Canvas.moveTo(xFix,yBottom);
+            this.Canvas.lineTo(xFix,y);
+            ++drawCount;
+        }
+
+        if (drawCount>0) this.Canvas.stroke();
+    }
+
     this.Draw=function()
     {
         if (!this.IsShow || this.ChartFrame.IsMinSize || !this.IsVisible) return;
@@ -33573,57 +33629,17 @@ function ChartMACD()
             return;
         }
 
-        var isMinute=this.IsMinuteFrame();
         var dataWidth=this.ChartFrame.DataWidth;
-        var distanceWidth=this.ChartFrame.DistanceWidth;
-        var border=this.ChartBorder.GetBorder();
-        var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
-        var chartright=border.RightEx;
-        var xPointCount=this.ChartFrame.XPointCount;
-        var lockRect=this.GetLockRect();
-        if (lockRect) chartright=lockRect.Left;
-
-        var bFirstPoint=true;
-        var drawCount=0;
-        var yBottom=this.ChartFrame.GetYFromData(0);
-        
         var lineWidth=this.LineWidth*GetDevicePixelRatio();
         if (this.LineWidth==50) lineWidth=dataWidth;
         else if (lineWidth>dataWidth) lineWidth=dataWidth;
         
         var backupLineWidth=this.Canvas.lineWidth;
         this.Canvas.lineWidth=lineWidth;
-        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
-        //for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
-        {
-            var value=this.Data.Data[i];
-            if (value==null) continue;
 
-            if (isMinute)
-            {
-                var x=this.ChartFrame.GetXFromIndex(j);
-            }
-            else
-            {
-                var left=xOffset;
-                var right=xOffset+dataWidth;
-                if (right>chartright) break;
-                var x=left+(right-left)/2;
-            }
-            var y=this.ChartFrame.GetYFromData(value);
-
-            if (x>chartright) break;
-
-            var xFix=ToFixedPoint2(lineWidth, x); //毛边修正
-            this.Canvas.beginPath();
-            this.Canvas.moveTo(xFix,yBottom);
-            this.Canvas.lineTo(xFix,y);
-
-            if (value>=0) this.Canvas.strokeStyle=this.UpColor;
-            else this.Canvas.strokeStyle=this.DownColor;
-            this.Canvas.stroke();
-            this.Canvas.closePath();
-        }
+         //上下分开画
+        this.DrawBars(lineWidth, true);
+        this.DrawBars(lineWidth, false);
 
         this.Canvas.lineWidth=backupLineWidth;
     }
@@ -88562,7 +88578,7 @@ function MinuteCoordinateData()
         {
             Full:   //完整模式
             [
-                [0, 0, "rgb(200,200,200)", "09:30"],    //[0]=索引 [1]=线段类型 [2]=文字颜色(弃用) [3]=刻度文字 [4]=线段颜色 [5]=背景色
+                [0, 0, "rgb(200,200,200)", "09:30"],    //[0]=索引 [1]=线段类型(预留) [2]=文字颜色(弃用) [3]=刻度文字 [4]=线段颜色 [5]=背景色
                 [31, 0, "RGB(200,200,200)", "10:00"],
                 [61, 0, "RGB(200,200,200)", "10:30"],
                 [91, 0, "RGB(200,200,200)", "11:00"],

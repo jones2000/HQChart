@@ -16955,6 +16955,36 @@ function JSExecute(ast,option)
                 if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
                 this.OutVarTable.push({Name:varName, Data:outVar,Type:type, NoneName:true});
             }
+            else if (item.Expression.Type==Syntax.UnaryExpression)
+            {
+                var varName="__temp_l_"+i+"__";
+                var argument=item.Expression.Argument;
+                var type=0;
+                let outVar=null;
+                if (argument.Type==Syntax.Literal)
+                {
+                    outVar=argument.Value;
+                    if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
+                }
+                else if (argument.Type==Syntax.Identifier)
+                {
+                    let varName=argument.Name;
+                    outVar=this.ReadVariable(varName,item.Expression);
+                    if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
+                }
+                else if (argument.Type==Syntax.BinaryExpression)
+                {
+                    outVar=argument.Out;
+                    if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
+                }
+                
+                if (item.Expression.Operator=='-')
+                {
+                    if (outVar) outVar=this.Algorithm.Subtract(0,outVar);
+                }
+               
+                if (outVar) this.OutVarTable.push({Name:varName, Data:outVar,Type:type, NoneName:true});
+            }
             else if (item.Expression.Type==Syntax.SequenceExpression)
             {
                 let varName;
@@ -17158,6 +17188,39 @@ function JSExecute(ast,option)
                             this.VarTable.set(varName,aryValue);
                         }
                        
+                    }
+                    else if (itemExpression.Type==Syntax.UnaryExpression)
+                    {
+                        if (j==0)
+                        {
+                            varName="__temp_sb_"+i+"__";
+                            var argument=itemExpression.Argument;
+                            let aryValue=null;
+                            if (argument.Type==Syntax.Literal)
+                            {
+                                aryValue=argument.Value;
+                                if (!Array.isArray(aryValue)) aryValue=this.SingleDataToArrayData(aryValue);
+                            }
+                            else if (argument.Type==Syntax.Identifier)
+                            {
+                                let varName=argument.Name;
+                                aryValue=this.ReadVariable(varName,item.Expression);
+                                if (!Array.isArray(aryValue)) aryValue=this.SingleDataToArrayData(aryValue);
+                            }
+                            else if (argument.Type==Syntax.BinaryExpression)
+                            {
+                                aryValue=argument.Out;
+                                if (!Array.isArray(aryValue)) aryValue=this.SingleDataToArrayData(aryValue);
+                            }
+                            
+                            if (itemExpression.Operator=='-')
+                            {
+                                if (aryValue) aryValue=this.Algorithm.Subtract(0,aryValue);
+                            }
+                            
+                            isNoneName=true;
+                            this.VarTable.set(varName,aryValue);
+                        }
                     }
                 }
 
@@ -17440,7 +17503,25 @@ function JSExecute(ast,option)
             case Syntax.CallExpression:
                 this.VisitCallExpression(node);
                 break;
+            case Syntax.UnaryExpression:
+                this.VisitUnaryExpression(node);
+                break;
         }
+    }
+
+    this.VisitUnaryExpression=function(node)
+    {
+        if (node.Operator=='-') 
+        {
+            var tempValue=this.GetNodeValueEx(node.Argument);
+            var value=this.Algorithm.Subtract(0,tempValue);
+        }
+        else 
+        {
+            var value=node.Argument.Value;
+        }
+
+        return value;
     }
 
     this.VisitSequenceExpression=function(node)
@@ -17841,17 +17922,7 @@ function JSExecute(ast,option)
         else if (right.Type==Syntax.MemberExpression)
             value=this.ReadMemberVariable(right);
         else if (right.Type==Syntax.UnaryExpression)
-        {
-            if (right.Operator=='-') 
-            {
-                var tempValue=this.GetNodeValue(right.Argument);
-                value=this.Algorithm.Subtract(0,tempValue);
-            }
-            else 
-            {
-                value=right.Argument.Value;
-            }
-        }
+            value=this.VisitUnaryExpression(right);
 
         if (JS_EXECUTE_DEBUG_LOG) JSConsole.Complier.Log('[JSExecute::VisitAssignmentExpression]' , varName, ' = ',value);
 
@@ -17957,6 +18028,20 @@ function JSExecute(ast,option)
 
     }
 
+    //获取节点值，BinaryExpression，LogicalExpression会重新计算
+    this.GetNodeValueEx=function(item)
+    {
+        var value=null;
+        if (item.Type==Syntax.BinaryExpression || item.Type==Syntax.LogicalExpression) 
+            value=this.VisitBinaryExpression(item);
+        else if (item.Type==Syntax.CallExpression)
+            value=this.VisitCallExpression(item);
+        else
+            value=this.GetNodeValue(item);
+
+        return value;
+    }
+
     this.GetNodeValue=function(node)
     {
         switch(node.Type)
@@ -17964,14 +18049,10 @@ function JSExecute(ast,option)
             case Syntax.Literal:    //数字
                 return node.Value;
             case Syntax.UnaryExpression:
-                if (node.Operator=='-') 
-                {
-                    let value=this.GetNodeValue(node.Argument);
-                    return this.Algorithm.Subtract(0,value);
-                }
-                return node.Argument.Value;
+                var value=this.VisitUnaryExpression(node);
+                return value;
             case Syntax.Identifier:
-                let value=this.ReadVariable(node.Name,node);
+                var value=this.ReadVariable(node.Name,node);
                 return value;
             case Syntax.BinaryExpression:
             case Syntax.LogicalExpression:
@@ -18188,6 +18269,32 @@ function JSExplainer(ast,option)
                     let outVar=item.Expression.Out;
                     this.OutVarTable.push({Name:varName, Data:`输出: ${outVar}`,Type:0, NoneName:true});
                 }
+                else if (item.Expression.Type==Syntax.UnaryExpression) //一元运算 如-C, -7, -(C+10)
+                {
+                    var varName="__temp_l_"+i+"__";
+                    var argument=item.Expression.Argument;
+                    let outVar=null;
+                    if (argument.Type==Syntax.Literal)
+                    {
+                        outVar=argument.Value;
+                    }
+                    else if (argument.Type==Syntax.Identifier)
+                    {
+                        let varName=argument.Name;
+                        outVar=this.ReadVariable(varName,item.Expression);
+                    }
+                    else if (argument.Type==Syntax.BinaryExpression)
+                    {
+                        outVar=argument.Out;
+                    }
+
+                    if (item.Expression.Operator=='-') 
+                    {
+                        outVar=`-${outVar}`;
+                    }
+
+                    this.OutVarTable.push({Name:varName, Data:`输出: ${outVar}`,Type:0, NoneName:true});
+                }
                 else if (item.Expression.Type==Syntax.SequenceExpression)
                 {
                     let varName;
@@ -18291,6 +18398,33 @@ function JSExplainer(ast,option)
                             isNoneName=true;
                             this.VarTable.set(varName,aryValue);
                         }
+                        else if (itemExpression.Type==Syntax.UnaryExpression)
+                        {
+                            varName="__temp_sb_"+i+"__";
+                            var argument=itemExpression.Argument;
+                            let aryValue=null;
+                            if (argument.Type==Syntax.Literal)
+                            {
+                                aryValue=argument.Value;
+                            }
+                            else if (argument.Type==Syntax.Identifier)
+                            {
+                                let varName=argument.Name;
+                                aryValue=this.ReadVariable(varName,item.Expression);
+                            }
+                            else if (argument.Type==Syntax.BinaryExpression)
+                            {
+                                aryValue=argument.Out;
+                            }
+                            
+                            if (itemExpression.Operator=='-')
+                            {
+                                aryValue=`-${aryValue}`;
+                            }
+                            
+                            isNoneName=true;
+                            this.VarTable.set(varName,aryValue);
+                        }
                     }
 
                     var outValue;
@@ -18383,6 +18517,9 @@ function JSExplainer(ast,option)
             case Syntax.CallExpression:
                 this.VisitCallExpression(node);
                 break;
+            case Syntax.UnaryExpression:
+                this.VisitUnaryExpression(node);
+                break;
         }
     }
 
@@ -18393,6 +18530,17 @@ function JSExplainer(ast,option)
             let item =node.Expression[i];
             this.VisitNode(item);
         }
+    }
+
+    this.VisitUnaryExpression=function(node)
+    {
+        if (node.Operator=='-') 
+        {
+            let value=this.GetNodeValueEx(node.Argument);
+            return '-'+value;
+        }
+
+        return node.Argument.Value;
     }
 
     //函数调用
@@ -18886,17 +19034,7 @@ function JSExplainer(ast,option)
         else if (right.Type==Syntax.MemberExpression)
             value=this.ReadMemberVariable(right);
         else if (right.Type==Syntax.UnaryExpression)
-        {
-            if (right.Operator=='-') 
-            {
-                var tempValue=this.GetNodeValue(right.Argument);
-                value='-'+tempValue;
-            }
-            else 
-            {
-                value=right.Argument.Value;
-            }
-        }
+            value=this.VisitUnaryExpression(right);
 
         JSConsole.Complier.Log('[JSExplainer::VisitAssignmentExpression]' , varName, ' = ',value);
         this.VarTable.set(varName,value);
@@ -19009,6 +19147,19 @@ function JSExplainer(ast,option)
 
     }
 
+    this.GetNodeValueEx=function(node)
+    {
+        var value=null;
+        if (node.Type==Syntax.BinaryExpression || node.Type==Syntax.LogicalExpression) 
+            value=this.VisitBinaryExpression(node);
+        else if (node.Type==Syntax.CallExpression)
+            value=this.VisitCallExpression(node);
+        else
+            value=this.GetNodeValue(node);
+
+        return value;
+    }
+
     this.GetNodeValue=function(node)
     {
         switch(node.Type)
@@ -19016,12 +19167,7 @@ function JSExplainer(ast,option)
             case Syntax.Literal:    //数字
                 return node.Value;
             case Syntax.UnaryExpression:
-                if (node.Operator=='-') 
-                {
-                    let value=this.GetNodeValue(node.Argument);
-                    return '-'+value;
-                }
-                return node.Argument.Value;
+                return this.VisitUnaryExpression(node);
             case Syntax.Identifier:
                 let value=this.ReadVariable(node.Name,node);
                 return value;
