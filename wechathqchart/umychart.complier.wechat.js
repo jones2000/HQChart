@@ -12831,33 +12831,13 @@ function JSExecute(ast,option)
                 }
                 else if (item.Expression.Type==Syntax.UnaryExpression)
                 {
-                    var varName="__temp_l_"+i+"__";
-                    var argument=item.Expression.Argument;
-                    var type=0;
-                    let outVar=null;
-                    if (argument.Type==Syntax.Literal)
+                    var varName="__temp_u_"+i+"__";
+                    var varInfo={ };
+                    if (this.ReadUnaryExpression(item.Expression, varInfo))
                     {
-                        outVar=argument.Value;
-                        if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
+                        var type=0;
+                        this.OutVarTable.push({Name:varName, Data:varInfo.OutVar,Type:type, NoneName:true});
                     }
-                    else if (argument.Type==Syntax.Identifier)
-                    {
-                        let varName=argument.Name;
-                        outVar=this.ReadVariable(varName,item.Expression);
-                        if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
-                    }
-                    else if (argument.Type==Syntax.BinaryExpression)
-                    {
-                        outVar=argument.Out;
-                        if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
-                    }
-                    
-                    if (item.Expression.Operator=='-')
-                    {
-                        if (outVar) outVar=this.Algorithm.Subtract(0,outVar);
-                    }
-                
-                    if (outVar) this.OutVarTable.push({Name:varName, Data:outVar,Type:type, NoneName:true});
                 }
                 else if (item.Expression.Type==Syntax.SequenceExpression)
                 {
@@ -13052,33 +13032,13 @@ function JSExecute(ast,option)
                         {
                             if (j==0)
                             {
-                                varName="__temp_sb_"+i+"__";
-                                var argument=itemExpression.Argument;
-                                let aryValue=null;
-                                if (argument.Type==Syntax.Literal)
+                                varName="__temp_su_"+i+"__";
+                                var varInfo={ };
+                                if (this.ReadUnaryExpression(itemExpression, varInfo))
                                 {
-                                    aryValue=argument.Value;
-                                    if (!Array.isArray(aryValue)) aryValue=this.SingleDataToArrayData(aryValue);
+                                    isNoneName=true;
+                                    this.VarTable.set(varName,varInfo.OutVar);
                                 }
-                                else if (argument.Type==Syntax.Identifier)
-                                {
-                                    let varName=argument.Name;
-                                    aryValue=this.ReadVariable(varName,item.Expression);
-                                    if (!Array.isArray(aryValue)) aryValue=this.SingleDataToArrayData(aryValue);
-                                }
-                                else if (argument.Type==Syntax.BinaryExpression)
-                                {
-                                    aryValue=argument.Out;
-                                    if (!Array.isArray(aryValue)) aryValue=this.SingleDataToArrayData(aryValue);
-                                }
-                                
-                                if (itemExpression.Operator=='-')
-                                {
-                                    if (aryValue) aryValue=this.Algorithm.Subtract(0,aryValue);
-                                }
-                                
-                                isNoneName=true;
-                                this.VarTable.set(varName,aryValue);
                             }
                         }
                     }
@@ -13209,6 +13169,57 @@ function JSExecute(ast,option)
         JSConsole.Complier.Log('[JSExecute::RunAST]', this.VarTable);
 
         return this.OutVarTable;
+    }
+
+    this.ReadUnaryExpression=function(item, varInfo)
+    {
+        var argument=item.Argument;
+        var outVar=null;
+        if (argument.Type==Syntax.Literal)
+        {
+            outVar=argument.Value;
+            if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
+        }
+        else if (argument.Type==Syntax.Identifier)
+        {
+            var varName=argument.Name;
+            outVar=this.ReadVariable(varName,item.Expression);
+            if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
+        }
+        else if (argument.Type==Syntax.BinaryExpression)
+        {
+            outVar=argument.Out;
+            if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
+        }
+        else if (argument.Type==Syntax.CallExpression)
+        {
+            var callItem=argument;
+            if (this.Draw.IsDrawFunction(callItem.Callee.Name) )
+            {
+                return false;
+            }
+            else if (callItem.Callee.Name==="IFC" && callItem.Draw)
+            {
+                return false;
+            }
+            else
+            {
+                outVar=callItem.Out;
+                if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
+            }
+        }
+        else
+        {
+            return false;
+        }
+        
+        if (item.Operator=='-')
+        {
+            if (outVar) outVar=this.Algorithm.Subtract(0,outVar);
+        }
+
+        varInfo.OutVar=outVar;
+        return true;
     }
 
     this.GetOutIconData=function(cond, iconDraw)
