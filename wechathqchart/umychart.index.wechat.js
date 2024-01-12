@@ -2608,7 +2608,7 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
         //把数据拟合到kdata上
         var result = [];
 
-        for (var i in outVar) 
+        for (var i=0; i<outVar.length; ++i) 
         {
             var item = outVar[i];
             var indexData = [];
@@ -2620,7 +2620,7 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
 
                 if (item.color) outVarItem.Color = item.color;
                 if (item.linewidth >= 1) outVarItem.LineWidth = item.linewidth;
-                if (item.isshow == false) outVarItem.IsShow = false;
+                if (IFrameSplitOperator.IsBool(item.isshow)) outVarItem.IsShow = false;
                 if (item.isexdata == true) outVarItem.IsExData = true;
 
                 result.push(outVarItem);

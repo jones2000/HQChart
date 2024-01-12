@@ -23540,7 +23540,7 @@ function ChartKLine()
     //绘制自定义K线
     this.DrawColorKBar=function(data, colorData, dataWidth, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen)
     {
-        if (Math.abs(yClose-y)<1)
+        if (Math.abs(yClose-yOpen)<1)
             this.DrawColorKBar_Line(data, colorData, dataWidth, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen);
         else if (colorData.Border || colorData.Type===0) 
             this.DrawColorKBar_Border(data, colorData, dataWidth, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen);
@@ -33184,6 +33184,7 @@ function ChartMinuteInfo()
     this.TextColor=g_JSChartResource.MinuteInfo.TextColor;
     this.Font=g_JSChartResource.MinuteInfo.Font;
     this.PointColor=g_JSChartResource.MinuteInfo.PointColor;
+    this.PointRadius=g_JSChartResource.MinuteInfo.PointRadius;
     this.LineColor=g_JSChartResource.MinuteInfo.LineColor;
     this.TextBGColor=g_JSChartResource.MinuteInfo.TextBGColor;
     this.PixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
@@ -33390,7 +33391,7 @@ function ChartMinuteInfo()
 
         this.Canvas.fillStyle = this.PointColor;
         this.Canvas.beginPath();
-        this.Canvas.arc(item.Start.X,item.Start.Y, 5, 0, 2 * Math.PI);
+        this.Canvas.arc(item.Start.X,item.Start.Y, this.PointRadius, 0, 2 * Math.PI);
         this.Canvas.closePath();
         this.Canvas.fill();
     }
@@ -62728,7 +62729,8 @@ function JSChartResource()
         Font: 14*GetDevicePixelRatio() +'px 微软雅黑',
         PointColor:'rgb(38,113,254)',
         LineColor:'rgb(120,167,255)',
-        TextBGColor:'rgba(255,255,255,0.8)'
+        TextBGColor:'rgba(255,255,255,0.8)',
+        PointRadius:4*GetDevicePixelRatio(),   //圆点半径
     }
 
     //画图工具-尺子
@@ -63458,11 +63460,13 @@ function JSChartResource()
 
         if (style.MinuteInfo)
         {
+            var item=style.MinuteInfo;
             if (style.MinuteInfo.TextColor) this.MinuteInfo.TextColor=style.MinuteInfo.TextColor;
             if (style.MinuteInfo.Font) this.MinuteInfo.Font=style.MinuteInfo.Font;
             if (style.MinuteInfo.PointColor) this.MinuteInfo.PointColor=style.MinuteInfo.PointColor;
             if (style.MinuteInfo.LineColor) this.MinuteInfo.LineColor=style.MinuteInfo.LineColor;
             if (style.MinuteInfo.TextBGColor) this.MinuteInfo.TextBGColor=style.MinuteInfo.TextBGColor;
+            if (IFrameSplitOperator.IsNumber(item.PointRadius)) this.MinuteInfo.PointRadius=item.PointRadius;
         }
 
         if (style.Title)

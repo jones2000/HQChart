@@ -1224,7 +1224,7 @@ function ChartKLine()
     //绘制自定义K线
     this.DrawColorKBar=function(data, colorData, dataWidth, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen)
     {
-        if (Math.abs(yClose-y)<1)
+        if (Math.abs(yClose-yOpen)<1)
             this.DrawColorKBar_Line(data, colorData, dataWidth, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen);
         else if (colorData.Border || colorData.Type===0) 
             this.DrawColorKBar_Border(data, colorData, dataWidth, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen);
@@ -5390,6 +5390,7 @@ function ChartMinuteInfo()
     this.TextColor = g_JSChartResource.MinuteInfo.TextColor;
     this.Font = g_JSChartResource.MinuteInfo.Font;
     this.PointColor = g_JSChartResource.MinuteInfo.PointColor;
+    this.PointRadius=g_JSChartResource.MinuteInfo.PointRadius;
     this.LineColor = g_JSChartResource.MinuteInfo.LineColor;
     this.TextBGColor = g_JSChartResource.MinuteInfo.TextBGColor;
     this.TextHeight = 18;
@@ -5582,7 +5583,7 @@ function ChartMinuteInfo()
 
         this.Canvas.fillStyle = this.PointColor;
         this.Canvas.beginPath();
-        this.Canvas.arc(item.Start.X, item.Start.Y, 5, 0, 2 * Math.PI);
+        this.Canvas.arc(item.Start.X, item.Start.Y, this.PointRadius, 0, 2 * Math.PI);
         this.Canvas.closePath();
         this.Canvas.fill();
     }

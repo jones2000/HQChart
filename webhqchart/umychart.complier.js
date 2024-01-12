@@ -21681,6 +21681,11 @@ function OverlayScriptIndex(name,script,args,option)
         }
 
         this.OverlayIndex.Frame.Frame.Title=this.Name;    //给子框架设置标题
+        if (hqChart.Frame.SubFrame[windowIndex])
+        {
+            var mainFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+            if (mainFrame) this.OverlayIndex.Frame.Frame.XPointCount=mainFrame.XPointCount; //跟主窗口同步下页面显示数据个数
+        }
 
         for(var i=0; i<this.OutVar.length; ++i)
         {
@@ -23622,7 +23627,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
 
                 if (item.color) outVarItem.Color=item.color;
                 if (item.linewidth) outVarItem.LineWidth=item.linewidth; 
-                if (item.isshow==false) outVarItem.IsShow = false;
+                if (IFrameSplitOperator.IsBool(item.isshow)) outVarItem.IsShow = item.isshow;  //是否绘制线段
                 if (item.isexdata==true) outVarItem.IsExData = true;
                 if (item.BreakPoint) outVarItem.BreakPoint=item.BreakPoint;
 

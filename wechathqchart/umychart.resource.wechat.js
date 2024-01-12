@@ -243,7 +243,8 @@ function JSChartResource()
         Font: '14px 微软雅黑',
         PointColor: 'rgb(38,113,254)',
         LineColor: 'rgb(120,167,255)',
-        TextBGColor: 'rgba(255,255,255,0.8)'
+        TextBGColor: 'rgba(255,255,255,0.8)',
+        PointRadius:4,  //圆点半径
     };
 
     //单图标指标ChartSingleText -> DRAWICON
@@ -465,6 +466,17 @@ function JSChartResource()
             if (style.TooltipPaint.BorderColor) this.TooltipPaint.BorderColor = style.TooltipPaint.BorderColor;
             if (style.TooltipPaint.TitleColor) this.TooltipPaint.TitleColor = style.TooltipPaint.TitleColor;
             if (style.TooltipPaint.TitleFont) this.TooltipPaint.TitleFont = style.TooltipPaint.TitleFont;
+        }
+
+        if (style.MinuteInfo)
+        {
+            var item=style.MinuteInfo;
+            if (style.MinuteInfo.TextColor) this.MinuteInfo.TextColor=style.MinuteInfo.TextColor;
+            if (style.MinuteInfo.Font) this.MinuteInfo.Font=style.MinuteInfo.Font;
+            if (style.MinuteInfo.PointColor) this.MinuteInfo.PointColor=style.MinuteInfo.PointColor;
+            if (style.MinuteInfo.LineColor) this.MinuteInfo.LineColor=style.MinuteInfo.LineColor;
+            if (style.MinuteInfo.TextBGColor) this.MinuteInfo.TextBGColor=style.MinuteInfo.TextBGColor;
+            if (IFrameSplitOperator.IsNumber(item.PointRadius)) this.MinuteInfo.PointRadius=item.PointRadius;
         }
 
         if (style.Title)
