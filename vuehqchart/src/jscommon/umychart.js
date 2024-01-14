@@ -10643,6 +10643,9 @@ function AverageWidthFrame()
         //JSConsole.Chart.Log('[AverageWidthFrame.DrawVertical] bottom',bottom);
         if (this.ChartBorder.Bottom<=5*GetDevicePixelRatio()) return;   //高度不够 不显示
 
+        var mapX=null;
+        if (this.GetVerticalXCache) mapX=this.GetVerticalXCache();
+
         var bottomTextExtend=null;
         if (this.XTextExtend)
         {
@@ -10659,7 +10662,10 @@ function AverageWidthFrame()
         var textRightPrev=null; //上一次刻度输出右边x坐标
         for(var i=0; i<this.VerticalInfo.length; ++i)
         {
-            var x=this.GetXFromIndex(this.VerticalInfo[i].Value);
+            var item=this.VerticalInfo[i];
+            var x=null;
+            if (mapX && mapX.has(item.Value)) x=mapX.get(item.Value);
+            else x=this.GetXFromIndex(item.Value);
             if (x>right) break;
             if (xPrev!=null && Math.abs(x-xPrev)<this.MinXDistance) continue;
             
@@ -14995,6 +15001,49 @@ function KLineFrame()
 
     //是否在X轴坐标上
     //this.PtInVertical=function(x,y) { return false; }
+
+    //缓存X轴坐标刻度
+    this.GetVerticalXCache=function()
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.VerticalInfo)) return null;
+        
+        var dataWidth=this.DataWidth;
+        var distanceWidth=this.DistanceWidth;
+        var xPointCount=this.XPointCount;
+
+        var setIndex=new Set();
+        for(var i=0; i<this.VerticalInfo.length; ++i)
+        {
+            var item=this.VerticalInfo[i];
+            setIndex.add(item.Value);
+        }
+
+        if (this.IsHScreen)
+        {
+            var border=this.ChartBorder.GetHScreenBorder();
+            var xOffset=border.TopEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        }
+        else
+        {
+            var border=this.ChartBorder.GetBorder();
+            var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        }
+
+        var mapX=new Map();
+        for(var i=0;i<xPointCount;++i, xOffset+=(dataWidth+distanceWidth))
+        {
+            var left=xOffset;
+            var right=xOffset+dataWidth;
+            var x=left+(right-left)/2;
+
+            if (setIndex.has(i))
+            {
+                mapX.set(i, x);
+            }
+        }
+
+        return mapX;
+    }
 }
 
 function OverlayKLineFrame()
@@ -16034,19 +16083,25 @@ function KLineHScreenFrame()
     //画X轴
     this.DrawVertical=function()
     {
+        var mapX=null;
+        if (this.GetVerticalXCache) mapX=this.GetVerticalXCache();
+
         var border=this.ChartBorder.GetHScreenBorder();
         var left=border.Left;
         var right=border.RightTitle;
         var bottom=border.Bottom;
         var pixelRatio = GetDevicePixelRatio(); //获取设备的分辨率
         var xPrev=null; //上一个坐标x的值
-        for(var i in this.VerticalInfo)
+        for(var i=0; i<this.VerticalInfo.length; ++i)
         {
-            var x=this.GetXFromIndex(this.VerticalInfo[i].Value);
+            var item=this.VerticalInfo[i];
+            var x=null;
+            if (mapX && mapX.has(item.Value)) x=mapX.get(item.Value);
+            else x=this.GetXFromIndex(item.Value);
+
             if (x>=bottom) break;
             if (xPrev!=null && Math.abs(x-xPrev)<80) continue;
 
-            var item=this.VerticalInfo[i];
             if (item.LineType==2)
             {
                 this.Canvas.strokeStyle=this.VerticalInfo[i].LineColor;
@@ -33559,15 +33614,30 @@ function ChartMACD()
     this.DrawBars=function(lineWidth, bUpBar)
     {
         var isMinute=this.IsMinuteFrame();
-        var border=this.ChartBorder.GetBorder();
+        
         var dataWidth=this.ChartFrame.DataWidth;
         var distanceWidth=this.ChartFrame.DistanceWidth;
         var xPointCount=this.ChartFrame.XPointCount;
-        var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        var isHSCreen=this.ChartFrame.IsHScreen===true;
 
-        var chartright=border.RightEx;
-        var lockRect=this.GetLockRect();
-        if (lockRect) chartright=lockRect.Left;
+        if (isHSCreen)
+        {
+            var border=this.ChartBorder.GetHScreenBorder();
+            var xOffset=border.TopEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.BottomEx;
+            var lockRect=this.GetLockRect();
+            if (lockRect) chartright=lockRect.Top;
+        }
+        else
+        {
+            var border=this.ChartBorder.GetBorder();
+            var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+
+            var chartright=border.RightEx;
+            var lockRect=this.GetLockRect();
+            if (lockRect) chartright=lockRect.Left;
+        }
+
 
         if (bUpBar) this.Canvas.strokeStyle=this.UpColor;
         else this.Canvas.strokeStyle=this.DownColor;
@@ -33604,8 +33674,18 @@ function ChartMACD()
 
             var y=this.ChartFrame.GetYFromData(value);
             var xFix=ToFixedPoint2(lineWidth, x); //毛边修正
-            this.Canvas.moveTo(xFix,yBottom);
-            this.Canvas.lineTo(xFix,y);
+
+            if (isHSCreen)
+            {
+                this.Canvas.moveTo(yBottom,ToFixedPoint(x));
+                this.Canvas.lineTo(y,ToFixedPoint(x));
+            }
+            else
+            {
+                this.Canvas.moveTo(xFix,yBottom);
+                this.Canvas.lineTo(xFix,y);
+            }
+            
             ++drawCount;
         }
 
@@ -33624,12 +33704,6 @@ function ChartMACD()
             return;
         }
 
-        if (this.ChartFrame.IsHScreen===true)
-        {
-            this.HScreenDraw();
-            return;
-        }
-
         var dataWidth=this.ChartFrame.DataWidth;
         var lineWidth=this.LineWidth*GetDevicePixelRatio();
         if (this.LineWidth==50) lineWidth=dataWidth;
@@ -33641,48 +33715,6 @@ function ChartMACD()
          //上下分开画
         this.DrawBars(lineWidth, true);
         this.DrawBars(lineWidth, false);
-
-        this.Canvas.lineWidth=backupLineWidth;
-    }
-
-    this.HScreenDraw=function()
-    {
-        var dataWidth=this.ChartFrame.DataWidth;
-        var distanceWidth=this.ChartFrame.DistanceWidth;
-        var border=this.ChartBorder.GetHScreenBorder();
-        var chartright=border.BottomEx;
-        var xPointCount=this.ChartFrame.XPointCount;
-        var lockRect=this.GetLockRect();
-        if (lockRect) chartright=lockRect.Top;
-
-        var yBottom=this.ChartFrame.GetYFromData(0);
-
-        var lineWidth=this.LineWidth*GetDevicePixelRatio();
-        if (this.LineWidth==50) lineWidth=dataWidth;
-        else if (lineWidth>dataWidth) lineWidth=dataWidth;
-
-        var backupLineWidth=this.Canvas.lineWidth;
-        this.Canvas.lineWidth=lineWidth;
-        
-        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
-        {
-            var value=this.Data.Data[i];
-            if (value==null) continue;
-
-            var x=this.ChartFrame.GetXFromIndex(j);
-            var y=this.ChartFrame.GetYFromData(value);
-
-            if (x>chartright) break;
-
-            this.Canvas.beginPath();
-            this.Canvas.moveTo(yBottom,ToFixedPoint(x));
-            this.Canvas.lineTo(y,ToFixedPoint(x));
-
-            if (value>=0) this.Canvas.strokeStyle=this.UpColor;
-            else this.Canvas.strokeStyle=this.DownColor;
-            this.Canvas.stroke();
-            this.Canvas.closePath();
-        }
 
         this.Canvas.lineWidth=backupLineWidth;
     }

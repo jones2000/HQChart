@@ -37,7 +37,7 @@
         function KLineChart(divKLine)
         {
             this.DivKLine=divKLine;
-            this.Chart=JSChart.Init(divKLine);   //把K线图绑定到一个Div上
+            this.Chart=JSChart.Init(divKLine,false, false);   //把K线图绑定到一个Div上
            
 
             //K线配置信息
@@ -48,14 +48,16 @@
                 
                 Windows: //窗口指标
                 [
-                    { Index:"EMPTY" },
-                    { Index:"VOL", Script:'成交量:VOL,COLORSTICK,UPCOLOR(RGB(255,215,0))', IsSync:true, FloatPrecision:0, StringFormat:2, IsShowTitleArrow:false },
+                    { Index:"EMPTY", IsSync:true },
+                    { Index:"VOL", Script:'成交量:VOL,COLORSTICK,UPCOLOR(RGB(255,215,0))', IsSync:true, FloatPrecision:0, StringFormat:2, IsShowTitleArrow:false,IsSync:true },
+                    { Index:"MACD2", IsSync:true}, 
+                    { Index:"RSI", IsSync:true}
                 ], 
 
                 
                 OverlayIndex:
                 [
-                    { Index:'持仓', Windows:1, Script:"持仓量:VOLINSTK,RGB(178,58,238);", ShowRightText:false, FloatPrecision:0, StringFormat:2 },
+                    { Index:'持仓', Windows:1, Script:"持仓量:VOLINSTK,RGB(178,58,238);", ShowRightText:false, FloatPrecision:0, StringFormat:2, IsSync:true},
                 ],  //叠加指标
                 
                 Symbol:"if2312.SHFE",
@@ -99,26 +101,32 @@
     
                 Border: //边框
                 {
-                    Left:50,         //左边间距
+                    Left:1,         //左边间距
                     Right:90,       //右边间距
                     Bottom:25,      //底部间距
                     Top:25,         //顶部间距
 
                     AutoLeft:{ Blank:10, MinWidth:30 },
-                    AutoRight:{ Blank:5, MinWidth:40 },
+                    AutoRight:{ Blank:5, MinWidth:80 },
                 },
                 
                 Frame:  //子框架设置
                 [
                     {
-                        SplitCount:6
+                        SplitCount:6,
+                        IsShowLeftText:false,
                     },
 
                     { 
-                        SplitCount:8, 
-                        
+                        SplitCount:4, 
+                        IsShowLeftText:false,
                     },
-                    
+                    {
+                        IsShowLeftText:false,
+                    },
+                    {
+                        IsShowLeftText:false,
+                    }
                 ],
 
                 ExtendChart:    //扩展图形
@@ -151,11 +159,18 @@
                 zoom.push([0.4,0]);
                 zoom.push([0.2,0]);
                 zoom.push([0.08,0]);
+                zoom.push([0.07,0]);
 
 
                 this.OnSize();  //让K线全屏
+                this.Option.OnCreatedCallback=(chart)=>{ this.OnCreateHQChart(chart); }
                 this.Option.NetworkFilter=(data, callback)=>{ this.NetworkFilter(data, callback); }
                 this.Chart.SetOption(this.Option);  //设置K线配置
+            }
+
+            this.OnCreateHQChart=function(chart)
+            {
+                chart.AfterBindMainData=(name)=>{ this.AfterBindMainData(chart,name); }
             }
 
             this.NetworkFilter=function(data, callback)
@@ -207,13 +222,51 @@
                 this.Chart.ChangeIndex(windowIndex,indexName,option);
             }
 
+            this.IsFullShow=true;
+            this.AfterBindMainData=function(jsChart, name)
+            {
+                console.log("[AfterBindMainData]", name);
+                if ((name=="RecvHistoryData" || name=="RecvMinuteHistoryData") && this.IsFullShow)
+                {
+                    var hisData=jsChart.ChartPaint[0].Data;
+                    hisData.DataOffset=0;
+                    var dataCount=hisData.Data.length;
+
+                    
+                    for(var i=0;i<jsChart.Frame.SubFrame.length;++i)
+                    {
+                        var item =jsChart.Frame.SubFrame[i].Frame;
+                        item.XPointCount=dataCount;
+
+                        var width=item.GetFrameWidth()-g_JSChartResource.FrameMargin;
+                        item.DataWidth=width/dataCount;
+                        item.DistanceWidth=0;
+                    }
+                    
+
+                    this.IsFullShow=false;
+                }
+            }
+
+
         }
 
        
         $(function () 
         {
+            const font = new FontFace("iconfont",`url('../jscommon/umychart.resource/font/iconfont.woff?t=1690947130935') format('woff')`);
+            document.fonts.add(font);    //把字体添加到 document.font（FontFaceSet）中
+            font.load();    //加载字体
+
+            JSChart.EnableCanvasWillReadFrequently=true;
             var klineControl=new KLineChart(document.getElementById('kline'));
-            klineControl.Create();
+
+            //等待到所有的字体都加载完毕
+            document.fonts.ready.then(() => 
+            {
+                klineControl.Create();
+            });
+
         })
 
        
