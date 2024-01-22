@@ -8547,6 +8547,7 @@ function ChartCorssCursor()
     this.TextFormat= { Right:0 };               //0=默认 1=价格显示(分时图才有用)
     this.IsShowCorss = true;    //是否显示十字光标
     this.IsShowClose = false;     //Y轴始终显示收盘价
+    this.IsOnlyDrawMinute=false;  //是否只能画在走势图价格线上
     this.IsFixXLastTime=false;    //是否修正X轴,超出当前时间的,X轴调整到当前最后的时间.
 
     //内部使用
@@ -8565,6 +8566,24 @@ function ChartCorssCursor()
         var klineData = data.Data[dataIndex];
         if (!klineData) return null;
         this.Close = klineData.Close;
+        var yPoint = this.Frame.GetYFromData(this.Close);
+        return yPoint;
+    }
+
+    this.GetMinuteCloseYPoint=function(index)
+    {
+        if (!IFrameSplitOperator.IsNumber(index)) return null;
+        index=parseInt(index);
+        if (!this.StringFormatX.Data) return null;
+        var data = this.StringFormatX.Data;
+        if (!data.Data || data.Data.length <= 0) return null;
+        var dataIndex = data.DataOffset + index;
+        if (dataIndex >= data.Data.length) dataIndex = data.Data.length - 1;
+        if (dataIndex < 0) return null;
+
+        var close = data.Data[dataIndex];
+        if (!IFrameSplitOperator.IsNumber(index)) return null;
+        this.Close=close;
         var yPoint = this.Frame.GetYFromData(this.Close);
         return yPoint;
     }
@@ -8614,10 +8633,16 @@ function ChartCorssCursor()
         var rightWidth = this.Frame.ChartBorder.Right;
         var chartRight = this.Frame.ChartBorder.GetChartWidth();
         x = this.Frame.GetXFromIndex(this.CursorIndex); //手机端 十字只能画在K线上
-        if (this.IsShowClose) 
+
+        if (this.IsShowClose)  //手机端 十字只能画在K线上
         {
             var yPoint = this.GetCloseYPoint(this.CursorIndex);
             if (yPoint != null) y = yPoint;
+        }
+        else if (this.IsOnlyDrawMinute)
+        {
+            var yPoint = this.GetMinuteCloseYPoint(this.CursorIndex);
+            if (yPoint != null) y=yPoint;
         }
 
         if (this.IsFixXLastTime)
@@ -8876,6 +8901,16 @@ function ChartCorssCursor()
         var y = this.LastPoint.Y;
 
         y = this.Frame.GetXFromIndex(this.CursorIndex); //手机端 十字只能画在K线上
+        if (this.IsShowClose)  //手机端 十字只能画在K线上
+        {
+            var yPoint = this.GetCloseYPoint(this.CursorIndex);
+            if (yPoint != null) x = yPoint;
+        }
+        else if (this.IsOnlyDrawMinute)
+        {
+            var yPoint = this.GetMinuteCloseYPoint(this.CursorIndex);
+            if (yPoint != null) x=yPoint;
+        }
 
         var left = this.Frame.ChartBorder.GetLeft();
         var right = this.Frame.ChartBorder.GetRightEx();

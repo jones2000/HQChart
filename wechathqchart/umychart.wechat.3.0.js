@@ -335,7 +335,7 @@ function JSChart(element)
             if (!isNaN(option.CorssCursorInfo.Right)) chart.ChartCorssCursor.ShowTextMode.Right = option.CorssCursorInfo.Right;
             if (!isNaN(option.CorssCursorInfo.Bottom)) chart.ChartCorssCursor.ShowTextMode.Bottom = option.CorssCursorInfo.Bottom;
             if (option.CorssCursorInfo.IsShowCorss === false) chart.ChartCorssCursor.IsShowCorss = option.CorssCursorInfo.IsShowCorss;
-            if (option.CorssCursorInfo.IsShowClose == true) chart.ChartCorssCursor.IsShowClose = option.CorssCursorInfo.IsShowClose;    //Y轴显示收盘价
+            if (IFrameSplitOperator.IsBool(item.IsShowClose)) chart.ChartCorssCursor.IsShowClose = item.IsShowClose;    //Y轴显示收盘价
             if (IFrameSplitOperator.IsNumber(option.CorssCursorInfo.HPenType)) chart.ChartCorssCursor.HPenType = option.CorssCursorInfo.HPenType;
             if (option.CorssCursorInfo.VPenType > 0) chart.ChartCorssCursor.VPenType = option.CorssCursorInfo.VPenType;
             if (IFrameSplitOperator.IsNumber(item.DateFormatType)) chart.ChartCorssCursor.StringFormatX.DateFormatType=item.DateFormatType;
@@ -629,6 +629,7 @@ function JSChart(element)
             if (IFrameSplitOperator.IsNumber(item.PriceFormatType)) chart.ChartCorssCursor.StringFormatY.PriceFormatType=item.PriceFormatType;
             if (IFrameSplitOperator.IsNumber(item.DataFormatType)) chart.ChartCorssCursor.StringFormatY.DataFormatType=item.DataFormatType;
             if (IFrameSplitOperator.IsNumber(item.RightTextFormat)) chart.ChartCorssCursor.TextFormat.Right=item.RightTextFormat;
+            if (IFrameSplitOperator.IsBool(item.IsOnlyDrawMinute)) chart.ChartCorssCursor.IsOnlyDrawMinute = item.IsOnlyDrawMinute;    //Y轴显示收盘价
         }
 
         if (option.MinuteInfo) chart.CreateMinuteInfo(option.MinuteInfo);
@@ -908,14 +909,15 @@ function JSChart(element)
 
         if (option.CorssCursorInfo) 
         {
+            var item=option.CorssCursorInfo;
             if (!isNaN(option.CorssCursorInfo.Left)) chart.ChartCorssCursor.ShowTextMode.Left = option.CorssCursorInfo.Left;
             if (!isNaN(option.CorssCursorInfo.Right)) chart.ChartCorssCursor.ShowTextMode.Right = option.CorssCursorInfo.Right;
             if (!isNaN(option.CorssCursorInfo.Bottom)) chart.ChartCorssCursor.ShowTextMode.Bottom = option.CorssCursorInfo.Bottom;
             if (option.CorssCursorInfo.IsShowCorss === false) chart.ChartCorssCursor.IsShowCorss = option.CorssCursorInfo.IsShowCorss;
-            if (option.CorssCursorInfo.IsShowClose == true) chart.ChartCorssCursor.IsShowClose = option.CorssCursorInfo.IsShowClose;    //Y轴显示收盘价
+            if (IFrameSplitOperator.IsBool(item.IsShowClose)) chart.ChartCorssCursor.IsShowClose = item.IsShowClose;    //Y轴显示收盘价
             if (option.CorssCursorInfo.HPenType > 0) chart.ChartCorssCursor.HPenType = option.CorssCursorInfo.HPenType;
             if (option.CorssCursorInfo.VPenType > 0) chart.ChartCorssCursor.VPenType = option.CorssCursorInfo.VPenType;
-            if (IFrameSplitOperator.IsBool(option.CorssCursorInfo.IsFixXLastTime)) chart.ChartCorssCursor.IsFixXLastTime=option.CorssCursorInfo.IsFixXLastTime;
+            if (IFrameSplitOperator.IsBool(item.IsFixXLastTime)) chart.ChartCorssCursor.IsFixXLastTime=item.IsFixXLastTime;
         }
 
         if (option.Frame) 
@@ -7613,7 +7615,12 @@ function KLineChartContainer(uielement)
         this.CancelAutoUpdate();
         var download = this.DragDownload.Minute;
         download.Status = 1;
-        var firstItem = this.SourceData.Data[0];   //最新的一条数据
+        var firstItem=null;
+        if (IFrameSplitOperator.IsNonEmptyArray(this.SourceData.Data))
+            firstItem = this.SourceData.Data[0];   //最新的一条数据
+        else
+            firstItem={Date:null, Time:null};
+
         var postData =
         {
             "field": ["name", "symbol", "yclose", "open", "price", "high", "low", "vol"],
@@ -7665,7 +7672,7 @@ function KLineChartContainer(uielement)
         var aryDayData = KLineChartContainer.JsonDataToMinuteHistoryData(data);
         var lastDataCount = this.GetHistoryDataCount();   //保存下上一次的数据个数
 
-        for (var i in aryDayData)    //数据往前插
+        for (var i=0; i<aryDayData.length; ++i)    //数据往前插
         {
             var item = aryDayData[i];
             this.SourceData.Data.splice(i, 0, item);
@@ -7714,7 +7721,12 @@ function KLineChartContainer(uielement)
         this.CancelAutoUpdate();
         var download = this.DragDownload.Day;
         download.Status = 1;
-        var firstItem = this.SourceData.Data[0];   //最新的一条数据
+        var firstItem =null;
+        if (IFrameSplitOperator.IsNonEmptyArray(this.SourceData.Data))
+            firstItem = this.SourceData.Data[0];   //最新的一条数据
+        else
+            firstItem={Date:null};
+
         var postData =
         {
             "field": ["name", "symbol", "yclose", "open", "price", "high", "low", "vol"],
@@ -7780,8 +7792,13 @@ function KLineChartContainer(uielement)
         }
         
         var lastDataCount = this.GetHistoryDataCount();   //保存下上一次的数据个数
-        var firstData=this.SourceData.Data[0];
-        for (var i in aryDayData)    //数据往前插
+        var firstData=null;
+        if (IFrameSplitOperator.IsNonEmptyArray(this.SourceData.Data))
+            firstData=this.SourceData.Data[0];
+        else
+            firstData={Date:null};
+
+        for (var i=0; i<aryDayData.length; ++i)    //数据往前插
         {
             var item = aryDayData[i];
             this.SourceData.Data.splice(i, 0, item);
@@ -10962,20 +10979,21 @@ function KLineChartHScreenContainer(uielement)
 ////////////////////////////////////////////////////////////////////////////////
 //  走势图横屏显示
 //
-function MinuteChartHScreenContainer(uielement) {
-  this.newMethod = MinuteChartContainer;   //派生
-  this.newMethod(uielement);
-  delete this.newMethod;
+function MinuteChartHScreenContainer(uielement) 
+{
+    this.newMethod = MinuteChartContainer;   //派生
+    this.newMethod(uielement);
+    delete this.newMethod;
 
-  this.ClassName = 'MinuteChartHScreenContainer';
+    this.ClassName = 'MinuteChartHScreenContainer';
 
-  this.OnMouseMove = function (x, y, e) {
-    this.LastPoint.X = x;
-    this.LastPoint.Y = y;
-    this.CursorIndex = this.Frame.GetXData(y);
+    this.OnMouseMove = function (x, y, e) {
+        this.LastPoint.X = x;
+        this.LastPoint.Y = y;
+        this.CursorIndex = this.Frame.GetXData(y);
 
-    this.DrawDynamicInfo();
-  }
+        this.DrawDynamicInfo();
+    }
 
     //创建 windowCount 窗口个数
     this.Create = function (windowCount) 
@@ -11020,58 +11038,64 @@ function MinuteChartHScreenContainer(uielement) {
         this.ChartCorssCursor.StringFormatX.Frame = this.Frame.SubFrame[0].Frame;
     }
 
-  //创建子窗口
-  this.CreateChildWindow = function (windowCount) {
-    for (var i = 0; i < windowCount; ++i) {
-      var border = new ChartBorder();
-      border.UIElement = this.UIElement;
+    //创建子窗口
+    this.CreateChildWindow = function (windowCount) 
+    {
+        for (var i = 0; i < windowCount; ++i) 
+        {
+            var border = new ChartBorder();
+            border.UIElement = this.UIElement;
 
-      var frame = new MinuteHScreenFrame();
-      frame.Canvas = this.Canvas;
-      frame.ChartBorder = border;
-      if (i < 2) frame.ChartBorder.TitleHeight = 0;
-      frame.XPointCount = 243;
+            var frame = new MinuteHScreenFrame();
+            frame.Canvas = this.Canvas;
+            frame.ChartBorder = border;
+            if (i < 2) frame.ChartBorder.TitleHeight = 0;
+            frame.XPointCount = 243;
+            frame.Identify=i;
 
-      var DEFAULT_HORIZONTAL = [9, 8, 7, 6, 5, 4, 3, 2, 1];
-      frame.HorizontalMax = DEFAULT_HORIZONTAL[0];
-      frame.HorizontalMin = DEFAULT_HORIZONTAL[DEFAULT_HORIZONTAL.length - 1];
+            var DEFAULT_HORIZONTAL = [9, 8, 7, 6, 5, 4, 3, 2, 1];
+            frame.HorizontalMax = DEFAULT_HORIZONTAL[0];
+            frame.HorizontalMin = DEFAULT_HORIZONTAL[DEFAULT_HORIZONTAL.length - 1];
 
-      if (i == 0) {
-        frame.YSplitOperator = new FrameSplitMinutePriceY();
-        frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('price');
-      }
-      else {
-        frame.YSplitOperator = new FrameSplitY();
-        frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('double');
-      }
+            if (i == 0) 
+            {
+                frame.YSplitOperator = new FrameSplitMinutePriceY();
+                frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('price');
+            }
+            else 
+            {
+                frame.YSplitOperator = new FrameSplitY();
+                frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('double');
+            }
 
-      frame.YSplitOperator.Frame = frame;
-      frame.YSplitOperator.ChartBorder = border;
-      frame.XSplitOperator = new FrameSplitMinuteX();
-      frame.XSplitOperator.Frame = frame;
-      frame.XSplitOperator.ChartBorder = border;
-      if (i != windowCount - 1) frame.XSplitOperator.ShowText = false;
-      frame.XSplitOperator.Operator();
+            frame.YSplitOperator.Frame = frame;
+            frame.YSplitOperator.ChartBorder = border;
+            frame.XSplitOperator = new FrameSplitMinuteX();
+            frame.XSplitOperator.Frame = frame;
+            frame.XSplitOperator.ChartBorder = border;
+            if (i != windowCount - 1) frame.XSplitOperator.ShowText = false;
+            frame.XSplitOperator.Operator();
 
-      for (var j in DEFAULT_HORIZONTAL) {
-        frame.HorizontalInfo[j] = new CoordinateInfo();
-        frame.HorizontalInfo[j].Value = DEFAULT_HORIZONTAL[j];
-        if (i == 0 && j == frame.HorizontalMin) continue;
+            for (var j in DEFAULT_HORIZONTAL) 
+            {
+                frame.HorizontalInfo[j] = new CoordinateInfo();
+                frame.HorizontalInfo[j].Value = DEFAULT_HORIZONTAL[j];
+                if (i == 0 && j == frame.HorizontalMin) continue;
 
-        frame.HorizontalInfo[j].Message[1] = DEFAULT_HORIZONTAL[j].toString();
-        frame.HorizontalInfo[j].Font = "14px 微软雅黑";
-      }
+                frame.HorizontalInfo[j].Message[1] = DEFAULT_HORIZONTAL[j].toString();
+                frame.HorizontalInfo[j].Font = "14px 微软雅黑";
+            }
 
-      var subFrame = new SubFrameItem();
-      subFrame.Frame = frame;
-      if (i == 0)
-        subFrame.Height = 20;
-      else
-        subFrame.Height = 10;
+            var subFrame = new SubFrameItem();
+            subFrame.Frame = frame;
+            if (i == 0)
+                subFrame.Height = 20;
+            else
+                subFrame.Height = 10;
 
-      this.Frame.SubFrame[i] = subFrame;
+            this.Frame.SubFrame[i] = subFrame;
+        }
     }
-  }
 
 }
 
