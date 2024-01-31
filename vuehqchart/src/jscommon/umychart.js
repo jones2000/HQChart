@@ -5906,7 +5906,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         var sendData={ MouseStatus:null, X:x, Y:y, FrameID:frameID, e:e };
         if (this.TryMouseMove_CustomChartDrag(sendData))
         {
-            if (sendData.MouseStatus) mouseStatus=sendData.MouseStatus;
+            if (sendData.MouseStatus) 
+                mouseStatus=sendData.MouseStatus;
         }
         
         var bDrawPicture=false; //是否正在画图
@@ -5956,7 +5957,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             }
             else 
             {
-                if (!this.MouseDrag) this.SetCursor({Cursor:"default"}); //this.UIElement.style.cursor="default";
+                if (!this.MouseDrag) 
+                    this.SetCursor({Cursor:"default"}); //this.UIElement.style.cursor="default";
             }
         }
 
@@ -10093,35 +10095,46 @@ function AverageWidthFrame()
 
             if (item.Message[0]!=null && isDrawLeft)
             {
-                if (item.Font!=null) this.Canvas.font=item.Font;
-
-                var xText=left;
-                if (leftExtendLine && leftExtendLine.Width>1)
+                if (Array.isArray(item.Message[0]))
                 {
-                    var lineLength=leftExtendLine.Width;
-                    if (leftExtendLine.Color) this.Canvas.strokeStyle=leftExtendLine.Color;
-                    else this.Canvas.strokeStyle=item.LineColor;
-                    this.Canvas.beginPath();
-                    this.Canvas.moveTo(xText,yFixed);
-                    this.Canvas.lineTo(xText-lineLength,yFixed);
-                    this.Canvas.stroke();
-
-                    xText-=lineLength;
-                }
-
-                rtLeft=this.GetTextTopBottom(textBaseline,yText);
-                if (!rtPreLeft || (rtLeft && !this.IsTextTopBottomOverlap(rtLeft, rtPreLeft)))
-                {
-                    if (leftExtendText && leftExtendText.Align===1)
+                    if (this.MultiTextFormat==3)
                     {
-                        this.Canvas.textAlign="left";
-                        this.Canvas.fillText(item.Message[0],this.YTextPadding[0],yText);
+                        var obj={ Data:item.Message[0], X:left, Y:yText, TextBaseLine:textBaseline, IsLeft:true, Item:item, TextPadding:this.YTextPadding[0] };
+                        this.DrawMultiLineText(obj);
                     }
-                    else
+                }
+                else
+                {
+                    if (item.Font!=null) this.Canvas.font=item.Font;
+
+                    var xText=left;
+                    if (leftExtendLine && leftExtendLine.Width>1)
                     {
-                        this.Canvas.textAlign="right";
-                        this.Canvas.fillText(item.Message[0],xText-this.YTextPadding[0],yText);
-                        rtPreLeft=rtLeft;
+                        var lineLength=leftExtendLine.Width;
+                        if (leftExtendLine.Color) this.Canvas.strokeStyle=leftExtendLine.Color;
+                        else this.Canvas.strokeStyle=item.LineColor;
+                        this.Canvas.beginPath();
+                        this.Canvas.moveTo(xText,yFixed);
+                        this.Canvas.lineTo(xText-lineLength,yFixed);
+                        this.Canvas.stroke();
+
+                        xText-=lineLength;
+                    }
+
+                    rtLeft=this.GetTextTopBottom(textBaseline,yText);
+                    if (!rtPreLeft || (rtLeft && !this.IsTextTopBottomOverlap(rtLeft, rtPreLeft)))
+                    {
+                        if (leftExtendText && leftExtendText.Align===1)
+                        {
+                            this.Canvas.textAlign="left";
+                            this.Canvas.fillText(item.Message[0],this.YTextPadding[0],yText);
+                        }
+                        else
+                        {
+                            this.Canvas.textAlign="right";
+                            this.Canvas.fillText(item.Message[0],xText-this.YTextPadding[0],yText);
+                            rtPreLeft=rtLeft;
+                        }
                     }
                 }
             }
@@ -10188,6 +10201,11 @@ function AverageWidthFrame()
                         var lineHeight=this.Canvas.measureText('M').width;
                         if (itemHeight>lineHeight*2) this.Canvas.fillText(item.Message[1][1],xText+this.YTextPadding[1],yText+lineHeight);
                     }
+                    else if (this.MultiTextFormat==3)
+                    {
+                        var obj={ Data:item.Message[1], X:xText, Y:yText, TextBaseLine:textBaseline, IsLeft:false, Item:item, TextPadding:this.YTextPadding[1] };
+                        this.DrawMultiLineText(obj);
+                    }
                     else    //显示第1行
                     {
                         this.Canvas.fillText(item.Message[1][0],xText+this.YTextPadding[1],yText);
@@ -10246,6 +10264,65 @@ function AverageWidthFrame()
 
             }
         }
+    }
+
+    //多行文字刻度输出 obj={ Data:, X:, Y:, TextBaseLine:, IsLeft:, Item:刻度数据 }
+    this.DrawMultiLineText=function(obj)
+    {
+        var lineSpacing=2;
+        var lineHeight=this.Canvas.measureText('擎').width;
+        var lineCount=obj.Data.length;
+        var textHeight=lineHeight*lineCount+(lineSpacing*(lineCount-1));
+        var yText=obj.Y;
+
+        if (obj.Item.Font!=null) this.Canvas.font=obj.Item.Font;
+
+        if (obj.IsLeft)
+        {
+            this.Canvas.textAlign="right";
+            var xText=obj.X-obj.TextPadding;
+        }
+        else
+        {
+            this.Canvas.textAlign="left";
+            var xText=obj.X+obj.TextPadding;
+        }
+
+        var textBaseline=this.Canvas.textBaseline;  //备份下原来的对齐方式
+        this.Canvas.textBaseline='top';
+        if (obj.TextBaseLine==1)    //middle
+        {
+            yText-=textHeight/2;
+        }
+        else if (obj.TextBaseLine==0)   //top
+        {
+
+        }
+        else if (obj.TextBaseLine==2)   //bottom
+        {
+            yText-=textHeight;
+        }
+       
+        
+        for(var i=0;i<obj.Data.length;++i)
+        {
+            var item=obj.Data[i];
+            var text=item.Text;
+
+            var backupTextColor=null;
+            if (item.Color) 
+            {
+                backupTextColor=this.Canvas.fillStyle;
+                this.Canvas.fillStyle=item.Color;
+            }
+
+            this.Canvas.fillText(text,xText,yText);
+            yText+=lineHeight+lineSpacing;
+
+            if (backupTextColor) this.Canvas.fillStyle=backupTextColor;
+        }
+
+        this.Canvas.textBaseline=textBaseline;  //还原对齐方式
     }
 
     //上下区域是否重叠
@@ -11457,6 +11534,24 @@ function AverageWidthFrame()
         return null;
     }
 
+    this.GetMulitTextMaxWidth=function(aryData)
+    {
+        var width=null;
+
+        for(var i=0;i<aryData.length;++i)
+        {
+            var item=aryData[i];
+            var text=item.Text;
+            if (!text) continue;
+
+            var value=this.Canvas.measureText(text).width;
+            if (width==null) width=value;
+            else if(width<value) width=value;
+        }
+
+        return width;
+    }
+
     this.GetScaleTextWidth=function()
     {
         var border=this.ChartBorder.GetBorder();
@@ -11502,10 +11597,18 @@ function AverageWidthFrame()
 
             if (item.Message[0]!=null && isDrawLeft)
             {
-                textWidth=this.Canvas.measureText(item.Message[0]).width;
+                if (Array.isArray(item.Message[0]))
+                {
+                    textWidth=this.GetMulitTextMaxWidth(item.Message[0]);
+                }
+                else
+                {
+                    textWidth=this.Canvas.measureText(item.Message[0]).width;
+                }
+
                 if (width.Left==null || width.Left<textWidth)
                     width.Left=textWidth;
-
+                
                 //JSConsole.Chart.Log(`[ChartData::GetScaleTextWidth] ${item.Message[0]} ${textWidth}`);
             }
 
@@ -11535,6 +11638,10 @@ function AverageWidthFrame()
                         textWidth=this.Canvas.measureText(item.Message[1][0]).width;
                         var textWidth2=this.Canvas.measureText(item.Message[1][1]).width;
                         if (textWidth<textWidth2) textWidth=textWidth2;
+                    }
+                    else if (this.MultiTextFormat==3)
+                    {
+                        textWidth=this.GetMulitTextMaxWidth(item.Message[0]);
                     }
                     else    //显示第1行
                     {
@@ -40627,6 +40734,7 @@ function RectSelectPaint()
     };
 
     this.BorderCache;
+    this.IsOnlyOnePoint=false;   //空格选中区间，单点模式
 
     //设置参数接口
     this.SetOption=function(option)
@@ -40957,6 +41065,12 @@ function RectSelectPaint()
         }
         else
         {
+            if (this.IsOnlyOnePoint)
+            {
+                this.FirstPoint={ Date:kItem.Date, Time:kItem.Time, DataIndex:dataIndex };
+                return true;
+            }
+
             if (!this.FirstPoint) 
             {
                 this.FirstPoint={ Date:kItem.Date, Time:kItem.Time, DataIndex:dataIndex };
@@ -84626,8 +84740,8 @@ var MARKET_SUFFIX_NAME=
     SZO:".SZO",          //深证交易所 股票期权
     HK:'.HK',            //港股
     FHK:'.FHK',          //港股期货            
-    SHFE: '.SHF',        //上期所 (Shanghai Futures Exchange)
-    SHFE2:'.SHFE',       //上期所 (Shanghai Futures Exchange)
+    SHFE: '.SHF',        //上期所 (Shanghai Futures Exchange) | 上期所-能源
+    SHFE2:'.SHFE',       //上期所 (Shanghai Futures Exchange) | 上期所-能源
     CFFEX: '.CFE',       //中期所 (China Financial Futures Exchange)
     DCE: '.DCE',         //大连商品交易所(Dalian Commodity Exchange)
     CZCE: '.CZC',        //郑州期货交易所

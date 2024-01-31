@@ -63,6 +63,7 @@ function JSCanvasElement()
             JSConsole.Chart.Log("[JSCanvasElement::GetContext] create by getContext('2d')");
             canvas = node.getContext('2d');
             const dpr = wx.getSystemInfoSync().pixelRatio;
+            this.PixelRatio=dpr;
             node.width = width * dpr;
             node.height = height * dpr;
             canvas.restore();

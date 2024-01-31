@@ -43,9 +43,16 @@ HQData.NetworkFilter=function(data, callback)
             HQData.RequestIndexVariantData(data,callback);
             break;
 
+        case "JSSymbolData::GetOtherSymbolData":
+            HQData.RequestOtherSymbolData(data, callback);
+            break;
+
         case "AnnouncementInfo::RequestData":
             HQData.AnnouncementInfo_RequestData(data,callback);
             break;
+
+       
+
 
         case "PforecastInfo::RequestData":
             HQData.PforecastInfo_RequestData(data,callback);
@@ -189,6 +196,20 @@ HQData.RequestIndexVariantData=function(data,callback)
         callback(hqchartData);
     }
 
+}
+
+HQData.RequestOtherSymbolData=function(data, callback)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Data.symbol;
+    var period=data.Request.Data.period;
+    var right=data.Request.Data.right;
+    var hqchartData=null;
+    if (ChartData.IsDayPeriod(period,true)) hqchartData=KLINE_DAY_DATA2;
+    else if (ChartData.IsMinutePeriod(period,true)) hqchartData=KLINE_MINUTE_DATA2;
+    hqchartData.name=symbol;
+    hqchartData.symbol=symbol;
+    callback(hqchartData);
 }
 
 HQData.AnnouncementInfo_RequestData=function(data,callback)

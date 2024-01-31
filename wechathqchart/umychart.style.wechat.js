@@ -151,8 +151,17 @@ function GetBlackStyle()
         //画图工具
         DrawPicture: 
         {
-        LineColor: "rgb(30,144,255)",
-        PointColor: "rgb(105,105,105)",
+            LineColor: 
+            [
+                "rgb(41,98,255)" 
+            ],
+    
+            PointColor: 
+            [
+                "rgb(41,98,255)",           //选中颜色
+                "rgb(89,135,255)",          //moveon颜色
+                "rgb(0,0,0)"                //空心点背景色
+            ],
         },
 
         TooltipPaint:   //Tooltip

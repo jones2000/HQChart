@@ -1852,6 +1852,128 @@ function ChartData()
         return result;
     }
 
+     //K线数据拟合
+    this.FixKData=function(aryKData, period)
+    {
+        if (ChartData.IsDayPeriod(period,true))
+        {
+            return this.FixKData_Day(aryKData);
+        }
+        else if (ChartData.IsMinutePeriod(period,true))
+        {
+            return this.FixKData_Minute(aryKData);
+        }
+        
+        return null;
+    }
+
+     this.FixKData_Day=function(aryKData)
+    {
+        var result=[];
+        var nOverlayDataCount=aryKData.length;
+        for(var i=0,j=0; i<this.Data.length;)
+        {
+            var kItem=this.Data[i];
+            if (j<nOverlayDataCount)
+            {
+                var fItem=aryKData[j];
+                if (fItem.Date>kItem.Date)
+                {
+                    ++i;
+                    continue;
+                }
+            }
+
+            if (j+1<nOverlayDataCount)
+            {
+                var fItem = aryKData[j];
+                var fItem2 = aryKData[j + 1];
+
+                if (fItem.Date < kItem.Date && fItem2.Date <= kItem.Date)
+                {
+                    ++j;
+                    continue;
+                }
+            }
+
+            var item=new HistoryData();
+            item.Date=kItem.Date;
+            var index=j<nOverlayDataCount ? j : nOverlayDataCount-1;
+            var fItem=aryKData[index];
+
+            item.Close = fItem.Close;
+			item.High = fItem.High;
+			item.Low = fItem.Low;
+			item.Open = fItem.Open;
+			item.YClose = fItem.YClose;
+			item.Amount = fItem.Amount;
+            item.Vol = fItem.Vol;
+            item.ExDate = fItem.Date;   //对应叠加数据的日期 调试用
+
+            result[i]=item;
+            ++i;
+        }
+
+        return result;
+    }
+
+    this.FixKData_Minute=function(aryKData)
+    {
+        var result=[];
+        var nOverlayDataCount=aryKData.length;
+        for(var i=0,j=0; i<this.Data.length;)
+        {
+            var kItem=this.Data[i];
+            var kDateTime=ChartData.DateTimeToNumber(kItem);
+
+            if (j<nOverlayDataCount)
+            {
+                var fItem=aryKData[j];
+                var fDateTime=ChartData.DateTimeToNumber(fItem);
+                if (fDateTime>kDateTime)
+                {
+                    ++i;
+                    continue;
+                }
+            }
+
+            if (j+1<nOverlayDataCount)
+            {
+                var fItem = aryKData[j];
+                var fItem2 = aryKData[j + 1];
+                var fDateTime=ChartData.DateTimeToNumber(fItem);
+                var fDateTime2=ChartData.DateTimeToNumber(fItem2);
+
+                if (fDateTime < kDateTime && fDateTime2 <= kDateTime)
+                {
+                    ++j;
+                    continue;
+                }
+            }
+
+            var item=new HistoryData();
+            item.Date=kItem.Date;
+            item.Time=kItem.Time;
+            var index=j<nOverlayDataCount ? j : nOverlayDataCount-1;
+            var fItem=aryKData[index];
+
+            item.Close = fItem.Close;
+			item.High = fItem.High;
+			item.Low = fItem.Low;
+			item.Open = fItem.Open;
+			item.YClose = fItem.YClose;
+			item.Amount = fItem.Amount;
+            item.Vol = fItem.Vol;
+            item.ExDate = fItem.Date;   //对应叠加数据的日期 调试用
+            item.ExTime=fItem.Time;     //对应叠加数据的日期 调试用
+
+            result[i]=item;
+            ++i;
+        }
+
+        return result;
+    }
+
 }
 
 ChartData.IsNumber=function(value)
