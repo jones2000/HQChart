@@ -667,6 +667,13 @@ function FrameSplitKLinePriceY()
 
     this.CustomCoordinate = function (floatPrecision) 
     {
+        if (!IFrameSplitOperator.IsNumber(floatPrecision))
+        {
+            floatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.Symbol);
+            if (JSCommonCoordinateData.MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol)) floatPrecision = 0;    //手机端指数不显示小数位数
+            if (this.FloatPrecision != null) floatPrecision = this.FloatPrecision;
+        }
+
         this.Frame.CustomHorizontalInfo = [];
         for (var i=0;i<this.Custom.length; ++i) 
         {

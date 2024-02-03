@@ -14377,8 +14377,10 @@ function KLineFrame()
         {
             if (this.XSplit)
             {
-                if (this.XSplitOperator!=null) this.XSplitOperator.Operator();
+                if (this.XSplitOperator) this.XSplitOperator.Operator();
+                if (this.YSplitOperator && this.YSplitOperator.CustomCoordinate) this.YSplitOperator.CustomCoordinate();
             }
+           
             return;
         }
 
@@ -40735,6 +40737,7 @@ function RectSelectPaint()
 
     this.BorderCache;
     this.IsOnlyOnePoint=false;   //空格选中区间，单点模式
+    this.IsFullFrame=false;       //区间选择包含子窗口
 
     //设置参数接口
     this.SetOption=function(option)
@@ -41145,6 +41148,7 @@ function RectSelectPaint()
         else
         {
             var border=subFrame.GetBorder();
+            if (this.IsFullFrame)  border=this.ChartFrame.ChartBorder.GetBorder();  //全部指标窗口选中
             var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
             var chartright=border.RightEx;
             var drawHeight=border.ChartHeight-border.TopTitle-5*GetDevicePixelRatio();
@@ -44115,6 +44119,16 @@ function FrameSplitKLinePriceY()
 
     this.CustomCoordinate=function(floatPrecision)
     {
+        if (!IFrameSplitOperator.IsNumber(floatPrecision))
+        {
+            var pixelTatio = GetDevicePixelRatio();             //获取设备的分辨率
+            var width=this.Frame.ChartBorder.GetChartWidth();   //画布的宽度
+            var isPhoneModel=width<450*pixelTatio;
+            floatPrecision=GetfloatPrecision(this.Symbol);
+            if (isPhoneModel && MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol)) floatPrecision = 0;    //手机端指数不显示小数位数,太长了
+            if (this.FloatPrecision!=null) floatPrecision=this.FloatPrecision;
+        }
+
         this.Frame.CustomHorizontalInfo=[];
 
         var data=this.InvokeCustomYCoordinateCallback();
@@ -69024,7 +69038,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         this.Draw();
     }
 
-    //增加叠加股票 只支持日线数据
+    //增加叠加股票
     this.OverlaySymbol=function(symbol,option)
     {
         for(var i in this.OverlayChartPaint)

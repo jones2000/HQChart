@@ -2018,7 +2018,8 @@ function KLineFrame()
         {
             if (this.XSplit)
             {
-                if (this.XSplitOperator!=null) this.XSplitOperator.Operator();
+                if (this.XSplitOperator) this.XSplitOperator.Operator();
+                if (this.YSplitOperator && this.YSplitOperator.CustomCoordinate) this.YSplitOperator.CustomCoordinate();
             }
             return;
         }
