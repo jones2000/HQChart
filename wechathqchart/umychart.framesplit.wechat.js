@@ -201,6 +201,16 @@ function IFrameSplitOperator()
 
         return true;
     }
+
+    this.Reset=function()   //重置
+    {
+
+    }
+
+    this.SetOption=function(option)
+    {
+
+    }
 }
 
 //字符串格式化 千分位分割
@@ -800,12 +810,28 @@ function FrameSplitY()
     this.SplitType=0;                         //0=自动分割  1=固定分割 2=百分比(0-100)
     this.DefaultSplitType=0;
     this.FloatPrecision = 2;                  //坐标小数位数(默认2)
+    this.EnableRemoveZero=g_JSChartResource.Frame.EnableRemoveZero;
     this.FLOATPRECISION_RANGE = [1, 0.1, 0.01, 0.001, 0.0001];
     this.IgnoreYValue = null;                 //在这个数组里的数字不显示在刻度上 
     this.LineType=null;     //线段样式
 
     this.IsShowYZero = true;
     this.IntegerSplitData = null;
+
+    this.Reset=function()   //重置
+    {
+        this.EnableRemoveZero=g_JSChartResource.Frame.EnableRemoveZero;
+        this.StringFormat=g_JSChartResource.Frame.StringFormat;
+    }
+
+    this.SetOption=function(option)
+    {
+        if (!option) return;
+
+        if (IFrameSplitOperator.IsNumber(option.FloatPrecision)) this.FloatPrecision=option.FloatPrecision;
+        if (IFrameSplitOperator.IsNumber(option.StringFormat)) this.StringFormat=option.StringFormat;
+        if (IFrameSplitOperator.IsBool(option.EnableRemoveZero)) this.EnableRemoveZero=option.EnableRemoveZero;
+    }
 
     this.Operator = function () 
     {
@@ -913,7 +939,11 @@ function FrameSplitY()
                 {
                     var floatPrecision = this.FloatPrecision;
                     if (!isNaN(value) && Math.abs(value) > 1000) floatPrecision = 0;
-                    this.Frame.HorizontalInfo[i].Message[1] = IFrameSplitOperator.FormatValueString(value, floatPrecision, this.LanguageID);
+                    coordinate.Message[1] = IFrameSplitOperator.FormatValueString(value, floatPrecision, this.LanguageID);
+                }
+                else if (this.StringFormat==2)
+                {
+                    coordinate.Message[1]=`${value.toFixed(this.FloatPrecision)}`;
                 }
                 else if (this.StringFormat == -1) //刻度不显示
                 {
@@ -944,7 +974,7 @@ function FrameSplitY()
 
         this.FilterIgnoreYValue();
         this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo, (splitData.Max > 0 && splitData.Min < 0 && this.IsShowYZero));
-        this.RemoveZero(this.Frame.HorizontalInfo);
+        if (this.EnableRemoveZero) this.RemoveZero(this.Frame.HorizontalInfo);
         this.DynamicMessageText();
         this.Frame.HorizontalMax = splitData.Max;
         this.Frame.HorizontalMin = splitData.Min;

@@ -218,6 +218,8 @@ function ScriptIndex(name, script, args, option)
 
     this.IsShow=true;       //是否显示图形
 
+    this.YAxis=null;    //Y轴刻度设置  { FloatPrecision， StringFormat, EnableRemoveZero }
+
     if (option) 
     {
         if (option.FloatPrecision >= 0) this.FloatPrecision = option.FloatPrecision;
@@ -243,6 +245,14 @@ function ScriptIndex(name, script, args, option)
         if (option.Lock.Text) this.LockText = option.Lock.Text;
         if (option.Lock.Font) this.LockFont = option.Lock.Font;
         if (option.Lock.Count) this.LockCount = option.Lock.Count;
+    }
+
+    if (option && option.YAxis)
+    {
+        this.YAxis={ };
+        if (IFrameSplitOperator.IsNumber(option.YAxis.FloatPrecision)) this.YAxis.FloatPrecision=option.YAxis.FloatPrecision;
+        if (IFrameSplitOperator.IsNumber(option.YAxis.StringFormat)) this.YAxis.StringFormat=option.YAxis.StringFormat;
+        if (IFrameSplitOperator.IsBool(option.YAxis.EnableRemoveZero)) this.YAxis.EnableRemoveZero=option.YAxis.EnableRemoveZero;
     }
 
     if (args) this.Arguments = args;
@@ -1257,7 +1267,14 @@ function ScriptIndex(name, script, args, option)
 
         if (windowIndex >= 1 && hqChart.Frame) 
         {
-            hqChart.Frame.SubFrame[windowIndex].Frame.YSplitOperator.FloatPrecision = this.FloatPrecision;
+            var ySpliter=hqChart.Frame.SubFrame[windowIndex].Frame.YSplitOperator;
+            if (ySpliter)
+            {
+                ySpliter.Reset();
+                ySpliter.FloatPrecision = this.FloatPrecision;
+                if (this.YAxis) ySpliter.SetOption(this.YAxis);
+            }
+            
             if (this.YSpecificMaxMin) hqChart.Frame.SubFrame[windowIndex].Frame.YSpecificMaxMin = this.YSpecificMaxMin;  //最大最小值
             if (this.YSplitScale) hqChart.Frame.SubFrame[windowIndex].Frame.YSplitScale = this.YSplitScale;             //固定刻度
         }

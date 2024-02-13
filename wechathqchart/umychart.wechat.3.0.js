@@ -57,7 +57,7 @@ import
 } from "./umychart.coordinatedata.wechat.js";
 
 import { JSCommonComplier } from "./umychart.complier.wechat.js";     //通达信编译器
-import { JSCommonIndexScript } from "./umychart.index.data.wechat.js"; //系统指标定义
+import { JSCommonIndexScript, JSIndexScript } from "./umychart.index.data.wechat.js"; //系统指标定义
 import { HQIndexFormula } from "./umychart.hqIndexformula.wechat.js";     //通达信编译器
 
 import 
@@ -466,13 +466,10 @@ function JSChart(element)
                     let indexInfo = scriptData.Get(item.Index);
                     if (!indexInfo) continue;
 
-                    if (item.Lock) indexInfo.Lock = item.Lock;
+                    JSIndexScript.ModifyAttribute(indexInfo, item);
                     indexInfo.ID = item.Index;
-                    var args = indexInfo.Args;
-                    if (item.Args) args = item.Args;
-                    if (item.TitleFont) indexInfo.TitleFont=item.TitleFont;
-                    if (IFrameSplitOperator.IsNumber(item.IsShortTitle)) indexInfo.IsShortTitle=item.IsShortTitle;
-                    chart.WindowIndex[i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, args, indexInfo);    //脚本执行
+
+                    chart.WindowIndex[i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args, indexInfo);    //脚本执行
                     if (item.StringFormat > 0) chart.WindowIndex[i].StringFormat = item.StringFormat;
                     if (item.FloatPrecision >= 0) chart.WindowIndex[i].FloatPrecision = item.FloatPrecision;
                 }
@@ -6524,7 +6521,7 @@ function KLineChartContainer(uielement)
                 if (IFrameSplitOperator.IsNumber(option.IsShortTitle)) indexData.IsShortTitle=option.IsShortTitle;
             }
 
-            return this.ChangeScriptIndex(windowIndex, indexData);
+            return this.ChangeScriptIndex(windowIndex, indexData, option);
         }
 
         //主图指标
@@ -8685,23 +8682,9 @@ function MinuteChartContainer(uielement)
         if (windowIndex < 2) windowIndex = 2;
         if (windowIndex >= this.Frame.SubFrame.length) windowIndex = 2;
 
-        let indexData =
-        {
-            Name: indexInfo.Name, Script: indexInfo.Script, Args: indexInfo.Args, ID: indexName,
-            //扩展属性 可以是空
-            KLineType: indexInfo.KLineType, YSpecificMaxMin: indexInfo.YSpecificMaxMin, YSplitScale: indexInfo.YSplitScale,
-            FloatPrecision: indexInfo.FloatPrecision, Condition: indexInfo.Condition, StringFormat: indexInfo.StringFormat
-        };
-
-        if (option) 
-        {
-            if (option.FloatPrecision >= 0) indexData.FloatPrecision = option.FloatPrecision;
-            if (option.StringFormat > 0) indexData.StringFormat = option.StringFormat;
-            if (option.Args) indexData.Args = option.Args;
-            if (IFrameSplitOperator.IsNumber(option.YSplitType)) indexData.YSplitType=option.YSplitType;
-        }
-
-        return this.ChangeScriptIndex(windowIndex, indexData);
+        if (option) JSIndexScript.ModifyAttribute(indexInfo, option);
+      
+        return this.ChangeScriptIndex(windowIndex, indexInfo);
     }
 
     this.ChangeIndexTemplate=function(option)   //切换指标模板 可以设置指标窗口个数 每个窗口的指标, 只能从第3个指标窗口开始设置，前面2个指标窗口固定无法设置
@@ -8792,21 +8775,10 @@ function MinuteChartContainer(uielement)
                     else
                     {
                         var indexInfo = systemScript.Get(indexID);
-                        if (indexInfo)
+                        if (indexInfo) 
                         {
-                            var args=indexInfo.Args;
-                            if (item.Args) args=item.Args;
-                            let indexData = 
-                            { 
-                                Name:indexInfo.Name, Script:indexInfo.Script, Args: args, ID:indexID ,
-                                //扩展属性 可以是空
-                                KLineType:indexInfo.KLineType,  YSpecificMaxMin:indexInfo.YSpecificMaxMin,  YSplitScale:indexInfo.YSplitScale,
-                                FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition,
-                                OutName:indexInfo.OutName
-                            };
-                            if (item.TitleFont) indexData.TitleFont=item.TitleFont;
-        
-                            this.WindowIndex[windowIndex]=new ScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
+                            JSIndexScript.ModifyAttribute(indexInfo, item)
+                            this.WindowIndex[windowIndex]=new ScriptIndex(indexInfo.Name,indexInfo.Script, indexInfo.Args,indexInfo);    //脚本执行
                         }
                     }
                 }

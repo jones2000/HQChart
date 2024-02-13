@@ -611,15 +611,10 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
                 {
                     let indexInfo = scriptData.Get(item.Index);
                     if (!indexInfo) continue;
-
-                    if (item.Lock) indexInfo.Lock=item.Lock;
+                    JSIndexScript.ModifyAttribute(indexInfo, item);
                     indexInfo.ID=item.Index;
-                    var args=indexInfo.Args;
-                    if (item.Args) args=item.Args;
-                    if (item.IsShortTitle) indexInfo.IsShortTitle=item.IsShortTitle;
-                    if (item.TitleFont) indexInfo.TitleFont=item.TitleFont;
-                    if (IFrameSplitOperator.IsBool(item.IsSync)) indexInfo.IsSync=item.IsSync;
-                    chart.WindowIndex[i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, args,indexInfo);    //脚本执行
+                   
+                    chart.WindowIndex[i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args,indexInfo);    //脚本执行
                     if (item.StringFormat>0) chart.WindowIndex[i].StringFormat=item.StringFormat;
                     if (item.FloatPrecision>=0) chart.WindowIndex[i].FloatPrecision=item.FloatPrecision;
                 }
@@ -8062,7 +8057,6 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             subFrame.Frame.IsShowYText[1]=option.IsShowRightText;
             subFrame.Frame.YSplitOperator.IsShowRightText=option.IsShowRightText;         //显示右边刻度
         }
-
     }
 
     this.AddNewSubFrame=function(option)
@@ -8110,24 +8104,9 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         this.RemoveMinSizeWindows();    //清空隐藏的指标
         var index=this.AddNewSubFrame(option);
 
-        var indexData = 
-        { 
-            Name:indexInfo.Name, Script:indexInfo.Script, Args: indexInfo.Args, ID:indexName ,
-            //扩展属性 可以是空
-            KLineType:indexInfo.KLineType,  YSpecificMaxMin:indexInfo.YSpecificMaxMin,  YSplitScale:indexInfo.YSplitScale,
-            FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition,StringFormat:indexInfo.StringFormat,
-            OutName:indexInfo.OutName
-        };
+        JSIndexScript.ModifyAttribute(indexInfo, option);
 
-        if (option)
-        {
-            if (option.FloatPrecision>=0) indexData.FloatPrecision=option.FloatPrecision;
-            if (option.StringFormat>0) indexData.StringFormat=option.StringFormat;
-            if (option.Args) indexData.Args=option.Args;
-            if (option.Lock) indexData.Lock=option.Lock;
-        }
-
-        this.WindowIndex[index] = new ScriptIndex(indexData.Name, indexData.Script, indexData.Args,indexData);    //脚本执行
+        this.WindowIndex[index] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args,indexInfo);    //脚本执行
         if (this.ClassName=="MinuteChartContainer" || this.ClassName=="MinuteChartHScreenContainer")
             var bindData=this.SourceData;
         else 
@@ -42777,7 +42756,7 @@ function IFrameSplitOperator()
     this.Frame;                         //框架信息
     this.FrameSplitData;                //坐标轴分割方法
     this.SplitCount=5;                  //刻度个数
-    this.StringFormat=0;                //刻度字符串格式
+    this.StringFormat=0;                //刻度字符串格式    2=原始格式
     this.IsShowLeftText=true;           //显示左边刻度 
     this.IsShowRightText=true;          //显示右边刻度
     this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
@@ -43120,6 +43099,13 @@ function IFrameSplitOperator()
 
         return data;
     }
+
+    this.Reset=function()   //重置
+    {
+
+    }
+
+    this.SetOption=function(option) { }
 }
 
 //字符串格式化 千分位分割
@@ -44386,7 +44372,7 @@ function FrameSplitY()
     this.DefaultSplitType=0;
     this.Custom=[];         //[{Type:0}]; 定制刻度
     this.DefaultYMaxMin;    //{ Max:null, Min:null };    //指定最大,最小, Y轴范围必须比最大值大， 比最小值小
-    this.EnableRemoveZero=true;
+    this.EnableRemoveZero=g_JSChartResource.Frame.EnableRemoveZero;
     this.LineType=null;     //线段样式
     this.IgnoreYValue = null;                 //在这个数组里的数字不显示在刻度上 
     this.FixedYMaxMin;      //{ Max, Min} 固定Y轴最大最小值
@@ -44409,6 +44395,22 @@ function FrameSplitY()
     this.IsEnableDragY=function()
     {
         return true;
+    }
+
+
+    this.Reset=function()   //重置
+    {
+        this.EnableRemoveZero=g_JSChartResource.Frame.EnableRemoveZero;
+        this.StringFormat=g_JSChartResource.Frame.StringFormat;
+    }
+
+    this.SetOption=function(option)
+    {
+        if (!option) return;
+
+        if (IFrameSplitOperator.IsNumber(option.FloatPrecision)) this.FloatPrecision=option.FloatPrecision;
+        if (IFrameSplitOperator.IsNumber(option.StringFormat)) this.StringFormat=option.StringFormat;
+        if (IFrameSplitOperator.IsBool(option.EnableRemoveZero)) this.EnableRemoveZero=option.EnableRemoveZero;
     }
 
     this.GetFloatPrecision=function(value,floatPrecision)
@@ -44593,6 +44595,10 @@ function FrameSplitY()
             var floatPrecision=this.FloatPrecision;
             if (IFrameSplitOperator.IsNumber(value) && Math.abs(value) > 1000) floatPrecision=0;
             text=IFrameSplitOperator.FormatValueString(value,floatPrecision,this.LanguageID);
+        }
+        else if (this.StringFormat==2)   //原始数据输出
+        {
+            text=`${value.toFixed(this.FloatPrecision)}`;
         }
         else
         {
@@ -61818,7 +61824,9 @@ function JSChartResource()
     this.Frame={ 
         XBottomOffset:2*GetDevicePixelRatio(),  //X轴文字向下偏移
         YTopOffset:2*GetDevicePixelRatio(),      //Y轴顶部文字向下偏移
-        YTextPadding:[2,2]
+        YTextPadding:[2,2],
+        EnableRemoveZero:true,                  //移除小数点后面的0
+        StringFormat:0
     };
     this.ToolbarButtonStyle=0;
 
@@ -67778,6 +67786,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         this.Draw();
     }
 
+
     this.OnKLinePageChange=function(eventid)
     {
         if (!this.ChartPaint[0]) return;
@@ -67846,18 +67855,9 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             {
                 if (windowIndex == 0) windowIndex = 1;  //幅图指标,不能再主图显示
             }
-            let indexData = indexInfo;
-            if (option)
-            {
-                if (option.FloatPrecision>=0) indexData.FloatPrecision=option.FloatPrecision;
-                if (option.StringFormat>0) indexData.StringFormat=option.StringFormat;
-                if (option.Args) indexData.Args=option.Args;
-                if (option.TitleFont) indexData.TitleFont=option.TitleFont;
-                if (option.IsShortTitle) indexData.IsShortTitle=option.IsShortTitle;
-                if (option.Lock) indexData.Lock=option.Lock;
-            }
-            
-            return this.ChangeScriptIndex(windowIndex, indexData,option);
+
+            JSIndexScript.ModifyAttribute(indexInfo, option)
+            return this.ChangeScriptIndex(windowIndex, indexInfo, option);
         }
 
         //主图指标
@@ -68003,21 +68003,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         }
         else if (indexInfo)
         {
-            var args=indexInfo.Args;
-            if (obj.Args) args=obj.Args;    //外部可以设置参数
-            let indexData = 
-            { 
-                Name:indexInfo.Name, Script:indexInfo.Script, Args: args, ID:indexName,
-                //扩展属性 可以是空
-                KLineType:indexInfo.KLineType,  YSpecificMaxMin:indexInfo.YSpecificMaxMin,  YSplitScale:indexInfo.YSplitScale,
-                FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition,
-                OutName:indexInfo.OutName
-            };
-
-            if (IFrameSplitOperator.IsNumber(obj.FloatPrecision)) indexData.FloatPrecision=obj.FloatPrecision;
-            if (IFrameSplitOperator.IsNumber(obj.StringFormat)) indexData.StringFormat=obj.StringFormat;
-            if (IFrameSplitOperator.IsBool(obj.IsSync)) indexData.IsSync=obj.IsSync;
-            var scriptIndex=new OverlayScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
+            JSIndexScript.ModifyAttribute(indexInfo, obj);
+            var scriptIndex=new OverlayScriptIndex(indexInfo.Name,indexInfo.Script,indexInfo.Args,indexInfo);    //脚本执行
             scriptIndex.OverlayIndex={ IsOverlay:true, Identify:overlayFrame.Identify, WindowIndex:windowIndex, Frame:overlayFrame };    //叠加指标信息
             overlayFrame.Script=scriptIndex;
         }
@@ -68386,19 +68373,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                     var indexInfo = systemScript.Get(indexID);
                     if (indexInfo)
                     {
-                        var args=indexInfo.Args;
-                        if (option.Windows[i].Args) args=option.Windows[i].Args;
-                        let indexData = 
-                        { 
-                            Name:indexInfo.Name, Script:indexInfo.Script, Args: args, ID:indexID ,
-                            //扩展属性 可以是空
-                            KLineType:indexInfo.KLineType,  YSpecificMaxMin:indexInfo.YSpecificMaxMin,  YSplitScale:indexInfo.YSplitScale,
-                            FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition,
-                            OutName:indexInfo.OutName
-                        };
-                        if (item.TitleFont) indexData.TitleFont=item.TitleFont;
-    
-                        this.WindowIndex[i]=new ScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
+                        JSIndexScript.ModifyAttribute(indexInfo,item);
+                        this.WindowIndex[i]=new ScriptIndex(indexInfo.Name,indexInfo.Script,indexInfo.Args,indexInfo);    //脚本执行
                     }
                 }
             }

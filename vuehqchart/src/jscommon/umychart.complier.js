@@ -19560,6 +19560,8 @@ function ScriptIndex(name,script,args,option)
     this.TitleFont=g_JSChartResource.TitleFont;     //标题字体
     this.IsShortTitle=false;                        //是否显示指标参数
     this.IsUsePageData=false;                       //是否使用了K线界面数据
+
+    this.YAxis=null;    //Y轴刻度设置  { FloatPrecision， StringFormat, EnableRemoveZero }
     
     //调试信息
     this.Debug; // { Callback:, Count: }
@@ -19607,6 +19609,15 @@ function ScriptIndex(name,script,args,option)
         if (option.Lock.Font) this.LockFont=option.Lock.Font;
         if (option.Lock.Count) this.LockCount=option.Lock.Count;
         if (option.Lock.MinWidth) this.LockMinWidth=option.Lock.MinWidth*GetDevicePixelRatio();
+    }
+
+    if (option && option.YAxis)
+    {
+        this.YAxis={ };
+        if (IFrameSplitOperator.IsNumber(option.YAxis.FloatPrecision)) this.YAxis.FloatPrecision=option.YAxis.FloatPrecision;
+        if (IFrameSplitOperator.IsNumber(option.YAxis.StringFormat)) this.YAxis.StringFormat=option.YAxis.StringFormat;
+        if (IFrameSplitOperator.IsBool(option.YAxis.EnableRemoveZero)) this.YAxis.EnableRemoveZero=option.YAxis.EnableRemoveZero;
+        
     }
 
     if (args) this.Arguments=args;
@@ -21286,7 +21297,15 @@ function ScriptIndex(name,script,args,option)
 
         if (windowIndex>=1 && hqChart.Frame)
         {
-            hqChart.Frame.SubFrame[windowIndex].Frame.YSplitOperator.FloatPrecision=this.FloatPrecision;
+            //Y轴刻度格式 默认跟标题栏一致
+            var ySpliter=hqChart.Frame.SubFrame[windowIndex].Frame.YSplitOperator;
+            if (ySpliter)
+            {
+                ySpliter.Reset();
+                ySpliter.FloatPrecision=this.FloatPrecision;
+                if (this.YAxis) ySpliter.SetOption(this.YAxis);
+            }
+           
             if (this.YSpecificMaxMin)  hqChart.Frame.SubFrame[windowIndex].Frame.YSpecificMaxMin=this.YSpecificMaxMin;  //最大最小值
             if (this.YSplitScale)   hqChart.Frame.SubFrame[windowIndex].Frame.YSplitScale=this.YSplitScale;             //固定刻度
         }
@@ -21658,7 +21677,14 @@ function OverlayScriptIndex(name,script,args,option)
         if (!IFrameSplitOperator.IsNonEmptyArray(this.OutVar)) return;
 
         //修改Y轴分割方式
-        if (IFrameSplitOperator.IsNumber(this.YSplitType)) this.OverlayIndex.Frame.Frame.YSplitOperator.SplitType=this.YSplitType;
+        var ySpliter=this.OverlayIndex.Frame.Frame.YSplitOperator;
+        if (ySpliter)
+        {
+            ySpliter.Reset();
+            ySpliter.FloatPrecision=this.FloatPrecision;
+            if (IFrameSplitOperator.IsNumber(this.YSplitType)) ySpliter.SplitType=this.YSplitType;
+            if (this.YAxis) ySpliter.SetOption(this.YAxis);
+        }
         
         //指标名字
         var titleInfo={ Data:[], Title:this.Name, Frame:this.OverlayIndex.Frame.Frame, Script:this };

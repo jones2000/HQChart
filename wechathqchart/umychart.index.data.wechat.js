@@ -10,6 +10,11 @@
     系统录入的指标
 */
 
+import 
+{ 
+    IFrameSplitOperator,
+} from './umychart.framesplit.wechat.js'
+
 /*
     指标数据脚本 系统内置指标都写在这里
     Name：指标名字
@@ -147,6 +152,30 @@ JSIndexScript.AddIndex = function (aryIndex)  //添加自定义指标
     for (var i in aryIndex) 
     {
         g_CustomIndex.Add(aryIndex[i]);
+    }
+}
+
+//修改指标属性
+JSIndexScript.ModifyAttribute=function(indexInfo, attribute)
+{
+    if (!attribute) return;
+
+    if (attribute.Args) indexInfo.Args=attribute.Args;    //外部可以设置参数
+    if (IFrameSplitOperator.IsNumber(attribute.FloatPrecision)) indexInfo.FloatPrecision=attribute.FloatPrecision;
+    if (IFrameSplitOperator.IsNumber(attribute.StringFormat)) indexInfo.StringFormat=attribute.StringFormat;
+    if (IFrameSplitOperator.IsBool(attribute.IsSync)) indexInfo.IsSync=attribute.IsSync;
+    if (IFrameSplitOperator.IsBool(attribute.IsShortTitle)) indexInfo.IsShortTitle=attribute.IsShortTitle;
+    if (attribute.TitleFont) indexInfo.TitleFont=attribute.TitleFont;
+    if (attribute.Lock) indexInfo.Lock=attribute.Lock;
+    if (IFrameSplitOperator.IsNumber(attribute.YSplitType)) indexInfo.YSplitType=attribute.YSplitType;
+
+    if (attribute.YAxis)
+    {
+        var item=attribute.YAxis;
+        if (!indexInfo.YAxis) indexInfo.YAxis={ };
+        if (IFrameSplitOperator.IsNumber(item.FloatPrecision)) indexInfo.YAxis.FloatPrecision=item.FloatPrecision;
+        if (IFrameSplitOperator.IsNumber(item.StringFormat)) indexInfo.YAxis.StringFormat=item.StringFormat;
+        if (IFrameSplitOperator.IsBool(item.EnableRemoveZero)) indexInfo.YAxis.EnableRemoveZero=item.EnableRemoveZero;
     }
 }
 
@@ -1478,7 +1507,7 @@ JSIndexScript.prototype.AMO = function ()
 {
     let data =
     {
-        Name: 'AMO', Description: '成交金额', IsMainIndex: false,
+        Name: 'AMO', Description: '成交金额', IsMainIndex: false, YAxis:{ FloatPrecision:0, StringFormat:2 }, StringFormat:2,
         Args: [{ Name: 'M1', Value: 5 }, { Name: 'M2', Value: 10 }],
         Script: //脚本
             'AMOW:AMOUNT/10000.0,VOLSTICK;\n\

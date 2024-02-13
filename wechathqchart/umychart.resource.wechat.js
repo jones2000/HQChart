@@ -73,7 +73,9 @@ function JSChartResource()
     this.Frame = { 
         XBottomOffset: 0 ,  //X轴文字向下偏移
         YTopOffset:2,    //Y轴顶部文字向下偏移
-        YTextPadding:[2,2]
+        YTextPadding:[2,2],
+        StringFormat:0,
+        EnableRemoveZero:true,                  //移除小数点后面的0
     };  
     
     this.FrameLogo=
