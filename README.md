@@ -250,6 +250,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 * [走势图手机页面](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_minute_phone.html)   
 * [走势图手机横屏页面](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_minute_phone_hScreen.html)   
 * [走势图-异动信息标示](https://jones2000.github.io/HQChart/webhqchart.demo/samples/minute_mines.html)  
+* [指标模板示例](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_minute_template_index.html)  
 
 ## K线训练
 * [K线训练手机](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_ktrain.html)    

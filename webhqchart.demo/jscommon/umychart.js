@@ -68449,7 +68449,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                 var overlay=this.CreateOverlayWindowsIndex(item);
                 if (!overlay) continue;
 
-                aryOverlayIndex.push(overlay);
+                aryOverlayIndex.push({ WindowsIndex:item.WindowIndex, Overlay:overlay });
             }
         }
 
@@ -68464,7 +68464,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             for(var i=0;i<aryOverlayIndex.length;++i)
             {
                 var item=aryOverlayIndex[i];
-                this.BindOverlayIndexData(item,item.WindowIndex,bindData);
+                this.BindOverlayIndexData(item.Overlay,item.WindowsIndex,bindData);
             }
 
             this.UpdataDataoffset();           //更新数据偏移
@@ -73817,6 +73817,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
             this.Frame.SubFrame.splice(count,currentLength-count);
             this.WindowIndex.splice(count,currentLength-count);
+            this.TitlePaint.splice(count+1,currentLength-count);
         }
         else
         {
@@ -73834,8 +73835,6 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             } 
         }
 
-        
-        
         for(var i=0;i<count;++i)
         {
             var windowIndex=i;
@@ -73883,12 +73882,35 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             this.SetSubFrameAttribute(this.Frame.SubFrame[windowIndex], item, frameItem);
         }
 
+        //清空叠加指标
+        for(var i=0;i<this.Frame.SubFrame.length;++i)
+        {
+            this.DeleteWindowsOverlayIndex(i);  
+        }
+
         //最后一个显示X轴坐标
         for(var i=0;i<this.Frame.SubFrame.length;++i)
         {
             var item=this.Frame.SubFrame[i].Frame;
             if (i==this.Frame.SubFrame.length-1) item.XSplitOperator.ShowText=true;
             else item.XSplitOperator.ShowText=false;
+        }
+
+        //叠加指标
+        var aryOverlayIndex=[];
+        if (IFrameSplitOperator.IsNonEmptyArray(option.OverlayIndex))
+        {
+            for(var i=0;i<option.OverlayIndex.length;++i)
+            {
+                var item=option.OverlayIndex[i];
+                if (item.Index) item.IndexName=item.Index;
+                if (item.Windows>=0) item.WindowIndex=item.Windows;
+
+                var overlay=this.CreateOverlayWindowsIndex(item);
+                if (!overlay) continue;
+
+                aryOverlayIndex.push({ WindowsIndex:item.WindowIndex, Overlay:overlay });
+            }
         }
 
         if (!bRefreshData)
@@ -73898,6 +73920,13 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             {
                 this.BindIndexData(i,bindData);   //执行脚本
             }
+
+            for(var i=0;i<aryOverlayIndex.length;++i)
+            {
+                var item=aryOverlayIndex[i];
+                this.BindOverlayIndexData(item.Overlay,item.WindowsIndex,bindData);
+            }
+
             this.UpdataDataoffset();           //更新数据偏移
             this.Frame.SetSizeChage(true);
             if (this.UpdateXShowText) this.UpdateXShowText();
