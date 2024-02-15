@@ -237,6 +237,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 * [自定义彩色K线图](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_color_kline_v2.html)   
 * [分钟K线拖动下载历史数据页面](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_DragDownload.html)  
 * [日K线拖动下载历史数据页面](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_DragDownload_day.html)  
+* [指标模板示例](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_kline_template_index.html)  
 
 ## 订单流
 * [订单流样式1](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_orderflow.html)    

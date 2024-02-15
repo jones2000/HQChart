@@ -180,6 +180,7 @@ JSIndexScript.ModifyAttribute=function(indexInfo, attribute)
     if (IFrameSplitOperator.IsBool(attribute.IsShortTitle)) indexInfo.IsShortTitle=attribute.IsShortTitle;
     if (attribute.TitleFont) indexInfo.TitleFont=attribute.TitleFont;
     if (attribute.Lock) indexInfo.Lock=attribute.Lock;
+    if (IFrameSplitOperator.IsNumber(attribute.YSplitType)) indexInfo.YSplitType=attribute.YSplitType;
 
     if (attribute.YAxis)
     {
