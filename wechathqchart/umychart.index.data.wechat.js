@@ -168,6 +168,7 @@ JSIndexScript.ModifyAttribute=function(indexInfo, attribute)
     if (attribute.TitleFont) indexInfo.TitleFont=attribute.TitleFont;
     if (attribute.Lock) indexInfo.Lock=attribute.Lock;
     if (IFrameSplitOperator.IsNumber(attribute.YSplitType)) indexInfo.YSplitType=attribute.YSplitType;
+    if (IFrameSplitOperator.IsBool(attribute.IsShowIndexTitle)) indexInfo.IsShowIndexTitle=attribute.IsShowIndexTitle;
 
     if (attribute.YAxis)
     {

@@ -1267,6 +1267,8 @@ function DynamicChartTitlePainting()
     this.DynamicTitle={ OutName:null, OutValue:null };
     this.OverlayDynamicTitle=new Map();  //key , value={ OutName, OutValue }
 
+    this.IsShowMainIndexTitle=true; //是否显示主图指标标题
+
     this.SetDynamicTitleData=function(outName, args, data)
     {
         if (!data.OutName) data.OutName=new Map();
@@ -1662,7 +1664,7 @@ function DynamicChartTitlePainting()
         this.Canvas.textBaseline = this.TitleAlign;
         this.Canvas.font = this.Font;
 
-        if (this.TitleBG && this.Title) //指标名称
+        if (this.TitleBG && this.Title && this.IsShowMainIndexTitle) //指标名称
         {
             textWidth = this.Canvas.measureText(this.Title).width + 2;
             let height = this.Frame.ChartBorder.TitleHeight;
@@ -1685,7 +1687,7 @@ function DynamicChartTitlePainting()
             }
         }
 
-        if (this.Title && this.IsShowIndexName) //指标参数
+        if (this.Title && this.IsShowIndexName && this.IsShowMainIndexTitle) //指标参数
         {
             const metrics = this.Canvas.measureText(this.Title);
             textWidth = metrics.width + 2;
@@ -1745,7 +1747,7 @@ function DynamicChartTitlePainting()
         }
 
         //指标参数
-        if (this.ArgumentsText && this.IsShowIndexName)
+        if (this.ArgumentsText && this.IsShowIndexName && this.IsShowMainIndexTitle)
         {
             var textWidth=this.Canvas.measureText(this.ArgumentsText).width+2;
             this.Canvas.fillStyle=this.TitleColor;
@@ -1769,7 +1771,7 @@ function DynamicChartTitlePainting()
 
         if (bDrawValue)
         {
-            for (var i in this.Data) 
+            for (var i=0; i<this.Data.length && this.IsShowMainIndexTitle; ++i) 
             {
                 var item = this.Data[i];
                 var outText=this.GetTitleItem(item, false);
@@ -1893,11 +1895,13 @@ function DynamicChartTitlePainting()
         {
             var left = 1;
             var top = lineSpace;    //上下居中显示
+            if (!this.IsShowMainIndexTitle) top-=this.Frame.ChartBorder.TitleHeight;
             var right = this.Frame.ChartBorder.GetHeight();
         }
         else
         {
             var top=border.TopTitle+2;
+            if (!this.IsShowMainIndexTitle) top=this.Frame.ChartBorder.GetTop()+2;
             var left=border.Left+1;
             var right=border.Right;
             var bottom=border.Bottom;
@@ -1910,6 +1914,8 @@ function DynamicChartTitlePainting()
             var overlayItem=item[1];
             var overlayID=item[0];
             x=left;
+
+            if (!overlayItem.IsShowIndexTitle) continue;
 
             if (overlayItem.Title && this.IsShowOverlayIndexName)
             {

@@ -50293,6 +50293,8 @@ function DynamicChartTitlePainting()
     this.DynamicTitle={ OutName:null, OutValue:null };
     this.OverlayDynamicTitle=new Map();  //key , value={ OutName, OutValue }
 
+    this.IsShowMainIndexTitle=true; //是否显示主图指标标题
+
     this.ReloadResource=function()
     {
         this.Font=g_JSChartResource.TitleFont;
@@ -50756,7 +50758,7 @@ function DynamicChartTitlePainting()
         this.Canvas.textBaseline="middle";
         this.Canvas.font=this.Font;
         var pixelRatio=GetDevicePixelRatio();
-        if (this.Title && this.IsShowIndexName)
+        if (this.Title && this.IsShowIndexName && this.IsShowMainIndexTitle)
         {
             if (this.IsDrawTitleBG)
             {
@@ -50785,7 +50787,7 @@ function DynamicChartTitlePainting()
             }
         }
 
-        if (this.ArgumentsText && this.IsShowIndexName)
+        if (this.ArgumentsText && this.IsShowIndexName && this.IsShowMainIndexTitle)
         {
             var textWidth=this.Canvas.measureText(this.ArgumentsText).width+2;
             this.Canvas.fillStyle=this.TitleColor;
@@ -50805,7 +50807,7 @@ function DynamicChartTitlePainting()
             if (isShowLastData) return;
         }
 
-        for(var i=0; i<this.Data.length; ++i)
+        for(var i=0; i<this.Data.length && this.IsShowMainIndexTitle; ++i)
         {
             var item=this.Data[i];
             var outText=this.GetTitleItem(item, isShowLastData, i);
@@ -50904,7 +50906,9 @@ function DynamicChartTitlePainting()
         }
         else 
         {
-            this.DrawOverlayIndex(left+10*GetDevicePixelRatio());   //间距多空点 和主指标区分开
+            var xOffset=10*GetDevicePixelRatio();   //主指标区分开 间距多空点 
+            if (!this.IsShowMainIndexTitle) xOffset=0;
+            this.DrawOverlayIndex(left+xOffset);   
         }
     }
 
@@ -51094,6 +51098,7 @@ function DynamicChartTitlePainting()
         else
         {
             var top=border.TopTitle+2*pixelRatio;
+            if (!this.IsShowMainIndexTitle) top=this.Frame.ChartBorder.GetTop()+2*pixelRatio;
             var left=this.Frame.ChartBorder.GetLeft()+this.MerginLeft;
             var right=border.Right;
             var bottom=border.Bottom;
@@ -51111,6 +51116,7 @@ function DynamicChartTitlePainting()
             var toolbarInfo={ Width:0, YCenter:y, ID:overlayID };
             this.DrawOverlayToolbar(overlayItem,toolbarInfo,moveonPoint, mouseStatus);
 
+            if (!overlayItem.IsShowIndexTitle) continue;
             if (!overlayItem.Frame.IsShowIndexTitle) continue;
 
             x=left+toolbarInfo.Width;
@@ -51250,9 +51256,10 @@ function DynamicChartTitlePainting()
 
         var spaceWidth=5*GetDevicePixelRatio();
         var drawLeft=left;
+        var indexCount=0;
         for(item of this.OverlayIndex)
         {
-            left+=spaceWidth;
+            if (indexCount>0) left+=spaceWidth;
             var overlayItem=item[1];
             var overlayID=item[0];
             if (overlayItem.Title && this.IsShowOverlayIndexName)
@@ -51318,6 +51325,8 @@ function DynamicChartTitlePainting()
             }
 
             if (left>right) break;
+
+            ++indexCount;
         }
     }
 
@@ -68011,7 +68020,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         else if (obj.ShowRightText===false) frame.IsShow=false;
         if (IFrameSplitOperator.IsBool(obj.ShowToolbar)) frame.IsShowToolbar=obj.ShowToolbar;   //废弃
         if (IFrameSplitOperator.IsBool(obj.IsShareY)) frame.IsShareY=obj.IsShareY;
-        if (IFrameSplitOperator.IsBool(obj.IsShowIndexTitle)) frame.IsShowIndexTitle=obj.IsShowIndexTitle;
+        //if (IFrameSplitOperator.IsBool(obj.IsShowIndexTitle)) frame.IsShowIndexTitle=obj.IsShowIndexTitle;
         if (IFrameSplitOperator.IsBool(obj.IsCalculateYMaxMin)) frame.IsCalculateYMaxMin=obj.IsCalculateYMaxMin;   //是否计算Y最大最小值
 
         frame.YSplitOperator=new FrameSplitY();
@@ -68453,6 +68462,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             }
         }
 
+        this.Frame.SetSizeChage(true);
+
         if (!bRefreshData)
         {
             var bindData=this.ChartPaint[0].Data;
@@ -68468,7 +68479,6 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             }
 
             this.UpdataDataoffset();           //更新数据偏移
-            this.Frame.SetSizeChage(true);
             this.ResetFrameXYSplit();
             this.UpdateFrameMaxMin();          //调整坐标最大 最小值
             this.Draw();
@@ -68476,7 +68486,6 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         else
         {
            if (!symbol) symbol=this.Symbol;
-
            var optionData={ KLine:{} };
            if (IFrameSplitOperator.IsNumber(period)) optionData.KLine.Period=period;
            if (IFrameSplitOperator.IsNumber(right)) optionData.KLine.Right=right;
@@ -73298,9 +73307,10 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         if (this.EnableIndexChartDrag) this.CreateExtendChart("DragMovePaint");
 
         //子窗口动态标题
-        for(var i in this.Frame.SubFrame)
+        for(var i=0;i<this.Frame.SubFrame.length; ++i)
         {
             var titlePaint=new DynamicChartTitlePainting();
+            if (i==0 || i==1) titlePaint.IsShowMainIndexTitle=false;
             titlePaint.Frame=this.Frame.SubFrame[i].Frame;
             titlePaint.Canvas=this.Canvas;
             titlePaint.LanguageID=this.LanguageID;
@@ -73913,6 +73923,8 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             }
         }
 
+        this.Frame.SetSizeChage(true);
+
         if (!bRefreshData)
         {
             var bindData=this.SourceData;
@@ -73928,7 +73940,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             }
 
             this.UpdataDataoffset();           //更新数据偏移
-            this.Frame.SetSizeChage(true);
+            
             if (this.UpdateXShowText) this.UpdateXShowText();
             this.ResetFrameXYSplit();
             this.UpdateFrameMaxMin();          //调整坐标最大 最小值
@@ -73936,7 +73948,6 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         }
         else
         {
-            this.Frame.SetSizeChage(true);
             if (dayCount!=null) this.ChangeDayCount(dayCount);
         }
     }

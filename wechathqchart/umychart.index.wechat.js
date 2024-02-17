@@ -197,6 +197,7 @@ function ScriptIndex(name, script, args, option)
     this.ID;    //指标ID
     this.FloatPrecision = 2;    //小数位数
     this.StringFormat;
+    this.IsShowIndexTitle=true; //是否显示指标标题
     this.KLineType = null;      //K线显示类型
     this.InstructionType;       //五彩K线, 交易指标
     this.YSpecificMaxMin = null;  //最大最小值
@@ -224,6 +225,7 @@ function ScriptIndex(name, script, args, option)
     {
         if (option.FloatPrecision >= 0) this.FloatPrecision = option.FloatPrecision;
         if (option.StringFormat > 0) this.StringFormat = option.StringFormat;
+        if (IFrameSplitOperator.IsBool(option.IsShowIndexTitle)) this.IsShowIndexTitle=option.IsShowIndexTitle;
         if (option.ID) this.ID = option.ID;
         if (option.KLineType) this.KLineType = option.KLineType;
         if (option.InstructionType) this.InstructionType = option.InstructionType;
@@ -1415,8 +1417,12 @@ function ScriptIndex(name, script, args, option)
         }
 
         let titleIndex = windowIndex + 1;
-        hqChart.TitlePaint[titleIndex].Title = this.Name;
-        hqChart.TitlePaint[titleIndex].ArgumentsText = null;
+        var titlePaint=hqChart.TitlePaint[titleIndex];
+        titlePaint.Title = this.Name;
+        titlePaint.ArgumentsText = null;
+        titlePaint.Identify=this.Guid;    //指标ID
+        titlePaint.Script=this;
+        titlePaint.IsShowMainIndexTitle=this.IsShowIndexTitle;
 
         if (!this.IsShortTitle)
         {
@@ -1428,10 +1434,10 @@ function ScriptIndex(name, script, args, option)
                 indexParam += item.Value.toString();
             }
 
-            if (indexParam.length > 0) hqChart.TitlePaint[titleIndex].ArgumentsText =`(${indexParam})`;
+            if (indexParam.length > 0) titlePaint.ArgumentsText =`(${indexParam})`;
         }
         
-        if (this.TitleFont) hqChart.TitlePaint[titleIndex].Font=this.TitleFont;
+        if (this.TitleFont) titlePaint.Font=this.TitleFont;
         
         if (hqChart.UpdateUICallback) hqChart.UpdateUICallback('ScriptIndex', this.OutVar,
             { WindowIndex: windowIndex, Name: this.Name, Arguments: this.Arguments, HistoryData: hisData });  //通知上层回调
@@ -1554,7 +1560,7 @@ function OverlayScriptIndex(name,script,args,option)
         if (IFrameSplitOperator.IsNumber(this.YSplitType)) this.OverlayIndex.Frame.Frame.YSplitOperator.SplitType=this.YSplitType;
         
         //指标名字
-        var titleInfo={ Data:[], Title:this.Name };
+        var titleInfo={ Data:[], Title:this.Name, Frame:this.OverlayIndex.Frame.Frame, Script:this, IsShowIndexTitle:this.IsShowIndexTitle };
         let indexParam='';
         for(var i in this.Arguments)
         {
@@ -1573,7 +1579,7 @@ function OverlayScriptIndex(name,script,args,option)
             titlePaint.SetDynamicTitle(this.OutName,this.Arguments, this.OverlayIndex.Identify);
         }
 
-        for(var i in this.OutVar)
+        for(var i=0; i<this.OutVar.length; ++i)
         {
             let item=this.OutVar[i];
             if (item.IsExData===true) continue; //扩展数据不显示图形
@@ -1709,6 +1715,13 @@ function OverlayScriptIndex(name,script,args,option)
             else if (item.Type==9)
             {
                 this.CreateArea(hqChart,windowIndex,item,i);
+            }
+
+            var titleData=titleInfo.Data[i];
+            if (titleData)
+            {
+                if (this.FloatPrecision>=0) titleData.FloatPrecision=this.FloatPrecision;
+                if (IFrameSplitOperator.IsNumber(this.StringFormat)) titleData.StringFormat=this.StringFormat;
             }
         }
 

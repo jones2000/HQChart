@@ -19539,6 +19539,7 @@ function ScriptIndex(name,script,args,option)
     this.ID;                //指标ID
     this.FloatPrecision=2;  //小数位数
     this.StringFormat;
+    this.IsShowIndexTitle=true; //是否显示指标标题
     this.KLineType=null;    //K线显示类型
     this.InstructionType;   //五彩K线, 交易指标
     this.YSpecificMaxMin=null;  //最大最小值
@@ -19576,6 +19577,7 @@ function ScriptIndex(name,script,args,option)
     {
         if (option.FloatPrecision>=0) this.FloatPrecision=option.FloatPrecision;
         if (option.StringFormat>0) this.StringFormat=option.StringFormat;
+        if (IFrameSplitOperator.IsBool(option.IsShowIndexTitle)) this.IsShowIndexTitle=option.IsShowIndexTitle;
         if (option.ID) this.ID=option.ID;
         if (option.KLineType>=0 || option.KLineType===-1) this.KLineType=option.KLineType;
         if (option.InstructionType) this.InstructionType=option.InstructionType;
@@ -21322,7 +21324,7 @@ function ScriptIndex(name,script,args,option)
         }
         */
         
-        for(let i in this.OutVar)
+        for(let i=0; i<this.OutVar.length; ++i)
         {
             let item=this.OutVar[i];
             if (item.IsExData===true) continue; //扩展数据不显示图形
@@ -21535,11 +21537,13 @@ function ScriptIndex(name,script,args,option)
         }
 
         let titleIndex=windowIndex+1;
-        hqChart.TitlePaint[titleIndex].Title=this.Name;
-        hqChart.TitlePaint[titleIndex].Identify=this.Guid;    //指标ID
-        hqChart.TitlePaint[titleIndex].ArgumentsText=null;
-        hqChart.TitlePaint[titleIndex].Script=this;
-
+        var titlePaint=hqChart.TitlePaint[titleIndex];
+        titlePaint.Title=this.Name;
+        titlePaint.Identify=this.Guid;    //指标ID
+        titlePaint.ArgumentsText=null;
+        titlePaint.Script=this;
+        titlePaint.IsShowMainIndexTitle=this.IsShowIndexTitle;
+        
         if (!this.IsShortTitle)
         {
             let indexParam='';
@@ -21550,10 +21554,10 @@ function ScriptIndex(name,script,args,option)
                 indexParam+=item.Value.toString();
             }
 
-            if (indexParam.length>0) hqChart.TitlePaint[titleIndex].ArgumentsText=`(${indexParam})`;
+            if (indexParam.length>0) titlePaint.ArgumentsText=`(${indexParam})`;
         }
 
-        if (this.TitleFont) hqChart.TitlePaint[titleIndex].Font=this.TitleFont;
+        if (this.TitleFont) titlePaint.Font=this.TitleFont;
 
         return true;
     }
@@ -21687,7 +21691,7 @@ function OverlayScriptIndex(name,script,args,option)
         }
         
         //指标名字
-        var titleInfo={ Data:[], Title:this.Name, Frame:this.OverlayIndex.Frame.Frame, Script:this };
+        var titleInfo={ Data:[], Title:this.Name, Frame:this.OverlayIndex.Frame.Frame, Script:this, IsShowIndexTitle:this.IsShowIndexTitle };
         let indexParam='';
         for(var i in this.Arguments)
         {
