@@ -169,6 +169,7 @@ JSIndexScript.ModifyAttribute=function(indexInfo, attribute)
     if (attribute.Lock) indexInfo.Lock=attribute.Lock;
     if (IFrameSplitOperator.IsNumber(attribute.YSplitType)) indexInfo.YSplitType=attribute.YSplitType;
     if (IFrameSplitOperator.IsBool(attribute.IsShowIndexTitle)) indexInfo.IsShowIndexTitle=attribute.IsShowIndexTitle;
+    if (IFrameSplitOperator.IsNumber(attribute.KLineType)) indexInfo.KLineType=attribute.KLineType;
 
     if (attribute.YAxis)
     {
@@ -3202,13 +3203,20 @@ JSIndexScript.prototype.TEST = function ()
         {
             Name: 'TEST', Description: '测试脚本', IsMainIndex: true,
             Args: [{ Name: 'M1', Value: 5 },{ Name: 'M2', Value: 10 },{ Name: 'M3', Value: 15 }],
-            /*
+            
             Script: //脚本
                 //"T2:KDJ.J;"+
                 "DRAWBAND(OPEN,RGB(0,224,224),CLOSE,RGB(255,96,96));"
                 //"T2:IF(KDJ.J>-10,KDJ.J#WEEK,0);"
-                */
-            Script:"T_C:'000001$CLOSE';",
+                
+
+                /*
+            Script:'收:=C("000001.SH");' +
+            '开:=O("000001.SH");\n' +
+            '低:=L("000001.SH");'+
+            '高:=H("000001.SH");'+
+            "DRAWKLINE(高,开,低,收), COLORYELLOW;"
+            */
             
             //"DRAWGBK_DIV(C>O,RGB(221 ,160 ,221),RGB(100 ,250, 250),1,1);"
             /*

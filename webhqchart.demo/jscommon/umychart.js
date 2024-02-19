@@ -11955,16 +11955,18 @@ function MinuteFrame()
         if (this.Identify==0 && this.IsShowCloseButton) this.DrawCloseBeforeButton(moveonPoint, mouseStatus);  //盘前集合竞价关闭按钮
 
         if (this.ChartBorder.TitleHeight<5) return;
-        if (this.Identify==0 || this.Identify==1) return;
 
         var aryButton=[];
-        if (this.CloseIndex)  aryButton.push( { ID:JSCHART_BUTTON_ID.CLOSE_INDEX_WINDOW, Style:this.CloseWindowButton });
-        if (this.MaxMinWindow) aryButton.push({ ID:JSCHART_BUTTON_ID.MAX_MIN_WINDOW, Style:this.MaxMinWindowButton })
-        if (this.TitleWindow) aryButton.push({ ID:JSCHART_BUTTON_ID.TITLE_WINDOW, Style:this.TitleWindowButton });
-        if (this.ExportData) aryButton.push( {ID:JSCHART_BUTTON_ID.EXPORT_DATA, Style:this.ExportDataButton});
-        if (this.OverlayIndex) aryButton.push( { ID:JSCHART_BUTTON_ID.OVERLAY_INDEX, Style:this.OverlayIndexButton });
-        if (this.ChangeIndex) aryButton.push( { ID:JSCHART_BUTTON_ID.CHANGE_INDEX, Style:this.ChangeIndexButton });
-        if (this.ModifyIndex) aryButton.push( { ID:JSCHART_BUTTON_ID.MODIFY_INDEX_PARAM, Style:this.ModifyIndexParamButton });
+        if (this.Identify!=0 && this.Identify!=1) //价格图和成交量图只有自定义按钮
+        {
+            if (this.CloseIndex)  aryButton.push( { ID:JSCHART_BUTTON_ID.CLOSE_INDEX_WINDOW, Style:this.CloseWindowButton });
+            if (this.MaxMinWindow) aryButton.push({ ID:JSCHART_BUTTON_ID.MAX_MIN_WINDOW, Style:this.MaxMinWindowButton })
+            if (this.TitleWindow) aryButton.push({ ID:JSCHART_BUTTON_ID.TITLE_WINDOW, Style:this.TitleWindowButton });
+            if (this.ExportData) aryButton.push( {ID:JSCHART_BUTTON_ID.EXPORT_DATA, Style:this.ExportDataButton});
+            if (this.OverlayIndex) aryButton.push( { ID:JSCHART_BUTTON_ID.OVERLAY_INDEX, Style:this.OverlayIndexButton });
+            if (this.ChangeIndex) aryButton.push( { ID:JSCHART_BUTTON_ID.CHANGE_INDEX, Style:this.ChangeIndexButton });
+            if (this.ModifyIndex) aryButton.push( { ID:JSCHART_BUTTON_ID.MODIFY_INDEX_PARAM, Style:this.ModifyIndexParamButton });
+        }
 
         if (IFrameSplitOperator.IsNonEmptyArray(this.CustomToolbar))
         {
@@ -73797,9 +73799,10 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         var startWindowIndex=2;
         count+=startWindowIndex;
 
-        var dayCount=null;
+        var dayCount=null, symbol=null;
         if (IFrameSplitOperator.IsNumber(option.DayCount) && option.DayCount!=this.DayCount) dayCount= option.DayCount; //天数
-        var bRefreshData= (dayCount!=null);
+        if (option.Symbol) symbol=option.Symbol;
+        var bRefreshData= (dayCount!=null || symbol!=null);
 
         //清空所有的指标图型
         for(var i=startWindowIndex;i<currentLength;++i)
@@ -73948,7 +73951,10 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         }
         else
         {
-            if (dayCount!=null) this.ChangeDayCount(dayCount);
+            if (!symbol) symbol=this.Symbol;
+            var option={ };
+            if (IFrameSplitOperator.IsNumber(dayCount)) option.DayCount=dayCount;
+            this.ChangeSymbol(symbol, option);
         }
     }
 
@@ -76140,10 +76146,8 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         }
         else if (indexInfo)
         {
-            let indexData = indexInfo;
-            if (obj.Args) indexData.Args=obj.Args;  //外部可以设置参数
-
-            var scriptIndex=new OverlayScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
+            JSIndexScript.ModifyAttribute(indexInfo, obj);
+            var scriptIndex=new OverlayScriptIndex(indexInfo.Name,indexInfo.Script,indexInfo.Args,indexInfo);    //脚本执行
             scriptIndex.OverlayIndex={ IsOverlay:true, Identify:overlayFrame.Identify, WindowIndex:windowIndex, Frame:overlayFrame };    //叠加指标信息
             overlayFrame.Script=scriptIndex;
         }

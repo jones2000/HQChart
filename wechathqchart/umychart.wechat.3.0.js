@@ -3244,8 +3244,10 @@ function JSChartContainer(uielement)
         let indexInfo = scriptData.Get(indexName);
         if (!indexInfo) return;
 
+        JSIndexScript.ModifyAttribute(indexInfo, option);
         var index=this.AddNewSubFrame(option);
 
+        /*
         var indexData = 
         { 
             Name:indexInfo.Name, Script:indexInfo.Script, Args: indexInfo.Args, ID:indexName ,
@@ -3261,8 +3263,9 @@ function JSChartContainer(uielement)
             if (option.StringFormat>0) indexData.StringFormat=option.StringFormat;
             if (option.Args) indexData.Args=option.Args;
         }
+        */
 
-        this.WindowIndex[index] = new ScriptIndex(indexData.Name, indexData.Script, indexData.Args,indexData);    //脚本执行
+        this.WindowIndex[index] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args,indexInfo);    //脚本执行
         if (this.ClassName=="MinuteChartContainer" || this.ClassName=="MinuteChartHScreenContainer")
             var bindData=this.SourceData;
         else 
