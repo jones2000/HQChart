@@ -8063,20 +8063,26 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     {
         if (!option) return;
 
+        var frame=subFrame.Frame;
+
         if (option.Window)
         {
             var item=option.Window;
-            if (item.Modify!=null) subFrame.Frame.ModifyIndex=item.Modify;
-            if (item.Change!=null) subFrame.Frame.ChangeIndex=item.Change;
-            if (item.Close!=null) subFrame.Frame.CloseIndex=item.Close;
-            if (item.Overlay!=null) subFrame.Frame.OverlayIndex=item.Overlay;
-            if (item.IsDrawTitleBG==true)  subFrame.Frame.IsDrawTitleBG=item.IsDrawTitleBG;
-            if (IFrameSplitOperator.IsBool(item.IsShowNameArrow)) subFrame.Frame.IsShowNameArrow=item.IsShowNameArrow;
+            if (IFrameSplitOperator.IsBool(item.Modify)) frame.ModifyIndex=item.Modify;
+            if (IFrameSplitOperator.IsBool(item.Change)) frame.ChangeIndex=item.Change;
+            if (IFrameSplitOperator.IsBool(item.Close)) frame.CloseIndex=item.Close;
+            if (IFrameSplitOperator.IsBool(item.Overlay)) frame.OverlayIndex=item.Overlay;
+            if (IFrameSplitOperator.IsBool(item.Export)) frame.ExportData=item.Export;
+            if (IFrameSplitOperator.IsBool(item.MaxMin)) frame.MaxMinWindow=item.MaxMin;
+            if (IFrameSplitOperator.IsBool(item.TitleWindow)) frame.TitleWindow=item.TitleWindow;
+
+            if (IFrameSplitOperator.IsBool(item.IsDrawTitleBG))  frame.IsDrawTitleBG=item.IsDrawTitleBG;
+            if (IFrameSplitOperator.IsBool(item.IsShowNameArrow)) frame.IsShowNameArrow=item.IsShowNameArrow;
 
             if (item.OverlayIndexType)
             {
-                if (IFrameSplitOperator.IsNumber(item.OverlayIndexType.Position)) subFrame.Frame.OverlayIndexType.Position=item.OverlayIndexType.Position;
-                if (IFrameSplitOperator.IsNumber(item.OverlayIndexType.LineSpace)) subFrame.Frame.OverlayIndexType.LineSpace=item.OverlayIndexType.LineSpace;
+                if (IFrameSplitOperator.IsNumber(item.OverlayIndexType.Position)) frame.OverlayIndexType.Position=item.OverlayIndexType.Position;
+                if (IFrameSplitOperator.IsNumber(item.OverlayIndexType.LineSpace)) frame.OverlayIndexType.LineSpace=item.OverlayIndexType.LineSpace;
             }
         }
 
