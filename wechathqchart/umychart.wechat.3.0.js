@@ -3701,6 +3701,66 @@ function JSChartContainer(uielement)
 
         return result;
     }
+
+    //获取当天的显示的指标
+    this.GetIndexInfo = function () 
+    {
+        var aryIndex = [];
+        for(var i=0, j=0; i<this.WindowIndex.length; ++i)
+        {
+            var item = this.WindowIndex[i];
+            if (!item) continue;
+
+            var info = { Name: item.Name, WindowIndex:i, IsOverlay:false };
+            if (item.ID) info.ID = item.ID;
+
+            if (IFrameSplitOperator.IsNonEmptyArray(item.Arguments)) //参数
+            {
+                info.Args=[];
+                for(j=0;j<item.Arguments.length;++j)
+                {
+                    var argItem=item.Arguments[j];
+                    info.Args.push( { Name:argItem.Name, Value:argItem.Value} );
+                }
+            }
+
+            aryIndex.push(info);
+        }
+
+        this.GetOverlayIndexInfo(aryIndex); //叠加指标
+
+        return aryIndex;
+    }
+
+    //获取叠加指标
+    this.GetOverlayIndexInfo=function(aryIndex)
+    {
+        for(var i=0, j=0, k=0; i<this.Frame.SubFrame.length; ++i)
+        {
+            var item=this.Frame.SubFrame[i];
+            if (!IFrameSplitOperator.IsNonEmptyArray(item.OverlayIndex)) continue;
+
+            for(j=0; j<item.OverlayIndex.length; ++j)
+            {
+                var overlayItem=item.OverlayIndex[j];
+                if (!overlayItem.Script) continue;
+                var indexData=overlayItem.Script;
+                var info={ Name:indexData.Name, ID:indexData.ID, WindowIndex:i, IsOverlay:true, Identify:overlayItem.Identify };
+
+                if (IFrameSplitOperator.IsNonEmptyArray(indexData.Arguments)) //参数
+                {
+                    info.Args=[];
+                    for(k=0;k<indexData.Arguments.length;++k)
+                    {
+                        var argItem=indexData.Arguments[k];
+                        info.Args.push( { Name:argItem.Name, Value:argItem.Value} );
+                    }
+                }
+
+                aryIndex.push(info);
+            }
+        }
+    }
 }
 
 function ToFixed(number, precision) 
@@ -6624,21 +6684,6 @@ function KLineChartContainer(uielement)
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
         this.Draw();
-    }
-
-    //获取当天的显示的指标
-    this.GetIndexInfo = function () 
-    {
-        var aryIndex = [];
-        for (var i in this.WindowIndex) 
-        {
-            var item = this.WindowIndex[i];
-            var info = { Name: item.Name };
-            if (item.ID) info.ID = item.ID;
-            aryIndex.push(info);
-        }
-
-        return aryIndex;
     }
 
     this.ChangeIndexTemplate = function (option)   //切换指标模板 可以设置指标窗口个数 每个窗口的指标

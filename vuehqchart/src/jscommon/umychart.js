@@ -2728,6 +2728,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     this.Tooltip.id=Guid();
     uielement.parentNode.appendChild(this.Tooltip);
     this.IsShowTooltip=true;    //是否显示K线tooltip
+    this.TooltipCache={ Type:null, IsShow:false, X:null, Y:null, Data:null, InnerHTML:null };  //缓存tooltip数据
 
     //区间选择
     this.SelectRect=document.createElement("div");
@@ -6483,6 +6484,12 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
         var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
         var xMove=15/pixelTatio;    //顶部坐标偏移位置
+
+        this.TooltipCache.Type=toolTip.Type;
+        this.TooltipCache.Data=null;
+        this.TooltipCache.X=x;
+        this.TooltipCache.Y=y;
+
         if (toolTip.Type===0) //K线信息
         {
             var scrollPos=GetScrollPosition();
@@ -6517,6 +6524,10 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             this.Tooltip.className='jschart-tooltip';
             this.Tooltip.innerHTML=format.Text;
             this.Tooltip.style.display = "block";
+
+            this.TooltipCache.IsShow=true;
+            this.TooltipCache.Data={ Date:toolTip.Data.Date, Time:toolTip.Data.Time };
+            this.TooltipCache.InnerHTML=format.Text;
         }
         else if (toolTip.Type===1)   //信息地雷提示信息
         {
@@ -6671,13 +6682,44 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             this.Tooltip.style.top = (top +xMove)+ "px";
             this.Tooltip.style.width = width+"px";
             this.Tooltip.style.height =null;
-            this.Tooltip.innerHTML=format.Text;;
+            this.Tooltip.innerHTML=format.Text;
             this.Tooltip.style.display = "block";
+        }
+    }
+
+    this.UpdateDOMTooltip=function(toolTipType, data)
+    {
+        if (!this.TooltipCache.IsShow) return ;
+        if (this.TooltipCache.Type!=toolTipType) return;
+        if (!this.TooltipCache.Data) return;
+
+        if (this.TooltipCache.Type===0)
+        {
+            if (!data || !IFrameSplitOperator.IsNonEmptyArray(data.Data)) return;
+            var lastItem=data.Data[data.Data.length-1];
+            if (lastItem.Date!=this.TooltipCache.Data.Date) return;
+            if (IFrameSplitOperator.IsNumber(lastItem.Time) && lastItem.Time!=this.TooltipCache.Data.Time) return;
+            var klinePaint=this.ChartPaint[0];
+
+            var format=g_DivTooltipDataForamt.Create('HistoryDataStringFormat');
+            format.Value={ Data:lastItem, ChartPaint:klinePaint, Type:this.TooltipCache.Type };
+            format.Symbol=this.Symbol;
+            format.LanguageID=this.LanguageID;
+            format.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+            if (!format.Operator()) return;
+            if (format.Text==this.TooltipCache.InnerHTML) return;
+            this.Tooltip.innerHTML=format.Text;
+            this.TooltipCache.InnerHTML=format.Text;
         }
     }
 
     this.HideTooltip=function()
     {
+        this.TooltipCache.IsShow=false;
+        this.TooltipCache.Type=null;
+        this.TooltipCache.InnerHTML=null;
+        this.TooltipCache.Data=null;
+
         if (this.Tooltip.style.display!="none") this.Tooltip.style.display = "none";
     }
 
@@ -8770,6 +8812,65 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             {
                 var overlayItem=item.OverlayIndex[j];
                 if (overlayItem.Script) overlayItem.Script.RunCount=0;
+            }
+        }
+    }
+
+    //获取当前的显示的指标 包含叠加指标
+    this.GetIndexInfo=function()
+    {
+        var aryIndex=[];
+        for(var i=0, j=0; i<this.WindowIndex.length; ++i)
+        {
+            var item=this.WindowIndex[i];
+            if (!item) continue;
+            
+            var info={ Name:item.Name, WindowIndex:i, IsOverlay:false };
+            if (item.ID) info.ID=item.ID;
+            if (IFrameSplitOperator.IsNonEmptyArray(item.Arguments)) //参数
+            {
+                info.Args=[];
+                for(j=0;j<item.Arguments.length;++j)
+                {
+                    var argItem=item.Arguments[j];
+                    info.Args.push( { Name:argItem.Name, Value:argItem.Value} );
+                }
+            }
+
+            aryIndex.push(info);
+        }
+
+        this.GetOverlayIndexInfo(aryIndex); //叠加指标
+
+        return aryIndex;
+    }
+
+    //叠加指标
+    this.GetOverlayIndexInfo=function(aryIndex)
+    {
+        for(var i=0, j=0, k=0; i<this.Frame.SubFrame.length; ++i)
+        {
+            var item=this.Frame.SubFrame[i];
+            if (!IFrameSplitOperator.IsNonEmptyArray(item.OverlayIndex)) continue;
+
+            for(j=0; j<item.OverlayIndex.length; ++j)
+            {
+                var overlayItem=item.OverlayIndex[j];
+                if (!overlayItem.Script) continue;
+                var indexData=overlayItem.Script;
+                var info={ Name:indexData.Name, ID:indexData.ID, WindowIndex:i, IsOverlay:true, Identify:overlayItem.Identify };
+
+                if (IFrameSplitOperator.IsNonEmptyArray(indexData.Arguments)) //参数
+                {
+                    info.Args=[];
+                    for(k=0;k<indexData.Arguments.length;++k)
+                    {
+                        var argItem=indexData.Arguments[k];
+                        info.Args.push( { Name:argItem.Name, Value:argItem.Value} );
+                    }
+                }
+
+                aryIndex.push(info);
             }
         }
     }
@@ -66811,6 +66912,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         this.Draw();
 
         this.SendKLineUpdateEvent(bindData);    
+        this.UpdateDOMTooltip(0, bindData);
 
         //叠加指标计算
         this.BindAllOverlayIndexData(bindData, { CheckRunCount:true,SyncExecute:false });     //异步模式叠加指标
@@ -67061,6 +67163,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         this.Draw();
 
         this.SendKLineUpdateEvent(bindData);
+        this.UpdateDOMTooltip(0, bindData);
 
         //更新叠加指标
         this.BindAllOverlayIndexData(bindData, { CheckRunCount:true,SyncExecute:false });     //异步模式叠加指标
@@ -68559,31 +68662,6 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         this.UpdateFrameMaxMin();
         this.ResetFrameXYSplit();
         this.Draw();
-    }
-
-    //获取当前的显示的指标
-    this.GetIndexInfo=function()
-    {
-        var aryIndex=[];
-        for(var i in this.WindowIndex)
-        {
-            var item=this.WindowIndex[i];
-            var info={Name:item.Name};
-            if (item.ID) info.ID=item.ID;
-            if (item.Arguments) //参数
-            {
-                info.Args=[];
-                for(var i in item.Arguments)
-                {
-                    var argItem=item.Arguments[i];
-                    info.Args.push( {Name:argItem.Name, Value:argItem.Value} );
-                }
-            }
-
-            aryIndex.push(info);
-        }
-
-        return aryIndex;
     }
 
     this.CreateExtendChart=function(name, option)   //创建扩展图形
@@ -76228,21 +76306,6 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
     this.CreateWindowIndex=function(windowIndex)
     {
         this.WindowIndex[windowIndex].Create(this,windowIndex);
-    }
-
-    //获取当前的显示的指标
-    this.GetIndexInfo=function()
-    {
-        var aryIndex=[];
-        for(var i in this.WindowIndex)
-        {
-            var item=this.WindowIndex[i];
-            var info={Name:item.Name};
-            if (item.ID) info.ID=item.ID;
-            aryIndex.push(info);
-        }
-
-        return aryIndex;
     }
 
     this.OnTouchFinished=function()
