@@ -124,6 +124,7 @@ import {
     BarragePaint,
     MinuteTooltipPaint,
     BackgroundPaint,
+    g_ExtendChartPaintFactory,
 } from "./umychart.extendchart.wechat.js";
 
 import {
@@ -1451,6 +1452,13 @@ JSChart.GetDivTooltipDataFormat=function()  //div tooltip数据格式化
     return g_DivTooltipDataForamt;
 }
 
+//注册外部扩展图形
+//option:{ Create:创建类方法 }
+JSChart.RegisterExtendChartClass=function(name, option)
+{
+    return g_ExtendChartPaintFactory.Add(name,option);
+}
+
 //一些公共函数
 JSChart.ToFixedPoint=function(value)
 {
@@ -2209,6 +2217,17 @@ function JSChartContainer(uielement)
         }
         var bDrawTooltip=true;
         if (this.CurrentChartDrawPicture && this.CurrentChartDrawPicture.Status!=10) bDrawTooltip=false;
+
+        for (var i=0; i<this.ExtendChartPaint.length; ++i)    //动态扩展图形   在动态标题以后画
+        {
+            var item = this.ExtendChartPaint[i];
+            if (item.IsCallbackDraw) continue;
+            if (item.ClassName=="KLineTooltipPaint" || item.ClassName=="MinuteTooltipPaint") continue;
+            if (item.IsDynamic) continue;
+            if (item.DrawAfterTitle) continue;  //在绘制标题以后在绘制
+
+            item.Draw();
+        }
 
         if (bOnTouchDraw)
         {
@@ -6919,7 +6938,16 @@ function KLineChartContainer(uielement)
                 this.ExtendChartPaint.push(chart);
                 return chart;
             default:
-                return null;
+                chart=g_ExtendChartPaintFactory.Create(name);
+                if (!chart) return null;
+
+                chart.Canvas=this.Canvas;
+                chart.ChartBorder=this.Frame.ChartBorder;
+                chart.ChartFrame=this.Frame;
+                chart.HQChart=this;
+                chart.SetOption(option);
+                this.ExtendChartPaint.push(chart);
+                return chart;
         }
     }
 
@@ -9972,7 +10000,16 @@ function MinuteChartContainer(uielement)
                 this.ExtendChartPaint.push(chart);
                 return chart;
             default:
-                return null;
+                chart=g_ExtendChartPaintFactory.Create(name);
+                if (!chart) return null;
+
+                chart.Canvas=this.Canvas;
+                chart.ChartBorder=this.Frame.ChartBorder;
+                chart.ChartFrame=this.Frame;
+                chart.HQChart=this;
+                chart.SetOption(option);
+                this.ExtendChartPaint.push(chart);
+                return chart;
         }
     }
 

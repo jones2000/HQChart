@@ -6861,6 +6861,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 if (chart.IsShow==false) continue;      //隐藏的图形不计算
                 if (chart.NotSupportMessage)  continue;
                 if (!chart.ChartFrame) continue;
+                if (chart.IsExcludeYValue===true) continue;
 
                 var range=chart.GetMaxMin();
                 if (range==null || range.Max==null || range.Min==null) continue;
@@ -21635,6 +21636,7 @@ function IChartPainting()
     this.PtInChart;             //function(x,y) { }
 
     this.IsFullRangeMaxMin=false;   //this.GetMaxMin() true=计算全部的最大最小值 false=计算可视范围的最大最小值
+    this.IsExcludeYValue=false;     //不参与Y轴计算
 
     this.Draw=function()
     {
@@ -30000,6 +30002,7 @@ function ChartPointDot()
         var xPointCount=this.ChartFrame.XPointCount;
 
         this.Canvas.save();
+        this.ClipClient(bHScreen);
         this.Canvas.fillStyle=this.Color;
         var colorDot;
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
@@ -30008,7 +30011,7 @@ function ChartPointDot()
             if (value==null) continue;
 
             var x=this.ChartFrame.GetXFromIndex(j);
-            var y=this.ChartFrame.GetYFromData(value);
+            var y=this.ChartFrame.GetYFromData(value, false);
 
             if (x>chartright) break;
 

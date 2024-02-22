@@ -7160,7 +7160,7 @@ function ChartVolStick()
                 var y = this.ChartFrame.GetYFromData(value);
                 var barColor=this.GetBarColor(kItem);
                 var bUp=barColor.IsUp;
-                this.Canvas.strokeStyle=barColor.Color;
+                this.Canvas.fillStyle=barColor.Color;
 
                 //高度调整为整数
                 var height = ToFixedRect(y - yBottom);

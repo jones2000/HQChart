@@ -1109,6 +1109,49 @@ function BarragePaint()
     }
 }
 
+
+
+/*
+    扩展图形
+*/
+function ExtendChartPaintFactory()
+{
+    this.DataMap=new Map(
+        [
+            //["FrameSplitPaint", { Create:function() { return new FrameSplitPaint(); } }],
+        ]
+    );
+
+    this.SetCallbackDraw=new Set();
+
+    this.Create=function(name)
+    {
+        if (!this.DataMap.has(name)) return null;
+
+        var item=this.DataMap.get(name);
+        return item.Create();
+    }
+
+    this.Add=function(name, option)
+    {
+        this.DataMap.set(name, { Create:option.Create } );
+    }
+
+    this.AddCallbackDrawClassName=function(className)
+    {
+        if (!className) return;
+
+        this.SetCallbackDraw.add(className);
+    }
+
+    this.IsCallbackDraw=function(className)
+    {
+        return this.SetCallbackDraw.has(className);
+    }
+}
+
+var g_ExtendChartPaintFactory=new ExtendChartPaintFactory();
+
 //导出统一使用JSCommon命名空间名
 export
 {
@@ -1117,6 +1160,7 @@ export
     BarragePaint,
     MinuteTooltipPaint,
     BackgroundPaint,
+    g_ExtendChartPaintFactory,
 }
 /*
 module.exports =

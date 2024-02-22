@@ -18121,7 +18121,7 @@ function JSExplainer(ast,option)
         ['VOLR',"量比"], ['VOLINSTK',"持仓量"], ["OPI","持仓量"], ["ZSTJJ","均价"], ["QHJSJ","结算价"], ["SETTLE", "结算价"],
 
         //日期类
-        ['DATE',"日期"],['YEAR',"年份"],['MONTH',"月份"],['PERIOD', "周期"],['WEEK',"星期"],["TIME","时间"],
+        ['DATE',"日期"],['YEAR',"年份"],['MONTH',"月份"],["DAY","日"],['PERIOD', "周期"],['WEEK',"星期"],["TIME","时间"],
 
         //大盘数据
         ['INDEXA',"大盘成交额"],['INDEXC',"大盘收盘价"],['INDEXH',"大盘最高价"],['INDEXL',"大盘最低价"],['INDEXO',"大盘开盘价"],['INDEXV',"大盘成交量"],
@@ -19619,6 +19619,7 @@ function ScriptIndex(name,script,args,option)
         if (IFrameSplitOperator.IsNumber(option.YAxis.FloatPrecision)) this.YAxis.FloatPrecision=option.YAxis.FloatPrecision;
         if (IFrameSplitOperator.IsNumber(option.YAxis.StringFormat)) this.YAxis.StringFormat=option.YAxis.StringFormat;
         if (IFrameSplitOperator.IsBool(option.YAxis.EnableRemoveZero)) this.YAxis.EnableRemoveZero=option.YAxis.EnableRemoveZero;
+        if (IFrameSplitOperator.IsBool(option.YAxis.ExcludeValue)) this.YAxis.ExcludeValue=option.YAxis.ExcludeValue;    //不参数Y轴的计算
         
     }
 
@@ -19882,6 +19883,11 @@ function ScriptIndex(name,script,args,option)
         else if (this.ID) chart.IndexName==this.ID;
 
         if (this.ID) chart.IndexID=this.ID;
+
+        if (this.YAxis)
+        {
+            if (IFrameSplitOperator.IsBool(this.YAxis.ExcludeValue)) chart.IsExcludeYValue=this.YAxis.ExcludeValue;
+        }
 
         chart.Script=this;  //指标内容绑定上去
     }
@@ -20273,6 +20279,7 @@ function ScriptIndex(name,script,args,option)
         pointDot.Data.Data=varItem.Data;
         hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(pointDot.Data,varItem.Name,pointDot.Color);
 
+        this.SetChartIndexName(pointDot);
         hqChart.ChartPaint.push(pointDot);
     }
 

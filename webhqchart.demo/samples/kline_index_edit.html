@@ -21,6 +21,9 @@
                 <option value="0">主图</option>
             </select>
 
+            <input type="checkbox" id="exclude_y" name="exclude_y"/>
+            <label for="exclude_y">指标不参与Y轴计算</label>
+
             <button class="toolsButton" id="index_run">执行(切换指标)</button>
             <button class="toolsButton" id="index_check">语法检测</button>
             <button class="toolsButton" id="index_save">保存指标</button>
@@ -116,6 +119,10 @@
     <script src="../jscommon/umychart.testdata/60000.sh.minute.kline.js"></script>
     <script src="../jscommon/umychart.testdata/60000.sh.1minute.kline.js"></script>
 
+    <script src="../jscommon/umychart.testdata/000151.sz.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/000001.sz.minute.kline.js"></script>
+    
+
     <script src="../jscommon/umychart.testdata/60000.sh.NewsInteract.js"></script>
     <script src="../jscommon/umychart.testdata/60000.sh.BlockTrading.js"></script>
     <script src="../jscommon/umychart.testdata/60000.sh.TradeDetal.js"></script>
@@ -152,8 +159,8 @@
                 [
                     //{Index:"EMPTY", TitleHeight:1},
                     {Index:"MA", Overlay:true },
-                    {Index:"MACD", Overlay:true},
-                    {Index:"VOL", Overlay:true},
+                    {Index:"AMO", Overlay:true},
+                    {Index:"VOL", Overlay:true, YAxis: { FloatPrecision:0, StringFormat:2 } },
                 ], 
 
                 
@@ -270,12 +277,13 @@
                 [
                     {
                         SplitCount:6, 
-                        
+                        //SplitType:1,
                         Custom:
                         [
                             
                             { 
                                 Type:0,
+                               
                                 Position:'right',LineType:1, 
                                 //PositionEx:1,
                             },
@@ -529,11 +537,16 @@
                         aryParam.push({Name:paramName, Value:parseInt(value)});
                 }
 
+
+                var excludeYValue=document.getElementById("exclude_y").checked;
+
                 var  indexInfo=
                 {
                     Name:indexName,
                     Script:code,
                     Args:aryParam,
+
+                    YAxis:{ ExcludeValue:excludeYValue }
                 };
 
                 return indexInfo;
