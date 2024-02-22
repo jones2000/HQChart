@@ -36070,7 +36070,7 @@ function ChartMultiText()
     {
         if (IFrameSplitOperator.IsNumber(item.Time))
         {
-            var key=`${kItem.Date}-${item.Time}`;
+            var key=`${item.Date}-${item.Time}`;
         }
         else
         {
