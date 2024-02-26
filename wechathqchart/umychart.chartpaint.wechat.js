@@ -291,6 +291,15 @@ function ChartKLine()
     this.ShowRange={ };     //K线显示范围 { Start:, End:,  DataCount:, ShowCount: }
     this.DrawKRange={ Start:null, End:null };   //当前屏K线的索引{ Start: , End:}
 
+    //未回补的价格缺口
+    this.PriceGap={ Enable:false, Count:1 };
+    this.PriceGapStyple=
+    { 
+        Line:{ Color:g_JSChartResource.PriceGapStyple.Line.Color }, 
+        Text:{ Color:g_JSChartResource.PriceGapStyple.Text.Color, Font: g_JSChartResource.PriceGapStyple.Text.Font } 
+    };
+    this.AryPriceGapCache=[];   //缺口数据 { }
+
     this.DrawAKLine = function ()  //美国线
     {
         var isHScreen = (this.ChartFrame.IsHScreen === true);
@@ -320,6 +329,7 @@ function ChartKLine()
 
         var ptMax = { X: null, Y: null, Value: null, Align: 'left' };
         var ptMin = { X: null, Y: null, Value: null, Align: 'left' };
+        var preKItemInfo=null;
         for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth),++this.ShowRange.DataCount) 
         {
             var data = this.Data.Data[i];
@@ -334,6 +344,7 @@ function ChartKLine()
             var yOpen = this.ChartFrame.GetYFromData(data.Open);
             var yClose = this.ChartFrame.GetYFromData(data.Close);
             this.DrawKRange.End=i;
+            var kItemInfo={ Data:data, Coordinate:{ X:x, Low:yLow, High:yHigh, Close:yClose, Open:yOpen, Left:left, Right:right } };
 
             if (ptMax.Value == null || ptMax.Value < data.High)     //求最大值
             {
@@ -435,6 +446,17 @@ function ChartKLine()
                 var infoItem = { X: x, Xleft: left, XRight: right, YMax: yHigh, YMin: yLow, DayData: data, Index: j };
                 this.DrawInfoDiv(infoItem);
             }
+
+            if (this.PriceGap.Enable && preKItemInfo)
+            {
+                this.CheckPriceGrap(kItemInfo);
+
+                var value=this.IsPriceGrap(kItemInfo,preKItemInfo);
+                if (value>0)
+                    this.AryPriceGapCache.push({ Data:[preKItemInfo, kItemInfo], Type:value });
+            }
+    
+            preKItemInfo=kItemInfo;
         }
 
         this.PtMax = ptMax;
@@ -461,6 +483,7 @@ function ChartKLine()
         var bFirstPoint = true;
         this.Canvas.beginPath();
         this.Canvas.strokeStyle = this.CloseLineColor;
+        var preKItemInfo=null;
         for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth),++this.ShowRange.DataCount) 
         {
             var data = this.Data.Data[i];
@@ -481,6 +504,24 @@ function ChartKLine()
             else {
                 if (isHScreen) this.Canvas.lineTo(yClose, x);
                 else this.Canvas.lineTo(x, yClose);
+            }
+
+            if (this.PriceGap.Enable )
+            {
+                var yLow=this.GetYFromData(data.Low, false);
+                var yHigh=this.GetYFromData(data.High, false);
+                var yOpen=this.GetYFromData(data.Open, false);
+
+                var kItemInfo={ Data:data, Coordinate:{ X:x, Low:yLow, High:yHigh, Close:yClose, Open:yOpen, Left:left, Right:right }};
+
+                if (preKItemInfo)
+                {
+                    this.CheckPriceGrap(kItemInfo);
+                    var value=this.IsPriceGrap(kItemInfo,preKItemInfo);
+                    if (value>0) this.AryPriceGapCache.push({ Data:[preKItemInfo, kItemInfo], Type:value });
+                }
+
+                preKItemInfo=kItemInfo;
             }
         }
 
@@ -541,6 +582,7 @@ function ChartKLine()
             }
         }
 
+        var preKItemInfo=null;
         for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth),++this.ShowRange.DataCount) 
         {
             var data = this.Data.Data[i];
@@ -576,6 +618,24 @@ function ChartKLine()
             if (i==this.Data.Data.length-1)
             {
                 ptLast={ X:x, Y:yClose, XLeft:left, XRight:right, KItem:data, ChartRight:chartright };
+            }
+
+            if (this.PriceGap.Enable )
+            {
+                var yLow=this.GetYFromData(data.Low, false);
+                var yHigh=this.GetYFromData(data.High, false);
+                var yOpen=this.GetYFromData(data.Open, false);
+
+                var kItemInfo={ Data:data, Coordinate:{ X:x, Low:yLow, High:yHigh, Close:yClose, Open:yOpen, Left:left, Right:right }};
+
+                if (preKItemInfo)
+                {
+                    this.CheckPriceGrap(kItemInfo);
+                    var value=this.IsPriceGrap(kItemInfo,preKItemInfo);
+                    if (value>0) this.AryPriceGapCache.push({ Data:[preKItemInfo, kItemInfo], Type:value });
+                }
+
+                preKItemInfo=kItemInfo;
             }
         }
 
@@ -656,6 +716,7 @@ function ChartKLine()
             eventUnchangeKLine=this.GetEventCallback(JSCHART_EVENT_ID.ON_CUSTOM_UNCHANGE_KLINE_COLOR);
         }
 
+        var preKItemInfo=null;
         for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth), ++this.ShowRange.DataCount) 
         {
             var data = this.Data.Data[i];
@@ -663,8 +724,7 @@ function ChartKLine()
 
             var left = xOffset;
             var right = xOffset + dataWidth;
-            if (right > chartright)
-                break;
+            if (right > chartright) break;
 
             this.DrawKRange.End=i;
             var x = left + (right - left) / 2;
@@ -673,6 +733,8 @@ function ChartKLine()
             var yOpen = this.ChartFrame.GetYFromData(data.Open);
             var yClose = this.ChartFrame.GetYFromData(data.Close);
             var y = yHigh;
+
+            var kItemInfo={ Data:data, Coordinate:{ X:x, Low:yLow, High:yHigh, Close:yClose, Open:yOpen, Left:left, Right:right }};
 
             if (ptMax.Value == null || ptMax.Value < data.High)     //求最大值
             {
@@ -750,6 +812,15 @@ function ChartKLine()
             {
                 ptLast={ X:x, Y:yClose, XLeft:left, XRight:right, KItem:data, ChartRight:chartright };
             }
+
+            if (this.PriceGap.Enable && preKItemInfo)
+            {
+                this.CheckPriceGrap(kItemInfo);
+                var value=this.IsPriceGrap(kItemInfo,preKItemInfo);
+                if (value>0) this.AryPriceGapCache.push({ Data:[preKItemInfo, kItemInfo], Type:value });
+            }
+    
+            preKItemInfo=kItemInfo;
         }
 
         this.DrawLastPointEvent(ptLast);  //通知外部绘制最后一个点
@@ -1651,12 +1722,14 @@ function ChartKLine()
         this.PtMin = { X: null, Y: null, Value: null, Align: 'left' }; //清空最小
         this.ChartFrame.ChartKLine = { Max: null, Min: null };   //保存K线上 显示最大最小值坐标
         this.DrawKRange={ Start:null, End:null }; 
+        this.AryPriceGapCache=[];
 
         if (this.IsShow == false) return;
 
         if (this.DrawType == 1) 
         {
             this.DrawCloseLine();
+            if (this.PriceGap.Enable) this.DrawPriceGap();
             return;
         }
         else if (this.DrawType == 2) 
@@ -1677,6 +1750,8 @@ function ChartKLine()
         }
 
         this.DrawTrade();
+
+        if (this.PriceGap.Enable) this.DrawPriceGap();
 
         if (this.IsShowMaxMinPrice)     //标注最大值最小值
         {
@@ -1869,6 +1944,175 @@ function ChartKLine()
             if (ptLast) var data={ LastPoint:{ X:ptLast.X, Y:ptLast.Y, XLeft:ptLast.XLeft, XRight:ptLast.XRight }, KItem:ptLast.KItem, DrawType:this.DrawType, KWidth:kWidth, ChartRight:ptLast.ChartRight };
             else var data={ LastPoint:null, KItem:null, KWidth:kWidth };
             event.Callback(event,data,this);
+        }
+    }
+
+    //////////////////////////////////////////////////////////////
+    // 标识缺口
+    /////////////////////////////////////////////////////////////
+    this.DrawPriceGap=function()
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.AryPriceGapCache)) return;
+        if (this.PriceGap.Count<=0) return;
+
+        var index=this.AryPriceGapCache.length-this.PriceGap.Count;
+        if (index<0) index=0;
+
+        var isHScreen=(this.ChartFrame.IsHScreen===true);
+        var border=null;
+        
+        if (isHScreen) border=this.ChartBorder.GetHScreenBorder();
+        else border=this.ChartBorder.GetBorder();
+
+        this.Canvas.font=this.PriceGapStyple.Text.Font;
+        this.Canvas.textAlign = 'left';
+        this.Canvas.textBaseline = 'bottom';
+        var textHeight=this.Canvas.measureText("擎").width;
+        var decNum=JSCommonCoordinateData.GetfloatPrecision(this.Symbol);
+
+        for(var i=index;i<this.AryPriceGapCache.length;++i)
+        {
+            var item=this.AryPriceGapCache[i];
+            var start=item.Data[0];
+            var end=item.Data[1];
+            var rect=null, rtText=null, text=null;
+            if (item.Type==1)   //上缺口
+            {
+                if (isHScreen)
+                {
+                    rect={ Left:start.Coordinate.High, Right:end.Coordinate.Low, Top:start.Coordinate.X, Bottom: border.Bottom };
+                    rect.Width=rect.Right-rect.Left;
+                    rect.Height=rect.Bottom-rect.Top;
+
+                    rtText={ Left:start.Coordinate.High-textHeight-2, Top:start.Coordinate.Right+2, Height:textHeight };
+                    rtText.Bottom=rtText.Top+rtText.Height;
+                }
+                else
+                {
+                    rect={ Left:start.Coordinate.X, Right:border.Right, Top:end.Coordinate.Low, Bottom:start.Coordinate.High };
+                    rect.Width=rect.Right-rect.Left;
+                    rect.Height=rect.Bottom-rect.Top;
+    
+                    rtText={ Left:start.Coordinate.Right+2, Top:rect.Bottom+2, Right:rect.Right, Height:textHeight };
+                    rtText.Bottom=rtText.Top+rtText.Height;
+                }
+
+                text=`${start.Data.High.toFixed(decNum)}-${end.Data.Low.toFixed(decNum)}`;
+                
+            }
+            else if (item.Type==2)  //下缺口 
+            {
+                if (isHScreen)
+                {
+                    rect={ Left:start.Coordinate.Low, Right:end.Coordinate.High, Top:start.Coordinate.X, Bottom: border.Bottom };
+                    rect.Width=rect.Right-rect.Left;
+                    rect.Height=rect.Bottom-rect.Top;
+
+                    rtText={ Left:start.Coordinate.Low+2, Top:start.Coordinate.Right+2, Height:textHeight };
+                    rtText.Bottom=rtText.Top+rtText.Height;
+                }
+                else
+                {
+                    rect={ Left:start.Coordinate.X, Right:border.Right, Top:start.Coordinate.Low, Bottom:end.Coordinate.High };
+                    rect.Width=rect.Right-rect.Left;
+                    rect.Height=rect.Bottom-rect.Top;
+    
+                    rtText={ Left:start.Coordinate.Right+2, Bottom:rect.Top, Right:rect.Right, Height:textHeight };
+                    rtText.Top=rtText.Bottom-rtText.Height;
+                }
+
+                text=`${start.Data.Low.toFixed(decNum)}-${end.Data.High.toFixed(decNum)}`;
+            }
+            else
+            {
+                continue;
+            }
+
+            if (!rect) return;
+
+            this.Canvas.fillStyle=this.PriceGapStyple.Line.Color;
+            this.Canvas.fillRect(rect.Left, rect.Top,rect.Width, rect.Height);
+           
+            if (rtText)
+            {
+                var textWidth=this.Canvas.measureText(text).width;
+                rtText.Width=textWidth;
+                rtText.Right=rtText.Left+rtText.Width;
+
+                this.Canvas.fillStyle=this.PriceGapStyple.Text.Color;
+
+                if (isHScreen)
+                {
+                    this.Canvas.save(); 
+                    this.Canvas.translate(rtText.Left, rtText.Top);
+                    this.Canvas.rotate(90 * Math.PI / 180);
+                    this.Canvas.fillText(text,0,0);
+                    this.Canvas.restore();
+                }
+                else
+                {
+                    if (rtText.Right>rect.Right)
+                    {
+                        rtText.Right=rect.Right;
+                        rtText.Left=rtText.Right-rtText.Width;
+                    }
+
+                    this.Canvas.fillStyle=this.PriceGapStyple.Text.Color;
+                    this.Canvas.fillText(text,rtText.Left,rtText.Bottom);
+                }
+    
+                //this.Canvas.fillStyle="rgb(250,250,250)"
+                //this.Canvas.fillRect(rtText.Left, rtText.Top, rtText.Width, rtText.Height);
+    
+                
+            }
+        }
+        
+    }
+
+    //是否有缺口
+    this.IsPriceGrap=function(item, preItem)
+    {
+        if (!preItem || !item) return 0;
+
+        if (preItem.Data.Low>item.Data.High) return 2;    //下缺口 
+
+        if (preItem.Data.High<item.Data.Low) return 1;  //上缺口
+
+        return -1;
+    }
+
+    //检测缺口是不回补了
+    this.CheckPriceGrap=function(kItemInfo)
+    {
+        var kItem=kItemInfo.Data;
+        for(var i=0;i<this.AryPriceGapCache.length;++i)
+        {
+            var item=this.AryPriceGapCache[i];
+            var start=item.Data[0];
+            var end=item.Data[1];
+            if (item.Type==1) //上缺口
+            {
+                if (kItem.Low<=start.Data.High)
+                {
+                    this.AryPriceGapCache.splice(i,1);
+                    --i;
+                    continue;
+                }
+
+                if (kItem.Low<end.Data.Low) item.Data[1]=kItemInfo;
+            }
+            else if (item.Type==2)  //下缺口 
+            {
+                if (kItem.High>=start.Data.Low)
+                {
+                    this.AryPriceGapCache.splice(i,1);
+                    --i;
+                    continue;
+                }
+
+                if (kItem.High>end.Data.High) item.Data[1]=kItemInfo;
+            }
         }
     }
 }

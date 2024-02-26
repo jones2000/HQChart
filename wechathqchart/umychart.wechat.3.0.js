@@ -386,8 +386,15 @@ function JSChart(element)
 
         if (option.KLine)
         {
-            if (option.KLine.ShowKLine == false) chart.ChartPaint[0].IsShow = false;
-            if (option.KLine.IsShowMaxMinPrice == false) chart.ChartPaint[0].IsShowMaxMinPrice = false;
+            var item=option.KLine;
+            var klineChart=chart.ChartPaint[0];
+            if (IFrameSplitOperator.IsBool(item.ShowKLine)) klineChart.IsShow = item.ShowKLine;
+            if (IFrameSplitOperator.IsBool(item.IsShowMaxMinPrice)) klineChart.IsShowMaxMinPrice = item.IsShowMaxMinPrice;
+            if (item.PriceGap)
+            {
+                if (IFrameSplitOperator.IsBool(item.PriceGap.Enable)) klineChart.PriceGap.Enable=item.PriceGap.Enable;
+                if (IFrameSplitOperator.IsNumber(item.PriceGap.Count)) klineChart.PriceGap.Count=item.PriceGap.Count;
+            }
         }
 
         if (option.KLineTitle) 
@@ -1344,6 +1351,15 @@ function JSChart(element)
     {
         if (this.JSChartContainer && typeof(this.JSChartContainer.DeleteOverlayWindowsIndex)=='function') 
             this.JSChartContainer.DeleteOverlayWindowsIndex(identify);
+    }
+
+    this.ChangePriceGap=function(option)
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.ChangePriceGap)=='function')
+        {
+            JSConsole.Chart.Log('[JSChart:ChangePriceGap] ');
+            return this.JSChartContainer.ChangePriceGap(option);
+        }
     }
 
 }
@@ -3779,6 +3795,22 @@ function JSChartContainer(uielement)
                 aryIndex.push(info);
             }
         }
+    }
+
+    //删除扩展画法
+    this.DeleteExtendChartByID=function(id)
+    {
+        for(var i=0;i<this.ExtendChartPaint.length;++i)
+        {
+            var item=this.ExtendChartPaint[i];
+            if (item.ID==id)
+            {
+                this.ExtendChartPaint.splice(i, 1);
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 
@@ -8075,6 +8107,19 @@ function KLineChartContainer(uielement)
         this.Frame.ResetXYSplit(true);
         this.Draw();
     }
+
+    this.ChangePriceGap=function(obj)
+    {
+        if (!obj) return;
+        var klineChart=this.ChartPaint[0];
+        if (!klineChart) return;
+
+        if (IFrameSplitOperator.IsNumber(obj.Count)) klineChart.PriceGap.Count=obj.Count;
+        if (IFrameSplitOperator.IsBool(obj.Enable)) klineChart.PriceGap.Enable=obj.Enable;
+
+        this.Draw();
+    }
+
 }
 
 //API 返回数据 转化为array[]

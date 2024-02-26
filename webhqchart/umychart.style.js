@@ -235,6 +235,12 @@ function GetBlackStyle()
             Color:'rgb(119,136,153)', 
             LineDash:[2,2]
         },
+
+        PriceGapStyple:
+        { 
+            Line:{ Color:"rgb(128,128,128)" }, 
+            Text:{ Color:"rgb(219,220,220)", Font:`${12*GetDevicePixelRatio()}px 微软雅黑` } 
+        },
     
         Index: 
         {      

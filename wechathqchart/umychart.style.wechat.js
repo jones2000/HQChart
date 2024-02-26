@@ -118,6 +118,12 @@ function GetBlackStyle()
             }
         },
 
+        PriceGapStyple:
+        { 
+            Line:{ Color:"rgb(128,128,128)" }, 
+            Text:{ Color:"rgb(219,220,220)", Font:`12px 微软雅黑` } 
+        },
+
         Index: {      //指标线段颜色
         LineColor: [
             "rgb(255,189,09)",

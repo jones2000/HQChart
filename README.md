@@ -98,7 +98,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 * 支持常用指标指标(目前以录入系统指标80多个),支持自定义通达信语法脚本指标<br>
     均线，BOLL，MACD，KDJ，VOL，RSI，BRAR，WR，BIAS，OBV，DMI，CR，PSY，CCI，
     DMA，TRIX，VR，EMV，ROC，MIM，FSL，CYR，MASS，WAD，CHO ..... <br>
-* 支持画图工具,支持保存到本地或保存在内存中(小程序不支持)<br>
+* 支持画图工具,支持保存到本地或保存在内存中<br>
      线段，射线，矩形，圆弧线,水平线,趋势线,平行线,平行通道,价格通道线,文本,江恩角度线,阻速线,黄金分割,百分比线,波段线,三角形,对称角度,斐波那契周期线,平行四边形,圆, iconfont图片 <br>
 * 支持区间统计， 区间形态匹配 (微信小程序版本不支持) <br>
 * 数据鼠标左右拖拽移动, 键盘移动十字光标移动，键盘缩放 <br>
@@ -175,6 +175,10 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![bar](/小程序行情模块用例/image/kline_usabar.gif)  
 * HLC Area
 ![HLC Area](/小程序行情模块用例/image/kline_HLCArea.png)   
+* 未回补缺口显示
+![未回补缺口显示](/小程序行情模块用例/image/hqchart_kline_pricegap.gif)   
+* 小程序画图工具
+![小程序画图工具](/小程序行情模块用例/image/wechat_drawtool.gif)  
 
 
 # 2. 走势图

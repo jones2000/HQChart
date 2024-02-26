@@ -53,6 +53,8 @@ function IExtendChartPainting()
     this.IsAnimation=false;
     this.DrawAfterTitle = false;          //是否在动态标题画完以后再画,防止动态标题覆盖
 
+    this.ID=Guid(),
+    
     //上下左右间距
     this.Left = 5;
     this.Right = 5;

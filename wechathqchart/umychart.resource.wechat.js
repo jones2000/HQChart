@@ -157,6 +157,12 @@ function JSChartResource()
             }
         };
 
+    this.PriceGapStyple=
+    { 
+        Line:{ Color:"rgb(186,186,186)" }, 
+        Text:{ Color:"rgb(105,105,105)", Font:'12px 微软雅黑' } 
+    };
+
     this.Index = {};
     //指标线段颜色
     this.Index.LineColor =
@@ -455,6 +461,17 @@ function JSChartResource()
         {
             if (style.Index.LineColor) this.Index.LineColor = style.Index.LineColor;
             if (style.Index.NotSupport) this.Index.NotSupport = style.Index.NotSupport;
+        }
+
+        if (style.PriceGapStyple)
+        {
+            var item=style.PriceGapStyple;
+            if (item.Line && item.Line.Color) this.PriceGapStyple.Line.Color=item.Line.Color;
+            if (item.Text)
+            {
+                if (item.Text.Color) this.PriceGapStyple.Text.Color=item.Text.Color;
+                if (item.Text.Font) this.PriceGapStyple.Text.Font=item.Text.Font;
+            }
         }
         
         if (style.ColorArray) this.ColorArray = style.ColorArray;
