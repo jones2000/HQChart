@@ -627,6 +627,7 @@ function JSChart(element)
         chart.Create(windowsCount);                            //创建子窗口
 
         if (option.CorssCursorTouchEnd == true) chart.CorssCursorTouchEnd = option.CorssCursorTouchEnd;
+        if (IFrameSplitOperator.IsBool(option.IsClickShowCorssCursor)) chart.IsClickShowCorssCursor = option.IsClickShowCorssCursor;
         if (option.IsFullDraw == true) chart.IsFullDraw = option.IsFullDraw;
         if (option.CorssCursorInfo)     //十字光标设置
         {
@@ -8401,6 +8402,8 @@ function MinuteChartContainer(uielement)
             this.MouseDrag=drag;
             this.PhoneTouchInfo={ Start:{X:touches[0].clientX, Y:touches[0].clientY }, End:{ X:touches[0].clientX, Y:touches[0].clientY } };
             if (this.EnableScrollUpDown==false)
+                T_ShowCorssCursor();
+            else if (this.IsClickShowCorssCursor)
                 T_ShowCorssCursor();
 
             this.TouchEvent({ EventID:JSCHART_EVENT_ID.ON_PHONE_TOUCH, FunctionName:"OnTouchStart"}, e);

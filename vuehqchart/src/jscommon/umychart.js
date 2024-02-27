@@ -1029,7 +1029,8 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (item.TimeFormat) chart.TitlePaint[0].TimeFormat=item.TimeFormat;
         }
 
-        if (option.CorssCursorTouchEnd===true) chart.CorssCursorTouchEnd = option.CorssCursorTouchEnd;
+        if (IFrameSplitOperator.IsBool(option.CorssCursorTouchEnd)) chart.CorssCursorTouchEnd = option.CorssCursorTouchEnd;
+        if (IFrameSplitOperator.IsBool(option.IsClickShowCorssCursor)) chart.IsClickShowCorssCursor=option.IsClickShowCorssCursor;
         if (option.IsShowBeforeData===true) chart.IsShowBeforeData=option.IsShowBeforeData;
 
         //分钟数据指标从第3个指标窗口设置
@@ -9100,6 +9101,7 @@ function CoordinateInfo()
     this.LineDash=null;                                         //当线段类型==2时 可以设置虚线样式
     this.LineType=1;                                            //线段类型 -1=不画线段 2=虚线, 8,9=集合竞价坐标
     this.LineWidth;                                             //线段宽度
+    this.ExtendLine;                                            //延长线长度[ ] { Width:长度 } [0]=左 [1]=右  实例: [null, { Width: 50}];  
     this.ExtendData;                                            //扩展属性
                                                                 //百分比 { PriceColor:, PercentageColor:, SplitColor:, Font: }
                                                                 //自定义刻度 { Custom:{ Position: 1=强制内部 }}
@@ -11527,6 +11529,16 @@ function AverageWidthFrame()
                             else
                             {
                                 var textLeft=right+textWidth-itemText.Width;
+                            }
+
+                            if (item.ExtendLine && item.ExtendLine[1])  //右侧延长线
+                            {
+                                var exLine=item.ExtendLine[1];
+                                if (IFrameSplitOperator.IsNumber(exLine.Width))
+                                {
+                                    if (i==0) this.DrawLine(right,right+exLine.Width,y,item.LineColor,item.LineType,item);
+                                    textLeft+=exLine.Width;
+                                }
                             }
 
                             if (emptyBGColor)
@@ -22814,9 +22826,9 @@ function ChartKLine()
 
             if (this.PriceGap.Enable && preKItemInfo)
             {
-                this.CheckPriceGrap(kItemInfo);
+                this.CheckPriceGap(kItemInfo);
 
-                var value=this.IsPriceGrap(kItemInfo,preKItemInfo);
+                var value=this.IsPriceGap(kItemInfo,preKItemInfo);
                 if (value>0)
                     this.AryPriceGapCache.push({ Data:[preKItemInfo, kItemInfo], Type:value });
             }
@@ -23007,8 +23019,8 @@ function ChartKLine()
 
                 if (preKItemInfo)
                 {
-                    this.CheckPriceGrap(kItemInfo);
-                    var value=this.IsPriceGrap(kItemInfo,preKItemInfo);
+                    this.CheckPriceGap(kItemInfo);
+                    var value=this.IsPriceGap(kItemInfo,preKItemInfo);
                     if (value>0) this.AryPriceGapCache.push({ Data:[preKItemInfo, kItemInfo], Type:value });
                 }
 
@@ -23123,8 +23135,8 @@ function ChartKLine()
 
                 if (preKItemInfo)
                 {
-                    this.CheckPriceGrap(kItemInfo);
-                    var value=this.IsPriceGrap(kItemInfo,preKItemInfo);
+                    this.CheckPriceGap(kItemInfo);
+                    var value=this.IsPriceGap(kItemInfo,preKItemInfo);
                     if (value>0) this.AryPriceGapCache.push({ Data:[preKItemInfo, kItemInfo], Type:value });
                 }
 
@@ -23297,9 +23309,9 @@ function ChartKLine()
 
             if (this.PriceGap.Enable && preKItemInfo)
             {
-                this.CheckPriceGrap(kItemInfo);
+                this.CheckPriceGap(kItemInfo);
 
-                var value=this.IsPriceGrap(kItemInfo,preKItemInfo);
+                var value=this.IsPriceGap(kItemInfo,preKItemInfo);
                 if (value>0)
                     this.AryPriceGapCache.push({ Data:[preKItemInfo, kItemInfo], Type:value });
             }
@@ -26931,7 +26943,7 @@ function ChartKLine()
     }
 
     //是否有缺口
-    this.IsPriceGrap=function(item, preItem)
+    this.IsPriceGap=function(item, preItem)
     {
         if (!preItem || !item) return 0;
 
@@ -26943,7 +26955,7 @@ function ChartKLine()
     }
 
      //检测缺口是不回补了
-    this.CheckPriceGrap=function(kItemInfo)
+    this.CheckPriceGap=function(kItemInfo)
     {
         var kItem=kItemInfo.Data;
         for(var i=0;i<this.AryPriceGapCache.length;++i)
@@ -36620,7 +36632,7 @@ function ChartMultiSVGIcon()
                 if (item.Color)  this.Canvas.fillStyle = item.Color;
                 else this.Canvas.fillStyle = this.Color;
 
-                var textWidth=this.Canvas.measureText(item.Text).width;
+                var textWidth=this.Canvas.measureText(item.Symbol).width;
                 this.Canvas.textAlign='center';
                 var rtIcon=new Rect(x-fontSize/2,y-fontSize/2,fontSize,fontSize);
                 if (x+textWidth/2>=right) 
@@ -44738,7 +44750,7 @@ function FrameSplitKLinePriceY()
     this.CustomFixedCoordinate=function(option)    //固定坐标刻度
     {
         var defaultfloatPrecision=GetfloatPrecision(this.Symbol);
-        for(var i in option.Data)
+        for(var i=0; i<option.Data.length; ++i)
         {
             var item=option.Data[i];
             var info=new CoordinateInfo();
@@ -44759,6 +44771,7 @@ function FrameSplitKLinePriceY()
             else info.Message[1]=text;
 
             if (option.PositionEx===1) info.ExtendData={ Custom:{ Position:1 } };   //强制画在内部
+            if (IFrameSplitOperator.IsNonEmptyArray(item.ExtendLine)) info.ExtendLine=item.ExtendLine.slice();
 
             this.Frame.CustomHorizontalInfo.push(info);
         }
@@ -73124,6 +73137,8 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
     
                 if (this.EnableScrollUpDown==false)
                     T_ShowCorssCursor();    //移动十字光标
+                else if (this.IsClickShowCorssCursor)
+                    T_ShowCorssCursor(); 
             }
 
             if (this.EnableZoomIndexWindow)

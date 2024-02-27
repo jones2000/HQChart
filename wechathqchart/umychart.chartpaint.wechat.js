@@ -449,9 +449,9 @@ function ChartKLine()
 
             if (this.PriceGap.Enable && preKItemInfo)
             {
-                this.CheckPriceGrap(kItemInfo);
+                this.CheckPriceGap(kItemInfo);
 
-                var value=this.IsPriceGrap(kItemInfo,preKItemInfo);
+                var value=this.IsPriceGap(kItemInfo,preKItemInfo);
                 if (value>0)
                     this.AryPriceGapCache.push({ Data:[preKItemInfo, kItemInfo], Type:value });
             }
@@ -516,8 +516,8 @@ function ChartKLine()
 
                 if (preKItemInfo)
                 {
-                    this.CheckPriceGrap(kItemInfo);
-                    var value=this.IsPriceGrap(kItemInfo,preKItemInfo);
+                    this.CheckPriceGap(kItemInfo);
+                    var value=this.IsPriceGap(kItemInfo,preKItemInfo);
                     if (value>0) this.AryPriceGapCache.push({ Data:[preKItemInfo, kItemInfo], Type:value });
                 }
 
@@ -630,8 +630,8 @@ function ChartKLine()
 
                 if (preKItemInfo)
                 {
-                    this.CheckPriceGrap(kItemInfo);
-                    var value=this.IsPriceGrap(kItemInfo,preKItemInfo);
+                    this.CheckPriceGap(kItemInfo);
+                    var value=this.IsPriceGap(kItemInfo,preKItemInfo);
                     if (value>0) this.AryPriceGapCache.push({ Data:[preKItemInfo, kItemInfo], Type:value });
                 }
 
@@ -815,8 +815,8 @@ function ChartKLine()
 
             if (this.PriceGap.Enable && preKItemInfo)
             {
-                this.CheckPriceGrap(kItemInfo);
-                var value=this.IsPriceGrap(kItemInfo,preKItemInfo);
+                this.CheckPriceGap(kItemInfo);
+                var value=this.IsPriceGap(kItemInfo,preKItemInfo);
                 if (value>0) this.AryPriceGapCache.push({ Data:[preKItemInfo, kItemInfo], Type:value });
             }
     
@@ -2071,7 +2071,7 @@ function ChartKLine()
     }
 
     //是否有缺口
-    this.IsPriceGrap=function(item, preItem)
+    this.IsPriceGap=function(item, preItem)
     {
         if (!preItem || !item) return 0;
 
@@ -2083,7 +2083,7 @@ function ChartKLine()
     }
 
     //检测缺口是不回补了
-    this.CheckPriceGrap=function(kItemInfo)
+    this.CheckPriceGap=function(kItemInfo)
     {
         var kItem=kItemInfo.Data;
         for(var i=0;i<this.AryPriceGapCache.length;++i)
