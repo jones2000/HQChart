@@ -36767,6 +36767,300 @@ function ChartMultiSVGIcon()
     }
 }
 
+
+//图标集合(2.0) 支持横屏
+function ChartMultiSVGIconV2()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName="ChartMultiSVGIconV2";
+    this.AryIcon;  //[ {Index:, Value:, Symbol:, Color:, Baseline:, Line:{ Color:, Dash:[虚线点], KData:"H/L", Offset:[5,10], Width:线粗细 } } ]
+    this.IconSize=
+    { 
+        Max: g_JSChartResource.DRAWICON.Icon.MaxSize, Min:g_JSChartResource.DRAWICON.Icon.MinSize ,    //图标的最大最小值
+        Zoom:{ Type:g_JSChartResource.DRAWICON.Icon.Zoom.Type , Value:g_JSChartResource.DRAWICON.Icon.Zoom.Value } //放大倍数
+    }; 
+    this.Family;
+    this.Color=g_JSChartResource.DefaultTextColor;
+    this.IsHScreen=false;
+    this.IconRect=[];   //0=序号,1=区域
+
+    this.MapCache=null; //key=date/date-time  value={ Data:[] }
+
+    this.BuildKey=function(item)
+    {
+        if (IFrameSplitOperator.IsNumber(item.Time)) return `${item.Date}-${item.Time}`;
+        else return item.Date;
+    }
+
+    this.BuildCacheData=function()
+    {
+        var mapData=new Map();
+        this.MapCache=mapData;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.AryIcon)) return;
+
+        for(var i=0;i<this.AryIcon.length;++i)
+        {
+            var item=this.AryIcon[i];
+            var key=this.BuildKey(item);
+            if (mapData.has(key))
+            {
+                var mapItem=mapData.get(key);
+                mapItem.Data.push(item);
+            }
+            else
+            {
+                mapData.set(key,{ Data:[item] });
+            }
+        }
+    }
+
+    this.Draw=function()
+    {
+        this.IconRect=[];
+        if (!this.IsShow || this.ChartFrame.IsMinSize || !this.IsVisible) return;
+        if (this.IsShowIndexTitleOnly()) return;
+        if (this.IsHideScriptIndex()) return;
+        if (!this.Data || !IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return; //k线数据
+        if (!this.Family) return;
+        if (!this.MapCache || this.MapCache.size<=0) return;
+
+        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
+        var xPointCount=this.ChartFrame.XPointCount;
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var isMinute=this.IsMinuteFrame();
+
+        var border=this.GetBorder();
+        if (this.IsHScreen)
+        {
+            var xOffset=border.TopEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.BottomEx;
+            var chartLeft=border.TopEx;
+        }
+        else
+        {
+            var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.RightEx;
+            var chartLeft=border.LeftEx;
+        }
+
+        var fontSize=this.GetDynamicIconSize(dataWidth,distanceWidth,this.IconSize.Max,this.IconSize.Min,this.IconSize.Zoom);
+        this.Canvas.font=fontSize+'px '+this.Family;
+
+        var drawInfo={ Left:chartLeft, Right:chartright, FontSize:fontSize, DataWidth:dataWidth, DistanceWidth:distanceWidth };
+
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var kItem=this.Data.Data[i];
+            var key=this.BuildKey(kItem);
+            if (!this.MapCache.has(key)) continue;
+            var mapItem=this.MapCache.get(key);
+
+            if (isMinute)
+            {
+                var x=this.ChartFrame.GetXFromIndex(j);
+            }
+            else
+            {
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                if (right>chartright) break;
+                var x=left+(right-left)/2;
+            }
+
+            this.DrawItem(mapItem, kItem, x, drawInfo);
+        }
+    }
+
+    this.GetKValue=function(kItem, valueName)
+    {
+        switch(valueName)
+        {
+            case "HIGH":
+            case "H":
+                return kItem.High;
+            case "L":
+            case "LOW":
+                return kItem.Low;
+            case "C":
+            case "CLOSE":
+                return kItem.Close;
+            case "O":
+            case "OPEN":
+                return KItem.Open;
+            default:
+                return null;
+        }
+    }
+
+    this.DrawItem=function(groupItem, kItem, x, drawInfo)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(groupItem.Data)) return;
+
+        var fontSize=drawInfo.FontSize;
+        var left=drawInfo.Left, right=drawInfo.Right;
+        var dataWidth=drawInfo.DataWidth;
+        //var distanceWidth=drawInfo.DistanceWidth;
+
+        for(var i=0;i<groupItem.Data.length;++i)
+        {
+            var item=groupItem.Data[i]; 
+            var value=item.Value;
+            if (IFrameSplitOperator.IsString(item.Value)) value=this.GetKValue(kItem,item.Value);
+            if (!IFrameSplitOperator.IsNumber(value)) continue;
+
+            var y=this.ChartFrame.GetYFromData(item.Value,false);
+
+            if (item.Color)  this.Canvas.fillStyle = item.Color;
+            else this.Canvas.fillStyle = this.Color;
+
+            var textWidth=this.Canvas.measureText(item.Symbol).width;
+            this.Canvas.textAlign='center';
+            var rtIcon=new Rect(x-fontSize/2,y-fontSize/2,fontSize,fontSize);
+             if (x+textWidth/2>=right) 
+            {
+                this.Canvas.textAlign='right';
+                x+=dataWidth/2;
+                rtIcon.X=x-fontSize;
+            }
+            else if (x-textWidth/2<left)
+            {
+                this.Canvas.textAlign = 'left';
+                x-=dataWidth/2;
+                rtIcon.X=x;
+            }
+
+            if (item.Baseline==1) 
+            {
+                this.Canvas.textBaseline='top';
+                rtIcon.Y=y;
+            }
+            else if (item.Baseline==2) 
+            {
+                this.Canvas.textBaseline='bottom';
+                rtIcon.Y=y-fontSize;
+            }
+            else 
+            {
+                this.Canvas.textBaseline = 'middle';
+                rtIcon.Y=y-fontSize/2;
+            } 
+
+            if (this.IsHScreen)
+            {
+                this.Canvas.save(); 
+                this.Canvas.translate(y, x);
+                this.Canvas.rotate(90 * Math.PI / 180);
+                this.Canvas.fillText(item.Symbol,0,0);
+                this.Canvas.restore();
+            }
+            else
+            {
+                if (IFrameSplitOperator.IsNumber(item.YMove)) y+=item.YMove;
+                this.Canvas.fillText(item.Symbol, x, y);
+                if (item.Text) this.IconRect.push({ Rect:rtIcon , Item:item, KItem:kItem });
+            }
+
+            if (item.Line)
+            {
+                var price=item.Line.KData=="H"? kItem.High:kItem.Low;
+                var yPrice=this.ChartFrame.GetYFromData(price, false);
+                var yText=y;
+                if (Array.isArray(item.Line.Offset) && item.Line.Offset.length==2)
+                {
+                    if (yText>yPrice) //文字在下方
+                    {
+                        yText-=item.Line.Offset[1];
+                        yPrice+=item.Line.Offset[0]
+                    }
+                    else if (yText<yPrice)
+                    {
+                        yText+=item.Line.Offset[1];
+                        yPrice-=item.Line.Offset[0]
+                    }
+                }
+                this.Canvas.save();
+                if (item.Line.Dash) this.Canvas.setLineDash(item.Line.Dash);    //虚线
+                if (item.Line.Width>0) this.Canvas.lineWidth=item.Line.Width;   //线宽
+                this.Canvas.strokeStyle = item.Line.Color;
+                this.Canvas.beginPath();
+                if (this.IsHScreen)
+                {
+                    this.Canvas.moveTo(yText, ToFixedPoint(x));
+                    this.Canvas.lineTo(yPrice,ToFixedPoint(x));
+                }
+                else
+                {
+                    this.Canvas.moveTo(ToFixedPoint(x),yText);
+                    this.Canvas.lineTo(ToFixedPoint(x),yPrice);
+                }
+                
+                this.Canvas.stroke();
+                this.Canvas.restore();
+            }
+        }
+    }
+
+    this.GetTooltipData=function(x,y,tooltip)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.IconRect)) return false;
+        for(var i=0; i<this.IconRect.length; ++i)
+        {
+            var item=this.IconRect[i];
+            if (!item.Rect) continue;
+            var rect=item.Rect;
+            this.Canvas.beginPath();
+            this.Canvas.rect(rect.X,rect.Y,rect.Width,rect.Height);
+            if (this.Canvas.isPointInPath(x,y))
+            {
+                JSConsole.Chart.Log('[ChartMultiSVGIconV2::GetTooltipData] icon ', item);
+                tooltip.Data=item;
+                tooltip.ChartPaint=this;
+                tooltip.Type=4; //指标
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    this.GetMaxMin=function()
+    {
+        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
+        var range={ Min:null, Max:null };
+        if(!this.Data || !IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return range;
+        if (!this.MapCache || this.MapCache.size<=0) return;
+        var xPointCount=this.ChartFrame.XPointCount;
+
+        for(var i=this.Data.DataOffset,j=0, k=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        {
+            var kItem=this.Data.Data[i];
+            var key=this.BuildKey(kItem);
+            if (!this.MapCache.has(key)) continue;
+            var mapItem=this.MapCache.get(key);
+            if (!IFrameSplitOperator.IsNonEmptyArray(mapItem.Data)) continue;
+
+            for(k=0;k<mapItem.Data.length;++k)
+            {
+                var item=mapItem.Data[k];
+                var value=item.Value;
+                if (IFrameSplitOperator.IsString(item.Value)) value=this.GetKValue(kItem,item.Value);
+                if (!IFrameSplitOperator.IsNumber(value)) continue;
+
+                if (range.Max==null) range.Max=value;
+                else if (range.Max<value) range.Max=value;
+                if (range.Min==null) range.Min=value;
+                else if (range.Min>value) range.Min=value;
+            }
+        }
+
+        return range;
+    }
+}
+
 // 多dom节点
 function ChartMultiHtmlDom()
 {
@@ -52109,6 +52403,7 @@ function IChartDrawPicture()
 
     this.IsDrawFirst=false;
     this.IsShowYCoordinate=false;    //是否在Y轴显示点的刻度
+    this.IsShow=true;                //是否显示
 
     this.LineColor=g_JSChartResource.DrawPicture.LineColor[0];                            //线段颜色
     //this.LineColor="#1e90ff";      //线段颜色，input type="color" 不支持rgb和rgba 的格式
@@ -53178,6 +53473,8 @@ function IChartDrawPicture()
     this.GetXYCoordinate_default=function()
     {
         if (this.IsFrameMinSize()) return null;
+        if (!this.IsShow) return null;
+
         var drawPoint=this.CalculateDrawPoint( {IsCheckX:true, IsCheckY:true} );
 
         return this.PointRange(drawPoint);
@@ -53633,6 +53930,7 @@ function ChartDrawPictureLine()
     {
         this.LinePoint=[];
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint( {IsCheckX:true, IsCheckY:true} );
         if (!drawPoint) return;
@@ -53670,6 +53968,7 @@ function ChartDrawPictureLine()
     this.GetYCoordinatePoint=function()
     {
         if (this.IsFrameMinSize()) return null;
+        if (!this.IsShow) return null;
 
         if (this.Status<2) return null;
         if(!this.Point.length || !this.Frame) return null;
@@ -53832,6 +54131,7 @@ function ChartDrawGraffitiLine()
     {
         this.LinePoint=[];
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint( {IsCheckX:true, IsCheckY:true} );
         if (!drawPoint) return;
@@ -53887,6 +54187,7 @@ function ChartDrawArrowLine()
     {
         this.LinePoint=[];
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint( {IsCheckX:true, IsCheckY:true} );
         if (!drawPoint) return;
@@ -54005,6 +54306,7 @@ function ChartDrawPictureHaflLine()
         this.LinePoint=[];
         this.FullLine=null;
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint({IsCheckX:false, IsCheckY:false});
         if (!drawPoint || drawPoint.length!=2) return;
@@ -54083,6 +54385,7 @@ function ChartDrawPictureHorizontalLine()
     {
         this.LinePoint=[];
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint();
         if (!drawPoint || drawPoint.length!=1) return;
@@ -54339,6 +54642,7 @@ function ChartDrawHLine()
         this.ButtonBGWidth=0;
 
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint();
         if (!drawPoint || drawPoint.length!=1) return;
@@ -54736,6 +55040,7 @@ function ChartDrawPictureTrendLine()
     {
         this.LinePoint=[];
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint({IsCheckX:false, IsCheckY:false});
         if (!drawPoint || drawPoint.length!=2) return;
@@ -54778,6 +55083,7 @@ function ChartDrawPictureRect()
     this.Draw=function()
     {
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint({IsCheckX:true, IsCheckY:true});
         if (!drawPoint || drawPoint.length!=2) return;
@@ -54889,6 +55195,7 @@ function ChartDrawPictureArc()
     this.Draw=function()
     {
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint();
         if (!drawPoint || drawPoint.length!=2) return;
@@ -55120,6 +55427,7 @@ function ChartDrawPictureWaveMW()
         this.LinePoint=[];
         if (!this.Frame) return;
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         this.IsHScreen=this.Frame.IsHScreen;
         var drawPoint=this.CalculateDrawPoint({IsCheckX:true, IsCheckY:true});
@@ -55418,6 +55726,7 @@ function ChartDrawPictureParallelLines()
         this.LinePoint=[];
         this.CenterLine.Line=null;
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint({IsCheckX:false, IsCheckY:false}); //不检测x,y
         if (!drawPoint) return;
@@ -55531,6 +55840,7 @@ function ChartDrawFlatTop()
     {
         this.LinePoint=[];
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint({IsCheckX:true, IsCheckY:true});
         if (!drawPoint) return;
@@ -55883,6 +56193,7 @@ function ChartDrawPictureParallelChannel()
     {
         this.LinePoint=[];
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint();
         if (!drawPoint) return;
@@ -56033,6 +56344,7 @@ function ChartDrawPictureText()
     {
         this.TextRect=null;
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint({IsCheckX:true, IsCheckY:true});
         if (!drawPoint || drawPoint.length!=1) return;
@@ -56136,6 +56448,7 @@ function ChartDrawPictureIconFont()
     {
         this.TextRect=null;
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint({IsCheckX:true, IsCheckY:true});
         if (!drawPoint || drawPoint.length!=1) return;
@@ -56234,6 +56547,7 @@ function ChartDrawPictureGannFan()
     {
         this.LinePoint=[];
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint({IsCheckX:true, IsCheckY:true});
         if (!drawPoint) return;
@@ -56545,6 +56859,7 @@ function ChartDrawPictureGoldenSection()
     {
         this.LinePoint=[];
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint();
         if (!drawPoint) return;
@@ -56722,6 +57037,7 @@ function ChartDrawPictureTriangle()
     {
         this.LinePoint=[];
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint({IsCheckX:true, IsCheckY:true});
         if (!drawPoint) return;
@@ -56841,6 +57157,7 @@ function ChartDrawPictureSymmetryAngle()
     {
         this.LinePoint=[];
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint({IsCheckX:true, IsCheckY:true});
         if (!drawPoint) return;
@@ -56935,6 +57252,7 @@ function ChartDrawPictureCircle()
     {
         this.LinePoint=[];
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint({IsCheckX:true, IsCheckY:true});
         if (!drawPoint || drawPoint.length!=2) return;
@@ -56998,6 +57316,7 @@ function ChartDrawPictureQuadrangle()
     {
         this.LinePoint=[];
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint({IsCheckX:true, IsCheckY:true});
         if (!drawPoint) return;
@@ -57094,6 +57413,7 @@ function ChartDrawPictureFibonacci()
     {
         this.LinePoint=[];
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint();
         if (!drawPoint) return;
@@ -57296,6 +57616,7 @@ function ChartDrawLinearRegression(option)
     {
         this.LinePoint=[];
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint( { IsCheckX:true, IsCheckY:true} );
         if (!drawPoint || drawPoint.length!=2) 
@@ -57690,6 +58011,7 @@ function ChartDrawPriceLine()
     {
         this.LinePoint=[];
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint( { IsCheckX:false, IsCheckY:true } );
         if (!drawPoint) return;
@@ -57790,6 +58112,7 @@ function ChartDrawPriceLineV2()
     {
         this.LinePoint=[];
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint( { IsCheckX:false, IsCheckY:true } );
         if (!drawPoint) return;
@@ -57960,6 +58283,7 @@ function ChartDrawVerticalLine()
     {
         this.LinePoint=[];
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         if (!this.Frame || !this.Frame.Data) return;
         var data=this.Frame.Data;
@@ -58038,6 +58362,7 @@ function ChartDrawWaveRuler()
     {
         this.LinePoint=[];
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint({IsCheckX:true, IsCheckY:true});
         if (!drawPoint) return;
@@ -58200,6 +58525,7 @@ function ChartDrawWaveRuler2Point()
     {
         this.LinePoint=[];
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint({IsCheckX:true, IsCheckY:true});
         if (!drawPoint) return;
@@ -58332,6 +58658,7 @@ function ChartDrawBox()
     {
         this.LinePoint=[];
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint( {IsCheckX:true, IsCheckY:true} );
         if (!drawPoint) return;
@@ -58562,6 +58889,7 @@ function ChartDrawTwoPointDemo()
         this.LinePoint=[];
         this.PointInfo=[];
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint({IsCheckX:true, IsCheckY:true});
         if (!drawPoint) return;
@@ -58799,6 +59127,7 @@ function ChartDrawHLineSegment()
         this.IsHScreen=this.Frame.IsHScreen;
         this.LinePoint=[];
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint( { IsCheckX:false, IsCheckY:true} );
         if (!drawPoint || drawPoint.length!=2) return;
@@ -59454,6 +59783,7 @@ function ChartDrawNote()
         this.TextRect=null;
         this.PtCenter=null;
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint({IsCheckX:true, IsCheckY:true});
         if (!drawPoint || drawPoint.length!=1) return;
@@ -59837,6 +60167,7 @@ function ChartDrawAnchoredText()
         if (this.Status<2) return;
         if(this.Point.length!=1 || !this.Frame) return;
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint();
         if (!drawPoint || drawPoint.length!=1) return;
@@ -60186,6 +60517,7 @@ function ChartDrawPriceLabel()
     {
         this.TextRect=null;
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint({IsCheckX:true, IsCheckY:true});
         if (!drawPoint || drawPoint.length!=1) return;
@@ -60425,6 +60757,7 @@ function ChartDrawPriceNote()
         this.LinePoint=[];
         this.TextRect=null;
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint( {IsCheckX:true, IsCheckY:true} );
         if (!drawPoint) return;
@@ -60769,6 +61102,7 @@ function ChartDrawFibWedge()
         this.TextAngle=null;
         this.Radius=null;
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint({IsCheckX:false, IsCheckY:false});
         if (!IFrameSplitOperator.IsNonEmptyArray(drawPoint)) return;
@@ -61152,6 +61486,8 @@ function ChartFibRetracement()
     {
         this.LinePoint=[];
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
+
         var bCheckXY=true;
         if (this.ExtendLine.Left || this.ExtendLine.Right) bCheckXY=false;
         var drawPoint=this.CalculateDrawPoint( {IsCheckX:bCheckXY, IsCheckY:bCheckXY} );
@@ -61344,6 +61680,8 @@ function ChartFibSpeedResistanceFan()
     {
         this.LinePoint=[];
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
+
         var bCheckXY=false;
         var drawPoint=this.CalculateDrawPoint( {IsCheckX:bCheckXY, IsCheckY:bCheckXY} );
         if (!drawPoint) return;
@@ -61609,6 +61947,8 @@ function ChartPriceRange()
     {
         this.LinePoint=[];
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
+
         var bCheckXY=true;
         if (this.ExtendLine.Left || this.ExtendLine.Right) bCheckXY=false;
         var drawPoint=this.CalculateDrawPoint( {IsCheckX:bCheckXY, IsCheckY:bCheckXY} );
@@ -61726,6 +62066,8 @@ function ChartDateRange()
     {
         this.LinePoint=[];
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
+
         var bCheckXY=true;
         var drawPoint=this.CalculateDrawPoint( {IsCheckX:bCheckXY, IsCheckY:bCheckXY} );
         if (!drawPoint) return;

@@ -1004,6 +1004,14 @@ function Node()
             return;
         }
 
+        if (callee.Type==Syntax.Literal)    //指标调用 "MA.MA1"(10,5,5)"
+        {
+            var item={ ID:JS_EXECUTE_JOB_ID.JOB_EXECUTE_INDEX, Args:args,  FunctionName:callee.Value, DynamicName:callee.Value };
+            if (token) item.Token={ Index:token.Start, Line:token.LineNumber };
+            this.ExecuteIndex.push(item);
+            return;
+        }
+
         if (callee.Name == "LOADAPIDATA") //加载API数据
         {
             var item = { Name: callee.Name, ID: JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_CUSTOM_API_DATA, Args: args };
@@ -11495,6 +11503,98 @@ function JSSymbolData(ast,option,jsExecute)
         
     }
 
+    this.CallDynamicScriptIndex=function(job, varTable)
+    {
+        var callInfo=job.DynamicName;
+        var indexInfo={ Job:job, PeriodID:this.Period , Symbol:this.Symbol };
+        if (!this.ReadIndexFunctionValue(callInfo,indexInfo))     //读取指标
+        {
+            var token=job.Token;
+            this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`CallDynamicScriptIndex() Error: '${callInfo}' ${indexInfo.Error}`);
+        }
+
+        var systemIndex=new JSIndexScript();    //系统指标
+        var systemItem=systemIndex.Get(indexInfo.Name);
+        if (!systemItem)
+        {
+            var token=job.Token;
+            this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`CallDynamicScriptIndex() Error: '${callInfo}' ${indexInfo.Name} 指标不存在`);
+        }
+
+        indexInfo.SytemIndex=systemItem;    
+        if (!this.ReadDynamicIndexArgumentValue(job.Args, indexInfo, varTable))
+        {
+            var token=job.Token;
+            this.Execute.ErrorHandler.ThrowError(token.Index,token.Line,0,`CallDynamicScriptIndex() ${indexInfo.Name} 指标参数错误 : ${indexInfo.Error} `);
+        }
+
+        JSConsole.Complier.Log('[JSSymbolData::CallMemberScriptIndex] call script index', indexInfo);
+
+        var dateTimeRange=this.Data.GetDateRange();
+
+        var option=
+        {
+            HQDataType:this.DataType,
+            Symbol:indexInfo.Symbol,
+            Name:'',
+            Right:this.Right,           //复权
+            Period:indexInfo.PeriodID,  //周期
+            Data:null,
+            SourceData:null,
+            Callback:(outVar,job, symbolData)=> { 
+                this.RecvDynamicScriptIndexData(outVar,job,symbolData);
+                this.Execute.RunNextJob();
+            },
+            CallbackParam:indexInfo,
+            Async:true,
+            MaxRequestDataCount:this.MaxRequestDataCount+30*2,
+            MaxRequestMinuteDayCount:this.MaxRequestMinuteDayCount+2,
+            Arguments:indexInfo.Args,
+            //Condition:this.Condition,
+            IsBeforeData:this.IsBeforeData,
+            NetworkFilter:this.NetworkFilter,
+            IsApiPeriod:this.IsApiPeriod,
+            KLineRange:dateTimeRange    //K线数据范围
+        };
+
+        //执行脚本
+        var run=JSComplier.Execute(systemItem.Script,option,(error, indexInfo)=>{this.ExecuteScriptIndexError(error,indexInfo)});
+    }
+
+    this.ReadDynamicIndexArgumentValue=function(args, result, varTable)
+    {
+        result.Args=[];
+        for(var i =0;i<result.SytemIndex.Args.length; ++i)    //复制参数
+        {
+            var item=result.SytemIndex.Args[i];
+            result.Args.push({ Value:item.Value, Name:item.Name, IsDefault:true });
+        }
+
+        if (!IFrameSplitOperator.IsNonEmptyArray(args)) return true;
+
+        for(var i=0;i<args.length;++i)
+        {
+            var item=args[i];
+            var argItem=result.Args[i];
+            if (!argItem) continue;
+            if (item.Type==Syntax.Literal)
+            {
+                argItem.Value=item.Value;
+                argItem.IsDefault=false;
+            }
+            else if (item.Type==Syntax.Identifier)  //支持传参
+            {
+                if (varTable.has(item.Name))
+                {
+                    argItem.Value=varTable.get(item.Name);
+                    argItem.IsDefault=false;
+                }
+            }
+        }
+
+        return true;
+    }
+
     /*****************************************************************************************************************************
         脚本调用
 
@@ -11508,10 +11608,12 @@ function JSSymbolData(ast,option,jsExecute)
         CALCSTOCKINDEX('SH600000','KDJ',3)表示上证600000的KDJ指标第3个输出即J之值,第一个参数可在前面加SZ(深市),SH(沪市),BJ(京市),或市场_,,
         CALCSTOCKINDEX('47_IFL0','MACD',2)表示IFL0品种的MACD指标第2个输出值.
 
+        "MA.MA1"(6,12,18)
     *******************************************************************************************************************************/
-    this.CallScriptIndex=function(job)
+    this.CallScriptIndex=function(job, varTable)
     {
         if (job.Member) return this.CallMemberScriptIndex(job);
+        if (job.DynamicName) return this.CallDynamicScriptIndex(job, varTable);
 
         if (!job.Args || !(job.Args.length>=2)) 
         {
@@ -11664,6 +11766,42 @@ function JSSymbolData(ast,option,jsExecute)
                 result[item.Name]=item.Data;
             }
             this.ScriptIndexOutData.set(key,result);
+        } 
+    }
+
+    this.RecvDynamicScriptIndexData=function(outVar,indexInfo,symbolData)
+    {
+        JSConsole.Complier.Log('[JSSymbolData::RecvDynamicScriptIndexData] ', outVar, indexInfo, symbolData);
+        var kLine=symbolData.Data.Data;
+        var aryOutVar=outVar;
+        var data=this.Data.FitKLineIndex(kLine,aryOutVar,this.Period,indexInfo.PeriodID);
+
+        var objName=indexInfo.Name;
+        var memberValue={};
+        if (this.Execute.VarTable.has(objName))
+            memberValue=this.Execute.VarTable.get(objName);
+        else
+            this.Execute.VarTable.set(objName, memberValue);
+
+        var strValue="";
+        for(var i=0; i<indexInfo.Args.length; ++i)
+        {
+            var item=indexInfo.Args[i];
+            if (item.IsDefault===false)
+            {
+                if (strValue.length>0) strValue+=","; 
+                strValue+=`${item.Value}`;
+            }
+        }
+        var strArgs=`(${strValue})`;
+
+        //保存所有的指标数据, 下面用到了就可以不用算了
+        for(var i=0; i<data.length; ++i)
+        {
+            var key=`${outVar[i].Name}#${strArgs}`;
+            if (indexInfo.Period) key+='#'+indexInfo.Period;    //带周期的变量
+            
+            memberValue[key]=data[i].Data;
         } 
     }
 
@@ -12502,7 +12640,7 @@ function JSExecute(ast,option)
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_CUSTOM_API_DATA:
                 return this.SymbolData.DownloadCustomAPIData(jobItem);
             case JS_EXECUTE_JOB_ID.JOB_EXECUTE_INDEX:
-                return this.SymbolData.CallScriptIndex(jobItem);
+                return this.SymbolData.CallScriptIndex(jobItem, this.VarTable);
 
             case JS_EXECUTE_JOB_ID.JOB_RUN_SCRIPT:
                 return this.Run();
@@ -12715,18 +12853,18 @@ function JSExecute(ast,option)
     this.RunAST=function()
     {
         //预定义的变量
-        for(let i in this.Arguments)
+        for(var i=0; i<this.Arguments.length; ++i)
         {
-            let item =this.Arguments[i];
+            var item =this.Arguments[i];
             this.VarTable.set(item.Name,item.Value);
         }
 
         if (!this.AST) this.ThrowError();
         if (!this.AST.Body) this.ThrowError();
 
-        for(let i in this.AST.Body)
+        for(var i=0;i<this.AST.Body.length; ++i)
         {
-            let item =this.AST.Body[i];
+            var item =this.AST.Body[i];
             this.VisitNode(item);
 
             //输出变量
@@ -12839,26 +12977,37 @@ function JSExecute(ast,option)
                         this.OutVarTable.push({Name:varName, Data:varInfo.OutVar,Type:type, NoneName:true});
                     }
                 }
+                else if (item.Expression.Type==Syntax.MemberExpression) //MA.MA2
+                {
+                    var outVar=this.ReadMemberVariable(item.Expression);
+                    if (outVar)
+                    {
+                        var type=0;
+                        var varName="__temp_di_"+i+"__";
+                        if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
+                        this.OutVarTable.push({Name:varName, Data:outVar,Type:type, NoneName:true});
+                    }
+                }
                 else if (item.Expression.Type==Syntax.SequenceExpression)
                 {
-                    let varName;
-                    let draw;
-                    let color, upColor, downColor;
-                    let lineWidth;
-                    let colorStick=false;
-                    let pointDot=false;
-                    let upDownDot=false;
-                    let circleDot=false;
-                    let lineStick=false;
-                    let stick=false;
-                    let volStick=false;
-                    let lineArea=false;
-                    let stepLine=false;
-                    let isShow = true;
-                    let isExData = false;
-                    let isDotLine = false;
-                    let isOverlayLine = false;    //叠加线
-                    let isNoneName=false;
+                    var varName;
+                    var draw;
+                    var color, upColor, downColor;
+                    var lineWidth;
+                    var colorStick=false;
+                    var pointDot=false;
+                    var upDownDot=false;
+                    var circleDot=false;
+                    var lineStick=false;
+                    var stick=false;
+                    var volStick=false;
+                    var lineArea=false;
+                    var stepLine=false;
+                    var isShow = true;
+                    var isExData = false;
+                    var isDotLine = false;
+                    var isOverlayLine = false;    //叠加线
+                    var isNoneName=false;
                     var isShowTitle=true;
                     //显示在位置之上,对于DRAWTEXT和DRAWNUMBER等函数有用,放在语句的最后面(不能与LINETHICK等函数共用),比如:
                     //DRAWNUMBER(CLOSE>OPEN,HIGH,CLOSE),DRAWABOVE;
@@ -12870,7 +13019,7 @@ function JSExecute(ast,option)
                     var bgConfig=null;
                     var vLineConfig=null;
                     var xOffset=null, yOffset=null;
-                    for(let j=0 ; j<item.Expression.Expression.length; ++j)
+                    for(var j=0 ; j<item.Expression.Expression.length; ++j)
                     {
                         let itemExpression=item.Expression.Expression[j];
                         if (itemExpression.Type==Syntax.AssignmentExpression && itemExpression.Operator==':' && itemExpression.Left)
@@ -13038,6 +13187,20 @@ function JSExecute(ast,option)
                                 {
                                     isNoneName=true;
                                     this.VarTable.set(varName,varInfo.OutVar);
+                                }
+                            }
+                        }
+                        else if (itemExpression.Type==Syntax.MemberExpression)  //"MA.MA2"(5,12,29), COLORRED;
+                        {
+                            if (j==0)
+                            {
+                                var outVar=this.ReadMemberVariable(itemExpression);
+                                if (outVar)
+                                {
+                                    if (!Array.isArray(outVar)) varValue=this.SingleDataToArrayData(outVar); 
+                                    isNoneName=true;
+                                    varName="__temp_di_"+i+"__";
+                                    this.VarTable.set(varName,outVar);    //把常量放到变量表里
                                 }
                             }
                         }
@@ -13336,6 +13499,35 @@ function JSExecute(ast,option)
             else
                 value=this.GetNodeValue(item);
             args.push(value);
+        }
+
+        if (node.Callee.Type==Syntax.Literal)   //指标调用'MA.MA1'(6,12,18)
+        {
+            var dynamicName=node.Callee.Value;
+            var aryValue=dynamicName.split(".");
+            if (aryValue.length!=2) 
+            {
+                this.ThrowUnexpectedNode(node,`调用指标格式'${dynamicName}'错误`);
+            }
+
+            var name=aryValue[0];
+            var outName=aryValue[1];
+            var strValue="";
+            for(var i=0; i<args.length; ++i)
+            {
+                var value=args[i];
+                if (strValue.length>0) strValue+=","; 
+                strValue+=`${value}`;
+            }
+            var strArgs=`(${strValue})`;
+            var key=`${outName}#${strArgs}`;
+
+            node.Out=[];
+            if (!this.VarTable.has(name)) return node.Out;
+            var indexData=this.VarTable.get(name);
+            var value=indexData[key];
+            if (value) node.Out=value;
+            return node.Out;
         }
 
         if (funcName==="IFC")

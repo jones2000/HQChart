@@ -381,14 +381,46 @@
                     {
                         event:JSCHART_EVENT_ID.ON_CREATE_CUSTOM_Y_COORDINATE,
                         callback:(event, data, obj)=>{ this.OnCreateCustomYCoordinate(event, data, obj); }
+                    },
+                    {
+                        event:JSCHART_EVENT_ID.ON_TITLE_DRAW,
+                        callback:(event, data, obj)=>{ this.OnTitleDraw(event, data, obj); }
                     }
                 ];
 
                 this.OnSize();  //让K线全屏
                 this.Option.ScriptError=(error)=> { this.ExecuteScriptError(error); }
-                this.Option.NetworkFilter=(data, callback)=>{ HQData.NetworkFilter(data, callback); }
+                this.Option.NetworkFilter=(data, callback)=>{ this.NetworkFilter(data, callback); }
                 this.Chart.SetOption(this.Option);  //设置K线配置
 
+            }
+
+            this.NetworkFilter=function(data, callback)
+            {
+                console.log(`[HQData::NetworkFilter] ${HQData.Explain}`, data);
+
+                switch(data.Name) 
+                {
+                    case 'JSSymbolData::GetSymbolData':                 //分时图数据对接
+                        this.GetSymbolData(data, callback);
+                        break;
+                    default:
+                        HQData.NetworkFilter(data, callback);
+                        break;
+                }
+            }
+
+            this.GetSymbolData=function(data, callback)
+            {
+                var symbol=data.Request.Data.symbol;
+                var period=data.Request.Data.period;
+                if (this.Chart.JSChartContainer.Symbol==symbol && period==this.Chart.JSChartContainer.Period)
+                {
+                    if (ChartData.IsDayPeriod(period, true))
+                        HQData.RequestHistoryData(data, callback);
+                    else if (ChartData.IsMinutePeriod(peirod, true))
+                        HQData.RequestHistoryMinuteData(data, callback);
+                }
             }
 
             this.OnCreateFrame=function(event, data, obj)
@@ -766,6 +798,11 @@
                 this.DivKLine.style.backgroundColor=style.BGColor;   //修改div背景色
                 this.Chart.ReloadResource({ Resource:null, Draw:true , Update:true });  //动态更新颜色配置  
 
+            }
+
+            this.OnTitleDraw=function(event, data, obj)
+            {
+                console.log("[KLineChart::OnTitleDraw] data=", data);
             }
         
         }
