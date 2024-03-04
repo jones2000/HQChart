@@ -72045,6 +72045,7 @@ KLineChartContainer.JsonDataToHistoryData=function(data)
     var bfactor=11, afactor=12; //前, 后复权因子
     var bVirtual=13;            //虚拟数据
     var bNonTrade=14;           //非交易日
+    var flowCapital=15;         //流通股本
     var orderFlow=JSCHART_DATA_FIELD_ID.KLINE_ORDERFLOW;
     var colorData=JSCHART_DATA_FIELD_ID.KLINE_COLOR_DATA;
     var heatMapIndex=JSCHART_DATA_FIELD_ID.KLINE_HEATMAP;
@@ -72065,6 +72066,8 @@ KLineChartContainer.JsonDataToHistoryData=function(data)
         if (IFrameSplitOperator.IsNumber(jsData[position])) item.Position=jsData[position];//期货持仓
         if (IFrameSplitOperator.IsNumber(jsData[fclose])) item.FClose=jsData[fclose];       //期货结算价
         if (IFrameSplitOperator.IsNumber(jsData[yfclose])) item.YFClose=jsData[yfclose];    //期货前结算价
+
+        if (IFrameSplitOperator.IsNumber(jsData[flowCapital])) item.FlowCapital=jsData[flowCapital];   //流通股本
 
         if (IFrameSplitOperator.IsNumber(jsData[bfactor])) item.BFactor=jsData[bfactor];    //前复权因子
         if (IFrameSplitOperator.IsNumber(jsData[afactor])) item.AFactor=jsData[afactor];    //后复权因子
@@ -77457,7 +77460,7 @@ MinuteChartContainer.JsonDataToBeforeOpenData=function(data)
     var upperSymbol=symbol.toUpperCase();
     var isSHSZ=MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol);
 
-    var yClose=data.stock[0].yclos;
+    var yClose=data.stock[0].yclose;
     var preClose=data.stock[0].yclose;      //前一个数据价格
     var stockData=data.stock[0];
     var date=stockData.date;                //日期
