@@ -57,6 +57,7 @@ function IChartDrawPicture()
 
     this.IsDrawFirst=false;
     this.IsShowYCoordinate=false;    //是否在Y轴显示点的刻度
+    this.IsShow=true;                //是否显示
 
     this.LineColor=g_JSChartResource.DrawPicture.LineColor[0];                            //线段颜色
     //this.LineColor="#1e90ff";      //线段颜色，input type="color" 不支持rgb和rgba 的格式
@@ -1407,6 +1408,7 @@ function ChartDrawPictureLine()
     {
         this.LinePoint=[];
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint( {IsCheckX:true, IsCheckY:true} );
         if (!drawPoint) return;
@@ -1516,6 +1518,7 @@ function ChartDrawPictureHaflLine()
         this.LinePoint=[];
         this.FullLine=null;
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint({IsCheckX:false, IsCheckY:false});
         if (!drawPoint || drawPoint.length!=2) return;
@@ -1564,6 +1567,7 @@ function ChartDrawArrowLine()
     {
         this.LinePoint=[];
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint( {IsCheckX:true, IsCheckY:true} );
         if (!drawPoint) return;
@@ -1677,6 +1681,7 @@ function ChartDrawPictureHorizontalLine()
     {
         this.LinePoint=[];
         if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
 
         var drawPoint=this.CalculateDrawPoint();
         if (!drawPoint || drawPoint.length!=1) return;

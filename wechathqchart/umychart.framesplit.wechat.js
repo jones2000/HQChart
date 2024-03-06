@@ -1484,7 +1484,7 @@ function FrameSplitMinutePriceY()
         var distance = (max - min) / (showCount - 1);
         const minDistance = [1, 0.1, 0.01, 0.001, 0.0001];
         var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.Symbol);;    //默认小数位数
-        if (JSCommonCoordinateData.MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol)) defaultfloatPrecision = 0;    //手机端指数不显示小数位数,太长了
+        //if (JSCommonCoordinateData.MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol)) defaultfloatPrecision = 0;    //手机端指数不显示小数位数,太长了
 
         if (distance < minDistance[defaultfloatPrecision]) 
         {

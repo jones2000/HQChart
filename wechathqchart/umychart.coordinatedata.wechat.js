@@ -494,6 +494,16 @@ var MARKET_SUFFIX_NAME=
     {
         return 2;
     },
+
+    GetSHDecimal:function(symbol)
+    {
+        return 2;
+    },
+
+    GetSZDecimal:function(symbol)
+    {
+        return 2;
+    },
     
     GetFHKDecimal: function (symbol)  //港股指数期货 小数位数
     {
@@ -3596,6 +3606,10 @@ function GetfloatPrecision(symbol)  //获取小数位数
     else if (MARKET_SUFFIX_NAME.IsHSX(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetHSXDecimal(upperSymbol);
     else if (MARKET_SUFFIX_NAME.IsHNX(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetHNXDecimal(upperSymbol);
     else if (MARKET_SUFFIX_NAME.IsUPCOM(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetUPCOMDecimal(upperSymbol);
+
+    else if (MARKET_SUFFIX_NAME.IsSZ(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetSZDecimal(upperSymbol);
+    else if (MARKET_SUFFIX_NAME.IsSH(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetSHDecimal(upperSymbol);
+
     else defaultfloatPrecision=MARKET_SUFFIX_NAME.GetDefaultDecimal(upperSymbol);
 
     return defaultfloatPrecision;

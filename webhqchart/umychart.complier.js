@@ -3172,6 +3172,7 @@ function JSAlgorithm(errorHandler,symbolData)
         
         if (!Array.isArray(dayCount))
         {
+            dayCount=parseInt(dayCount);    //转整形
             if (dayCount<=0) dayCount=1;
             if (!data || !data.length) return result;
             
@@ -3279,6 +3280,7 @@ function JSAlgorithm(errorHandler,symbolData)
         }
         else
         {
+            dayCount=parseInt(dayCount);    //转整形
             if (dayCount<=0) return result;
             
             var offset=0;
@@ -3809,6 +3811,7 @@ function JSAlgorithm(errorHandler,symbolData)
         else
         {
             if (!IFrameSplitOperator.IsNonEmptyArray(data)) return result;
+            n=parseInt(n);
             if (n<=0) n=data.length;
             else if (n>data.length) n=data.length;
 
@@ -3907,6 +3910,7 @@ function JSAlgorithm(errorHandler,symbolData)
         else
         {
             if (!IFrameSplitOperator.IsNonEmptyArray(data)) return result;
+            n=parseInt(n);
             if (n<=0) n=data.length;
             else if (n>data.length) n=data.length;
 
@@ -17710,6 +17714,42 @@ function JSExecute(ast,option)
         }
     }
 
+    this.GetDynamicScriptIndex=function(node, args)
+    {
+        var dynamicName=node.Callee.Value;
+        var aryValue=dynamicName.split(".");
+        if (aryValue.length!=2) 
+        {
+            this.ThrowUnexpectedNode(node,`调用指标格式'${dynamicName}'错误`);
+        }
+
+        var name=aryValue[0];
+        var outName=aryValue[1];
+        var period=null;
+        var pos=outName.indexOf('#');
+        if (pos!=-1)
+        {
+            period=outName.slice(pos+1);     //周期
+            outName=outName.slice(0,pos);
+        }
+
+        var strValue="";
+        for(var i=0; i<args.length; ++i)
+        {
+            var value=args[i];
+            if (strValue.length>0) strValue+=","; 
+            strValue+=`${value}`;
+        }
+        var strArgs=`(${strValue})`;
+        var key=`${outName}#${strArgs}`;
+        if (period) key+=`#${period}`;
+       
+        if (!this.VarTable.has(name)) return null;
+        var indexData=this.VarTable.get(name);
+        var value=indexData[key];
+        return value;
+    }
+
     //函数调用
     this.VisitCallExpression=function(node)
     {
@@ -17735,30 +17775,10 @@ function JSExecute(ast,option)
 
         if (node.Callee.Type==Syntax.Literal)
         {
-            var dynamicName=node.Callee.Value;
-            var aryValue=dynamicName.split(".");
-            if (aryValue.length!=2) 
-            {
-                this.ThrowUnexpectedNode(node,`调用指标格式'${dynamicName}'错误`);
-            }
-
-            var name=aryValue[0];
-            var outName=aryValue[1];
-            var strValue="";
-            for(var i=0; i<args.length; ++i)
-            {
-                var value=args[i];
-                if (strValue.length>0) strValue+=","; 
-                strValue+=`${value}`;
-            }
-            var strArgs=`(${strValue})`;
-            var key=`${outName}#${strArgs}`;
-
             node.Out=[];
-            if (!this.VarTable.has(name)) return node.Out;
-            var indexData=this.VarTable.get(name);
-            var value=indexData[key];
-            if (value) node.Out=value;
+            node.Draw=null;
+            var data=this.GetDynamicScriptIndex(node, args);
+            if (data) node.Out=data;
             return node.Out;
         }
 
