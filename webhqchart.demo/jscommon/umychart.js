@@ -11516,7 +11516,7 @@ function AverageWidthFrame()
                         else
                         {
                             var bgTop=yText-textHeight/2-1*pixelTatio;
-                            if (i==0)
+                            if (i==0 && textInfo.Text.length==0)
                             {
                                 var textLeft=right;
                                 rtText.Left=textLeft;
@@ -11536,7 +11536,7 @@ function AverageWidthFrame()
                                 var exLine=item.ExtendLine[1];
                                 if (IFrameSplitOperator.IsNumber(exLine.Width))
                                 {
-                                    if (i==0) this.DrawLine(right,right+exLine.Width,y,item.LineColor,item.LineType,item);
+                                    if (i==0) this.DrawLine(right,textLeft+exLine.Width,y,item.LineColor,item.LineType,item);
                                     textLeft+=exLine.Width;
                                 }
                             }
@@ -50988,6 +50988,13 @@ function DynamicChartTitlePainting()
     this.MerginLeft=g_JSChartResource.IndexTitleMerginLeft;          //标题输出左边间距
 
     this.Buttons=[];  //按钮
+
+    this.UpDownArrowConfig=
+    {
+        UpColor:g_JSChartResource.IndexTitle.UpDownArrow.UpColor,
+        DownColor:g_JSChartResource.IndexTitle.UpDownArrow.DownColor,
+        UnchangeColor:g_JSChartResource.IndexTitle.UpDownArrow.UnchangeColor
+    };
     
 
     //动态标题
@@ -51528,27 +51535,68 @@ function DynamicChartTitlePainting()
                     else text=titleItem.Text;
 
                     var space=this.ParamSpace*GetDevicePixelRatio();
-                    var textWidth=this.Canvas.measureText(text).width+space; 
-                    if ((left+textWidth)>right) break;
+                    var indexTextWidth=this.Canvas.measureText(text).width;  //标题+数值长度
+                    var textWidth=indexTextWidth;
+
+                    if (IFrameSplitOperator.IsNonEmptyArray(titleItem.TextEx))
+                    {
+                        var xLeft=left;
+                        for(var n=0; n<titleItem.TextEx.length; ++n)
+                        {
+                            var outItem=titleItem.TextEx[n];
+                            var outTextWidth=this.Canvas.measureText(outItem.Text).width+2;
+                            outItem.Width=outTextWidth;
+                            outItem.Left=xLeft;
+
+                            textWidth+=outTextWidth;
+                            xLeft+=outTextWidth;
+                        }
+                    }
+
+                    if ((left+textWidth+space)>right) break;
                     
                     if (titleItem.BG)   //背景
                     {
                         var textHeight=this.Canvas.measureText("擎").width+2;
-                        var textWidth=this.Canvas.measureText(text).width+2;
                         var rtBG={ Left:left, Top:bottom-textHeight/2, Width:textWidth, Height:textHeight };
                         this.Canvas.fillStyle=titleItem.BG;
                         this.Canvas.fillRect(rtBG.Left,rtBG.Top-1, rtBG.Width, rtBG.Height);
 
                         this.Canvas.fillStyle=titleItem.Color;
-                        this.Canvas.fillText(text,rtBG.Left+1,bottom,textWidth);
+                        this.Canvas.fillText(text,rtBG.Left+1,bottom,indexTextWidth);
+                        left+=indexTextWidth;
 
-                        left+=(textWidth+space);
+                        if (IFrameSplitOperator.IsNonEmptyArray(titleItem.TextEx))
+                        {
+                            for(var n=0; n<titleItem.TextEx.length; ++n)
+                            {
+                                var outItem=titleItem.TextEx[n];
+                                this.Canvas.fillStyle=outItem.TextColor;
+                                this.Canvas.fillText(outItem.Text,left,bottom,outItem.Width);
+                                left+=outItem.Width;
+                            }
+                        }
+
+                        left+=space;
                     }
                     else
                     {
                         this.Canvas.fillStyle=titleItem.Color;
-                        this.Canvas.fillText(text,left,bottom,textWidth);
-                        left+=textWidth;
+                        this.Canvas.fillText(text,left,bottom,indexTextWidth);
+                        left+=indexTextWidth;
+
+                        if (IFrameSplitOperator.IsNonEmptyArray(titleItem.TextEx))
+                        {
+                            for(var n=0; n<titleItem.TextEx.length; ++n)
+                            {
+                                var outItem=titleItem.TextEx[n];
+                                this.Canvas.fillStyle=outItem.TextColor;
+                                this.Canvas.fillText(outItem.Text,left,bottom,outItem.Width);
+                                left+=outItem.Width;
+                            }
+                        }
+
+                        left+=space;
                     }
                 }
             }
@@ -51731,7 +51779,7 @@ function DynamicChartTitlePainting()
                     }
                 }
 
-                var arrow=null;
+                var arrowSuper=null;    //独立颜色
                 
                 if (this.IsShowUpDownArrow)
                 {
@@ -51739,9 +51787,9 @@ function DynamicChartTitlePainting()
                     if (dataIndex-1>=0) preValue=item.Data.Data[dataIndex-1];
                     if (IFrameSplitOperator.IsNumber(preValue))
                     {
-                        if (preValue>value) arrow='↓';
-                        else if (preValue<value) arrow='↑';
-                        else arrow='→';
+                        if (preValue>value) arrowSuper={ Text:'↓', TextColor:this.UpDownArrowConfig.DownColor };
+                        else if (preValue<value) arrowSuper={ Text:'↑', TextColor:this.UpDownArrowConfig.UpColor};
+                        else arrowSuper={ Text:'→', TextColor:this.UpDownArrowConfig.UnchangeColor };
                     }
                 }
             
@@ -51752,7 +51800,21 @@ function DynamicChartTitlePainting()
                     if (dyValue) valueText=dyValue;
                 }
 
-                if (arrow) valueText+=arrow;
+                if (arrowSuper)
+                {
+                    var outItem={ Name:null, Text:valueText, Color:item.Color, TextEx:[arrowSuper] };
+                    if (item.Name) 
+                    {
+                        var text=item.Name;
+                        var dyTitle=this.GetDynamicOutName(item.Name);  //动态标题
+                        if (dyTitle) text=dyTitle;
+                        outItem.Name=text;
+                    }
+                    //outItem.BG='rgb(100,100,100)';
+
+                    aryText=[outItem];
+                    valueText=null;
+                }
             }
         }
 
@@ -62591,6 +62653,16 @@ function JSChartResource()
     this.OverlayIndexTitleBGColor='rgba(255,255,255,0.7)';
     this.IndexTitleMerginLeft=1;        //指标输出左边间距
 
+    this.IndexTitle=
+    {
+        UpDownArrow:    //数值涨跌箭头
+        {
+            UpColor:"rgb(238,21,21)",   //上涨
+            DownColor:"rgb(25,158,0)",  //下跌
+            UnchangeColor:"rgb(0,0,0)"  //不变
+        }
+    }
+
     this.Title={
         TradeIndexColor:'rgb(105,105,105)', //交易指标颜色
         ColorIndexColor:'rgb(112,128,144)',  //五彩K线颜色
@@ -63698,6 +63770,18 @@ function JSChartResource()
         if (style.FrameTitleBGColor) this.FrameTitleBGColor = style.FrameTitleBGColor;
         if (style.SelFrameBorderColor) this.SelFrameBorderColor=style.SelFrameBorderColor;
         if (IFrameSplitOperator.IsNumber(style.IndexTitleMerginLeft)) this.IndexTitleMerginLeft = style.IndexTitleMerginLeft;
+
+        if (style.IndexTitle)
+        {
+            var item=style.IndexTitle;
+            if (item.UpDownArrow)
+            {
+                var subItem=item.UpDownArrow;
+                if (subItem.UpColor) this.IndexTitle.UpDownArrow.UpColor = subItem.UpColor;
+                if (subItem.DownColor) this.IndexTitle.UpDownArrow.DownColor = subItem.DownColor;
+                if (subItem.UnchangeColor) this.IndexTitle.UpDownArrow.UnchangeColor = subItem.UnchangeColor;
+            }
+        }
 
         if (style.Frame)
         {

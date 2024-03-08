@@ -97,6 +97,16 @@ function GetBlackStyle()
         DownTextColor: "rgb(25,158,0)",
         UnchagneTextColor: "rgb(190, 190 ,190)",
         CloseLineColor: 'rgb(250,250,250)',
+
+        IndexTitle:
+        {
+            UpDownArrow:    //数值涨跌箭头
+            {
+                UpColor:"rgb(238,21,21)",   //上涨
+                DownColor:"rgb(25,158,0)",  //下跌
+                UnchangeColor:"rgb(190, 190 ,190)"  //不变
+            }
+        },
     
         Title:
         {
