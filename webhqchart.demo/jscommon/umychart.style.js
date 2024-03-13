@@ -460,6 +460,12 @@ function GetBlackStyle()
             TextColor:"rgb(255,255,255)",
             //Font:14*GetDevicePixelRatio() +"px 微软雅黑"
         },
+
+        SessionBreaksPaint:
+        {
+            BGColor:[null, "rgb(42,46,57)"],
+            SplitLine:{ Color:'rgb(73,133,231)', Width:1*GetDevicePixelRatio(), Dash:[5*GetDevicePixelRatio(),5*GetDevicePixelRatio()] }
+        },
     
         //成交明细
         DealList:

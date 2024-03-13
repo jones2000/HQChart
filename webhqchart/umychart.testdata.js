@@ -51,6 +51,10 @@ HQData.NetworkFilter=function(data, callback)
             HQData.AnnouncementInfo_RequestData(data,callback);
             break;
 
+        case "JSSymbolData::GetLatestData":
+            HQData.RequestLatestData(data,callback);
+            break;
+
        
 
 
@@ -281,4 +285,37 @@ HQData.TradeDetail_RequestData=function(data,callback)
     var symbol=data.Request.Symbol;
 
     callback(TEST_TRADE_DETAL_DATA);
+}
+
+HQData.RequestLatestData=function(data,callback)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Data.symbol[0];
+    var id=data.Args[0];
+    var value=1;
+    switch(id)
+    {
+        case 3:
+            value=KLINE_1DAY_DATA.stock[0].yclose;
+            break;
+        case 4:
+            value=KLINE_1DAY_DATA.stock[0].open;
+            break;
+        case 5:
+            value=KLINE_1DAY_DATA.stock[0].high;
+            break;
+        case 6:
+            value=KLINE_1DAY_DATA.stock[0].low;
+            break;
+        case 7:
+            value=KLINE_1DAY_DATA.stock[0].price;
+            break;
+        case 8:
+            value=KLINE_1DAY_DATA.stock[0].vol;
+            break;
+    }
+
+    var hqchartData={ symbol:symbol, ver:2.0, data:[ {id:id, value:value }]};
+
+    callback(hqchartData);
 }
