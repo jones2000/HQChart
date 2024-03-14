@@ -19070,6 +19070,8 @@ function JSExplainer(ast,option)
                 else if (args[4]==0) barType="实心柱";
                 else barType="实线空心柱";
                 return `当满足条件${args[0]}时, 在${args[1]}和${args[2]}位置之间画柱状线,宽度为${args[3]},${barType}`;
+            case "PARTLINE":
+                return "画折线"
 
             case "SELL":
                 return "卖出平仓";

@@ -275,6 +275,9 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ## 指标计算
 * [前端工作线程批量计算指标](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_workerthread_sina.html)   
 
+## 键盘精灵
+* [键盘精灵](https://jones2000.github.io/HQChart/webhqchart.demo/samples/keyboard_demo.html)   
+
 
 
 # 4.使用教程
@@ -540,7 +543,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 11. [HQChart实战教程64-自定义分时图标题栏](https://jones2000.blog.csdn.net/article/details/131319341)  
 12. [HQChart实战教程65-自定义手机端分时图tooltip显示数据](https://jones2000.blog.csdn.net/article/details/131325837)   
 13. [HQChart实战教程68-自定义分时图PC端tooltip显示数据](https://blog.csdn.net/jones2000/article/details/134182120)    
-14. [HQChart实战教程69-分时图主图如何设置指标](https://jones2000.blog.csdn.net/article/details/136160187)    
+14. [HQChart实战教程69-分时图主图如何设置指标](https://jones2000.blog.csdn.net/article/details/136160187)   
+15. [HQChart实战教程70-K线图增加成本线](https://jones2000.blog.csdn.net/article/details/136687070)   
 
 ## HQChart报价列表高级应用教程(付费文章)
 1. [HQChart报价列表高级应用教程1-雪球数据对接报价列表](https://blog.csdn.net/jones2000/article/details/124759574)<br>
