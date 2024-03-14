@@ -36923,6 +36923,9 @@ function ChartMultiSVGIconV2()
             var chartLeft=border.LeftEx;
         }
 
+        this.Canvas.save();
+        this.ClipClient(this.ChartFrame.IsHScreen);
+
         var fontSize=this.GetDynamicIconSize(dataWidth,distanceWidth,this.IconSize.Max,this.IconSize.Min,this.IconSize.Zoom);
         this.Canvas.font=fontSize+'px '+this.Family;
 
@@ -36949,6 +36952,8 @@ function ChartMultiSVGIconV2()
 
             this.DrawItem(mapItem, kItem, x, drawInfo);
         }
+
+        this.Canvas.restore();
     }
 
     this.GetKValue=function(kItem, valueName)
@@ -36996,19 +37001,7 @@ function ChartMultiSVGIconV2()
             var textWidth=this.Canvas.measureText(item.Symbol).width;
             this.Canvas.textAlign='center';
             var rtIcon=new Rect(x-fontSize/2,y-fontSize/2,fontSize,fontSize);
-             if (x+textWidth/2>=right) 
-            {
-                this.Canvas.textAlign='right';
-                x+=dataWidth/2;
-                rtIcon.X=x-fontSize;
-            }
-            else if (x-textWidth/2<left)
-            {
-                this.Canvas.textAlign = 'left';
-                x-=dataWidth/2;
-                rtIcon.X=x;
-            }
-
+             
             if (item.Baseline==1) 
             {
                 this.Canvas.textBaseline='top';
