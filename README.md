@@ -218,6 +218,9 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![报价列表](/小程序行情模块用例/image/hqchart_report_2.gif)<br>
 * 键盘精灵<br>
 ![键盘精灵](/小程序行情模块用例/image/sendsymbol_demo.gif)<br>
+* T型报价   
+![T型报价](/小程序行情模块用例/image/TReport_demo.gif)  
+
 
 
 
@@ -276,7 +279,10 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 * [前端工作线程批量计算指标](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_workerthread_sina.html)   
 
 ## 键盘精灵
-* [键盘精灵](https://jones2000.github.io/HQChart/webhqchart.demo/samples/keyboard_demo.html)   
+* [键盘精灵](https://jones2000.github.io/HQChart/webhqchart.demo/samples/keyboard_demo.html)  
+
+## T型报价
+* [T型报价](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_TReport.html)  
 
 
 

@@ -1,0 +1,80 @@
+
+
+.jstable {
+    width: 100%;
+    margin-bottom: 1rem;
+    color: #212529;
+    border-collapse: collapse;
+}
+
+.jstable-bordered, .jstable-bordered td, .jstable-bordered th 
+{
+    border: 1px solid #dee2e6;
+}
+
+
+.jstable-metrics thead tr th td {
+    min-width: 5rem;
+    max-width: 15rem;
+    border-right: 0;
+    padding: .5rem;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.jstable-metrics tbody td {
+    text-align: right;
+    white-space: nowrap;
+    border-right: 0;
+    vertical-align: middle;
+    padding: .5rem;
+}
+
+.jstable-metrics td.jshcell-string
+{
+    text-align: center;
+    position: relative;
+}
+
+
+.jstable-metrics td.jscell-stock-name
+{
+    text-align: center;
+    position: relative;
+}
+
+.jstable-metrics td.jscell-stock-code
+{
+    text-align: center;
+    position: relative;
+}
+
+.jstable-metrics td.jscell-value-up
+{
+    color: red;
+}
+
+.jstable-metrics td.jscell-value-down
+{
+    color: green;
+}
+
+.jstable-metrics td.jscell-value-unchanged
+{
+    color:rgb(0,0,0);
+}
+
+.jstable-metrics td.jscell-big-number
+{
+    color:rgb(50, 9, 163);
+}
+
+.jstable-metrics td.jscell-none
+{
+    color:rgb(50, 9, 163);
+}
+
+.jstable-metrics td.jscell-number
+{
+    color:rgb(177, 162, 174);
+}

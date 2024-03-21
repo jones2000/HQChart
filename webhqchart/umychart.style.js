@@ -598,6 +598,59 @@ function GetBlackStyle()
             }
         },
 
+        //T型报价
+        TReport:
+        {
+            BorderColor:'rgb(38,38,41)',    //边框线
+            SelectedColor:"rgb(180,180,180)",     //选中行
+            Header:
+            {
+                Color:"rgb(187,187,187)",      //表头文字颜色
+                SortColor:"rgb(255,0,0)",      //排序箭头颜色
+                Mergin:{ Left:5, Right:5, Top:4, Bottom:2},    //表头四周间距
+                Font:{ Size:14, Name:"微软雅黑" }   //表头字体
+            },
+
+            Item:
+            {
+                Mergin:{ Top:2, Bottom:0,Left:5, Right:5 }, //单元格四周间距
+                Font:{ Size:15, Name:"微软雅黑"},
+                BarMergin:{ Top:2, Left:3, Right:3, Bottom:2 },//单元格字体
+                NameFont:{ Size:14, Name:"微软雅黑" },
+                SymbolFont:{ Size:12, Name:"微软雅黑" }
+            },
+
+            CenterItem:
+            {
+                TextColor:"rgb(16,226,217)",
+                BaseTextColor:"rgb(60,60,83)",
+                BGColor:"rgb(65,65,65)"
+            },
+
+            FieldColor:
+            {
+                Index:"rgb(250,250,250)",  //序号
+                Symbol:"rgb(60,60,60)",
+                Name:"rgb(250,250,250)",
+                Vol:"rgb(192,165,3)",        //成交量
+                Position:"rgb(250,250,250)",   //持仓量
+                Amount:"rgb(16,226,217)", //成交金额
+                Text:"rgb(250,250,250)",   //默认文本
+            },
+
+            UpTextColor:"rgb(238,21,21)",      //上涨文字颜色
+            DownTextColor:"rgb(25,158,0)",     //下跌文字颜色
+            UnchangeTextColor:"rgb(187,187,187)",     //平盘文字颜色 
+
+            UpBGColor:"rgb(35,5,5)",
+            DownBGColor:"rgb(5,35,5)",
+
+            MarkBorder:
+            {
+                MaxPositionColor:"rgb(192,192,0)"
+            },
+        },
+
         ScrollBar:
         {
             BorderColor:'rgb(38,38,41)',    //边框线

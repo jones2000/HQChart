@@ -3456,7 +3456,7 @@ function ChartReport()
         }
         else
         {
-            result.Star=0;
+            result.Start=0;
             result.End=0;
             result.IsEnd=true;
             result.IsSinglePage=true;

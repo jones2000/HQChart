@@ -56,6 +56,10 @@ export default {
     JSReportChart:JSReportChart,
     REPORT_COLUMN_ID:REPORT_COLUMN_ID,
 
+    //T型报价
+    JSTReportChart:JSTReportChart,
+    TREPORT_COLUMN_ID:TREPORT_COLUMN_ID,
+
     //键盘精灵
     JSKeyboardChart:JSKeyboardChart,
     KEYBOARD_COLUMN_ID:KEYBOARD_COLUMN_ID,

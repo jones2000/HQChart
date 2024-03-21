@@ -2482,6 +2482,15 @@ var JSCHART_EVENT_ID=
     ON_CREATE_CUSTOM_Y_COORDINATE:119,  //自定义Y轴刻度
 
     ON_BEFORE_DRAW_SPLASH_SCREEN:120,
+
+
+    //T型报价
+    ON_TREPORT_MARKET_STATUS:121,             //T型报价列表交易状态
+    ON_DBCLICK_TREPORT_ROW:122,               //双击T型报报价列表
+    ON_RCLICK_TREPORT_ROW:123,                //右键点击T型报价列表
+    ON_CLICK_TREPORT_HEADER:124,              //单击T型报价表头
+    ON_RCLICK_TREPORT_HEADER:125,             //右键点击T型报价表头
+    ON_TREPORT_LOCAL_SORT:126,                //T型报价列表本地排序
 }
 
 var JSCHART_OPERATOR_ID=
@@ -36893,6 +36902,29 @@ function ChartMultiSVGIconV2()
         }
     }
 
+    this.ClipClient=function(isHScreen)          //裁剪客户端
+    {
+        if (isHScreen==true)
+        {
+            var left=this.ChartBorder.GetLeft();
+            var right=this.ChartBorder.GetRight();
+            var top=this.ChartBorder.GetTop();
+            var bottom=this.ChartBorder.GetBottom();
+        }
+        else
+        {
+            var left=this.ChartBorder.GetLeft();
+            var right=this.ChartBorder.GetRight();
+            var top=this.ChartBorder.GetTop();
+            var bottom=this.ChartBorder.GetBottom();
+        }
+
+        this.Canvas.beginPath();
+        this.Canvas.rect(left,top,(right-left),(bottom-top));
+        //this.Canvas.stroke(); //调试用
+        this.Canvas.clip();
+    }
+
     this.Draw=function()
     {
         this.IconRect=[];
@@ -63954,6 +63986,59 @@ function JSChartResource()
         }
     },
 
+    //报价列表
+    this.TReport=
+    {
+        BorderColor:'rgb(192,192,192)',    //边框线
+        SelectedColor:"rgb(3,89,245)",  //选中行
+        Header:
+        {
+            Color:"rgb(60,60,60)",      //表头文字颜色
+            SortColor:"rgb(255,0,0)",   //排序箭头颜色
+            Mergin:{ Left:5, Right:5, Top:4, Bottom:2},    //表头四周间距
+            Font:{ Size:14, Name:"微软雅黑" }   //表头字体
+        },
+
+        Item:
+        {
+            Mergin:{ Top:2, Bottom:0,Left:5, Right:5 }, //单元格四周间距
+            Font:{ Size:15, Name:"微软雅黑"},
+            BarMergin:{ Top:2, Left:3, Right:3, Bottom:2 },//单元格字体
+            NameFont:{ Size:14, Name:"微软雅黑" },
+            SymbolFont:{ Size:12, Name:"微软雅黑" }
+        },
+
+        CenterItem:
+        {
+            TextColor:"rgb(60,60,83)",
+            BaseTextColor:"rgb(60,60,83)",
+            BGColor:"rgb(180,180,180)"
+        },
+
+        FieldColor:
+        {
+            Index:"rgb(60,60,60)",  //序号
+            Symbol:"rgb(60,60,60)",
+            Name:"rgb(60,60,60)",
+            Vol:"rgb(90,90,90)",        //成交量
+            Position:"rgb(90,90,90)",   //持仓量
+            Amount:"rgb(90,90,90)", //成交金额
+            Text:"rgb(60,60,60)",   //默认文本
+        },
+
+        UpTextColor:"rgb(238,21,21)",      //上涨文字颜色
+        DownTextColor:"rgb(25,158,0)",     //下跌文字颜色
+        UnchangeTextColor:"rgb(90,90,90)",     //平盘文字颜色 
+
+        UpBGColor:"rgb(255,220,220)",
+        DownBGColor:"rgb(190,220,190)",
+
+        MarkBorder:
+        {
+            MaxPositionColor:"rgb(192,192,192)"
+        },
+    },
+
     //键盘精灵
     this.Keyboard=
     {
@@ -64734,6 +64819,8 @@ function JSChartResource()
             }
         }
 
+        if (style.TReport) this.SetTReportStyle(style.TReport);
+
         if (style.SelectedChart)
         {
             var item=style.SelectedChart;
@@ -64832,6 +64919,103 @@ function JSChartResource()
             }
             
         }
+    }
+
+    this.SetTReportStyle=function(style)
+    {
+        var item=style;
+        var dest=this.TReport;
+
+        if (item.BorderColor) dest.BorderColor=item.BorderColor;
+        if (item.UpTextColor) dest.UpTextColor=item.UpTextColor;
+        if (item.DownTextColor) dest.DownTextColor=item.DownTextColor;
+        if (item.UnchangeTextColor) dest.UnchangeTextColor=item.UnchangeTextColor;
+        if (item.BorderColor) dest.SelectedColor=item.SelectedColor;
+
+        if (item.UpBGColor) dest.UpBGColor=item.UpBGColor;
+        if (item.DownBGColor) dest.DownBGColor=item.DownBGColor;
+
+        if (item.Header)
+        {
+            var header=item.Header;
+            if (header.Color) dest.Header.Color=header.Color;
+            if (header.SortColor) dest.Header.SortColor=header.SortColor;
+            if (header.Mergin)
+            {
+                var mergin=header.Mergin;
+                if (IFrameSplitOperator.IsNumber(mergin.Left)) dest.Header.Mergin.Left=mergin.Left;
+                if (IFrameSplitOperator.IsNumber(mergin.Right)) dest.Header.Mergin.Left=mergin.Right;
+                if (IFrameSplitOperator.IsNumber(mergin.Top)) dest.Header.Mergin.Top=mergin.Top;
+                if (IFrameSplitOperator.IsNumber(mergin.Bottom)) dest.Header.Mergin.Bottom=mergin.Bottom;
+            }
+            if (header.Font)
+            {
+                var font=header.Font;
+                if (font.Name) dest.Header.Font.Name=font.Name;
+                if (IFrameSplitOperator.IsNumber(font.Size)) dest.Header.Font.Size=font.Size;
+            }
+        }
+
+        if (item.CenterItem)
+        {
+            var cell=item.CenterItem;
+            if (cell.TextColor) dest.CenterItem.TextColor=cell.TextColor;
+            if (cell.BaseTextColor) dest.CenterItem.BaseTextColor=cell.BaseTextColor;
+            if (cell.BGColor) dest.CenterItem.BGColor=cell.BGColor;
+        }
+
+        if (item.Item)
+        {
+            var row=item.Item;
+            if (row.Mergin)
+            {
+                var mergin=row.Mergin;
+                if (IFrameSplitOperator.IsNumber(mergin.Left)) dest.Item.Mergin.Left=mergin.Left;
+                if (IFrameSplitOperator.IsNumber(mergin.Right)) dest.Item.Mergin.Right=mergin.Right;
+                if (IFrameSplitOperator.IsNumber(mergin.Top)) dest.Item.Mergin.Top=mergin.Top;
+                if (IFrameSplitOperator.IsNumber(mergin.Bottom)) dest.Item.Mergin.Bottom=mergin.Bottom;
+            }
+
+            if (row.Font)
+            {
+                var font=row.Font;
+                if (font.Name) dest.Item.Font.Name=font.Name;
+                if (IFrameSplitOperator.IsNumber(font.Size)) dest.Item.Font.Size=font.Size;
+            }
+
+            if (row.NameFont)
+            {
+                var font=row.NameFont;
+                if (font.Name) dest.Item.NameFont.Name=font.Name;
+                if (IFrameSplitOperator.IsNumber(font.Size)) dest.Item.NameFont.Size=font.Size;
+            }
+
+            if (row.SymbolFont)
+            {
+                var font=row.SymbolFont;
+                if (font.Name) dest.Item.SymbolFont.Name=font.Name;
+                if (IFrameSplitOperator.IsNumber(font.Size)) dest.Item.SymbolFont.Size=font.Size;
+            }
+        }
+
+        if (item.FieldColor)
+        {
+            var filed=item.FieldColor;
+            if (filed.Name) dest.FieldColor.Name=filed.Name;
+            if (filed.Symbol) dest.FieldColor.Symbol=filed.Symbol;
+            if (filed.Vol) dest.FieldColor.Vol=filed.Vol;
+            if (filed.Amount) dest.FieldColor.Amount=filed.Amount;
+            if (filed.Index) dest.FieldColor.Index=filed.Index;
+            if (filed.Text) dest.FieldColor.Text=filed.Text;
+            if (filed.Position) dest.FieldColor.Position=filed.Position;
+        }
+
+        if (item.MarkBorder)
+        {
+            var subIem=item.MarkBorder;
+            if (subIem.MaxPositionColor) dest.MarkBorder.MaxPositionColor=subIem.MaxPositionColor;
+        }
+            
     }
 }
 
@@ -66684,6 +66868,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         frame.XSplitOperator.Frame=frame;
         frame.XSplitOperator.ChartBorder=border;
         frame.XSplitOperator.ShowText=false;
+        frame.XSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
         frame.YSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); };
         frame.YSplitOperator.GetKLineChartCallback=()=> { return this.GetKLineChart(); };
         frame.YSplitOperator.HQChart=this;
