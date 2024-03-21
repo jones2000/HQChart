@@ -46,7 +46,7 @@
                 Name:"HO2404",
 
                 IsAutoUpdate:true,          //是自动更新数据
-                AutoUpdateFrequency:300,   //数据更新频率
+                AutoUpdateFrequency:1000,   //数据更新频率
  
                 //显示列
                 Column:
@@ -93,59 +93,29 @@
 
                 this.Option.EventCallback= 
                 [ 
-                    {   //根据大小单显示成交量颜色
-                        event:JSCHART_EVENT_ID.ON_DRAW_DEAL_VOL_COLOR, 
-                        callback:(event, data, obj)=>{ this.GetVolColor(event, data, obj); }  
-                    },
-                    {   //自定义内容
-                        event:JSCHART_EVENT_ID.ON_DRAW_DEAL_TEXT, 
-                        callback:(event, data, obj)=>{ this.GetCustomText(event, data, obj); }  
-                    },
-
                     {   //单击
-                        event:JSCHART_EVENT_ID.ON_CLICK_REPORT_ROW, 
+                        event:JSCHART_EVENT_ID.ON_CLICK_TREPORT_ROW, 
                         callback:(event, data, obj)=>{ this.OnClickRow(event, data, obj); }  
                     },
                     {   //右键单击
-                        event:JSCHART_EVENT_ID.ON_RCLICK_REPORT_ROW, 
+                        event:JSCHART_EVENT_ID.ON_RCLICK_TREPORT_ROW, 
                         callback:(event, data, obj)=>{ this.OnRClickRow(event, data, obj); }  
                     },
 
                     {   //双击
-                        event:JSCHART_EVENT_ID.ON_DBCLICK_REPORT_ROW, 
+                        event:JSCHART_EVENT_ID.ON_DBCLICK_TREPORT_ROW, 
                         callback:(event, data, obj)=>{ this.OnDBClickRow(event, data, obj); }  
                         
                     },
 
                     {   //单击表头
-                        event:JSCHART_EVENT_ID.ON_CLICK_REPORT_HEADER, 
+                        event:JSCHART_EVENT_ID.ON_CLICK_TREPORT_HEADER, 
                         callback:(event, data, obj)=>{ this.OnClickHeader(event, data, obj); }  
                     },
                     {   //右键单击表头
-                        event:JSCHART_EVENT_ID.ON_RCLICK_REPORT_HEADER, 
+                        event:JSCHART_EVENT_ID.ON_RCLICK_TREPORT_HEADER, 
                         callback:(event, data, obj)=>{ this.OnRClickHeader(event, data, obj); }  
                     },
-
-                    {   //自定义股票名称颜色
-                        event:JSCHART_EVENT_ID.ON_DRAW_REPORT_NAME_COLOR, 
-                        callback:(event, data, obj)=>{ this.OnGetNameColor(event, data, obj); }  
-                    },
-                    {
-                        event:JSCHART_EVENT_ID.ON_DRAW_CUSTOM_TEXT, 
-                        callback:(event, data, obj)=>{ this.OnGetCustomText(event, data, obj); }  
-                    },
-
-                    //点击tab切换板块
-                    {
-                        event:JSCHART_EVENT_ID.ON_CLICK_REPORT_TAB, 
-                        callback:(event, data, obj)=>{ this.OnClickTab(event, data, obj); } 
-                    },
-
-                    //单击TAB菜单项
-                    {
-                        event:JSCHART_EVENT_ID.ON_CLICK_REPORT_TABMENU, 
-                        callback:(event, data, obj)=>{ this.OnClickTabMenu(event, data, obj); } 
-                    }
                 ];
 
                 this.Chart.SetOption(this.Option);  //设置配置
@@ -176,18 +146,6 @@
                         break;
                 }
             }
-
-            this.TestListData=
-            [
-                [2000.0, "HO2404-C-2000", "HO2404-P-2000"],
-                [2025.0, "HO2404-C-2025", "HO2404-P-2025"],
-                [2050.0, "HO2404-C-2050", "HO2404-P-2050"],
-                [2075.0, "HO2404-C-2075", "HO2404-P-2075"],
-                [2100.0, "HO2404-C-2100", "HO2404-P-2100"],
-                [2125.0, "HO2404-C-2125", "HO2404-P-2125"],
-                [2150.0, "HO2404-C-2150", "HO2404-P-2150"],
-                [2175.0, "HO2404-C-2175", "HO2404-P-2175"],
-            ];
 
             this.RequestStockListData=function(data, callback)
             {
@@ -233,9 +191,10 @@
             {
                 var stocks=data.Request.Data.stocks;    //股票列表
                 data.PreventDefault=true;
-
+                var hqChart=data.Self;
                 var aryData=[ ];
                 
+                var flashTest=[this.GetRandomTestData(0,stocks.length-1),this.GetRandomTestData(0,stocks.length-1),this.GetRandomTestData(0,stocks.length-1)];
                 for(var i=0;i<stocks.length;++i)
                 {
                     var symbol=stocks[i];
@@ -270,6 +229,11 @@
                     item[14]=this.GetRandomTestData(1,3000);
 
                     aryData.push(item);
+
+                    if (i==flashTest[0] || i==flashTest[1])
+                        hqChart.SetFlashBGItem(symbol, { ID:TREPORT_COLUMN_ID.BUY_PRICE_ID, Color:"rgba(255,250,205, 0.3)", Count: 1});
+                    else if (i==flashTest[2])
+                        hqChart.SetFlashBGItem(symbol, { ID:TREPORT_COLUMN_ID.SELL_PRICE_ID, Color:"rgba(255,250,205, 0.3)", Count: 1});
                 }
 
                 var recvData=
@@ -411,191 +375,6 @@
                 return aryData;
             }
 
-            this.RequestMemberListData=function(data, callback)
-            {
-                var symbol=data.Request.Data.symbol;    //板块代码
-                data.PreventDefault=true;
-
-                var cacheData=this.GetMemberList(symbol);
-                if (cacheData)
-                {
-                    console.log("[ReportChart::RequestMemberListData] cacheData",cacheData);
-                    callback(cacheData);
-                    return;
-                };
-
-                var cacheUrl=`${g_JSChartResource.CacheDomain}/cache/BlockMember/mainindex.json`;
-                JSNetwork.HttpRequest({
-                    url: cacheUrl,
-                    type:"get",
-                    dataType: "json",
-                    async:true,
-                    success: (recvData)=>
-                    {
-                        this.RecvMemberListData(recvData);
-                        var hqchartData=this.GetMemberList(symbol);
-
-                        console.log("[ReportChart::RequestMemberListData] hqchartData",hqchartData);
-                        callback(hqchartData);
-                    },
-                    error: function(http,e)
-                    {
-                        
-                    }
-                });
-            }
-
-            this.RecvMemberListData=function(data)
-            {
-                var mapMember=new Map();
-                for(var i=0;i<data.plate.data.length;++i)
-                {
-                    var item=data.plate.data[i];
-                    var symbol=item.symbol;
-                    var name=item.name;
-                    var aryList=[];
-                    for(var j=0;j<item.member.symbol.length;++j)
-                    {
-                        aryList.push(item.member.symbol[j]);
-                    }
-
-                    mapMember.set(symbol, {Symbol:symbol, Name:name, Data:aryList});
-                }
-
-                this.MapMemberCache=mapMember;
-            }
-
-            this.GetMemberList=function(symbol)
-            {
-                if (!this.MapMemberCache) return null;
-
-                if (this.MapMemberCache.has(symbol)) 
-                {
-                    var item=this.MapMemberCache.get(symbol);
-                    return { symbol:symbol , name:item.Name, data:item.Data };
-                }
-
-                return { symbol:symbol, data:[] };
-            }
-
-
-            this.RequestStockSortData=function(data, callback)
-            {
-                var symbol=data.Request.Data.symbol;    //板块代码
-                var range=data.Request.Data.range;      //排序范围
-                var column=data.Request.Data.column;    //排序列信息
-                var sortType=data.Request.Data.sort;    //排序方向
-                var pageSize=data.Request.Data.pageSize;
-                data.PreventDefault=true;
-
-                var start=range.start;
-                var end=range.end;
-                if (start>0) start-=pageSize;
-                if (start<0) start=0;
-                end+=pageSize;
-
-                var postData=
-                { 
-                    field:
-                    [
-                        "symbol","name", "yclose", "open", "price", "high", "low", "vol", "amount", "buy", "sell", 
-                        //"industry", "region",
-                        "increase",
-                        "pe","pe2","pe3","pb",
-                        "totalequity","folwequity",
-                        "volin","volout","limitprice","week"
-                    ], 
-                    symbol: symbol,
-                    start:start,
-                    end:end,
-                    order:sortType==1? -1:1,
-                    orderfield:"price"
-                }
-
-                if (column.type==REPORT_COLUMN_ID.PRICE_ID) postData.orderfield="price";
-                else if (column.type==REPORT_COLUMN_ID.INCREASE_ID) postData.orderfield="increase";
-                else if (column.type==REPORT_COLUMN_ID.OPEN_ID) postData.orderfield="open";
-                else if (column.type==REPORT_COLUMN_ID.LOW_ID) postData.orderfield="low";
-                else if (column.type==REPORT_COLUMN_ID.HIGH_ID) postData.orderfield="high";
-                else if (column.type==REPORT_COLUMN_ID.AMOUNT_ID) postData.orderfield="amount";
-                else if (column.type==REPORT_COLUMN_ID.YCLOSE_ID) postData.orderfield="yclose";
- 
-
-                $.ajax({
-                    url: this.SortApiUrl,
-                    data: postData,
-                    type:"post",
-                    dataType: "json",
-                    async:true,
-                    success: (recvdata)=>
-                    {
-                        this.RecvStockSortData(recvdata,callback, { Filed:column.index, Sort:sortType , Symbol:symbol });
-                    },
-                    error:(request)=>
-                    {
-                        //self.RecvError(request,RECV_DATA_TYPE.BASE_DATA);
-                    }
-                });
-            }
-
-            this.RecvStockSortData=function(recvdata, callback, eventData)
-            {
-                var index=recvdata.start;
-                aryStock=this.ReadStockJsonData(recvdata.stock);
-                var hqchartData={ data:aryStock, index:[], filedindex:eventData.Filed, sort:eventData.Sort, symbol:eventData.Symbol };
-
-                for(var i=0;i<aryStock.length;++i, ++index)
-                {
-                    hqchartData.index.push(index);
-                }
-
-                console.log("[ReportChart::RecvStockSortData] hqchartData",hqchartData);
-                callback(hqchartData);
-            }
-
-            this.RequestMemberListDataV2=function(data, callback)
-            {
-                var symbol=data.Request.Data.symbol;    //板块代码
-                data.PreventDefault=true;
-
-                var postData=
-                { 
-                    field:["symbol"], 
-                    symbol: symbol,
-                    start:0,
-                    end:60000
-                }
-
-                $.ajax({
-                    url: this.SortApiUrl,
-                    data: postData,
-                    type:"post",
-                    dataType: "json",
-                    async:true,
-                    success: (recvdata)=>
-                    {
-                        this.RecvMemberListDataV2(recvdata, callback, { Symbol:symbol });
-                    },
-                    error:(request)=>
-                    {
-                        //self.RecvError(request,RECV_DATA_TYPE.BASE_DATA);
-                    }
-                });
-            }
-
-            this.RecvMemberListDataV2=function(data, callback, eventData)
-            {
-                var hqchartData={ symbol:eventData.Symbol , name:eventData.Symbol, data:[] };
-
-                for(var i=0;i<data.stock.length;++i)
-                {
-                    var item=data.stock[i];
-                    hqchartData.data.push(item.symbol);
-                }
-
-                console.log("[ReportChart::RecvMemberListDataV2] hqchartData",hqchartData);
-                callback(hqchartData);
-            }
 
             this.OnClickRow=function(event, data, obj)
             {
@@ -620,76 +399,17 @@
             this.OnRClickHeader=function(event, data, obj)
             {
                 console.log('[ReportChart::OnRClickHeader] event, data', event , data);
-            }
-
-
-            this.OnGetNameColor=function(event, data, obj)
-            {
-                if (data.Symbol=='600000.sh' || data.Symbol=="000001.sz")
-                {
-                    data.TextColor='rgb(30,144 ,255)';
-                }
-            }
-
-            //根据大小单显示成交量颜色
-            this.GetVolColor=function(event, data, obj) 
-            {
-                if (data.Data.Vol>50000) data.TextColor='rgb(128,0,128)';
-            }
-
-            this.OnGetCustomText=function(event, data, obj) 
-            {
-                //console.log('[ReportChart::OnGetCustomText] event, data', event , data);
-                if (data.Column.ID==3)
-                {
-                    if (IFrameSplitOperator.IsNumber(data.Value))
-                    {
-                        data.Out.TextColor="rgb(220,220,220)";
-                        data.Out.Text=`数值:${data.Value.toFixed(2)}`;
-                        data.Out.BGColor='rgba(100,100,1, 0.5)';
-                    }
-                    else
-                    {
-                        data.Out.TextColor="rgb(0,0,0)";
-                        data.Out.Text=`数值:--.--`;
-                        data.Out.BGColor='rgba(169,169,169,0.5)';
-                    }
-                }
-
-                //data.Out.Text=out.Text;
-                //data.Out.TextColor=out.Color;
-                //data.Out.TextAlign='center';
-            }
-
-            this.OnClickTab=function(event, data, obj)
-            {
-                console.log('[ReportChart::OnClickTab] event, data', event , data);
-                var tabItem=data.Data.Tab;
-                var symbol=tabItem.ID;  //板块ID;
-                this.Chart.ChangeSymbol(symbol);
-            }
-            
-            
+            }  
         }
 
-        var g_reportCtrl;
+        
         $(function () 
         {
             WebFont.load({ custom: { families: ['iconfont'] } });   //预加载下iconfont资源
  
             var reportCtrl=new ReportChart(document.getElementById('report'));
             reportCtrl.Create();
-            g_reportCtrl=reportCtrl;
-
-           
-
-
         })
-
-        function ChangeSymbol(symbol, option)
-        {
-            g_reportCtrl.Chart.ChangeSymbol(symbol,option);
-        }
 
     </script>  
 </body>  

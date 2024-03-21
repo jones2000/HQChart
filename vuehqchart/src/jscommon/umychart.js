@@ -2491,6 +2491,7 @@ var JSCHART_EVENT_ID=
     ON_CLICK_TREPORT_HEADER:124,              //单击T型报价表头
     ON_RCLICK_TREPORT_HEADER:125,             //右键点击T型报价表头
     ON_TREPORT_LOCAL_SORT:126,                //T型报价列表本地排序
+    ON_CLICK_TREPORT_ROW:127,                 //左键点击点击T型报价列表
 }
 
 var JSCHART_OPERATOR_ID=

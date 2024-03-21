@@ -855,6 +855,16 @@ function JSTReportChartContainer(uielement)
         },frequency);
     }
 
+    this.UIOnDblClick=function(e)
+    {
+        var pixelTatio = GetDevicePixelRatio();
+        var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
+        var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
+
+        var chart=this.GetTReportChart();
+        if (chart) chart.OnDblClick(x,y,e);
+    }
+
     this.UIOnMouseDown=function(e)
     {
         var pixelTatio = GetDevicePixelRatio();
@@ -1234,6 +1244,71 @@ function JSTReportChartContainer(uielement)
         }
 
         return null;
+    }
+
+    //obj={ ID:, Color: , Time:, Count: }
+    this.SetFlashBGItem=function(symbol, obj)
+    {
+        var item={ ID:obj.ID, Color:obj.Color, Count:1 };
+        if (IFrameSplitOperator.IsNumber(obj.Count)) item.Count=obj.Count;
+        if (IFrameSplitOperator.IsNumber(obj.Time)) item.Time=obj.Time;
+        else item.Time=Date.now();
+
+        if (this.FlashBG.has(symbol))
+        {
+            var stockItem=this.FlashBG.get(symbol);
+            stockItem.LastTime=item.Time;
+            stockItem.Data.set(item.ID, item);
+        }
+        else
+        {
+            var stockItem={ LastTime:item.Time,  Data:new Map([ [item.ID, item ] ])  };
+            this.FlashBG.set(symbol, stockItem);
+        }
+    }
+
+    this.GetFlashBGData=function(symbol, time)
+    {
+        if (!this.FlashBG) return null;
+        if (!this.FlashBG.has(symbol)) return null;
+
+        var timeDiff=3*1000;
+        var stockItem=this.FlashBG.get(symbol);
+        if (time-stockItem.LastTime>=timeDiff)   //超时的删除
+        {
+            this.FlashBG.delete(symbol);
+            return null;
+        }
+
+        if (!stockItem.Data || stockItem.Data.size<=0) 
+        {
+            this.FlashBG.delete(symbol);
+            return null;
+        }
+
+        var aryDelID=[];    //超时需要参数的
+        for(var mapItem of stockItem.Data)
+        {
+            var item=mapItem[1];
+            if (time-item.Time>=timeDiff || item.Count<=0) 
+                aryDelID.push(item.ID);
+        }
+
+        if (IFrameSplitOperator.IsNonEmptyArray(aryDelID))
+        {
+            for(var i=0; i<aryDelID.length; ++i)
+            {
+                stockItem.Data.delete(aryDelID[i]);
+            }
+
+            if (stockItem.Data.size<=0)
+            {
+                this.FlashBG.delete(symbol);
+                return null;
+            }
+        }
+
+        return stockItem;
     }
 }
 
@@ -1831,7 +1906,21 @@ function ChartTReport()
 
         var data= { ExePrice:exePrice , TData:null };
         if (this.GetExePriceDataCallback) data.TData=this.GetExePriceDataCallback(exePrice);
-        //if (this.GetFlashBGDataCallback) data.FlashBG=this.GetFlashBGDataCallback(exePrice, Date.now());
+        if (this.GetFlashBGDataCallback && data.TData) 
+        {
+            if (data.TData.LeftData)    //左侧
+            {
+                var item=data.TData.LeftData;
+                data.TData.LeftFlashBG=this.GetFlashBGDataCallback(item.Symbol, Date.now());
+            }
+
+            if (data.TData.RightData)   //右侧
+            {
+                var item=data.TData.RightData;
+                data.TData.RightFlashBG=this.GetFlashBGDataCallback(item.Symbol, Date.now());
+            }
+        }
+
         data.Decimal=2;
 
         var bSelected=false;
@@ -1984,9 +2073,30 @@ function ChartTReport()
             }
 
             this.GetMarkBorderData(drawInfo, exePriceData.ExePrice, column.Type, cellType);
+            this.GetFlashBGData(drawInfo, exePriceData, column.Type, cellType);
         }
 
-        this.DrawCell(drawInfo);
+        this.DrawCell(drawInfo, exePriceData, column.Type, cellType);
+    }
+
+    this.GetFlashBGData=function(drawInfo, exePriceData, columnType, cellType)
+    {
+        if (!exePriceData.TData) return;
+
+        var data=null;
+        if (cellType==1) data=exePriceData.TData.LeftFlashBG;
+        else if (cellType==2) data=exePriceData.TData.RightFlashBG;
+
+        if (!data || !data.Data) return;
+
+        if (data.Data.has(columnType))
+        {
+            var item=data.Data.get(columnType);
+            drawInfo.FlashBGColor=item.Color;
+            --item.Count;
+
+            if (this.GlobalOption) ++this.GlobalOption.FlashBGCount;
+        }
     }
 
     this.GetMarkBorderData=function(drawInfo, exePrice, columnType, cellType)
@@ -2063,6 +2173,13 @@ function ChartTReport()
         {
             var rtItem=drawInfo.Rect;
             this.Canvas.fillStyle=drawInfo.BGColor;
+            this.Canvas.fillRect(rtItem.Left,rtItem.Top,rtItem.Width,rtItem.Height);   
+        }
+
+        if (drawInfo.FlashBGColor)   //闪动背景
+        {
+            var rtItem=drawInfo.Rect;
+            this.Canvas.fillStyle=drawInfo.FlashBGColor;
             this.Canvas.fillRect(rtItem.Left,rtItem.Top,rtItem.Width,rtItem.Height);   
         }
 
@@ -2260,6 +2377,20 @@ function ChartTReport()
         }
 
         return result;
+    }
+
+    this.OnDblClick=function(x,y,e)
+    {
+        if (!this.Data) return false;
+
+        var row=this.PtInBody(x,y);
+        if (row)
+        {
+            this.SendClickEvent(JSCHART_EVENT_ID.ON_DBCLICK_TREPORT_ROW, { Data:row, X:x, Y:y });
+            return true;
+        }
+
+        return false;
     }
 
 }
