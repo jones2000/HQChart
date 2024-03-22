@@ -200,6 +200,11 @@ JSTReportChart.GetResource=function()
     return g_JSChartResource;
 }
 
+JSTReportChart.GetfloatPrecision=function(symbol)
+{
+    return GetfloatPrecision(symbol);
+}
+
 function HQTReportItem()
 {
     this.Symbol;
@@ -255,7 +260,7 @@ function JSTReportChartContainer(uielement)
     this.Symbol;    //期权对应的品种代码
     this.Name;      //期权对应的品种名称
     this.NetworkFilter;                                 //数据回调接口
-    this.Data={ XOffset:0, YOffset:0, Data:[], BaseExePrice:null };        //股票列表 BaseExePrice=基准
+    this.Data={ XOffset:0, YOffset:0, Data:[], Price:null };        //股票列表 Price=标的物市场价格
     this.BorderData={ MapData:null }; //key=Field Value:[null, {ExePrice} ,{ExePrice} ]
     this.SourceData={ Data:[] } ;                       //原始股票顺序(排序还原用) {ExePrice=行权价格 LeftData:, RightData}
 
@@ -441,7 +446,7 @@ function JSTReportChartContainer(uielement)
     {
         this.SourceData.Data=[];
         this.Data.Data=[];
-        this.Data.BaseExePrice=null;
+        this.Data.Price=null;
         this.MapStockData=null;
         this.MapExePriceData=null;
         this.BorderData.MapData=null;
@@ -595,9 +600,9 @@ function JSTReportChartContainer(uielement)
             }
         }
 
-        if (IFrameSplitOperator.IsNumber(data.baseExePrice))
+        if (IFrameSplitOperator.IsNumber(data.price))
         {
-            this.Data.BaseExePrice=data.baseExePrice;
+            this.Data.Price=data.price;
         }
 
         this.Draw();
@@ -682,6 +687,9 @@ function JSTReportChartContainer(uielement)
                 if (!setUpdateSymbol.has(symbol)) setUpdateSymbol.add(symbol);
             }
         }
+
+        if (IFrameSplitOperator.IsNumber(data.price)) this.Data.Price=data.price;
+        
 
         //实时数据排序
         var chart=this.ChartPaint[0];
@@ -1904,7 +1912,7 @@ function ChartTReport()
         var reportleft=this.RectClient.Left;
         var reportRight=this.RectClient.Right;
 
-        var data= { ExePrice:exePrice , TData:null };
+        var data= { ExePrice:exePrice , TData:null, Decimal:2 };
         if (this.GetExePriceDataCallback) data.TData=this.GetExePriceDataCallback(exePrice);
         if (this.GetFlashBGDataCallback && data.TData) 
         {
@@ -1912,16 +1920,16 @@ function ChartTReport()
             {
                 var item=data.TData.LeftData;
                 data.TData.LeftFlashBG=this.GetFlashBGDataCallback(item.Symbol, Date.now());
+                data.Decimal=JSTReportChart.GetfloatPrecision(item.Symbol);
             }
 
             if (data.TData.RightData)   //右侧
             {
                 var item=data.TData.RightData;
                 data.TData.RightFlashBG=this.GetFlashBGDataCallback(item.Symbol, Date.now());
+                data.Decimal=JSTReportChart.GetfloatPrecision(item.Symbol);
             }
         }
-
-        data.Decimal=2;
 
         var bSelected=false;
         if (this.SelectedRow && this.SelectedRow.ExePrice==exePrice) bSelected=true;
@@ -1932,10 +1940,10 @@ function ChartTReport()
         this.DrawCenterItem(dataIndex, data, this.CenterColumn, rtItem, 0);
         if (bSelected && this.SelectedRow.CellType==0) this.RectSelectedRow=rtItem;
 
-        if (IFrameSplitOperator.IsNumber(this.Data.BaseExePrice))
+        if (IFrameSplitOperator.IsNumber(this.Data.Price))
         {
             var leftBGColor=null, rightBGColor=null;
-            if (exePrice>this.Data.BaseExePrice)
+            if (exePrice>this.Data.Price)
             {
                 leftBGColor=this.UpBGColor;
                 rightBGColor=this.DownBGColor;
