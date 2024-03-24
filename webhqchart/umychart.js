@@ -51336,6 +51336,7 @@ function DynamicChartTitlePainting()
     this.BGBorderColor=g_JSChartResource.IndexTitleBorderColor;
     this.BGBorderMoveOnColor=g_JSChartResource.IndexTitleBorderMoveOnColor;
     this.BorderRoundRadius=2;   //圆角矩形角度
+    this.NameButtonStyle=g_JSChartResource.IndexTitleBorderStyle,
 
     this.OnDrawEvent;
     this.ParamSpace=2;              //参数显示的间距
@@ -52631,7 +52632,6 @@ function DynamicChartTitlePainting()
         var roundRadius=this.BorderRoundRadius*pixelRatio;
         var bgWidth=textWidth+4*pixelRatio+roundRadius*2;
        
-
         rtButton.Top=rtButton.YCenter-bgHeight/2-1,
         rtButton.Width=bgWidth;
         rtButton.Height=bgHeight;
@@ -52649,19 +52649,33 @@ function DynamicChartTitlePainting()
             }
         }
 
-        this.Canvas.beginPath();
-        this.Canvas.roundRect( ToFixedPoint(rtButton.Left), ToFixedPoint(rtButton.Top), ToFixedRect(rtButton.Width), ToFixedRect(rtButton.Height), [roundRadius]);
-        this.Canvas.closePath();
-
-        this.Canvas.fillStyle=this.BGColor;
-        this.Canvas.fill();
-
-        if (borderColor)
+        if (this.NameButtonStyle==1)
         {
-            this.Canvas.strokeStyle=borderColor;
-            this.Canvas.stroke();
+            this.Canvas.beginPath();
+            this.Canvas.roundRect(ToFixedPoint(rtButton.Left), ToFixedPoint(rtButton.Top), ToFixedRect(rtButton.Width), ToFixedRect(rtButton.Height), [roundRadius]);
+            this.Canvas.closePath();
+
+            this.Canvas.fillStyle=this.BGColor;
+            this.Canvas.fill();
+
+            if (borderColor)
+            {
+                this.Canvas.strokeStyle=borderColor;
+                this.Canvas.stroke();
+            }
         }
-       
+        else
+        {
+            this.Canvas.fillStyle=this.BGColor;
+            this.Canvas.fillRect(rtButton.Left, rtButton.Top, rtButton.Width, rtButton.Height);
+    
+            if (borderColor)
+            {
+                this.Canvas.strokeStyle=borderColor;
+                this.Canvas.strokeRect(ToFixedPoint(rtButton.Left), ToFixedPoint(rtButton.Top), ToFixedRect(rtButton.Width), ToFixedRect(rtButton.Height), [roundRadius]);
+            }
+        }
+        
         this.Canvas.fillStyle=this.TitleColor;
         this.Canvas.fillText(title,rtButton.Left+roundRadius+2*pixelRatio,rtButton.YCenter,textWidth);
     }
@@ -63010,7 +63024,8 @@ function JSChartResource()
     this.TitleFont=13*GetDevicePixelRatio() +'px 微软雅黑';          //指标显示,tooltip显示字体
     this.IndexTitleBGColor='rgb(250,250,250)';                      //指标名字背景色
     this.IndexTitleBorderColor='rgb(180,180,180)';                  //指标名字边框颜色
-    this.IndexTitleBorderMoveOnColor='rgb(0,0,0)';            //指标名字边框颜色(鼠标在上面)
+    this.IndexTitleBorderMoveOnColor='rgb(0,0,0)';                   //指标名字边框颜色(鼠标在上面)
+    this.IndexTitleBorderStyle=1,                                   //0=直角边框 1=圆角变量
     this.IndexTitleColor="rgb(43,54,69)";                           //指标名字颜色
     this.IndexTitleSelectedColor="rgb(65,105,225)";
     this.OverlayIndexTitleBGColor='rgba(255,255,255,0.7)';
@@ -63984,6 +63999,16 @@ function JSChartResource()
 
             MoveRowColor:'rgb(240,128,128)',
             SrcRowColor:'rgb(180,240,240)',
+        },
+
+        VScrollbar:
+        {
+            ScrollBarHeight:60,
+            ButtonColor:"rgba(252,252,252,0.8)",
+            BarColor:"rgba(168,168,168,0.9)",
+            BorderColor:'rgba(180,180,180,0.9)',
+            BGColor:"rgba(234,239,248,0.9)",
+            BarWidth:{ Size:12 }
         }
     },
 
@@ -64174,6 +64199,7 @@ function JSChartResource()
         if (style.IndexTitleBGColor) this.IndexTitleBGColor=style.IndexTitleBGColor;
         if (style.IndexTitleBorderColor) this.IndexTitleBorderColor=style.IndexTitleBorderColor;
         if (style.IndexTitleBorderMoveOnColor) this.IndexTitleBorderMoveOnColor=style.IndexTitleBorderMoveOnColor;
+        if (IFrameSplitOperator.IsNumber(style.IndexTitleBorderStyle)) this.IndexTitleBorderStyle=style.IndexTitleBorderStyle;
         if (style.IndexTitleColor) this.IndexTitleColor=style.IndexTitleColor;
         if (style.IndexTitleSelectedColor) this.IndexTitleSelectedColor=style.IndexTitleSelectedColor;
         if (style.OverlayIndexTitleBGColor) this.OverlayIndexTitleBGColor=style.OverlayIndexTitleBGColor;
@@ -64621,205 +64647,8 @@ function JSChartResource()
             }
         }
 
-        if (style.Report)
-        {
-            var item=style.Report;
-            if (item.BorderColor) this.Report.BorderColor=item.BorderColor;
-            if (item.UpTextColor) this.Report.UpTextColor=item.UpTextColor;
-            if (item.DownTextColor) this.Report.DownTextColor=item.DownTextColor;
-            if (item.UnchagneTextColor) this.Report.UnchagneTextColor=item.UnchagneTextColor;
-            if (item.BorderColor) this.Report.SelectedColor=item.SelectedColor;
-           
-
-            if (item.CloseLine)
-            {
-                var closeLine=item.CloseLine;
-                if (closeLine.CloseColor) this.Report.CloseLine.CloseColor=closeLine.CloseColor;
-                if (closeLine.YCloseColor) this.Report.CloseLine.YCloseColor=closeLine.YCloseColor;
-                if (closeLine.AreaColor) this.Report.CloseLine.AreaColor=closeLine.AreaColor;
-            }
-
-            if (item.KLine)
-            {
-                var kline=item.KLine;
-                if (kline.UpColor) this.Report.KLine.UpColor=kline.UpColor;
-                if (kline.DownColor) this.Report.KLine.DownColor=kline.DownColor;
-                if (kline.UnchagneColor) this.Report.KLine.UnchagneColor=kline.UnchagneColor;
-
-                if (IFrameSplitOperator.IsNumber(kline.DataWidth)) this.Report.KLine.DataWidth=kline.DataWidth;
-                if (IFrameSplitOperator.IsNumber(kline.DistanceWidth)) this.Report.KLine.DistanceWidth=kline.DistanceWidth;
-            }
-
-            if (item.Header)
-            {
-                var header=item.Header;
-                if (header.Color) this.Report.Header.Color=header.Color;
-                if (header.SortColor) this.Report.Header.SortColor=header.SortColor;
-                if (header.Mergin)
-                {
-                    var mergin=header.Mergin;
-                    if (IFrameSplitOperator.IsNumber(mergin.Left)) this.Report.Header.Mergin.Left=mergin.Left;
-                    if (IFrameSplitOperator.IsNumber(mergin.Right)) this.Report.Header.Mergin.Left=mergin.Right;
-                    if (IFrameSplitOperator.IsNumber(mergin.Top)) this.Report.Header.Mergin.Top=mergin.Top;
-                    if (IFrameSplitOperator.IsNumber(mergin.Bottom)) this.Report.Header.Mergin.Bottom=mergin.Bottom;
-                }
-                if (header.Font)
-                {
-                    var font=header.Font;
-                    if (font.Name) this.Report.Header.Font.Name=font.Name;
-                    if (IFrameSplitOperator.IsNumber(font.Size)) this.Report.Header.Font.Size=font.Size;
-                }
-            }
-
-            if (item.Item)
-            {
-                var row=item.Item;
-                if (row.Mergin)
-                {
-                    var mergin=row.Mergin;
-                    if (IFrameSplitOperator.IsNumber(mergin.Left)) this.Report.Item.Mergin.Left=mergin.Left;
-                    if (IFrameSplitOperator.IsNumber(mergin.Right)) this.Report.Item.Mergin.Right=mergin.Right;
-                    if (IFrameSplitOperator.IsNumber(mergin.Top)) this.Report.Item.Mergin.Top=mergin.Top;
-                    if (IFrameSplitOperator.IsNumber(mergin.Bottom)) this.Report.Item.Mergin.Bottom=mergin.Bottom;
-                }
-
-                if (row.Font)
-                {
-                    var font=row.Font;
-                    if (font.Name) this.Report.Item.Font.Name=font.Name;
-                    if (IFrameSplitOperator.IsNumber(font.Size)) this.Report.Item.Font.Size=font.Size;
-                }
-
-                if (row.BarMergin)
-                {
-                    var mergin=row.BarMergin;
-                    if (IFrameSplitOperator.IsNumber(mergin.Left)) this.Report.Item.BarMergin.Left=mergin.Left;
-                    if (IFrameSplitOperator.IsNumber(mergin.Top)) this.Report.Item.BarMergin.Top=mergin.Top;
-                    if (IFrameSplitOperator.IsNumber(mergin.Right)) this.Report.Item.BarMergin.Right=mergin.Right;
-                    if (IFrameSplitOperator.IsNumber(mergin.Bottom)) this.Report.Item.BarMergin.Bottom=mergin.Bottom;
-                }
-
-                if (row.NameFont)
-                {
-                    var font=row.NameFont;
-                    if (font.Name) this.Report.Item.NameFont.Name=font.Name;
-                    if (IFrameSplitOperator.IsNumber(font.Size)) this.Report.Item.NameFont.Size=font.Size;
-                }
-
-                if (row.SymbolFont)
-                {
-                    var font=row.SymbolFont;
-                    if (font.Name) this.Report.Item.SymbolFont.Name=font.Name;
-                    if (IFrameSplitOperator.IsNumber(font.Size)) this.Report.Item.SymbolFont.Size=font.Size;
-                }
-            }
-
-            if (item.FixedItem)
-            {
-                var row=item.FixedItem;
-                if (row.Font)
-                {
-                    var font=row.Font;
-                    if (font.Name) this.Report.FixedItem.Font.Name=font.Name;
-                    if (IFrameSplitOperator.IsNumber(font.Size)) this.Report.FixedItem.Font.Size=font.Size;
-                }
-            }
-
-            if (item.LimitBorder)
-            {
-                var limit=item.LimitBorder;
-                if (limit.Color) this.Report.LimitBorder.Color=limit.Color;
-                if (limit.Mergin)
-                {
-                    var mergin=limit.Mergin;
-                    if (IFrameSplitOperator.IsNumber(mergin.Left)) this.Report.LimitBorder.Mergin.Left=mergin.Left;
-                    if (IFrameSplitOperator.IsNumber(mergin.Top)) this.Report.LimitBorder.Mergin.Top=mergin.Top;
-                    if (IFrameSplitOperator.IsNumber(mergin.Right)) this.Report.LimitBorder.Mergin.Right=mergin.Right;
-                    if (IFrameSplitOperator.IsNumber(mergin.Bottom)) this.Report.LimitBorder.Mergin.Bottom=mergin.Bottom;
-                }
-            }
-
-            if (item.LimitColor)
-            {
-                var limit=item.LimitColor;
-                if (limit.UpColor) this.Report.LimitColor.UpColor=limit.UpColor;
-                if (limit.DownColor) this.Report.LimitColor.DownColor=limit.DownColor;
-                if (limit.TextColor) this.Report.LimitColor.UpColor=limit.TextColor;
-            }
-
-            if (item.FieldColor)
-            {
-                var filed=item.FieldColor;
-                if (filed.Name) this.Report.FieldColor.Name=filed.Name;
-                if (filed.Symbol) this.Report.FieldColor.Symbol=filed.Symbol;
-                if (filed.Vol) this.Report.FieldColor.Vol=filed.Vol;
-                if (filed.Amount) this.Report.FieldColor.Amount=filed.Amount;
-                if (filed.Index) this.Report.FieldColor.Index=filed.Index;
-                if (filed.BarTitle) this.Report.FieldColor.BarTitle=filed.BarTitle;
-                if (filed.Text) this.Report.FieldColor.Text=filed.Text;
-
-                if (IFrameSplitOperator.IsNonEmptyArray(filed.Bar))
-                {
-                    for(var i=0;i<filed.Bar.length;++i)
-                        this.Report.FieldColor.Bar[i]=filed.Bar[i];
-                }
-            }
-
-            if (item.Tab)
-            {
-                var tab=item.Tab;
-                if (tab.Font)
-                {
-                    var font=tab.Font;
-                    if (font.Name) this.Report.Tab.Font.Name=font.Name;
-                    if (IFrameSplitOperator.IsNumber(font.Size)) this.Report.Tab.Font.Size=font.Size;
-                }
-
-                if (IFrameSplitOperator.IsNumber(tab.ScrollBarWidth)) this.Report.Tab.ScrollBarWidth=tab.ScrollBarWidth;
-                if (tab.ButtonColor) this.Report.Tab.ButtonColor=tab.ButtonColor;
-                if (tab.BarColor) this.Report.Tab.BarColor=tab.BarColor;
-                if (tab.BorderColor) this.Report.Tab.BorderColor=tab.BorderColor;
-
-                if (tab.TabTitleColor) this.Report.Tab.TabTitleColor=tab.TabTitleColor;
-                if (tab.TabSelectedTitleColor) this.Report.Tab.TabSelectedTitleColor=tab.TabSelectedTitleColor;
-                if (tab.TabSelectedBGColor) this.Report.Tab.TabSelectedBGColor=tab.TabSelectedBGColor;
-                if (tab.TabMoveOnTitleColor) this.Report.Tab.TabMoveOnTitleColor=tab.TabMoveOnTitleColor;
-                if (tab.TabBGColor) this.Report.Tab.TabBGColor=tab.TabBGColor;
-            }
-
-            if (item.PageInfo)
-            {
-                var pageinfo=item.PageInfo;
-                if (pageinfo.Font)
-                {
-                    var font=pageinfo.Font;
-                    if (font.Name) this.Report.PageInfo.Font.Name=font.Name;
-                    if (IFrameSplitOperator.IsNumber(font.Size)) this.Report.PageInfo.Font.Size=font.Size;
-                }
-
-                if (pageinfo.TextColor) this.Report.PageInfo.TextColor=pageinfo.TextColor;
-                if (pageinfo.BGColor) this.Report.PageInfo.BGColor=pageinfo.BGColor;
-
-                if (pageinfo.Mergin)
-                {
-                    var mergin=pageinfo.Mergin;
-                    if (IFrameSplitOperator.IsNumber(mergin.Left)) this.Report.PageInfo.Mergin.Left=mergin.Left;
-                    if (IFrameSplitOperator.IsNumber(mergin.Top)) this.Report.PageInfo.Mergin.Top=mergin.Top;
-                    if (IFrameSplitOperator.IsNumber(mergin.Right)) this.Report.PageInfo.Mergin.Right=mergin.Right;
-                    if (IFrameSplitOperator.IsNumber(mergin.Bottom)) this.Report.PageInfo.Mergin.Bottom=mergin.Bottom;
-                }
-            }
-
-            if (item.DragRow)
-            {
-                var dragRow=item.DragRow;
-                if (dragRow.Color) this.Report.DragRow.Color=dragRow.Color;
-                if (dragRow.TextColor) this.Report.DragRow.TextColor=dragRow.TextColor;
-                if (dragRow.MoveRowColor) this.Report.DragRow.MoveRowColor=dragRow.MoveRowColor;
-                if (dragRow.SrcRowColor) this.Report.DragRow.SrcRowColor=dragRow.SrcRowColor;
-            }
-        }
-
+        if (style.Report) this.SetReportStyle(style.Report);
+       
         if (style.TReport) this.SetTReportStyle(style.TReport);
 
         if (style.SelectedChart)
@@ -64920,6 +64749,218 @@ function JSChartResource()
             }
             
         }
+    }
+
+    this.SetReportStyle=function(style)
+    {
+        var item=style;
+        var dest=this.Report;
+
+        if (item.BorderColor) this.Report.BorderColor=item.BorderColor;
+        if (item.UpTextColor) this.Report.UpTextColor=item.UpTextColor;
+        if (item.DownTextColor) this.Report.DownTextColor=item.DownTextColor;
+        if (item.UnchagneTextColor) this.Report.UnchagneTextColor=item.UnchagneTextColor;
+        if (item.BorderColor) this.Report.SelectedColor=item.SelectedColor;
+           
+
+        if (item.CloseLine)
+        {
+            var closeLine=item.CloseLine;
+            if (closeLine.CloseColor) this.Report.CloseLine.CloseColor=closeLine.CloseColor;
+            if (closeLine.YCloseColor) this.Report.CloseLine.YCloseColor=closeLine.YCloseColor;
+            if (closeLine.AreaColor) this.Report.CloseLine.AreaColor=closeLine.AreaColor;
+        }
+
+        if (item.KLine)
+        {
+            var kline=item.KLine;
+            if (kline.UpColor) this.Report.KLine.UpColor=kline.UpColor;
+            if (kline.DownColor) this.Report.KLine.DownColor=kline.DownColor;
+            if (kline.UnchagneColor) this.Report.KLine.UnchagneColor=kline.UnchagneColor;
+
+            if (IFrameSplitOperator.IsNumber(kline.DataWidth)) this.Report.KLine.DataWidth=kline.DataWidth;
+            if (IFrameSplitOperator.IsNumber(kline.DistanceWidth)) this.Report.KLine.DistanceWidth=kline.DistanceWidth;
+        }
+
+        if (item.Header)
+        {
+            var header=item.Header;
+            if (header.Color) this.Report.Header.Color=header.Color;
+            if (header.SortColor) this.Report.Header.SortColor=header.SortColor;
+            if (header.Mergin)
+            {
+                var mergin=header.Mergin;
+                if (IFrameSplitOperator.IsNumber(mergin.Left)) this.Report.Header.Mergin.Left=mergin.Left;
+                if (IFrameSplitOperator.IsNumber(mergin.Right)) this.Report.Header.Mergin.Left=mergin.Right;
+                if (IFrameSplitOperator.IsNumber(mergin.Top)) this.Report.Header.Mergin.Top=mergin.Top;
+                if (IFrameSplitOperator.IsNumber(mergin.Bottom)) this.Report.Header.Mergin.Bottom=mergin.Bottom;
+            }
+            if (header.Font)
+            {
+                var font=header.Font;
+                if (font.Name) this.Report.Header.Font.Name=font.Name;
+                if (IFrameSplitOperator.IsNumber(font.Size)) this.Report.Header.Font.Size=font.Size;
+            }
+        }
+
+        if (item.Item)
+        {
+            var row=item.Item;
+            if (row.Mergin)
+            {
+                var mergin=row.Mergin;
+                if (IFrameSplitOperator.IsNumber(mergin.Left)) this.Report.Item.Mergin.Left=mergin.Left;
+                if (IFrameSplitOperator.IsNumber(mergin.Right)) this.Report.Item.Mergin.Right=mergin.Right;
+                if (IFrameSplitOperator.IsNumber(mergin.Top)) this.Report.Item.Mergin.Top=mergin.Top;
+                if (IFrameSplitOperator.IsNumber(mergin.Bottom)) this.Report.Item.Mergin.Bottom=mergin.Bottom;
+            }
+
+            if (row.Font)
+            {
+                var font=row.Font;
+                if (font.Name) this.Report.Item.Font.Name=font.Name;
+                if (IFrameSplitOperator.IsNumber(font.Size)) this.Report.Item.Font.Size=font.Size;
+            }
+
+            if (row.BarMergin)
+            {
+                var mergin=row.BarMergin;
+                if (IFrameSplitOperator.IsNumber(mergin.Left)) this.Report.Item.BarMergin.Left=mergin.Left;
+                if (IFrameSplitOperator.IsNumber(mergin.Top)) this.Report.Item.BarMergin.Top=mergin.Top;
+                if (IFrameSplitOperator.IsNumber(mergin.Right)) this.Report.Item.BarMergin.Right=mergin.Right;
+                if (IFrameSplitOperator.IsNumber(mergin.Bottom)) this.Report.Item.BarMergin.Bottom=mergin.Bottom;
+            }
+
+            if (row.NameFont)
+            {
+                var font=row.NameFont;
+                if (font.Name) this.Report.Item.NameFont.Name=font.Name;
+                if (IFrameSplitOperator.IsNumber(font.Size)) this.Report.Item.NameFont.Size=font.Size;
+            }
+
+            if (row.SymbolFont)
+            {
+                var font=row.SymbolFont;
+                if (font.Name) this.Report.Item.SymbolFont.Name=font.Name;
+                if (IFrameSplitOperator.IsNumber(font.Size)) this.Report.Item.SymbolFont.Size=font.Size;
+            }
+        }
+
+        if (item.FixedItem)
+        {
+            var row=item.FixedItem;
+            if (row.Font)
+            {
+                var font=row.Font;
+                if (font.Name) this.Report.FixedItem.Font.Name=font.Name;
+                if (IFrameSplitOperator.IsNumber(font.Size)) this.Report.FixedItem.Font.Size=font.Size;
+            }
+        }
+
+        if (item.LimitBorder)
+        {
+            var limit=item.LimitBorder;
+            if (limit.Color) this.Report.LimitBorder.Color=limit.Color;
+            if (limit.Mergin)
+            {
+                var mergin=limit.Mergin;
+                if (IFrameSplitOperator.IsNumber(mergin.Left)) this.Report.LimitBorder.Mergin.Left=mergin.Left;
+                if (IFrameSplitOperator.IsNumber(mergin.Top)) this.Report.LimitBorder.Mergin.Top=mergin.Top;
+                if (IFrameSplitOperator.IsNumber(mergin.Right)) this.Report.LimitBorder.Mergin.Right=mergin.Right;
+                if (IFrameSplitOperator.IsNumber(mergin.Bottom)) this.Report.LimitBorder.Mergin.Bottom=mergin.Bottom;
+            }
+        }
+
+        if (item.LimitColor)
+        {
+            var limit=item.LimitColor;
+            if (limit.UpColor) this.Report.LimitColor.UpColor=limit.UpColor;
+            if (limit.DownColor) this.Report.LimitColor.DownColor=limit.DownColor;
+            if (limit.TextColor) this.Report.LimitColor.UpColor=limit.TextColor;
+        }
+
+        if (item.FieldColor)
+        {
+            var filed=item.FieldColor;
+            if (filed.Name) this.Report.FieldColor.Name=filed.Name;
+            if (filed.Symbol) this.Report.FieldColor.Symbol=filed.Symbol;
+            if (filed.Vol) this.Report.FieldColor.Vol=filed.Vol;
+            if (filed.Amount) this.Report.FieldColor.Amount=filed.Amount;
+            if (filed.Index) this.Report.FieldColor.Index=filed.Index;
+            if (filed.BarTitle) this.Report.FieldColor.BarTitle=filed.BarTitle;
+            if (filed.Text) this.Report.FieldColor.Text=filed.Text;
+
+            if (IFrameSplitOperator.IsNonEmptyArray(filed.Bar))
+            {
+                for(var i=0;i<filed.Bar.length;++i)
+                    this.Report.FieldColor.Bar[i]=filed.Bar[i];
+            }
+        }
+
+        if (item.Tab)
+        {
+            var tab=item.Tab;
+            if (tab.Font)
+            {
+                var font=tab.Font;
+                if (font.Name) this.Report.Tab.Font.Name=font.Name;
+                if (IFrameSplitOperator.IsNumber(font.Size)) this.Report.Tab.Font.Size=font.Size;
+            }
+
+            if (IFrameSplitOperator.IsNumber(tab.ScrollBarWidth)) this.Report.Tab.ScrollBarWidth=tab.ScrollBarWidth;
+            if (tab.ButtonColor) this.Report.Tab.ButtonColor=tab.ButtonColor;
+            if (tab.BarColor) this.Report.Tab.BarColor=tab.BarColor;
+            if (tab.BorderColor) this.Report.Tab.BorderColor=tab.BorderColor;
+
+            if (tab.TabTitleColor) this.Report.Tab.TabTitleColor=tab.TabTitleColor;
+            if (tab.TabSelectedTitleColor) this.Report.Tab.TabSelectedTitleColor=tab.TabSelectedTitleColor;
+            if (tab.TabSelectedBGColor) this.Report.Tab.TabSelectedBGColor=tab.TabSelectedBGColor;
+            if (tab.TabMoveOnTitleColor) this.Report.Tab.TabMoveOnTitleColor=tab.TabMoveOnTitleColor;
+            if (tab.TabBGColor) this.Report.Tab.TabBGColor=tab.TabBGColor;
+        }
+
+        if (item.PageInfo)
+        {
+            var pageinfo=item.PageInfo;
+            if (pageinfo.Font)
+            {
+                var font=pageinfo.Font;
+                if (font.Name) this.Report.PageInfo.Font.Name=font.Name;
+                if (IFrameSplitOperator.IsNumber(font.Size)) this.Report.PageInfo.Font.Size=font.Size;
+            }
+
+            if (pageinfo.TextColor) this.Report.PageInfo.TextColor=pageinfo.TextColor;
+            if (pageinfo.BGColor) this.Report.PageInfo.BGColor=pageinfo.BGColor;
+
+            if (pageinfo.Mergin)
+            {
+                var mergin=pageinfo.Mergin;
+                if (IFrameSplitOperator.IsNumber(mergin.Left)) this.Report.PageInfo.Mergin.Left=mergin.Left;
+                if (IFrameSplitOperator.IsNumber(mergin.Top)) this.Report.PageInfo.Mergin.Top=mergin.Top;
+                if (IFrameSplitOperator.IsNumber(mergin.Right)) this.Report.PageInfo.Mergin.Right=mergin.Right;
+                if (IFrameSplitOperator.IsNumber(mergin.Bottom)) this.Report.PageInfo.Mergin.Bottom=mergin.Bottom;
+            }
+        }
+
+        if (item.DragRow)
+        {
+            var dragRow=item.DragRow;
+            if (dragRow.Color) this.Report.DragRow.Color=dragRow.Color;
+            if (dragRow.TextColor) this.Report.DragRow.TextColor=dragRow.TextColor;
+            if (dragRow.MoveRowColor) this.Report.DragRow.MoveRowColor=dragRow.MoveRowColor;
+            if (dragRow.SrcRowColor) this.Report.DragRow.SrcRowColor=dragRow.SrcRowColor;
+        }
+
+        if (item.VScrollbar)
+        {
+            var subItem=item.VScrollbar;
+            if (IFrameSplitOperator.IsNumber(subItem.ScrollBarHeight)) dest.VScrollbar.ScrollBarHeight=subItem.ScrollBarHeight;
+            if (subItem.ButtonColor) dest.VScrollbar.ButtonColor=subItem.ButtonColor;
+            if (subItem.BarColor) dest.VScrollbar.BarColor=subItem.BarColor;
+            if (subItem.BorderColor) dest.VScrollbar.BorderColor=subItem.BorderColor;
+            if (subItem.BGColor) dest.VScrollbar.BGColor=subItem.BGColor;
+        }
+        
     }
 
     this.SetTReportStyle=function(style)

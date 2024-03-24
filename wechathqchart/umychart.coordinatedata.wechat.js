@@ -2124,6 +2124,9 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.CFFEX + '-IC', {Time:2,Decimal:1,Name:'中证股指期货'}],
         [MARKET_SUFFIX_NAME.CFFEX + '-IF', {Time:2,Decimal:1,Name:'沪深股指期货'}],
         [MARKET_SUFFIX_NAME.CFFEX + '-IM', {Time:2,Decimal:1,Name:'中证1000股指期货'}],
+        [MARKET_SUFFIX_NAME.CFFEX + '-IO', {Time:2,Decimal:1,Name:'沪深300股指期权'}],
+        [MARKET_SUFFIX_NAME.CFFEX + '-MO', {Time:2,Decimal:1,Name:'中证1000股指期权'}],
+        [MARKET_SUFFIX_NAME.CFFEX + '-HO', {Time:2,Decimal:1,Name:'上证50股指期权'}],
 
         //广州期货交易所
         [MARKET_SUFFIX_NAME.GZFE+'-SI', {Time:0,Decimal:2,Name:"工业硅"}],

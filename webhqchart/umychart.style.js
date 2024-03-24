@@ -595,6 +595,16 @@ function GetBlackStyle()
 
                 MoveRowColor:'rgb(135,206,250)',
                 SrcRowColor:'rgb(49,48,56)',
+            },
+
+            VScrollbar:
+            {
+                BarWidth:40,
+                ScrollBarHeight:60,
+                ButtonColor:"rgba(13,12,15,0.8)",
+                BarColor:"rgba(48,48,48,0.9)",
+                BorderColor:'rgba(48,48,48,0.9)',
+                BGColor:"rgba(211,211,211,0.5)",
             }
         },
 
