@@ -3093,7 +3093,7 @@ function JSChartContainer(uielement)
         {
             if (this.RightSpaceCount > 0)
             {
-                if (xPointcount + data.DataOffset >= data.Data.length + this.RightSpaceCount - 1) return false;
+                if (xPointcount + data.DataOffset >= data.Data.length + this.RightSpaceCount) return false;
 
                 data.DataOffset += step;
 
