@@ -220,6 +220,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![键盘精灵](/小程序行情模块用例/image/sendsymbol_demo.gif)<br>
 * T型报价   
 ![T型报价](/小程序行情模块用例/image/TReport_demo.gif)  
+* 大数据表格
+![大数据表格](/小程序行情模块用例/image/report_bigdata_demo.gif)  
 
 
 

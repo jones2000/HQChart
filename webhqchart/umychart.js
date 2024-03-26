@@ -4398,6 +4398,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             drag.LastMove.Y=touches[0].clientY;
 
             this.MouseDrag=drag;
+            var drawPictureActive=this.GetActiveDrawPicture();  //上一次选中的
+            var selectedChart={ Chart:this.SelectedChart.Selected.Chart, Identify:this.SelectedChart.Selected.Identify };   //上一次选中的图形
             this.PhoneTouchInfo={ Start:{X:touches[0].clientX, Y:touches[0].clientY }, End:{ X:touches[0].clientX, Y:touches[0].clientY } };
             if (this.SelectChartDrawPicture) this.SelectChartDrawPicture.IsSelected=false;
             this.SelectChartDrawPicture=null;
@@ -4411,7 +4413,11 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 {
                     this.SetChartDrawPictureFirstPoint(drag.Click.X,drag.Click.Y,true);
                     //只有1个点 直接完成
-                    if (this.FinishChartDrawPicturePoint()) this.DrawDynamicInfo({Corss:false, Tooltip:false});
+                    if (this.FinishChartDrawPicturePoint()) 
+                    {
+                        if (drawPicture.IsDrawMain) this.Draw();
+                        else this.DrawDynamicInfo( {Corss:false, Tooltip:false} );
+                    }
                 }
 
                 if (e.cancelable) e.preventDefault();
@@ -4436,6 +4442,12 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                         let sendData={ DrawPicture: drawPictrueData.ChartDrawPicture };
                         event.Callback(event,sendData,this);
                     }
+
+                    var drawType=0;
+                    if (drawPictrueData.ChartDrawPicture.IsDrawMain) drawType=1;
+                    else if (drawPictureActive.Select.Guid && drawPictureActive.Select.Chart && drawPictureActive.Select.Chart.IsDrawMain)  drawType=1;
+
+                    if (drawType==1) this.Draw();
 
                     if (e.cancelable) e.preventDefault();
                     return;
@@ -4493,6 +4505,14 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             }
             
             this.TouchEvent({ EventID:JSCHART_EVENT_ID.ON_PHONE_TOUCH, FunctionName:"OnTouchStart"}, e);
+
+            var drawType=0;
+            if (drawPictureActive.Select.Guid!=null)
+            {
+                if (drawPictureActive.Select.Guid && drawPictureActive.Select.Chart)  drawType=1;
+            }
+
+            if (drawType==1) this.Draw();
         }
         else if (this.IsPhonePinching(e))
         {
@@ -54997,6 +55017,15 @@ function ChartDrawHLine()
 
     this.AryButton=[];
     this.ExtendData;    //扩展数据
+    this.ShowPriceTextConfig=
+    { 
+        IsShow:[false, false, true], //[0]=left内 [1]=right内 [2]=right外
+        Font:
+        [
+            `${12*GetDevicePixelRatio()}px 微软雅黑`,
+            `${12*GetDevicePixelRatio()}px 微软雅黑`,
+        ],
+    };  
 
     //内部变量
     this.ColseButtonSize=0;
@@ -55028,6 +55057,15 @@ function ChartDrawHLine()
                 if (item.SettingIcon) this.Button.SettingIcon=CloneData(item.SettingIcon);
             }
             if (option.ExtendData) this.ExtendData=option.ExtendData;
+
+            if (IFrameSplitOperator.IsNonEmptyArray(option.IsShowPriceText))
+            {
+                for(var i=0;i<option.IsShowPriceText.length && i<3;++i)
+                {
+                    var value=option.IsShowPriceText[i]
+                    if (IFrameSplitOperator.IsBool(value)) this.ShowPriceTextConfig.IsShow[i]=value;
+                }
+            }
         }
     }
 
@@ -55116,6 +55154,7 @@ function ChartDrawHLine()
         this.Canvas.stroke();
         this.RestoreLineWidth();
 
+        //画水平线段
         var line={Start:new Point(), End:new Point()};
         if (isHScreen)
         {
@@ -55133,6 +55172,18 @@ function ChartDrawHLine()
         }
         this.LinePoint.push(line);
 
+        var yValue=this.Frame.GetYData(drawPoint[0].Y);
+        var strPrice=yValue.toFixed(this.Precision);
+        if (this.ShowPriceTextConfig.IsShow[0])
+        {
+            this.DrawPriceText(strPrice, line.Start, line.End, 0);
+        }
+
+        if (this.ShowPriceTextConfig.IsShow[1])
+        {
+            this.DrawPriceText(strPrice, line.Start, line.End, 1);
+        }
+
         var labInfo;
         if (this.GetLabelCallback) labInfo=this.GetLabelCallback(this);
 
@@ -55147,14 +55198,17 @@ function ChartDrawHLine()
 
         this.Canvas.restore();
 
-        var rtDraw={ };
        
-        //显示价格
-        this.CalculateButtonSize();
-        this.DrawValueText(drawPoint[0].Y, rtDraw, labInfo); 
-        if (labInfo) 
-            this.DrawRightLab(labInfo, rtDraw);
+        //外部右侧显示价格
+        if (this.ShowPriceTextConfig.IsShow[2])
+        {
+            var rtDraw={ };
+            this.CalculateButtonSize();
+            this.DrawValueText(drawPoint[0].Y, rtDraw, labInfo); 
+            if (labInfo) this.DrawRightLab(labInfo, rtDraw);
+        }
         
+
         //鼠标是否在按钮上
         if (moveonPoint && mouseStatus)
         {
@@ -55334,6 +55388,39 @@ function ChartDrawHLine()
         this.DrawButton(rtBG.Top, rtBG.Right, lineHeight, rtDraw);
     }
 
+    this.DrawPriceText=function(text, ptStart, ptEnd, position)
+    {
+        if (position!=1 && position!=0) return;
+
+        var font=this.ShowPriceTextConfig.Font[position];
+        this.Canvas.fillStyle=this.LineColor;
+        this.Canvas.font=font;
+        var textWidth=this.Canvas.measureText(text).width;
+        var lineHeight=this.GetFontHeight();
+
+        var rtBG=null;
+        if (position==1)
+        {
+            var rtBG={ Left:ptStart.X, Top:ptStart.Y-lineHeight/2, Width:textWidth+4, Height:lineHeight };
+            rtBG.Right=rtBG.Left+rtBG.Width;
+            rtBG.Bottom=rtBG.Top+rtBG.Height;
+        }
+        else if (position==0)
+        {
+            var rtBG={ Right:ptEnd.X, Top:ptEnd.Y-lineHeight/2, Width:textWidth+4, Height:lineHeight };
+            rtBG.Left=rtBG.Right-rtBG.Width;
+            rtBG.Bottom=rtBG.Top+rtBG.Height;
+        }
+
+        this.Canvas.fillRect(ToFixedRect(rtBG.Left),ToFixedRect(rtBG.Top), ToFixedRect(rtBG.Width+this.ButtonBGWidth),ToFixedRect(rtBG.Height));
+
+        this.Canvas.fillStyle=this.ValueTextColor
+        this.Canvas.textAlign="left";
+        this.Canvas.textBaseline="middle";
+        this.Canvas.fillText(text,rtBG.Left+2,ptStart.Y);
+        
+    }
+
     this.CalculateButtonSize=function()
     {
         var pixelRatio=GetDevicePixelRatio();
@@ -55387,7 +55474,7 @@ function ChartDrawHLine()
 
         left+=1;
         var pixelRatio=GetDevicePixelRatio();
-        if (this.Button.SettingIcon)
+        if (this.Button.SettingIcon && this.Button.SettingIcon.Text)
         {
             var rtButton={Left:left, Top:drawTop, Width:this.SettingButtonSize, Height:drawHeight };
             rtButton.Right=rtButton.Left+rtButton.Width;
@@ -55420,7 +55507,7 @@ function ChartDrawHLine()
             left=rtButton.Right+this.ButtonSpace;
         }
 
-        if (this.Button.CloseIcon)
+        if (this.Button.CloseIcon && this.Button.CloseIcon.Text)
         {
             var rtButton={Left:left, Top:drawTop, Width:this.ColseButtonSize, Height:drawHeight };
             rtButton.Right=rtButton.Left+rtButton.Width;
@@ -58519,7 +58606,7 @@ function ChartDrawPriceLine()
     }
 }
 
-//画图工具-标价线2 支持横屏
+//画图工具-标价线2 支持横屏 支持价格文字在坐标内部显示
 function ChartDrawPriceLineV2()
 {
     this.newMethod=IChartDrawPicture;   //派生
@@ -58535,6 +58622,7 @@ function ChartDrawPriceLineV2()
     this.IsDrawFirst=true;
     this.TextColor="rgb(255,255,255)";
     this.Title; //标题
+    this.TextPosition=[null, 0];   //[0]=左侧(没有做)     [1]=右侧  0=自动 1=内部 2=外部
 
     this.Super_SetOption=this.SetOption;    //父类函数
     this.SetOption=function(option)
@@ -58544,6 +58632,7 @@ function ChartDrawPriceLineV2()
         {
             if (option.TextColor) this.TextColor=option.TextColor;
             if (option.Title) this.Title=option.Title;
+            if (IFrameSplitOperator.IsNonEmptyArray(option.TextPosition)) this.TextPosition=option.TextPosition.slice();
         }
     }
 
@@ -58615,14 +58704,20 @@ function ChartDrawPriceLineV2()
 
         if (this.IsHScreen)
         {
-            if (chartBorder.Bottom>10)
-            {
-                var rtBG={ Left:(xText-textHeight/2), Top:yText , Width: textHeight, Height:textWidth };
-            }
-            else    //框架内部显示
+            var position=this.TextPosition[1];
+            var bDrawInside=false;  //在内部绘制
+            if (position==0) bDrawInside=chartBorder.Bottom<=10;
+            else if (position==1) bDrawInside=true;
+            else if (position==2) bDrawInside=false;
+
+            if (bDrawInside)
             {
                 yText=yText-textWidth;
                 var rtBG={ Left:(xText-textHeight/2), Top:yText , Width:textHeight, Height: textWidth};
+            }
+            else    //框架内部显示
+            {
+                var rtBG={ Left:(xText-textHeight/2), Top:yText , Width: textHeight, Height:textWidth };
             }
             
             this.Canvas.fillStyle=this.LineColor;
@@ -58638,13 +58733,13 @@ function ChartDrawPriceLineV2()
             if (this.Title)
             {
                 var textWidth=this.Canvas.measureText(this.Title).width+2*pixelTatio;
-                if (chartBorder.Bottom>10)
+                if (bDrawInside)
                 {
-                    var rtTitle={ Left:rtBG.Left, Top:bottom-textWidth-1*pixelTatio, Width:textHeight, Height:textWidth };
+                    var rtTitle={Left:rtBG.Left, Top:rtBG.Top-textWidth-1*pixelTatio, Width:textHeight, Height:textWidth};
                 }
                 else
                 {
-                    var rtTitle={Left:rtBG.Left, Top:rtBG.Top-textWidth-1*pixelTatio, Width:textHeight, Height:textWidth}
+                    var rtTitle={ Left:rtBG.Left, Top:bottom-textWidth-1*pixelTatio, Width:textHeight, Height:textWidth };
                 }
 
                 this.Canvas.fillStyle=this.LineColor;
@@ -58660,14 +58755,20 @@ function ChartDrawPriceLineV2()
         }
         else
         {
-            if (chartBorder.Right>10)
+            var position=this.TextPosition[1];
+            var bDrawInside=false;  //在内部绘制
+            if (position==0) bDrawInside=chartBorder.Right<=10;
+            else if (position==1) bDrawInside=true;
+            else if (position==2) bDrawInside=false;
+
+            if (bDrawInside)
             {
-                var rtBG={ Left:xText, Top:(yText-textHeight/2-1*pixelTatio) , Width:textWidth, Height: textHeight};
-                if (rtBG.Left+rtBG.Width>border.ChartWidth) rtBG.Left=border.ChartWidth-rtBG.Width-2*pixelTatio;
+                var rtBG={ Left:xText-textWidth, Top:(yText-textHeight/2-1*pixelTatio) , Width:textWidth, Height: textHeight};
             }
             else    //框架内部显示
             {
-                var rtBG={ Left:xText-textWidth, Top:(yText-textHeight/2-1*pixelTatio) , Width:textWidth, Height: textHeight};
+                var rtBG={ Left:xText, Top:(yText-textHeight/2-1*pixelTatio) , Width:textWidth, Height: textHeight};
+                if (rtBG.Left+rtBG.Width>border.ChartWidth) rtBG.Left=border.ChartWidth-rtBG.Width-2*pixelTatio;
             }
             
             this.Canvas.fillStyle=this.LineColor;
@@ -58679,14 +58780,14 @@ function ChartDrawPriceLineV2()
             if (this.Title)
             {
                 var textWidth=this.Canvas.measureText(this.Title).width+2*pixelTatio;
-                if (chartBorder.Right>10)
+                if (bDrawInside)
                 {
-                    var rtTitle={ Left:right-textWidth-1*pixelTatio, Top:rtBG.Top, Width:textWidth, Height:textHeight };
-                    if (rtBG.Left!=right) rtTitle.Left=rtBG.Left-textWidth-1*pixelTatio;
+                    var rtTitle={Left:rtBG.Left-textWidth, Top:rtBG.Top, Width:textWidth, Height:textHeight}
                 }
                 else
                 {
-                    var rtTitle={Left:rtBG.Left-textWidth, Top:rtBG.Top, Width:textWidth, Height:textHeight}
+                    var rtTitle={ Left:right-textWidth-1*pixelTatio, Top:rtBG.Top, Width:textWidth, Height:textHeight };
+                    if (rtBG.Left!=right) rtTitle.Left=rtBG.Left-textWidth-1*pixelTatio;
                 }
 
                 this.Canvas.fillStyle=this.LineColor;
@@ -63025,7 +63126,7 @@ function JSChartResource()
     this.IndexTitleBGColor='rgb(250,250,250)';                      //指标名字背景色
     this.IndexTitleBorderColor='rgb(180,180,180)';                  //指标名字边框颜色
     this.IndexTitleBorderMoveOnColor='rgb(0,0,0)';                   //指标名字边框颜色(鼠标在上面)
-    this.IndexTitleBorderStyle=1,                                   //0=直角边框 1=圆角变量
+    this.IndexTitleBorderStyle=1,                                   //0=直角边框 1=圆角边框
     this.IndexTitleColor="rgb(43,54,69)";                           //指标名字颜色
     this.IndexTitleSelectedColor="rgb(65,105,225)";
     this.OverlayIndexTitleBGColor='rgba(255,255,255,0.7)';

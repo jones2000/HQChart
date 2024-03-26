@@ -26,6 +26,39 @@ function Point()
     this.X;
     this.Y;
 }
+
+//修正线段有毛刺
+function ToFixedPoint(value) 
+{
+    return parseInt(value) + 0.5;
+}
+  
+function ToFixedRect(value) 
+{
+    //return value;
+    // With a bitwise or.
+    //rounded = (0.5 + somenum) | 0;
+    // A double bitwise not.
+    //rounded = ~~ (0.5 + somenum);
+    // Finally, a left bitwise shift.
+    var rounded;
+    return rounded = (0.5 + value) << 0;
+}
+
+function GetFontHeight(context, font, word)
+{
+    if (!context) return null;
+
+    if (font) context.font=font;
+
+    var text='擎';
+    if (IFrameSplitOperator.IsString(word)) text=word;
+
+    var fontInfo=context.measureText(text);
+    var textHeight=fontInfo.width+2;
+
+    return textHeight;
+}
   
 
 //画图工具
@@ -1347,6 +1380,7 @@ IChartDrawPicture.ArrayDrawPricture=
     { Name:"射线", ClassName:'ChartDrawPictureHaflLine',  Create:function() { return new ChartDrawPictureHaflLine(); } },
     { Name:"箭头", ClassName:"ChartDrawArrowLine", Create:function() { return new ChartDrawArrowLine(); } },
     { Name:"水平线", ClassName:'ChartDrawPictureHorizontalLine',  Create:function() { return new ChartDrawPictureHorizontalLine(); }},
+    { Name:"标价线2", ClassName:"ChartDrawPriceLineV2", Create:function() { return new ChartDrawPriceLineV2(); } },
 ];
 
 IChartDrawPicture.GetDrawPictureByName=function(value)
@@ -1819,6 +1853,207 @@ function ChartDrawPictureHorizontalLine()
     }
 }
 
+//画图工具-标价线2 支持横屏
+function ChartDrawPriceLineV2()
+{
+    this.newMethod=IChartDrawPicture;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartDrawPriceLineV2';
+    this.Font="12px 微软雅黑";
+    this.PointCount=1;
+    this.IsPointIn=this.IsPointIn_XYValue_Line;
+    this.IsHScreen=false;
+    this.LineWidth=1;
+    //this.IsDrawFirst=true;
+    this.TextColor="rgb(255,255,255)";
+    this.Title; //标题
+    this.TextPosition=[null, 0];   //[0]=左侧(没有做)     [1]=右侧  0=自动 1=内部 2=外部
+
+    this.Super_SetOption=this.SetOption;    //父类函数
+    this.SetOption=function(option)
+    {
+        if (this.Super_SetOption) this.Super_SetOption(option);
+        if (option)
+        {
+            if (option.TextColor) this.TextColor=option.TextColor;
+            if (option.Title) this.Title=option.Title;
+            if (IFrameSplitOperator.IsNonEmptyArray(option.TextPosition)) this.TextPosition=option.TextPosition.slice();
+        }
+    }
+
+    this.Draw=function()
+    {
+        this.LinePoint=[];
+        if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
+
+        var drawPoint=this.CalculateDrawPoint( { IsCheckX:false, IsCheckY:true } );
+        if (!drawPoint) return;
+        if (drawPoint.length!=1) return;
+        if (!this.IsYValueInFrame(this.Value[0].YValue)) return;
+
+        this.IsHScreen=this.Frame.IsHScreen;
+        var chartBorder=this.Frame.ChartBorder;
+        var border=this.Frame.GetBorder();
+        if (this.IsHScreen)
+        {
+            var left=border.LeftEx;
+            var right=border.RightEx;
+            var bottom=border.Bottom;
+            var top=border.Top;
+
+            var ptStart={ X:drawPoint[0].X, Y:top };
+            if (ptStart.X<left || ptStart.X>right) return;
+            
+            var ptEnd={X:drawPoint[0].X, Y:bottom };
+            var price=this.Frame.GetYData(ptStart.X, false);
+        }
+        else
+        {
+            var bottom=border.BottomEx;
+            var top=border.TopTitle;
+            var left=border.Left;
+            var right=border.Right;
+
+            var ptStart={ X:left, Y:drawPoint[0].Y };
+            if (ptStart.Y<top || ptStart.Y>bottom) return;
+
+            var ptEnd={ X:right, Y:drawPoint[0].Y };
+            var price=this.Frame.GetYData(ptStart.Y, false);
+        }
+        
+        //this.ClipFrame();
+       
+        this.SetLineWidth();
+        this.Canvas.strokeStyle=this.LineColor;
+        this.Canvas.beginPath();
+        this.Canvas.moveTo(ToFixedPoint(ptStart.X),ToFixedPoint(ptStart.Y));
+        this.Canvas.lineTo(ToFixedPoint(ptEnd.X),ToFixedPoint(ptEnd.Y));
+        this.Canvas.stroke();
+        this.RestoreLineWidth();
+
+        var line={Start:ptStart, End:ptEnd};
+        this.LinePoint.push(line);
+        
+        var pixelTatio =1;
+        this.Canvas.font=this.Font;
+        var offset=2*pixelTatio;
+        var xText=ptEnd.X;
+        var yText=ptEnd.Y;
+
+        this.Canvas.textBaseline='middle';
+        this.Canvas.textAlign='left';
+        var textHeight=this.GetFontHeight();
+        var text=price.toFixed(2);
+        var textWidth=this.Canvas.measureText(text).width+2*offset;
+
+        if (this.IsHScreen)
+        {
+            var position=this.TextPosition[1];
+            var bDrawInside=false;  //在内部绘制
+            if (position==0) bDrawInside=chartBorder.Bottom<=10;
+            else if (position==1) bDrawInside=true;
+            else if (position==2) bDrawInside=false;
+
+            if (!bDrawInside)
+            {
+                var rtBG={ Left:(xText-textHeight/2), Top:yText , Width: textHeight, Height:textWidth };
+            }
+            else    //框架内部显示
+            {
+                yText=yText-textWidth;
+                var rtBG={ Left:(xText-textHeight/2), Top:yText , Width:textHeight, Height: textWidth};
+            }
+            
+            this.Canvas.fillStyle=this.LineColor;
+            this.Canvas.fillRect(rtBG.Left, rtBG.Top, rtBG.Width, rtBG.Height);
+
+            this.Canvas.save();
+            this.Canvas.translate(xText,yText+1*pixelTatio);
+            this.Canvas.rotate(90 * Math.PI / 180);
+            this.Canvas.fillStyle=this.TextColor;
+            this.Canvas.fillText(text,0,0);
+            this.Canvas.restore();
+
+            if (this.Title)
+            {
+                var textWidth=this.Canvas.measureText(this.Title).width+2*pixelTatio;
+                if (!bDrawInside)
+                {
+                    var rtTitle={ Left:rtBG.Left, Top:bottom-textWidth-1*pixelTatio, Width:textHeight, Height:textWidth };
+                }
+                else
+                {
+                    var rtTitle={Left:rtBG.Left, Top:rtBG.Top-textWidth-1*pixelTatio, Width:textHeight, Height:textWidth}
+                }
+
+                this.Canvas.fillStyle=this.LineColor;
+                this.Canvas.fillRect(rtTitle.Left, rtTitle.Top, rtTitle.Width, rtTitle.Height);
+
+                this.Canvas.save();
+                this.Canvas.translate(xText,rtTitle.Top+1*pixelTatio);
+                this.Canvas.rotate(90 * Math.PI / 180);
+                this.Canvas.fillStyle=this.TextColor;
+                this.Canvas.fillText(this.Title,0,0);
+                this.Canvas.restore();
+            }
+        }
+        else
+        {
+            var position=this.TextPosition[1];
+            var bDrawInside=false;  //在内部绘制
+            if (position==0) bDrawInside=chartBorder.Right<=10;
+            else if (position==1) bDrawInside=true;
+            else if (position==2) bDrawInside=false;
+
+            if (!bDrawInside)
+            {
+                var rtBG={ Left:xText, Top:(yText-textHeight/2-1*pixelTatio) , Width:textWidth, Height: textHeight};
+                if (rtBG.Left+rtBG.Width>border.ChartWidth) rtBG.Left=border.ChartWidth-rtBG.Width-2*pixelTatio;
+            }
+            else    //框架内部显示
+            {
+                var rtBG={ Left:xText-textWidth, Top:(yText-textHeight/2-1*pixelTatio) , Width:textWidth, Height: textHeight};
+            }
+            
+            this.Canvas.fillStyle=this.LineColor;
+            this.Canvas.fillRect(rtBG.Left, rtBG.Top, rtBG.Width, rtBG.Height);
+
+            this.Canvas.fillStyle=this.TextColor;
+            this.Canvas.fillText(text, rtBG.Left+offset, yText);
+
+            if (this.Title)
+            {
+                var textWidth=this.Canvas.measureText(this.Title).width+2*pixelTatio;
+                if (!bDrawInside)
+                {
+                    var rtTitle={ Left:right-textWidth-1*pixelTatio, Top:rtBG.Top, Width:textWidth, Height:textHeight };
+                    if (rtBG.Left!=right) rtTitle.Left=rtBG.Left-textWidth-1*pixelTatio;
+                }
+                else
+                {
+                    var rtTitle={Left:rtBG.Left-textWidth, Top:rtBG.Top, Width:textWidth, Height:textHeight}
+                }
+
+                this.Canvas.fillStyle=this.LineColor;
+                this.Canvas.fillRect(rtTitle.Left, rtTitle.Top, rtTitle.Width, rtTitle.Height);
+
+                this.Canvas.fillStyle=this.TextColor;
+                this.Canvas.fillText(this.Title, rtTitle.Left+1*pixelTatio, yText);
+            }
+        }
+        
+       
+    }
+
+    this.DrawPrice=function()
+    {
+
+    }
+}
+
 export
 {
     IChartDrawPicture,
@@ -1827,4 +2062,5 @@ export
     ChartDrawPictureHaflLine,
     ChartDrawArrowLine,
     ChartDrawPictureHorizontalLine,
+    ChartDrawPriceLineV2,
 }
