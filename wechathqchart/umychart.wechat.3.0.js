@@ -1785,7 +1785,6 @@ function JSChartContainer(uielement)
                     }
 
                     this.DrawDynamicInfo();
-
                     return;
                 }
             }
@@ -3855,23 +3854,6 @@ function Guid()
         return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
     }
     return (S4() + S4() + "-" + S4() + "-" + S4() + "-" + S4() + "-" + S4() + S4() + S4());
-}
-
-function GetScrollPosition() {
-  var scrollPos = {};
-  var scrollTop = 0;
-  var scrollLeft = 0;
-  if (document.documentElement && document.documentElement.scrollTop) {
-    scrollTop = document.documentElement.scrollTop;
-    scrollLeft = document.documentElement.scrollLeft;
-  } else if (document.body) {
-    scrollTop = document.body.scrollTop;
-    scrollLeft = document.body.scrollLeft;
-  }
-
-  scrollPos.Top = scrollTop;
-  scrollPos.Left = scrollLeft;
-  return scrollPos;
 }
 
 //修正线段有毛刺
@@ -8373,6 +8355,52 @@ function MinuteChartContainer(uielement)
             drag.LastMove.X = touches[0].clientX;
             drag.LastMove.Y = touches[0].clientY;
 
+            this.MouseDrag=drag;
+            this.PhoneTouchInfo={ Start:{X:touches[0].clientX, Y:touches[0].clientY }, End:{ X:touches[0].clientX, Y:touches[0].clientY } };
+
+            if (this.SelectChartDrawPicture) this.SelectChartDrawPicture.IsSelected=false;
+            this.SelectChartDrawPicture=null;
+
+            if (this.CurrentChartDrawPicture)  //画图工具模式
+            {
+                var drawPicture=this.CurrentChartDrawPicture;
+                if (drawPicture.Status==2)
+                {
+                    this.SetChartDrawPictureThirdPoint(drag.Click.X,drag.Click.Y,true);
+                }
+                else
+                {
+                    this.SetChartDrawPictureFirstPoint(drag.Click.X,drag.Click.Y,true);
+                    //只有1个点 直接完成
+                    if (this.FinishChartDrawPicturePoint()) this.DrawDynamicInfo({Corss:false, Tooltip:false});
+                }
+                return;
+            }
+            else
+            {
+                var pt=this.PointAbsoluteToRelative(touches[0].clientX,touches[0].clientY, true);
+                var drawPictrueData={ X:pt.X, Y:pt.Y, PixelRatio:this.UIElement.PixelRatio };
+                if (this.GetChartDrawPictureByPoint(drawPictrueData))
+                {
+                    drawPictrueData.ChartDrawPicture.Status=20;
+                    drawPictrueData.ChartDrawPicture.ValueToPoint();
+                    drawPictrueData.ChartDrawPicture.MovePointIndex=drawPictrueData.PointIndex;
+                    drawPictrueData.ChartDrawPicture.IsSelected=true;
+                    this.CurrentChartDrawPicture=drawPictrueData.ChartDrawPicture;
+                    this.SelectChartDrawPicture=drawPictrueData.ChartDrawPicture;
+                    let event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_DRAWPICTURE); //选中画图工具事件
+                    if (event && event.Callback)
+                    {
+                        let sendData={ DrawPicture: drawPictrueData.ChartDrawPicture };
+                        event.Callback(event,sendData,this);
+                    }
+
+                    this.DrawDynamicInfo();
+
+                    return;
+                }
+            }
+
             var T_ShowCorssCursor=()=>
             {
                 if (this.ChartCorssCursor.IsShow === true)    //移动十字光标
@@ -8399,8 +8427,7 @@ function MinuteChartContainer(uielement)
                 }, this.PressTime);
             }
 
-            this.MouseDrag=drag;
-            this.PhoneTouchInfo={ Start:{X:touches[0].clientX, Y:touches[0].clientY }, End:{ X:touches[0].clientX, Y:touches[0].clientY } };
+           
             if (this.EnableScrollUpDown==false)
                 T_ShowCorssCursor();
             else if (this.IsClickShowCorssCursor)
@@ -8448,22 +8475,65 @@ function MinuteChartContainer(uielement)
                 var moveUpDown=Math.abs(drag.LastMove.Y-touches[0].clientY);
                 moveSetp=parseInt(moveSetp);
 
-                 //上下滚动
-                if ( ((moveUpDown>0 && moveSetp<=3) || moveAngle<=this.TouchMoveMinAngle) && this.EnableScrollUpDown==true ) 
+                if (this.CurrentChartDrawPicture)
                 {
-                    var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_TOUCH_SCROLL_UP_DOWN);
-                    var isEnd=true; //是否退出
-                    if (event && event.Callback)
+                    var drawPicture=this.CurrentChartDrawPicture;
+                    if (drawPicture.Status==1 || drawPicture.Status==2)
                     {
-                        var sendData={ DragData:drag, PreventDefault:false };
-                        event.Callback(event, sendData, this);
-                        isEnd=(sendData.PreventDefault===false);
+                        if(moveSetp<5 && moveUpDown<5) return;
+                        if(this.SetChartDrawPictureSecondPoint(touches[0].clientX,touches[0].clientY,true))
+                        {
+                            this.DrawDynamicInfo();
+                        }
+                    }
+                    else if (drawPicture.Status==3)
+                    {
+                        if(this.SetChartDrawPictureThirdPoint(touches[0].clientX,touches[0].clientY,true))
+                        {
+                            this.DrawDynamicInfo();
+                        }
+                    }
+                    else if (drawPicture.Status==20)    //画图工具移动
+                    {
+                        if(moveSetp<5 && moveUpDown<5) return;
+
+                        if(this.MoveChartDrawPicture(touches[0].clientX-drag.LastMove.X,touches[0].clientY-drag.LastMove.Y,true))
+                        {
+                            this.DrawDynamicInfo();
+                        }
                     }
 
-                    if (isEnd)
+                    drag.LastMove.X=touches[0].clientX;
+                    drag.LastMove.Y=touches[0].clientY;
+                }
+                else 
+                {
+                    if ( ((moveUpDown>0 && moveSetp<=3) || moveAngle<=this.TouchMoveMinAngle) && this.EnableScrollUpDown==true ) 
+                    {   //上下滚动
+                        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_TOUCH_SCROLL_UP_DOWN);
+                        var isEnd=true; //是否退出
+                        if (event && event.Callback)
+                        {
+                            var sendData={ DragData:drag, PreventDefault:false };
+                            event.Callback(event, sendData, this);
+                            isEnd=(sendData.PreventDefault===false);
+                        }
+
+                        if (isEnd)
+                        {
+                            this.ClearTouchTimer();
+                            return;
+                        }
+                    }
+
+                    if (drag!=null)
                     {
                         this.ClearTouchTimer();
-                        return;
+
+                        this.MouseDrag=null;
+                        var x = touches[0].clientX;
+                        var y = touches[0].clientY;
+                        this.OnMouseMove(x,y,e);
                     }
                 }
             }
@@ -8501,16 +8571,6 @@ function MinuteChartContainer(uielement)
             }
 
             phonePinch.Last = { "X": touches[0].pageX, "Y": touches[0].pageY, "X2": touches[1].pageX, "Y2": touches[1].pageY };
-        }
-
-        if (drag!=null)
-        {
-            this.ClearTouchTimer();
-
-            this.MouseDrag=null;
-            var x = touches[0].clientX;
-            var y = touches[0].clientY;
-            this.OnMouseMove(x,y,e);
         }
 
         if (this.PhoneTouchInfo)
@@ -9844,6 +9904,15 @@ function MinuteChartContainer(uielement)
         this.Frame.SubFrame[0].Frame.YSplitOperator.YClose = yClose;
         this.Frame.SubFrame[0].Frame.YSplitOperator.Data = bindData;
 
+        this.Frame.Data=this.ChartPaint[0].Data;
+        this.Frame.SourceData=minuteData;
+
+        for(var i=0; i<this.Frame.SubFrame.length; ++i)
+        {
+            var item=this.Frame.SubFrame[i].Frame;
+            item.Data=minuteData;  //每个子窗口都绑定下数据
+        }
+
         //均线
         bindData = new ChartData();
         bindData.Data = minuteData.GetMinuteAvPrice();
@@ -10175,6 +10244,32 @@ function MinuteChartContainer(uielement)
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Draw();
+    }
+
+    this.CreateChartDrawPicture=function(name, option, callback)
+    {
+        var drawPicture=null;
+        var item=IChartDrawPicture.GetDrawPictureByName(name);
+        if (item) drawPicture=item.Create();
+        if (!drawPicture) return false;
+
+        drawPicture.Canvas=this.Canvas;
+        drawPicture.Status=0;
+        drawPicture.Symbol=this.Symbol;
+        drawPicture.Period=888888888;
+        drawPicture.Option=this.ChartDrawOption;
+        
+        if (callback) drawPicture.FinishedCallback=callback;    //完成通知上层回调
+        if (option) drawPicture.SetOption(option);
+        var self=this;
+        drawPicture.Update=function()   //更新回调函数
+        {
+            self.DrawDynamicInfo();
+        };
+        drawPicture.GetActiveDrawPicture=function() { return self.GetActiveDrawPicture(); }
+        this.CurrentChartDrawPicture=drawPicture;
+        JSConsole.Chart.Log("[MinuteChartContainer::CreateChartDrawPicture] ", name,this.CurrentChartDrawPicture);
+        return true;
     }
 }
 

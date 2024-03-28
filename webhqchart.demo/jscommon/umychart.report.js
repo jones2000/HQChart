@@ -3389,6 +3389,7 @@ function ChartReport()
             if (item.Title) colItem.Title=item.Title;
             if (item.TextAlign) colItem.TextAlign=item.TextAlign;
             if (item.TextColor) colItem.TextColor=item.TextColor;
+            if (item.HeaderColor) colItem.HeaderColor=item.HeaderColor;
             if (item.MaxText) colItem.MaxText=item.MaxText;
             if (item.ID) colItem.ID=item.ID;
             if (IFrameSplitOperator.IsNumber(item.Sort)) colItem.Sort=item.Sort;
@@ -3734,6 +3735,8 @@ function ChartReport()
             var textWidth=itemWidth-this.HeaderMergin.Left-this.HeaderMergin.Right;
             var x=textLeft+this.HeaderMergin.Left;
 
+            if (item.HeaderColor) this.Canvas.fillStyle=item.HeaderColor;
+
             if (this.SortInfo && this.SortInfo.Field==i && this.SortInfo.Sort>0)
             {
                 this.DrawSortHeader(item.Title,item.TextAlign,x,y,textWidth,this.SortInfo.Sort);
@@ -3742,6 +3745,8 @@ function ChartReport()
             {
                 this.DrawText(item.Title,item.TextAlign,x,y,textWidth);
             }
+
+            if (item.HeaderColor)  this.Canvas.fillStyle=this.HeaderColor;
 
             textLeft+=item.Width;
         }
@@ -3753,6 +3758,8 @@ function ChartReport()
             var textWidth=itemWidth-this.HeaderMergin.Left-this.HeaderMergin.Right;
             var x=textLeft+this.HeaderMergin.Left;
 
+            if (item.HeaderColor) this.Canvas.fillStyle=item.HeaderColor;
+
             if (this.SortInfo && this.SortInfo.Field==i && this.SortInfo.Sort>0)
             {
                 this.DrawSortHeader(item.Title,item.TextAlign,x,y,textWidth,this.SortInfo.Sort);
@@ -3761,6 +3768,8 @@ function ChartReport()
             {
                 this.DrawText(item.Title,item.TextAlign,x,y,textWidth);
             }
+
+            if (item.HeaderColor)  this.Canvas.fillStyle=this.HeaderColor;
 
             textLeft+=item.Width;
         } 

@@ -5,6 +5,11 @@ import
 } from './umychart.framesplit.wechat.js'
 
 import 
+{ 
+    g_MinuteTimeStringData,
+} from "./umychart.coordinatedata.wechat.js";
+
+import 
 {
     g_JSChartResource,
     g_JSChartLocalization,
@@ -1936,6 +1941,8 @@ function ChartDrawPriceLineV2()
 
         var line={Start:ptStart, End:ptEnd};
         this.LinePoint.push(line);
+
+       
         
         var pixelTatio =1;
         this.Canvas.font=this.Font;
@@ -1949,6 +1956,7 @@ function ChartDrawPriceLineV2()
         var text=price.toFixed(2);
         var textWidth=this.Canvas.measureText(text).width+2*offset;
 
+        var centerPoint=null;
         if (this.IsHScreen)
         {
             var position=this.TextPosition[1];
@@ -1999,6 +2007,8 @@ function ChartDrawPriceLineV2()
                 this.Canvas.fillText(this.Title,0,0);
                 this.Canvas.restore();
             }
+
+            centerPoint={ X:ptStart.X, Y:ptStart.Y+(ptEnd.Y-ptStart.Y)/2 };   //中心点
         }
         else
         {
@@ -2043,9 +2053,11 @@ function ChartDrawPriceLineV2()
                 this.Canvas.fillStyle=this.TextColor;
                 this.Canvas.fillText(this.Title, rtTitle.Left+1*pixelTatio, yText);
             }
+
+            centerPoint={ X:ptStart.X+(ptEnd.X-ptStart.X)/2, Y:ptStart.Y };   //中心点
         }
         
-       
+        if (centerPoint) this.DrawPoint([centerPoint]);
     }
 
     this.DrawPrice=function()

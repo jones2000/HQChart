@@ -58702,6 +58702,7 @@ function ChartDrawPriceLineV2()
         var text=price.toFixed(2);
         var textWidth=this.Canvas.measureText(text).width+2*offset;
 
+        var centerPoint=null;
         if (this.IsHScreen)
         {
             var position=this.TextPosition[1];
@@ -58752,6 +58753,8 @@ function ChartDrawPriceLineV2()
                 this.Canvas.fillText(this.Title,0,0);
                 this.Canvas.restore();
             }
+
+            centerPoint={ X:ptStart.X, Y:ptStart.Y+(ptEnd.Y-ptStart.Y)/2 };   //中心点
         }
         else
         {
@@ -58796,9 +58799,11 @@ function ChartDrawPriceLineV2()
                 this.Canvas.fillStyle=this.TextColor;
                 this.Canvas.fillText(this.Title, rtTitle.Left+1*pixelTatio, yText);
             }
+
+            centerPoint={ X:ptStart.X+(ptEnd.X-ptStart.X)/2, Y:ptStart.Y };   //中心点
         }
         
-       
+        if (centerPoint) this.DrawPoint([centerPoint]);
     }
 
     this.DrawPrice=function()
@@ -69680,28 +69685,30 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
     //{ Type:  0=普通坐标  1=百分比坐标 (右边坐标刻度) 2=对数对标 3=等比坐标, IsReverse:是否反转坐标 }
     this.ChangeCoordinateType=function(obj) 
     {
-        if (!this.Frame && !this.Frame.SubFrame) return;
-        if (!this.Frame.SubFrame.length) return;
+        if (!this.Frame) return;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.Frame.SubFrame)) return;
+        if (!this.Frame.SubFrame[0]) return;
 
+        var frame=this.Frame.SubFrame[0].Frame;
         if (IFrameSplitOperator.IsNumber(obj))  //老版本
         {
             var type=obj;
             if (type==2) //反转坐标
             {
-                this.Frame.SubFrame[0].Frame.CoordinateType=1;
+                frame.CoordinateType=1;
             }
             else if(type==1)
             {
-                this.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType=type;
+                frame.YSplitOperator.CoordinateType=type;
             }
             else if (type==0)
             {
-                this.Frame.SubFrame[0].Frame.CoordinateType=0;
-                this.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType=0;
+                frame.CoordinateType=0;
+                frame.YSplitOperator.CoordinateType=0;
             }
             else if (type==3)   //对数坐标
             {
-                this.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType=2;
+                frame.Frame.YSplitOperator.CoordinateType=2;
             }
             else
             {
@@ -69710,11 +69717,15 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         }
         else
         {
-            if (obj.Type>=0 && obj.Type<=5) this.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType=obj.Type;
-            if (obj.IsReverse===true) this.Frame.SubFrame[0].Frame.CoordinateType=1;
-            else if (obj.IsReverse==false) this.Frame.SubFrame[0].Frame.CoordinateType=0;
+            if (obj.Type>=0 && obj.Type<=5) frame.YSplitOperator.CoordinateType=obj.Type;
+            if (obj.IsReverse===true) frame.CoordinateType=1;
+            else if (obj.IsReverse==false) frame.CoordinateType=0;
         }
 
+        //请求缓存的最大最小值
+        frame.YMaxMin.Max=null;
+        frame.YMaxMin.Min=null;
+        
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Frame.SetSizeChage(true);
         this.Draw();
