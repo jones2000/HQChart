@@ -179,6 +179,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![未回补缺口显示](/小程序行情模块用例/image/hqchart_kline_pricegap.gif)   
 * 小程序画图工具
 ![小程序画图工具](/小程序行情模块用例/image/wechat_drawtool.gif)  
+![小程序画图工具](/小程序行情模块用例/image/drawtool_price_line.gif)  
 * 背景分割
 ![背景分割](/小程序行情模块用例/image/kline_splitbg.png)  
 
