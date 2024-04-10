@@ -90,6 +90,12 @@ function JSReportChart(divElement)
             if (IFrameSplitOperator.IsNumber(item.Sort)) chart.SortInfo.Sort=item.Sort;
         }
 
+        var reportChart=chart.GetReportChart();
+        if (reportChart)
+        {
+            if (IFrameSplitOperator.IsNumber(option.TextOverflowStyle)) reportChart.TextOverflowStyle=option.TextOverflowStyle;
+        }
+
         this.SetChartBorder(chart, option);
 
         //是否自动更新
@@ -246,6 +252,9 @@ function HQReportItem()
     this.CloseLine;     //{Data:[], Max:, Min:, Count: }
 
     this.ExtendData;    //扩展数据
+
+    this.Time;
+    this.Date;
 }
 
 function JSReportChartContainer(uielement)
@@ -1143,6 +1152,9 @@ function JSReportChartContainer(uielement)
 
         if (item[32]) stock.CloseLine=item[32];                     //32=收盘价线
         if (item[33]) stock.KLine=item[33];                         //33=K线
+
+        if (IFrameSplitOperator.IsNumber(item[35])) stock.Time=item[35];    //时间 hhmm / hhmmss / hhmmss.fff
+        if (IFrameSplitOperator.IsNumber(item[36])) stock.Date=item[36];    //日期
     }
 
 
@@ -3113,6 +3125,9 @@ var REPORT_COLUMN_ID=
     NAME_EX_ID:27,          //扩展名字
     CLOSE_LINE_ID:28,       //收盘价线
     KLINE_ID:29,            //K线
+
+    TIME_ID:31,             //时间 hhmmss / hhmm / hhmmss.fff
+    DATE_ID:32,             //日期
     
 
     SYMBOL_NAME_ID:99,
@@ -3192,6 +3207,7 @@ function ChartReport()
     this.VScrollbar;
 
     this.GlobalOption;
+    this.TextOverflowStyle=0;                //输出内容比单元格长度大 0=裁剪  1=输出"####"
 
     //涨跌颜色
     this.UpColor=g_JSChartResource.Report.UpTextColor;
@@ -3392,6 +3408,8 @@ function ChartReport()
             if (item.HeaderColor) colItem.HeaderColor=item.HeaderColor;
             if (item.MaxText) colItem.MaxText=item.MaxText;
             if (item.ID) colItem.ID=item.ID;
+            if (item.FullColBGColor) colItem.FullColBGColor=item.FullColBGColor;    //整列背景色
+            if (item.HeaderBGColor) colItem.HeaderBGColor=item.HeaderBGColor;       //表头背景色
             if (IFrameSplitOperator.IsNumber(item.Sort)) colItem.Sort=item.Sort;
             if (IFrameSplitOperator.IsBool(item.EnableTooltip)) colItem.EnableTooltip=item.EnableTooltip;
             if (IFrameSplitOperator.IsNumber(item.FixedWidth)) colItem.FixedWidth=item.FixedWidth;
@@ -3441,6 +3459,14 @@ function ChartReport()
             else if (item.Type==REPORT_COLUMN_ID.CLOSE_LINE_ID)
             {
                 if (IFrameSplitOperator.IsBool(item.IsDrawArea)) colItem.IsDrawArea=item.IsDrawArea;
+            }
+            else if(item.Type==REPORT_COLUMN_ID.TIME_ID)
+            {
+                if (IFrameSplitOperator.IsNumber(item.ValueType)) colItem.ValueType=item.ValueType;
+            }
+            else if (item.Type==REPORT_COLUMN_ID.DATE_ID)
+            {
+                if (IFrameSplitOperator.IsNumber(item.FormatType)) colItem.FormatType=item.FormatType;
             }
 
             this.Column.push(colItem);
@@ -3534,6 +3560,11 @@ function ChartReport()
 
             { Type:REPORT_COLUMN_ID.CUSTOM_ICON_ID, Title:"  ", TextAlign:"left", FixedWidth:20, TextColor:g_JSChartResource.Report.FieldColor.Text },
             { Type:REPORT_COLUMN_ID.KLINE_ID, Title:"K线", TextAlign:"left", FixedWidth:50, TextColor:g_JSChartResource.Report.FieldColor.Text },
+
+            { Type:REPORT_COLUMN_ID.TIME_ID, Title:"时间", TextAlign:"left", ValueType:0, TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"99:99:99.999" },
+            { Type:REPORT_COLUMN_ID.DATE_ID, Title:"日期", TextAlign:"left", FormatType:0, TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"9999-99-99" },
+
+            
         ];
 
         for(var i=0;i<DEFAULT_COLUMN.length;++i)
@@ -3724,7 +3755,6 @@ function ChartReport()
         var y=top+this.HeaderMergin.Top+(this.HeaderHeight-this.HeaderMergin.Top-this.HeaderMergin.Bottom)/2;
 
         this.Canvas.font=this.HeaderFont;
-        this.Canvas.fillStyle=this.HeaderColor;
         
         var textLeft=left;
         //固定列
@@ -3735,7 +3765,16 @@ function ChartReport()
             var textWidth=itemWidth-this.HeaderMergin.Left-this.HeaderMergin.Right;
             var x=textLeft+this.HeaderMergin.Left;
 
+            if (item.HeaderBGColor) 
+            {
+                var rtBG={Left:textLeft, Top:top, Width:itemWidth, Height:this.HeaderHeight };
+                rtBG.Right=rtBG.Left+rtBG.Width;
+                rtBG.Bottom=rtBG.Top+rtBG.Height;
+                this.DrawItemBG({ Rect:rtBG, BGColor:item.HeaderBGColor });
+            }
+
             if (item.HeaderColor) this.Canvas.fillStyle=item.HeaderColor;
+            else this.Canvas.fillStyle=this.HeaderColor;
 
             if (this.SortInfo && this.SortInfo.Field==i && this.SortInfo.Sort>0)
             {
@@ -3746,7 +3785,7 @@ function ChartReport()
                 this.DrawText(item.Title,item.TextAlign,x,y,textWidth);
             }
 
-            if (item.HeaderColor)  this.Canvas.fillStyle=this.HeaderColor;
+           this.Canvas.fillStyle=this.HeaderColor;
 
             textLeft+=item.Width;
         }
@@ -3758,7 +3797,16 @@ function ChartReport()
             var textWidth=itemWidth-this.HeaderMergin.Left-this.HeaderMergin.Right;
             var x=textLeft+this.HeaderMergin.Left;
 
+            if (item.HeaderBGColor) 
+            {
+                var rtBG={Left:textLeft, Top:top, Width:itemWidth, Height:this.HeaderHeight };
+                rtBG.Right=rtBG.Left+rtBG.Width;
+                rtBG.Bottom=rtBG.Top+rtBG.Height;
+                this.DrawItemBG({ Rect:rtBG, BGColor:item.HeaderBGColor });
+            }
+
             if (item.HeaderColor) this.Canvas.fillStyle=item.HeaderColor;
+            else this.Canvas.fillStyle=this.HeaderColor;
 
             if (this.SortInfo && this.SortInfo.Field==i && this.SortInfo.Sort>0)
             {
@@ -3768,8 +3816,6 @@ function ChartReport()
             {
                 this.DrawText(item.Title,item.TextAlign,x,y,textWidth);
             }
-
-            if (item.HeaderColor)  this.Canvas.fillStyle=this.HeaderColor;
 
             textLeft+=item.Width;
         } 
@@ -4079,6 +4125,11 @@ function ChartReport()
         rtItem.Right=rtItem.Left+rtItem.Width;
         rtItem.Bottom=rtItem.Top+rtItem.Height;
         drawInfo.Rect=rtItem;
+
+        if (column.FullColBGColor)
+        {
+            this.DrawItemBG({ Rect:rtItem, BGColor:column.FullColBGColor });
+        }
         
         //tooltip提示
         if (column.EnableTooltip===true)
@@ -4289,6 +4340,14 @@ function ChartReport()
             rtItem.Right=rtItem.Left+rtItem.Width;
             rtItem.Bottom=rtItem.Top+rtItem.Height;
             this.DrawKLine(stock.KLine, column, rtItem, data);
+        }
+        else if (column.Type==REPORT_COLUMN_ID.TIME_ID)
+        {
+            this.FormaTimeDrawInfo(column, stock, drawInfo, data);
+        }
+        else if (column.Type==REPORT_COLUMN_ID.DATE_ID)
+        {
+            this.FormaDateDrawInfo(column, stock, drawInfo, data);
         }
 
         //拖拽行颜色
@@ -4512,6 +4571,43 @@ function ChartReport()
         }
     }
 
+    this.FormaTimeDrawInfo=function(column, stock, drawInfo, data)
+    {
+        if (!IFrameSplitOperator.IsNumber(stock.Time)) return;
+
+        if (column.ValueType==0) //0=hhmm 1=hhmmss 2=hhmmss.fff
+        {
+            drawInfo.Text=IFrameSplitOperator.FormatTimeString(stock.Time,"HH:MM");
+        }   
+        else if (column.ValueType==1)
+        {
+            drawInfo.Text=IFrameSplitOperator.FormatTimeString(stock.Time,"HH:MM:SS");
+        }
+        else if (column.ValueType==2)
+        {
+            drawInfo.Text=IFrameSplitOperator.FormatTimeString(stock.Time,"HH:MM:SS.fff");
+        }
+    }
+
+    this.FormaDateDrawInfo=function(column, stock, drawInfo, data)
+    {
+        if (!IFrameSplitOperator.IsNumber(stock.Date)) return;
+
+        if (column.FormatType==0)
+            drawInfo.Text=IFrameSplitOperator.FormatDateString(stock.Date,"YYYY-MM-DD");
+        else if (column.FormatType==1)
+            drawInfo.Text=IFrameSplitOperator.FormatDateString(stock.Date,"YYYY/MM/DD");
+        else if (column.FormatType==2)
+            drawInfo.Text=IFrameSplitOperator.FormatDateString(stock.Date,"YYYY/MM/DD/W");
+        else if (column.FormatType==3)
+            drawInfo.Text=IFrameSplitOperator.FormatDateString(stock.Date,"YYYY-MM");
+        else if (column.FormatType==4)
+            drawInfo.Text=IFrameSplitOperator.FormatDateString(stock.Date,"MM/DD");
+        else if (column.FormatType==4)
+            drawInfo.Text=IFrameSplitOperator.FormatDateString(stock.Date,"MM-DD");
+    }
+
+
     //自定义图标
     this.GetCustomIconData=function(columnInfo, symbol, drawInfo, data)
     {
@@ -4613,7 +4709,7 @@ function ChartReport()
 
         var textWidth=this.Canvas.measureText(text).width+1;
         var bClip=false;
-        if (textWidth>=width)
+        if (textWidth>=width)   //长度超过单元格 裁剪
         {
             this.Canvas.save();
             bClip=true;
@@ -4623,6 +4719,16 @@ function ChartReport()
             this.Canvas.rect(rtCell.Left, rtCell.Top, rtCell.Width, rtCell.Height);
             //this.Canvas.stroke(); //调试用
             this.Canvas.clip();
+
+            if (this.TextOverflowStyle==1)
+            {
+                var count=text.length+5;
+                text="";
+                for(var i=0;i<count;++i)
+                {
+                    text+="#";
+                }
+            }
         }
 
         this.Canvas.textBaseline="middle";

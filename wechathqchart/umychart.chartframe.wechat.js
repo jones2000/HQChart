@@ -58,7 +58,7 @@ function IChartFramePainting()
     this.Canvas;                        //画布
 
     this.Identify;                      //窗口标识
-
+    this.Guid=Guid();                   //内部窗口唯一标识
     this.ChartBorder;
     this.PenBorder = g_JSChartResource.FrameBorderPen;        //边框颜色
     this.TitleBGColor = g_JSChartResource.FrameTitleBGColor;  //标题背景色
@@ -335,6 +335,8 @@ function AverageWidthFrame()
    
     this.DrawOtherChart;      //其他画法调用
     this.GetEventCallback;    //事件回调
+
+    this.FrameData={ SubFrameItem:null };    //窗口框架信息
 
     this.DrawFrame = function () 
     {
@@ -1181,6 +1183,25 @@ function AverageWidthFrame()
         if (IFrameSplitOperator.IsNumber(width.Right)) width.Right+=this.YTextPadding[1];
         
         return { TextWidth:width };
+    }
+
+    this.GetMainOverlayFrame=function()
+    {
+        if (!this.FrameData || !this.FrameData.SubFrameItem)  return null;
+
+        var subFrame=this.FrameData.SubFrameItem;
+        var leftFrame=null, rightFrame=null;
+        for(var i=0;i<subFrame.OverlayIndex.length;++i)
+        {
+            var item=subFrame.OverlayIndex[i];
+            var overlayFrame=item.Frame;
+            if (overlayFrame.IsShowMainFrame==2) rightFrame=overlayFrame;
+            else if (overlayFrame.IsShowMainFrame==1) leftFrame=overlayFrame;
+        }
+
+        if (!leftFrame && !rightFrame) return null;
+
+        return [leftFrame, rightFrame];
     }
 }
 
@@ -2537,6 +2558,7 @@ function OverlayKLineFrame()
 
     this.MainFrame=null;    //主框架
     this.IsShareY=false;    //使用和主框架公用Y轴
+    this.IsShowMainFrame=0; //是否显示在主框架坐标上 1=左边 2=右边
     this.IsCalculateYMaxMin=true;   //是否计算Y最大最小值
     this.RightOffset=50;
     this.PenBorder=g_JSChartResource.OverlayFrame.BolderPen; //'rgb(0,0,0)'

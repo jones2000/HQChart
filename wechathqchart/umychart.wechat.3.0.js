@@ -2772,13 +2772,18 @@ function JSChartContainer(uielement)
             { 
                 ID:key, Frame:frame, ChartPaint:[] , Max:null, Min:null, 
                 OverlayFrame:[],        //共享坐标
-                SingleOverlay:[]        //独立坐标
+                SingleOverlay:[],        //独立坐标
+                MainOverlayFrame:[null, null],  //叠加坐标在主坐标显示[0]=left [1]=right
             };
 
             for(var j=0;j<subItem.OverlayIndex.length;++j)
             {
                 var overlayItem=subItem.OverlayIndex[j];
                 var overlayFrame=overlayItem.Frame;
+
+                if (overlayFrame.IsShowMainFrame===1) item.MainOverlayFrame[0]= overlayFrame;
+                else if (overlayFrame.IsShowMainFrame===2) item.MainOverlayFrame[1]= overlayFrame;
+
                 if (overlayFrame.IsShareY)
                 {
                     if (!overlayFrame.MainFrame) continue;
@@ -2876,6 +2881,13 @@ function JSChartContainer(uielement)
             for(var j=0;j<item.OverlayFrame.length;++j)
             {
                 item.OverlayFrame[j].XYSplit=true;
+            }
+
+            //叠加坐标显示在主图坐标 需要同步
+            for(var i=0;i<item.MainOverlayFrame.length;++i)
+            {
+                var subItem=item.MainOverlayFrame[i];
+                if (subItem) subItem.XYSplit=true;
             }
 
             //独立坐标叠加指标
@@ -4077,10 +4089,29 @@ function OverlayIndexItem()
             }
         }
 
-        if (value.Max!=null && value.Min!=null)
+        if (!IFrameSplitOperator.IsNumber(this.Frame.YMaxMin.Max) || this.Frame.YMaxMin.Max!=value.Max)
         {
-            this.Frame.HorizontalMax=value.Max;
-            this.Frame.HorizontalMin=value.Min;
+            this.Frame.YMaxMin.Max=value.Max;
+            this.Frame.XYSplit=true;
+        }
+
+        if (!IFrameSplitOperator.IsNumber(this.Frame.YMaxMin.Min) || this.Frame.YMaxMin.Min!=value.Min)
+        {
+            this.Frame.YMaxMin.Min=value.Min;
+            this.Frame.XYSplit=true;
+        }
+
+        if (this.Frame.XYSplit)
+        {
+            var max=10, min=0;
+            if (value.Max!=null) max=value.Max;
+            if (value.Min!=null) min=value.Min;
+
+            this.Frame.HorizontalMax=max;
+            this.Frame.HorizontalMin=min;  
+        }
+        else
+        {
             this.Frame.XYSplit=true;
         }
     }
@@ -4483,6 +4514,29 @@ function HQTradeFrame()
                 var firstOpenPrice = frame.YSplitOperator.GetFirstOpenPrice();
                 outObject.RightYValue = ((yValue - firstOpenPrice) / firstOpenPrice * 100).toFixed(2) + '%';
             }
+
+            if (frame.GetMainOverlayFrame)
+            {
+                var aryOverlayFrame=frame.GetMainOverlayFrame();
+                if (aryOverlayFrame) 
+                {
+                    if (aryOverlayFrame[0]) //左侧
+                    {
+                        var leftFrame=aryOverlayFrame[0];
+                        var value=leftFrame.GetYData(y);
+                        outObject.RightYValue=yValue;
+                        yValue=value;
+                    }
+
+                    if (aryOverlayFrame[1]) //右侧
+                    {
+                        var rightFrame=aryOverlayFrame[1];
+                        var value=rightFrame.GetYData(y);
+                        outObject.RightYValue=value;
+                    }
+                }
+            }
+
             return yValue;
         }
     }
@@ -4724,7 +4778,34 @@ function HQTradeHScreenFrame() {
             }
         }
 
-        if (frame != null) return frame.GetYData(x);
+        if (frame != null) 
+        {
+            var xValue=frame.GetYData(x);
+
+            if (frame.GetMainOverlayFrame)
+            {
+                var aryOverlayFrame=frame.GetMainOverlayFrame();
+                if (aryOverlayFrame) 
+                {
+                    if (aryOverlayFrame[0]) //左侧
+                    {
+                        var leftFrame=aryOverlayFrame[0];
+                        var value=leftFrame.GetYData(x);
+                        outObject.RightYValue=xValue;
+                        xValue=value;
+                    }
+
+                    if (aryOverlayFrame[1]) //右侧
+                    {
+                        var rightFrame=aryOverlayFrame[1];
+                        var value=rightFrame.GetYData(x);
+                        outObject.RightYValue=value;
+                    }
+                }
+            }
+
+            return xValue;
+        }
     }
 }
 
@@ -5428,6 +5509,7 @@ function KLineChartContainer(uielement)
             }
 
             var subFrame = new SubFrameItem();
+            frame.FrameData.SubFrameItem=subFrame;
             subFrame.Frame = frame;
             if (i == 0) subFrame.Height = 20;
             else subFrame.Height = 10;
@@ -5482,6 +5564,7 @@ function KLineChartContainer(uielement)
         }
 
         var subFrame = new SubFrameItem();
+        frame.FrameData.SubFrameItem=subFrame;
         subFrame.Frame = frame;
         subFrame.Height = 10;
 
@@ -6497,11 +6580,17 @@ function KLineChartContainer(uielement)
   //删除某一个窗口的指标 bCallDestory=是否调用图形销毁函数
     this.DeleteIndexPaint = function (windowIndex, bCallDestroy) 
     {
-        let paint = new Array();  //踢出当前窗口的指标画法
+        if (!this.Frame.SubFrame[windowIndex]) return;
+        var subFrame=this.Frame.SubFrame[windowIndex].Frame;
+        if (!subFrame) return;
+
+        var paint=[];  //踢出当前窗口的指标画法
         for (var i=0;i<this.ChartPaint.length; ++i) 
         {
             let item = this.ChartPaint[i];
-            if (i == 0 || item.ChartFrame != this.Frame.SubFrame[windowIndex].Frame)
+            var bFind=(item.ChartFrame.Guid==subFrame.Guid || item.ChartFrame==subFrame);
+
+            if (i == 0 || !bFind)
             {
                 paint.push(item);
             }
@@ -6514,7 +6603,6 @@ function KLineChartContainer(uielement)
             }
         }
 
-        var subFrame=this.Frame.SubFrame[windowIndex].Frame;
         subFrame.YSpecificMaxMin = null;          //清空指定最大最小值
         subFrame.IsLocked = false;                //解除上锁
         subFrame.YSplitScale = null;              //清空固定刻度
@@ -8046,6 +8134,7 @@ function KLineChartContainer(uielement)
        
         if (IFrameSplitOperator.IsBool(obj.IsShareY)) frame.IsShareY=obj.IsShareY;
         if (IFrameSplitOperator.IsBool(obj.IsCalculateYMaxMin)) frame.IsCalculateYMaxMin=obj.IsCalculateYMaxMin;   //是否计算Y最大最小值
+        if (IFrameSplitOperator.IsNumber(obj.IsShowMainFrame)) frame.IsShowMainFrame=obj.IsShowMainFrame;
 
         frame.YSplitOperator=new FrameSplitY();
         frame.YSplitOperator.LanguageID=this.LanguageID;
@@ -8688,6 +8777,7 @@ function MinuteChartContainer(uielement)
             }
 
             var subFrame = new SubFrameItem();
+            frame.FrameData.SubFrameItem=subFrame;
             subFrame.Frame = frame;
             if (i == 0) subFrame.Height = 20;
             else subFrame.Height = 10;
@@ -8785,11 +8875,17 @@ function MinuteChartContainer(uielement)
     //删除某一个窗口的指标 bCallDestory=是否调用图形销毁函数
     this.DeleteIndexPaint = function (windowIndex, bCallDestroy) 
     {
-        let paint = new Array();
+        if (!this.Frame.SubFrame[windowIndex]) return;
+        var subFrame=this.Frame.SubFrame[windowIndex].Frame;
+        if (!subFrame) return;
+
+        var paint=[];
         for (var i=0;i<this.ChartPaint.length;++i)  //踢出当前窗口的指标画法
         {
             let item = this.ChartPaint[i];
-            if (i == 0 || item.ChartFrame != this.Frame.SubFrame[windowIndex].Frame)
+            var bFind=(item.ChartFrame.Guid==subFrame.Guid || item.ChartFrame==subFrame);
+
+            if (i == 0 || !bFind)
             {
                 paint.push(item);
             }
@@ -8803,7 +8899,6 @@ function MinuteChartContainer(uielement)
         }
 
         //清空指定最大最小值
-        var subFrame=this.Frame.SubFrame[windowIndex].Frame;
         subFrame.YSpecificMaxMin = null;
         subFrame.IsLocked = false;          //解除上锁
         subFrame.YSplitOperator.SplitType=subFrame.YSplitOperator.DefaultSplitType;  //还原Y坐标分割模式
@@ -10029,11 +10124,10 @@ function MinuteChartContainer(uielement)
         frame.MainFrame=subFrame.Frame;
         frame.ChartBorder=subFrame.Frame.ChartBorder;
         frame.GlobalOption=this.GlobalOption;
-        if (obj.ShowRightText===true) frame.IsShow=true;
-        else if (obj.ShowRightText===false) frame.IsShow=false;
-        if (obj.IsShareY===true) frame.IsShareY=true;
+        if (IFrameSplitOperator.IsBool(obj.ShowRightText)) frame.IsShow=obj.ShowRightText;
+        if (IFrameSplitOperator.IsBool(obj.IsShareY)) frame.IsShareY=true;
         if (IFrameSplitOperator.IsBool(obj.IsCalculateYMaxMin)) frame.IsCalculateYMaxMin=obj.IsCalculateYMaxMin;   //是否计算Y最大最小值
-
+        if (IFrameSplitOperator.IsNumber(obj.IsShowMainFrame)) frame.IsShowMainFrame=obj.IsShowMainFrame;
         frame.YSplitOperator=new FrameSplitY();
         frame.YSplitOperator.LanguageID=this.LanguageID;
         frame.YSplitOperator.FrameSplitData=this.FrameSplitData.get('double');
@@ -11218,6 +11312,7 @@ function KLineChartHScreenContainer(uielement)
             }
 
             var subFrame = new SubFrameItem();
+            frame.FrameData.SubFrameItem=subFrame;
             subFrame.Frame = frame;
             if (i == 0)
                 subFrame.Height = 20;
@@ -11340,6 +11435,7 @@ function MinuteChartHScreenContainer(uielement)
             }
 
             var subFrame = new SubFrameItem();
+            frame.FrameData.SubFrameItem=subFrame;
             subFrame.Frame = frame;
             if (i == 0)
                 subFrame.Height = 20;

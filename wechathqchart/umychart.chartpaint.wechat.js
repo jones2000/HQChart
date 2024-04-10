@@ -8958,6 +8958,8 @@ function ChartCorssCursor()
 
         this.StringFormatX.Value = this.CursorIndex;
         this.StringFormatY.Value = yValue;
+        this.StringFormatY.RValue=yValueExtend.RightYValue; //右侧子坐标
+        this.StringFormatY.Point={X:x, Y:y};
         this.StringFormatY.FrameID = yValueExtend.FrameID;
 
         if (((this.ShowTextMode.Left == 1 && this.Frame.ChartBorder.Left >= 30) || this.ShowTextMode.Left == 2 ||
@@ -9216,6 +9218,8 @@ function ChartCorssCursor()
 
         this.StringFormatX.Value = xValue;
         this.StringFormatY.Value = yValue;
+        this.StringFormatY.RValue=yValueExtend.RightYValue; //右侧子坐标
+        this.StringFormatY.Point={X:x, Y:y};
         this.StringFormatY.FrameID = yValueExtend.FrameID;
 
         if (((this.ShowTextMode.Left == 1 && this.Frame.ChartBorder.Top >= 30) || this.ShowTextMode.Left == 2 ||
@@ -9262,6 +9266,12 @@ function ChartCorssCursor()
                 this.Canvas.fillText(text, 2, 0, textWidth);
 
                 this.Canvas.restore();
+            }
+
+            if (this.StringFormatY.RText) 
+            {
+                text=this.StringFormatY.RText;
+                var textWidth=this.Canvas.measureText(text).width+4;    //前后各空2个像素
             }
 
             if (this.Frame.ChartBorder.Bottom >= 30 && this.ShowTextMode.Right == 1) {

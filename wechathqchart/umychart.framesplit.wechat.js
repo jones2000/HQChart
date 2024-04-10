@@ -934,46 +934,17 @@ function FrameSplitY()
                 this.Frame.HorizontalInfo[i] = coordinate;
                 coordinate.Value=value;
                 if (IFrameSplitOperator.IsNumber(this.LineType)) coordinate.LineType=this.LineType;
+                var text=this.FormatValueString(value);
+                this.Frame.HorizontalInfo[i].Message[0] = this.Frame.HorizontalInfo[i].Message[1]=text;
 
-                if (this.StringFormat == 1)   //手机端格式 如果有万,亿单位了 去掉小数
-                {
-                    var floatPrecision = this.FloatPrecision;
-                    if (!isNaN(value) && Math.abs(value) > 1000) floatPrecision = 0;
-                    coordinate.Message[1] = IFrameSplitOperator.FormatValueString(value, floatPrecision, this.LanguageID);
-                }
-                else if (this.StringFormat==2)
-                {
-                    coordinate.Message[1]=`${value.toFixed(this.FloatPrecision)}`;
-                }
-                else if (this.StringFormat == -1) //刻度不显示
-                {
-
-                }
-                else 
-                {
-                    var absValue = Math.abs(value);
-                    var floatPrecision = this.FloatPrecision;   //数据比小数位数还小, 调整小数位数
-                    if (absValue < 0.0000000001)
-                        this.Frame.HorizontalInfo[i].Message[1] = 0;
-                    else if (absValue < this.FLOATPRECISION_RANGE[this.FLOATPRECISION_RANGE.length - 1])
-                        this.Frame.HorizontalInfo[i].Message[1] = value.toExponential(2).toString();
-                    else {
-                        if (floatPrecision < this.FLOATPRECISION_RANGE.length && absValue < this.FLOATPRECISION_RANGE[floatPrecision])++floatPrecision;
-                        if (floatPrecision < this.FLOATPRECISION_RANGE.length && absValue < this.FLOATPRECISION_RANGE[floatPrecision])++floatPrecision;
-                        if (floatPrecision < this.FLOATPRECISION_RANGE.length && absValue < this.FLOATPRECISION_RANGE[floatPrecision])++floatPrecision;
-                        this.Frame.HorizontalInfo[i].Message[1] = IFrameSplitOperator.FormatValueString(value, floatPrecision, this.LanguageID);
-                    }
-                }
-
-                this.Frame.HorizontalInfo[i].Message[0] = this.Frame.HorizontalInfo[i].Message[1];
-
-                if (this.StringFormat == -2) this.Frame.HorizontalInfo[i].Message[1] = null;    //刻度右边不显示
-                else if (this.StringFormat == -3) this.Frame.HorizontalInfo[i].Message[0] = null;   //刻度左边不显示
+                if (this.IsShowLeftText==false) this.Frame.HorizontalInfo[i].Message[0]=null;
+                if (this.IsShowRightText==false) this.Frame.HorizontalInfo[i].Message[1]=null;
             }
         }
 
         this.FilterIgnoreYValue();
         this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo, (splitData.Max > 0 && splitData.Min < 0 && this.IsShowYZero));
+        this.MainOverlayFrameSplitY();  //主图Y轴绑定叠加Y轴坐标
         if (this.EnableRemoveZero) this.RemoveZero(this.Frame.HorizontalInfo);
         this.DynamicMessageText();
         this.Frame.HorizontalMax = splitData.Max;
@@ -988,6 +959,56 @@ function FrameSplitY()
                 event.Callback(event,data,this);
             }
         }
+    }
+
+    this.FormatValueString=function(value)
+    {
+        var text;
+        if (this.StringFormat==1)   //手机端格式 如果有万,亿单位了 去掉小数
+        {
+            var floatPrecision=this.FloatPrecision;
+            if (IFrameSplitOperator.IsNumber(value) && Math.abs(value) > 1000) floatPrecision=0;
+            text=IFrameSplitOperator.FormatValueString(value,floatPrecision,this.LanguageID);
+        }
+        else if (this.StringFormat==2)   //原始数据输出
+        {
+            text=`${value.toFixed(this.FloatPrecision)}`;
+        }
+        else if (this.StringFormat == -1) //刻度不显示
+        {
+
+        }
+        else
+        {
+            var absValue=Math.abs(value);
+            if (absValue<0.0000000001) 
+            {
+                text=0;
+            }
+            else if (absValue<this.FLOATPRECISION_RANGE[this.FLOATPRECISION_RANGE.length-1]) 
+            {
+                text = value.toExponential(2).toString();
+            }
+            else
+            {
+                var floatPrecision=this.GetFloatPrecision(absValue,this.FloatPrecision);                //数据比小数位数还小, 调整小数位数
+                text = IFrameSplitOperator.FormatValueString(value, floatPrecision,this.LanguageID);
+            }
+        }
+
+        return text;
+    }
+
+    this.GetFloatPrecision=function(value,floatPrecision)
+    {
+        if (value>this.FLOATPRECISION_RANGE[0]) return floatPrecision;
+        if (floatPrecision<0) return 2;
+        for(;floatPrecision<this.FLOATPRECISION_RANGE.length;++floatPrecision)
+        {
+            if (value>this.FLOATPRECISION_RANGE[floatPrecision]) break;
+        }
+
+        return floatPrecision;
     }
 
     this.FilterIgnoreYValue = function () 
@@ -1040,6 +1061,45 @@ function FrameSplitY()
         data.Count = count;
 
         return true;
+    }
+
+    this.MainOverlayFrameSplitY=function()
+    {
+        if (!this.Frame.GetMainOverlayFrame) return;
+        var aryOverlayFrame=this.Frame.GetMainOverlayFrame();
+        if (!aryOverlayFrame ) return;
+
+        if (aryOverlayFrame[1])
+        {
+            var rightFrame=aryOverlayFrame[1];
+            var ySplitOper=rightFrame.YSplitOperator;
+            if (ySplitOper) ySplitOper.Operator();
+
+            for(var i=0;i<this.Frame.HorizontalInfo.length;++i)
+            {
+                var item=this.Frame.HorizontalInfo[i];
+                var y=this.Frame.GetYFromData(item.Value);
+                var yValue=rightFrame.GetYData(y);
+                if (ySplitOper && ySplitOper.FormatValueString) item.Message[1] = ySplitOper.FormatValueString(yValue); 
+                else item.Message[1] = this.FormatValueString(yValue);
+            }
+        }
+
+        if (aryOverlayFrame[0])
+        {
+            var leftFrame=aryOverlayFrame[0];
+            var ySplitOper=leftFrame.YSplitOperator
+            if (ySplitOper) ySplitOper.Operator();
+
+            for(var i=0;i<this.Frame.HorizontalInfo.length;++i)
+            {
+                var item=this.Frame.HorizontalInfo[i];
+                var y=this.Frame.GetYFromData(item.Value);
+                var yValue=leftFrame.GetYData(y);
+                if (ySplitOper && ySplitOper.FormatValueString)  item.Message[0] = ySplitOper.FormatValueString(yValue); 
+                else item.Message[0] = this.FormatValueString(yValue);
+            }
+        }
     }
 }
 
@@ -2089,9 +2149,15 @@ function HQPriceStringFormat()
         else 
         {
             if (this.DataFormatType==1)
+            {
                 this.Text=IFrameSplitOperator.FormatValueThousandsString(this.Value,defaultfloatPrecision);
+                if (IFrameSplitOperator.IsNumber(this.RValue)) this.RText=IFrameSplitOperator.FormatValueString(this.RValue,defaultfloatPrecision,this.LanguageID);
+            }
             else
+            {
                 this.Text = IFrameSplitOperator.FormatValueString(this.Value, defaultfloatPrecision, this.LanguageID);
+                if (IFrameSplitOperator.IsNumber(this.RValue)) this.RText=IFrameSplitOperator.FormatValueString(this.RValue,defaultfloatPrecision,this.LanguageID);
+            }
         }
 
         if (this.GetEventCallback)
