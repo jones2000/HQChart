@@ -462,11 +462,11 @@ function JSScrollBarChartContainer(uielement)
             switch(item.Data.Type)
             {
                 case 0:
-                    mouseStatus={ Cursor:"move", Name:"SliderChart"};
+                    mouseStatus={ Cursor:"grab", Name:"SliderChart"};
                     break;
                 case 1:
                 case 2:
-                    mouseStatus={ Cursor:"ew-resize", Name:"SliderChart"};
+                    mouseStatus={ Cursor:"col-resize", Name:"SliderChart"};
                     break;
             }
         }
@@ -536,6 +536,10 @@ function JSScrollBarChartContainer(uielement)
                 {
                     xStart=pageRange.First.XStart;
                 }
+                else if (xStart>=right)
+                {
+                    xStart=pageRange.Last.XEnd;
+                }
 
                 this.SliderChart.XStart=xStart;
             }
@@ -544,6 +548,10 @@ function JSScrollBarChartContainer(uielement)
                 if (xEnd>=right) 
                 {
                     xEnd=pageRange.Last.XEnd;
+                }
+                else if (xEnd<=left)
+                {
+                    xEnd=pageRange.First.XStart;
                 }
 
                 this.SliderChart.XEnd=xEnd;
@@ -1089,8 +1097,9 @@ function SliderChart()
     this.Color=g_JSChartResource.ScrollBar.Slider.BarAreaColor;
 
     this.BarColor=g_JSChartResource.ScrollBar.Slider.BarColor;
-    this.BarWidth=10;
-    this.BarPadding=10;  //上下留白
+    this.BarWidth=g_JSChartResource.ScrollBar.Slider.BarWidth;
+    this.BarPadding=g_JSChartResource.ScrollBar.Slider.BarPadding;  //上下留白
+    this.MinCenterWidth=g_JSChartResource.ScrollBar.Slider.MinCenterWidth;
 
     this.DateFont=g_JSChartResource.ScrollBar.Slider.DateFont;
     this.DateColor=g_JSChartResource.ScrollBar.Slider.DateColor;
@@ -1150,6 +1159,12 @@ function SliderChart()
         var rtBar={ Left:Math.min(xStart,xEnd), Top:top, Width:Math.abs(xEnd-xStart), Height: bottom-top};
         rtBar.Right=rtBar.Left+rtBar.Width;
         rtBar.Bottom=rtBar.Top+rtBar.Height;
+        if (rtBar.Width<this.MinCenterWidth)
+        {
+            rtBar.Left-=(this.MinCenterWidth-rtBar.Width)/2;
+            rtBar.Width=this.MinCenterWidth;
+            rtBar.Right=rtBar.Left+rtBar.Width;
+        }
         this.Canvas.fillRect(rtBar.Left, rtBar.Top, rtBar.Width, rtBar.Height);
         this.AryRect.push({ Rect:rtBar, Type:0});
 

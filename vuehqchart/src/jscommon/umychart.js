@@ -313,6 +313,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
 
         if (option.KLine)   //k线图的属性设置
         {
+            var item=option.KLine;
             if (option.KLine.DragMode>=0) chart.DragMode=option.KLine.DragMode;
             if (option.KLine.Right>=0) chart.Right=option.KLine.Right;
             if (option.KLine.Period>=0) chart.Period=option.KLine.Period;
@@ -320,7 +321,8 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (option.KLine.MaxRequestDataCount>0) chart.MaxRequestDataCount=option.KLine.MaxRequestDataCount;
             if (option.KLine.Info && option.KLine.Info.length>0) chart.SetKLineInfo(option.KLine.Info,false);
             if (option.KLine.KLineDoubleClick==false) chart.MinuteDialog=this.MinuteDialog=null;
-            if (option.KLine.IsShowTooltip==false) chart.IsShowTooltip=false;
+            if (IFrameSplitOperator.IsBool(item.IsShowTooltip)) chart.IsShowTooltip=item.IsShowTooltip;
+            if (IFrameSplitOperator.IsBool(item.IsShowKLineDivTooltip)) chart.IsShowKLineDivTooltip=item.IsShowKLineDivTooltip;
             if (option.KLine.MaxRequestMinuteDayCount>0) chart.MaxRequestMinuteDayCount=option.KLine.MaxRequestMinuteDayCount;
             if (option.KLine.DrawType) chart.KLineDrawType=option.KLine.DrawType;
             if (option.KLine.FirstShowDate>19910101) chart.CustomShow={ Date:option.KLine.FirstShowDate, PageSize:option.KLine.PageSize };
@@ -4180,6 +4182,12 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         return null;
     }
 
+    //扩展图形支持tooltip外部接口
+    this.PtInExtendChartPaintTooltip=function(x,y,tooltip)
+    {
+        return null;
+    }
+
     this.TryClickPaintEvent=function(eventID, ptClick, e)
     {
         var event=this.GetEventCallback(eventID);
@@ -5786,6 +5794,9 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
         if (this.PtInOverlayChartPaintTooltip(x,y,toolTip))
             return toolTip;
+
+        if (this.PtInExtendChartPaintTooltip(x,y,toolTip))
+            return toolTip;
         
         return null;
     }
@@ -6561,6 +6572,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
         if (toolTip.Type===0) //K线信息
         {
+            if (!this.IsShowKLineDivTooltip) return;
+
             var scrollPos=GetScrollPosition();
             var left = x;
             var top = y;
@@ -64593,7 +64606,11 @@ function JSChartResource()
             DateFont:`${14*GetDevicePixelRatio()}px 微软雅黑`,
             DateColor:'rgb(0,0,0)',
             BarColor:"rgb(207,207,207)",
-            BarAreaColor:"rgba(232,232,232,0.65)"
+            BarAreaColor:"rgba(232,232,232,0.65)",
+
+            BarWidth:10,
+            BarPadding:15,  //上下留白
+            MinCenterWidth:15
         }
     },
 
@@ -65238,6 +65255,9 @@ function JSChartResource()
                 if (subItem.DateColor) this.ScrollBar.Slider.DateColor=subItem.DateColor;
                 if (subItem.BarColor) this.ScrollBar.Slider.BarColor=subItem.BarColor;
                 if (subItem.BarAreaColor) this.ScrollBar.Slider.BarAreaColor=subItem.BarAreaColor;
+                if (IFrameSplitOperator.IsNumber(subItem.BarWidth)) this.ScrollBar.Slider.BarWidth=subItem.BarWidth;
+                if (IFrameSplitOperator.IsNumber(subItem.BarPadding)) this.ScrollBar.Slider.BarPadding=subItem.BarPadding;
+                if (IFrameSplitOperator.IsNumber(subItem.MinCenterWidth)) this.ScrollBar.Slider.MinCenterWidth=subItem.MinCenterWidth;
             }
 
             if (item.BGChart)
@@ -66473,8 +66493,9 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
     this.KLineCalculate=null;               //K线定制指标计算
     this.KLineCalcOption=new Map();         //K线定制指标配置
 
-    this.ScrollBar=null;        //横向滚动条
-
+    this.ScrollBar=null;            //横向滚动条
+    this.IsAutoSyncDataOffset=true; //增量更新时,是否移动当前屏数据
+    this.IsShowKLineDivTooltip=true;    //是否显示K线tooltip
 
     this.GetKLineCalulate=function()
     {
@@ -67701,15 +67722,18 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         var xPointCount=this.Frame.SubFrame[0].Frame.XPointCount;   //当前一屏能显示的数据个数
 
         var newDataCount=0;
-        if (lastDataCount>0 && hisData.Data.length>lastDataCount)
+        if (IFrameSplitOperator.IsNumber(lastDataCount))
         {
-            newDataCount=hisData.Data.length-lastDataCount;
-            JSConsole.Chart.Log(`[KLineChartContainer::UpdateMainData]  [count=${lastDataCount}->${hisData.Data.length}], [newDataCount=${newDataCount}], [Pagesize=${xPointCount}]`);
-        }
-        else if (lastDataCount==0 && hisData.Data.length>xPointCount)   //历史数据为空,当前收到数据大于一屏的数据,显示最新数据
-        {
-            newDataCount=hisData.Data.length-xPointCount;
-            JSConsole.Chart.Log(`[KLineChartContainer::UpdateMainData] history data is empty. [count=${lastDataCount}->${hisData.Data.length}], [newDataCount=${newDataCount}], [Pagesize=${xPointCount}]`);
+            if (lastDataCount>0 && hisData.Data.length>lastDataCount)
+            {
+                newDataCount=hisData.Data.length-lastDataCount;
+                JSConsole.Chart.Log(`[KLineChartContainer::UpdateMainData]  [count=${lastDataCount}->${hisData.Data.length}], [newDataCount=${newDataCount}], [Pagesize=${xPointCount}]`);
+            }
+            else if (lastDataCount==0 && hisData.Data.length>xPointCount)   //历史数据为空,当前收到数据大于一屏的数据,显示最新数据
+            {
+                newDataCount=hisData.Data.length-xPointCount;
+                JSConsole.Chart.Log(`[KLineChartContainer::UpdateMainData] history data is empty. [count=${lastDataCount}->${hisData.Data.length}], [newDataCount=${newDataCount}], [Pagesize=${xPointCount}]`);
+            }
         }
 
         this.ChartPaint[0].Data=hisData;
@@ -69101,7 +69125,9 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         if (!this.SourceData) return;
         if (!this.SourceData.MergeMinuteData(aryMinuteData)) return;
 
-        JSConsole.Chart.Log(`[KLineChartContainer::RecvMinuteRealtimeDataV2] update kline by 1 minute data [${lastDataCount}->${this.SourceData.Data.length}]`);
+        JSConsole.Chart.Log(`[KLineChartContainer::RecvMinuteRealtimeDataV2] update kline by 1 minute data [${lastDataCount}->${this.SourceData.Data.length}], IsAutoSyncDataOffset=${this.IsAutoSyncDataOffset}`);
+
+        if (this.IsAutoSyncDataOffset===false)  lastDataCount=null; //维持当前的屏位置
 
         var bindData=new ChartData();
         bindData.Data=this.SourceData.Data;
@@ -70320,6 +70346,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
             this.Frame.SubFrame.splice(count,currentLength-count);
             this.WindowIndex.splice(count,currentLength-count);
+            this.TitlePaint.splice(count+1,currentLength-count);
 
             //最后一个显示X轴坐标
             for(var i=0;i<this.Frame.SubFrame.length;++i)
@@ -75843,6 +75870,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
             this.Frame.SubFrame.splice(count,currentLength-count);
             this.WindowIndex.splice(count,currentLength-count);
+            this.TitlePaint.splice(count+1,currentLength-count);
         }
         else
         {
