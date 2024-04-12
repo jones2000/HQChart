@@ -131,6 +131,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![指标图形拖拽](/小程序行情模块用例/image/hqchart_dragindechart.gif)
 * Y轴拖拽缩放
 ![Y轴缩放](/小程序行情模块用例/image/hqchart_ydrag.gif)  
+* 指标tab按钮
+![指标tab按钮](/小程序行情模块用例/image/frame_button.gif)  
 
 * 订单流  
 ![订单流](/小程序行情模块用例/image/hqchart_ordeflow.png)  

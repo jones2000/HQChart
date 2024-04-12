@@ -5235,9 +5235,12 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             var item=this.ChartDrawPicture[i];
             if (item.IsDrawFirst) continue;
             if (item.IsDrawMain && item.IsDrawMain()) continue;
+            if (this.SelectChartDrawPicture && this.SelectChartDrawPicture.Guid==item.Guid) continue;   //当前选中在最后画
 
             item.Draw();
         }
+
+        if (this.SelectChartDrawPicture) this.SelectChartDrawPicture.Draw();
 
         if (this.CurrentChartDrawPicture && this.CurrentChartDrawPicture.Status!=10)
         {
@@ -5678,8 +5681,14 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             var item=this.ChartDrawPicture[i];
             if (item.IsDrawFirst) continue;
             if (item.IsDrawMain && item.IsDrawMain()) continue;
+            if (this.SelectChartDrawPicture &&item.Guid==this.SelectChartDrawPicture.Guid) continue;    //选中画图最后画 确保显示在最外面
 
             item.Draw(moveonPoint, this.LastMouseStatus);
+        }
+
+        if (this.SelectChartDrawPicture) 
+        {
+            this.SelectChartDrawPicture.Draw(moveonPoint, this.LastMouseStatus);
         }
 
         if (this.CurrentChartDrawPicture && this.CurrentChartDrawPicture.Status!=10)
