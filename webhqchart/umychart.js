@@ -2494,6 +2494,9 @@ var JSCHART_EVENT_ID=
     ON_RCLICK_TREPORT_HEADER:125,             //右键点击T型报价表头
     ON_TREPORT_LOCAL_SORT:126,                //T型报价列表本地排序
     ON_CLICK_TREPORT_ROW:127,                 //左键点击点击T型报价列表
+
+
+    ON_CHANGE_INDEX:150,    //切换指标
 }
 
 var JSCHART_OPERATOR_ID=
@@ -5658,7 +5661,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 if (option.Point) item.LatestPoint=option.Point;
             }
 
-            if (item.IsDynamic && item.DrawAfterTitle===true) item.Draw();
+            if (item.IsDynamic && item.DrawAfterTitle===true) item.Draw(moveonPoint, this.LastMouseStatus);
         }
 
         if (this.EnableAnimation)
@@ -39445,7 +39448,8 @@ function ExtendChartPaintFactory()
             ["FrameSplitPaint", { Create:function() { return new FrameSplitPaint(); } }],
             ["RectSelectPaint", { Create:function() { return new RectSelectPaint(); } }],
             ["DragMovePaint", { Create:function() { return new DragMovePaint(); } }],
-            ["SessionBreaksPaint", { Create:function() { return new SessionBreaksPaint(); }}]
+            ["SessionBreaksPaint", { Create:function() { return new SessionBreaksPaint(); }}],
+            ["FrameButtomToolbarPaint", {Create:function() { return new FrameButtomToolbarPaint(); }}]
         ]
     );
 
@@ -43959,6 +43963,207 @@ function SessionBreaksPaint()
 
 
         this.KDataFeature={ Symbol:this.HQChart.Symbol, Period:period, DataCount:hisData.Data.length };
+    }
+}
+
+//窗口底部工具栏
+function FrameButtomToolbarPaint()
+{
+    this.newMethod=IExtendChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='FrameButtomToolbarPaint';
+    this.FrameID=-1;
+    this.FrameGuid=null;
+    this.IsDynamic=true;
+    this.DrawAfterTitle=true;
+
+    this.AryButton=[];      // { Title:, ID:, Data:数据, TooltipText:提示信息 }
+    this.SelectedID=null;   // 选中按钮ID
+    this.AryRectButton=[];
+
+    this.BGColor=g_JSChartResource.FrameButtomToolbar.BGColor;
+    this.BorderColor=g_JSChartResource.FrameButtomToolbar.BorderColor;
+    this.ButtonConfig=CloneData(g_JSChartResource.FrameButtomToolbar.Button);
+    /*
+    {
+        Font:{ Family:"微软雅黑" },
+        TitleColor: 
+        { 
+            Selected:"rgb(255,255,255)", Default:"rgb(140,140,140)", MoveOn:"rgb(255,255,255)" 
+        },
+        BGColor: {  Selected:"rgb(234,85,4)", Default:"rgb(25,25,25)", MoveOn:"rgb(59,59,59)" },
+        BorderColor:"rgb(60,60,60)",
+
+        Mergin: { Left:5*GetDevicePixelRatio(), Right:5*GetDevicePixelRatio(), Top:4*GetDevicePixelRatio(), Bottom:2*GetDevicePixelRatio() }
+    };
+    */
+
+    /*
+    this.AryButton=
+    [
+        { Title:"MACD", ID:"A", TooltipText:"切换MACD指标", Data:{ IndexID:"MACD"}}, 
+        { Title:"RSI", ID:"A1", TooltipText:"切换RSI指标", Data:{ IndexID:"RSI"} }, 
+        { Title:"大狗棍法", ID:"B1" }, 
+        { Title:"降龙掌", ID:"B3"}
+    ];
+    this.SelectedID="A1"
+    */
+    
+    this.ReloadResource=function(resource)
+    {
+        this.BGColor=g_JSChartResource.FrameButtomToolbar.BGColor;
+        this.BorderColor=g_JSChartResource.FrameButtomToolbar.BorderColor;
+
+        this.ButtonConfig=CloneData(g_JSChartResource.FrameButtomToolbar.Button);
+    }
+
+    this.SetOption=function(option)
+    {
+        if (option)
+        {
+            if (IFrameSplitOperator.IsNumber(option.FrameID))  this.FrameID=option.FrameID;
+            if (option.FrameGuid)  this.FrameGuid=option.FrameGuid;
+            if (IFrameSplitOperator.IsNonEmptyArray(option.AryButton)) this.AryButton=option.AryButton.slice();
+            if (option.SelectedID) this.SelectedID=option.SelectedID;
+        }
+    }
+
+    //设置当前选中的菜单ID
+    this.SetSelectedID=function(id)
+    {
+        this.SelectedID=id;
+    }
+
+    this.Draw=function(moveonPoint, mouseStatus)
+    {
+        this.AryRectButton=[];
+
+        var frame=this.GetFrame();
+        if (!frame) return;
+        if (frame.IsHScreen) return;    //不支持横屏
+        if (frame.IsMinSize) return;
+        if (frame.ChartBorder.IsShowTitleOnly) return;
+
+        var border=frame.ChartBorder.GetBorder();
+        var rtBG={ Left:border.Left+1, Right:border.Right-1, Top:border.BottomEx+1, Bottom:border.Bottom-1 };
+        rtBG.Width=rtBG.Right-rtBG.Left;
+        rtBG.Height=rtBG.Bottom-rtBG.Top;
+        if (rtBG.Height<10) return;
+
+        if (this.BGColor)
+        {
+            this.Canvas.fillStyle=this.BGColor;
+            this.Canvas.fillRect(rtBG.Left,rtBG.Top,rtBG.Width,rtBG.Height);
+        }
+
+        var font=this.TitleFont(rtBG.Height-this.ButtonConfig.Mergin.Top-this.ButtonConfig.Mergin.Bottom);
+        this.Canvas.textBaseline='middle';
+        this.Canvas.textAlign='center';
+        this.Canvas.font=font;
+        var xBotton=rtBG.Left;
+        for(var i=0;i<this.AryButton.length;++i)
+        {
+            var item=this.AryButton[i];
+            if (!item.Title) return;
+            var textWidth=this.Canvas.measureText(item.Title).width+2;
+            var buttonWidth=textWidth+this.ButtonConfig.Mergin.Left+this.ButtonConfig.Mergin.Right;
+            var rtButton={ Left:xBotton, Top:rtBG.Top, Bottom:rtBG.Bottom, Height:rtBG.Height, Width:buttonWidth };
+            rtButton.Right=rtButton.Left+rtButton.Width;
+
+            //鼠标是否在按钮上
+            var bgColor=this.ButtonConfig.BGColor.Default;
+            var titleColor=this.ButtonConfig.TitleColor.Default;
+            if (moveonPoint && (moveonPoint.X>=rtButton.Left && moveonPoint.X<rtButton.Right && moveonPoint.Y>=rtButton.Top && moveonPoint.Y<=rtButton.Bottom))
+            {
+                bgColor=this.ButtonConfig.BGColor.MoveOn;
+                titleColor=this.ButtonConfig.TitleColor.MoveOn;
+                if (mouseStatus)
+                    mouseStatus.MouseOnToolbar={ Rect:rtButton, Item:item, Frame:frame, Point:{X:moveonPoint.X, Y:moveonPoint.Y}, ID:"TitleButton" };
+            }
+
+            if (this.SelectedID && this.SelectedID==item.ID)
+            {
+                bgColor=this.ButtonConfig.BGColor.Selected;
+                titleColor=this.ButtonConfig.TitleColor.Selected;
+            }
+            
+
+            if (bgColor)
+            {
+                this.Canvas.fillStyle=bgColor;
+                this.Canvas.fillRect(rtButton.Left,rtButton.Top,rtButton.Width,rtButton.Height);
+            }
+            
+            if (this.ButtonConfig.BorderColor)
+            {
+                this.Canvas.strokeStyle=this.ButtonConfig.BorderColor;
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(ToFixedPoint(rtButton.Right),rtButton.Top);
+                this.Canvas.lineTo(ToFixedPoint(rtButton.Right),rtButton.Bottom);
+                this.Canvas.stroke();
+            }
+
+            this.Canvas.fillStyle=titleColor;
+            var xText=rtButton.Left+rtButton.Width/2;   //居中
+            var yText=rtButton.Top+this.ButtonConfig.Mergin.Top+(rtButton.Height-this.ButtonConfig.Mergin.Top-this.ButtonConfig.Mergin.Bottom)/2;
+            this.Canvas.fillText(item.Title,xText,yText);
+            
+            this.AryRectButton.push({ Rect:rtButton, ID:item.ID, Data:item });
+
+            xBotton+=buttonWidth+1;
+        }
+
+        if (this.BorderColor)
+        {
+            this.Canvas.strokeStyle=this.BorderColor;
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(border.Left,ToFixedPoint(border.BottomEx));
+            this.Canvas.lineTo(border.Right,ToFixedPoint(border.BottomEx));
+            this.Canvas.stroke();
+        }
+    }
+
+    this.GetFrame=function()
+    {
+        if (!this.ChartFrame) return null;
+        if (this.FrameID>=0)
+        {
+            var subFrame=this.ChartFrame.SubFrame[this.FrameID];
+            if (!subFrame || !subFrame.Frame) return null;
+            
+            return subFrame.Frame;
+        }
+
+        return null;
+    }
+
+    this.TitleFont=function(height)
+    {
+        var config=this.ButtonConfig.Font;
+        var fontSize=height;
+        if (IFrameSplitOperator.IsPlusNumber(config.Size)) fontSize=config.Size;
+        
+        var font=`${fontSize*GetDevicePixelRatio()}px ${config.Family}`;
+        return font;
+    }
+
+    this.PtInButtons=function(x,y)
+    {
+        for(var i=0;i<this.AryRectButton.length;++i)
+        {
+            var item=this.AryRectButton[i];
+            var rect=item.Rect;
+            if (x>rect.Left && x<rect.Right && y>rect.Top && y<rect.Bottom)
+            {
+                var frame=this.GetFrame();
+                var result={ ID:item.Data.ID, Rect:rect, FrameID:this.FrameID, Frame:frame, Data:item.Data };
+                return result;
+            }
+        }
+
+        return null;
     }
 }
 
@@ -64614,6 +64819,21 @@ function JSChartResource()
         }
     },
 
+    this.FrameButtomToolbar=
+    {
+        BGColor:"rgb(235,235,235)",
+        BorderColor:"rgb(204,204,204)",
+        Button:
+        {
+            Font:{ Family:"微软雅黑" },
+            TitleColor: { Selected:"rgb(255,255,255)", Default:"rgb(125,125,125)", MoveOn:"rgb(234,85,4)" },
+            BGColor: {  Selected:"rgb(234,85,4)", Default:"rgb(235,235,235)", MoveOn:"rgb(242,242,242)" },
+            BorderColor:"rgb(204,204,204)",
+
+            Mergin: { Left:5*GetDevicePixelRatio(), Right:5*GetDevicePixelRatio(), Top:4*GetDevicePixelRatio(), Bottom:2*GetDevicePixelRatio() }
+        }
+    }
+
 
     //自定义风格
     this.SetStyle=function(style)
@@ -65269,6 +65489,9 @@ function JSChartResource()
             }
             
         }
+
+        if (style.FrameButtomToolbar)
+            this.SetFrameButtomToolbar(style.FrameButtomToolbar);
     }
 
     this.SetReportStyle=function(style)
@@ -65579,6 +65802,57 @@ function JSChartResource()
         }
             
     }
+
+    this.SetFrameButtomToolbar=function(style)
+    {
+        var dest=this.FrameButtomToolbar;
+
+        if (style.BGColor) dest.BGColor=style.BGColor;
+        if (style.BorderColor) dest.BorderColor=style.BorderColor;
+        if (style.Button)
+        {
+            var button=style.Button;
+            if (button.BorderColor) dest.Button.BorderColor=button.BorderColor;
+
+            if (button.Font)
+            {
+                var item=button.Font;
+                var destItem=this.FrameButtomToolbar.Button.Font;
+                if (item.Family) destItem.Family=item.Family;
+                if (IFrameSplitOperator.IsNumber(item.Size)) destItem.Size=item.Size;
+            }
+
+            if (button.TitleColor)
+            {
+                var item=button.TitleColor;
+                var destItem=this.FrameButtomToolbar.Button.TitleColor;
+                if (item.Selected) destItem.Selected=item.Selected;
+                if (item.Default) destItem.Default=item.Default;
+                if (item.MoveOn) destItem.MoveOn=item.MoveOn;
+            }
+
+            if (button.BGColor)
+            {
+                var item=button.BGColor;
+                var destItem=this.FrameButtomToolbar.Button.BGColor;
+                if (item.Selected) destItem.Selected=item.Selected;
+                if (item.Default) destItem.Default=item.Default;
+                if (item.MoveOn) destItem.MoveOn=item.MoveOn;
+            }
+
+            if (button.Mergin)
+            {
+                var item=button.Mergin;
+                var destItem=this.FrameButtomToolbar.Button.Mergin;
+                if (IFrameSplitOperator.IsNumber(item.Left)) destItem.Left=item.Left;
+                if (IFrameSplitOperator.IsNumber(item.Right)) destItem.Left=item.Right;
+                if (IFrameSplitOperator.IsNumber(item.Top)) destItem.Top=item.Top;
+                if (IFrameSplitOperator.IsNumber(item.Bottom)) destItem.Bottom=item.Bottom;
+            }
+        }
+        
+    }
+
 }
 
 var g_JSChartResource=new JSChartResource();
@@ -69951,6 +70225,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             if (option.Window) this.SetFrameToolbar(windowIndex,option.Window);
         }
 
+        this.OnChangeIndexEvent(windowIndex, { ID:indexData.ID, Name:indexData.Name, FunctionName:"ChangeScriptIndex" });
+
         this.Frame.ClearUpDonwFrameYData({ Index:windowIndex });
         var bindData=this.ChartPaint[0].Data;
         this.BindIndexData(windowIndex,bindData);   //执行脚本
@@ -69994,6 +70270,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         var apiItem=indexData.API;
         this.WindowIndex[windowIndex]=new APIScriptIndex(apiItem.Name,apiItem.Script,apiItem.Args,indexData);
 
+        this.OnChangeIndexEvent(windowIndex, { ID:indexData.ID, Name:indexData.Name, FunctionName:"ChangeAPIIndex" });
+
         if (indexData)
         {
             if (indexData.Window) this.SetFrameToolbar(windowIndex,indexData.Window);
@@ -70006,6 +70284,16 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Draw();
+    }
+
+    this.OnChangeIndexEvent=function(windowIndex, indexInfo)
+    {
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CHANGE_INDEX);
+        if (event && event.Callback)
+        {
+            var data={ IndexInfo:indexInfo, WindowIndex:windowIndex  };
+            event.Callback(event,data,this);
+        }
     }
 
     //切换指标 指定切换窗口指标
@@ -70030,7 +70318,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                 if (windowIndex == 0) windowIndex = 1;  //幅图指标,不能再主图显示
             }
 
-            JSIndexScript.ModifyAttribute(indexInfo, option)
+            JSIndexScript.ModifyAttribute(indexInfo, option);
             return this.ChangeScriptIndex(windowIndex, indexInfo, option);
         }
 

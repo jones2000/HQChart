@@ -189,7 +189,7 @@ JSIndexScript.ModifyAttribute=function(indexInfo, attribute)
         if (IFrameSplitOperator.IsNumber(item.FloatPrecision)) indexInfo.YAxis.FloatPrecision=item.FloatPrecision;
         if (IFrameSplitOperator.IsNumber(item.StringFormat)) indexInfo.YAxis.StringFormat=item.StringFormat;
         if (IFrameSplitOperator.IsBool(item.EnableRemoveZero)) indexInfo.YAxis.EnableRemoveZero=item.EnableRemoveZero;
-        if (IFrameSplitOperator.IsBool(item.ExcludeValue)) indexInfo.YAxis.ExcludeValue=attribute.ExcludeValue;    //不参数Y轴的计算
+        if (IFrameSplitOperator.IsBool(item.ExcludeValue)) indexInfo.YAxis.ExcludeValue=item.ExcludeValue;    //不参数Y轴的计算
     }
 }
 

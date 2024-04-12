@@ -215,7 +215,7 @@
 
                 DrawTool:       //画图工具
                 {
-                    //StorageKey:'4E7EA133-D6C8-4776-9869-1DDDCC5FA744'
+                    StorageKey:'4E7EA133-D6C8-4776-9869-1DDDCC5FA788'
                 },
     
                 KLine:  //K线设置
@@ -284,7 +284,7 @@
                             { 
                                 Type:0,
                                
-                                Position:'right',LineType:1, 
+                                Position:'right', LineType:1, 
                                 //PositionEx:1,
                             },
                             
@@ -329,7 +329,7 @@
                         
                     },
 
-                    { SplitCount:5 },
+                    { SplitCount:5, BottomSpace:20 },
                     { SplitCount:4 }
                 ],
 
@@ -337,6 +337,7 @@
                 [
                     //{Name:'KLineTooltip' },  //手机端tooltip
                     //{Name:"FrameSplitPaint", LineColor:"rgb(200,0,0)" }
+                    //{Name:"SessionBreaksPaint"}
                 ],
 
 
@@ -385,6 +386,15 @@
                     {
                         event:JSCHART_EVENT_ID.ON_TITLE_DRAW,
                         callback:(event, data, obj)=>{ this.OnTitleDraw(event, data, obj); }
+                    },
+                    {
+                        event:JSCHART_EVENT_ID.ON_CLICK_EXTENDCHART_BUTTON,
+                        callback:(event, data, obj)=>{ this.OnClickExtendChartButton(event, data, obj); }
+                    },
+                    {
+                        event:JSCHART_EVENT_ID.ON_CHANGE_INDEX,
+                        callback:(event, data, obj)=>{ this.OnChangeIndex(event, data, obj); }
+
                     }
                 ];
 
@@ -412,9 +422,10 @@
 
             this.GetSymbolData=function(data, callback)
             {
+                data.PreventDefault=true;
                 var symbol=data.Request.Data.symbol;
                 var period=data.Request.Data.period;
-                if (this.Chart.JSChartContainer.Symbol==symbol && period==this.Chart.JSChartContainer.Period)
+                if (this.Chart.JSChartContainer.Symbol==symbol)
                 {
                     if (ChartData.IsDayPeriod(period, true))
                         HQData.RequestHistoryData(data, callback);
@@ -455,6 +466,26 @@
 				};
 
                 frame.CustomToolbar = [button];   //按钮添加
+
+                if (frame.Identify==1)
+                {
+                    var chart=obj.GetExtendChartByClassNameV2("FrameButtomToolbarPaint");
+                    if (!chart)
+                    {
+                        var  aryButton=
+                        [
+                            { Title:"MACD", ID:"F_BTN_01", TooltipText:"MACD:平滑异同平均", Data:{ IndexID:"MACD"}}, 
+                            { Title:"RSI", ID:"F_BTN_02", TooltipText:"RSI:相对强弱指标", Data:{ IndexID:"RSI"} }, 
+                            { Title:"CCI", ID:"F_BTN_03",TooltipText:"CCI:商品路径指标", Data:{ IndexID:"CCI"} }, 
+                            { Title:"ATR", ID:"F_BTN_04", TooltipText:"ATR:说明......", Data:{ IndexID:"ATR"}},
+                            { Title:"VMACD", ID:"F_BTN_05",TooltipText:"VMACD:说明......", Data:{ IndexID:"VMACD"}},
+                            { Title:"BRAR", ID:"F_BTN_06", TooltipText:"BRAR:说明......", Data:{ IndexID:"BRAR"}}
+                        ];
+                    
+                        obj.CreateExtendChart("FrameButtomToolbarPaint", { FrameID:frame.Identify, AryButton:aryButton } );
+                    }
+                    
+                }
             }
 
             this.OnCreateOverlayFrame=function(event, data, obj)
@@ -601,6 +632,11 @@
                 var value=document.getElementById("overlay_y").checked;
 
                 var option={ Script:indexInfo.Script, WindowIndex:windowIndex, Name:indexInfo.Name, Args:indexInfo.Args, IsShareY:!value };
+                if (option.IsShareY)
+                {
+                    option.YAxis=indexInfo.YAxis;
+                }
+                
                 this.Chart.AddOverlayIndex(option);
             }
 
@@ -779,20 +815,43 @@
 
             this.ChangeStyle=function(styleName)
             {
+                var buttonColor=[null,null];
                 if (styleName=='black') 
                 {
                     var style=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID); //读取风格配置
+
+                    buttonColor[0]="rgb(156,156,156)";
+                    buttonColor[1]="rgb(255,255,255)";
                 }
                 else if (styleName=='white') 
                 {
                     var style=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.WHITE_ID); //读取风格配置
                     style.BGColor='rgb(255,255,255)';
+
+                    buttonColor[0]="rgb(156,156,156)";
+                    buttonColor[1]="rgb(105,105,105)";
                 }
                 else 
                 {
                     return;
                 }
-                
+
+
+                var frame=this.Chart.JSChartContainer.Frame;
+                for(var i=0, j=0;i<frame.SubFrame.length;++i)
+                {
+                    var subFrame=frame.SubFrame[i];
+                    for(j=0;j<subFrame.Frame.CustomToolbar.length;++j)
+                    {
+                        var item=subFrame.Frame.CustomToolbar[j];
+                        if (item.ID=="8888")
+                        {
+                            item.Style.MoveOnColor=buttonColor[1];
+                            item.Style.Color=buttonColor[0];
+                        }
+                    }
+                }
+
                 style.ToolbarButtonStyle=1;
                 JSChart.SetStyle(style);
                 this.DivKLine.style.backgroundColor=style.BGColor;   //修改div背景色
@@ -803,6 +862,67 @@
             this.OnTitleDraw=function(event, data, obj)
             {
                 console.log("[KLineChart::OnTitleDraw] data=", data);
+            }
+
+            this.OnClickExtendChartButton=function(event, data, obj)
+            {
+                console.log("[KLineChart::OnClickExtendChartButton] data=", data);
+
+                if (!data.Info) return;
+
+                if (this.OnClickIndexButton(data.Info)) data.PreventDefault=true;
+            }
+
+
+            this.OnClickIndexButton=function(btnInfo)
+            {
+                if (btnInfo.Chart.ClassName!="FrameButtomToolbarPaint") return false;
+
+                var chart=btnInfo.Chart;
+                var data=btnInfo.Data;
+                if (!data.Data) return;
+
+                var indexID=data.Data.IndexID;
+                var windowIndex=btnInfo.FrameID;
+
+                chart.SetSelectedID(data.ID);
+                this.Chart.ChangeIndex(windowIndex, indexID);
+
+                return true;
+            }
+
+            this.OnChangeIndex=function(event, data, obj)
+            {
+                console.log("[KLineChart::OnChangeIndex] data=", data);
+
+                var aryChart=obj.GetExtendChartByClassNameV2("FrameButtomToolbarPaint");
+                if (!IFrameSplitOperator.IsNonEmptyArray(aryChart)) return;
+                
+                var windowIndex=data.WindowIndex;
+                var indexID=data.IndexInfo.ID;
+                for(var i=0;i<aryChart.length;++i)  //工具栏联动
+                {
+                    var item=aryChart[i];
+                    var chart=item.Chart;
+                    if (chart.FrameID==windowIndex)
+                    {
+                        var finder=null;
+                        for(var j=0;j<chart.AryButton.length;++j)
+                        {
+                            var btnItem=chart.AryButton[j];
+                            if (btnItem.Data && btnItem.Data.IndexID==indexID)
+                            {
+                                finder=btnItem;
+                                break;
+                            }
+                        }
+
+                        if (finder) chart.SetSelectedID(finder.ID);
+                        else chart.SetSelectedID(null);
+                        
+                        return;
+                    }
+                }
             }
         
         }

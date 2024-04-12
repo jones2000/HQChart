@@ -682,6 +682,19 @@ function GetBlackStyle()
                 AreaColor:"rgba(24,28,42,0.5)",
             },
         },
+
+        FrameButtomToolbar:
+        {
+            BGColor:"rgb(25,25,25)",
+            BorderColor:"rgb(60,60,60)",
+            Button:
+            {
+                Font:{ Family:"微软雅黑" },
+                TitleColor: { Selected:"rgb(255,255,255)", Default:"rgb(140,140,140)", MoveOn:"rgb(255,255,255)" },
+                BGColor: {  Selected:"rgb(234,85,4)", Default:"rgb(25,25,25)", MoveOn:"rgb(59,59,59)" },
+                BorderColor:"rgb(60,60,60)",
+            }
+        }
         
     };
     
