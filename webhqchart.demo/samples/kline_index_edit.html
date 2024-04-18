@@ -129,6 +129,8 @@
 
     <script src="../jscommon/umychart.testdata.js"></script>
 
+    <script src="../jscommon/umychart.popMenu.js"></script>
+
     <script>
 
         MARKET_SUFFIX_NAME.GetMarketStatus = function (symbol)  { return 2; }
@@ -147,6 +149,9 @@
             this.IndexEdit;
 
             this.MapIndex=new Map();    //本地指标
+
+            this.JSPopMenu=new JSPopMenu();
+            this.JSPopMenu.Inital();
           
             //K线配置信息
             this.Option= {
@@ -207,6 +212,7 @@
                 //IsCorssOnlyDrawKLine:true,
 
                 CtrlMoveStep:10,
+                EnablePopMenuV2:true,
 
                 //EnableVerifyRecvData:true,
 
@@ -329,7 +335,7 @@
                         
                     },
 
-                    { SplitCount:5, BottomSpace:20 },
+                    { SplitCount:5, BottomSpace:18 },
                     { SplitCount:4 }
                 ],
 
@@ -395,6 +401,10 @@
                         event:JSCHART_EVENT_ID.ON_CHANGE_INDEX,
                         callback:(event, data, obj)=>{ this.OnChangeIndex(event, data, obj); }
 
+                    },
+                    {
+                        event:JSCHART_EVENT_ID.ON_CLICK_TITLE_BUTTON,
+                        callback:(event, data, obj)=>{ this.OnClickTitleButton(event, data, obj); }
                     }
                 ];
 
@@ -462,7 +472,8 @@
 						MerginLeft: 2,
                         YMoveOffset:-1,
 					},
-					TooltipText: "指标按钮-左侧",
+					TooltipText: "指标设置",
+                    Data:{ FrameID:frame.Identify, ID:"DrapDownMenu" }
 				};
 
                 frame.CustomToolbar = [button];   //按钮添加
@@ -479,7 +490,9 @@
                             { Title:"CCI", ID:"F_BTN_03",TooltipText:"CCI:商品路径指标", Data:{ IndexID:"CCI"} }, 
                             { Title:"ATR", ID:"F_BTN_04", TooltipText:"ATR:说明......", Data:{ IndexID:"ATR"}},
                             { Title:"VMACD", ID:"F_BTN_05",TooltipText:"VMACD:说明......", Data:{ IndexID:"VMACD"}},
-                            { Title:"BRAR", ID:"F_BTN_06", TooltipText:"BRAR:说明......", Data:{ IndexID:"BRAR"}}
+                            { Title:"BRAR", ID:"F_BTN_06", TooltipText:"BRAR:说明......", Data:{ IndexID:"BRAR"}},
+                            { Title:"更多指标", ID:"F_BTN_07", TooltipText:"更多更多......", SVGButton:{ Symbol:"\ue694", }, Data:{ } },
+                            //{ SVGButton:{ Symbol:"\ue694", }, ID:"F_BTN_08", Data:{ } }
                         ];
                     
                         obj.CreateExtendChart("FrameButtomToolbarPaint", { FrameID:frame.Identify, AryButton:aryButton } );
@@ -870,11 +883,14 @@
 
                 if (!data.Info) return;
 
-                if (this.OnClickIndexButton(data.Info)) data.PreventDefault=true;
+                if (this.OnClickIndexButton(data.Info, data.e)) 
+                {
+                    data.PreventDefault=true;
+                }
             }
 
 
-            this.OnClickIndexButton=function(btnInfo)
+            this.OnClickIndexButton=function(btnInfo, e)
             {
                 if (btnInfo.Chart.ClassName!="FrameButtomToolbarPaint") return false;
 
@@ -882,13 +898,73 @@
                 var data=btnInfo.Data;
                 if (!data.Data) return;
 
-                var indexID=data.Data.IndexID;
                 var windowIndex=btnInfo.FrameID;
+                if (btnInfo.ButtonType==0 && data.Data.IndexID)
+                {
+                    var indexID=data.Data.IndexID;
+                    chart.SetSelectedID(data.ID);
+                    this.Chart.ChangeIndex(windowIndex, indexID);
+                    return;
+                }
+                
+                if (btnInfo.ID=="F_BTN_07")
+                {
+                    var tabInfo={ID:"F_BTN_07", Chart:chart };
+                    var menuData=
+                    { 
+                        Menu:
+                        [ 
+                            { Name:"ACD", ID:"POP_MENU_1", Data:{ IndexID:"ACD", WindowIndex:btnInfo.FrameID, TabInfo:tabInfo } },  
+                            { Name:"AMV", ID:"POP_MENU_2", Data:{ IndexID:"AMV", WindowIndex:btnInfo.FrameID, TabInfo:tabInfo } },  
+                            { Name:"BIAS", ID:"POP_MENU_3", Data:{ IndexID:"BIAS", WindowIndex:btnInfo.FrameID, TabInfo:tabInfo } },
+                            { 
+                                Name:"其他指标", 
+                                SubMenu:
+                                [ 
+                                    { Name:"WAD", Data:{ IndexID:"WAD", WindowIndex:btnInfo.FrameID, TabInfo:tabInfo }}, 
+                                    { Name:"MASS", Data:{ IndexID:"MASS", WindowIndex:btnInfo.FrameID, TabInfo:tabInfo }}
+                                ]
+                            }
+                        ],
 
-                chart.SetSelectedID(data.ID);
-                this.Chart.ChangeIndex(windowIndex, indexID);
+                        Position:JSPopMenu.POSITION_ID.TAB_MENU_ID,
+
+                        ClickCallback:(data)=>{ this.OnClickIndexMenu(data); }
+                    };
+
+                    this.Chart.PopupMenuByTab(menuData, btnInfo.RectCell);
+
+                    if(e.preventDefault) e.preventDefault();
+                    if(e.stopPropagation) e.stopPropagation();
+                }
+                
 
                 return true;
+            }
+
+            this.OnClickIndexMenu=function(menuData)
+            {
+                if (!menuData.Data) return;
+                var data=menuData.Data;
+                var windowIndex=data.WindowIndex;
+                var indexID=data.IndexID;
+                if (data.TabInfo)
+                {
+                    var chart=data.TabInfo.Chart;
+                    for(var i=0;i<chart.AryButton.length;++i)
+                    {
+                        var item=chart.AryButton[i];
+                        if (item.ID==data.TabInfo.ID)
+                        {
+                            item.Data={ IndexID:indexID };
+                            item.Title=menuData.Name;
+                            item.TooltipText=`指标${item.Title}说明: xxxxxx`;
+                            break;
+                        }
+                    }
+                }
+
+                this.Chart.ChangeIndex(windowIndex, indexID);
             }
 
             this.OnChangeIndex=function(event, data, obj)
@@ -923,6 +999,40 @@
                         return;
                     }
                 }
+            }
+
+            this.OnClickTitleButton=function(event, data, obj)
+            {
+                console.log("[KLineChart::OnClickTitleButton] data=", data);
+                
+                if (!data.Info || !data.Info.Data) return;
+                var rtButton=data.Info.Rect;
+                var e=data.e;
+                var menuData=
+                { 
+                    Menu:
+                    [ 
+                        { Name:"设置1", ID:"INDEX_DRAPDOWN_MENU_1", Data:{ WindowIndex:data.Info.FrameID } },  
+                        { Name:"设置2", ID:"INDEX_DRAPDOWN_MENU_2", Data:{ WindowIndex:data.Info.FrameID } },  
+                    ],
+
+                    Position:JSPopMenu.POSITION_ID.TAB_MENU_ID,
+
+                    ClickCallback:(data)=>{ this.OnClickIndexDrapdownMenu(data); }
+                };
+
+                this.Chart.PopupMenuByDrapdown(menuData, rtButton);
+
+                if(e.preventDefault) e.preventDefault();
+                if(e.stopPropagation) e.stopPropagation();
+            }
+
+            this.OnClickIndexDrapdownMenu=function(menuData)
+            {
+                console.log("[KLineChart::OnClickIndexDrapdownMenu] menuData=", menuData);
+
+                var text=`指标下拉菜单\r\n窗口:${menuData.Data.WindowIndex}\r\n菜单ID:${menuData.ID}`;
+                alert(text);
             }
         
         }

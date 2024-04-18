@@ -275,11 +275,12 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         chart.ModifyIndexDialog=this.ModifyIndexDialog;
         chart.ChangeIndexDialog=this.ChangeIndexDialog;
         chart.MinuteDialog=this.MinuteDialog;
+
+        var pixelRatio=GetDevicePixelRatio();
         
         //右键菜单
-        if (option.IsShowRightMenu==true) chart.RightMenu=new KLineRightMenu(this.DivElement);
+        if (IFrameSplitOperator.IsBool(option.IsShowRightMenu)) chart.IsShowRightMenu=option.IsShowRightMenu;
         if (option.ScriptError) chart.ScriptErrorCallback=option.ScriptError;
-        chart.SelectRectRightMenu=new KLineSelectRightMenu(this.DivElement);
         if (option.EnableScrollUpDown==true) chart.EnableScrollUpDown=option.EnableScrollUpDown;
         if (option.DisableMouse==true) chart.DisableMouse=option.DisableMouse;
         if (option.TouchMoveMinAngle) chart.TouchMoveMinAngle=option.TouchMoveMinAngle;
@@ -493,8 +494,8 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
                     chart.Frame.SubFrame[i].Frame.IsShowYText[1]=item.IsShowRightText;
                     chart.Frame.SubFrame[i].Frame.YSplitOperator.IsShowRightText=item.IsShowRightText;         //显示右边刻度
                 }
-                if (item.TopSpace>=0) chart.Frame.SubFrame[i].Frame.ChartBorder.TopSpace=item.TopSpace;
-                if (item.BottomSpace>=0) chart.Frame.SubFrame[i].Frame.ChartBorder.BottomSpace=item.BottomSpace;
+                if (item.TopSpace>=0) chart.Frame.SubFrame[i].Frame.ChartBorder.TopSpace=item.TopSpace*pixelRatio;
+                if (item.BottomSpace>=0) chart.Frame.SubFrame[i].Frame.ChartBorder.BottomSpace=item.BottomSpace*pixelRatio;
 
                 if (item.RightTextPosition>0) chart.Frame.SubFrame[i].Frame.YTextPosition[1]=item.RightTextPosition;
                 if (item.LeftTextPosition>0) chart.Frame.SubFrame[i].Frame.YTextPosition[0]=item.LeftTextPosition;
@@ -693,7 +694,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         chart.MinuteDialog=this.MinuteDialog;
         
         //右键菜单
-        if (option.IsShowRightMenu==true) chart.RightMenu=new KLineRightMenu(this.DivElement);
+        if (IFrameSplitOperator.IsBool(option.IsShowRightMenu)) chart.IsShowRightMenu=option.IsShowRightMenu;
 
         if (option.KLine)   //k线图的属性设置
         {
@@ -795,6 +796,8 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
 
         chart.ModifyIndexDialog=this.ModifyIndexDialog;
         chart.ChangeIndexDialog=this.ChangeIndexDialog;
+
+        var pixelRatio=GetDevicePixelRatio();
 
         var windowsCount=2;
         if (option.Windows && option.Windows.length>0) windowsCount+=option.Windows.length; //指标窗口从第3个窗口开始
@@ -911,7 +914,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
 
         if (option.MinuteInfo) chart.CreateMinuteInfo(option.MinuteInfo);
 
-        if (option.IsShowRightMenu==true) chart.RightMenu=new MinuteRightMenu(this.DivElement);
+        if (IFrameSplitOperator.IsBool(option.IsShowRightMenu)) chart.IsShowRightMenu=option.IsShowRightMenu;
 
         if (IFrameSplitOperator.IsNumber(option.DayCount)) chart.DayCount=option.DayCount;
 
@@ -963,8 +966,8 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
                 if (IFrameSplitOperator.IsNumber(item.YTextBaseline)) chart.Frame.SubFrame[i].Frame.YTextBaseline=item.YTextBaseline;
                 if (IFrameSplitOperator.IsBool(item.IsShowIndexTitle)) chart.Frame.SubFrame[i].Frame.IsShowIndexTitle=item.IsShowIndexTitle;
 
-                if (item.TopSpace>=0) chart.Frame.SubFrame[i].Frame.ChartBorder.TopSpace=item.TopSpace;
-                if (item.BottomSpace>=0) chart.Frame.SubFrame[i].Frame.ChartBorder.BottomSpace=item.BottomSpace;
+                if (item.TopSpace>=0) chart.Frame.SubFrame[i].Frame.ChartBorder.TopSpace=item.TopSpace*pixelRatio;
+                if (item.BottomSpace>=0) chart.Frame.SubFrame[i].Frame.ChartBorder.BottomSpace=item.BottomSpace*pixelRatio;
 
                 //是否显示关闭集合竞价按钮
                 if (IFrameSplitOperator.IsNumber(item.CloseBeforeButton)) chart.Frame.SubFrame[i].Frame.IsShowCloseButton=item.CloseBeforeButton;
@@ -1630,6 +1633,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         if (!chart) return false;
 
         this.JSChartContainer=chart;
+        chart.DivElement=this.DivElement;
 
         if (option.DefaultCursor) chart.DefaultCursor=option.DefaultCursor;
         if (option.OnCreatedCallback) option.OnCreatedCallback(chart);
@@ -1637,6 +1641,10 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         //是否自动更新
         if (option.IsAutoUpdate!=null) chart.IsAutoUpdate=option.IsAutoUpdate;
         if (option.AutoUpdateFrequency>0) chart.AutoUpdateFrequency=option.AutoUpdateFrequency;
+
+        //内置菜单
+        if (option.EnablePopMenuV2===true) chart.InitalPopMenu();
+
         //注册事件
         if (option.EventCallback)
         {
@@ -1662,19 +1670,6 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             this.JSChartContainer=chart;
             this.DivElement.JSChart=this;   //div中保存一份
             this.JSChartContainer.Draw();
-        }
-
-        if (IFrameSplitOperator.IsBool(option.CheckLatestVerion) && option.CheckLatestVerion==false)
-        {
-
-        }
-        else if (JSChart.LastVersion==null)
-        {
-            if (chart && typeof(chart.GetLatestVersion)=='function') 
-            {
-                //由于域名都要备案,获取最新版本接口停止使用
-                //chart.GetLatestVersion();
-            }
         }
     }
 
@@ -2119,6 +2114,24 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             return this.JSChartContainer.ChangePriceGap(option);
         }
     }
+
+    this.PopupMenuByTab=function(menuData, rtTab)
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.PopupMenuByTab)=='function')
+        {
+            JSConsole.Chart.Log('[JSChart:PopupMenuByTab] ');
+            return this.JSChartContainer.PopupMenuByTab(menuData, rtTab);
+        }
+    }
+
+    this.PopupMenuByDrapdown=function(menuData, rtButton)
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.PopupMenuByDrapdown)=='function')
+        {
+            JSConsole.Chart.Log('[JSChart:PopupMenuByDrapdown] ');
+            return this.JSChartContainer.PopupMenuByDrapdown(menuData, rtButton);
+        }
+    }
 }
 
 JSChart.LastVersion=null;   //最新的版本号
@@ -2323,6 +2336,12 @@ JSChart.ToFixedRect=function(value)
 {
     return ToFixedRect(value);
 }
+
+JSChart.GetScrollPosition=function()
+{
+    return GetScrollPosition();
+}
+
 
 
 
@@ -2609,6 +2628,40 @@ var JSCHART_WORKER_MESSAGE_ID=
     ERROR_EXECUTE_SCRIPT:3,
 }
 
+var JSCHART_MENU_ID=
+{
+    CMD_CHANGE_PERIOD_ID:1,       //切换周期
+    CMD_CHANGE_WINDOW_COUNT_ID:2, //窗口个数
+    CMD_CHANGE_RIGHT_ID:3,        //复权
+    CMD_CHANGE_INDEX_ID:4,          //切换指标
+    CMD_CHANGE_COLOR_INDEX_ID:5,    //五彩K线指标
+    CMD_CHANGE_TRADE_INDEX_ID:6,    //专家系统(交易指标)
+    CMD_DELETE_COLOR_INDEX_ID:7,    //删除五彩K线指标
+    CMD_DELETE_TRADE_INDEX_ID:8,    //删除专家系统(交易指标)
+    CMD_CHANGE_KLINE_TYPE_ID:9,     //切换K线类型
+    CMD_CHANGE_PRICE_GAP_ID:10,     //缺口提示
+    CMD_OVERLAY_SYMBOL_ID:11,       //叠加品种
+    CMD_DELETE_ALL_OVERLAY_SYMBOL_ID:12,    //删除所有叠加品种
+    CMD_CHANGE_COORDINATETYPE_ID:13,    //切换坐标类型
+    CMD_CHANGE_KLINE_INFO_ID:14,        //切换信息地雷
+    CMD_DELETE_ALL_KLINE_INFO_ID:15,    //清空信息地雷
+    CMD_CHANGE_DRAG_MODE_ID:16,         //切换拖动模式
+    CMD_CHANGE_BG_SPLIT_ID:17,          //背景分割
+
+    CMD_SHOW_DRAWTOOL_ID:18,    //画图工具
+    CMD_HIDE_DRAWTOOL_ID:19,
+
+    CMD_SHOW_STOCKCHIP_ID:20,   //筹码分布
+    CMD_HIDE_STOCKCHIP_ID:21,
+
+    CMD_ENABLE_SELECT_RECT_ID:22,   //启动区间选择
+    CMD_CHANGE_DAY_COUNT_ID:23,     //切换天数
+    CMD_SHOW_BEFORE_DATA_ID:24,     //显示|隐藏集合竞价
+
+    CMD_SELECTED_ZOOM_ID:25,        //选中放大
+    CMD_SELECTED_SUMMARY_ID:26,  //区间统计
+}
+
 
 function PhoneDBClick()
 {
@@ -2772,9 +2825,6 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     this.SelectRect.oncontextmenu=function() { return false; }; //屏蔽选中区域系统右键菜单
     uielement.parentNode.appendChild(this.SelectRect);
     
-    //区间选择右键菜单
-    this.SelectRectRightMenu;   
-
     //坐标轴风格方法 double-更加数值型分割  price-更加股票价格分割
     this.FrameSplitData=new Map();
     this.FrameSplitData.set("double",new SplitData());
@@ -2834,10 +2884,21 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
     this.StockCache={ Data:null };        //扩展数据缓存数据
 
+    this.JSPopMenu;     //内置菜单
+    this.IsShowRightMenu=true;  //显示右键菜单
+
 
     this.ClearStockCache=function()
     {
         this.StockCache.Data=null;
+    }
+
+    this.InitalPopMenu=function()   //初始化弹出窗口
+    {
+        if (this.JSPopMenu) return;
+
+        this.JSPopMenu=new JSPopMenu();     //内置菜单
+        this.JSPopMenu.Inital();
     }
 
     //obj={ Element:, Canvas: }
@@ -2889,60 +2950,9 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     {
         this.IsDestroy=true;
         this.StopAutoUpdate();
-
-        if (this.GetLatestVersionTimer!=null) 
-        {
-            clearTimeout(this.GetLatestVersionTimer);
-            this.GetLatestVersionTimer=null;
-        }
     }
 
     this.ChartDestory=this.ChartDestroy;    //老版本写错了,需要兼容下
-
-
-    this.GetLatestVersionTimer=null;    //获取最新版本
-    this.GetLatestVersion=function()
-    {
-        if (this.GetLatestVersionTimer!=null)
-        {
-            clearTimeout(this.GetLatestVersionTimer);
-            this.GetLatestVersionTimer=null;
-        }
-
-        var roundeTime=Math.floor(Math.random()*50); 
-        var waittimer=1000*60*3+(roundeTime*1000);
-        var value="aHR0cHM6Ly9ocWNoYXJ0LnplYWxpbmsuY29tL2FwaS9HZXRWZXJzaW9u";
-        JSConsole.Chart.Log("[JSChartContainer::GetLatestVersion] wait for get hqchart latest version. ",waittimer);
-        this.GetLatestVersionTimer = setTimeout(()=>
-        {
-            var width=0, height=0;
-            if (this.Frame && this.Frame.ChartBorder)
-            {
-                width=this.Frame.ChartBorder.GetChartWidth();
-                height=this.Frame.ChartBorder.GetChartHeight();
-            }
-            
-            var url=`${atob(value)}?width=${width}&height=${height}&type=h5`;
-
-            if (JSChart.LastVersion!=null) return;  //只请求一次
-
-            JSNetwork.HttpRequest({
-                url: url,
-                type:"get",
-                dataType: "json",
-                async:true,
-                success:function(data)
-                {
-                    JSConsole.Chart.Log("[JSChartContainer::GetLatestVersion] hqchart latest version. ",data);
-                    JSChart.LastVersion=data;
-                },
-                error:function(request, textStatus, errorThrown)
-                {
-                    JSConsole.Chart.Log("[JSChartContainer::GetLatestVersion] Get HQChart latest version failed.", request);
-                }
-            });
-        }, waittimer);
-    }
 
     //设置焦点
     this.SetFocus=function()
@@ -3059,6 +3069,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     this.UIOnContextMenu=function(e)
     {
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
+        if (!this.IsShowRightMenu) return;
 
         var x = e.clientX-this.UIElement.getBoundingClientRect().left;
         var y = e.clientY-this.UIElement.getBoundingClientRect().top;
@@ -3300,7 +3311,6 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         }
 
         this.HideSelectRect();
-        if (this.SelectRectRightMenu) this.SelectRectRightMenu.Hide();
         if (this.ChartPictureMenu) this.ChartPictureMenu.Hide();
 
         var paint=this.GetRectSelectPaint();
@@ -3940,17 +3950,19 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 }
                 else
                 {
-                    if (isShowMenu && this.SelectRectRightMenu)
+                    if (isShowMenu)
                     {
-                        e.data=
-                        {
+                        var data=
+                        { 
                             Chart:this,
                             X:drag.LastMove.X-uielement.getBoundingClientRect().left,
                             Y:drag.LastMove.Y-uielement.getBoundingClientRect().top,
                             SelectData:selectData,          //区间选择的数据
                             RectSelectPaint:paint           //区间选择背景
                         };
-                        this.SelectRectRightMenu.DoModal(e);
+
+                        e.data=data;
+                        this.PopupSelectRectMenuV2(data, e);
                     }
                 }
             }
@@ -9002,6 +9014,251 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             }
         }
     }
+
+    //点tab弹菜单
+    this.PopupMenuByTab=function(menuData, rtTab)
+    {
+        if (!this.JSPopMenu) return;
+
+        var pixelRatio=GetDevicePixelRatio();
+        var rtCell={ Left:rtTab.Left/pixelRatio, Right:rtTab.Right/pixelRatio, Bottom:rtTab.Bottom/pixelRatio, Top:rtTab.Top/pixelRatio };
+        rtCell.Width=rtCell.Right-rtCell.Left;
+        rtCell.Height=rtCell.Bottom-rtCell.Top;
+
+        var rtClient=this.UIElement.getBoundingClientRect();
+        var rtScroll=GetScrollPosition();
+
+        var offsetLeft=rtClient.left+rtScroll.Left;
+        var offsetTop=rtClient.top+rtScroll.Top;
+        rtCell.Left+=offsetLeft;
+        rtCell.Right+=offsetLeft;
+        rtCell.Top+=offsetTop;
+        rtCell.Bottom+=offsetTop;
+
+        this.JSPopMenu.CreatePopMenu(menuData);
+        this.JSPopMenu.PopupMenuByTab(rtCell);
+    }
+
+    //下拉菜单
+    this.PopupMenuByDrapdown=function(menuData, rtButton)
+    {
+        if (!this.JSPopMenu) return;
+
+        var pixelRatio=GetDevicePixelRatio();
+        var rtCell={ Left:rtButton.Left/pixelRatio, Right:rtButton.Right/pixelRatio, Bottom:rtButton.Bottom/pixelRatio, Top:rtButton.Top/pixelRatio };
+        rtCell.Width=rtCell.Right-rtCell.Left;
+        rtCell.Height=rtCell.Bottom-rtCell.Top;
+
+        var rtClient=this.UIElement.getBoundingClientRect();
+        var rtScroll=GetScrollPosition();
+
+        var offsetLeft=rtClient.left+rtScroll.Left;
+        var offsetTop=rtClient.top+rtScroll.Top;
+        rtCell.Left+=offsetLeft;
+        rtCell.Right+=offsetLeft;
+        rtCell.Top+=offsetTop;
+        rtCell.Bottom+=offsetTop;
+
+        this.JSPopMenu.CreatePopMenu(menuData);
+        this.JSPopMenu.PopupMenuByDrapdown(rtCell);
+    }
+
+    //右键菜单
+    this.PopupMenuByRClick=function(menuData, x, y)
+    {
+        var rtClient=this.UIElement.getBoundingClientRect();
+        var rtScroll=GetScrollPosition();
+
+        x+=rtClient.left+rtScroll.Left;
+        y+=rtClient.top+rtScroll.Top;
+
+        this.JSPopMenu.CreatePopMenu(menuData);
+        this.JSPopMenu.PopupMenuByRight(x,y);
+    }
+
+    //点击右键菜单
+    this.OnClickRightMenu=function(data)
+    {
+        JSConsole.Chart.Log('[JSChartContainer::OnClickRightMenu] ',data);
+        if (!data || !data.Data) return;
+
+        var cmdID=data.Data.ID;     //命令ID
+        var aryArgs=data.Data.Args; //参数
+        var param=null, srcParam=null;  //原始值
+        if (IFrameSplitOperator.IsNonEmptyArray(aryArgs))
+        {
+            srcParam=aryArgs[0];
+            if (IFrameSplitOperator.IsNumber(aryArgs[0])) param=aryArgs[0];
+        }
+
+        switch(cmdID)
+        {
+            case JSCHART_MENU_ID.CMD_CHANGE_PERIOD_ID:
+                if (this.ChangePeriod && param!=null)
+                    this.ChangePeriod(param);
+                break;
+            case JSCHART_MENU_ID.CMD_CHANGE_WINDOW_COUNT_ID:
+                if (this.ChangeIndexWindowCount && param!=null)
+                    this.ChangeIndexWindowCount(param);
+                break;
+            case JSCHART_MENU_ID.CMD_CHANGE_RIGHT_ID:
+                if (this.ChangeRight && param!=null)
+                    this.ChangeRight(param);
+                break;
+            case JSCHART_MENU_ID.CMD_CHANGE_INDEX_ID:
+                if (this.ChangeIndex && param!=null && aryArgs[1]) 
+                    this.ChangeIndex(param,aryArgs[1]);
+                break;
+
+            case JSCHART_MENU_ID.CMD_CHANGE_COLOR_INDEX_ID:
+            case JSCHART_MENU_ID.CMD_CHANGE_TRADE_INDEX_ID:
+                if (this.ChangeInstructionIndex && aryArgs[0])
+                    this.ChangeInstructionIndex(aryArgs[0]);
+                break;
+            case JSCHART_MENU_ID.CMD_DELETE_COLOR_INDEX_ID:    //删除五彩K线指标
+            case JSCHART_MENU_ID.CMD_DELETE_TRADE_INDEX_ID:    //删除专家系统(交易指标)
+                if (this.CancelInstructionIndex) this.CancelInstructionIndex();
+                break;
+            case JSCHART_MENU_ID.CMD_CHANGE_KLINE_TYPE_ID:      //切换K线类型
+                if (this.ChangeKLineDrawType && param!=null)
+                    this.ChangeKLineDrawType(param,aryArgs[1],aryArgs[2]);
+                break;
+            case JSCHART_MENU_ID.CMD_CHANGE_PRICE_GAP_ID:       //缺口提示
+                if (this.ChangePriceGap && IFrameSplitOperator.IsBool(aryArgs[0]))
+                {
+                    if (aryArgs[0]==false)
+                    {
+                        this.ChangePriceGap({ Enable:aryArgs[0] });
+                    }
+                    else 
+                    {
+                        if (IFrameSplitOperator.IsNumber(aryArgs[1]))
+                            this.ChangePriceGap({ Enable:aryArgs[0], Count:aryArgs[1] });
+                    }
+                }
+                break;
+            case JSCHART_MENU_ID.CMD_OVERLAY_SYMBOL_ID:
+                if (aryArgs[1]===true)
+                {
+                    if (this.OverlaySymbol && aryArgs[0]) this.OverlaySymbol(aryArgs[0]);
+                }
+                else if (aryArgs[1]===false)
+                {
+                    if (this.DeleteOverlaySymbol && aryArgs[0]) this.DeleteOverlaySymbol(aryArgs[0]);
+                }
+                break;
+            case JSCHART_MENU_ID.CMD_DELETE_ALL_OVERLAY_SYMBOL_ID:
+                if (this.ClearOverlaySymbol) this.ClearOverlaySymbol();
+                break;
+            case JSCHART_MENU_ID.CMD_CHANGE_COORDINATETYPE_ID:
+                if (this.ChangeCoordinateType && aryArgs[0]) this.ChangeCoordinateType(aryArgs[0]);
+                break;
+            case JSCHART_MENU_ID.CMD_CHANGE_KLINE_INFO_ID:
+                if (aryArgs[0] && IFrameSplitOperator.IsBool(aryArgs[1]))
+                {
+                    if (aryArgs[1]==true && this.AddKLineInfo) this.AddKLineInfo(aryArgs[0],true);
+                    else if (aryArgs[1]==false && this.DeleteKLineInfo) this.DeleteKLineInfo(aryArgs[0]);
+                }
+                break;
+            case JSCHART_MENU_ID.CMD_DELETE_ALL_KLINE_INFO_ID:
+                if (this.ClearKLineInfo) this.ClearKLineInfo();
+                break;
+            case JSCHART_MENU_ID.CMD_CHANGE_DRAG_MODE_ID:
+                if (param!=null) this.DragMode=param;
+                break;
+            case JSCHART_MENU_ID.CMD_CHANGE_BG_SPLIT_ID:
+                if (IFrameSplitOperator.IsBool(srcParam))
+                {
+                    if (srcParam) 
+                    {
+                        this.CreateExtendChart("SessionBreaksPaint", { }); 
+                        this.Draw();
+                    }
+                    else 
+                    {
+                        var finder=this.GetExtendChartByClassName("SessionBreaksPaint");
+                        if (finder) 
+                        {
+                            this.DeleteExtendChartByID(finder.Chart.ID);
+                            this.Draw();
+                        }
+                    }
+                }
+                break;
+            case JSCHART_MENU_ID.CMD_SHOW_DRAWTOOL_ID:
+                var option={Name:'画图工具', Top:this.Frame.ChartBorder.Top };
+                var extendChart=this.CreateExtendChart(option.Name, option);   //创建扩展图形
+                this.SetSizeChange(true);
+                this.Draw();
+                break;
+            case JSCHART_MENU_ID.CMD_HIDE_DRAWTOOL_ID:
+                var drawTools=this.GetExtendChartByClassName('DrawToolsButton');
+                if (drawTools)
+                {
+                    var toolsWidth=drawTools.Chart.Width;
+                    var toolsIndex=parseInt(drawTools.Index);
+                    for(var i=toolsIndex+1; i<this.ExtendChartPaint.length; ++i)   //在画图工具后面创建的需要减去工具的宽度
+                    {
+                        var item=this.ExtendChartPaint[i];
+                        if (item.ClassName=='StockChip')
+                        {
+                            item.Left-=toolsWidth;
+                        }
+                    }
+                    this.DeleteExtendChart(drawTools); 
+                    this.Frame.ChartBorder.Right-=toolsWidth;
+                    this.SetSizeChange(true);
+                    this.Draw();
+                }
+                break;
+            case JSCHART_MENU_ID.CMD_SHOW_STOCKCHIP_ID:
+                var option={Name:'筹码分布', ShowType:1, Width:230 };
+                var extendChart=this.CreateExtendChart(option.Name, option);   //创建扩展图形
+                this.SetSizeChange(true);
+                this.Draw();
+                break;
+            case JSCHART_MENU_ID.CMD_HIDE_STOCKCHIP_ID:
+                var StockChip=chart.GetExtendChartByClassName('StockChip');
+                if (StockChip)
+                {
+                    var chipWidth=StockChip.Chart.Width;
+                    var chipIndex=parseInt(StockChip.Index);
+                    for(var i=chipIndex+1; i<this.ExtendChartPaint.length; ++i)   //在筹码后面创建的需要筹码的宽度
+                    {
+                        var item=this.ExtendChartPaint[i];
+                        if (item.ClassName=='DrawToolsButton')
+                        {
+                            item.Left-=chipWidth;
+                        }
+                    }
+                    this.DeleteExtendChart(StockChip); 
+                    this.Frame.ChartBorder.Right-=chipWidth;
+                    this.SetSizeChange(true);
+                    this.Draw();
+                }
+                break;
+            case JSCHART_MENU_ID.CMD_ENABLE_SELECT_RECT_ID:
+                if (IFrameSplitOperator.IsBool(srcParam))
+                    this.EnableSelectRect=srcParam;
+                break;
+            case JSCHART_MENU_ID.CMD_CHANGE_DAY_COUNT_ID:
+                if (this.ChangeDayCount && param!=null)
+                    this.ChangeDayCount(param);
+                break;
+            case JSCHART_MENU_ID.CMD_SHOW_BEFORE_DATA_ID:
+                if (this.ShowCallAuctionData && IFrameSplitOperator.IsBool(srcParam))
+                    this.ShowCallAuctionData({ Left:srcParam, MultiDay:{ Left:srcParam }});
+                break;
+
+            case JSCHART_MENU_ID.CMD_SELECTED_ZOOM_ID:
+                if (this.ShowSelectData && srcParam) this.ShowSelectData(srcParam);
+                break;
+            case JSCHART_MENU_ID.CMD_SELECTED_SUMMARY_ID:
+                var dlg=new KLineSelectRectDialog(this.DivElement);
+                dlg.DoModal(srcParam);
+                break;
+        }
+    }
 }
 
 function GetDevicePixelRatio()
@@ -9099,11 +9356,12 @@ function GetScrollPosition()
     var scrollPos={};
     var scrollTop=0;
     var scrollLeft=0;
-    if(document.documentElement && document.documentElement.scrollTop)
+    if (document.documentElement && (document.documentElement.scrollTop || document.documentElement.scrollLeft))
     {
         scrollTop=document.documentElement.scrollTop;
         scrollLeft=document.documentElement.scrollLeft;
-    }else if(document.body)
+    }
+    else if(document.body)
     {
         scrollTop=document.body.scrollTop;
         scrollLeft=document.body.scrollLeft;
@@ -12227,7 +12485,7 @@ function MinuteFrame()
             for(var i=0;i<this.CustomToolbar.length;++i)
             {
                 var item=this.CustomToolbar[i];
-                if (item.ID && item.Style) aryButton.push({ ID:item.ID, Style:item.Style, TooltipText:item.TooltipText });
+                if (item.ID && item.Style) aryButton.push({ ID:item.ID, Style:item.Style, TooltipText:item.TooltipText, Data:item.Data });
             }
         }
 
@@ -14357,7 +14615,7 @@ function KLineFrame()
                 var item=this.CustomToolbar[i];
                 if (item.ID && item.Style) 
                 {
-                    var btnItem={ ID:item.ID, Style:item.Style, TooltipText:item.TooltipText};
+                    var btnItem={ ID:item.ID, Style:item.Style, TooltipText:item.TooltipText, Data:item.Data };
                     
                     if (item.IsLeft===true) //左侧按钮
                     { 
@@ -14423,7 +14681,7 @@ function KLineFrame()
             var item=this.CustomToolbar[i];
             if (item.ID && item.Style) 
             {
-                var btnItem={ ID:item.ID, Style:item.Style, TooltipText:item.TooltipText};
+                var btnItem={ ID:item.ID, Style:item.Style, TooltipText:item.TooltipText, Data:item.Data };
                 if (item.IsLeft===true) aryLeftButton.push(btnItem);     //左侧按钮
             }
         }
@@ -44067,7 +44325,8 @@ function FrameButtomToolbarPaint()
             this.Canvas.fillRect(rtBG.Left,rtBG.Top,rtBG.Width,rtBG.Height);
         }
 
-        var font=this.TitleFont(rtBG.Height-this.ButtonConfig.Mergin.Top-this.ButtonConfig.Mergin.Bottom);
+        var font=this.GetTitleFont(rtBG.Height-this.ButtonConfig.Mergin.Top-this.ButtonConfig.Mergin.Bottom);
+        var svgFont=this.GetSVGFont(rtBG.Height-this.ButtonConfig.Mergin.Top-this.ButtonConfig.Mergin.Bottom);
         this.Canvas.textBaseline='middle';
         this.Canvas.textAlign='center';
         this.Canvas.font=font;
@@ -44075,9 +44334,23 @@ function FrameButtomToolbarPaint()
         for(var i=0;i<this.AryButton.length;++i)
         {
             var item=this.AryButton[i];
-            if (!item.Title) return;
-            var textWidth=this.Canvas.measureText(item.Title).width+2;
-            var buttonWidth=textWidth+this.ButtonConfig.Mergin.Left+this.ButtonConfig.Mergin.Right;
+            if (!item.Title && !(item.SVGButton && item.SVGButton.Symbol)) return;
+
+            var textWidth=0;
+            if (item.Title)
+            {
+                textWidth=this.Canvas.measureText(item.Title).width+2;
+            }
+            
+            var svgButtonWidth=0;
+            if (item.SVGButton && item.SVGButton.Symbol) 
+            {
+                svgButtonWidth=this.ButtonConfig.SVG.Size;
+                if (textWidth>0) svgButtonWidth+=this.ButtonConfig.SVG.MerginLeft;
+                
+            }
+
+            var buttonWidth=textWidth+svgButtonWidth+this.ButtonConfig.Mergin.Left+this.ButtonConfig.Mergin.Right;
             var rtButton={ Left:xBotton, Top:rtBG.Top, Bottom:rtBG.Bottom, Height:rtBG.Height, Width:buttonWidth };
             rtButton.Right=rtButton.Left+rtButton.Width;
 
@@ -44114,12 +44387,50 @@ function FrameButtomToolbarPaint()
                 this.Canvas.stroke();
             }
 
-            this.Canvas.fillStyle=titleColor;
-            var xText=rtButton.Left+rtButton.Width/2;   //居中
-            var yText=rtButton.Top+this.ButtonConfig.Mergin.Top+(rtButton.Height-this.ButtonConfig.Mergin.Top-this.ButtonConfig.Mergin.Bottom)/2;
-            this.Canvas.fillText(item.Title,xText,yText);
+            if (item.Title)
+            {
+                this.Canvas.fillStyle=titleColor;
+                var xText=rtButton.Left+(rtButton.Width-svgButtonWidth)/2;   //居中
+                var yText=rtButton.Top+this.ButtonConfig.Mergin.Top+(rtButton.Height-this.ButtonConfig.Mergin.Top-this.ButtonConfig.Mergin.Bottom)/2;
+                this.Canvas.fillText(item.Title,xText,yText);
+            }
+           
+
+            var rtSVG=null;
+            if (item.SVGButton && item.SVGButton.Symbol) 
+            {
+                this.Canvas.font=svgFont;
+                this.Canvas.fillStyle=titleColor;
+                var xText=rtButton.Right-this.ButtonConfig.SVG.Size/2-this.ButtonConfig.Mergin.Right;
+                this.Canvas.fillText(item.SVGButton.Symbol,xText,yText);
+                this.Canvas.font=font;
+
+                rtSVG={Left:rtButton.Right-this.ButtonConfig.Mergin.Right-this.ButtonConfig.SVG.Size, Top:rtButton.Top, Width:this.ButtonConfig.SVG.Size, Height:this.ButtonConfig.SVG.Size};
+                rtSVG.Right=rtSVG.Left+rtSVG.Width;
+                rtSVG.Bottom=rtSVG.Top+rtSVG.Height;
+            }
+
+            //{ Rect:rtButton, ID:item.ID, Data:item, RectSVG:rtSVG }
+            if (textWidth>0 && svgButtonWidth>0)
+            {
+                var rtText={ Left:rtButton.Left, Top:rtButton.Top, Bottom:rtButton.Bottom };
+                rtText.Right=rtText.Left+textWidth+this.ButtonConfig.Mergin.Left+this.ButtonConfig.SVG.MerginLeft/2;
+                var cacheItem={ Rect:rtText, ID:item.ID, Data:item, RectCell:rtButton, ButtonType:0 };  
+                this.AryRectButton.push(cacheItem);
+
+                var rtSVG={Left:rtText.Right, Right:rtButton.Right, Top:rtButton.Top, Bottom:rtButton.Bottom };
+                var cacheItem={ Rect:rtSVG, ID:item.ID, Data:item, RectCell:rtButton, ButtonType:1 };  
+                this.AryRectButton.push(cacheItem);
+            }
+            else
+            {
+                var cacheItem={ Rect:rtButton, ID:item.ID, Data:item, RectCell:rtButton };  //RectCell 全部的大小
+                if (textWidth>0) cacheItem.ButtonType=0;
+                else if (svgButtonWidth>0) cacheItem.ButtonType=1;
+                this.AryRectButton.push(cacheItem);
+            }
             
-            this.AryRectButton.push({ Rect:rtButton, ID:item.ID, Data:item });
+            
 
             xBotton+=buttonWidth+1;
         }
@@ -44148,13 +44459,22 @@ function FrameButtomToolbarPaint()
         return null;
     }
 
-    this.TitleFont=function(height)
+    this.GetTitleFont=function(height)
     {
         var config=this.ButtonConfig.Font;
-        var fontSize=height;
+        var fontSize=height*GetDevicePixelRatio();
         if (IFrameSplitOperator.IsPlusNumber(config.Size)) fontSize=config.Size;
         
-        var font=`${fontSize*GetDevicePixelRatio()}px ${config.Family}`;
+        var font=`${fontSize}px ${config.Family}`;
+        return font;
+    }
+
+    this.GetSVGFont=function(height)
+    {
+        var config=this.ButtonConfig.SVG;
+        var fontSize=height*GetDevicePixelRatio();
+        if (IFrameSplitOperator.IsPlusNumber(config.Size)) fontSize=config.Size;
+        var font=`${fontSize}px ${config.Family}`;
         return font;
     }
 
@@ -44167,7 +44487,7 @@ function FrameButtomToolbarPaint()
             if (x>rect.Left && x<rect.Right && y>rect.Top && y<rect.Bottom)
             {
                 var frame=this.GetFrame();
-                var result={ ID:item.Data.ID, Rect:rect, FrameID:this.FrameID, Frame:frame, Data:item.Data };
+                var result={ ID:item.Data.ID, Rect:rect, FrameID:this.FrameID, Frame:frame, Data:item.Data, ButtonType:item.ButtonType, RectCell:item.RectCell, };
                 return result;
             }
         }
@@ -53367,7 +53687,7 @@ function DynamicChartTitlePainting()
                 var rtButton={ Left:left, YCenter:yCenter };
                 this.DrawButton(item, rtButton, moveonPoint, mouseStatus);
                 
-                this.Buttons.push({ ID:item.ID, Rect:rtButton, FrameID:this.Frame.Identify, Type:0 });  //Type 0=主图按钮 1=附图按钮 2=主图指标名字按钮
+                this.Buttons.push({ ID:item.ID, Rect:rtButton, FrameID:this.Frame.Identify, Type:0, Data:item.Data });  //Type 0=主图按钮 1=附图按钮 2=主图指标名字按钮
 
                 left=rtButton.Right;
 
@@ -53428,7 +53748,7 @@ function DynamicChartTitlePainting()
             var rect=item.Rect;
             if (x>rect.Left && x<rect.Right && y>rect.Top && y<rect.Bottom)
             {
-                var result= { ID:item.ID, Rect:rect, FrameID:item.FrameID, Type:item.Type };
+                var result= { ID:item.ID, Rect:rect, FrameID:item.FrameID, Type:item.Type, Data:item.Data };
                 if (item.Type==1)
                 {
                     result.Title=item.Title;
@@ -53508,7 +53828,7 @@ function IChartDrawPicture()
         if (option.LineWidth>0) this.LineWidth=option.LineWidth;
         if (option.AreaColor) this.AreaColor=option.AreaColor;
         if (option.PointColor) this.PointColor=option.PointColor;
-        if (option.MoveOnPointColor) this.SelectPointColor=option.PointColor;
+        if (option.MoveOnPointColor) this.MoveOnPointColor=option.MoveOnPointColor;
         if (option.PointRadius) this.PointRadius=option.PointRadius;
         if (IFrameSplitOperator.IsNumber(option.SquareSize)) this.SquareSize=option.SquareSize;
         if (IFrameSplitOperator.IsBool(option.IsShowPoint)) this.IsShowPoint=option.IsShowPoint;
@@ -53707,8 +54027,8 @@ function IChartDrawPicture()
             for(var i=0; i<this.Point.length; ++i)
             {
                 var item=this.Point[i];
-                var xValue=parseInt(this.Frame.GetXData(item.Y));
-                var yValue=this.Frame.GetYData(item.X);
+                var xValue=parseInt(this.Frame.GetXData(item.Y,false));
+                var yValue=this.Frame.GetYData(item.X,false);
 
                 var valueItem={ XValue:xValue, YValue:yValue };
                 var minuteItem=data.Data[xValue];
@@ -53722,8 +54042,8 @@ function IChartDrawPicture()
             for(var i=0; i<this.Point.length; ++i)
             {
                 var item=this.Point[i];
-                var xValue=parseInt(this.Frame.GetXData(item.X));
-                var yValue=this.Frame.GetYData(item.Y);
+                var xValue=parseInt(this.Frame.GetXData(item.X,false));
+                var yValue=this.Frame.GetYData(item.Y,false);
 
                 if (xValue>=data.Data.length) //超过当前数据,直接读固定时间
                 {
@@ -53798,12 +54118,23 @@ function IChartDrawPicture()
         }
 
         data.FindDataIndexByDateTime(aryDateTime);
-        for(var i in aryDateTime)
+        for(var i=0; i<aryDateTime.length; ++i)
         {
             var findItem=aryDateTime[i];
             var valueItem=this.Value[i];
             if (findItem.Index>=0) valueItem.XValue=findItem.Index;
         }
+    }
+
+    //重置X索引数据
+    this.ResetXValue=function()
+    {
+        for(var i=0; i<this.Value.length; ++i)
+        {
+            var item=this.Value[i];
+            item.XValue=null;
+        }
+        return true;
     }
 
     //xStep,yStep 移动的偏移量
@@ -53931,6 +54262,8 @@ function IChartDrawPicture()
             for(var i=0; i<this.Value.length; ++i)
             {
                 var item=this.Value[i];
+                if (!IFrameSplitOperator.IsNumber(item.XValue)) return null;    //无效索引 不显示
+
                 var dataIndex=item.XValue-data.DataOffset;
                 if (dataIndex<0 || dataIndex>=showCount) ++invaildX;
             
@@ -55001,7 +55334,7 @@ function ChartDrawPictureLine()
         if (this.IsFrameMinSize()) return;
         if (!this.IsShow) return;
 
-        var drawPoint=this.CalculateDrawPoint( {IsCheckX:true, IsCheckY:true} );
+        var drawPoint=this.CalculateDrawPoint( {IsCheckX:true, IsCheckY:false} );
         if (!drawPoint) return;
         if (drawPoint.length!=2) return;
 
@@ -55621,8 +55954,9 @@ function ChartDrawHLine()
     
     this.Button= 
     { 
-        CloseIcon: {  Text:'\ue62b', Color:'rgb(255,255,255)', Family:"iconfont", Size:16 },
-        SettingIcon: { Text:'\ue623',Color:'rgb(255,255,255)', Family:"iconfont", Size:16 }
+        CloseIcon: {  Text:'\ue62b', Color:'rgb(255,255,255)', Family:"iconfont", Size:16, ID:JSCHART_BUTTON_ID.DRAW_PICTURE_DELETE, TooltipText:null },
+        SettingIcon: { Text:'\ue623',Color:'rgb(255,255,255)', Family:"iconfont", Size:16, ID:JSCHART_BUTTON_ID.DRAW_PICTURE_SETTING, TooltipText:null }
+        //修改ID, Text , TooltipText 可以外部定制按钮
     }
 
     this.AryButton=[];
@@ -55816,6 +56150,7 @@ function ChartDrawHLine()
             this.CalculateButtonSize();
             this.DrawValueText(drawPoint[0].Y, rtDraw, labInfo); 
             if (labInfo) this.DrawRightLab(labInfo, rtDraw);
+            if (labInfo) this.DrawCustomHLine(labInfo, drawPoint[0].Y);
         }
         
 
@@ -55952,6 +56287,53 @@ function ChartDrawHLine()
             }
 
             yText+=labSize.LineHeight+lineSpace;
+        }
+    }
+
+    this.DrawCustomHLine=function(labInfo, yLine)
+    {
+        if (!labInfo) return;
+        if (!IFrameSplitOperator.IsNonEmptyArray(labInfo.AryLine)) return;
+
+        var left=this.Frame.ChartBorder.GetLeft();
+        var right=this.Frame.ChartBorder.GetRight();
+        var pixelRatio=GetDevicePixelRatio();
+
+        var yMax=yLine, yMin=yLine;
+        for(var i=0;i<labInfo.AryLine.length;++i)
+        {
+            var item=labInfo.AryLine[i];
+            if (!IFrameSplitOperator.IsNumber(item.Value)) continue;
+
+            var y=this.Frame.GetYFromData(item.Value);
+            var yFixed=ToFixedPoint(y);
+            var xRight=right;
+            if (IFrameSplitOperator.IsNumber(item.Width)) xRight=left+item.Width*pixelRatio;
+            if (item.Color) this.Canvas.strokeStyle=item.Color;
+            else this.Canvas.strokeStyle=this.LineColor;
+            
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(left,yFixed);
+            this.Canvas.lineTo(xRight,yFixed);
+            this.Canvas.stroke();
+
+            if (yMax<yFixed) yMax=yFixed;
+            if (yMin>yFixed) yMin=yFixed;
+        }
+
+        if (yMax!=yMin && labInfo.VLine)
+        {
+            var item=labInfo.VLine;
+            var x=left+20*pixelRatio;
+            if (IFrameSplitOperator.IsNumber(item.XOffset)) x=left+item.XOffset*pixelRatio;
+            x=ToFixedPoint(x);
+            if (item.Color) this.Canvas.strokeStyle=item.Color;
+            else this.Canvas.strokeStyle=this.LineColor;
+
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(x,yMax);
+            this.Canvas.lineTo(x,yMin);
+            this.Canvas.stroke();
         }
     }
 
@@ -56099,7 +56481,7 @@ function ChartDrawHLine()
             this.Canvas.fillStyle=icon.Color;
             this.Canvas.fillText(this.Button.SettingIcon.Text,xCenter,yCenter);
 
-            this.AryButton.push({Rect:rtButton, ID:JSCHART_BUTTON_ID.DRAW_PICTURE_SETTING});
+            this.AryButton.push({Rect:rtButton, ID:icon.ID, TooltipText:icon.TooltipText});
 
             /*
             if (this.ColseButtonSize>0)
@@ -56131,7 +56513,7 @@ function ChartDrawHLine()
             this.Canvas.fillStyle=icon.Color;
             this.Canvas.fillText(this.Button.CloseIcon.Text,xCenter,yCenter);
 
-            this.AryButton.push({Rect:rtButton,ID:JSCHART_BUTTON_ID.DRAW_PICTURE_DELETE });
+            this.AryButton.push({Rect:rtButton,ID:icon.ID, TooltipText:icon.TooltipText });
 
             left=rtButton.Right;
         }
@@ -64834,12 +65216,14 @@ function JSChartResource()
         BorderColor:"rgb(204,204,204)",
         Button:
         {
-            Font:{ Family:"微软雅黑" },
+            Font:{ Family:"微软雅黑", Size:12*GetDevicePixelRatio() },
             TitleColor: { Selected:"rgb(255,255,255)", Default:"rgb(125,125,125)", MoveOn:"rgb(234,85,4)" },
             BGColor: {  Selected:"rgb(234,85,4)", Default:"rgb(235,235,235)", MoveOn:"rgb(242,242,242)" },
             BorderColor:"rgb(204,204,204)",
 
-            Mergin: { Left:5*GetDevicePixelRatio(), Right:5*GetDevicePixelRatio(), Top:4*GetDevicePixelRatio(), Bottom:2*GetDevicePixelRatio() }
+            Mergin: { Left:5*GetDevicePixelRatio(), Right:5*GetDevicePixelRatio(), Top:4*GetDevicePixelRatio(), Bottom:2*GetDevicePixelRatio() },
+
+            SVG:{ Family:"iconfont", Size:12*GetDevicePixelRatio(), MerginLeft:4*GetDevicePixelRatio() }
         }
     }
 
@@ -65857,6 +66241,15 @@ function JSChartResource()
                 if (IFrameSplitOperator.IsNumber(item.Right)) destItem.Left=item.Right;
                 if (IFrameSplitOperator.IsNumber(item.Top)) destItem.Top=item.Top;
                 if (IFrameSplitOperator.IsNumber(item.Bottom)) destItem.Bottom=item.Bottom;
+            }
+
+            if (button.SVG)
+            {
+                var item=button.SVG;
+                var destItem=this.FrameButtomToolbar.Button.SVG;
+                if (IFrameSplitOperator.IsNumber(item.Size)) destItem.Size=item.Size;
+                if (IFrameSplitOperator.IsNumber(item.MerginLeft)) destItem.MerginLeft=item.MerginLeft;
+                if (item.Family) destItem.Family=item.Family;
             }
         }
         
@@ -68120,10 +68513,9 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             isShowMenu=data.IsShowMenu;
         }
        
-
-        if (isShowMenu && this.SelectRectRightMenu)
+        if (isShowMenu)
         {
-            e.data=
+            var data=
             {
                 Chart:this,
                 X:x,
@@ -68131,8 +68523,9 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                 SelectData:selectData,          //区间选择的数据
                 RectSelectPaint:paint           //区间选择背景
             };
+            e.data=data;
 
-            this.SelectRectRightMenu.DoModal(e);
+            this.PopupSelectRectMenuV2(data, e);
         }    
     }
 
@@ -68167,7 +68560,6 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
     this.ShowSelectData=function(selectData)
     {
         this.HideSelectRect();
-        if (this.SelectRectRightMenu) this.SelectRectRightMenu.Hide();
 
         JSConsole.Chart.Log('[KLineChartContainer::ShowSelectData] selectData', selectData);
         var dataOffset=selectData.Start;
@@ -68252,9 +68644,9 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                 isShowMenu=data.IsShowMenu;
             }
 
-            if (isShowMenu && this.SelectRectRightMenu)
+            if (isShowMenu)
             {
-                e.data=
+                var data=
                 {
                     Chart:this,
                     X:corssCursor.LastPoint.X/pixelTatio,
@@ -68262,7 +68654,9 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                     SelectData:selectData,          //区间选择的数据
                     RectSelectPaint:paint           //区间选择背景
                 };
-                this.SelectRectRightMenu.DoModal(e);
+                e.data=data
+                
+                this.PopupSelectRectMenuV2(data, e);
             }
         }
         
@@ -72169,32 +72563,315 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         }
     }
 
-
     //注册鼠标右键事件
     this.OnRightMenu=function(x,y,e)
     {
         var pixelTatio = GetDevicePixelRatio(); //x,y 需要乘以放大倍速
-        if (this.RightMenu)
-        {
-            var frameId=this.Frame.PtInFrame(x*pixelTatio,y*pixelTatio);
-            e.data={ Chart:this, FrameID:frameId };
-            this.RightMenu.DoModal(e);
-        }
-
+        var frameId=this.Frame.PtInFrame(x*pixelTatio,y*pixelTatio);
+        this.PopupRightMenuV2({X:e.offsetX, Y:e.offsetY, FrameID:frameId}, e);
+        
         var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CONTEXT_MENU);
         if (event)
         {
-            var frameId=this.Frame.PtInFrame(x*pixelTatio,y*pixelTatio);
             var data={ X:x, Y:y, Event:e, FrameID:frameId };
             event.Callback(event,data,this);
         }
+    }
+
+    //右键菜单数据
+    this.GetRightMenuData=function(frameID)
+    {
+        var windowCount=this.Frame.SubFrame.length; //窗口个数
+        var klineChart=this.ChartPaint[0];
+        var priceGap=klineChart.PriceGap;                   //缺口配置信息
+        var coordinateType=null, yCoordinateType=null;      //坐标类型
+        var mainFrame=null;
+        if (this.Frame.SubFrame[0] && this.Frame.SubFrame[0].Frame) mainFrame=this.Frame.SubFrame[0].Frame;
+        if (mainFrame) 
+        {
+            coordinateType=mainFrame.CoordinateType;
+            if (mainFrame.YSplitOperator) yCoordinateType=mainFrame.YSplitOperator.CoordinateType;
+        }
+
+        var aryKLineInfo=[];    //信息地雷
+        for(var i=0;i<this.ChartInfo.length;++i)
+        {
+            var item=this.ChartInfo[i];
+            if (item && item.ClassName) aryKLineInfo.push(item.ClassName);
+        }
+
+        var aryOverlaySymbol=[];    //叠加的股票列表
+        for(var i=0; i<this.OverlayChartPaint.length; ++i)
+        {
+            var item=this.OverlayChartPaint[i];
+            if (item && item.Symbol) aryOverlaySymbol.push(item.Symbol)
+        }
+
+        var bBGSpit=false, bShowDrawTool=false, bShowStockChip=false;
+        if (this.GetExtendChartByClassName("SessionBreaksPaint")) bBGSpit=true;
+        if (this.GetExtendChartByClassName('DrawToolsButton')) bShowDrawTool=true;  //画图工具
+        if (this.GetExtendChartByClassName('StockChip')) bShowStockChip=true;       //筹码
+
+        var aryMenu=
+        [
+            { 
+                Name:"分析周期", 
+                SubMenu:
+                [
+                    { Name:"日线", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_PERIOD_ID, Args:[0] }, Checked:this.Period==0 },
+                    { Name:"周线", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_PERIOD_ID, Args:[1] }, Checked:this.Period==1 },
+                    { Name:"双周线", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_PERIOD_ID, Args:[21]}, Checked:this.Period==21   },
+                    { Name:"月线", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_PERIOD_ID, Args:[2]}, Checked:this.Period==2 },
+                    { Name:"季线", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_PERIOD_ID, Args:[9]}, Checked:this.Period==9  },
+                    { Name:"半年", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_PERIOD_ID, Args:[22]}, Checked:this.Period==22  },
+                    { Name:"年线", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_PERIOD_ID, Args:[3]}, Checked:this.Period==3  },
+                    { Name:"1分", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_PERIOD_ID, Args:[4]}, Checked:this.Period==4  },
+                    { Name:"5分", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_PERIOD_ID, Args:[5]}, Checked:this.Period==5  },
+                    { Name:"15分", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_PERIOD_ID, Args:[6]}, Checked:this.Period==6  },
+                    { Name:"30分", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_PERIOD_ID, Args:[7]}, Checked:this.Period==7  },
+                    { Name:"60分", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_PERIOD_ID, Args:[8]}, Checked:this.Period==8  },
+                    { Name:"2小时", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_PERIOD_ID, Args:[11]}, Checked:this.Period==11  },
+                    { Name:"4小时", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_PERIOD_ID, Args:[12]}, Checked:this.Period==12  },
+                    { Name:"分笔", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_PERIOD_ID, Args:[10]}, Checked:this.Period==10  },
+                    { Name:"自定义周期:3分钟", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_PERIOD_ID, Args:[20003]}, Checked:this.Period==20003  },
+                    { Name:"自定义周期:35分钟", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_PERIOD_ID, Args:[20035]}, Checked:this.Period==20035  },
+                    { Name:"自定义周期:8日", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_PERIOD_ID, Args:[40008]}, Checked:this.Period==40008  },
+                ]
+            },
+            { 
+                Name:"指标切换", 
+                SubMenu:
+                [
+                    { Name:"均线", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_INDEX_ID, Args:[frameID, "均线"]}},
+                    { Name:"BOLL", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_INDEX_ID, Args:[frameID, "BOLL"]}},
+                    { Name:"MACD", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_INDEX_ID, Args:[frameID, "MACD"]}},
+                    { Name:"KDJ", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_INDEX_ID, Args:[frameID, "KDJ"]}},
+                    { Name:"VOL", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_INDEX_ID, Args:[frameID, "VOL"]}},
+                    { Name:"RSI", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_INDEX_ID, Args:[frameID, "RSI"]}},
+                    { Name:"BRAR", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_INDEX_ID, Args:[frameID, "BRAR"]}},
+                    { Name:"WR", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_INDEX_ID, Args:[frameID, "WR"]}},
+                ]
+            },
+            { 
+                Name:"五彩K线", 
+                SubMenu:
+                [
+                    { Name:"十字星", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_COLOR_INDEX_ID, Args:["五彩K线-十字星"]}},
+                    { Name:"早晨之星", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_COLOR_INDEX_ID, Args:["五彩K线-早晨之星"]}},
+                    { Name:"垂死十字", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_COLOR_INDEX_ID, Args:["五彩K线-垂死十字"]}},
+                    { Name:"三只乌鸦", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_COLOR_INDEX_ID, Args:["五彩K线-三只乌鸦"]}},
+                    { Name:"光脚阴线", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_COLOR_INDEX_ID, Args:["五彩K线-光脚阴线"]}},
+                    { Name:"黄昏之星", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_COLOR_INDEX_ID, Args:["五彩K线-黄昏之星"]}},
+                ]
+
+            },
+            { 
+                Name:"专家系统", 
+                SubMenu:
+                [
+                    { Name:"BIAS", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_TRADE_INDEX_ID, Args:["交易系统-BIAS"]}},
+                    { Name:"CCI", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_TRADE_INDEX_ID, Args:["交易系统-CCI"]}},
+                    { Name:"DMI", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_TRADE_INDEX_ID, Args:["交易系统-DMI"]}},
+                    { Name:"KD", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_TRADE_INDEX_ID, Args:["交易系统-KD"]}},
+                    { Name:"BOLL", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_TRADE_INDEX_ID, Args:["交易系统-BOLL"]}},
+                    { Name:"KDJ", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_TRADE_INDEX_ID, Args:["交易系统-KDJ"]}},
+                ]
+            },
+            { 
+                Name:"信息地雷", 
+                SubMenu:
+                [
+                    { Name:"公告", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_KLINE_INFO_ID, Args:["公告", !aryKLineInfo.includes("AnnouncementInfo")]}, Checked:aryKLineInfo.includes("AnnouncementInfo") },
+                    { Name:"业绩预告", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_KLINE_INFO_ID, Args:["业绩预告", !aryKLineInfo.includes("PforecastInfo")]}, Checked:aryKLineInfo.includes("PforecastInfo") },
+                    { Name:"调研", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_KLINE_INFO_ID, Args:["调研", !aryKLineInfo.includes("ResearchInfo") ]}, Checked:aryKLineInfo.includes("ResearchInfo") },
+                    { Name:"大宗交易", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_KLINE_INFO_ID, Args:["大宗交易", !aryKLineInfo.includes("BlockTrading")]}, Checked:aryKLineInfo.includes("BlockTrading") },
+                    { Name:"龙虎榜", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_KLINE_INFO_ID, Args:["龙虎榜", !aryKLineInfo.includes("TradeDetail")]}, Checked:aryKLineInfo.includes("TradeDetail") },
+                    { Name:"互动易", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_KLINE_INFO_ID, Args:["互动易", !aryKLineInfo.includes("InvestorInfo")]}, Checked:aryKLineInfo.includes("InvestorInfo") },
+                ]
+            },
+            { 
+                Name:"缺口提示", 
+                SubMenu:
+                [
+                    { Name:"显示1个缺口", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_PRICE_GAP_ID, Args:[true, 1]}, Checked:(priceGap.Enable==true && priceGap.Count==1) },
+                    { Name:"显示2个缺口", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_PRICE_GAP_ID, Args:[true, 2]}, Checked:(priceGap.Enable==true && priceGap.Count==2) },
+                    { Name:"显示3个缺口", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_PRICE_GAP_ID, Args:[true, 3]}, Checked:(priceGap.Enable==true && priceGap.Count==3) },
+                    { Name:"隐藏缺口", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_PRICE_GAP_ID, Args:[false]}, Checked:priceGap.Enable==false },
+                ]
+            },
+            { 
+                Name:"叠加品种", 
+                SubMenu:
+                [
+                    { Name:"上证指数", Data:{ ID: JSCHART_MENU_ID.CMD_OVERLAY_SYMBOL_ID, Args:["000001.sh", !aryOverlaySymbol.includes("000001.sh")]}, Checked:aryOverlaySymbol.includes("000001.sh") },
+                    { Name:"深证成指", Data:{ ID: JSCHART_MENU_ID.CMD_OVERLAY_SYMBOL_ID, Args:["399001.sz", !aryOverlaySymbol.includes("399001.sz")]}, Checked:aryOverlaySymbol.includes("399001.sz") },
+                    { Name:"中小板指", Data:{ ID: JSCHART_MENU_ID.CMD_OVERLAY_SYMBOL_ID, Args:["399005.sz", !aryOverlaySymbol.includes("399005.sz")]}, Checked:aryOverlaySymbol.includes("399005.sz") },
+                    { Name:"创业板指", Data:{ ID: JSCHART_MENU_ID.CMD_OVERLAY_SYMBOL_ID, Args:["399006.sz", !aryOverlaySymbol.includes("399006.sz")]}, Checked:aryOverlaySymbol.includes("399006.sz") },
+                    { Name:"沪深300", Data:{ ID: JSCHART_MENU_ID.CMD_OVERLAY_SYMBOL_ID, Args:["000300.sh", !aryOverlaySymbol.includes("000300.sh")]}, Checked:aryOverlaySymbol.includes("000300.sh")},
+                ]
+            },
+            { 
+                Name:"主图线型", 
+                SubMenu:
+                [
+                    { Name:"K线(空心阳线)", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_KLINE_TYPE_ID, Args:[3]} },
+                    { Name:"K线(实心阳线)", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_KLINE_TYPE_ID, Args:[0]} },
+                    { Name:"美国线", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_KLINE_TYPE_ID, Args:[2, true, { IsThinAKBar:false }]} },
+                    { Name:"美国线(细)", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_KLINE_TYPE_ID, Args:[2, true, { IsThinAKBar:true }]} },
+                    { Name:"收盘线", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_KLINE_TYPE_ID, Args:[1]} },
+                    { Name:"收盘面积", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_KLINE_TYPE_ID, Args:[4]} },
+                    { Name:"K线(空心阳线阴线)", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_KLINE_TYPE_ID, Args:[6]} },
+                    { Name:"Heikin Ashi", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_KLINE_TYPE_ID, Args:[11]} },
+                    { Name:"Line Break", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_KLINE_TYPE_ID, Args:[12]} },
+                    { Name:"High-low", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_KLINE_TYPE_ID, Args:[13]} },
+                    { Name:"HLC Area", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_KLINE_TYPE_ID, Args:[15]} },
+                ]
+            },
+            { 
+                Name:"坐标类型", 
+                SubMenu:
+                [
+                    { Name:"反转坐标", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_COORDINATETYPE_ID, Args:[{ IsReverse:coordinateType==0 }]}, Checked:coordinateType==1 },
+                    { Name:JSPopMenu.SEPARATOR_LINE_NAME },
+
+                    { Name:"普通坐标", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_COORDINATETYPE_ID, Args:[{ Type:0 }]}, Checked:yCoordinateType==0 },
+                    { Name:"百分比坐标", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_COORDINATETYPE_ID, Args:[{ Type:1 }]}, Checked:yCoordinateType==1 },
+                    { Name:"对数坐标", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_COORDINATETYPE_ID, Args:[{ Type:2 }]}, Checked:yCoordinateType==2 },
+                    { Name:"等比坐标", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_COORDINATETYPE_ID, Args:[{ Type:3 }]}, Checked:yCoordinateType==3 },
+                    { Name:"等分坐标", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_COORDINATETYPE_ID, Args:[{ Type:4 }]}, Checked:yCoordinateType==4 },
+                    { Name:"黄金分割", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_COORDINATETYPE_ID, Args:[{ Type:5 }]}, Checked:yCoordinateType==5},
+
+                ]
+            },
+            { 
+                Name:"指标窗口个数",
+                SubMenu:
+                [
+                    { Name:"1个窗口", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_WINDOW_COUNT_ID, Args:[2]}, Checked:2==windowCount },
+                    { Name:"2个窗口", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_WINDOW_COUNT_ID, Args:[3]}, Checked:3==windowCount },
+                    { Name:"3个窗口", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_WINDOW_COUNT_ID, Args:[4]}, Checked:4==windowCount },
+                    { Name:"4个窗口", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_WINDOW_COUNT_ID, Args:[5]}, Checked:5==windowCount },
+                    { Name:"5个窗口", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_WINDOW_COUNT_ID, Args:[6]}, Checked:6==windowCount },
+                ]
+            },
+            {
+                Name:"其他设置",
+                SubMenu:
+                [
+                    
+                    { Name:"禁止拖拽", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_DRAG_MODE_ID, Args:[0]}, Checked:0==this.DragMode },
+                    { Name:"启动拖拽", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_DRAG_MODE_ID, Args:[1]}, Checked:1==this.DragMode },
+                    { Name:"区间选择", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_DRAG_MODE_ID, Args:[2]}, Checked:2==this.DragMode },
+                    { Name:JSPopMenu.SEPARATOR_LINE_NAME },
+
+                    { Name:"背景分割", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_BG_SPLIT_ID, Args:[!bBGSpit]}, Checked:bBGSpit},
+
+                    { Name:"画图工具", Data:{ ID:bShowDrawTool?JSCHART_MENU_ID.CMD_HIDE_DRAWTOOL_ID:JSCHART_MENU_ID.CMD_SHOW_DRAWTOOL_ID, Args:[]}, Checked:bShowDrawTool},
+
+                    { Name:"移动筹码图", Data:{ ID:bShowStockChip?JSCHART_MENU_ID.CMD_HIDE_STOCKCHIP_ID:JSCHART_MENU_ID.CMD_SHOW_STOCKCHIP_ID, Args:[]}, Checked:bShowStockChip},
+                ]
+            }
+        ];
+
+        //复权
+        if(!MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol) && !MARKET_SUFFIX_NAME.IsBIT(this.Symbol))
+        {
+            var rightMenu=
+            {
+                Name:"复权处理",
+                SubMenu:
+                [
+                    { Name:"不复权", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_RIGHT_ID, Args:[0]}, Checked:0==this.Right },
+                    { Name:"前复权", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_RIGHT_ID, Args:[1]}, Checked:1==this.Right },
+                    { Name:"后复权", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_RIGHT_ID, Args:[2]}, Checked:2==this.Right }
+                ]
+            };
+
+            aryMenu.splice(1,0,rightMenu);
+        }
+
+        //删除菜单
+        for(var i=0;i<aryMenu.length;++i)
+        {
+            var item=aryMenu[i];
+            if (item.Name=="五彩K线")
+            {
+                if (this.ColorIndex) 
+                {   
+                    item.SubMenu.push({ Name:JSPopMenu.SEPARATOR_LINE_NAME });
+                    item.SubMenu.push({ Name:"删除五彩K线", Data:{ ID: JSCHART_MENU_ID.CMD_DELETE_COLOR_INDEX_ID} });
+                }
+            }
+            else if (item.Name=="专家系统")
+            {
+                if (this.TradeIndex) 
+                {
+                    item.SubMenu.push({ Name:JSPopMenu.SEPARATOR_LINE_NAME });
+                    item.SubMenu.push({ Name:"删除专家系统", Data:{ ID: JSCHART_MENU_ID.CMD_DELETE_TRADE_INDEX_ID} });
+                }
+            }
+            else if (item.Name=="叠加品种")
+            {
+                for(var j=0;j<item.SubMenu.length;++j)
+                {
+                    if (item.SubMenu[j].Checked)
+                    {
+                        item.SubMenu.push({ Name:JSPopMenu.SEPARATOR_LINE_NAME });
+                        item.SubMenu.push({ Name:"取消叠加", Data:{ ID: JSCHART_MENU_ID.CMD_DELETE_ALL_OVERLAY_SYMBOL_ID} });
+                        break;
+                    }
+                }
+            }
+            else if (item.Name=="信息地雷")
+            {
+                for(var j=0;j<item.SubMenu.length;++j)
+                {
+                    if (item.SubMenu[j].Checked)
+                    {
+                        item.SubMenu.push({ Name:JSPopMenu.SEPARATOR_LINE_NAME });
+                        item.SubMenu.push({ Name:"删除所有", Data:{ ID: JSCHART_MENU_ID.CMD_DELETE_ALL_KLINE_INFO_ID} });
+                        break;
+                    }
+                }
+            }
+        }
+
+        return aryMenu;
+    }
+
+    this.PopupRightMenuV2=function(data,e)
+    {
+        if (!this.JSPopMenu) return;
+        var x=data.X, y=data.Y;
+        var frameID=data.FrameID;
+        var menuData={ Menu:this.GetRightMenuData(frameID), Position:JSPopMenu.POSITION_ID.RIGHT_MENU_ID };
+        menuData.ClickCallback=(data)=>{ this.OnClickRightMenu(data); }
+
+        this.PopupMenuByRClick(menuData, x, y);
+    }
+
+    this.PopupSelectRectMenuV2=function(data, e)
+    {
+        var aryMenu=
+        [
+            { Name:"区间统计", Data:{ ID:JSCHART_MENU_ID.CMD_SELECTED_SUMMARY_ID, Args:[e] }},
+            { Name:"区间放大", Data:{ ID:JSCHART_MENU_ID.CMD_SELECTED_ZOOM_ID, Args:[data.SelectData] }}
+        ];
+        
+        var menuData={ Menu:aryMenu, Position:JSPopMenu.POSITION_ID.RIGHT_MENU_ID };
+        menuData.ClickCallback=(data)=>{ this.OnClickRightMenu(data); }
+        var x=data.X, y=data.Y;
+        this.PopupMenuByRClick(menuData, x, y);
     }
 
     //重新加载画图工具(切换股票|周期)
     this.ReloadChartDrawPicture=function()
     {
         this.ChartDrawPicture=[];
-        this.ChartDrawStorageCache;
+        if (this.SelectChartDrawPicture)  this.SelectChartDrawPicture.IsSelected=false; 
+        this.SelectChartDrawPicture=null;
+        this.CurrentChartDrawPicture=null;
+
         if (this.ChartDrawStorage)
         {
             this.ChartDrawStorageCache=this.ChartDrawStorage.GetDrawData( {Symbol:this.Symbol, Period:this.Period} );
@@ -73573,7 +74250,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_TITLE_BUTTON);
         if (event && event.Callback)
         {
-            var data={ Info:button, PreventDefault:false  };    //PreventDefault 是否阻止内置的点击处理
+            var data={ Info:button, PreventDefault:false, e:e };    //PreventDefault 是否阻止内置的点击处理
             event.Callback(event,data,this);
             if (data.PreventDefault) return;
         }
@@ -73585,7 +74262,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_EXTENDCHART_BUTTON);
         if (event && event.Callback)
         {
-            var data={ Info:button, PreventDefault:false  };    //PreventDefault 是否阻止内置的点击处理
+            var data={ Info:button, PreventDefault:false, e:e  };    //PreventDefault 是否阻止内置的点击处理
             event.Callback(event,data,this);
             if (data.PreventDefault) return;
         }
@@ -75552,20 +76229,133 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
     //注册鼠标右键事件
     this.OnRightMenu=function(x,y,e)
     {
-        if (this.RightMenu)
-        {
-            var frameId=this.Frame.PtInFrame(x,y);
-            e.data={ Chart:this, FrameID:frameId };
-            this.RightMenu.DoModal(e);
-        }
-
+        var pixelTatio = GetDevicePixelRatio(); //x,y 需要乘以放大倍速
+        var frameId=this.Frame.PtInFrame(x*pixelTatio,y*pixelTatio);
+        this.PopupRightMenuV2({X:e.offsetX, Y:e.offsetY, FrameID:frameId}, e);
+        
         var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CONTEXT_MENU);
         if (event)
         {
-            var frameId=this.Frame.PtInFrame(x,y);
             var data={ X:x, Y:y, Event:e, FrameID:frameId };
             event.Callback(event,data,this);
         }
+    }
+
+    //右键菜单数据
+    this.GetRightMenuData=function(frameID)
+    {
+        var windowCount=this.Frame.SubFrame.length; //窗口个数
+
+        var aryOverlaySymbol=[];                    //叠加的股票列表
+        for(var i=0; i<this.OverlayChartPaint.length; ++i)
+        {
+            var item=this.OverlayChartPaint[i];
+            if (item && item.Symbol) aryOverlaySymbol.push(item.Symbol)
+        }
+
+        var bShowDrawTool=false;
+        if (this.GetExtendChartByClassName('DrawToolsButton')) bShowDrawTool=true;  //画图工具
+
+        var aryMenu=
+        [
+            { 
+                Name:"叠加品种", 
+                SubMenu:
+                [
+                    { Name:"上证指数", Data:{ ID: JSCHART_MENU_ID.CMD_OVERLAY_SYMBOL_ID, Args:["000001.sh", !aryOverlaySymbol.includes("000001.sh")]}, Checked:aryOverlaySymbol.includes("000001.sh") },
+                    { Name:"深证成指", Data:{ ID: JSCHART_MENU_ID.CMD_OVERLAY_SYMBOL_ID, Args:["399001.sz", !aryOverlaySymbol.includes("399001.sz")]}, Checked:aryOverlaySymbol.includes("399001.sz") },
+                    { Name:"中小板指", Data:{ ID: JSCHART_MENU_ID.CMD_OVERLAY_SYMBOL_ID, Args:["399005.sz", !aryOverlaySymbol.includes("399005.sz")]}, Checked:aryOverlaySymbol.includes("399005.sz") },
+                    { Name:"创业板指", Data:{ ID: JSCHART_MENU_ID.CMD_OVERLAY_SYMBOL_ID, Args:["399006.sz", !aryOverlaySymbol.includes("399006.sz")]}, Checked:aryOverlaySymbol.includes("399006.sz") },
+                    { Name:"沪深300", Data:{ ID: JSCHART_MENU_ID.CMD_OVERLAY_SYMBOL_ID, Args:["000300.sh", !aryOverlaySymbol.includes("000300.sh")]}, Checked:aryOverlaySymbol.includes("000300.sh")},
+                ]
+            },
+            {
+                Name:"多日分时图",
+                SubMenu:
+                [
+                    { Name:"当日分时图", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_DAY_COUNT_ID, Args:[1]}, Checked:this.DayCount==1 },
+                    { Name:"最近2日", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_DAY_COUNT_ID, Args:[2]}, Checked:this.DayCount==2 },
+                    { Name:"最近3日", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_DAY_COUNT_ID, Args:[3]}, Checked:this.DayCount==3 },
+                    { Name:"最近4日", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_DAY_COUNT_ID, Args:[4]}, Checked:this.DayCount==4 },
+                    { Name:"最近5日", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_DAY_COUNT_ID, Args:[5]}, Checked:this.DayCount==5 },
+                ]
+            },
+            {
+                Name:"指标窗口个数",
+                SubMenu:
+                [
+                    { Name:"1个窗口", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_WINDOW_COUNT_ID, Args:[2]}, Checked:3==windowCount },
+                    { Name:"2个窗口", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_WINDOW_COUNT_ID, Args:[3]}, Checked:4==windowCount },
+                    { Name:"3个窗口", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_WINDOW_COUNT_ID, Args:[4]}, Checked:5==windowCount },
+                    { Name:"4个窗口", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_WINDOW_COUNT_ID, Args:[5]}, Checked:6==windowCount },
+                    { Name:"5个窗口", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_WINDOW_COUNT_ID, Args:[6]}, Checked:7==windowCount },
+                ]
+            },
+            {
+                Name:"指标切换",
+                SubMenu:
+                [
+                    { Name:"MACD", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_INDEX_ID, Args:[frameID, "MACD"]}},
+                    { Name:"DMI", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_INDEX_ID, Args:[frameID, "DMI"]}},
+                    { Name:"DMA", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_INDEX_ID, Args:[frameID, "DMA"]}},
+                    { Name:"BRAR", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_INDEX_ID, Args:[frameID, "BRAR"]}},
+                    { Name:"KDJ", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_INDEX_ID, Args:[frameID, "KDJ"]}},
+                    { Name:"RSI", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_INDEX_ID, Args:[frameID, "RSI"]}},
+                    { Name:"WR", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_INDEX_ID, Args:[frameID, "WR"]}},
+                    { Name:"CCI", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_INDEX_ID, Args:[frameID, "CCI"]}},
+                    { Name:"TRIX", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_INDEX_ID, Args:[frameID, "TRIX"]}},
+                ]
+            },
+            {
+                Name:"区间选择",Data:{ ID: JSCHART_MENU_ID.CMD_ENABLE_SELECT_RECT_ID, Args:[!this.EnableSelectRect]}, Checked:this.EnableSelectRect
+            },
+            {
+                Name:"其他设置",
+                SubMenu:
+                [
+                    { Name:"画图工具", Data:{ ID:bShowDrawTool?JSCHART_MENU_ID.CMD_HIDE_DRAWTOOL_ID:JSCHART_MENU_ID.CMD_SHOW_DRAWTOOL_ID, Args:[]}, Checked:bShowDrawTool},
+                ]
+            }
+
+        ];
+
+        if (MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol))
+        {
+            var item={ Name:"集合竞价",Data:{ ID: JSCHART_MENU_ID.CMD_SHOW_BEFORE_DATA_ID, Args:[!this.IsShowBeforeData] }, Checked:this.IsShowBeforeData };
+            aryMenu.splice(4,0,item);
+        }
+
+        
+        //删除菜单
+        for(var i=0;i<aryMenu.length;++i)
+        {
+            var item=aryMenu[i];
+            if (item.Name=="叠加品种")
+            {
+                for(var j=0;j<item.SubMenu.length;++j)
+                {
+                    if (item.SubMenu[j].Checked)
+                    {
+                        item.SubMenu.push({ Name:JSPopMenu.SEPARATOR_LINE_NAME });
+                        item.SubMenu.push({ Name:"取消叠加", Data:{ ID: JSCHART_MENU_ID.CMD_DELETE_ALL_OVERLAY_SYMBOL_ID} });
+                        break;
+                    }
+                }
+            }
+        }
+
+        return aryMenu;
+    }
+
+    this.PopupRightMenuV2=function(data,e)
+    {
+        if (!this.JSPopMenu) return;
+        var x=data.X, y=data.Y;
+        var frameID=data.FrameID;
+        var menuData={ Menu:this.GetRightMenuData(frameID), Position:JSPopMenu.POSITION_ID.RIGHT_MENU_ID };
+        menuData.ClickCallback=(data)=>{ this.OnClickRightMenu(data); }
+
+        this.PopupMenuByRClick(menuData, x, y);
     }
 
     this.OnWheel=function(e)
@@ -76672,15 +77462,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             this.ResetDayOffset();
         }
         
-        if (this.DayCount>1)
-        {
-            this.ChartDrawPicture=[];
-        }
-        else
-        {
-            this.ReloadChartDrawPicture();
-        }
-
+        this.ReloadChartDrawPicture();
         this.ResetDataStatus();
         this.ClearIndexPaint();             //清空指标
         this.Frame.ClearYCoordinateMaxMin();
@@ -77202,6 +77984,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         this.TitlePaint[0].IsShowDate=true;
         this.UpdateDataOffset();
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.CreateChartDrawPictureByStorage(); //创建画图工具
 
         //执行脚本
         if (this.Frame.SubFrame.length>2)
@@ -77500,7 +78283,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             this.UpdateLatestMinuteDataV2(minuteData);
             this.UpdateHistoryMinuteUI(updateTime);
             this.RecvMinuteDataEvent({FunctionName:"RecvUpdateMinuteData"} );
-            this.RequestOverlayMinuteData();    //请求叠加数据 (主数据下载完再下载)
+            this.RequestOverlayMinuteData();        //请求叠加数据 (主数据下载完再下载)
             this.BindAllOverlayIndexData(this.SourceData);
             this.AutoUpdateEvent(true, "MinuteChartContainer::RecvUpdateMinuteData");
             this.AutoUpdate();
@@ -78920,7 +79703,11 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
     this.ReloadChartDrawPicture=function()
     {
         this.ChartDrawPicture=[];
-        this.ChartDrawStorageCache;
+        if (this.SelectChartDrawPicture)  this.SelectChartDrawPicture.IsSelected=false; 
+        this.SelectChartDrawPicture=null;
+        this.CurrentChartDrawPicture=null;
+        this.MoveOnChartDrawPicture=null;
+        
         if (this.ChartDrawStorage)
         {
             this.ChartDrawStorageCache=this.ChartDrawStorage.GetDrawData( { Symbol:this.Symbol, Period:888888888 } );
@@ -78931,7 +79718,8 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
     {
         if (!this.ChartDrawStorageCache || this.ChartDrawStorageCache.length<=0) return;
 
-        for(var i in this.ChartDrawStorageCache)
+        var self=this;
+        for(var i=0; i<this.ChartDrawStorageCache.length; ++i)
         {
             var item=this.ChartDrawStorageCache[i];
             if (item.FrameID<0 || !this.Frame.SubFrame || this.Frame.SubFrame.length<item.FrameID) continue;
@@ -78942,8 +79730,11 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             drawPicture.Canvas=this.Canvas;
             drawPicture.Status=10;
             drawPicture.Frame=this.Frame.SubFrame[item.FrameID].Frame;  //绑定框架坐标
+            if (drawPicture.ImportStorageData) drawPicture.ImportStorageData(item);
+            drawPicture.ResetXValue();
             drawPicture.UpdateXValue();
             drawPicture.ValueToPoint();
+            drawPicture.GetActiveDrawPicture=()=>{ return this.GetActiveDrawPicture(); }
 
             if (drawPicture.ClassName==='ChartDrawPictureText') drawPicture.IsInitialized=true;
 
@@ -85480,1479 +86271,6 @@ function WaitDialog(divElement)
         var top=border.GetHeight()/2;
 
         this.Show(left,top,200,40);      //显示
-    }
-}
-
-//K线右键菜单类
-//id:"kline"
-function KLineRightMenu(divElement)
-{
-    this.newMethod=IDivDialog;   //派生
-    this.newMethod(divElement);
-    delete this.newMethod;
-
-    this.option={};
-
-    this.Create = function () {
-        var _self = this;
-
-        this.ID=Guid();
-
-        _self.BindData();
-        _self.BindEvent();
-    }
-    this.BindData=function(){
-        var _self = this;
-
-        var id=this.DivElement.id;
-        var $body = $("#" + id);
-
-        $body.find("div[id^='topMenu_']").remove();
-        $body.find("div[id^='childMenu_']").remove();
-
-        var $topMenu = $("<div />");
-        $topMenu.attr("id", "topMenu_"+_self.ID).addClass("context-menu-wrapper topmenu").hide();
-        $body.append($topMenu);
-
-        var $topTable = $("<table />");
-        $topTable.attr({ id: "topTable_" + _self.ID, cellspacing: "0", cellpadding: "0" }).addClass("context-menu");
-        $topMenu.append($topTable);
-
-        $topTable.append(_self.childrenList(_self.option.data));
-
-        for (var i = 0; i < _self.option.data.length; i++) {
-            var isHasChildren = typeof _self.option.data[i].children != "undefined";
-
-            if (isHasChildren) {
-
-                var $childMenu = $("<div />");
-                $childMenu.attr({ id: "childMenu_"+_self.ID + i, "data-index": i }).addClass("context-menu-wrapper").hide();
-                $body.append($childMenu);
-
-                var $childTable = $("<table />");
-                $childTable.attr({ id: "childTable_" + _self.ID + i, cellspacing: "0", cellpadding: "0" }).addClass("context-menu");
-                $childMenu.append($childTable);
-
-                $childTable.append(_self.childrenList(_self.option.data[i].children));
-            }
-        }
-    }
-
-    this.Update=function()
-    {
-        var _self = this;
-        //var id=this.DivElement.id;
-        //var $body=$("#"+id);
-        //
-        //var $topTable = $("#topTable_" + _self.ID);
-        //$topTable.empty();
-        //$topTable.append(_self.childrenList(_self.option.data));
-        //
-        //for (var i = 0; i < _self.option.data.length; i++) {
-        //    var isHasChildren = typeof _self.option.data[i].children != "undefined";
-        //
-        //    if (isHasChildren) {
-        //        var $childTable = $("#childTable_" + _self.ID + i);
-        //        $childTable.empty();
-        //        $childTable.append(_self.childrenList(_self.option.data[i].children));
-        //    }
-        //}
-
-        _self.BindData();
-        _self.BindEvent();
-    }
-
-    this.childrenList = function(list) {
-        var result = [];
-
-        for (var i = 0; i < list.length; i++) {
-            var isBorder = typeof list[i].isBorder != "undefined" && list[i].isBorder;
-
-            var $tr = $("<tr />");
-            $tr.addClass("font_Arial context-menu");
-            if (isBorder)
-                $tr.addClass("border");
-
-            var $td1 = $("<td />");
-            if(list[i].selected){
-                $td1.addClass("spacer context-menu").html("√");
-            }else{
-                $td1.addClass("spacer context-menu");
-            }
-
-            var $td2 = $("<td />");
-            $td2.addClass("text").html(list[i].text);
-
-            var $td3 = $("<td />");
-            $td3.addClass("right shortcut");
-
-            var $td4 = $("<td />");
-            $td4.addClass(typeof list[i].children != "undefined" ? "submenu-arrow" : "context-menu spacer");
-
-            $tr.append($td1).append($td2).append($td3).append($td4);
-
-            result.push($tr);
-        }
-        return result;
-    }
-
-    this.Show=function (obj) {
-        var _self = this;
-        $.extend(_self.option, obj);
-
-        if (!_self.ID) _self.Create();  //判断是否重复创建
-        else _self.Update();            //更新菜单状态
-
-        var $topMenu = $("#topMenu_"+_self.ID),
-            topWidth = $topMenu.outerWidth(),
-            topHeight = $topMenu.outerHeight();
-
-        var x = _self.option.x,
-            y = _self.option.y;
-
-        if (topWidth > _self.option.position.X + _self.option.position.W- x) //超过了右边距
-            x = x - topWidth;
-
-        if (topHeight > _self.option.position.Y +_self.option.position.H - y)//超过了下边距
-            y = y - topHeight;
-
-        $topMenu.hide();
-        $topMenu.css({ position:"absolute",left: x + "px", top: y + "px" }).show();
-
-        this.isInit = true;
-    }
-
-    this.Hide=function () {
-        var _self = this;
-        if (typeof($)=="undefined") return;
-        $("#topMenu_" + _self.ID).hide();
-        $("[id^='childMenu_" + _self.ID + "']").hide();
-    }
-
-    this.BindEvent=function () {
-        var _self = this;
-        var $childMenu = $("[id^='childMenu_" + _self.ID + "']");
-
-        $("#topTable_" + _self.ID).find("tr").mouseenter(function () {
-            var $this = $(this),
-                index = $this.index(),
-                $topMenu = $("#topMenu_" + _self.ID),
-                $child = $("#childMenu_" + _self.ID + index),
-                trWidth = $this.outerWidth(),
-                trHeight = $this.outerHeight();
-
-            var left = $topMenu.position().left + trWidth + 1;
-            var top = $topMenu.position().top + (trHeight * index);
-
-            if (trWidth > _self.option.position.X + _self.option.position.W - left) //超过了右边距
-                left = left - trWidth - $topMenu.outerWidth() - 2;
-
-            if ($child.outerHeight() > _self.option.position.Y +_self.option.position.H - top)//超过了下边距
-                top = $topMenu.position().top + $topMenu.outerHeight() - $child.outerHeight();
-
-            $childMenu.hide();
-            $child.css({ left: left + "px", top: top + "px" }).show();
-        }).mouseleave(function () {
-            var index = $(this).index();
-            setTimeout(function () {
-                if ($("#childMenu_" + _self.ID + index).attr("data-isShow") != 1) {
-                    $("#childMenu_" + _self.ID + index).hide();
-                }
-            }, 10)
-
-        }).click(function () {
-            var $this = $(this);
-            var index = $this.index();
-
-            if ($.type(_self.option.data[index].click) == "function") {
-                _self.option.data[index].click(_self.option.returnData);
-                $this.hide();
-            }
-        }).contextmenu(function()
-        {
-            return false;   //屏蔽系统右键菜单
-        });
-
-
-        $childMenu.mouseenter(function () {
-            $(this).attr("data-isShow", "1");
-        }).mouseleave(function () {
-            $(this).attr("data-isShow", "0");
-        }).contextmenu(function()
-        {
-            return false;   //屏蔽系统右键菜单
-        });
-
-        $childMenu.find("tr").click(function () {
-            var $this = $(this);
-            var divIndex = parseInt($this.closest("div").attr("data-index"));
-            var trIndex = $this.index();
-
-            if ($.type(_self.option.data[divIndex].children[trIndex].click) == "function") {
-                _self.option.data[divIndex].children[trIndex].click(_self.option.windowIndex || 1);
-                $childMenu.hide();
-            }
-        });
-    }
-
-    this.GetPeriod=function (chart) 
-    {
-        var data=
-        [
-            {
-                text: "日线", Value:0,
-                click: function () { chart.ChangePeriod(0); }
-            }, 
-            {
-                text: "周线",Value:1,
-                click: function () { chart.ChangePeriod(1); }
-            }, 
-            {
-                text: "双周线",Value:21,
-                click: function () { chart.ChangePeriod(21); }
-            },
-            {
-                text: "月线",Value:2,
-                click: function () { chart.ChangePeriod(2); }
-            }, 
-            {
-                text: "季线",Value:9,
-                click: function () { chart.ChangePeriod(9); }
-            },
-            {
-                text: "半年",Value:22,
-                click: function () { chart.ChangePeriod(22); }
-            },
-            {
-                text: "年线",Value:3,
-                click: function () { chart.ChangePeriod(3); }
-            },
-            {
-                text: "1分",Value:4,
-                click: function () { chart.ChangePeriod(4); }
-            },
-            {
-                text: "5分",Value:5,
-                click: function () { chart.ChangePeriod(5); }
-            },
-            {
-                text: "15分",Value:6,
-                click: function () { chart.ChangePeriod(6); }
-            },
-            {
-                text: "30分",Value:7,
-                click: function () { chart.ChangePeriod(7); }
-            },
-            {
-                text: "60分",Value:8,
-                click: function () { chart.ChangePeriod(8); }
-            },
-            {
-                text: "2小时",Value:11,
-                click: function () { chart.ChangePeriod(11); }
-            },
-            {
-                text: "4小时",Value:12,
-                click: function () { chart.ChangePeriod(12); }
-            },
-            {
-                text: "分笔",Value:10,
-                click: function () { chart.ChangePeriod(10); }
-            },
-            {
-                text: "自定义周期:3分钟",Value:20003,
-                click: function () { chart.ChangePeriod(20003); }
-            },
-            {
-                text: "自定义周期:35分钟",Value:20035,
-                click: function () { chart.ChangePeriod(20035); }
-            },
-            {
-                text: "自定义周期:8日",Value:40008,
-                click: function () { chart.ChangePeriod(40008); }
-            }
-        ];
-
-        for(var i in data)
-        {
-            var item=data[i];
-            if (item.Value==chart.Period)
-            {
-                item.selected=true;
-                break;
-            }
-        }
-
-        return data; 
-    }
-
-    this.GetRight=function(chart)
-    {
-        var data=
-        [
-            {
-                text: "不复权",
-                click: function () { chart.ChangeRight(0); }
-            }, 
-            {
-                text: "前复权",
-                click: function () { chart.ChangeRight(1); }
-            }, 
-            {
-                text: "后复权",
-                click: function () { chart.ChangeRight(2); }
-            }
-        ];
-
-        if (chart.Right>=0 && chart.Right<data.length) data[chart.Right].selected=true;
-
-        return data;
-    }
-
-    //指标
-    this.GetIndex=function (chart) 
-    {
-        return [{
-            text: "均线",
-            click: function (windowIndex) {
-                chart.ChangeIndex(windowIndex, '均线')
-            }
-        }, {
-            text: "BOLL",
-            click: function (windowIndex) {
-                chart.ChangeIndex(windowIndex, 'BOLL')
-            },
-            isBorder:true
-        }, {
-            text: "MACD",
-            click: function (windowIndex) {
-                chart.ChangeIndex(windowIndex, 'MACD')
-            }
-        }, {
-            text: "KDJ",
-            click: function (windowIndex) {
-                chart.ChangeIndex(windowIndex, 'KDJ')
-            }
-        }, {
-            text: "VOL",
-            click: function (windowIndex) {
-                chart.ChangeIndex(windowIndex, 'VOL')
-            }
-        }, {
-            text: "RSI",
-            click: function (windowIndex) {
-                chart.ChangeIndex(windowIndex, 'RSI')
-            }
-        }, {
-            text: "BRAR",
-            click: function (windowIndex) {
-                chart.ChangeIndex(windowIndex, 'BRAR')
-            }
-        }, {
-            text: "WR",
-            click: function (windowIndex) {
-                chart.ChangeIndex(windowIndex, 'WR')
-            }
-        }, {
-            text: "BIAS",
-            click: function (windowIndex) {
-                chart.ChangeIndex(windowIndex, 'BIAS')
-            }
-        }, {
-            text: "OBV",
-            click: function (windowIndex) {
-                chart.ChangeIndex(windowIndex, 'OBV')
-            }
-        }, {
-            text: "DMI",
-            click: function (windowIndex) {
-                chart.ChangeIndex(windowIndex, 'DMI')
-            }
-        }, {
-            text: "CR",
-            click: function (windowIndex) {
-                chart.ChangeIndex(windowIndex, 'CR')
-            }
-        }, {
-            text: "PSY",
-            click: function (windowIndex) {
-                chart.ChangeIndex(windowIndex, 'PSY')
-            }
-        }, {
-            text: "CCI",
-            click: function (windowIndex) {
-                chart.ChangeIndex(windowIndex, 'CCI')
-            }
-        }, {
-            text: "DMA",
-            click: function (windowIndex) {
-                chart.ChangeIndex(windowIndex, 'DMA')
-            }
-        }, {
-            text: "TRIX",
-            click: function (windowIndex) {
-                chart.ChangeIndex(windowIndex, 'TRIX')
-            }
-        }, {
-            text: "VR",
-            click: function (windowIndex) {
-                chart.ChangeIndex(windowIndex, 'VR')
-            }
-        }, {
-            text: "EMV",
-            click: function (windowIndex) {
-                chart.ChangeIndex(windowIndex, 'EMV')
-            }
-        }, {
-            text: "ROC",
-            click: function (windowIndex) {
-                chart.ChangeIndex(windowIndex, 'ROC')
-            }
-        }, {
-            text: "MIM",
-            click: function (windowIndex) {
-                chart.ChangeIndex(windowIndex, 'MIM')
-            }
-        }, {
-            text: "FSL",
-            click: function (windowIndex) {
-                chart.ChangeIndex(windowIndex, 'FSL')
-            }
-        } ]
-    }
-
-    //五彩K线
-    this.GetColorIndex=function (chart) 
-    {
-        var data=
-        [
-            {
-                text: "十字星",
-                click: function (windowIndex) { chart.ChangeInstructionIndex('五彩K线-十字星') }
-            }, 
-            {
-                text: "早晨之星",
-                click: function (windowIndex) { chart.ChangeInstructionIndex('五彩K线-早晨之星') },
-            }, 
-            {
-                text: "垂死十字",
-                click: function (windowIndex) { chart.ChangeInstructionIndex('五彩K线-垂死十字') },
-            }, 
-            {
-                text: "三只乌鸦",
-                click: function (windowIndex) { chart.ChangeInstructionIndex('五彩K线-三只乌鸦') }
-            }, 
-            {
-                text: "光脚阴线",
-                click: function (windowIndex) { chart.ChangeInstructionIndex('五彩K线-光脚阴线') }
-            }, 
-            {
-                text: "黄昏之星",
-                click: function (windowIndex) { chart.ChangeInstructionIndex('五彩K线-黄昏之星') }
-            }
-        ];
-
-        if (chart.ColorIndex)
-        {
-            data[data.length-1].isBorder=true;
-            data.push(
-                {
-                    text: "删除五彩K线",
-                    click: function (windowIndex) { chart.CancelInstructionIndex() }
-                });
-        }
-
-        return data;
-    }
-
-    //专家系统
-    this.GetTradeIndex=function(chart)
-    {
-        var data=
-        [
-            {
-                text: "BIAS",
-                click: function (windowIndex) { chart.ChangeInstructionIndex('交易系统-BIAS') }
-            }, 
-            {
-                text: "CCI",
-                click: function (windowIndex) { chart.ChangeInstructionIndex('交易系统-CCI') }
-            }, 
-            {
-                text: "DMI",
-                click: function (windowIndex) { chart.ChangeInstructionIndex('交易系统-DMI') }
-            }, 
-            {
-                text: "KD",
-                click: function (windowIndex) { chart.ChangeInstructionIndex('交易系统-KD') }
-            }, 
-            {
-                text: "BOLL",
-                click: function (windowIndex) { chart.ChangeInstructionIndex('交易系统-BOLL') }
-            }, 
-            {
-                text: "KDJ",
-                click: function (windowIndex) { chart.ChangeInstructionIndex('交易系统-KDJ') }
-            }
-        ];
-
-        if (chart.TradeIndex)
-        {
-            data[data.length-1].isBorder=true;
-            data.push(
-                {
-                    text: "删除专家系统",
-                    click: function (windowIndex) { chart.CancelInstructionIndex()}
-                });
-        }
-        return data;
-    }
-
-    //叠加
-    this.GetOverlay=function (chart)  
-    {
-        var data=
-        [
-            {
-                text: "上证指数",
-                click: function () { chart.OverlaySymbol('000001.sh'); }
-            },
-            {
-                text: "深证成指",
-                click: function () { chart.OverlaySymbol('399001.sz'); }
-            }, 
-            {
-                text: "中小板指",
-                click: function () { chart.OverlaySymbol('399005.sz'); }
-            }, 
-            {
-                text: "创业板指",
-                click: function () { chart.OverlaySymbol('399006.sz'); }
-            }, 
-            {
-                text: "沪深300",
-                click: function () { chart.OverlaySymbol('000300.sh'); },
-            }
-        ];
-
-        for(var i in chart.OverlayChartPaint)
-        {
-            var item=chart.OverlayChartPaint[i];
-            var symbol=item.Symbol;
-            const mapSymbol=new Map([['000001.sh',0],['399001.sz',1],['399005.sz',2],['399006.sz',3],['000300.sh',4]]);
-            if (mapSymbol.has(symbol)) 
-            {
-                var menuItem=data[mapSymbol.get(symbol)];
-                let delSymbol=symbol;
-                menuItem.selected=true;
-                menuItem.click=function () { chart.DeleteOverlaySymbol(delSymbol); };
-            }
-        }
-
-        if (chart.OverlayChartPaint && chart.OverlayChartPaint.length>0)
-        {
-            data[data.length-1].isBorder=true;
-            data.push(
-                {
-                    text: "取消叠加",
-                    click: function () { chart.ClearOverlaySymbol();}
-                }
-            );
-        }
-
-        return data;
-    }
-
-    //K线类型设置
-    this.GetKLineType=function(chart)
-    {
-        var data=
-        [
-            {
-                text: "K线(空心阳线)",
-                click: function () { chart.ChangeKLineDrawType(3);}
-            },
-            {
-                text: "K线(实心阳线)",
-                click: function () { chart.ChangeKLineDrawType(0); }
-            }, 
-            {
-                text: "美国线",
-                click: function () { chart.ChangeKLineDrawType(2, true ,{ IsThinAKBar:false }); }
-            }, 
-            {
-                text: "收盘线",
-                click: function () { chart.ChangeKLineDrawType(1); }
-            },
-            {
-                text: "收盘面积",
-                click: function () { chart.ChangeKLineDrawType(4); }
-            },
-            {
-                text: "K线(空心阳线阴线)",
-                click: function () { chart.ChangeKLineDrawType(6);}
-            },
-            {
-                text: "Heikin Ashi",
-                click: function () { chart.ChangeKLineDrawType(11);}
-            },
-            {
-                text: "Line Break",
-                click: function () { chart.ChangeKLineDrawType(12);}
-            },
-            {
-                text: "High-low",
-                click: function () { chart.ChangeKLineDrawType(13);}
-            },
-            {
-                text: "HLC Area",
-                click: function () { chart.ChangeKLineDrawType(15);}
-            }
-        ];
-
-        switch(chart.KLineDrawType)
-        {
-            case 0:
-                data[1].selected=true;
-                break;
-            case 1:
-                data[3].selected=true;
-                break;
-            case 2:
-                data[2].selected=true;
-                break;
-            case 3:
-                data[0].selected=true;
-                break;
-            case 4:
-                data[4].selected=true;
-                break;
-            case 6:
-                data[5].selected=true;
-                break;
-            case 11:
-                data[6].selected=true;
-                break;
-            case 12:
-                data[7].selected=true;
-                break;
-            case 13:
-                data[8].selected=true;
-                break;
-            case 15:
-                data[9].selected=true;
-                break;
-        }
-        return data;
-    }
-
-    //指标窗口个数
-    this.GetIndexWindowCount=function(chart)
-    {
-        var data=
-        [
-            {
-                text: "1个窗口",
-                click: function () { chart.ChangeIndexWindowCount(1); }
-            },
-            {
-                text: "2个窗口",
-                click: function () { chart.ChangeIndexWindowCount(2); }
-            }, 
-            {
-                text: "3个窗口",
-                click: function () { chart.ChangeIndexWindowCount(3); }
-            }, 
-            {
-                text: "4个窗口",
-                click: function () { chart.ChangeIndexWindowCount(4); }
-            },
-            {
-                text: "5个窗口",
-                click: function () { chart.ChangeIndexWindowCount(5); }
-            }
-        ];
-
-        var count=chart.Frame.SubFrame.length;
-        if ((count-1)>=0 && (count-1)<data.length) data[count-1].selected=true;  //选中
-
-        return data;
-    }
-
-    //坐标类型
-    this.GetCoordinateType=function(chart)
-    {
-        var data= 
-        [
-            {
-                text: "普通坐标",
-                click: function () { chart.ChangeCoordinateType( {Type:0} ); }
-            },
-            {
-                text: "百分比坐标",
-                click: function () { chart.ChangeCoordinateType( {Type:1} ); }
-            },
-            {
-                text: "反转坐标",
-                click: function () { chart.ChangeCoordinateType( { IsReverse:true } ); }
-            },
-            {
-                text: "对数坐标",
-                click: function () { chart.ChangeCoordinateType( {Type:2} ); }
-            },
-            {
-                text: "等比坐标",
-                click: function () { chart.ChangeCoordinateType( {Type:3} ); }
-            },
-            {
-                text: "等分坐标",
-                click: function () { chart.ChangeCoordinateType( {Type:4} ); }
-            },
-            {
-                text: "黄金分割",
-                click: function () { chart.ChangeCoordinateType( {Type:5} ); }
-            }
-        ];
-
-        if (chart.Frame && chart.Frame.SubFrame && chart.Frame.SubFrame.length>0) 
-        {
-            if (chart.Frame.SubFrame[0].Frame.CoordinateType==1) 
-            {
-                data[2].selected=true;
-                data[2].click=function() { chart.ChangeCoordinateType( { IsReverse:false } ); } //取消反转
-            }
-
-            if (chart.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType==1) data[1].selected=true;  //百分比
-            else if (chart.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType==0) data[0].selected=true; //普通坐标
-            else if (chart.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType==2) data[3].selected=true; //对数
-            else if (chart.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType==3) data[4].selected=true; //等比坐标
-            else if (chart.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType==4) data[5].selected=true; //等分坐标
-            else if (chart.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType==5) data[6].selected=true; //黄金分割
-        }
-
-        return data;
-    }
-
-    //拖拽模式
-    this.GetDragModeType=function(chart)
-    {
-        var data=
-        [
-            {
-                text: "禁止拖拽",
-                click: function () { chart.DragMode=0; }
-            },
-            {
-                text: "启动拖拽",
-                click: function () { chart.DragMode=1; }
-            },
-            {
-                text: "区间选择",
-                click: function () { chart.DragMode=2; }
-            }
-        ];
-
-        if (chart.DragMode>=0 && chart.DragMode<data.length) data[chart.DragMode].selected=true;  //选中
-
-        return data;
-    }
-
-    //工具
-    this.GetTools=function(chart)
-    {
-        var data=[];
-        var drawTools=chart.GetExtendChartByClassName('DrawToolsButton');
-        if (drawTools)
-        {
-            data.push(
-                {
-                    text: "关闭画图工具",
-                    click: function () 
-                    { 
-                        var toolsWidth=drawTools.Chart.Width;
-                        var toolsIndex=parseInt(drawTools.Index);
-                        for(var i=toolsIndex+1; i<chart.ExtendChartPaint.length; ++i)   //在画图工具后面创建的需要减去工具的宽度
-                        {
-                            var item=chart.ExtendChartPaint[i];
-                            if (item.ClassName=='StockChip')
-                            {
-                                item.Left-=toolsWidth;
-                            }
-                        }
-                        chart.DeleteExtendChart(drawTools); 
-                        chart.Frame.ChartBorder.Right-=toolsWidth;
-                        chart.SetSizeChange(true);
-                        chart.Draw();
-                    }
-                }
-            );
-        }
-        else
-        {
-            data.push(
-                {
-                    text: "画图工具",
-                    click: function () {
-                        var option={Name:'画图工具', Top:chart.Frame.ChartBorder.Top };
-                        var extendChart=chart.CreateExtendChart(option.Name, option);   //创建扩展图形
-                        chart.SetSizeChange(true);
-                        chart.Draw();
-                    }
-                }
-            );
-        }
-
-        var StockChip=chart.GetExtendChartByClassName('StockChip');
-        if (StockChip)
-        {
-            data.push(
-                {
-                    text: "关闭移动筹码",
-                    click: function () 
-                    { 
-                        var chipWidth=StockChip.Chart.Width;
-                        var chipIndex=parseInt(StockChip.Index);
-                        for(var i=chipIndex+1; i<chart.ExtendChartPaint.length; ++i)   //在筹码后面创建的需要筹码的宽度
-                        {
-                            var item=chart.ExtendChartPaint[i];
-                            if (item.ClassName=='DrawToolsButton')
-                            {
-                                item.Left-=chipWidth;
-                            }
-                        }
-                        chart.DeleteExtendChart(StockChip); 
-                        chart.Frame.ChartBorder.Right-=chipWidth;
-                        chart.SetSizeChange(true);
-                        chart.Draw();
-                    }
-                    
-                }
-            );
-        }
-        else
-        {
-            data.push(
-                {
-                    text: "移动筹码",
-                    click: function () {  
-                        var option={Name:'筹码分布', ShowType:1, Width:230 };
-                        var extendChart=chart.CreateExtendChart(option.Name, option);   //创建扩展图形
-                        chart.SetSizeChange(true);
-                        chart.Draw();
-                    }
-                }
-            );
-        }
-
-        return data;
-    }
-
-    //缺口提示
-    this.GetPriceGap=function(chart)
-    {
-        var klineChart=chart.ChartPaint[0];
-        var priceGap=klineChart.PriceGap;
-        var data=
-        [
-            {
-                text: "显示1个缺口",
-                click: function () { chart.ChangePriceGap({ Enable:true, Count:1 }); }
-            },
-            {
-                text: "显示2个缺口",
-                click: function () { chart.ChangePriceGap({ Enable:true, Count:2 }); }
-            },
-            {
-                text: "显示3个缺口",
-                click: function () { chart.ChangePriceGap({ Enable:true, Count:3 }); }
-            },
-            {
-                text: "隐藏缺口",
-                click: function () { chart.ChangePriceGap({ Enable:false }); }
-            }
-        ];
-
-        if (!priceGap.Enable || priceGap.Count<=0) 
-        {
-            data[data.length-1].selected=true;  //选中
-        }
-        else if (priceGap.Enable && priceGap.Count>0)
-        {
-            var index=priceGap.Count-1;
-            if (index>data.length-2) index=data.length-2;
-            data[index].selected=true;  //选中
-        }
-
-        return data;
-    }
-
-    this.GetBGSplit=function(chart)
-    {
-        var data=
-        [
-            {
-                text: "启用",
-                click: function () 
-                { 
-                    chart.CreateExtendChart("SessionBreaksPaint", { }); 
-                    chart.Draw();
-                }
-            }, 
-            {
-                text: "关闭",
-                click: function () 
-                { 
-                    var finder=chart.GetExtendChartByClassName("SessionBreaksPaint");
-                    if (finder) 
-                    {
-                        chart.DeleteExtendChartByID(finder.Chart.ID);
-                        chart.Draw();
-                    }
-                }
-            }, 
-        ];
-
-        var finder=chart.GetExtendChartByClassName("SessionBreaksPaint");
-        if (finder) data[0].selected=true;
-        else data[1].selected=true;
-
-        return data;
-    }
-
-
-    this.GetKLineInfo=function(chart)
-    {
-        var setInfo=new Set();
-        for(var i in chart.ChartInfo)
-        {
-            var item=chart.ChartInfo[i];
-            setInfo.add(item.ClassName);
-        }
-
-        var aryKLineInfo=["公告","业绩预告","调研","大宗交易","龙虎榜","互动易"]
-
-        var data=[];
-        for(var i in aryKLineInfo)
-        {
-            var infoName=aryKLineInfo[i];
-            var classInfo=JSKLineInfoMap.GetClassInfo(infoName);
-            if (!classInfo) continue;
-            
-            var item=this.CreateKlineInfoItem(infoName, setInfo.has(classInfo.ClassName), chart);
-            data.push(item);
-        }
-
-        if (chart.ChartInfo.length>0)
-        {
-            data[data.length-1].isBorder=true;
-            var item={ text:'删除所有', click:function() { chart.ClearKLineInfo()} };
-            data.push(item);
-           
-        }
-
-        return data;
-    }
-
-    this.CreateKlineInfoItem=function(infoName,bExist,chart)
-    {
-        var item= 
-        {
-            text:infoName, 
-            selected:bExist
-        }
-
-        if (bExist) item.click=function() { chart.DeleteKLineInfo(infoName) };
-        else  item.click=function() { chart.AddKLineInfo(infoName,true) }
-
-        return item;
-    }
-
-    this.DoModal=function(event)
-    {
-        var chart=event.data.Chart;
-        var rightMenu=chart.RightMenu;
-        var x = event.offsetX;
-        var y = event.offsetY;
-
-        var dataList=[{
-            text: "分析周期",
-            children: this.GetPeriod(chart)
-        }, 
-        {
-            text: "复权处理",
-            children: this.GetRight(chart)
-        }, 
-        {
-            text: "指标切换",
-            children: this.GetIndex(chart)
-        }, 
-        {
-            text:"五彩K线",
-            children: this.GetColorIndex(chart)
-        },
-        {
-            text:'专家系统',
-            children: this.GetTradeIndex(chart)
-        },
-        {
-            text:'信息地雷',
-            children: this.GetKLineInfo(chart)
-        },
-        {
-            text:'缺口提示',
-            children: this.GetPriceGap(chart)
-        },
-        {
-            text: "叠加品种",
-            children: this.GetOverlay(chart)
-        },
-        {
-            text:'主图线型',
-            children: this.GetKLineType(chart)
-        },
-        {
-            text:"坐标类型",
-            children:this.GetCoordinateType(chart)
-        },
-        {
-            text:'指标窗口个数',
-            children: this.GetIndexWindowCount(chart)
-        },
-        {
-            text:'鼠标拖拽',
-            children: this.GetDragModeType(chart)
-        },
-        {
-            text:"工具",
-            children:this.GetTools(chart)
-        },
-        {
-            text:"背景分割",
-            children:this.GetBGSplit(chart)
-        }
-        ];
-
-        var upperSymbol=chart.Symbol.toUpperCase();
-        if(MARKET_SUFFIX_NAME.IsSHSZIndex(chart.Symbol) || MARKET_SUFFIX_NAME.IsBIT(upperSymbol))
-        {
-            dataList.splice(1,1);
-        }
-
-        var identify=event.data.FrameID;
-        var overlayIndex=this.GetOverlayIndex(chart,identify);
-        if (overlayIndex && overlayIndex.length>0)
-        {
-            var delOverlayIndexMenu={ text:'删除叠加指标', children:this.GetDeleteOverlayIndex(chart,overlayIndex) }
-            dataList.splice(3,0,delOverlayIndexMenu);
-        }
-
-        JSConsole.Chart.Log('[KLineRightMenu::DoModal]',identify);
-        rightMenu.Show({
-            windowIndex :identify,
-            x:x+chart.UIElement.offsetLeft,
-            y:y+chart.UIElement.offsetTop,
-            position:chart.Frame.Position,
-            data:dataList
-        })
-
-        $(document).click(function () {
-            rightMenu.Hide();
-        });
-    }
-
-    this.GetOverlayIndex=function(chart, windowsIndex)
-    {
-        if (windowsIndex>=chart.Frame.SubFrame.length || windowsIndex<0) return [];
-
-        var result=[];
-        var item=chart.Frame.SubFrame[windowsIndex];
-        for(var i in item.OverlayIndex)
-        {
-            var overlayItem=item.OverlayIndex[i];
-            result.push({Name:overlayItem.Script.Name, Identify:overlayItem.Identify});
-        }
-        
-        return result;
-    }
-
-    this.GetDeleteOverlayIndex=function(chart,overlayIndex)
-    {
-        var data=[];
-        for(var i in overlayIndex)
-        {
-            let identify=overlayIndex[i].Identify;
-            data.push({text:overlayIndex[i].Name, click:function()
-                { 
-                    chart.DeleteOverlayWindowsIndex(identify)
-                }});
-        }
-
-        return data;
-    }
-}
-
-//K线区间选择右键菜单
-function KLineSelectRightMenu(divElement)
-{
-    this.newMethod=KLineRightMenu;   //派生
-    this.newMethod(divElement);
-    delete this.newMethod;
-
-    this.DoModal=function(event)
-    {
-        var chart=event.data.Chart;
-        var rightMenu=this;
-        var x = event.data.X;
-        var y = event.data.Y;
-
-        var dataList=
-        [
-            {
-                text: "区间统计",
-                click: function () 
-                {
-                    JSConsole.Chart.Log('[KLineSelectRightMenu::click] 区间统计');
-                    rightMenu.Hide();
-                    var dialog=new KLineSelectRectDialog(divElement);
-                    dialog.DoModal(event);
-                }
-            },
-            {
-                text:'区间放大',
-                click:function()
-                {
-                    JSConsole.Chart.Log('[KLineSelectRightMenu::click] 区间放大');
-                    var chart=event.data.Chart;
-                    chart.ShowSelectData(event.data.SelectData);
-                }
-            }
-        ];
-
-        rightMenu.Show({
-            x:x,
-            y:y,
-            position:chart.Frame.Position,
-            data:dataList
-        });
-    }
-
-    this.Show=function (obj) 
-    {
-        var _self = this;
-        $.extend(_self.option, obj);
-
-        //判断是否重复创建
-        if (!_self.ID) _self.Create();
-        //判断下如果DOM没了需要重新创建
-        var divIdName='topMenu_'+_self.ID;
-        var divDom=document.getElementById(divIdName);
-        if (!divDom) _self.Create();
-
-        var $topMenu = $("#topMenu_"+_self.ID),
-            topWidth = $topMenu.outerWidth(),
-            topHeight = $topMenu.outerHeight();
-
-        $topMenu.contextmenu(function()
-        {
-            return false;   //屏蔽系统右键菜单
-        });
-
-        var x = _self.option.x,
-            y = _self.option.y;
-
-        if (topWidth > _self.option.position.X + _self.option.position.W- x) //超过了右边距
-            x = x - topWidth;
-
-        if (topHeight > _self.option.position.Y +_self.option.position.H - y)//超过了下边距
-            y = y - topHeight;
-
-        $topMenu.hide();
-        $topMenu.css({ position:"absolute",left: x + "px", top: y + "px" }).show();
-
-        $("#topMenu_" + _self.ID).find("tr").show();    //把菜单列表显示
-
-        this.isInit = true;
-    }
-}
-
-//分钟数据右键菜单
-function MinuteRightMenu(divElement)
-{
-    this.newMethod=KLineRightMenu;   //派生
-    this.newMethod(divElement);
-    delete this.newMethod;
-
-    this.DoModal=function(event)
-    {
-        var chart=event.data.Chart;
-        var rightMenu=chart.RightMenu;
-        var x = event.offsetX;
-        var y = event.offsetY;
-
-        var dataList=
-        [
-            {
-                text: "叠加品种",
-                children: this.GetOverlay(chart)
-            },
-            {
-                text: "多日分时图",
-                children: this.GetDayCount(chart)
-            },
-            {
-                text:'指标窗口个数',
-                children: this.GetIndexWindowCount(chart)
-            },
-            {
-                text: "副图指标切换",
-                children: this.GetIndex(chart)
-            },
-            {
-                text:"区间选择",
-                children:this.GetSelectRect(chart)
-            },
-            
-        ];
-
-        var symbol=chart.Symbol;
-        if (MARKET_SUFFIX_NAME.IsSHSZStockA(symbol))
-        {
-            dataList.push({text:'集合竞价',children: this.GetShowBeforeData(chart)});
-        }
-
-        dataList.push({text:"工具", children:this.GetTools(chart)});
-
-        var identify=event.data.FrameID;
-        var overlayIndex=this.GetOverlayIndex(chart,identify);
-        if (overlayIndex && overlayIndex.length>0)
-        {
-            var delOverlayIndexMenu={ text:'删除叠加指标', children:this.GetDeleteOverlayIndex(chart,overlayIndex) }
-            dataList.splice(3,0,delOverlayIndexMenu);
-        }
-
-        var identify=event.data.FrameID;
-        JSConsole.Chart.Log('[MinuteRightMenu::DoModal]',identify);
-        rightMenu.Show({
-            windowIndex :identify,
-            x:x+chart.UIElement.offsetLeft,
-            y:y+chart.UIElement.offsetTop,
-            position:chart.Frame.Position,
-            data:dataList
-        })
-
-        $(document).click(function () {
-            rightMenu.Hide();
-        });
-    }
-
-    this.GetDayCount=function(chart)
-    {
-        var data=
-        [
-            {
-                text: "当日分时图",
-                click: function () { chart.ChangeDayCount(1); },
-                isBorder:true
-            }, 
-            {
-                text: "最近2日",
-                click: function () { chart.ChangeDayCount(2); }
-            }, 
-            {
-                text: "最近3日",
-                click: function () { chart.ChangeDayCount(3); }
-            },
-            {
-                text: "最近4日",
-                click: function () { chart.ChangeDayCount(4); }
-            },
-            {
-                text: "最近5日",
-                click: function () { chart.ChangeDayCount(5); }
-            },
-            {
-                text: "最近6日",
-                click: function () { chart.ChangeDayCount(6); }
-            }
-        ];
-        
-        if ((chart.DayCount-1)>=0 && (chart.DayCount-1)<data.length) data[chart.DayCount-1].selected=true;
-
-        return data;
-    }
-
-    this.GetIndex=function (chart) 
-    {
-        var data=
-        [
-            {
-                text: "MACD",
-                click: function (windowIndex) { chart.ChangeIndex(windowIndex, 'MACD') }
-            }, 
-            {
-                text: "DMI",
-                click: function (windowIndex) { chart.ChangeIndex(windowIndex, 'DMI') }
-            },
-            {
-                text: "DMA",
-                click: function (windowIndex) { chart.ChangeIndex(windowIndex, 'DMA') }
-            }, 
-            {
-                text: "BRAR",
-                click: function (windowIndex) { chart.ChangeIndex(windowIndex, 'BRAR') }
-            }, 
-            {
-                text: "KDJ",
-                click: function (windowIndex) { chart.ChangeIndex(windowIndex, 'KDJ') }
-            }, 
-            {
-                text: "RSI",
-                click: function (windowIndex) { chart.ChangeIndex(windowIndex, 'RSI') }
-            }, 
-            {
-                text: "WR",
-                click: function (windowIndex) { chart.ChangeIndex(windowIndex, 'WR') }
-            },  
-            {
-                text: "CCI",
-                click: function (windowIndex) { chart.ChangeIndex(windowIndex, 'CCI') }
-            },
-            {
-                text: "TRIX",
-                click: function (windowIndex) { chart.ChangeIndex(windowIndex, 'TRIX') }
-            }
-        ];
-
-        return data;
-    }
-
-    this.GetShowBeforeData=function(chart)  //是否显示集合竞价
-    {
-        if (chart.IsShowBeforeData)
-        {
-            var data=
-            [
-                {
-                    text: "隐藏",
-                    click: function () { chart.ShowCallAuctionData( { Left:false, MultiDay:{ Left:false }} ); },
-                }
-            ];
-            
-            return data;
-        }
-        else
-        {
-            var data=
-            [
-                {
-                    text: "显示",
-                    click: function () { chart.ShowCallAuctionData({Left:true, MultiDay:{ Left:true }}); },
-                }
-            ];
-
-            return data;
-        }
-    }
-
-    this.GetSelectRect=function(chart)  //区间选择
-    {
-        if (chart.EnableSelectRect)
-        {
-            var data=
-            [
-                {
-                    text: "禁用区间选择",
-                    click: function () { chart.EnableSelectRect=false; },
-                }
-            ];
-            
-            return data;
-        }
-        else
-        {
-            var data=
-            [
-                {
-                    text: "启动区间选择",
-                    click: function () { chart.EnableSelectRect=true },
-                }
-            ];
-
-            return data;
-        }
-    }
-
-    //指标窗口个数
-    this.GetIndexWindowCount=function(chart)
-    {
-        var data=
-        [
-            {
-                text: "1个窗口",
-                click: function () { chart.ChangeIndexWindowCount(2); }
-            },
-            {
-                text: "2个窗口",
-                click: function () { chart.ChangeIndexWindowCount(3); }
-            }, 
-            {
-                text: "3个窗口",
-                click: function () { chart.ChangeIndexWindowCount(4); }
-            },
-            {
-                text: "4个窗口",
-                click: function () { chart.ChangeIndexWindowCount(5); }
-            },
-            {
-                text: "5个窗口",
-                click: function () { chart.ChangeIndexWindowCount(6); }
-            }
-        ];
-
-        var count=chart.Frame.SubFrame.length-1;
-        if ((count-1)>=0 && (count-1)<data.length) data[count-1].selected=true;  //选中
-
-        return data;
-    }
-
-    //工具
-    this.GetTools=function(chart)
-    {
-        var data=[];
-        var drawTools=chart.GetExtendChartByClassName('DrawToolsButton');
-        if (drawTools)
-        {
-            data.push(
-                {
-                    text: "关闭画图工具",
-                    click: function () 
-                    { 
-                        var toolsWidth=drawTools.Chart.Width;
-                        var toolsIndex=parseInt(drawTools.Index);
-                        chart.DeleteExtendChart(drawTools); 
-                        chart.Frame.ChartBorder.Right-=toolsWidth;
-                        chart.SetSizeChange(true);
-                        chart.Draw();
-                    }
-                }
-            );
-        }
-        else
-        {
-            data.push(
-                {
-                    text: "画图工具",
-                    click: function () {
-                        var option={Name:'画图工具', Top:chart.Frame.ChartBorder.Top };
-                        var extendChart=chart.CreateExtendChart(option.Name, option);   //创建扩展图形
-                        chart.SetSizeChange(true);
-                        chart.Draw();
-                    }
-                }
-            );
-        }
-
-        return data;
     }
 }
 
