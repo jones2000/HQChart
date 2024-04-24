@@ -41,6 +41,8 @@ function JSPopMenu()
     {
         this.Clear();
 
+        if (!IFrameSplitOperator.IsNonEmptyArray(data.Menu)) return;
+
         var root=document.createElement("div");
         root.className="UMyChart_PopMenu";
 
@@ -57,6 +59,13 @@ function JSPopMenu()
         for(var i=0;i<data.Menu.length;++i)
         {
             var item=data.Menu[i];
+            if (item.Name==JSPopMenu.SEPARATOR_LINE_NAME)
+            {
+                var trSeparator=this.CreateSeparatorTr();
+                if (trSeparator) tbody.appendChild(trSeparator);
+                continue;
+            }
+
             var trDom=this.CreateMenu(rootData, item);
             tbody.appendChild(trDom);
         }
@@ -153,21 +162,8 @@ function JSPopMenu()
                 var subItem=item.SubMenu[i];
                 if (subItem.Name==JSPopMenu.SEPARATOR_LINE_NAME)
                 {
-                    var trSeparator=document.createElement("tr");
-                    trSeparator.className='UMyChart_MenuItem_Tr_Separator';
-                    var tdDom=document.createElement("td");
-                    tdDom.className="UMyChart_MenuItem_Td_Status_Separator";
-                    trSeparator.appendChild(tdDom);
-                    var tdDom=document.createElement("td");
-                    tdDom.className="UMyChart_MenuItem_Td_Separator";
-                    trSeparator.appendChild(tdDom);
-                    var tdDom=document.createElement("td");
-                    tdDom.className="UMyChart_MenuItem_Td_Separator";
-                    trSeparator.appendChild(tdDom);
-                    var tdDom=document.createElement("td");
-                    tdDom.className="UMyChart_MenuItem_Td_Separator";
-                    trSeparator.appendChild(tdDom);
-                    subTbody.appendChild(trSeparator);
+                    var trSeparator=this.CreateSeparatorTr();
+                    if (trSeparator) subTbody.appendChild(trSeparator);
                     continue;
                 }
                 
@@ -187,6 +183,30 @@ function JSPopMenu()
         }
 
         return trDom;
+    }
+
+    this.CreateSeparatorTr=function()
+    {
+        var trSeparator=document.createElement("tr");
+        trSeparator.className='UMyChart_MenuItem_Tr_Separator';
+
+        var tdDom=document.createElement("td");
+        tdDom.className="UMyChart_MenuItem_Td_Status_Separator";
+        trSeparator.appendChild(tdDom);
+
+        var tdDom=document.createElement("td");
+        tdDom.className="UMyChart_MenuItem_Td_Separator";
+        trSeparator.appendChild(tdDom);
+
+        var tdDom=document.createElement("td");
+        tdDom.className="UMyChart_MenuItem_Td_Separator";
+        trSeparator.appendChild(tdDom);
+
+        var tdDom=document.createElement("td");
+        tdDom.className="UMyChart_MenuItem_Td_Separator";
+        trSeparator.appendChild(tdDom);
+
+        return trSeparator;
     }
 
     //弹tab菜单

@@ -2515,7 +2515,9 @@ var JSCHART_EVENT_ID=
     ON_CLICK_TREPORT_ROW:127,                 //左键点击点击T型报价列表
 
 
-    ON_CHANGE_INDEX:150,    //切换指标
+    ON_CHANGE_INDEX:150,        //切换指标
+    ON_MENU_COMMAND:151,        //菜单时间回调
+    ON_CREATE_RIGHT_MENU:152,   //创建右键菜单
 }
 
 var JSCHART_OPERATOR_ID=
@@ -2659,7 +2661,13 @@ var JSCHART_MENU_ID=
     CMD_SHOW_BEFORE_DATA_ID:24,     //显示|隐藏集合竞价
 
     CMD_SELECTED_ZOOM_ID:25,        //选中放大
-    CMD_SELECTED_SUMMARY_ID:26,  //区间统计
+    CMD_SELECTED_SUMMARY_ID:26,     //区间统计
+
+    CMD_SHOW_INDEX_ID:27,           //显示隐藏指标
+    CMD_SHOW_OVERLAY_INDEX_ID:28,   //显示隐藏叠加指标
+    CMD_DELETE_OVERLAY_INDEX_ID:29, //删除叠加指标
+    CMD_SHOW_OVERLAY_Y_AXIS_ID:30,   //显示隐藏Y轴叠加指标
+    CMD_ENABLE_OVERLAY_SHARE_Y_ID:31,   //和主图指标共享Y轴坐标
 }
 
 
@@ -8004,18 +8012,26 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         {
             this.ChartDrawPicture=[];
             if (this.ChartDrawStorage) this.ChartDrawStorage.Clear();
+            this.SelectChartDrawPicture=null;
 
             if (option && option.Draw==false) bDraw=false;
             if (bDraw) this.Draw();
         }
         else
         {
-            for(var i in this.ChartDrawPicture)
+            for(var i=0; i<this.ChartDrawPicture.length; ++i)
             {
-                if (this.ChartDrawPicture[i]==drawPicture)
+                var item=this.ChartDrawPicture[i];
+                if (item.Guid==drawPicture.Guid || item==drawPicture)
                 {
                     if (this.ChartDrawStorage) this.ChartDrawStorage.DeleteDrawData(drawPicture);
                     this.ChartDrawPicture.splice(i,1);
+
+                    if (this.SelectChartDrawPicture)    //去掉选中
+                    {
+                        if (this.SelectChartDrawPicture.Guid==drawPicture.Guid || this.SelectChartDrawPicture==drawPicture) 
+                            this.SelectChartDrawPicture=null;
+                    }
 
                     if (option && option.Draw==false) bDraw=false;
                     if (bDraw) this.Draw();
@@ -8217,6 +8233,11 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             {
                 if (IFrameSplitOperator.IsNumber(item.OverlayIndexType.Position)) frame.OverlayIndexType.Position=item.OverlayIndexType.Position;
                 if (IFrameSplitOperator.IsNumber(item.OverlayIndexType.LineSpace)) frame.OverlayIndexType.LineSpace=item.OverlayIndexType.LineSpace;
+            }
+
+            if (IFrameSplitOperator.IsNonEmptyArray(item.CustomToolbar))    //自定义工具按钮
+            {
+                frame.CustomToolbar=item.CustomToolbar.slice();
             }
         }
 
@@ -9076,14 +9097,11 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         this.JSPopMenu.PopupMenuByRight(x,y);
     }
 
-    //点击右键菜单
-    this.OnClickRightMenu=function(data)
+    //菜单命令
+    this.ExecuteMenuCommand=function(cmdID, aryArgs)
     {
-        JSConsole.Chart.Log('[JSChartContainer::OnClickRightMenu] ',data);
-        if (!data || !data.Data) return;
+        JSConsole.Chart.Log('[JSChartContainer::ExecuteMenuCommand] cmdID=, aryArgs=', cmdID,aryArgs);
 
-        var cmdID=data.Data.ID;     //命令ID
-        var aryArgs=data.Data.Args; //参数
         var param=null, srcParam=null;  //原始值
         if (IFrameSplitOperator.IsNonEmptyArray(aryArgs))
         {
@@ -9257,7 +9275,158 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 var dlg=new KLineSelectRectDialog(this.DivElement);
                 dlg.DoModal(srcParam);
                 break;
+
+            case JSCHART_MENU_ID.CMD_SHOW_INDEX_ID:        //显示隐藏指标   [0]=windowIndex [1]=0=自动 1=隐藏 2=显示
+                if (param==null || !IFrameSplitOperator.IsNumber(aryArgs[1])) return false;
+                var windowIndex=param, showType=aryArgs[1];
+                var script=this.WindowIndex[windowIndex];
+                if (!script) return false;
+            
+                if (showType==1) script.IsShow=false;
+                else if (showType==2) script.IsShow=true;
+                else script.IsShow=!script.IsShow;
+
+                this.UpdateWindowIndex(windowIndex);
+                break;
+
+            case JSCHART_MENU_ID.CMD_SHOW_OVERLAY_INDEX_ID:   //显示隐藏叠加指标 [0]=indexGuid [1]=0=自动 1=隐藏 2=显示
+                if (!srcParam || !IFrameSplitOperator.IsNumber(aryArgs[1])) return false;
+                var indexGuid=srcParam,showType=aryArgs[1];
+
+                var overlay=this.GetOverlayIndexByIdentify(indexGuid);
+                if (!overlay || !overlay.OverlayItem || !overlay.OverlayItem.Script) return false;
+
+                var script=overlay.OverlayItem.Script;
+
+                if (showType==1) script.IsShow=false;
+                else if (showType==2) script.IsShow==true;
+                else script.IsShow=!script.IsShow;
+
+                this.UpdateOverlayIndex(indexGuid);
+                break;
+            case JSCHART_MENU_ID.CMD_DELETE_OVERLAY_INDEX_ID:
+                if (srcParam && this.DeleteOverlayWindowsIndex)
+                    this.DeleteOverlayWindowsIndex(srcParam);
+                break;
+            case JSCHART_MENU_ID.CMD_SHOW_OVERLAY_Y_AXIS_ID:
+                if (!srcParam || !IFrameSplitOperator.IsNumber(aryArgs[1])) return false;
+                if (!this.GetOverlayIndexByIdentify) return false;
+
+                var indexGuid=srcParam,showType=aryArgs[1];
+                var finder=this.GetOverlayIndexByIdentify(indexGuid);
+                if (!finder || !finder.OverlayItem) return false;
+                
+                var frame=finder.OverlayItem.Frame;
+                if (showType==1) frame.IsShow=false;
+                else if (showType==2) frame.IsShow==true;
+                else frame.IsShow=!frame.IsShow; 
+
+                this.UpdataDataoffset();           //更新数据偏移
+                this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+                this.Draw();
+
+                break;
+
+            case JSCHART_MENU_ID.CMD_ENABLE_OVERLAY_SHARE_Y_ID:
+                if (!srcParam || !IFrameSplitOperator.IsNumber(aryArgs[1])) return false;
+                if (!this.GetOverlayIndexByIdentify) return false;
+
+                var indexGuid=srcParam,showType=aryArgs[1];
+                var finder=this.GetOverlayIndexByIdentify(indexGuid);
+                if (!finder || !finder.OverlayItem) return false;
+
+                var frame=finder.OverlayItem.Frame;
+                if (showType==1) frame.IsShareY=false;
+                else if (showType==2) frame.IsShareY==true;
+                else frame.IsShareY=!frame.IsShareY; 
+
+                this.UpdataDataoffset();           //更新数据偏移
+                this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+                this.Draw();
+
+                break;
         }
+    }
+
+    this.GetShowIndexMenuData=function(windowIndex, showType)
+    {
+        var script=this.WindowIndex[windowIndex];
+        if (!script) return null;
+
+        var data= { Name:script.IsShow?"隐藏指标":"显示指标",  Data:{ ID: JSCHART_MENU_ID.CMD_SHOW_INDEX_ID, Args:[windowIndex, 0] } };  
+
+        return data;
+    }
+
+    this.GetShowOverlayIndexMenuData=function(indexGuid, showType)
+    {
+        var overlay=this.GetOverlayIndexByIdentify(indexGuid);
+        if (!overlay || !overlay.OverlayItem || !overlay.OverlayItem.Script) return null;
+
+        var script=overlay.OverlayItem.Script;
+        var data= { Name:script.IsShow?"隐藏指标":"显示指标",  Data:{ ID: JSCHART_MENU_ID.CMD_SHOW_OVERLAY_INDEX_ID, Args:[indexGuid, 0] } };  
+
+        return data;
+    }
+
+    this.GetShowOverlayIndexYAxisMenuData=function(indexGuid, showType)
+    {
+        var overlay=this.GetOverlayIndexByIdentify(indexGuid);
+        if (!overlay || !overlay.OverlayItem || !overlay.OverlayItem.Script) return null;
+
+        var frame=overlay.OverlayItem.Frame;
+        var data= { Name:frame.IsShow?"隐藏Y轴":"显示Y轴",  Data:{ ID: JSCHART_MENU_ID.CMD_SHOW_OVERLAY_Y_AXIS_ID, Args:[indexGuid, 0] } };  
+
+        return data;
+    }
+
+    this.GetOverlayIndexShareYMenuData=function(indexGuid, showType)
+    {
+        var overlay=this.GetOverlayIndexByIdentify(indexGuid);
+        if (!overlay || !overlay.OverlayItem || !overlay.OverlayItem.Script) return null;
+
+        var frame=overlay.OverlayItem.Frame;
+        var data= { Name:"公用窗口Y轴", Data:{ ID: JSCHART_MENU_ID.CMD_ENABLE_OVERLAY_SHARE_Y_ID, Args:[indexGuid, 0] } , Checked:frame.IsShareY };  
+
+        return data;
+    }
+
+    //点击右键菜单
+    this.OnClickRightMenu=function(data)
+    {
+        JSConsole.Chart.Log('[JSChartContainer::OnClickRightMenu] ',data);
+        if (!data || !data.Data) return;
+
+        var cmdID=data.Data.ID;     //命令ID
+        var aryArgs=data.Data.Args; //参数
+
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_MENU_COMMAND);  //回调通知外部
+        if (event && event.Callback)
+        {
+            var data={ PreventDefault:false, CommandID:cmdID, Args:aryArgs, SrcData:data };
+            event.Callback(event,data,this);
+            if (data.PreventDefault) return;
+        }
+
+        this.ExecuteMenuCommand(cmdID, aryArgs);
+    }
+
+    this.PopupRightMenuV2=function(data,e)
+    {
+        if (!this.JSPopMenu) return;
+        var x=data.X, y=data.Y;
+        var frameID=data.FrameID;
+        var menuData={ Menu:this.GetRightMenuData(frameID), Position:JSPopMenu.POSITION_ID.RIGHT_MENU_ID };
+        menuData.ClickCallback=(data)=>{ this.OnClickRightMenu(data); }
+
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CREATE_RIGHT_MENU);
+        if (event && event.Callback)
+        {
+            var sendData={ MenuData:menuData, FrameID:frameID };
+            event.Callback(event, sendData, this);
+        }
+
+        this.PopupMenuByRClick(menuData, x, y);
     }
 }
 
@@ -53726,7 +53895,7 @@ function DynamicChartTitlePainting()
                 var rtButton={ Left:left, YCenter:yCenter };
                 this.DrawButton(item, rtButton, moveonPoint, mouseStatus);
 
-                this.Buttons.push({ ID:item.ID, Rect:rtButton, FrameID:this.Frame.Identify, Type:1, OverlayID:toolbarInfo.ID, Title:overlayItem.Title  });
+                this.Buttons.push({ ID:item.ID, Rect:rtButton, FrameID:this.Frame.Identify, Type:1, OverlayID:toolbarInfo.ID, Title:overlayItem.Title, Data:item.Data  });
 
                 left=rtButton.Right;
 
@@ -55952,13 +56121,18 @@ function ChartDrawHLine()
     this.ButtonBGColor='rgb(190,190,190)';
     this.ButtonSpace=3;
     
+    this.TextMargin={ Left:0, Right:0 };
+
     this.Button= 
     { 
-        CloseIcon: {  Text:'\ue62b', Color:'rgb(255,255,255)', Family:"iconfont", Size:16, ID:JSCHART_BUTTON_ID.DRAW_PICTURE_DELETE, TooltipText:null },
-        SettingIcon: { Text:'\ue623',Color:'rgb(255,255,255)', Family:"iconfont", Size:16, ID:JSCHART_BUTTON_ID.DRAW_PICTURE_SETTING, TooltipText:null }
+        CloseIcon: {  Text:'\ue62b', Color:'rgb(255,255,255)', Family:"iconfont", Size:16, ID:JSCHART_BUTTON_ID.DRAW_PICTURE_DELETE, TooltipText:null, Margin:{ Left:2, Right:2 } },
+        SettingIcon: { Text:'\ue623',Color:'rgb(255,255,255)', Family:"iconfont", Size:16, ID:JSCHART_BUTTON_ID.DRAW_PICTURE_SETTING, TooltipText:null, Margin:{ Left:2, Right:2 } }
         //修改ID, Text , TooltipText 可以外部定制按钮
     }
 
+    this.CustomButton=[];   //自定义的按钮 { Text:'\ue62b', Color:'rgb(255,255,255)', Family:"iconfont", Size:16, ID:JSCHART_BUTTON_ID.DRAW_PICTURE_BUTTON_1, TooltipText:null }
+
+    this.AryShowButton=[];  //需要显示的按钮 { Data:, Width }
     this.AryButton=[];
     this.ExtendData;    //扩展数据
     this.ShowPriceTextConfig=
@@ -55988,18 +56162,36 @@ function ChartDrawHLine()
             }
 
             if (IFrameSplitOperator.IsNumber(option.Precision)) this.Precision=option.Precision;
-            if (IFrameSplitOperator.IsNumber(option.Precision)) this.Precision=option.Precision;
             if (option.Font) this.Font=option.Font;
             if (option.ValueTextColor) this.ValueTextColor=option.ValueTextColor;
+            if (option.ButtonBGColor) this.ButtonBGColor=option.ButtonBGColor;
             if (IFrameSplitOperator.IsNumber(option.ButtonPosition)) this.ButtonPosition=option.ButtonPosition;
             if (IFrameSplitOperator.IsNumber(option.RightSpaceWidth)) this.RightSpaceWidth=option.RightSpaceWidth;
 
             if (option.Button)
             {
                 var item=option.Button;
-                if (item.CloseIcon) this.Button.CloseIcon=CloneData(item.CloseIcon);
-                if (item.SettingIcon) this.Button.SettingIcon=CloneData(item.SettingIcon);
+                if (item.CloseIcon) 
+                {
+                    this.Button.CloseIcon=CloneData(item.CloseIcon);
+                    if (!this.Button.CloseIcon.ID) this.Button.CloseIcon.ID=JSCHART_BUTTON_ID.DRAW_PICTURE_DELETE;
+                }
+                else if (item.CloseIcon===null) 
+                {
+                    this.Button.CloseIcon=null;
+                }
+
+                if (item.SettingIcon) 
+                {
+                    this.Button.SettingIcon=CloneData(item.SettingIcon);
+                    if (!this.Button.SettingIcon.ID) this.Button.SettingIcon.ID=JSCHART_BUTTON_ID.DRAW_PICTURE_SETTING;
+                }
+                else if (item.SettingIcon===null) 
+                {
+                    this.Button.SettingIcon=null;
+                }
             }
+
             if (option.ExtendData) this.ExtendData=option.ExtendData;
 
             if (IFrameSplitOperator.IsNonEmptyArray(option.IsShowPriceText))
@@ -56009,6 +56201,13 @@ function ChartDrawHLine()
                     var value=option.IsShowPriceText[i]
                     if (IFrameSplitOperator.IsBool(value)) this.ShowPriceTextConfig.IsShow[i]=value;
                 }
+            }
+
+            if (option.TextMargin)
+            {
+                var item=option.TextMargin;
+                if (IFrameSplitOperator.IsNumber(item.Left)) this.TextMargin.Left=item.Left;
+                if (IFrameSplitOperator.IsNumber(item.Right)) this.TextMargin.Right=item.Right;
             }
         }
     }
@@ -56054,8 +56253,32 @@ function ChartDrawHLine()
         this.Draw();
     }
 
+    //获取需要显示的按钮 系统按钮+自定义按钮
+    this.GetShowButton=function()
+    {
+        var aryButton=[];
+
+        var item=this.Button.SettingIcon;
+        if (item && item.Text) aryButton.push({ Data:item, Width:null });
+
+        item=this.Button.CloseIcon;
+        if (item && item.Text) aryButton.push({ Data:item, Width:null });
+
+        if (IFrameSplitOperator.IsNonEmptyArray(this.CustomButton))
+        {
+            for(var i=0;i<this.CustomButton.length;++i)
+            {
+                item=this.CustomButton[i];
+                if (item && item.Text) aryButton.push({ Data:item, Width:null });
+            }
+        }
+
+        return aryButton;
+    }
+
     this.Draw=function(moveonPoint, mouseStatus)
     {
+        this.AryShowButton=[];
         this.LinePoint=[];
         this.AryButton=[];
         this.ColseButtonSize=0;
@@ -56130,6 +56353,8 @@ function ChartDrawHLine()
 
         var labInfo;
         if (this.GetLabelCallback) labInfo=this.GetLabelCallback(this);
+
+        this.AryShowButton=this.GetShowButton();    //获取按钮
 
         //描述信息
         if (labInfo)
@@ -56254,6 +56479,8 @@ function ChartDrawHLine()
         var labSize=this.CalculateLabSize(labInfo);
 
         var drawLeft=rtLeftDraw.Right-labSize.Width;
+        if (drawLeft<rtLeftDraw.Left) drawLeft=rtLeftDraw.Left;
+        var drawRight=drawLeft+labSize.Width;
         var drawTop=rtLeftDraw.Bottom;
         var lineSpace=0;
         if (IFrameSplitOperator.IsNumber(labInfo.LineSpace)) lineSpace=labInfo.LineSpace;
@@ -56283,7 +56510,7 @@ function ChartDrawHLine()
             {
                 this.Canvas.textAlign="right";
                 this.Canvas.fillStyle=item.TextColor;
-                this.Canvas.fillText(item.Text,rtLeftDraw.Right-1,yText+1);
+                this.Canvas.fillText(item.Text,drawRight-1,yText+1);
             }
 
             yText+=labSize.LineHeight+lineSpace;
@@ -56304,11 +56531,17 @@ function ChartDrawHLine()
         {
             var item=labInfo.AryLine[i];
             if (!IFrameSplitOperator.IsNumber(item.Value)) continue;
+            if (item.Width<0) continue;
 
             var y=this.Frame.GetYFromData(item.Value);
             var yFixed=ToFixedPoint(y);
             var xRight=right;
-            if (IFrameSplitOperator.IsNumber(item.Width)) xRight=left+item.Width*pixelRatio;
+            if (IFrameSplitOperator.IsPlusNumber(item.Width)) 
+            {
+                if (item.Width<1)  xRight=left+(item.Width*(right-left));   //0.3 百分比
+                else xRight=left+item.Width*pixelRatio;     //>1 实际数值就是长度
+            }
+
             if (item.Color) this.Canvas.strokeStyle=item.Color;
             else this.Canvas.strokeStyle=this.LineColor;
             
@@ -56360,17 +56593,25 @@ function ChartDrawHLine()
         var textWidth=this.Canvas.measureText(strValue).width;
         var lineHeight=this.GetFontHeight();
         var rtBG={ Left:right+this.RightSpaceWidth, Top:y- lineHeight/2, Width:textWidth+4, Height:lineHeight };
-        rtBG.Right=rtBG.Left+rtBG.Width;
+        //rtBG.Right=rtBG.Left+rtBG.Width;
         rtBG.Bottom=rtBG.Top+rtBG.Height;
+        rtBG.Width+=(this.TextMargin.Left+this.TextMargin.Right);
+        rtBG.Right=rtBG.Left+rtBG.Width;
+        var xText=rtBG.Left+this.TextMargin.Left+2;
+
         if (this.ButtonPosition==1)
+        {
             this.Canvas.fillRect(ToFixedRect(rtBG.Left),ToFixedRect(rtBG.Top), ToFixedRect(rtBG.Width+this.ButtonBGWidth),ToFixedRect(rtBG.Height));
+        }
         else
+        {
             this.Canvas.fillRect(ToFixedRect(rtBG.Left),ToFixedRect(rtBG.Top), ToFixedRect(rtBG.Width),ToFixedRect(rtBG.Height));
+        }
 
         this.Canvas.fillStyle=this.ValueTextColor
         this.Canvas.textAlign="left";
         this.Canvas.textBaseline="middle";
-        this.Canvas.fillText(strValue,rtBG.Left+2,y);
+        this.Canvas.fillText(strValue,xText,y);
 
         rtDraw.Left=rtBG.Left;
         rtDraw.Top=rtBG.Top;
@@ -56396,6 +56637,7 @@ function ChartDrawHLine()
             var rtBG={ Left:ptStart.X, Top:ptStart.Y-lineHeight/2, Width:textWidth+4, Height:lineHeight };
             rtBG.Right=rtBG.Left+rtBG.Width;
             rtBG.Bottom=rtBG.Top+rtBG.Height;
+
         }
         else if (position==0)
         {
@@ -56417,42 +56659,33 @@ function ChartDrawHLine()
     {
         var pixelRatio=GetDevicePixelRatio();
 
-        if (this.Button.SettingIcon)
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.AryShowButton)) return;
+
+        var totalWidth=0;
+        for(var i=0;i<this.AryShowButton.length;++i)
         {
-            var icon=this.Button.SettingIcon;
+            var item=this.AryShowButton[i];
+            var icon=item.Data;
             var font=`${icon.Size*pixelRatio}px ${icon.Family}`;
             this.Canvas.font=font;
-            var width=this.Canvas.measureText(icon.Text).width;
-            this.SettingButtonSize=width;
+            item.Width=this.Canvas.measureText(icon.Text).width+2;
+
+            if (icon.Margin)
+            {
+                var margin=icon.Margin;
+                if (IFrameSplitOperator.IsNumber(margin.Left)) item.Width+=margin.Left;
+                if (IFrameSplitOperator.IsNumber(margin.Right)) item.Width+=margin.Right;
+            }
+
+            totalWidth+=item.Width;
         }
 
-        if (this.Button.CloseIcon)
-        {
-            var icon=this.Button.CloseIcon;
-            var font=`${icon.Size*pixelRatio}px ${icon.Family}`;
-            this.Canvas.font=font;
-            var width=this.Canvas.measureText(icon.Text).width;
-            this.ColseButtonSize=width;
-        }
-
-        if (this.ColseButtonSize<=0 && this.SettingButtonSize<=0) return;
-
-        var buttonWidth=0
-        if (this.SettingButtonSize>0) buttonWidth+=this.SettingButtonSize;
-        if (this.ColseButtonSize>0) 
-        {
-            if (buttonWidth>0) buttonWidth+=this.ButtonSpace;
-            buttonWidth+=this.ColseButtonSize;
-        }
-
-        buttonWidth+=4;
-
-        this.ButtonBGWidth=buttonWidth;
+        this.ButtonBGWidth=totalWidth;
     }
 
     this.DrawButton=function(drawTop, drawLeft, drawHeight, rtDraw)
     {
-        if (this.ColseButtonSize<=0 && this.SettingButtonSize<=0) return;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.AryShowButton)) return;
 
         if (this.ButtonPosition==1) drawTop-=drawHeight;
 
@@ -56464,61 +56697,29 @@ function ChartDrawHLine()
         this.Canvas.fillStyle=this.ButtonBGColor;
         this.Canvas.fillRect(ToFixedRect(rtBG.Left),ToFixedRect(rtBG.Top), ToFixedRect(rtBG.Width),ToFixedRect(rtBG.Height));
 
-        left+=1;
         var pixelRatio=GetDevicePixelRatio();
-        if (this.Button.SettingIcon && this.Button.SettingIcon.Text)
+        for(var i=0;i<this.AryShowButton.length;++i)
         {
-            var rtButton={Left:left, Top:drawTop, Width:this.SettingButtonSize, Height:drawHeight };
+            var item=this.AryShowButton[i];
+            var icon=item.Data;
+
+            var rtButton={Left:left, Top:drawTop, Width:item.Width, Height:drawHeight };
             rtButton.Right=rtButton.Left+rtButton.Width;
             rtButton.Bottom=rtButton.Top+rtButton.Height;
             var yCenter=rtButton.Top+rtButton.Height/2;
             var xCenter=rtButton.Left+rtButton.Width/2;
 
-            var icon=this.Button.SettingIcon;
-            this.Canvas.font=`${icon.Size*pixelRatio}px ${icon.Family}`;
+            var font=`${icon.Size*pixelRatio}px ${icon.Family}`;
+            this.Canvas.font=font;
             this.Canvas.textAlign="center";
             this.Canvas.textBaseline="middle";
             this.Canvas.fillStyle=icon.Color;
-            this.Canvas.fillText(this.Button.SettingIcon.Text,xCenter,yCenter);
-
-            this.AryButton.push({Rect:rtButton, ID:icon.ID, TooltipText:icon.TooltipText});
-
-            /*
-            if (this.ColseButtonSize>0)
-            {
-                var xLine=rtButton.Right+this.ButtonSpace/2;
-                xLine=ToFixedPoint(xLine);
-                this.Canvas.strokeStyle=this.ButtonSplitLineColor;
-                this.Canvas.beginPath();
-                this.Canvas.moveTo(xLine,rtButton.Top);
-                this.Canvas.lineTo(xLine,rtButton.Bottom);
-                this.Canvas.stroke();
-            }
-            */
-
-            left=rtButton.Right+this.ButtonSpace;
-        }
-
-        if (this.Button.CloseIcon && this.Button.CloseIcon.Text)
-        {
-            var rtButton={Left:left, Top:drawTop, Width:this.ColseButtonSize, Height:drawHeight };
-            rtButton.Right=rtButton.Left+rtButton.Width;
-            rtButton.Bottom=rtButton.Top+rtButton.Height;
-            var yCenter=rtButton.Top+rtButton.Height/2;
-            var xCenter=rtButton.Left+rtButton.Width/2;
-            var icon=this.Button.CloseIcon;
-            this.Canvas.font=`${icon.Size*pixelRatio}px ${icon.Family}`;
-            this.Canvas.textAlign="center";
-            this.Canvas.textBaseline="middle";
-            this.Canvas.fillStyle=icon.Color;
-            this.Canvas.fillText(this.Button.CloseIcon.Text,xCenter,yCenter);
+            this.Canvas.fillText(icon.Text,xCenter,yCenter);
 
             this.AryButton.push({Rect:rtButton,ID:icon.ID, TooltipText:icon.TooltipText });
 
             left=rtButton.Right;
         }
-
-        rtDraw.Right=rtBG.Right;
     }
 
     this.PtInButtons=function(x,y)
@@ -72645,6 +72846,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                     { Name:"均线", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_INDEX_ID, Args:[frameID, "均线"]}},
                     { Name:"BOLL", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_INDEX_ID, Args:[frameID, "BOLL"]}},
                     { Name:"MACD", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_INDEX_ID, Args:[frameID, "MACD"]}},
+                    { Name:"MACD(粗)", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_INDEX_ID, Args:[frameID, "MACD2"]}},
                     { Name:"KDJ", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_INDEX_ID, Args:[frameID, "KDJ"]}},
                     { Name:"VOL", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_INDEX_ID, Args:[frameID, "VOL"]}},
                     { Name:"RSI", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_INDEX_ID, Args:[frameID, "RSI"]}},
@@ -72839,16 +73041,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         return aryMenu;
     }
 
-    this.PopupRightMenuV2=function(data,e)
-    {
-        if (!this.JSPopMenu) return;
-        var x=data.X, y=data.Y;
-        var frameID=data.FrameID;
-        var menuData={ Menu:this.GetRightMenuData(frameID), Position:JSPopMenu.POSITION_ID.RIGHT_MENU_ID };
-        menuData.ClickCallback=(data)=>{ this.OnClickRightMenu(data); }
 
-        this.PopupMenuByRClick(menuData, x, y);
-    }
 
     this.PopupSelectRectMenuV2=function(data, e)
     {
@@ -74797,7 +74990,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
     this.DayOffset={ Offset:0, ShowDayCount:-1, DataOffset:0, DayCount:1,  }; //Offset 日期偏移 , DataOffset数据偏移
     this.PageInfo={ Enable:false, Offset:-8888, ShowDayCount:4 };   //分页配置
-    this.DataStatus={ MultiDay:false, LatestDay:false };      //MultiDay=多日  LatestDay:当天
+    this.DataStatus={ MultiDay:false, LatestDay:false, LatestDate:null};      //MultiDay=多日  LatestDay:当天 LatestDate:最后的日期
 
     this.ZoomStepPixel=50;
 
@@ -76347,17 +76540,6 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         return aryMenu;
     }
 
-    this.PopupRightMenuV2=function(data,e)
-    {
-        if (!this.JSPopMenu) return;
-        var x=data.X, y=data.Y;
-        var frameID=data.FrameID;
-        var menuData={ Menu:this.GetRightMenuData(frameID), Position:JSPopMenu.POSITION_ID.RIGHT_MENU_ID };
-        menuData.ClickCallback=(data)=>{ this.OnClickRightMenu(data); }
-
-        this.PopupMenuByRClick(menuData, x, y);
-    }
-
     this.OnWheel=function(e)
     {
         JSConsole.Chart.Log('[MinuteChartContainer::OnWheel]',e);
@@ -77299,6 +77481,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
     {
         this.DataStatus.MultiDay=false;
         this.DataStatus.LatestDay=false;
+        this.DataStatus.LatestDate=null;
     }
 
     this.ClearOverlaySymbolData=function()
@@ -78212,7 +78395,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         if (!this.mapEvent.has(JSCHART_EVENT_ID.RECV_MINUTE_DATA)) return;
 
         var event=this.mapEvent.get(JSCHART_EVENT_ID.RECV_MINUTE_DATA);
-        var data={ MinuteData:this.SourceData, Stock:{ Symbol:this.Symbol, Name:this.Name }, Option:option };
+        var data={ MinuteData:this.SourceData, Stock:{ Symbol:this.Symbol, Name:this.Name }, Option:option, DataStatus:this.DataStatus };
         event.Callback(event,data,this);
     }
 
@@ -78410,6 +78593,9 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         if (this.IsBeforeData) this.BeforeOpenData=beforeOpenData;
         if (this.IsAfterData) this.AfterCloseData=afterCloseData;
 
+        var bFirstData=(this.DataStatus.LatestDay==false);   //首条单日数据
+
+        this.DataStatus.LatestDate=data.stock[0].date; //保存下最后一天的日期
         this.DataStatus.LatestDay=true;
             
         if (this.DayCount>1)    //多日走势图
@@ -78498,7 +78684,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         var chartInfo=this.GetChartMinuteInfo();
         if (chartInfo) chartInfo.SourceData=this.SourceData;    //数据绑定到信息地雷上
 
-        this.RecvMinuteDataEvent( {FunctionName:"RecvMinuteData"} );
+        this.RecvMinuteDataEvent( {FunctionName:"RecvMinuteData", Day:{ IsFirstData:bFirstData} } );
         this.RequestMinuteInfoData();
         this.RequestOverlayMinuteData();//请求叠加数据 (主数据下载完再下载)
         this.CreateChartDrawPictureByStorage(); //创建画图工具
