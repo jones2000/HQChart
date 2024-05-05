@@ -327,6 +327,16 @@ function GetBlackStyle()
             {
                 MoveOnColor:"rgb(255,255,255)",
                 Color:"rgb(156,156,156)"
+            },
+
+            Tooltip:
+            {
+                //Font:12*GetDevicePixelRatio() +"px 微软雅黑",
+                Color:'rgb(204,204,204)',
+                ColorBG:'rgb(32,32,32)',
+                ColorBorder:'rgb(69,69,69)',
+                //BorderRadius:4,
+                //Mergin:{ Left:4, Right:4, Top:2, Bottom:4 },
             }
         },
         

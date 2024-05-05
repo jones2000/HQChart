@@ -115,5 +115,6 @@ export default {
     HQChartScriptWorker:HQChartScriptWorker,    //计算工作线程
 
     JSPopMenu:JSPopMenu,    //弹出菜单
+    JSDialogDrawTool:JSDialogDrawTool,  //画图工具对话框
     
 }

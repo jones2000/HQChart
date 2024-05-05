@@ -6,9 +6,11 @@
 
 <title>仿通达信公式编辑器</title>  
     <!-- 加载资源 -->
-    <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
     <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/drawtool/iconfont.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
     <link rel="stylesheet" href="../jscommon/umychart.resource/js/codemirror/codemirror.css" />
+
 </head>  
 <body>
     <div id="kline"></div>
@@ -109,6 +111,7 @@
     <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
     <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
     <script src="../jscommon/umychart.popMenu.js"></script>
+    <script src="../jscommon/umychart.DialogDrawTool.js"></script>
     
      <!-- 公式编辑器 -->
     <script src="../jscommon/umychart.resource/js/codemirror/codemirror.js"></script>
@@ -202,8 +205,8 @@
                 //Language:'EN',
 
                 Symbol:"600000.sh",
-                IsAutoUpdate:false,       //是自动更新数据
-                AutoUpdateFrequency:3000,   //数据更新频率
+                IsAutoUpdate:true,       //是自动更新数据
+                AutoUpdateFrequency:500,   //数据更新频率
                 //TradeIndex: {Index:'交易系统-BIAS'},    //交易系统
 
                 SplashTitle:'加载数据中......',
@@ -215,6 +218,7 @@
 
                 CtrlMoveStep:10,
                 EnablePopMenuV2:true,
+                EnableDrawToolDialogV2:true,
 
                 //EnableVerifyRecvData:true,
 
@@ -1120,24 +1124,92 @@
             this.ClickCrossCursor=function(event, data, obj)
             {
                 console.log('[KLineChart::ClickCrossCursor] event, data', event , data); //打印信息
-                var ARRAY_COLOR=['rgb(255,140,0)', "rgb(153,50,204)", "rgb(0, 139, 0)"];
-                var lineColor=ARRAY_COLOR[this.ColorCount%ARRAY_COLOR.length];
-                ++this.ColorCount;
 
                 var button=data.Button;
-                var drawPictrue=
-                { 
-                    ClassName:"ChartDrawHLine",                   
-                    Value:[ {XValue:0, YValue:button.Data.YValue} ],    
-                    FrameID:button.Data.FrameID,
-                    RightSpaceWidth:2,	 
-                    Button:{ SettingIcon:null },     
-                    ButtonBGColor:"rgb(100,0,0)",    
-                    LineColor:lineColor
-                };
+                var rtButton=button.Rect;
+                var yValue=button.Data.YValue;
+                var windowIndex=button.Data.FrameID;
+                var e=data.e;
 
-                this.Chart.AddChartDrawPicture(drawPictrue);
-                this.Chart.Draw();
+                if (windowIndex==0)
+                {
+                    var menuData=
+                    { 
+                        Menu:
+                        [ 
+                            { Name:`买入 @ ${yValue.toFixed(2)}`,  Data:{ ID: "MENU_BUY_ID",  Args:[yValue] } },
+                            { Name:`卖出 @ ${yValue.toFixed(2)}`,  Data:{ ID: "MENU_SELL_ID", Args:[yValue] } },
+                            { Name:JSPopMenu.SEPARATOR_LINE_NAME },
+                            { Name:`画线 @ ${yValue.toFixed(2)}`,  Data:{ ID: "MENU_DRAW_LINE_ID", Args:[yValue, windowIndex] } },
+                        ],
+
+                        Position:JSPopMenu.POSITION_ID.DROPDOWN_RIGHT_MENU_ID,
+
+                        ClickCallback:(data)=>{ this.OnClickCrossCursorMenu(data); }
+                    };
+                }
+                else
+                { 
+                    var menuData=
+                    { 
+                        Menu:
+                        [ 
+                            { Name:`画线 @ ${yValue.toFixed(5)}`,  Data:{ ID: "MENU_DRAW_LINE_ID", Args:[yValue, windowIndex] } },
+                        ],
+
+                        Position:JSPopMenu.POSITION_ID.DROPDOWN_RIGHT_MENU_ID,
+
+                        ClickCallback:(data)=>{ this.OnClickCrossCursorMenu(data); }
+                    };
+
+                }
+                
+
+                this.Chart.PopupMenuByDrapdown(menuData, rtButton);
+
+                if(e.preventDefault) e.preventDefault();
+                if(e.stopPropagation) e.stopPropagation();
+            }
+
+            this.ColorCount=0;
+            this.OnClickCrossCursorMenu=function(data)
+            {
+                console.log("[KLineChart::OnClickCrossCursorMenu] data=", data);
+
+                if (data.Data.ID=="MENU_DRAW_LINE_ID")
+                {
+                    var ARRAY_COLOR=['rgb(255,140,0)', "rgb(153,50,204)", "rgb(0, 139, 0)"];
+                    var lineColor=ARRAY_COLOR[this.ColorCount%ARRAY_COLOR.length];
+                    ++this.ColorCount;
+
+                    var yValue=data.Data.Args[0];
+                    var frameID=data.Data.Args[1];
+                    var drawPictrue=
+                    { 
+                        ClassName:"ChartDrawHLine",                   
+                        Value:[ {XValue:0, YValue:yValue} ],    
+                        FrameID:frameID,
+                        RightSpaceWidth:2,	 
+                        Button:{ SettingIcon:null },     
+                        ButtonBGColor:"rgb(100,0,0)",    
+                        LineColor:lineColor
+                    };
+
+                    this.Chart.AddChartDrawPicture(drawPictrue);
+                    this.Chart.Draw();
+                }
+                else if (data.Data.ID=="MENU_BUY_ID")
+                {
+                    var yValue=data.Data.Args[0];
+                    var text=`买入价:${yValue.toFixed(2)}`;
+                    alert(text);
+                }
+                else if (data.Data.ID=="MENU_SELL_ID")
+                {
+                    var yValue=data.Data.Args[0];
+                    var text=`卖出价:${yValue.toFixed(2)}`;
+                    alert(text);
+                }
             }
 
             this.OnCreateRightMenu=function(event, data, obj)

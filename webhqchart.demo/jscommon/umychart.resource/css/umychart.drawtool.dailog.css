@@ -1,0 +1,98 @@
+
+/*
+    Copyright (c) 2018 jones
+ 
+    http://www.apache.org/licenses/LICENSE-2.0
+
+   开源项目 https://github.com/jones2000/HQChart
+ 
+   jones_2000@163.com
+
+   内置画图工具对话框
+*/
+
+.UMyChart_DrawTool_Dialog_Div
+{
+    font-family: "微软雅黑";
+    /*display: flex;*/
+    border: 2px solid; 
+    width:fit-content;
+    border-color: rgb(128,128,128);
+    visibility:hidden;
+    position: absolute;
+    background-color: rgba(255,255,255,0.9);
+    left:1px;
+    top:1px;
+}
+
+.UMyChart_DrawTool_Title_Div
+{
+    padding-left: 2px;
+    height:20px;
+    border-bottom: 1px solid;
+    border-color: rgb(128,128,128);
+    display: flex;
+    cursor: default;
+    user-select: none;
+}
+
+.UMyChart_DrawTool_Close_Div
+{
+    margin-left: auto;
+    padding-right: 4px;
+    cursor:pointer;
+}
+
+.UMyChart_DrawTool_Table
+{
+    border-collapse: collapse;
+    border-spacing: 2px;
+}
+
+.UMyChart_DrawTool_Tbody
+{
+    
+}
+
+.UMyChart_DrawTool_Tr
+{
+    display: table-row;
+    height:20px;
+}
+
+.UMyChart_DrawTool_Span_Selected
+{
+    background: rgb(128,128,128);
+    color: rgb(255,255,255);
+}
+
+.UMyChart_DrawTool_Td
+{
+    padding: 2px;
+}
+
+.UMyChart_DrawTool_Span
+{
+    font-size:22px;
+    border: 1px solid;
+    border-color: rgb(128,128,128);
+}
+
+.UMyChart_DrawTool_Group_Tr
+{
+    font-size: 12px;
+    cursor: default;
+    user-select: none;
+}
+
+.UMyChart_DrawTool_Group_Td
+{
+   text-align:center;
+}
+
+.UMyChart_DrawTool_Group_End_Tr
+{
+    height:5px;
+    border-bottom: 1px solid;
+    border-color: rgb(128,128,128);
+}

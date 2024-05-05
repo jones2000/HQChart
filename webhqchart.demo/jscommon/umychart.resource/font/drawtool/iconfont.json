@@ -1,0 +1,310 @@
+{
+  "id": "4529603",
+  "name": "HQChart_DrawTool",
+  "font_family": "hqchart_drawtool",
+  "css_prefix_text": "icon-",
+  "description": "hqchart画图工具",
+  "glyphs": [
+    {
+      "icon_id": "10686101",
+      "name": "价格范围",
+      "font_class": "jiagefanwei",
+      "unicode": "e618",
+      "unicode_decimal": 58904
+    },
+    {
+      "icon_id": "10736830",
+      "name": "时间范围",
+      "font_class": "shijianfanwei",
+      "unicode": "e61f",
+      "unicode_decimal": 58911
+    },
+    {
+      "icon_id": "5669509",
+      "name": "不相交角",
+      "font_class": "buxiangjiaojiao",
+      "unicode": "e617",
+      "unicode_decimal": 58903
+    },
+    {
+      "icon_id": "37944389",
+      "name": "图标_不相交通道",
+      "font_class": "tubiao_buxiangjiaotongdao",
+      "unicode": "e79c",
+      "unicode_decimal": 59292
+    },
+    {
+      "icon_id": "20086094",
+      "name": "drawicon_1",
+      "font_class": "drawicon_1",
+      "unicode": "e660",
+      "unicode_decimal": 58976
+    },
+    {
+      "icon_id": "20086105",
+      "name": "drawicon_2",
+      "font_class": "drawicon_2",
+      "unicode": "e661",
+      "unicode_decimal": 58977
+    },
+    {
+      "icon_id": "704860",
+      "name": "tooltip-text",
+      "font_class": "tooltiptext",
+      "unicode": "eb0f",
+      "unicode_decimal": 60175
+    },
+    {
+      "icon_id": "37432772",
+      "name": "Tooltip",
+      "font_class": "Tooltip",
+      "unicode": "e62f",
+      "unicode_decimal": 58927
+    },
+    {
+      "icon_id": "2410156",
+      "name": "方块",
+      "font_class": "fangkuai",
+      "unicode": "e600",
+      "unicode_decimal": 58880
+    },
+    {
+      "icon_id": "7669738",
+      "name": "平行四边形",
+      "font_class": "draw_quadrangle",
+      "unicode": "e62c",
+      "unicode_decimal": 58924
+    },
+    {
+      "icon_id": "5810174",
+      "name": "arrow",
+      "font_class": "arrow",
+      "unicode": "e7e3",
+      "unicode_decimal": 59363
+    },
+    {
+      "icon_id": "7656282",
+      "name": "圆弧",
+      "font_class": "draw_arc",
+      "unicode": "e602",
+      "unicode_decimal": 58882
+    },
+    {
+      "icon_id": "7656318",
+      "name": "线段",
+      "font_class": "draw_line",
+      "unicode": "e605",
+      "unicode_decimal": 58885
+    },
+    {
+      "icon_id": "7656337",
+      "name": "射线",
+      "font_class": "draw_rays",
+      "unicode": "e606",
+      "unicode_decimal": 58886
+    },
+    {
+      "icon_id": "7656347",
+      "name": "矩形",
+      "font_class": "rectangle",
+      "unicode": "e607",
+      "unicode_decimal": 58887
+    },
+    {
+      "icon_id": "7656351",
+      "name": "平行线",
+      "font_class": "draw_parallel_lines",
+      "unicode": "e608",
+      "unicode_decimal": 58888
+    },
+    {
+      "icon_id": "7656362",
+      "name": "设置",
+      "font_class": "setting",
+      "unicode": "e609",
+      "unicode_decimal": 58889
+    },
+    {
+      "icon_id": "7656365",
+      "name": "垃圾桶",
+      "font_class": "recycle_bin",
+      "unicode": "e60a",
+      "unicode_decimal": 58890
+    },
+    {
+      "icon_id": "7658213",
+      "name": "趋势线",
+      "font_class": "draw_trendline",
+      "unicode": "e60e",
+      "unicode_decimal": 58894
+    },
+    {
+      "icon_id": "7658219",
+      "name": "黄金分割",
+      "font_class": "draw_goldensection",
+      "unicode": "e60f",
+      "unicode_decimal": 58895
+    },
+    {
+      "icon_id": "7658227",
+      "name": "江恩角度线",
+      "font_class": "draw_gannfan",
+      "unicode": "e610",
+      "unicode_decimal": 58896
+    },
+    {
+      "icon_id": "7658243",
+      "name": "百分比线",
+      "font_class": "draw_percentage",
+      "unicode": "e611",
+      "unicode_decimal": 58897
+    },
+    {
+      "icon_id": "7658252",
+      "name": "波段线",
+      "font_class": "draw_waveband",
+      "unicode": "e612",
+      "unicode_decimal": 58898
+    },
+    {
+      "icon_id": "7658254",
+      "name": "阻速线",
+      "font_class": "draw_resline",
+      "unicode": "e613",
+      "unicode_decimal": 58899
+    },
+    {
+      "icon_id": "7658255",
+      "name": "文本",
+      "font_class": "draw_text",
+      "unicode": "e614",
+      "unicode_decimal": 58900
+    },
+    {
+      "icon_id": "7658337",
+      "name": "平行通道",
+      "font_class": "draw_parallelchannel",
+      "unicode": "e615",
+      "unicode_decimal": 58901
+    },
+    {
+      "icon_id": "7659084",
+      "name": "M头W底",
+      "font_class": "draw_wavemw",
+      "unicode": "e616",
+      "unicode_decimal": 58902
+    },
+    {
+      "icon_id": "7659827",
+      "name": "三角形",
+      "font_class": "draw_triangle",
+      "unicode": "e61a",
+      "unicode_decimal": 58906
+    },
+    {
+      "icon_id": "7659834",
+      "name": "价格通道线",
+      "font_class": "draw_pricechannel",
+      "unicode": "e61b",
+      "unicode_decimal": 58907
+    },
+    {
+      "icon_id": "7659837",
+      "name": "圆",
+      "font_class": "draw_circle",
+      "unicode": "e61c",
+      "unicode_decimal": 58908
+    },
+    {
+      "icon_id": "7659838",
+      "name": "对称角线",
+      "font_class": "draw_symangle",
+      "unicode": "e61d",
+      "unicode_decimal": 58909
+    },
+    {
+      "icon_id": "7659841",
+      "name": "水平线",
+      "font_class": "draw_hline",
+      "unicode": "e61e",
+      "unicode_decimal": 58910
+    },
+    {
+      "icon_id": "19932330",
+      "name": "线形回归带",
+      "font_class": "linear_1",
+      "unicode": "e657",
+      "unicode_decimal": 58967
+    },
+    {
+      "icon_id": "19932332",
+      "name": "延长线形回归带",
+      "font_class": "linear_2",
+      "unicode": "e659",
+      "unicode_decimal": 58969
+    },
+    {
+      "icon_id": "19932333",
+      "name": "线形回归线",
+      "font_class": "linear_3",
+      "unicode": "e65a",
+      "unicode_decimal": 58970
+    },
+    {
+      "icon_id": "19932334",
+      "name": "尺子",
+      "font_class": "ruler",
+      "unicode": "e65b",
+      "unicode_decimal": 58971
+    },
+    {
+      "icon_id": "19941940",
+      "name": "标价线",
+      "font_class": "price_line",
+      "unicode": "e65c",
+      "unicode_decimal": 58972
+    },
+    {
+      "icon_id": "19941945",
+      "name": "垂直线",
+      "font_class": "vertical_line",
+      "unicode": "e65d",
+      "unicode_decimal": 58973
+    },
+    {
+      "icon_id": "19965759",
+      "name": "波浪尺",
+      "font_class": "waveruler",
+      "unicode": "e65e",
+      "unicode_decimal": 58974
+    },
+    {
+      "icon_id": "19967944",
+      "name": "箱型线",
+      "font_class": "draw_box",
+      "unicode": "e65f",
+      "unicode_decimal": 58975
+    },
+    {
+      "icon_id": "20982623",
+      "name": "头肩型",
+      "font_class": "draw_head_shoulders_bt",
+      "unicode": "e6a0",
+      "unicode_decimal": 59040
+    },
+    {
+      "icon_id": "20982634",
+      "name": "平行射线",
+      "font_class": "draw_p_rays_lines",
+      "unicode": "e6a1",
+      "unicode_decimal": 59041
+    },
+    {
+      "icon_id": "20985860",
+      "name": "水平线段",
+      "font_class": "draw_hlinesegment",
+      "unicode": "e6a2",
+      "unicode_decimal": 59042
+    }
+  ]
+}

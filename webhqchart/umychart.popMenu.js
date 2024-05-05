@@ -258,6 +258,12 @@ function JSPopMenu()
         var yBottom=window.innerHeight-15;
         if (yMenuBottom>yBottom) yTop=rtButton.Top-menuHeight;
 
+        if (this.Data.Position==JSPopMenu.POSITION_ID.DROPDOWN_RIGHT_MENU_ID)
+        {
+            var menuWidth=this.RootDOM.offsetWidth;
+            xLeft=rtButton.Right-menuWidth;
+        }
+
         this.RootDOM.style.visibility='visible';
         this.RootDOM.style.top = yTop + "px";
         this.RootDOM.style.left = xLeft + "px";
@@ -346,4 +352,6 @@ function JSPopMenu()
 JSPopMenu.POSITION_ID={ };
 JSPopMenu.POSITION_ID.RIGHT_MENU_ID=0;
 JSPopMenu.POSITION_ID.TAB_MENU_ID=1;
+JSPopMenu.POSITION_ID.DROPDOWN_MENU_ID=2;       //左对齐下拉
+JSPopMenu.POSITION_ID.DROPDOWN_RIGHT_MENU_ID=3; //右对齐下拉
 JSPopMenu.SEPARATOR_LINE_NAME="MENU_SEPARATOR"; //分割线

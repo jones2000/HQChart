@@ -10388,6 +10388,11 @@ function JSDraw(errorHandler,symbolData)
         return offset;
     }
 
+    this.KLINETYPE=function(type)
+    {
+        return type;
+    }
+
     this.FIRSTDRAW=function(value)
     {
         return value;
@@ -10986,7 +10991,7 @@ function JSDraw(errorHandler,symbolData)
         {
             for(var i in condition)
             {
-                drawData[i]=null;
+                drawData.Data[i]=null;
                 if (!condition[i]) continue;
 
                 if (isNumber) 
@@ -11011,7 +11016,7 @@ function JSDraw(errorHandler,symbolData)
                 var count=this.SymbolData.Data.Data.length;
                 for(var i=0; i<count; ++i)
                 {
-                    drawData[i]=null;
+                    drawData.Data[i]=null;
                     if (isNumber) 
                     {
                         drawData.Data[i]=data;
@@ -17155,6 +17160,7 @@ function JSExecute(ast,option)
                 var vLineConfig=null;
                 var isFirstDraw=null;
                 let xOffset=null, yOffset=null;
+                var klineType=null;
                 for(let j=0; j<item.Expression.Expression.length; ++j)
                 {
                     let itemExpression=item.Expression.Expression[j];
@@ -17312,6 +17318,10 @@ function JSExecute(ast,option)
                                 vLineConfig=itemExpression.Draw;
                                 varName=null;
                             }
+                            else if (itemExpression.Callee.Name=="KLINETYPE")
+                            {
+                                klineType=itemExpression.Out;
+                            }
                         }
                     }
                     else if (itemExpression.Type==Syntax.BinaryExpression)
@@ -17459,6 +17469,7 @@ function JSExecute(ast,option)
                     if (IFrameSplitOperator.IsNumber(xOffset)) outVar.XOffset=xOffset;
                     if (IFrameSplitOperator.IsNumber(yOffset)) outVar.YOffset=yOffset;
                     if (IFrameSplitOperator.IsBool(isFirstDraw)) outVar.IsFirstDraw=isFirstDraw;
+                    if (IFrameSplitOperator.IsNumber(klineType)) outVar.KLineType=klineType;
                     this.OutVarTable.push(outVar);
                 }
                 else if (varName)
@@ -17897,6 +17908,9 @@ function JSExecute(ast,option)
             case 'DRAWKLINE_IF':
                 node.Draw=this.Draw.DRAWKLINE_IF(args[0],args[1],args[2],args[3],args[4]);
                 node.Out=[];
+                break;
+            case "KLINETYPE":   //K线类型 和DRAWKLINE连用
+                node.Out=this.Draw.KLINETYPE(args[0]);
                 break;
             case "DRAWOVERLAYKLINE":
                 node.Draw=this.Draw.DRAWOVERLAYKLINE(args[0],args[1],args[2],args[3]);
@@ -20631,6 +20645,7 @@ function ScriptIndex(name,script,args,option)
 
         if (IFrameSplitOperator.IsBool(varItem.IsFirstDraw)) chart.IsDrawFirst=varItem.IsFirstDraw;
 
+        this.SetChartIndexName(chart);
         hqChart.ChartPaint.push(chart);
     }
 
@@ -20697,10 +20712,12 @@ function ScriptIndex(name,script,args,option)
         chart.Data.Data=varItem.Draw.DrawData;
         chart.IsShowMaxMinPrice=false;
         chart.IsShowKTooltip=false;
+        if (IFrameSplitOperator.IsNumber(varItem.KLineType)) chart.DrawType=varItem.KLineType;
 
         if (varItem.Color)  //如果设置了颜色,使用外面设置的颜色
             chart.UnchagneColor=chart.DownColor=chart.UpColor=this.GetColor(varItem.Color);
 
+        this.SetChartIndexName(chart);
         hqChart.ChartPaint.push(chart);
     }
 
@@ -22540,6 +22557,7 @@ function OverlayScriptIndex(name,script,args,option)
 
         if (IFrameSplitOperator.IsBool(varItem.IsFirstDraw)) chart.IsDrawFirst=varItem.IsFirstDraw;
 
+        this.SetChartIndexName(chart);
         frame.ChartPaint.push(chart);
     }
 
