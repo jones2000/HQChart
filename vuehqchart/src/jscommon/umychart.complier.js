@@ -21240,6 +21240,7 @@ function ScriptIndex(name,script,args,option)
 
         this.ReloadChartResource(hqChart, windowIndex, chart);
         
+        this.SetChartIndexName(chart);
         hqChart.ChartPaint.push(chart);
 
          var titleIndex=windowIndex+1;
@@ -21260,6 +21261,7 @@ function ScriptIndex(name,script,args,option)
         chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
         chart.PointGroup=varItem.Draw.DrawData; 
         if (varItem.Draw.Name) chart.Name=varItem.Draw.Name;
+        this.SetChartIndexName(chart);
         hqChart.ChartPaint.push(chart);
 
          var titleIndex=windowIndex+1;
@@ -21286,6 +21288,7 @@ function ScriptIndex(name,script,args,option)
         titleData.DataType="MULTI_BAR";
         hqChart.TitlePaint[titleIndex].Data[id]=titleData;
 
+        this.SetChartIndexName(chart);
         hqChart.ChartPaint.push(chart);
     }
 
@@ -21299,6 +21302,7 @@ function ScriptIndex(name,script,args,option)
 
         chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
         chart.Texts=varItem.Draw.DrawData; 
+        this.SetChartIndexName(chart);
         hqChart.ChartPaint.push(chart);
     }
 
@@ -21314,6 +21318,7 @@ function ScriptIndex(name,script,args,option)
         chart.Family=varItem.Draw.DrawData.Family;
         chart.AryIcon= varItem.Draw.DrawData.Icon;
         chart.BuildCacheData();
+        this.SetChartIndexName(chart);
         hqChart.ChartPaint.push(chart);
     }
 
@@ -22887,6 +22892,7 @@ function OverlayScriptIndex(name,script,args,option)
 
         this.ReloadChartResource(hqChart, windowIndex, chart);
 
+        this.SetChartIndexName(chart);
         frame.ChartPaint.push(chart);
     }
 
@@ -22950,6 +22956,7 @@ function OverlayScriptIndex(name,script,args,option)
         titleData.DataType="MULTI_BAR";
         titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=titleData;
 
+        this.SetChartIndexName(chart);
         frame.ChartPaint.push(chart);
     }
 
@@ -22966,6 +22973,7 @@ function OverlayScriptIndex(name,script,args,option)
 
         chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
         chart.Texts=varItem.Draw.DrawData; 
+        this.SetChartIndexName(chart);
         frame.ChartPaint.push(chart);
     }
 
@@ -22984,6 +22992,7 @@ function OverlayScriptIndex(name,script,args,option)
         chart.Family=varItem.Draw.DrawData.Family;
         chart.AryIcon= varItem.Draw.DrawData.Icon;
         chart.BuildCacheData();
+        this.SetChartIndexName(chart);
         frame.ChartPaint.push(chart);
     }
 
@@ -23012,6 +23021,7 @@ function OverlayScriptIndex(name,script,args,option)
 
         this.ReloadChartResource(hqChart, windowIndex, chart);
         
+        this.SetChartIndexName(chart);
         frame.ChartPaint.push(chart);
     }
 

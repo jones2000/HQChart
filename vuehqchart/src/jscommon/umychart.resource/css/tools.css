@@ -1241,6 +1241,12 @@ input[type="color"] {
     height:20px;
 }
 
+.UMyChart_DrawTool_Disable_Tr
+{
+    pointer-events: none;
+    color:rgb(169,169,169)
+}
+
 .UMyChart_MenuItem_Tr_Separator
 {
     height:5px;   
@@ -1344,10 +1350,10 @@ input[type="color"] {
     /*display: flex;*/
     border: 2px solid; 
     width:fit-content;
-    border-color: rgb(128,128,128);
+    border-color: rgb(204,204,204);
     visibility:hidden;
     position: absolute;
-    background-color: rgba(255,255,255,0.9);
+    background-color: rgba(250,250,250,1);
     left:1px;
     top:1px;
 }
@@ -1357,10 +1363,11 @@ input[type="color"] {
     padding-left: 2px;
     height:20px;
     border-bottom: 1px solid;
-    border-color: rgb(128,128,128);
+    border-color: rgb(204,204,204);
     display: flex;
     cursor: default;
     user-select: none;
+    background-color:rgb(222,222,222)
 }
 
 .UMyChart_DrawTool_Close_Div
@@ -1389,7 +1396,10 @@ input[type="color"] {
 
 .UMyChart_DrawTool_Span_Selected
 {
-    background: rgb(128,128,128);
+    font-size:22px;
+    border: 1px solid;
+    border-color: rgb(128,128,128);
+    background: rgb(234,85,4);
     color: rgb(255,255,255);
 }
 
@@ -1403,6 +1413,7 @@ input[type="color"] {
     font-size:22px;
     border: 1px solid;
     border-color: rgb(128,128,128);
+    color: rgb(77,77,77);
 }
 
 .UMyChart_DrawTool_Group_Tr
@@ -1421,7 +1432,7 @@ input[type="color"] {
 {
     height:5px;
     border-bottom: 1px solid;
-    border-color: rgb(128,128,128);
+    border-color: rgb(204,204,204);
 }
 
 

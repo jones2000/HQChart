@@ -10,11 +10,12 @@
    内置画图工具 设置框
 */
 
-JS_DRAWTOOL_MENU_ID=
+var JS_DRAWTOOL_MENU_ID=
 {
     CMD_SELECTED_ID:1,
     CMD_CHANGE_LINE_COLOR_ID:2,
-    CMD_DELETE_ALL_RAW_CHART_ID:3
+    CMD_DELETE_ALL_DRAW_CHART_ID:3,
+    CMD_ERASE_DRAW_CHART_ID:4,
 };
 
 function JSDialogDrawTool()
@@ -102,7 +103,8 @@ function JSDialogDrawTool()
             { Title:"选中", ClassName:'hqchart_drawtool icon-arrow', Type:1, Data:{ID:JS_DRAWTOOL_MENU_ID.CMD_SELECTED_ID} },
             { Title:'尺子', ClassName: 'hqchart_drawtool icon-ruler', Type:0, Data:{ ID:"尺子" } },
             { Title:"点击切换颜色", ClassName: 'hqchart_drawtool icon-fangkuai', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_CHANGE_LINE_COLOR_ID }},
-            { Title:"删除所有画线", ClassName: 'hqchart_drawtool icon-recycle_bin', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_DELETE_ALL_RAW_CHART_ID }}
+            { Title:"擦除画线", ClassName: 'hqchart_drawtool icon-a-xiangpicachuxiangpica', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_ERASE_DRAW_CHART_ID }},
+            { Title:"删除所有画线", ClassName: 'hqchart_drawtool icon-recycle_bin', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_DELETE_ALL_DRAW_CHART_ID }}
         ]
     };
 
@@ -235,18 +237,27 @@ function JSDialogDrawTool()
         {
             this.OnChangeLineColor(data);
         }
-        else if (type==2 && id==JS_DRAWTOOL_MENU_ID.CMD_DELETE_ALL_RAW_CHART_ID)
+        else if (type==2 && id==JS_DRAWTOOL_MENU_ID.CMD_DELETE_ALL_DRAW_CHART_ID)
         {
             this.DeleteAllChart();
+        }
+        else if (type==2 &&  id==JS_DRAWTOOL_MENU_ID.CMD_ERASE_DRAW_CHART_ID)
+        {
+            this.ClearAllSelectedChart();
+            this.ClearCurrnetDrawPicture();
+            this.EnableEraseChart(true);
         }
         else if (type==1 && id==JS_DRAWTOOL_MENU_ID.CMD_SELECTED_ID)
         {
             this.ClearAllSelectedChart();
             this.ClearCurrnetDrawPicture();
+            this.EnableEraseChart(false);
         }
         else if (type==0)
         {
             this.ClearAllSelectedChart();
+            this.EnableEraseChart(false);
+            data.Span.classList.remove("UMyChart_DrawTool_Span");
             data.Span.classList.add("UMyChart_DrawTool_Span_Selected");
             this.CreateDrawPicture(data);
         }
@@ -259,6 +270,7 @@ function JSDialogDrawTool()
         {
             var item=this.AryDivChart[i];
             item.Span.classList.remove("UMyChart_DrawTool_Span_Selected");
+            item.Span.classList.add("UMyChart_DrawTool_Span");
         }
     }
 
@@ -332,6 +344,43 @@ function JSDialogDrawTool()
         this.HQChart.ClearChartDrawPicture();
     }
 
+    this.SetEraseChartButtonStatus=function(enable)
+    {
+        for(var i=0;i<this.AryDivChart.length;++i)
+        {
+            var item=this.AryDivChart[i];
+            if (item.Item.Type==2 && item.Item.Data && item.Item.Data.ID==JS_DRAWTOOL_MENU_ID.CMD_ERASE_DRAW_CHART_ID)
+            {
+                if (enable)
+                {
+                    if (item.Span.classList.contains("UMyChart_DrawTool_Span"))
+                    {
+                        item.Span.classList.replace("UMyChart_DrawTool_Span", "UMyChart_DrawTool_Span_Selected");
+                    }
+                }
+                else
+                {
+                    if (item.Span.classList.contains("UMyChart_DrawTool_Span_Selected"))
+                    {
+                        item.Span.classList.replace("UMyChart_DrawTool_Span_Selected","UMyChart_DrawTool_Span");
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    this.EnableEraseChart=function(enable)
+    {
+        if (!this.HQChart) return;
+
+        if (this.HQChart.EnableEraseChartDrawPicture==enable) return;
+
+        this.HQChart.EnableEraseChartDrawPicture=enable;
+
+        this.SetEraseChartButtonStatus(enable);
+    }
+
     this.CreateDrawPicture=function(data)
     {
         if (!this.HQChart) return null;
@@ -358,6 +407,7 @@ function JSDialogDrawTool()
     this.OnFinishDrawPicture=function(chart, data)
     {
         data.Span.classList.remove("UMyChart_DrawTool_Span_Selected");
+        data.Span.classList.add("UMyChart_DrawTool_Span");
     }
 
     this.Show=function(x, y)

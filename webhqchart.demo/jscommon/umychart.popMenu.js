@@ -103,6 +103,8 @@ function JSPopMenu()
     {
         var trDom=document.createElement("tr");
         trDom.className='UMyChart_MenuItem_Tr';
+
+        if (item.Disable===true) trDom.classList.add('UMyChart_DrawTool_Disable_Tr');
         
         var prtTdDom=null;
         for(var i=0;i<this.AryTDClassName.length;++i)
@@ -178,8 +180,15 @@ function JSPopMenu()
         }
         else
         {
-            trDom.onmousedown=(e)=> { this.OnClickMenu(e, item, false); };   //菜单点击
-            trDom.onmouseover=(e)=>{ this.OnMouseOver(e, parentItem); }
+            if (item.Disable===true)
+            {
+                
+            }
+            else
+            {
+                trDom.onmousedown=(e)=> { this.OnClickMenu(e, item, false); };   //菜单点击
+                trDom.onmouseover=(e)=>{ this.OnMouseOver(e, parentItem); }
+            }
         }
 
         return trDom;
@@ -312,6 +321,8 @@ function JSPopMenu()
 
                 subMenu.style.left=`${x}px`;
                 subMenu.style.top=`${y}px`;
+
+
 
                 trDom.classList.add(this.SelectedClassName);
 

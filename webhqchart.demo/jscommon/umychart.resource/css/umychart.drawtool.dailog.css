@@ -60,6 +60,12 @@
     height:20px;
 }
 
+.UMyChart_DrawTool_Disable_Tr
+{
+    pointer-events: none;
+    color:rgb(169,169,169)
+}
+
 .UMyChart_DrawTool_Span_Selected
 {
     background: rgb(128,128,128);

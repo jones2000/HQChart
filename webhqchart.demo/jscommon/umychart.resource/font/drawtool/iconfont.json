@@ -6,6 +6,13 @@
   "description": "hqchart画图工具",
   "glyphs": [
     {
+      "icon_id": "37278411",
+      "name": "擦除",
+      "font_class": "a-xiangpicachuxiangpica",
+      "unicode": "e60b",
+      "unicode_decimal": 58891
+    },
+    {
       "icon_id": "10686101",
       "name": "价格范围",
       "font_class": "jiagefanwei",
