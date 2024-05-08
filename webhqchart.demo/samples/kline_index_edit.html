@@ -523,6 +523,9 @@
                     
                         obj.CreateExtendChart("FrameButtomToolbarPaint", { FrameID:frame.Identify, AryButton:aryButton } );
                     }
+
+
+                    //frame.HorizontalReserved={ Top:50, Bottom:30 };
                     
                 }
             }
@@ -583,6 +586,31 @@
             this.OnCreateCustomYCoordinate=function(event, data ,obj)
             {
                 console.log("[OnCreateCustomYCoordinate] data ", data);
+                if (data.ID==0)
+                {
+                    
+                    var info=new CoordinateInfo();
+                    info.Type=5;
+                    info.Value=7.5;
+                    //info.Message=["40%", "40%"]
+                    info.AreaData={  Value:[7.0, 8.0], BGColor:"rgba(65,105,225,0.5)", Position:[0, 1 ] }
+                    data.Frame.CustomHorizontalInfo.push(info);
+
+                    var info=new CoordinateInfo();
+                    info.Type=5;
+                    info.Value=8.5;
+                    //info.Message=["60%", "60%"]
+                    info.AreaData={  Value:[8.0, 9.0], BGColor:"rgba(139,0,139,0.5)", Position:[0, 1 ] }
+                    data.Frame.CustomHorizontalInfo.push(info);
+
+                    var info=new CoordinateInfo();
+                    info.Type=5;
+                    info.Value=8.5;
+                    //info.Message=["60%", "60%"]
+                    info.AreaData={  Value:[9.0, 10.0], BGColor:"rgba(84, 255, 159,0.5)", Position:[0, 1 ] }
+                    data.Frame.CustomHorizontalInfo.push(info);
+                    
+                }
             }
 
             this.OnSize=function(option)  //自适应大小调整
@@ -1216,9 +1244,29 @@
             {
                 console.log("[KLineChart::OnCreateRightMenu] data=", data);
 
-                var item={ Name:"自定义菜单项", Data:{ ID:"CUSTOM_MENU_1_ID", Args:[1] }};
+                var item={ Name:"自定义菜单项", Data:{ ID:"CUSTOM_MENU_1_ID", Args:[1] } };
                 data.MenuData.Menu.push( { Name:JSPopMenu.SEPARATOR_LINE_NAME });
                 data.MenuData.Menu.push(item);
+                
+                for(var i=0;i<data.MenuData.Menu.length;++i)
+                {
+                    var item=data.MenuData.Menu[i];
+                    if (item.Name=="其他设置")
+                    {
+                        for(var j=0;j<item.SubMenu.length;++j)
+                        {
+                            var subItem=item.SubMenu[j];
+                            if (subItem.Name=="鼠标形状")
+                            {
+                                var customCursor="url('../jscommon/umychart.resource/Cursor/normal.cur'), default";
+                                var newItem={ Name:"自定义图片", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_DEFAULTCURSOR_ID, Args:[customCursor]}, Checked:obj.DefaultCursor==customCursor };
+                                subItem.SubMenu.push(newItem);
+                                break;
+                            }
+                        }
+                    }
+                }
+                
             }
 
             this.OnMenuCommand=function(event, data, obj)
