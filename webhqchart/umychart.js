@@ -650,6 +650,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (item.IsShowOverlayIndexName==false) chart.Frame.SubFrame[i].Frame.IsShowOverlayIndexName=false;
             if (IFrameSplitOperator.IsNumber(item.IndexParamSpace)) chart.Frame.SubFrame[i].Frame.IndexParamSpace=item.IndexParamSpace;
             if (IFrameSplitOperator.IsNumber(item.IndexTitleSpace)) chart.Frame.SubFrame[i].Frame.IndexTitleSpace=item.IndexTitleSpace;
+            if (!IFrameSplitOperator.IsUndefined(item.HorizontalReserved)) frame.HorizontalReserved=item.HorizontalReserved;
             
             if (item.OverlayIndexType)
             {
@@ -1096,6 +1097,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
                 if (IFrameSplitOperator.IsBool(item.IsShowTitleArrow)) chart.Frame.SubFrame[index].Frame.IsShowTitleArrow=item.IsShowTitleArrow;
                 if (item.IsShowIndexName==false) chart.Frame.SubFrame[index].Frame.IsShowIndexName=false;
                 if (item.IsShowOverlayIndexName==false) chart.Frame.SubFrame[index].Frame.IsShowOverlayIndexName=false;
+                if (!IFrameSplitOperator.IsUndefined(item.HorizontalReserved)) frame.HorizontalReserved=item.HorizontalReserved;
             }
         }
 
@@ -2671,6 +2673,8 @@ var JSCHART_MENU_ID=
     CMD_DELETE_OVERLAY_INDEX_ID:29, //删除叠加指标
     CMD_SHOW_OVERLAY_Y_AXIS_ID:30,   //显示隐藏Y轴叠加指标
     CMD_ENABLE_OVERLAY_SHARE_Y_ID:31,   //和主图指标共享Y轴坐标
+
+    CMD_CHANGE_DEFAULTCURSOR_ID:32,     //修改鼠标形状
 }
 
 
@@ -9380,6 +9384,11 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 this.Draw();
 
                 break;
+            case JSCHART_MENU_ID.CMD_CHANGE_DEFAULTCURSOR_ID:
+                if (!IFrameSplitOperator.IsString(srcParam)) return;
+                this.DefaultCursor=srcParam;
+                this.UIElement.style.cursor=this.DefaultCursor;
+                break;
         }
     }
 
@@ -9976,6 +9985,7 @@ function IChartFramePainting()
 
     this.HorizontalMax;                 //Y轴最大值
     this.HorizontalMin;                 //Y轴最小值
+    this.HorizontalReserved=null;       //Y轴预留高度 { Top:上, Bottom:下 }
     this.XPointCount=10;                //X轴数据个数
 
     this.ClientBGColor;                 //客户区背景色
@@ -22941,9 +22951,9 @@ function IChartPainting()
         if (!IFrameSplitOperator.IsNumber(ptStart.X) || !IFrameSplitOperator.IsNumber(ptStart.Y)) return null;
         if (!IFrameSplitOperator.IsNumber(ptEnd.X) || !IFrameSplitOperator.IsNumber(ptEnd.Y)) return null;
 
-        if (x==ptStart.X || y==ptStart.Y) 
+        if (x==ptStart.X && y==ptStart.Y) 
             return { Identify:this.Identify, Chart:this };
-        if (x==ptEnd.X || y==ptEnd.Y) 
+        if (x==ptEnd.X && y==ptEnd.Y) 
             return { Identify:this.Identify, Chart:this };
 
         var lineWidth=5;
@@ -36811,7 +36821,9 @@ function ChartMultiBar()
 
     this.Draw=function()
     {
-        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
+        if (!this.IsShow || this.ChartFrame.IsMinSize || !this.IsVisible) return;
+        if (this.IsShowIndexTitleOnly()) return;
+        if (this.IsHideScriptIndex()) return;
         if (!this.Data || this.Data.length<=0) return;
 
         this.IsHScreen=(this.ChartFrame.IsHScreen===true);
@@ -45676,6 +45688,11 @@ IFrameSplitOperator.IsVaild=function(value)
     return true;
 }
 
+IFrameSplitOperator.IsUndefined=function(value)
+{
+    return value===undefined;
+}
+
 IFrameSplitOperator.RemoveZero=function(strValue)
 {
     while(strValue.length>0)
@@ -46688,11 +46705,14 @@ function FrameSplitY()
         if (this.EnableRemoveZero) this.RemoveZero(this.Frame.HorizontalInfo);
 
         this.DynamicMessageText();
+
         this.Frame.HorizontalMax=splitData.Max;
         this.Frame.HorizontalMin=splitData.Min;
 
         if (this.EnableZoomUpDown==true && !this.FixedYMaxMin)
             this.FixedYMaxMin={ Max:splitData.Max, Min:splitData.Min };
+
+        this.ReservedHeight(splitData); //预留高度
 
         if (this.GetEventCallback)
         {
@@ -46704,6 +46724,49 @@ function FrameSplitY()
                 event.Callback(event,data,this);
             }
         }
+    }
+
+    this.ReservedHeight=function(splitData)
+    {
+        if (this.Frame.IsHScreen) return;   //横屏以后再搞
+
+        var yReserved=this.Frame.HorizontalReserved;
+        if (!yReserved) return;
+
+        var reservedHeight=0;
+        if (IFrameSplitOperator.IsPlusNumber(yReserved.Top)) reservedHeight+=yReserved.Top;
+        if (IFrameSplitOperator.IsPlusNumber(yReserved.Bottom)) reservedHeight+=yReserved.Bottom;
+        if (reservedHeight<=0) return;
+
+        var border=this.Frame.GetBorder();
+        var top=border.TopEx;
+        var bottom=border.BottomEx;
+        var srcHeight=bottom-top;
+        if (srcHeight<reservedHeight) return;
+
+        var max=splitData.Max;
+        var min=splitData.Min;
+        if (IFrameSplitOperator.IsPlusNumber(yReserved.Top)) top-=yReserved.Top;
+        if (IFrameSplitOperator.IsPlusNumber(yReserved.Bottom)) bottom+=yReserved.Bottom;
+
+        var value=(max-min)/(bottom-top);   //1个像素点对应的数值
+        if (IFrameSplitOperator.IsPlusNumber(yReserved.Top))
+        {
+            var topValue=value*yReserved.Top;
+            max+=topValue;
+        }
+        
+        if (IFrameSplitOperator.IsPlusNumber(yReserved.Bottom))
+        {
+            var bottomValue=value*yReserved.Bottom;
+            min-=bottomValue;
+        }
+
+        splitData.Max=max;
+        splitData.Min=min;
+
+        this.Frame.HorizontalMax=splitData.Max;
+        this.Frame.HorizontalMin=splitData.Min;
     }
 
 
@@ -56055,7 +56118,7 @@ function ChartDrawHLine()
     this.TextFont=12*GetDevicePixelRatio() +"px 微软雅黑";
     this.RightSpaceWidth=50;
 
-    this.ButtonPosition=0;              //按钮位置, 0=价格后面， 1=价格上面 2=价格上面 左对齐
+    this.ButtonPosition=0;              //按钮位置, 0=价格后面， 1=价格上面 2=价格上面 左对齐 3=垂直排列
     this.ButtonBGColor='rgb(190,190,190)';
     this.ButtonSpace=3;
     
@@ -56087,6 +56150,8 @@ function ChartDrawHLine()
     this.ColseButtonSize=0;
     this.SettingButtonSize=0;
     this.ButtonBGWidth=0;
+    this.VerticalButtonInfo={ Width:0, Height:0 };  //垂直按钮信息
+   
 
 
     this.SetOption=function(option)
@@ -56222,6 +56287,9 @@ function ChartDrawHLine()
         this.ColseButtonSize=0;
         this.SettingButtonSize=0;
         this.ButtonBGWidth=0;
+
+        this.VerticalButtonInfo.Width=0;
+        this.VerticalButtonInfo.Height=0;
 
         if (this.IsFrameMinSize()) return;
         if (!this.IsShow) return;
@@ -56424,15 +56492,16 @@ function ChartDrawHLine()
         if (IFrameSplitOperator.IsNumber(labInfo.LineSpace)) lineSpace=labInfo.LineSpace;
 
         //背景色
+        var rtLab={ Left:drawLeft, Top:drawTop, Width:labSize.Width, Height:labSize.Height }
+        rtLab.Right=rtLab.Left+rtLab.Width;
+        rtLab.Bottom=rtLab.Top+rtLab.Height;
         if (labInfo.BGColor)
         {
             this.Canvas.fillStyle=labInfo.BGColor;
-            var rtTop=drawTop;
-            this.Canvas.fillRect(ToFixedRect(drawLeft),ToFixedRect(rtTop),ToFixedRect(labSize.Width),ToFixedRect(labSize.Height));  
+            this.Canvas.fillRect(ToFixedRect(rtLab.Left),ToFixedRect(rtLab.Top),ToFixedRect(rtLab.Width),ToFixedRect(rtLab.Height));  
         }
 
         var yText=drawTop+1+lineSpace;
-        
         this.Canvas.textBaseline="top";
         for(var i=0;i<labInfo.AryText.length;++i)
         {
@@ -56453,6 +56522,8 @@ function ChartDrawHLine()
 
             yText+=labSize.LineHeight+lineSpace;
         }
+
+        this.DrawVerticalButton(rtLab);
     }
 
     this.DrawCustomHLine=function(labInfo, yLine)
@@ -56607,13 +56678,20 @@ function ChartDrawHLine()
             var font=`${icon.Size*pixelRatio}px ${icon.Family}`;
             this.Canvas.font=font;
             item.Width=this.Canvas.measureText(icon.Text).width+2;
+            item.Height=item.Width;
 
             if (icon.Margin)
             {
                 var margin=icon.Margin;
                 if (IFrameSplitOperator.IsNumber(margin.Left)) item.Width+=margin.Left;
                 if (IFrameSplitOperator.IsNumber(margin.Right)) item.Width+=margin.Right;
+
+                if (IFrameSplitOperator.IsNumber(margin.Top)) item.Height+=margin.Top;
+                if (IFrameSplitOperator.IsNumber(margin.Bottom)) item.Height+=margin.Bottom;
             }
+
+            if (this.VerticalButtonInfo.Width<item.Width) this.VerticalButtonInfo.Width=item.Width;
+            this.VerticalButtonInfo.Height+=item.Height;
 
             totalWidth+=item.Width;
         }
@@ -56621,10 +56699,50 @@ function ChartDrawHLine()
         this.ButtonBGWidth=totalWidth;
     }
 
+    //垂直排列按钮
+    this.DrawVerticalButton=function(rtLab)
+    {
+        if (this.ButtonPosition!=3) return;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.AryShowButton)) return;
+        if (this.VerticalButtonInfo.Height<=0) return;
+
+        var rtBG={ Left:rtLab.Right, Top:rtLab.Top, Width:this.VerticalButtonInfo.Width, Height:this.VerticalButtonInfo.Height };
+        rtBG.Right=rtBG.Left+rtBG.Width;
+        rtBG.Bottom=rtBG.Top+rtBG.Height;
+        this.Canvas.fillStyle=this.ButtonBGColor;
+        this.Canvas.fillRect(ToFixedRect(rtBG.Left),ToFixedRect(rtBG.Top), ToFixedRect(rtBG.Width),ToFixedRect(rtBG.Height));
+
+        var pixelRatio=GetDevicePixelRatio();
+        var yTop=rtLab.Top;
+        for(var i=0;i<this.AryShowButton.length;++i)
+        {
+            var item=this.AryShowButton[i];
+            var icon=item.Data;
+
+            var rtButton={Left:rtBG.Left, Top:yTop, Width:this.VerticalButtonInfo.Width, Height:item.Height };
+            rtButton.Right=rtButton.Left+rtButton.Width;
+            rtButton.Bottom=rtButton.Top+rtButton.Height;
+            var yCenter=rtButton.Top+rtButton.Height/2;
+            var xCenter=rtButton.Left+rtButton.Width/2;
+
+            var font=`${icon.Size*pixelRatio}px ${icon.Family}`;
+            this.Canvas.font=font;
+            this.Canvas.textAlign="center";
+            this.Canvas.textBaseline="middle";
+            this.Canvas.fillStyle=icon.Color;
+            this.Canvas.fillText(icon.Text,xCenter,yCenter);
+
+            this.AryButton.push({Rect:rtButton,ID:icon.ID, TooltipText:icon.TooltipText, Data:icon.Data });
+
+            yTop=rtButton.Bottom;
+        }
+    }
+
     this.DrawButton=function(drawTop, drawLeft, drawHeight, rtDraw)
     {
         if (!IFrameSplitOperator.IsNonEmptyArray(this.AryShowButton)) return;
-
+        if (this.ButtonPosition==3) return; //垂直按钮在DrawVerticalButton()调用
+ 
         if (this.ButtonPosition==1) 
         {
             drawTop-=drawHeight;
@@ -56635,7 +56753,7 @@ function ChartDrawHLine()
                 drawLeft=chartWidth-this.ButtonBGWidth;
             }
 
-            if (chartLeft>drawLeft) drawLeft=chartLeft;
+            if (rtDraw.Left>drawLeft) drawLeft=rtDraw.Left;
 
         }
         else if (this.ButtonPosition==2)
@@ -68068,6 +68186,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             {
                 var cursorIndex={ ZoomType:this.ZoomType, IsLockRight:this.IsZoomLockRight };
                 cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
+                if (e.ctrlKey) cursorIndex.ZoomType=1;  //ctrl+滚轴 十字中心缩放
                 if (this.Frame.ZoomDown(cursorIndex, { ZoomDownloadDataCallback:(requestData)=>{ this.ZoomDownloadData(requestData) } } ))
                 {
                     this.CursorIndex=cursorIndex.Index;
@@ -68090,6 +68209,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             {
                 var cursorIndex={ ZoomType:this.ZoomType, IsLockRight:this.IsZoomLockRight };
                 cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
+                if (e.ctrlKey) cursorIndex.ZoomType=1;  //ctrl+滚轴 十字中心缩放
                 if (this.Frame.ZoomUp(cursorIndex))
                 {
                     JSConsole.Chart.Log("[KLineChartContainer::OnWheel] cursorIndex ",cursorIndex)
@@ -72940,6 +73060,15 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                     { Name:"画图工具", Data:{ ID:JSCHART_MENU_ID.CMD_SHOW_DRAWTOOL_ID, Args:[]}, Checked:this.IsShowDrawToolDialog() },
 
                     { Name:"移动筹码图", Data:{ ID:bShowStockChip?JSCHART_MENU_ID.CMD_HIDE_STOCKCHIP_ID:JSCHART_MENU_ID.CMD_SHOW_STOCKCHIP_ID, Args:[]}, Checked:bShowStockChip},
+                    { Name:JSPopMenu.SEPARATOR_LINE_NAME },
+                    { 
+                        Name:"鼠标形状", 
+                        SubMenu:
+                        [
+                            { Name:"默认", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_DEFAULTCURSOR_ID, Args:["default"]}, Checked:this.DefaultCursor=="default" },
+                            { Name:"十字线", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_DEFAULTCURSOR_ID, Args:["crosshair"]}, Checked:this.DefaultCursor=="crosshair" },
+                        ]
+                    }
                 ]
             }
         ];

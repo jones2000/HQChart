@@ -1,8 +1,8 @@
 @font-face {
   font-family: "hqchart_drawtool"; /* Project id 4529603 */
-  src: url('iconfont.woff2?t=1715003562605') format('woff2'),
-       url('iconfont.woff?t=1715003562605') format('woff'),
-       url('iconfont.ttf?t=1715003562605') format('truetype');
+  src: url('iconfont.woff2?t=1715090362723') format('woff2'),
+       url('iconfont.woff?t=1715090362723') format('woff'),
+       url('iconfont.ttf?t=1715090362723') format('truetype');
 }
 
 .hqchart_drawtool {
@@ -11,6 +11,34 @@
   font-style: normal;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-feibonaqisuduzulishan:before {
+  content: "\e620";
+}
+
+.icon-feibonaqihuiche:before {
+  content: "\e621";
+}
+
+.icon-feibonaqiqixing:before {
+  content: "\e622";
+}
+
+.icon-feibonaqizhouqixian:before {
+  content: "\e662";
+}
+
+.icon-jiangenjiaoduxian:before {
+  content: "\e619";
+}
+
+.icon-GoldenSection:before {
+  content: "\e601";
+}
+
+.icon-PercentageLine:before {
+  content: "\e603";
 }
 
 .icon-a-xiangpicachuxiangpica:before {

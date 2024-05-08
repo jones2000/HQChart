@@ -34,6 +34,8 @@ function JSDialogDrawTool()
                 { Title: '趋势线', ClassName: 'hqchart_drawtool icon-draw_trendline', Type:0, Data:{ ID:"趋势线" } },
                 { Title: '水平线', ClassName: 'hqchart_drawtool icon-draw_hline', Type:0, Data:{ ID:"水平线" } },
                 { Title: '涂鸦线段', ClassName: 'hqchart_drawtool icon-draw_line', Type:0, Data:{ ID:"涂鸦线段" } },
+                { Title: '阻速线', ClassName: 'hqchart_drawtool icon-draw_resline', Type:0, Data:{ ID:"阻速线" } },
+                { Title: '江恩角度线', ClassName: 'hqchart_drawtool icon-jiangenjiaoduxian', Type:0, Data:{ ID:"江恩角度线" } },
             ]
         }, 
         {
@@ -45,13 +47,21 @@ function JSDialogDrawTool()
                 { Title: '平行射线', ClassName: 'hqchart_drawtool icon-draw_p_rays_lines', Type:0, Data:{ ID:"平行射线" } }, 
                 { Title: '平行通道', ClassName: 'hqchart_drawtool icon-draw_parallelchannel',Type:0, Data:{ ID:"平行通道" } },
                 { Title: '价格通道线', ClassName: 'hqchart_drawtool icon-draw_pricechannel', Type:0, Data:{ ID:"价格通道线" } },
-                { Title: '箱型线', ClassName: 'iconfont icon-draw_box', Type:0, Data:{ ID:"箱型线" }  },
+                { Title: '箱型线', ClassName: 'hqchart_drawtool icon-draw_box', Type:0, Data:{ ID:"箱型线" }  },
                 { Title:"不相交通道", ClassName:"hqchart_drawtool icon-buxiangjiaojiao", Type:0, Data:{ ID:"DisjointChannel"} },
-                { Title:"平滑顶/底", ClassName:"hqchart_drawtool icon-tubiao_buxiangjiaotongdao", Type:0, Data:{ ID:"FlatTop"}}
+                { Title:"平滑顶/底", ClassName:"hqchart_drawtool icon-tubiao_buxiangjiaotongdao", Type:0, Data:{ ID:"FlatTop"}},
+
+                { Title: "波段线", ClassName:'hqchart_drawtool icon-draw_waveband',  Type:0, Data:{ ID:"波段线" }  },
+                { Title: "百分比线", ClassName:'hqchart_drawtool icon-PercentageLine',  Type:0, Data:{ ID:"百分比线" }  },
+                { Title: "黄金分割", ClassName:'hqchart_drawtool icon-GoldenSection',  Type:0, Data:{ ID:"黄金分割" }  },
+
+                { Title: "线形回归线", ClassName:'hqchart_drawtool icon-linear_3',  Type:0, Data:{ ID:"线形回归线" }  },
+                { Title: "线形回归带", ClassName:'hqchart_drawtool icon-linear_1',  Type:0, Data:{ ID:"线形回归带" }  },
+                { Title: "延长线形回归带", ClassName:'hqchart_drawtool icon-linear_2',  Type:0, Data:{ ID:"延长线形回归带" }  },
             ]
         },
         { 
-            Title:"多边形",
+            Title:"形状",
             AryChart:
             [
                 { Title: '圆弧线', ClassName: 'hqchart_drawtool icon-draw_arc', Type:0, Data:{ ID:"圆弧线" }  },
@@ -70,6 +80,17 @@ function JSDialogDrawTool()
                 { Title: '头肩型', ClassName: 'hqchart_drawtool icon-draw_head_shoulders_bt', Type:0, Data:{ ID:"头肩型" } },
                 { Title: '波浪尺', ClassName: 'hqchart_drawtool icon-waveruler', Type:0, Data:{ ID:"波浪尺" } },
                 { Title: 'AB波浪尺', ClassName: 'hqchart_drawtool icon-waveruler', Type:0, Data:{ ID:"AB波浪尺" } },
+                
+            ]
+        },
+        {
+            Title:"斐波那契",
+            AryChart:
+            [
+                { Title: '斐波那契周期线', ClassName: 'hqchart_drawtool icon-feibonaqizhouqixian', Type:0, Data:{ ID:"斐波那契周期线" } },
+                { Title: '斐波那契楔形', ClassName: 'hqchart_drawtool icon-feibonaqiqixing', Type:0, Data:{ ID:"FibWedge" } },
+                { Title: '斐波那契回撤', ClassName: 'hqchart_drawtool icon-feibonaqihuiche', Type:0, Data:{ ID:"FibRetracement" } },
+                { Title: '斐波那契速度阻力扇', ClassName: 'hqchart_drawtool icon-feibonaqisuduzulishan', Type:0, Data:{ ID:"FibSpeedResistanceFan" } },
             ]
         },
         {

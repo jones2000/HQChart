@@ -6,6 +6,55 @@
   "description": "hqchart画图工具",
   "glyphs": [
     {
+      "icon_id": "5672309",
+      "name": "斐波那契速度阻力扇",
+      "font_class": "feibonaqisuduzulishan",
+      "unicode": "e620",
+      "unicode_decimal": 58912
+    },
+    {
+      "icon_id": "5672353",
+      "name": "斐波那契回撤",
+      "font_class": "feibonaqihuiche",
+      "unicode": "e621",
+      "unicode_decimal": 58913
+    },
+    {
+      "icon_id": "5673045",
+      "name": "斐波那契契形",
+      "font_class": "feibonaqiqixing",
+      "unicode": "e622",
+      "unicode_decimal": 58914
+    },
+    {
+      "icon_id": "34041367",
+      "name": "斐波那契周期线",
+      "font_class": "feibonaqizhouqixian",
+      "unicode": "e662",
+      "unicode_decimal": 58978
+    },
+    {
+      "icon_id": "5671406",
+      "name": "江恩角度线",
+      "font_class": "jiangenjiaoduxian",
+      "unicode": "e619",
+      "unicode_decimal": 58905
+    },
+    {
+      "icon_id": "36063035",
+      "name": "黄金分割线",
+      "font_class": "GoldenSection",
+      "unicode": "e601",
+      "unicode_decimal": 58881
+    },
+    {
+      "icon_id": "36063039",
+      "name": "百分比线",
+      "font_class": "PercentageLine",
+      "unicode": "e603",
+      "unicode_decimal": 58883
+    },
+    {
       "icon_id": "37278411",
       "name": "擦除",
       "font_class": "a-xiangpicachuxiangpica",
