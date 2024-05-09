@@ -48757,13 +48757,38 @@ HQData.NetworkFilter=function(data, callback)
 HQData.RequestMinuteData=function(data, callback)
 {
     data.PreventDefault=true;
-    var symbol=data.Request.Data.symbol[0]; //请求的股票代码
-    var dayCount=data.Request.Data.daycount;
+    var symbol=data.Request.Data.symbol[0];             //请求的股票代码
+    var callcation=data.Request.Data.callcation;        //集合竞价
     console.log(`[HQData::RequestMinuteData] Symbol=${symbol}`);
     
-    var hqchartData=MINUTE_1DAY_DATA;
-    hqchartData.stock[0].symbol=symbol;
-    hqchartData.stock[0].name=symbol;
+    var srcStock=MINUTE_1DAY_DATA.stock[0];
+    var stockItem={ date:srcStock.date, minute:srcStock.minute, yclose:srcStock.yclose, symbol:srcStock.symbol, name:srcStock.name };
+    if (callcation.Before)
+    {
+        var before=
+        [
+            //[交易时间, 价格，成交量， 成交金额, 日期（可选，YYYYMMDD)],
+            [915, srcStock.yclose,0,0],
+            [916, srcStock.yclose+0.01,0,0],
+            [917, srcStock.yclose+0.03,0,0],
+            [918, srcStock.yclose+0.02,0,0],
+            [919, srcStock.yclose+0.02,0,0],
+            [920, srcStock.yclose+0.01,0,0],
+            [921, srcStock.yclose,0,0],
+            [922, srcStock.yclose-0.02,0,0],
+            [923, srcStock.yclose-0.03,0,0],
+            [924, srcStock.yclose,0,0],
+            [925, srcStock.yclose,0,0],
+        ];
+
+        var beforeinfo={ totalcount:11, ver:1.0 };
+
+        stockItem.before=before;
+        stockItem.beforeinfo=beforeinfo;
+    }
+
+    var hqchartData={code:0, stock:[stockItem] };
+   
 
     callback(hqchartData);
 }
@@ -48773,12 +48798,44 @@ HQData.RequestMinuteDaysData=function(data, callback)
     data.PreventDefault=true;
     var symbol=data.Request.Data.symbol; //请求的股票代码
     var dayCount=data.Request.Data.daycount;
+    var callcation=data.Request.Data.callcation;        //集合竞价
   
     console.log(`[HQData::RequestMinuteDaysData] Symbol=${symbol}`);
     
-    var hqchartData=MINUTE_5DAY_DATA;
-    hqchartData.symbol=symbol;
-    hqchartData.name=symbol;
+    var hqchartData={code:0, data:[] };
+    hqchartData.symbol=MINUTE_5DAY_DATA.symbol;
+    hqchartData.name=MINUTE_5DAY_DATA.symbol;
+
+    for(var i=0;i<dayCount && i<MINUTE_5DAY_DATA.data.length;++i)
+    {
+        var item=MINUTE_5DAY_DATA.data[i];
+        var dayItem={minute:item.minute, yclose:item.yclose, date:item.date };
+        if (callcation.Before)
+        {
+            var before=
+            [
+                //[交易时间, 价格，成交量， 成交金额, 日期（可选，YYYYMMDD)],
+                [915, item.yclose,0,0],
+                [916, item.yclose+0.01,0,0],
+                [917, item.yclose+0.03,0,0],
+                [918, item.yclose+0.02,0,0],
+                [919, item.yclose+0.02,0,0],
+                [920, item.yclose+0.01,0,0],
+                [921, item.yclose,0,0],
+                [922, item.yclose-0.02,0,0],
+                [923, item.yclose-0.03,0,0],
+                [924, item.yclose,0,0],
+                [925, item.yclose,0,0],
+            ];
+
+            var beforeinfo={ totalcount:11, ver:1.0 };
+
+            dayItem.before=before;
+            dayItem.beforeinfo=beforeinfo;
+        }
+
+        hqchartData.data.push(dayItem);
+    }
    
     callback(hqchartData);
 }

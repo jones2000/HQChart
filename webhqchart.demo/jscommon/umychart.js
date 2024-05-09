@@ -9472,6 +9472,61 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
         this.PopupMenuByRClick(menuData, x, y);
     }
+
+    //指标窗口扩展图形
+    this.CreateChartPaintExtend=function(chart, windowIndex)
+    {
+        if (windowIndex<0) return false;
+        var subFrame=this.Frame.SubFrame[windowIndex];
+        if (!subFrame || !subFrame.Frame) return false;
+
+        var frame=subFrame.Frame;
+        chart.Canvas=this.Canvas;
+        chart.ChartBorder=frame.ChartBorder;
+        chart.ChartFrame=frame;
+       
+        this.ChartPaintEx.push(chart);
+
+        return true;
+    }
+
+    //删除指标窗口扩展图形 option={ ChartID:图形ID, WindowIndex:窗口 }
+    this.DeleteChartPaintExtend=function(option, bCallDestroy)
+    {
+        if (!option) return;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.ChartPaintEx)) return;
+       
+        if (IFrameSplitOperator.IsNumber(option.WindowIndex))
+        {
+            var windowIndex=option.WindowIndex;
+            if (!this.Frame.SubFrame[windowIndex]) return;
+            var subFrame=this.Frame.SubFrame[windowIndex].Frame;
+            if (!subFrame) return;
+
+            var paint=[];  //踢出当前窗口的指标画法
+            var deleteCount=0;
+            for(var i=0;i<this.ChartPaintEx.length; ++i)
+            {
+                var item=this.ChartPaintEx[i];
+                var bFind=(item.ChartFrame.Guid==subFrame.Guid || item.ChartFrame==subFrame);
+
+                if (!bFind)
+                {
+                    paint.push(item);
+                }
+                else
+                {
+                    ++deleteCount;
+                    if (bCallDestroy===true)
+                    {
+                        if (item && item.OnDestroy) item.OnDestroy();   //图形销毁
+                    }
+                }
+            }
+
+            if (deleteCount>0) this.ChartPaintEx=paint;
+        }
+    }
 }
 
 function GetDevicePixelRatio()
@@ -71322,6 +71377,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             for(var i=currentLength-1;i>=count;--i)
             {
                 this.DeleteIndexPaint(i);
+                this.DeleteChartPaintExtend({WindowIndex:i});
                 this.Frame.SubFrame[i].Frame.ClearToolbar();
                 if (event && event.Callback)
                 {
@@ -71637,6 +71693,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
         var delFrame=this.Frame.SubFrame[id].Frame;
         this.DeleteIndexPaint(id);
+        this.DeleteChartPaintExtend({WindowIndex:id});
         this.Frame.SubFrame[id].Frame.ClearToolbar();
 
         var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DELETE_FRAME);
@@ -75056,12 +75113,12 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
     this.IsShowBeforeData=false;              //是否显示盘前集合竞价数据 (当日)
     this.BeforeOpenData=null;                 //盘前集合竞价数据
-    this.IsBeforeData=false;                  //是否支持显示盘前集合竞价数据
+    this.IsBeforeData=false;                  //是否支持显示盘前集合竞价数据(当日)
 
     this.IsShowAfterData=false;               //收盘集合竞价
     this.AfterCloseData=null;                 //收盘集合竞价数据
-    this.IsAfterData=false;                   //是否支持显示收盘集合竞价数据
-    this.ShareAfterVol=0;              //1=盘后数据成交量Y坐标和主图共享 2=盘后数据成交量Y坐标和盘前共享
+    this.IsAfterData=false;                   //是否支持显示收盘集合竞价数据(当日)
+    this.ShareAfterVol=0;                     //1=盘后数据成交量Y坐标和主图共享 2=盘后数据成交量Y坐标和盘前共享
     this.ExtendWidth={ Left: 120, Right:120 } ;      //单日分时图 左右扩展图形宽度
     
     this.IsShowLead=true;                     //指数是否显示领先指标
@@ -75071,7 +75128,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
     this.IsShowMultiDayAfterData=false;             //多日分时图 是否显示收盘集合竞价
     this.MultiDayAfterCloseData=null;                //多日分时图 收盘集合竞价数据
 
-    this.MultiDayExtendWidth={ Left:20, Right:20 };   //多日分时图 左右扩展图形宽度
+    this.MultiDayExtendWidth={ Left:40, Right:20 };   //多日分时图 左右扩展图形宽度
 
     this.ChartDrawStorage=new ChartDrawStorage();
     this.ChartDrawStorageCache=null;         //首次需要创建的画图工具数据
@@ -77222,6 +77279,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             for(var i=currentLength-1;i>=count;--i)
             {
                 this.DeleteIndexPaint(i);
+                this.DeleteChartPaintExtend({WindowIndex:i});
                 var item=this.Frame.SubFrame[i].Frame;
                 if (item.ClearToolbar) item.ClearToolbar();
 
@@ -77461,6 +77519,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
         var delFrame=this.Frame.SubFrame[id].Frame;
         this.DeleteIndexPaint(id);
+        this.DeleteChartPaintExtend({WindowIndex:id});
         this.Frame.SubFrame[id].Frame.ClearToolbar();
 
         var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DELETE_FRAME);
@@ -78058,11 +78117,17 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
         if (this.NetworkFilter)
         {
+            var callCation=
+            { 
+                Before:this.IsShowMultiDayBeforeData , 
+                After:this.IsShowMultiDayAfterData
+            }   //集合竞价
+
             var obj=
             {
                 Name:'MinuteChartContainer::RequestHistoryMinuteData', //类名::函数
                 Explain:'多日分时数据',
-                Request:{ Url:self.HistoryMinuteApiUrl, Data:{daycount:self.DayCount, symbol:self.Symbol}, Type:'POST' }, 
+                Request:{ Url:self.HistoryMinuteApiUrl, Data:{daycount:self.DayCount, symbol:self.Symbol, callcation:callCation }, Type:'POST' }, 
                 Self:this,
                 PreventDefault:false
             };
@@ -78442,11 +78507,9 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                     dateRange=this.SourceData.GetDateRange();
             }
 
-            var callCation=
-            { 
-                Before:(this.IsShowBeforeData && this.DayCount===1), 
-                After:(this.IsShowAfterData && this.DayCount===1)
-            }   //集合竞价
+            var callCation={ Before:this.IsShowBeforeData, After:this.IsShowAfterData }   //集合竞价
+            if (this.DayCount>1) callCation={ Before:this.IsShowMultiDayBeforeData, After:this.IsShowMultiDayAfterData }   //多日集合竞价
+           
             var obj=
             {
                 Name:'MinuteChartContainer::RequestMinuteData', //类名::函数名

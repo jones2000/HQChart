@@ -6,8 +6,9 @@
 
 <title>仿通达信公式编辑器-分时图</title>  
     <!-- 加载资源 -->
-    <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
     <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/drawtool/iconfont.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
     <link rel="stylesheet" href="../jscommon/umychart.resource/js/codemirror/codemirror.css" />
 </head>  
 <body>
@@ -99,12 +100,19 @@
     <script src="../jscommon/umychart.complier.js"></script>    <!-- 麦语言解析执行器 -->
     <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
     <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+    <script src="../jscommon/umychart.popMenu.js"></script>
+    <script src="../jscommon/umychart.DialogDrawTool.js"></script>
 
      <!-- 公式编辑器 -->
     <script src="../jscommon/umychart.resource/js/codemirror/codemirror.js"></script>
     <script src="../jscommon/umychart.resource/js/codemirror/javascript.js"></script>
    
-    <script src="../jscommon/umychart.NetworkFilterTest.js"></script>
+
+    <script src="../jscommon/umychart.testdata/60000.sh.day.minute.js"></script>
+    <script src="../jscommon/umychart.testdata/60000.sh.5day.minute.js"></script>
+
+    <script src="../jscommon/umychart.testdata.js"></script>
+   
 
     <script>
 
@@ -152,8 +160,18 @@
                 
                 EnableSelectRect:true,
                 EnableZoomIndexWindow:true,
+
+                EnablePopMenuV2:true,
+                EnableDrawToolDialogV2:true,
+                EnableNewIndex:true,
                 
-                CorssCursorInfo:{  Left:1, Right:1, Bottom:1, IsFixXLastTime:true, RightButton:{ Enable:true } },
+                CorssCursorInfo:
+                {  
+                    Left:1, Right:1, Bottom:1, 
+                    IsFixXLastTime:true, 
+                    RightButton:{ Enable:true }, 
+                    //IsOnlyDrawMinute:true 
+                },
     
 
                 SelectRect:
@@ -201,7 +219,7 @@
                     Bottom:25,
 
                     AutoLeft:{ Blank:10, MinWidth:60 },
-                    AutoRight:{ Blank:10, MinWidth:130 },
+                    AutoRight:{ Blank:10, MinWidth:60 },
                 },
                 
                 Frame:  //子框架设置
@@ -252,6 +270,18 @@
                 this.Option.NetworkFilter=(data, callback)=>{ HQData.NetworkFilter(data, callback); }
                 this.Chart.SetOption(this.Option);  //设置K线配置
 
+                this.Chart.AddEventCallback(
+                    {
+                        event:JSCHART_EVENT_ID.ON_TITLE_DRAW, 
+                        callback:(event, data, obj)=>{ this.UpdateTitle(event, data, obj); }
+                    }
+                );
+
+            }
+
+            this.UpdateTitle=function(event, data, obj)
+            {
+                console.log("[KLineChart::UpdateTitle] ", data);
             }
 
             this.OnSize=function(option)  //自适应大小调整
