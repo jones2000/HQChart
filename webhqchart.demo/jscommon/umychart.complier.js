@@ -18812,15 +18812,9 @@ function JSExplainer(ast,option)
 
         if (g_JSComplierResource.IsCustomFunction(funcName))
         {
-            var data=this.Algorithm.CallCustomFunction(funcName, args, this.SymbolData, node);
-            node.Out=[];
-            node.Draw=null;
-
-            if (data)
-            {
-                if (data.Out) node.Out=data.Out;
-                if (data.Draw) node.Draw=data.Draw;
-            }
+            var functionInfo=g_JSComplierResource.CustomFunction.Data.get(funcName);
+            if (!functionInfo.Description) node.Out=`自定义函数${funcName}`;
+            else node.Out=functionInfo.Description;
 
             return node.Out;
         }
@@ -19439,7 +19433,12 @@ function JSExplainer(ast,option)
             return data;
         }
 
-        if (g_JSComplierResource.IsCustomVariant(name)) return this.ReadCustomVariant(name,node); //读取自定义变量
+        if (g_JSComplierResource.IsCustomVariant(name)) 
+        {
+            var variantInfo=g_JSComplierResource.CustomVariant.Data.get(name); //读取自定义变量
+            if (variantInfo.Description) return variantInfo.Description;
+            else return name;
+        }
 
         if (this.VarTable.has(name)) return this.VarTable.get(name);
 

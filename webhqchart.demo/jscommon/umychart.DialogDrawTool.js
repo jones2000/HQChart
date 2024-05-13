@@ -16,6 +16,7 @@ var JS_DRAWTOOL_MENU_ID=
     CMD_CHANGE_LINE_COLOR_ID:2,
     CMD_DELETE_ALL_DRAW_CHART_ID:3,
     CMD_ERASE_DRAW_CHART_ID:4,
+    CMD_ENABLE_MAGNET_ID:5,   //画图工具磁体功能
 };
 
 function JSDialogDrawTool()
@@ -105,6 +106,9 @@ function JSDialogDrawTool()
             Title:"文字",
             AryChart:
             [
+                { Title:"文字", ClassName: 'hqchart_drawtool icon-draw_text', Type:0, Data:{ ID:"文本" } },
+                { Title:"锚点文字", ClassName: 'hqchart_drawtool icon-maodianwenzi', Type:0, Data:{ ID:"AnchoredText"  } },
+                { Title:"注释", ClassName: 'hqchart_drawtool icon-maodian ', Type:0, Data:{ ID:"Note"} },
                 { Title: '价格标签', ClassName: 'hqchart_drawtool icon-Tooltip', Type:0, Data:{ ID:"PriceLabel" }  },
                 { Title: '价格注释', ClassName: 'hqchart_drawtool icon-tooltiptext', Type:0, Data:{ ID:"PriceNote" }  },
                 { Title: '向上箭头', ClassName: 'iconfont icon-arrow_up', Type:0, Data:{ ID:"icon-arrow_up" } }, 
@@ -123,6 +127,7 @@ function JSDialogDrawTool()
         [
             { Title:"选中", ClassName:'hqchart_drawtool icon-arrow', Type:1, Data:{ID:JS_DRAWTOOL_MENU_ID.CMD_SELECTED_ID} },
             { Title:'尺子', ClassName: 'hqchart_drawtool icon-ruler', Type:0, Data:{ ID:"尺子" } },
+            { Title:"磁铁", ClassName:'hqchart_drawtool icon-xifu', Type:2, Data:{ID:JS_DRAWTOOL_MENU_ID.CMD_ENABLE_MAGNET_ID} },
             { Title:"点击切换颜色", ClassName: 'hqchart_drawtool icon-fangkuai', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_CHANGE_LINE_COLOR_ID }},
             { Title:"擦除画线", ClassName: 'hqchart_drawtool icon-a-xiangpicachuxiangpica', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_ERASE_DRAW_CHART_ID }},
             { Title:"删除所有画线", ClassName: 'hqchart_drawtool icon-recycle_bin', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_DELETE_ALL_DRAW_CHART_ID }}
@@ -274,7 +279,12 @@ function JSDialogDrawTool()
             this.ClearCurrnetDrawPicture();
             this.EnableEraseChart(false);
         }
+        else if (type==2 && id==JS_DRAWTOOL_MENU_ID.CMD_ENABLE_MAGNET_ID)
+        {
+            this.ChangeMagnet(data);
+        }
         else if (type==0)
+    
         {
             this.ClearAllSelectedChart();
             this.EnableEraseChart(false);
@@ -290,6 +300,8 @@ function JSDialogDrawTool()
         for(var i=0;i<this.AryDivChart.length;++i)
         {
             var item=this.AryDivChart[i];
+            if (item.Item.Type==2) continue;
+
             item.Span.classList.remove("UMyChart_DrawTool_Span_Selected");
             item.Span.classList.add("UMyChart_DrawTool_Span");
         }
@@ -400,6 +412,31 @@ function JSDialogDrawTool()
         this.HQChart.EnableEraseChartDrawPicture=enable;
 
         this.SetEraseChartButtonStatus(enable);
+    }
+
+    this.ChangeMagnet=function(data)
+    {
+        if (!this.HQChart) return;
+
+        var enable=true;
+        if (this.HQChart.ChartDrawOption.Magnet)
+        {
+            var item=this.HQChart.ChartDrawOption.Magnet;
+            var enable=!item.Enable;
+        }
+
+        if (enable) 
+        {
+            this.HQChart.SetChartDrawOption({ Magnet:{ Enable:enable, Type:0 }});
+            data.Span.classList.remove("UMyChart_DrawTool_Span");
+            data.Span.classList.add("UMyChart_DrawTool_Span_Selected");
+        }
+        else 
+        {
+            this.HQChart.SetChartDrawOption({ Magnet:{ Enable:false }});
+            data.Span.classList.remove("UMyChart_DrawTool_Span_Selected");
+            data.Span.classList.add("UMyChart_DrawTool_Span");
+        }
     }
 
     this.CreateDrawPicture=function(data)

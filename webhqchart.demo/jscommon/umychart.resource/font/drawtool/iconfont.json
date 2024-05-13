@@ -6,6 +6,27 @@
   "description": "hqchart画图工具",
   "glyphs": [
     {
+      "icon_id": "13135882",
+      "name": "吸附",
+      "font_class": "xifu",
+      "unicode": "e71b",
+      "unicode_decimal": 59163
+    },
+    {
+      "icon_id": "5673904",
+      "name": "锚点文字",
+      "font_class": "maodianwenzi",
+      "unicode": "e62e",
+      "unicode_decimal": 58926
+    },
+    {
+      "icon_id": "11083005",
+      "name": "锚点",
+      "font_class": "maodian",
+      "unicode": "e6db",
+      "unicode_decimal": 59099
+    },
+    {
       "icon_id": "5672309",
       "name": "斐波那契速度阻力扇",
       "font_class": "feibonaqisuduzulishan",
