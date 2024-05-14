@@ -206,7 +206,7 @@
 
                 Symbol:"600000.sh",
                 IsAutoUpdate:true,       //是自动更新数据
-                AutoUpdateFrequency:500,   //数据更新频率
+                AutoUpdateFrequency:3000,   //数据更新频率
                 //TradeIndex: {Index:'交易系统-BIAS'},    //交易系统
 
                 SplashTitle:'加载数据中......',
@@ -393,6 +393,10 @@
                         callback:(event, data, obj)=>{ this.OnSplitYCoordinate(event, data, obj); }
                     },
                     {
+                        event:JSCHART_EVENT_ID.ON_SPLIT_XCOORDINATE, 
+                        callback:(event, data, obj)=>{ this.OnSplitXCoordinate(event, data, obj); }
+                    },
+                    {
                         event:JSCHART_EVENT_ID.ON_CREATE_OVERLAY_FRAME, 
                         callback:(event, data, obj)=>{ this.OnCreateOverlayFrame(event, data, obj); }
                     },
@@ -450,10 +454,39 @@
                     case 'JSSymbolData::GetSymbolData':                 //分时图数据对接
                         this.GetSymbolData(data, callback);
                         break;
+                    case "APIScriptIndex::ExecuteScript":
+                        this.GetAPIIndexData(data, callback);
+                        break;
                     default:
                         HQData.NetworkFilter(data, callback);
                         break;
                 }
+            }
+
+            this.GetAPIIndexData=function(data, callback)
+            {
+                data.PreventDefault=true;
+                var request=data.Request;
+                if (request.Data.indexname=='CLOSE_LINE')
+                    this.GetAPIIndx_CLOSE_LINE(data, callback)
+            }
+
+            this.GetAPIIndx_CLOSE_LINE=function(data, callback)
+            {
+                var hqchart=data.HQChart;
+                var kData=hqchart.ChartPaint[0].Data;
+
+                var closeLine={ name:'价', type:0, data:kData.GetClose() };
+
+                var apiData=
+                {
+                    code:0, 
+                    stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+                    outdata: { date:kData.GetDate() ,time:kData.GetTime(), outvar:[closeLine] } 
+                };
+               
+                console.log('[KLineChart::GetAPIIndx_CLOSE_LINE] apiData ', apiData);
+                callback(apiData);
             }
 
             this.GetSymbolData=function(data, callback)
@@ -583,31 +616,42 @@
                
             }
 
+            this.OnSplitXCoordinate=function(event, data, obj)
+            {
+                console.log("[OnSplitXCoordinate] data ", data);
+            }
+
             this.OnCreateCustomYCoordinate=function(event, data ,obj)
             {
                 console.log("[OnCreateCustomYCoordinate] data ", data);
                 if (data.ID==0)
                 {
+                    var info=new CoordinateInfo();
+                    info.Type=5;
+                    info.Value=7;
+                    //info.Message=["40%", "40%"]
+                    info.AreaData={  Value:[6.0, 7.0], BGColor:"rgba(249,210,88,0.5)", Position:[0, 1 ] }
+                    data.Frame.CustomHorizontalInfo.push(info);
                     
                     var info=new CoordinateInfo();
                     info.Type=5;
-                    info.Value=7.5;
+                    info.Value=8;
                     //info.Message=["40%", "40%"]
-                    info.AreaData={  Value:[7.0, 8.0], BGColor:"rgba(65,105,225,0.5)", Position:[0, 1 ] }
+                    info.AreaData={  Value:[7.0, 8.0], BGColor:"rgba(93,202,119,0.5)", Position:[0, 1 ] }
                     data.Frame.CustomHorizontalInfo.push(info);
 
                     var info=new CoordinateInfo();
                     info.Type=5;
-                    info.Value=8.5;
+                    info.Value=9;
                     //info.Message=["60%", "60%"]
-                    info.AreaData={  Value:[8.0, 9.0], BGColor:"rgba(139,0,139,0.5)", Position:[0, 1 ] }
+                    info.AreaData={  Value:[8.0, 9.0], BGColor:"rgba(43,190,174,0.5)", Position:[0, 1 ] }
                     data.Frame.CustomHorizontalInfo.push(info);
 
                     var info=new CoordinateInfo();
                     info.Type=5;
-                    info.Value=8.5;
+                    info.Value=10;
                     //info.Message=["60%", "60%"]
-                    info.AreaData={  Value:[9.0, 10.0], BGColor:"rgba(84, 255, 159,0.5)", Position:[0, 1 ] }
+                    info.AreaData={  Value:[9.0, 10.0], BGColor:"rgba(125, 212, 251,0.5)", Position:[0, 1 ] }
                     data.Frame.CustomHorizontalInfo.push(info);
                     
                 }
@@ -1247,7 +1291,7 @@
                 var item={ Name:"自定义菜单项", Data:{ ID:"CUSTOM_MENU_1_ID", Args:[1] } };
                 data.MenuData.Menu.push( { Name:JSPopMenu.SEPARATOR_LINE_NAME });
                 data.MenuData.Menu.push(item);
-                
+                var frameID=data.FrameID;
                 for(var i=0;i<data.MenuData.Menu.length;++i)
                 {
                     var item=data.MenuData.Menu[i];
@@ -1264,6 +1308,17 @@
                                 break;
                             }
                         }
+                    }
+                    else if (item.Name=="指标切换")
+                    {
+                        item.SubMenu.push({ Name:JSPopMenu.SEPARATOR_LINE_NAME });
+                        var indexInfo={ API: { ID:"CLOSE_LINE", Name:'收盘线(后台指标)',Args:null, Url:'local'} };
+                        var newItem={ Name:indexInfo.API.Name, Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_API_INDEX_ID, Args:[frameID, indexInfo]}};
+                        item.SubMenu.push(newItem);
+
+                        var indexInfo={ Name:"高低均价(自定义脚本)", ID:"HIGH_LOW_AV", Script:"均价:(H+L)/2;高:H;低:L;" };
+                        var newItem={ Name:indexInfo.Name, Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_SCRIPT_INDEX_ID, Args:[frameID, indexInfo]}};
+                        item.SubMenu.push(newItem);
                     }
                 }
                 
@@ -1349,11 +1404,13 @@
 
             $("#style_black").click(function(){ klineControl.ChangeStyle('black') })
             $("#style_white").click(function(){ klineControl.ChangeStyle('white'); })
-            
-
 
             DeleteLocalIndex=(e, name)=>{ klineControl.DeleteLocalIndex(e, name); }
             SelectLocalIndex=(e, name)=> { klineControl.SelectLocalIndex(e, name); }
+
+
+            JSComplier.AddFunction({ Name:'FUNC_DEMO',   Description:'自定义函数1', IsDownload:false } );
+            JSComplier.AddVariant({ Name:'VAR_DEMO',   Description:'自定义变量1' } );
 
         })
 

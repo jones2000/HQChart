@@ -201,6 +201,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![信息标识](/小程序行情模块用例/image/hqchart_minute_info.png)   
 [https://jones2000.github.io/HQChart/webhqchart.demo/samples/minute_mines.html](https://jones2000.github.io/HQChart/webhqchart.demo/samples/minute_mines.html)   
 * 支持涨停坐标 <br>
+* 支持美股盘前,盘中,盘后,全部全部行情展示   
+![美股](/小程序行情模块用例/image/minute_usa.gif)
 
 # 3. 其他图形
 * 成交明细表, 支持键盘,滚轴翻页<br>
@@ -335,7 +337,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 37. [HQChart使用教程43-日K线设置拖拽自动下载历史数据](https://blog.csdn.net/jones2000/article/details/102511317) <br>
 38. [HQChart使用教程45-如何动态修改指标参数](https://blog.csdn.net/jones2000/article/details/102594672) <br>
 39. [HQChart使用教程46-分钟周期数据计算外部接口](https://blog.csdn.net/jones2000/article/details/102628045) <br>
-40. [HQChart使用教程47-如何自定义右键菜单](https://blog.csdn.net/jones2000/article/details/102720671) <br>
+40. ~~[HQChart使用教程47-如何自定义右键菜单](https://blog.csdn.net/jones2000/article/details/102720671)~~  
 41. [HQChart使用教程48-如何自定义X轴刻度](https://blog.csdn.net/jones2000/article/details/102741428) <br>
 42. [HQChart使用教程49-指标配置项说明](https://blog.csdn.net/jones2000/article/details/102928907) <br>
 43. [HQChart使用教程50-Y轴自定义刻度设置说明](https://blog.csdn.net/jones2000/article/details/103174483) <br>
@@ -383,6 +385,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 85. [HQChart使用教程94-如何创建报价列表](https://blog.csdn.net/jones2000/article/details/124544643)<br>
 86. [HQChart使用教程96-指标图形双击](https://blog.csdn.net/jones2000/article/details/125735141)<br>
 87. [HQChart使用教程97-K线X轴滚动条](https://jones2000.blog.csdn.net/article/details/134133670)   
+88. [HQChart使用教程98-右键菜单2.0使用介绍](https://blog.csdn.net/jones2000/article/details/138841350)   
 
 ##  微信小程序教程
 1. [HQChart小程序教程1-如何快速的创建一个K线图](https://developers.weixin.qq.com/community/develop/article/doc/0006c451ac81589915b89d1c55bc13) <br>
@@ -558,6 +561,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 13. [HQChart实战教程68-自定义分时图PC端tooltip显示数据](https://blog.csdn.net/jones2000/article/details/134182120)    
 14. [HQChart实战教程69-分时图主图如何设置指标](https://jones2000.blog.csdn.net/article/details/136160187)   
 15. [HQChart实战教程70-K线图增加成本线](https://jones2000.blog.csdn.net/article/details/136687070)   
+16. [HQChart实战教程72-美股盘前,盘中,盘后分时图](https://blog.csdn.net/jones2000/article/details/138870447)   
 
 ## HQChart报价列表高级应用教程(付费文章)
 1. [HQChart报价列表高级应用教程1-雪球数据对接报价列表](https://blog.csdn.net/jones2000/article/details/124759574)<br>
