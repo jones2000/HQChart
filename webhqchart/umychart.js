@@ -2677,6 +2677,8 @@ var JSCHART_MENU_ID=
     CMD_ENABLE_OVERLAY_SHARE_Y_ID:31,   //和主图指标共享Y轴坐标
 
     CMD_CHANGE_DEFAULTCURSOR_ID:32,     //修改鼠标形状
+    CMD_CHANGE_API_INDEX_ID:33,         //切换后台接口指标
+    CMD_CHANGE_SCRIPT_INDEX_ID:34,      //切换成自定义的脚本指标
 }
 
 
@@ -9197,6 +9199,14 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             case JSCHART_MENU_ID.CMD_CHANGE_INDEX_ID:
                 if (this.ChangeIndex && param!=null && aryArgs[1]) 
                     this.ChangeIndex(param,aryArgs[1]);
+                break;
+            case JSCHART_MENU_ID.CMD_CHANGE_API_INDEX_ID:
+                if (this.ChangeAPIIndex && param!=null && aryArgs[1]) 
+                    this.ChangeAPIIndex(param, aryArgs[1]);
+                break;
+            case JSCHART_MENU_ID.CMD_CHANGE_SCRIPT_INDEX_ID:
+                if (this.ChangeScriptIndex && param!=null && aryArgs[1]) 
+                    this.ChangeScriptIndex(param,aryArgs[1],aryArgs[2]);
                 break;
 
             case JSCHART_MENU_ID.CMD_CHANGE_COLOR_INDEX_ID:
