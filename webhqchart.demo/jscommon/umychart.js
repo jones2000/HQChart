@@ -55550,6 +55550,7 @@ IChartDrawPicture.ArrayDrawPricture=
     { Name:"标价线", ClassName:"ChartDrawPriceLine", Create:function() { return new ChartDrawPriceLine(); } },
     { Name:"标价线2", ClassName:"ChartDrawPriceLineV2", Create:function() { return new ChartDrawPriceLineV2(); } },
     { Name:"垂直线", ClassName:"ChartDrawVerticalLine", Create:function() { return new ChartDrawVerticalLine(); } },
+    { Name:"十字线", ClassName:"ChartDrawCrosshair", Create:function() { return new ChartDrawCrosshair(); } },
     { Name:"波浪尺", ClassName:"ChartDrawWaveRuler", Create:function() { return new ChartDrawWaveRuler(); } },
     { Name:"AB波浪尺", ClassName:"ChartDrawWaveRuler2Point", Create:function() { return new ChartDrawWaveRuler2Point(); } },
     { Name:"箱型线", ClassName:"ChartDrawBox", Create:function() { return new ChartDrawBox(); } },
@@ -60273,6 +60274,7 @@ function ChartDrawVerticalLine()
     this.PointCount=1;
     this.IsPointIn=this.IsPointIn_XYValue_Line;
     this.IsHScreen=false;
+    this.GetXYCoordinate=this.GetXYCoordinate_default;
 
     this.Draw=function()
     {
@@ -60327,6 +60329,96 @@ function ChartDrawVerticalLine()
 
         var line={Start:ptStart, End:ptEnd};
         this.LinePoint.push(line);
+        
+        if (this.Status==10) this.DrawPoint(drawPoint);  //画点 
+        this.Canvas.restore();
+    }
+}
+
+//画图工具-十字线 支持横屏
+function ChartDrawCrosshair()
+{
+    this.newMethod=IChartDrawPicture;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartDrawCrosshair';
+    this.PointCount=1;
+    this.IsPointIn=this.IsPointIn_XYValue_Line;
+    this.IsHScreen=false;
+    this.GetXYCoordinate=this.GetXYCoordinate_default;
+
+    this.Draw=function()
+    {
+        this.LinePoint=[];
+        if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
+
+        if (!this.Frame || !this.Frame.Data) return;
+        var data=this.Frame.Data;
+        var drawPoint=this.CalculateDrawPoint( { IsCheckX:false, IsCheckY:false } );
+        if (!drawPoint) return;
+        if (drawPoint.length!=1) return;
+
+        this.IsHScreen=this.Frame.IsHScreen;
+        var pt=drawPoint[0];
+
+        var chartBorder=this.Frame.ChartBorder;
+        var border=this.Frame.GetBorder();
+        if (this.IsHScreen)
+        {
+            var xValue=Math.round(this.Frame.GetXData(pt.Y,false))+data.DataOffset;
+            if (xValue<0) xValue=0;
+            else if (xValue>=data.Data.length) xValue=data.Data.length-1;
+            var yLine=this.Frame.GetXFromIndex(xValue-data.DataOffset,false);
+            yLine=ToFixedPoint2(this.LineWidth,yLine);
+            var xLine=ToFixedPoint2(this.LineWidth,pt.X);
+            var left=border.LeftEx
+            var right=border.RightEx
+            var top=border.Top;
+            var bottom=border.Bottom;
+            var ptStart={ X:left, Y:yLine };
+            var ptEnd={ X:right, Y:yLine };
+
+            var ptStart2={ X:xLine, Y:top };
+            var ptEnd2={ X:xLine, Y:bottom };
+        }
+        else
+        {
+            var xValue=Math.round(this.Frame.GetXData(pt.X,false))+data.DataOffset;
+            if (xValue<0) xValue=0;
+            else if (xValue>=data.Data.length) xValue=data.Data.length-1;
+            var xLine=this.Frame.GetXFromIndex(xValue-data.DataOffset,false);
+            xLine=ToFixedPoint2(this.LineWidth,xLine);
+            var yLine=ToFixedPoint2(this.LineWidth, pt.Y);
+            var top=border.TopEx;
+            var bottom=border.BottomEx;
+            var left=border.Left;
+            var right=border.Right;
+            var ptStart={ X:xLine, Y:top };
+            var ptEnd={ X:xLine, Y:bottom };
+
+            var ptStart2={ X:left, Y:yLine };
+            var ptEnd2={ X:right, Y:yLine };
+        }
+        
+        this.ClipFrame();
+       
+        this.SetLineWidth();
+        this.Canvas.strokeStyle=this.LineColor;
+        this.Canvas.beginPath();
+        this.Canvas.moveTo(ptStart.X,ptStart.Y);
+        this.Canvas.lineTo(ptEnd.X,ptEnd.Y);
+
+        this.Canvas.moveTo(ptStart2.X, ptStart2.Y);
+        this.Canvas.lineTo(ptEnd2.X,ptEnd2.Y);
+        this.Canvas.stroke();
+        this.RestoreLineWidth();
+
+        var line={Start:ptStart, End:ptEnd};
+        var line2={Start:ptStart2, End:ptEnd2};
+        this.LinePoint.push(line);
+        this.LinePoint.push(line2);
         
         if (this.Status==10) this.DrawPoint(drawPoint);  //画点 
         this.Canvas.restore();
@@ -73210,8 +73302,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                 Name:"主图线型", 
                 SubMenu:
                 [
-                    { Name:"K线(空心阳线)", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_KLINE_TYPE_ID, Args:[3]}, Checked:klineType==0 },
-                    { Name:"K线(实心阳线)", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_KLINE_TYPE_ID, Args:[0]}, Checked:klineType==3 },
+                    { Name:"K线(空心阳线)", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_KLINE_TYPE_ID, Args:[3]}, Checked:klineType==3 },
+                    { Name:"K线(实心阳线)", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_KLINE_TYPE_ID, Args:[0]}, Checked:klineType==0 },
                     { Name:"美国线", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_KLINE_TYPE_ID, Args:[2, true, { IsThinAKBar:false }]}, Checked:(klineType==2&&!bThinAKBar) },
                     { Name:"美国线(细)", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_KLINE_TYPE_ID, Args:[2, true, { IsThinAKBar:true }]}, Checked:(klineType==2&&bThinAKBar) },
                     { Name:"收盘线", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_KLINE_TYPE_ID, Args:[1]}, Checked:klineType==1},
@@ -80429,7 +80521,25 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
         if (border.DayBorder)
         {
+            var dayIndex=-1;
+            for(var i=0;i<this.DayData.length;++i)
+            {
+                var dayItem=this.DayData[i];
+                if (dayItem.Date==item.Date)
+                {
+                    dayIndex=this.DayData.length-1-i;
+                    break;
+                }
+            }
 
+            if (dayIndex<0) return;
+
+            var item=border.DayBorder[dayIndex];
+            if (!item) return;
+
+            rtSelected={ Left:item.LeftEx, Right:item.RightEx, Top:border.Bottom, Bottom:border.ChartHeight };
+            rtSelected.Width=rtSelected.Right-rtSelected.Left;
+            rtSelected.Height=rtSelected.Bottom-rtSelected.Top;
         }
         else
         {
@@ -80469,7 +80579,18 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
         if (border.DayBorder)
         {
+            for(var i=0;i<border.DayBorder.length;++i)
+            {
+                var item=border.DayBorder[i];
+                var rtDay={ Left:item.LeftEx, Right:item.RightEx };
+                if (x>=rtDay.Left && x<=rtDay.Right)
+                {
+                    var dayItem=this.DayData[this.DayData.length-1-i];
+                    if (!dayItem) return null;
 
+                    return dayItem.Date;
+                }
+            }
         }
         else
         {
@@ -87995,7 +88116,8 @@ function MinuteTimeStringData()
         return this.Futures.get(splitData.Name);
     }
 
-    this.GetUSA=function()
+    // type=时间类型 
+    this.GetUSA=function(upperSymbol)
     {
         if (!this.USA) this.USA=this.CreateUSAData(0);
         return this.USA;
@@ -88216,7 +88338,7 @@ function MinuteTimeStringData()
         if (MARKET_SUFFIX_NAME.IsHK(upperSymbol)) return this.GetHK(upperSymbol);
         if (MARKET_SUFFIX_NAME.IsTW(upperSymbol)) return this.GetTW(upperSymbol);
         if (MARKET_SUFFIX_NAME.IsJP(upperSymbol)) return this.GetJP(upperSymbol);
-        if (MARKET_SUFFIX_NAME.IsUSA(upperSymbol)) return this.GetUSA(true);
+        if (MARKET_SUFFIX_NAME.IsUSA(upperSymbol)) return this.GetUSA(upperSymbol);
         if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsSHFE(upperSymbol) || MARKET_SUFFIX_NAME.IsGZFE(upperSymbol))
         {
             var splitData = g_FuturesTimeData.GetSplitData(upperSymbol);

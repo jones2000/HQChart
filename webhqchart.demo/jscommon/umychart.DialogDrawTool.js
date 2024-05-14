@@ -31,6 +31,7 @@ function JSDialogDrawTool()
                 { Title: '射线', ClassName: 'hqchart_drawtool icon-draw_rays', Type:0, Data:{ ID:"射线" } },
                 { Title: '标价线', ClassName: 'hqchart_drawtool icon-price_line', Type:0, Data:{ ID:"标价线" } },
                 { Title: '垂直线', ClassName: 'hqchart_drawtool icon-vertical_line', Type:0, Data:{ ID:"垂直线" } },
+                { Title: '十字线', ClassName: 'hqchart_drawtool icon-tubiao_shizixian', Type:0, Data:{ ID:"十字线" } },
                 { Title: '箭头', ClassName: 'hqchart_drawtool icon-draw_rays', Type:0, Data:{ ID:"箭头" } },
                 { Title: '趋势线', ClassName: 'hqchart_drawtool icon-draw_trendline', Type:0, Data:{ ID:"趋势线" } },
                 { Title: '水平线', ClassName: 'hqchart_drawtool icon-draw_hline', Type:0, Data:{ ID:"水平线" } },

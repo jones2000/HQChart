@@ -6,6 +6,13 @@
   "description": "hqchart画图工具",
   "glyphs": [
     {
+      "icon_id": "37944385",
+      "name": "图标_十字线",
+      "font_class": "tubiao_shizixian",
+      "unicode": "e79d",
+      "unicode_decimal": 59293
+    },
+    {
       "icon_id": "13135882",
       "name": "吸附",
       "font_class": "xifu",
