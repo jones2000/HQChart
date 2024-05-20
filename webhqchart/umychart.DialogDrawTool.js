@@ -17,6 +17,10 @@ var JS_DRAWTOOL_MENU_ID=
     CMD_DELETE_ALL_DRAW_CHART_ID:3,
     CMD_ERASE_DRAW_CHART_ID:4,
     CMD_ENABLE_MAGNET_ID:5,   //画图工具磁体功能
+    CMD_DELETE_DRAW_CHART_ID:6,
+
+    CMD_CHANGE_FONT_COLOR_ID:7, //切换字体颜色
+    CMD_CHANGE_BG_COLOR_ID:8    //切换背景色
 };
 
 function JSDialogDrawTool()
@@ -101,6 +105,7 @@ function JSDialogDrawTool()
             [
                 { Title: '价格范围', ClassName: 'hqchart_drawtool icon-shijianfanwei', Type:0, Data:{ ID:"PriceRange" }  },
                 { Title: '时间范围', ClassName: 'hqchart_drawtool icon-jiagefanwei', Type:0, Data:{ ID:"DateRange" }  },
+                { Title: "监测线", ClassName:"hqchart_drawtool icon-jiance", Type:0, Data:{ ID:"MonitorLine"} },
             ]
         },
         {
@@ -448,7 +453,7 @@ function JSDialogDrawTool()
         { 
             LineColor:this.LineColor,   //线段颜色
             LineWidth:this.LineWidth,   //线段宽度
-            //PointColor:'rgba(255,130,71,0.5)'    //点颜色
+            PointColor:this.LineColor    //点颜色
         };
 
         var name=data.Item.Data.ID;
@@ -518,8 +523,318 @@ function JSDialogDrawTool()
         if ((right+5)>=window.innerWidth) left=window.innerWidth-this.DivDialog.offsetWidth-5;
         if ((bottom+5)>=window.innerHeight) top=window.innerHeight-this.DivDialog.offsetHeight-5;
 
+        this.DivDialog.style.left = left + 'px';
+        this.DivDialog.style.top = top + 'px';
+
+        if(e.preventDefault) e.preventDefault();
+    }
+
+    this.DocOnMouseUpTitle=function(e)
+    {
+        this.DragTitle=null;
+        this.onmousemove = null;
+        this.onmouseup = null;
+    }
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////
+// 修改画图工具
+//
+//
+////////////////////////////////////////////////////////////////////////////////////
+function JSDialogModifyDraw()
+{
+    this.DivDialog=null;
+    this.HQChart;
+    this.ChartPicture;
+    //按钮
+    this.ColorButton=null;
+    this.BGColorButton=null;
+    this.FontColorButton=null;
+
+    this.RandomLineColor=["rgb(255,69,0)", "rgb(173,255,47)", "rgb(238,154,73)", "rgb(255,105,180)"];               //线段颜色
+    this.RandomBGColor=["rgba(210,251,209，0.8)", "rgb(217,217,253)", "rgb(255,208,204)", "rgb(252,249,206)"];      //背景颜色
+    this.RandomFontColor=["rgb(0,0,0)", "rgb(255, 0, 0)", "rgb(20, 255, 0)", "rgb(255, 0, 255)"];                   //文字颜色
+
+    this.AryButton=
+    [
+        { Title:"点击线段颜色", ClassName: 'hqchart_drawtool icon-huabi', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_CHANGE_LINE_COLOR_ID }},
+        { Title:"点击字体颜色", ClassName: 'hqchart_drawtool icon-zitiyanse', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_CHANGE_FONT_COLOR_ID }},
+        { Title:"点击背景色", ClassName: 'hqchart_drawtool icon-zitibeijingse', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_CHANGE_BG_COLOR_ID }},
+        { Title:"删除", ClassName: 'hqchart_drawtool icon-recycle_bin', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_DELETE_DRAW_CHART_ID }}
+    ];
+   
+    this.Inital=function(hqchart)
+    {
+       this.HQChart=hqchart;
+    }
+
+    this.Destroy=function()
+    {
+        this.ChartPicture=null;
+        this.ColorButton=null;
+        if (this.DivDialog)
+        {
+            document.body.remove(this.DivDialog);
+            this.DivDialog=null;
+        }
+    }
+
+    this.Create=function()
+    {
+        var divDom=document.createElement("div");
+        divDom.className='UMyChart_Draw_Modify_Dialog_Div';
+
+        var drgDiv=document.createElement("div");
+        drgDiv.className="UMyChart_Draw_Modify_Dialog_Drag_Div";
+        drgDiv.onmousedown=(e)=>{ this.OnMouseDownTitle(e); }
+        divDom.appendChild(drgDiv);
+
+        var spanDom=document.createElement("span");
+        spanDom.className="hqchart_drawtool icon-tuodong";
+        spanDom.classList.add("UMyChart_DrawTool_Span");
+        drgDiv.appendChild(spanDom);
+
+        for(var i=0;i<this.AryButton.length;++i)
+        {
+            var item=this.AryButton[i];
+            this.CreateButtonItem(item, divDom);
+        }
+
+        this.DivDialog=divDom;
+        document.body.appendChild(divDom);
+    }
+
+    this.CreateButtonItem=function(item, parentDivDom)
+    {
+        var divItem=document.createElement("div");
+        divItem.className="UMyChart_Draw_Modify_Dialog_Button_Div";
+        var spanDom=document.createElement("span");
+        spanDom.className=item.ClassName;
+        spanDom.classList.add("UMyChart_DrawTool_Span");
+        divItem.appendChild(spanDom);
+
+        var data={ Div:divItem, Span:spanDom, Parent:parentDivDom, Item:item };
+        divItem.onmousedown=(e)=> { this.OnClickButton(e, data); };   //点击
+
+        switch(item.Data.ID)
+        {
+            case JS_DRAWTOOL_MENU_ID.CMD_CHANGE_LINE_COLOR_ID:
+                this.ColorButton=data;
+                break;
+            case JS_DRAWTOOL_MENU_ID.CMD_CHANGE_BG_COLOR_ID:
+                this.BGColorButton=data;
+                divItem.style.display="none";
+                break;
+            case JS_DRAWTOOL_MENU_ID.CMD_CHANGE_FONT_COLOR_ID:
+                this.FontColorButton=data;
+                divItem.style.display="none";
+                break;
+        }
+
+        parentDivDom.appendChild(divItem);
+    }
+
+    this.OnClickButton=function(e, data)
+    {
+        console.log('[JSDialogModifyDraw::OnClickButton] ', data);
+        if (!data.Item || !data.Item.Data) return;
+
+        var id=data.Item.Data.ID;
+        switch(id)
+        {
+            case JS_DRAWTOOL_MENU_ID.CMD_CHANGE_LINE_COLOR_ID:
+                this.ModifyLineColor();
+                break;
+            case JS_DRAWTOOL_MENU_ID.CMD_DELETE_DRAW_CHART_ID:
+                this.DeleteDrawPicture();
+                break;
+            case JS_DRAWTOOL_MENU_ID.CMD_CHANGE_BG_COLOR_ID:
+                this.ModifyBGColor();
+                break;
+            case JS_DRAWTOOL_MENU_ID.CMD_CHANGE_FONT_COLOR_ID:
+                this.ModifyFontColor();
+                break;
+        }
+    }
+
+    this.Close=function(e)
+    {
+        if (!this.DivDialog) return;
+
+        this.ChartPicture=null;
+        this.DivDialog.style.visibility='hidden';
+    }
+
+    this.IsShow=function()
+    {
+        if (!this.DivDialog) return false;
+        return this.DivDialog.style.visibility==='visible';
+    }
+
+    this.DeleteDrawPicture=function()
+    {
+        if (this.ChartPicture && this.HQChart)
+        {
+            this.HQChart.ClearChartDrawPicture(this.ChartPicture);
+        }
+
+        this.Close();
+    }
+
+    this.ShowButton=function(dom, diaplay)
+    {
+        if (dom.style.display==diaplay) return;
+        dom.style.display=diaplay;
+    }
+
+    this.GetRandomColor=function(currentColor, randomLineColor)
+    {
+        var colorIndex=0;
+        for(var i=0;i<randomLineColor.length;++i)
+        {
+            if (currentColor==randomLineColor[i]) 
+            {
+                colorIndex=i+1;
+                break;
+            }
+        }
+
+        colorIndex=colorIndex%randomLineColor.length;
+        var color=randomLineColor[colorIndex];
+
+        return color;
+    }
+
+    this.ModifyLineColor=function()
+    {
+        if (!this.ChartPicture || !this.HQChart) return;
+
+        var color=this.GetRandomColor(this.ChartPicture.LineColor, this.RandomLineColor);
+
+        this.ChartPicture.LineColor = color;
+        this.ChartPicture.PointColor = color;
+
+        if (this.ColorButton) this.ColorButton.Span.style['color']=color;
+
+        if (this.HQChart.ChartDrawStorage) this.HQChart.ChartDrawStorage.SaveDrawData(this.ChartPicture);   //保存下
+
+        this.HQChart.Draw();
+    }
+
+    this.ModifyFontColor=function()
+    {
+        if (!this.ChartPicture || !this.HQChart) return;
+
+        var color=this.GetRandomColor(this.ChartPicture.TextColor, this.RandomFontColor);
+        this.ChartPicture.TextColor=color;
+
+        if (this.FontColorButton) this.FontColorButton.Span.style['color']=color;
+
+        if (this.HQChart.ChartDrawStorage) this.HQChart.ChartDrawStorage.SaveDrawData(this.ChartPicture);   //保存下
+
+        this.HQChart.Draw();
+    }
+
+    this.ModifyBGColor=function()
+    {
+        if (!this.ChartPicture || !this.HQChart) return;
+        var color=this.GetRandomColor(this.ChartPicture.BGColor, this.RandomBGColor);
+
+        this.ChartPicture.BGColor=color;
+        if (this.BGColorButton) this.BGColorButton.Span.style['color']=color;
+        if (this.HQChart.ChartDrawStorage) this.HQChart.ChartDrawStorage.SaveDrawData(this.ChartPicture);   //保存下
+
+        this.HQChart.Draw();
+    }
+
+    this.Show=function(x, y)
+    {
+        if (!this.DivDialog) this.Create();
+
+        this.DivDialog.style.visibility='visible';
+        this.DivDialog.style.top = y + "px";
+        this.DivDialog.style.left = x + "px";
+    }
+
+    this.SetChartPicture=function(chart)
+    {
+        this.ChartPicture=chart;
+
+        var bShowLineColor=true, bShowBGColor=false, bShowFontColor=false;
+        var bgColor=null, fontColor=null;
+        var ARRAY_TEXT_CHART=['ChartDrawPriceLabel', "ChartDrawAnchoredText","ChartDrawPriceNote","ChartDrawNote"];
+        if (ARRAY_TEXT_CHART.includes(chart.ClassName))
+        {
+            bShowBGColor=true;
+            bShowFontColor=true;
+            bgColor=chart.BGColor;
+            fontColor=chart.TextColor;
+        }
+        
+        if (this.ColorButton)
+        {
+            var item=this.ColorButton;
+            this.ShowButton(item.Div, bShowLineColor?"block":"none");
+            if (bShowLineColor)
+            {
+                item.Span.style['color']=chart.LineColor;
+            }
+        }
+
+        if (this.BGColorButton)
+        {
+            var item=this.BGColorButton;
+            this.ShowButton(item.Div, bShowBGColor?"block":"none");
+            if (bShowBGColor)
+            {
+                item.Span.style['color']=bgColor;
+            }
+        }
+
+        if (this.FontColorButton)
+        {
+            var item=this.FontColorButton;
+            this.ShowButton(item.Div, bShowFontColor?"block":"none");
+            if (bShowFontColor)
+            {
+                item.Span.style['color']=fontColor;
+            }
+        }
+        
+    }
+
+    this.OnMouseDownTitle=function(e)
+    {
+        if (!this.DivDialog) return;
+
+        var dragData={ X:e.clientX, Y:e.clientY };
+        dragData.YOffset=e.clientX - this.DivDialog.offsetLeft;
+        dragData.XOffset=e.clientY - this.DivDialog.offsetTop;
+        this.DragTitle=dragData;
+
+        document.onmousemove=(e)=>{ this.DocOnMouseMoveTitle(e); }
+        document.onmouseup=(e)=>{ this.DocOnMouseUpTitle(e); }
+    }
+
+    this.DocOnMouseMoveTitle=function(e)
+    {
+        if (!this.DragTitle) return;
+
+        var left = e.clientX - this.DragTitle.YOffset;
+        var top = e.clientY - this.DragTitle.XOffset;
+
+        var right=left+this.DivDialog.offsetWidth;
+        var bottom=top+ this.DivDialog.offsetHeight;
+        
+        if ((right+5)>=window.innerWidth) left=window.innerWidth-this.DivDialog.offsetWidth-5;
+        if ((bottom+5)>=window.innerHeight) top=window.innerHeight-this.DivDialog.offsetHeight-5;
+
         this.DivDialog.style.left = left + 'px'
         this.DivDialog.style.top = top + 'px'
+
+        if(e.preventDefault) e.preventDefault();
     }
 
     this.DocOnMouseUpTitle=function(e)

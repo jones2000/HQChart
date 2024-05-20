@@ -38,6 +38,7 @@ function JSExplainer(ast,option)
     this.JobList=[];                //执行的任务队列
     this.VarTable=new Map();        //变量表
     this.OutVarTable=[];            //输出变量
+    this.MaxValueLength=100;        //最长的字符
 
     //脚本自动变量表, 只读
     this.ConstVarTable=new Map(
@@ -137,7 +138,7 @@ function JSExplainer(ast,option)
         if (!this.AST) this.ThrowError();
         if (!this.AST.Body) this.ThrowError();
 
-        for(let i in this.AST.Body)
+        for(let i=0; i<this.AST.Body.length; ++i)
         {
             let item =this.AST.Body[i];
             this.VisitNode(item);
@@ -234,7 +235,7 @@ function JSExplainer(ast,option)
                         {
                             varName=itemExpression.Left.Name;
                             let varValue=this.VarTable.get(varName);
-                            this.VarTable.set(varName,varValue);            //把常量放到变量表里
+                            this.VarTable.set(varName,this.ConvertToShortValue(varValue));            //把常量放到变量表里
                         }
                         else if (itemExpression.Type==Syntax.Identifier)
                         {
@@ -258,7 +259,7 @@ function JSExplainer(ast,option)
                                 let varValue=this.ReadVariable(varName,itemExpression);
                                 varName="__temp_si_"+i+"__";
                                 isNoneName=true;
-                                this.VarTable.set(varName,varValue);            //放到变量表里
+                                this.VarTable.set(varName,this.ConvertToShortValue(varValue));            //放到变量表里
                             }
                         }
                         else if(itemExpression.Type==Syntax.Literal)    //常量
@@ -863,7 +864,20 @@ function JSExplainer(ast,option)
         }
 
         JSConsole.Complier.Log('[JSExplainer::VisitAssignmentExpression]' , varName, ' = ',value);
-        this.VarTable.set(varName,value);
+        this.VarTable.set(varName,this.ConvertToShortValue(value));
+    }
+
+    this.ConvertToShortValue=function(value)
+    {
+        var maxLength=this.MaxValueLength;
+        if (value && value.length>=maxLength)
+        {
+            var shortValue=value.slice(0, maxLength-10);
+            shortValue+="......";
+            return shortValue;
+        }
+       
+        return value;
     }
 
     this.ReadMemberVariable=function(node)

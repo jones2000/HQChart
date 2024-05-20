@@ -4847,6 +4847,35 @@ function JSAlgorithm(errorHandler,symbolData)
         return result;
     }
 
+    //反向过滤连续出现的信号.
+    //用法:FILTERX(X,N):X满足条件后,将其前N周期内的数据置为0,N为常量.
+    //例如:FILTERX(CLOSE>OPEN,5)查找阳线,前5天内出现过的阳线不被记录在内
+    this.FILTERX=function(data, n, node)
+    {
+        var result=[];
+        for(let i=0,j=0; i<data.length; ++i)
+        {
+            if (data[i])
+            {
+                result[i]=1;
+                for(j=0;j<n && i-j-1>=0;++j)
+                {
+                    result[i-j-1]=0;
+                }
+                i+=n;
+            }
+            else
+            {
+                result[i]=0;
+            }
+        }
+
+        return result;
+    }
+
+    //上一次条件成立到当前的周期数.
+    //用法:BARSLAST(X):上一次X不为0到现在的周期数
+    //例如:BARSLAST(CLOSE/REF(CLOSE,1)>=1.1)表示上一个涨停板到当前的周期数
     this.BARSLAST=function(data)
     {
         var result=[];
@@ -4859,6 +4888,52 @@ function JSAlgorithm(errorHandler,symbolData)
 
             if (data[i]>0)  day=0;
             else if (day!=null) ++day;
+
+            if (day!=null) result[i]=day;
+        }
+
+        return result;
+    }
+
+    //倒数第N次成立时距今的周期数.
+    //用法:BARSLASTS(X,N):X倒数第N满足到现在的周期数,N支持变量
+    this.BARSLASTS=function(data, n, node)
+    {
+        var result=[];
+        if (!data) return result;
+        if (n<=0) n=data.length;
+
+        var day=null;
+        var SingleValue=0;  //单词数
+        var periodCount=0;
+        for(let i=0;i<data.length;++i)
+        {
+            result[i]=null;
+            var value=data[i];
+
+            if (value>0)  
+            {
+                if (day==null) 
+                {
+                    day=0;
+                    ++periodCount;
+                }
+                else
+                {
+                    ++periodCount;
+                    if (periodCount>n) day-=SingleValue;
+                }
+
+                SingleValue=0;
+            }
+            else 
+            {
+                if (day!=null) 
+                {
+                    ++day;
+                    ++SingleValue;
+                }
+            }
 
             if (day!=null) result[i]=day;
         }
@@ -8887,10 +8962,15 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.FILTER(args[0],args[1]);
             case 'TFILTER':
                 return this.TFILTER(args[0],args[1],args[2]);
+            case "FILTERX":
+                return this.FILTERX(args[0],args[1],node);
             case 'SLOPE':
                 return this.SLOPE(args[0],args[1]);
             case 'BARSLAST':
                 return this.BARSLAST(args[0]);
+            case "BARSLASTS":
+                //this.ThrowUnexpectedNode(node,`函数'BARSLASTS'还在开发中`, name);
+                return this.BARSLASTS(args[0],args[1],node);
             case 'BARSCOUNT':
                 return this.BARSCOUNT(args[0]);
             case 'BARSSINCEN':
@@ -16313,6 +16393,7 @@ JSSymbolData.prototype.JsonDataToFinance=function(data)
 
 var JS_EXECUTE_DEBUG_LOG=false;
 
+
 var JS_EXECUTE_JOB_ID=
 {
     JOB_DOWNLOAD_SYMBOL_DATA:1, //下载股票的K线数据
@@ -18340,6 +18421,7 @@ function JSExplainer(ast,option)
     this.JobList=[];                //执行的任务队列
     this.VarTable=new Map();        //变量表
     this.OutVarTable=[];            //输出变量
+    this.MaxValueLength=150;        //最长的字符
 
     //脚本自动变量表, 只读
     this.ConstVarTable=new Map(
@@ -18440,9 +18522,10 @@ function JSExplainer(ast,option)
         if (!this.AST) this.ThrowError();
         if (!this.AST.Body) this.ThrowError();
 
-        for(let i in this.AST.Body)
+        for(var i=0; i<this.AST.Body.length; ++i)
         {
-            let item =this.AST.Body[i];
+            //console.log(`[JSExplainer::RunAST] ${i}`);
+            var item =this.AST.Body[i];
             this.VisitNode(item);
 
             //输出变量
@@ -18565,7 +18648,7 @@ function JSExplainer(ast,option)
                         {
                             varName=itemExpression.Left.Name;
                             let varValue=this.VarTable.get(varName);
-                            this.VarTable.set(varName,varValue);            //把常量放到变量表里
+                            this.VarTable.set(varName,this.ConvertToShortValue(varValue));            //把常量放到变量表里
                         }
                         else if (itemExpression.Type==Syntax.Identifier)
                         {
@@ -18603,7 +18686,7 @@ function JSExplainer(ast,option)
                                 let varValue=this.ReadVariable(varName,itemExpression);
                                 varName="__temp_si_"+i+"__";
                                 isNoneName=true;
-                                this.VarTable.set(varName,varValue);            //放到变量表里
+                                this.VarTable.set(varName,this.ConvertToShortValue(varValue));            //放到变量表里
                             }
                         }
                         else if(itemExpression.Type==Syntax.Literal)    //常量
@@ -18808,7 +18891,7 @@ function JSExplainer(ast,option)
             return node.Out;
         }
 
-        JSConsole.Complier.Log('[JSExplainer::VisitCallExpression]' , funcName, '(', args.toString() ,')');
+        if (JS_EXECUTE_DEBUG_LOG) JSConsole.Complier.Log('[JSExplainer::VisitCallExpression]' , funcName, '(', args.toString() ,')');
 
         if (g_JSComplierResource.IsCustomFunction(funcName))
         {
@@ -18835,6 +18918,8 @@ function JSExplainer(ast,option)
             ["BARSLASTCOUNT", { Name:"BARSLASTCOUNT", Param:{ Count:1 }, ToString:function(args) { return `条件${args[0]}连续成立次数`; } } ],
             ["BARSCOUNT",   { Name:"BARSCOUNT", Param:{ Count:1 }, ToString:function(args) { return `${args[0]}有效数据周期数`; } } ],
             ["BARSLAST",    { Name:"BARSLAST", Param:{ Count:1 }, ToString:function(args) { return `上次${args[0]}不为0距今天数`; } } ],
+            ["BARSLASTS",    { Name:"BARSLASTS", Param:{ Count:2 }, ToString:function(args) { return `倒数第N次成立时距今的周期数`; } } ],
+            
             ["BARSNEXT",    { Name:"BARSNEXT", Param:{ Count:1 }, ToString:function(args) { return `下次${args[0]}不为0距今天数`; } } ],
             ["BARSSINCEN",  { Name:"BARSSINCEN", Param:{ Count:2 }, ToString:function(args) { return `在${args[1]}周期内首次${args[0]}距今天数`; } } ],
             ["BARSSINCE",   { Name:"BARSSINCE", Param:{ Count:1 }, ToString:function(args) { return `首次${args[0]}距今天数`; } } ],
@@ -19002,7 +19087,7 @@ function JSExplainer(ast,option)
                 if (item.Param.Count!=args.length)
                 this.ThrowUnexpectedNode(node,`函数${funcName}参数个数不正确. 需要${item.Param.Count}个参数`);
             }
-            
+ 
             return item.ToString(args);
         }
 
@@ -19279,8 +19364,22 @@ function JSExplainer(ast,option)
         else if (right.Type==Syntax.UnaryExpression)
             value=this.VisitUnaryExpression(right);
 
-        JSConsole.Complier.Log('[JSExplainer::VisitAssignmentExpression]' , varName, ' = ',value);
-        this.VarTable.set(varName,value);
+        if (JS_EXECUTE_DEBUG_LOG) JSConsole.Complier.Log('[JSExplainer::VisitAssignmentExpression]' , varName, ' = ',value);
+
+        this.VarTable.set(varName,this.ConvertToShortValue(value));
+    }
+
+    this.ConvertToShortValue=function(value)
+    {
+        var maxLength=this.MaxValueLength;
+        if (value && value.length>=maxLength)
+        {
+            var shortValue=value.slice(0, maxLength-10);
+            shortValue+="......";
+            return shortValue;
+        }
+       
+        return value;
     }
 
     this.ReadMemberVariable=function(node)
@@ -19340,7 +19439,7 @@ function JSExplainer(ast,option)
                     let leftValue=this.GetNodeValue(value.Left);
                     let rightValue=this.GetNodeValue(value.Right);
 
-                    JSConsole.Complier.Log('[JSExplainer::VisitBinaryExpression] BinaryExpression',value , leftValue, rightValue);
+                    if (JS_EXECUTE_DEBUG_LOG) JSConsole.Complier.Log('[JSExplainer::VisitBinaryExpression] BinaryExpression',value , leftValue, rightValue);
                     value.Out=null; //保存中间值
 
                     value.Out=`(${leftValue} ${value.Operator} ${rightValue})`;
@@ -19357,14 +19456,14 @@ function JSExplainer(ast,option)
                         else if (value.Operator=="=") value.Out='(平盘)';
                     }
                         
-                    JSConsole.Complier.Log('[JSExplainer::VisitBinaryExpression] BinaryExpression',value);
+                    if (JS_EXECUTE_DEBUG_LOG) JSConsole.Complier.Log('[JSExplainer::VisitBinaryExpression] BinaryExpression',value);
                 }
                 else if (value.Type==Syntax.LogicalExpression)
                 {
                     let leftValue=this.GetNodeValue(value.Left);
                     let rightValue=this.GetNodeValue(value.Right);
 
-                    JSConsole.Complier.Log('[JSExecute::VisitBinaryExpression] LogicalExpression',value , leftValue, rightValue);
+                    if (JS_EXECUTE_DEBUG_LOG) JSConsole.Complier.Log('[JSExecute::VisitBinaryExpression] LogicalExpression',value , leftValue, rightValue);
                     value.Out=null; //保存中间值
 
                     switch(value.Operator)
@@ -19379,7 +19478,7 @@ function JSExplainer(ast,option)
                             break;
                     }
 
-                    JSConsole.Complier.Log('[JSExplainer::VisitBinaryExpression] LogicalExpression',value);
+                    if (JS_EXECUTE_DEBUG_LOG) JSConsole.Complier.Log('[JSExplainer::VisitBinaryExpression] LogicalExpression',value);
                 }
                 
                 node=temp;

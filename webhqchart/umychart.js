@@ -1649,6 +1649,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
 
         //画图工具
         if (option.EnableDrawToolDialogV2===true) chart.InitalDrawToolDialog();
+        if (option.EnableModifyDrawDialogV2===true) chart.InitalModifyDrawDialog();
 
         //注册事件
         if (option.EventCallback)
@@ -2679,6 +2680,9 @@ var JSCHART_MENU_ID=
     CMD_CHANGE_DEFAULTCURSOR_ID:32,     //修改鼠标形状
     CMD_CHANGE_API_INDEX_ID:33,         //切换后台接口指标
     CMD_CHANGE_SCRIPT_INDEX_ID:34,      //切换成自定义的脚本指标
+
+    CMD_CHANGE_BASELINE_ID:35,          //分时图切换基准线
+
 }
 
 
@@ -2908,6 +2912,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     this.IsShowRightMenu=true;  //显示右键菜单
 
     this.DialogDrawTool;    //画图工具
+    this.DialogModifyDraw;  //画图修改
 
 
     this.ClearStockCache=function()
@@ -2932,6 +2937,15 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         this.DialogDrawTool.Create();
     }
 
+    this.InitalModifyDrawDialog=function()
+    {
+        if ( this.DialogModifyDraw) return;
+
+        this.DialogModifyDraw=new JSDialogModifyDraw();
+        this.DialogModifyDraw.Inital(this);
+        this.DialogModifyDraw.Create();
+    }
+
     this.ShowDrawToolDialog=function(x,y)
     {
         if (!this.DialogDrawTool) return;
@@ -2952,6 +2966,31 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         if (!this.DialogDrawTool) return false;
 
         return  this.DialogDrawTool.IsShow();
+    }
+
+    this.ShowModifyDrawDialog=function(chart, x,y)
+    {
+        if (!this.DialogModifyDraw) return;
+
+        this.DialogModifyDraw.SetChartPicture(chart);
+        if (this.DialogModifyDraw.IsShow()) return;
+
+        var rtClient=this.UIElement.getBoundingClientRect();
+        var rtScroll=GetScrollPosition();
+        
+        var top=this.UIElement.offsetTop+15;
+        var left=(this.UIElement.offsetWidth-this.DialogModifyDraw.DivDialog.offsetWidth)/2;
+        left+=rtClient.left+rtScroll.Left;
+        top+=rtClient.top+rtScroll.Top;
+
+        this.DialogModifyDraw.Show(left, top);
+    }
+
+    this.CloseModifyDrawDialog=function()
+    {
+        if (!this.DialogModifyDraw) return;
+
+        this.DialogModifyDraw.Close();
     }
 
     //obj={ Element:, Canvas: }
@@ -3632,6 +3671,9 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                     
             }
         }
+
+
+        if (!this.SelectChartDrawPicture) this.CloseModifyDrawDialog(); //当前没有选中画图 隐藏画图修改框
 
         document.onmousemove=(e)=>{ this.DocOnMouseMove(e); }
         document.onmouseup=(e)=> { this.DocOnMouseUp(e); }
@@ -6327,6 +6369,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                     this.SelectChartDrawPicture=null;
                     if (this.ChartPictureMenu) this.ChartPictureMenu.Hide();
                     this.ClearChartDrawPicture(drawPicture);        //删除选中的画图工具
+                    this.CloseModifyDrawDialog();
                 }
                 else if (this.SelectedChart && this.SelectedChart.Selected.Identify)
                 {
@@ -8033,11 +8076,23 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     this.OnSelectChartPicture=function(chart)
     {   
         JSConsole.Chart.Log('[JSChartContainer::OnSelectChartPicture]',chart);
-        if (!this.ChartPictureMenu) this.ChartPictureMenu=g_DialogFactory.Create('ChartPictureSettingMenu', this.UIElement.parentNode);
-        if (!this.ChartPictureMenu) return;
 
-        var event={ data: { ChartPicture:chart, HQChart:this}};
-        this.ChartPictureMenu.DoModal(event);
+        if (!this.DialogModifyDraw) return;
+
+        if (chart.ClassName=="ChartDrawPictureText" || chart.ClassName=='ChartDrawVolProfile')
+        {
+            this.CloseModifyDrawDialog();
+
+            if (!this.ChartPictureMenu) this.ChartPictureMenu=g_DialogFactory.Create('ChartPictureSettingMenu', this.UIElement.parentNode);
+            if (!this.ChartPictureMenu) return;
+
+            var event={ data: { ChartPicture:chart, HQChart:this}};
+            this.ChartPictureMenu.DoModal(event);
+        }
+        else
+        {
+            this.ShowModifyDrawDialog(chart);
+        } 
     }
 
     this.FinishMoveChartDrawPicture=function()
@@ -9316,6 +9371,10 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             case JSCHART_MENU_ID.CMD_SHOW_BEFORE_DATA_ID:
                 if (this.ShowCallAuctionData && IFrameSplitOperator.IsBool(srcParam))
                     this.ShowCallAuctionData({ Left:srcParam, MultiDay:{ Left:srcParam }});
+                break;
+            case JSCHART_MENU_ID.CMD_CHANGE_BASELINE_ID:
+                if (this.ChangeBaselineType && IFrameSplitOperator.IsNumber(param))
+                    this.ChangeBaselineType(param);
                 break;
 
             case JSCHART_MENU_ID.CMD_SELECTED_ZOOM_ID:
@@ -55580,6 +55639,8 @@ IChartDrawPicture.ArrayDrawPricture=
 
     { Name:"水平线2", ClassName:"ChartDrawHLine", Create:function() { return new ChartDrawHLine(); }},
 
+    { Name:"MonitorLine", ClassName:"ChartDrawMonitorLine", Create:function() { return new ChartDrawMonitorLine(); }},
+
 
     //trading view样式
     { Name:"Note", ClassName:"ChartDrawNote", Create:function() { return new ChartDrawNote(); } },
@@ -60432,6 +60493,221 @@ function ChartDrawCrosshair()
         
         if (this.Status==10) this.DrawPoint(drawPoint);  //画点 
         this.Canvas.restore();
+    }
+}
+
+//画图工具-监测线
+function ChartDrawMonitorLine()
+{
+    this.newMethod=IChartDrawPicture;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartDrawMonitorLine';
+    this.PointCount=1;
+    this.IsPointIn=this.IsPointIn_XYValue_Line;
+    this.IsHScreen=false;
+    this.GetXYCoordinate=this.GetXYCoordinate_default;
+    this.FormatLabelTextCallback=null;
+
+    this.LineColor='rgb(255,215,0)'
+    this.LabelConfig=
+    { 
+        Font:`${12*GetDevicePixelRatio()}px 微软雅黑`, 
+        BGColor:"rgb(30,144,255)", YTextOffset:4,
+        LineColor:"rgba(255,215,0,0.8)",
+        LineDash:[3,5],
+    }
+
+    this.SetOption=function(option)
+    {
+        if (option.LineColor) this.LineColor=option.LineColor;
+        if (option.Label)
+        {
+            var item=option.Label;
+            var dest=this.LabelConfig
+            if (item.Font) dest.Font=item.Font;
+            if (item.BGColor) dest.BGColor=item.BGColor;
+            if (item.LineColor) dest.LineColor=item.LineColor;
+            if (item.LineDash) dest.LineDash=item.LineDash;
+            if (IFrameSplitOperator.IsNumber(item.YTextOffset)) dest.YTextOffset=item.YTextOffset;
+        }
+
+        if (option.FormatLabelTextCallback) this.FormatLabelTextCallback=option.FormatLabelTextCallback;
+    }
+
+    this.Draw=function()
+    {
+        this.LinePoint=[];
+        if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
+
+        if (!this.Frame || !this.Frame.Data) return;
+        var data=this.Frame.Data;
+        if (!IFrameSplitOperator.IsNonEmptyArray(data.Data)) return;
+
+        if (this.Point.length!=1) return;
+        if (this.Value.length!=1) return;
+        this.IsHScreen=this.Frame.IsHScreen;
+        if (this.IsHScreen) return;
+
+        if (this.Status==20) this.DrawMoveLine();
+        else if (this.Status==10) this.DrawMonitorLine(data);
+    }
+
+    this.DrawMoveLine=function()
+    {
+        var border=this.Frame.ChartBorder.GetBorder();
+        var pt=this.Point[0];
+        var x=ToFixedPoint(pt.X);
+        this.ClipFrame();
+
+        this.Canvas.strokeStyle=this.LineColor;
+        this.Canvas.beginPath();
+        this.Canvas.moveTo(x,border.TopEx);
+        this.Canvas.lineTo(x,border.BottomEx);
+        this.Canvas.stroke();
+
+        this.Canvas.restore();
+    }
+
+    this.DrawMonitorLine=function(data)
+    {
+        var isMinute=this.Frame.IsMinuteFrame();
+        var dataWidth=this.Frame.DataWidth;
+        var distanceWidth=this.Frame.DistanceWidth;
+        var xPointCount=this.Frame.XPointCount;
+
+        if (this.IsHScreen)
+        {
+            //var border=this.Frame.ChartBorder.GetHScreenBorder();
+            //var chartright=border.BottomEx;
+            //var xOffset=border.TopEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        }
+        else
+        {
+            var border=this.Frame.ChartBorder.GetBorder();
+            var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.RightEx;
+        }
+
+        var ptData=this.Value[0];
+        this.ClipFrame();
+        
+        var labelInfo=null;
+        for(var i=data.DataOffset,j=0;i<data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var item=data.Data[i];
+
+            if (isMinute)
+            {
+                var x=this.Frame.GetXFromIndex(j);
+            }
+            else
+            {
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                if (right>chartright) break;
+                var x=left+(right-left)/2;
+            }
+
+            if (i==ptData.XValue)   //起始
+            {
+                this.Canvas.strokeStyle=this.LineColor;
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(x,border.TopEx);
+                this.Canvas.lineTo(x,border.BottomEx);
+                this.Canvas.stroke();
+
+                var line={Start:{X:x, Y:border.TopEx}, End:{X:x, Y:border.BottomEx}};
+                this.LinePoint.push(line);
+            }
+            else if (i==data.Data.length-1)  //结束
+            {
+                if (this.LabelConfig.LineDash)  this.Canvas.setLineDash(this.LabelConfig.LineDash);
+                this.Canvas.strokeStyle=this.LabelConfig.LineColor;
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(x,border.TopEx);
+                this.Canvas.lineTo(x,border.BottomEx);
+                this.Canvas.stroke();
+                if (this.LabelConfig.LineDash) this.Canvas.setLineDash([]);
+
+                labelInfo={ Left:right, Data:data, StartIndex:ptData.XValue, AryText:[] };
+            }
+        }
+
+        this.Canvas.restore();
+
+        if (labelInfo) this.DrawLabel(labelInfo);
+    }
+
+    this.DrawLabel=function(labelInfo)
+    {
+        if (!this.FormatLabelTextCallback) return;
+        this.FormatLabelTextCallback(labelInfo);
+        if (!IFrameSplitOperator.IsNonEmptyArray(labelInfo.AryText)) return;
+        if (!IFrameSplitOperator.IsNumber(labelInfo.YValue)) return;
+
+        /*
+        labelInfo.YValue=7.15;
+        labelInfo.AryText=
+        [
+            { Name:"标题1:", Text:"6666", NameColor:"rgb(255,255,255)", TextColor:"rgb(30,10,30)" },
+            { Name:"标题2:", Text:"08.00", NameColor:"rgb(255,255,255)", TextColor:"rgb(30,10,30)" },
+            { Name:"标题3:", Text:"999.1", NameColor:"rgb(255,255,255)", TextColor:"rgb(30,10,30)" },
+            { Name:"标题4:", Text:"320" , NameColor:"rgb(255,255,255)", TextColor:"rgb(30,10,30)"},
+            { Name:"标题5:", Text:"77775.77", NameColor:"rgb(255,255,255)", TextColor:"rgb(30,10,30)" }
+        ]
+        */
+
+        var y=this.Frame.GetYFromData(labelInfo.YValue,false);
+        this.Canvas.font=this.LabelConfig.Font;
+        this.Canvas.textAlign="left";
+        this.Canvas.textBaseline="top";
+        var lineHeight=this.Canvas.measureText("擎").width+2;
+        var maxWidth=0, lineCount=0;
+        for(var i=0;i<labelInfo.AryText.length;++i)
+        {
+            var item=labelInfo.AryText[i];
+            item.NameWidth=0;
+            item.TextWidth=0;
+            if (item.Name) item.NameWidth=this.Canvas.measureText(item.Name).width+2;
+            if (item.Text) item.TextWidth=this.Canvas.measureText(item.Text).width+2;
+
+            var itemWidth=item.NameWidth+item.TextWidth;
+            if (maxWidth<itemWidth) maxWidth=itemWidth;
+            ++lineCount;
+        }
+
+        var rtBG={ Left:labelInfo.Left+1, Top:y, Width:maxWidth+4, Height:lineHeight*lineCount+4 };
+        rtBG.Right=rtBG.Left+rtBG.Width;
+        rtBG.Bottom=rtBG.Top+rtBG.Height;
+        if (this.LabelConfig.BGColor)
+        {
+            this.Canvas.fillStyle=this.LabelConfig.BGColor
+            this.Canvas.fillRect(ToFixedRect(rtBG.Left),ToFixedRect(rtBG.Top),ToFixedRect(rtBG.Width),ToFixedRect(rtBG.Height)); 
+        }
+
+        var xText=rtBG.Left+2;
+        var yText=rtBG.Top+this.LabelConfig.YTextOffset;
+        for(var i=0;i<labelInfo.AryText.length;++i)
+        {
+            var item=labelInfo.AryText[i];
+
+            if (item.Name)
+            {
+                this.Canvas.fillStyle=item.NameColor;
+                this.Canvas.fillText(item.Name,xText,yText);
+            }
+            
+            if (item.Text)
+            {
+                this.Canvas.fillStyle=item.TextColor;
+                this.Canvas.fillText(item.Text,xText+item.NameWidth ,yText);
+            }
+
+            yText+=lineHeight;
+        }
     }
 }
 
@@ -75398,6 +75674,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
     this.DataStatus={ MultiDay:false, LatestDay:false, LatestDate:null};      //MultiDay=多日  LatestDay:当天 LatestDate:最后的日期
 
     this.ZoomStepPixel=50;
+    this.BaselineType=0;    //基准线类型 0=最新昨收盘 1=多日前昨收盘
 
     //集合竞价设置 obj={ Left:true/false, Right:true/false, MultiDay:{Left:, Right:} }
     this.SetCallCationDataBorder=function(obj)
@@ -76873,6 +77150,16 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                     { Name:"最近3日", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_DAY_COUNT_ID, Args:[3]}, Checked:this.DayCount==3 },
                     { Name:"最近4日", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_DAY_COUNT_ID, Args:[4]}, Checked:this.DayCount==4 },
                     { Name:"最近5日", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_DAY_COUNT_ID, Args:[5]}, Checked:this.DayCount==5 },
+
+                    { 
+                        Name:"基准线选择",
+                        SubMenu:
+                        [
+                            { Name:"最新昨收价", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_BASELINE_ID, Args:[0]}, Checked:this.BaselineType===0 },
+                            { Name:"多日前昨收价", Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_BASELINE_ID, Args:[1]}, Checked:this.BaselineType===1 }
+                        ]
+
+                    }
                 ]
             },
             {
@@ -78061,6 +78348,14 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         this.RequestData();
     }
 
+    this.ChangeBaselineType=function(type)
+    {
+        if (this.BaselineType==type) return;
+
+        this.BaselineType=type;
+        if (this.DayCount>1) this.RequestData();
+    }
+
     //[{ Symbol: , Color, Option: }]
     this.OverlaySymbols=function(aryData, option)
     {
@@ -78548,10 +78843,13 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
 
         var upperSymbol=this.Symbol.toUpperCase();
-
-        var yClose=this.DayData[0].YClose;
         var isFutures=MARKET_SUFFIX_NAME.IsFutures(upperSymbol);
-        if (IFrameSplitOperator.IsNumber(this.DayData[0].YClearing) && isFutures) yClose=this.DayData[0].YClearing; //期货使用前结算价
+        var dayItem=this.DayData[0];    //最新
+        if (this.BaselineType===1) dayItem=this.DayData[this.DayData.length-1]; //多日前
+
+        var yClose=dayItem.YClose;
+        if (IFrameSplitOperator.IsNumber(dayItem.YClearing) && isFutures) yClose=dayItem.YClearing; //期货使用前结算价
+
         this.BindMainData(sourceData,yClose);
         
          //外汇 均线暂时不用
@@ -80376,6 +80674,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         {
             var value=frame.GetXData(x);
             index=parseInt(value.toFixed(0));
+            if (IFrameSplitOperator.IsNumber(data.DataOffset)) index+=data.DataOffset;  //加上数据偏移
         }
         else if (clientPos>=100 && clientPos<=199)
         {

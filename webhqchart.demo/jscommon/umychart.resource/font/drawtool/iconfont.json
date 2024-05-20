@@ -6,6 +6,41 @@
   "description": "hqchart画图工具",
   "glyphs": [
     {
+      "icon_id": "3634785",
+      "name": "字体背景色",
+      "font_class": "zitibeijingse",
+      "unicode": "e656",
+      "unicode_decimal": 58966
+    },
+    {
+      "icon_id": "12424469",
+      "name": "字体颜色",
+      "font_class": "zitiyanse",
+      "unicode": "e686",
+      "unicode_decimal": 59014
+    },
+    {
+      "icon_id": "2005644",
+      "name": "画笔",
+      "font_class": "huabi",
+      "unicode": "e663",
+      "unicode_decimal": 58979
+    },
+    {
+      "icon_id": "15272275",
+      "name": "拖动",
+      "font_class": "tuodong",
+      "unicode": "e6ff",
+      "unicode_decimal": 59135
+    },
+    {
+      "icon_id": "27520569",
+      "name": "监测",
+      "font_class": "jiance",
+      "unicode": "e936",
+      "unicode_decimal": 59702
+    },
+    {
       "icon_id": "37944385",
       "name": "图标_十字线",
       "font_class": "tubiao_shizixian",
