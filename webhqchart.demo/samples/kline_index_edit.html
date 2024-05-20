@@ -219,6 +219,7 @@
                 CtrlMoveStep:10,
                 EnablePopMenuV2:true,
                 EnableDrawToolDialogV2:true,
+                EnableModifyDrawDialogV2:true,
 
                 //EnableVerifyRecvData:true,
 
@@ -973,7 +974,7 @@
                     return;
                 }
 
-
+                var penBorder=style.FrameBorderPen;
                 var frame=this.Chart.JSChartContainer.Frame;
                 for(var i=0, j=0;i<frame.SubFrame.length;++i)
                 {
@@ -987,6 +988,10 @@
                             item.Style.Color=buttonColor[0];
                         }
                     }
+
+                    var frameItem=subFrame.Frame;
+                    frameItem.YLineExtend=[{ Width:5, Color:penBorder}, { Width:5, Color:penBorder} ];
+                    frameItem.XLineExtend=[{ Mode:1, Color:penBorder }];
                 }
 
                 style.ToolbarButtonStyle=1;
