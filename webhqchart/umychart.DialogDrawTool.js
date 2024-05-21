@@ -727,8 +727,18 @@ function JSDialogModifyDraw()
     {
         if (!this.ChartPicture || !this.HQChart) return;
 
-        var color=this.GetRandomColor(this.ChartPicture.TextColor, this.RandomFontColor);
-        this.ChartPicture.TextColor=color;
+        
+        if (this.ChartPicture.ClassName=="ChartDrawNote")
+        {
+            var color=this.GetRandomColor(this.ChartPicture.NoteTextColor, this.RandomFontColor);
+            this.ChartPicture.NoteTextColor=color;
+        }
+        else
+        {
+            var color=this.GetRandomColor(this.ChartPicture.TextColor, this.RandomFontColor);
+            this.ChartPicture.TextColor=color;
+        }
+       
 
         if (this.FontColorButton) this.FontColorButton.Span.style['color']=color;
 
@@ -740,9 +750,18 @@ function JSDialogModifyDraw()
     this.ModifyBGColor=function()
     {
         if (!this.ChartPicture || !this.HQChart) return;
-        var color=this.GetRandomColor(this.ChartPicture.BGColor, this.RandomBGColor);
 
-        this.ChartPicture.BGColor=color;
+        if (this.ChartPicture.ClassName=="ChartDrawNote")
+        {
+            var color=this.GetRandomColor(this.ChartPicture.NoteBGColor, this.RandomBGColor);
+            this.ChartPicture.NoteBGColor=color;
+        }
+        else
+        {
+            var color=this.GetRandomColor(this.ChartPicture.BGColor, this.RandomBGColor);
+            this.ChartPicture.BGColor=color;
+        }
+       
         if (this.BGColorButton) this.BGColorButton.Span.style['color']=color;
         if (this.HQChart.ChartDrawStorage) this.HQChart.ChartDrawStorage.SaveDrawData(this.ChartPicture);   //保存下
 
@@ -764,13 +783,20 @@ function JSDialogModifyDraw()
 
         var bShowLineColor=true, bShowBGColor=false, bShowFontColor=false;
         var bgColor=null, fontColor=null;
-        var ARRAY_TEXT_CHART=['ChartDrawPriceLabel', "ChartDrawAnchoredText","ChartDrawPriceNote","ChartDrawNote"];
+        var ARRAY_TEXT_CHART=['ChartDrawPriceLabel', "ChartDrawAnchoredText","ChartDrawPriceNote"];
         if (ARRAY_TEXT_CHART.includes(chart.ClassName))
         {
             bShowBGColor=true;
             bShowFontColor=true;
             bgColor=chart.BGColor;
             fontColor=chart.TextColor;
+        }
+        else if (chart.ClassName=="ChartDrawNote")
+        {
+            bShowBGColor=true;
+            bShowFontColor=true;
+            bgColor=chart.NoteBGColor;
+            fontColor=chart.NoteTextColor;
         }
         
         if (this.ColorButton)

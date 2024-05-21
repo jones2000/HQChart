@@ -11785,6 +11785,7 @@ function AverageWidthFrame()
             {
                 var text=IFrameSplitOperator.FormatDateString(kItem.Date,null);
                 if (ChartData.IsMinutePeriod(option.Period)) text+=" " + IFrameSplitOperator.FormatTimeString(kItem.Time, "HH:MM");
+                else if (ChartData.IsMilliSecondPeriod(option.Period)) text+=" " + IFrameSplitOperator.FormatTimeString(kItem.Time, "HH:MM:SS.fff");
                 var textWidth=this.Canvas.measureText(text).width+2;
 
                 var textLeft=item.X-textWidth/2;
@@ -54402,7 +54403,7 @@ function IChartDrawPicture()
         var isHScreen=this.Frame.IsHScreen;
         if (isHScreen)
         {
-            for(var i in this.Point)
+            for(var i=0; i<this.Point.length; ++i)
             {
                 var item=this.Point[i];
                 var xValue=parseInt(this.Frame.GetXData(item.Y,false))+data.DataOffset;
@@ -54418,7 +54419,7 @@ function IChartDrawPicture()
         }
         else
         {
-            for(var i in this.Point)
+            for(var i=0; i<this.Point.length; ++i)
             {
                 var item=this.Point[i];
                 var xValue=parseInt(this.Frame.GetXData(item.X,false))+data.DataOffset;
@@ -60517,6 +60518,26 @@ function ChartDrawMonitorLine()
         BGColor:"rgb(30,144,255)", YTextOffset:4,
         LineColor:"rgba(255,215,0,0.8)",
         LineDash:[3,5],
+    }
+
+    this.PointToValue_Backup=this.PointToValue;
+
+    this.PointToValue=function()
+    {
+        if (!this.PointToValue_Backup()) return false;
+
+        if (this.Frame.IsKLineFrame(false))
+        {
+            if (this.Frame.Identify===0)
+            {
+                var dataIndex=this.Value[0].XValue;
+                var data=this.Frame.Data;
+                var kItem=data.Data[dataIndex];
+                this.Value[0].YValue=kItem.Close;   //使用收盘价
+            }
+        }
+
+        return true;
     }
 
     this.SetOption=function(option)

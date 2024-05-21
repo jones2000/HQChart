@@ -682,7 +682,7 @@ function JSScrollBarChartContainer(uielement)
         if (obj.Type==0)
         {
             var start=this.Frame.GetXData(obj.XStart);
-            start=parseInt(start);
+            start=parseInt(start+0.5);  //四舍五入
             var moveSetp=start-this.XOffsetData.Start;
 
             this.XOffsetData.Start=start;
