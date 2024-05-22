@@ -6,6 +6,13 @@
   "description": "hqchart画图工具",
   "glyphs": [
     {
+      "icon_id": "7414214",
+      "name": "info line",
+      "font_class": "infoline",
+      "unicode": "e64a",
+      "unicode_decimal": 58954
+    },
+    {
       "icon_id": "3634785",
       "name": "字体背景色",
       "font_class": "zitibeijingse",

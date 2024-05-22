@@ -32,6 +32,7 @@ function JSDialogDrawTool()
             AryChart:
             [
                 { Title: '线段', ClassName: 'hqchart_drawtool icon-draw_line', Type:0, Data:{ ID:"线段" } },
+                { Title: '线段信息', ClassName: 'hqchart_drawtool icon-infoline', Type:0, Data:{ ID:"InfoLine" } },
                 { Title: '射线', ClassName: 'hqchart_drawtool icon-draw_rays', Type:0, Data:{ ID:"射线" } },
                 { Title: '标价线', ClassName: 'hqchart_drawtool icon-price_line', Type:0, Data:{ ID:"标价线" } },
                 { Title: '垂直线', ClassName: 'hqchart_drawtool icon-vertical_line', Type:0, Data:{ ID:"垂直线" } },
@@ -458,6 +459,9 @@ function JSDialogDrawTool()
 
         var name=data.Item.Data.ID;
         if (["icon-arrow_up","icon-arrow_down","icon-arrow_left", "icon-arrow_right"].includes(name)) option=null;
+        else if (name=="InfoLine") option.FormatLabelTextCallback=(lableInfo)=>{ this.ChartInfoLine_FormatLabelText(lableInfo); }
+        else if (name=="MonitorLine") option.FormatLabelTextCallback=(lableInfo)=>{ this.ChartDrawMonitorLine_FormatLabelText(lableInfo); }
+        
 
         this.HQChart.CreateChartDrawPicture(name, option, (chart)=>{ this.OnFinishDrawPicture(chart, data); });
     }
@@ -534,6 +538,60 @@ function JSDialogDrawTool()
         this.DragTitle=null;
         this.onmousemove = null;
         this.onmouseup = null;
+    }
+
+    this.ChartInfoLine_FormatLabelText=function(labelInfo)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(labelInfo.AryValue)) return;
+        if (!labelInfo.Data || !IFrameSplitOperator.IsNonEmptyArray(labelInfo.Data.Data)) return;
+        for(var i=0;i<labelInfo.AryValue.length;++i)
+        {
+            var item=labelInfo.AryValue[i];
+            if (!IFrameSplitOperator.IsNumber(item.XValue) || item.XValue<0) return;
+        }
+
+        var startIndex=labelInfo.AryValue[0].XValue;
+        var endIndex=labelInfo.AryValue[1].XValue;
+        var startItem=labelInfo.Data.Data[startIndex];
+        var endItem=labelInfo.Data.Data[endIndex];
+        if (!startItem || !endItem) return;
+
+        var isMinutePeriod=ChartData.IsMinutePeriod(labelInfo.Data.Period, true);
+        labelInfo.AryText=[];
+        labelInfo.AryText.push({ Name:"起始日期: ", Text:IFrameSplitOperator.FormatDateString(startItem.Date), NameColor:"rgb(0,0,0)", TextColor:"rgb(30,10,30)" });
+        if (isMinutePeriod) labelInfo.AryText.push({ Name:"起始时间: ", Text:IFrameSplitOperator.FormatTimeString(startItem.Time, "HH:MM"), NameColor:"rgb(0,0,0)", TextColor:"rgb(30,10,30)" });
+
+        labelInfo.AryText.push({ Name:"结束日期: ", Text:IFrameSplitOperator.FormatDateString(endItem.Date), NameColor:"rgb(0,0,0)", TextColor:"rgb(30,10,30)" });
+        if (isMinutePeriod) labelInfo.AryText.push({ Name:"结束时间: ", Text:IFrameSplitOperator.FormatTimeString(endItem.Time, "HH:MM"), NameColor:"rgb(0,0,0)", TextColor:"rgb(30,10,30)" });
+
+        //示例：计算一个斜率数据
+        var x=labelInfo.AryPoint[1].X-labelInfo.AryPoint[0].X;
+        var y=labelInfo.AryPoint[1].Y-labelInfo.AryPoint[0].Y;
+        var text="--";
+        if (x!=0) text=`${(y/x).toFixed(4)}`;
+        labelInfo.AryText.push({ Name:"斜率: ", Text:text, NameColor:"rgb(0,0,0)", TextColor:"rgb(238, 0, 238)"});
+        labelInfo.AryText.push({ Name:"其他: ", Text:'......', NameColor:"rgb(0,0,0)", TextColor:"rgb(156, 156, 156)"});
+    }
+
+    this.ChartDrawMonitorLine_FormatLabelText=function(labelInfo)
+    {
+        if (!labelInfo.Data || !IFrameSplitOperator.IsNonEmptyArray(labelInfo.Data.Data)) return;
+        if (!IFrameSplitOperator.IsNumber(labelInfo.StartIndex) || labelInfo.StartIndex<0) return;
+
+        var startItem=labelInfo.Data.Data[labelInfo.StartIndex];
+        var endItem=labelInfo.Data.Data[labelInfo.Data.Data.length-1];
+        labelInfo.YValue=endItem.Close;
+        var isMinutePeriod=ChartData.IsMinutePeriod(labelInfo.Data.Period, true);
+
+        labelInfo.AryText=[];
+        labelInfo.AryText.push({ Name:"起始: ", Text:IFrameSplitOperator.FormatDateString(startItem.Date,"MM-DD"), NameColor:"rgb(0,0,0)", TextColor:"rgb(30,10,30)" });
+        if (isMinutePeriod) labelInfo.AryText.push({ Name:"起始: ", Text:IFrameSplitOperator.FormatTimeString(startItem.Time, "HH:MM"), NameColor:"rgb(0,0,0)", TextColor:"rgb(30,10,30)" });
+
+        labelInfo.AryText.push({ Name:"最新: ", Text:IFrameSplitOperator.FormatDateString(endItem.Date,"MM-DD"), NameColor:"rgb(0,0,0)", TextColor:"rgb(30,10,30)" });
+        if (isMinutePeriod) labelInfo.AryText.push({ Name:"最新: ", Text:IFrameSplitOperator.FormatTimeString(endItem.Time, "HH:MM"), NameColor:"rgb(0,0,0)", TextColor:"rgb(30,10,30)" });
+
+        labelInfo.AryText.push({ Name:"ɑ: ", Text:"--.--", NameColor:"rgb(0, 0 ,255)", TextColor:"rgb(255, 165, 0)"});
+        labelInfo.AryText.push({ Name:"β: ", Text:"--.--", NameColor:"rgb(0 ,0 ,255)", TextColor:"rgb(238 ,121, 66)"});
     }
 }
 

@@ -105,7 +105,11 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         return item;
     }
 
-    this.OnSize=function(option) //{ Type:1 新版本OnSize  Redraw:是否重绘, XYSplit:是否重新计算分割线 }
+    /*
+    { Type: 1=K线柱子宽度不变  2=K线全部显示
+      Redraw:是否重绘, XYSplit:是否重新计算分割线 }
+    */
+    this.OnSize=function(option) 
     {
         //画布大小通过div获取 如果有style里的大小 使用style里的
         if (this.DivElement.style.height && this.DivElement.style.width)
@@ -166,9 +170,13 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         {
             if (option && option.XYSplit===true) this.JSChartContainer.ResetFrameXYSplit();
 
-            if (this.JSChartContainer.OnSize && option && option.Type==1) 
+            if (this.JSChartContainer.OnSize && option && option.Type==1)   //K线宽度不变
             {
                 this.JSChartContainer.OnSize();
+            }
+            else if (this.JSChartContainer.ShowAllKLine && option && option.Type==2)
+            {
+                this.JSChartContainer.ShowAllKLine();
             }
             else
             {
@@ -9749,6 +9757,16 @@ function CloneData(data)
 function IsRecvOverlap(rect1, rect2)
 {
     return Math.max(rect1.Left,rect2.Left) < Math.min(rect1.Right,rect2.Right) && Math.max(rect1.Top,rect2.Top) < Math.min(rect1.Bottom,rect2.Bottom); 
+}
+
+function CopyMerginConfig(dest,src)
+{
+    if (!src || !dest) return;
+
+    if (IFrameSplitOperator.IsNumber(src.Left)) dest.Left=src.Left;
+    if (IFrameSplitOperator.IsNumber(src.Top)) dest.Top=src.Top;
+    if (IFrameSplitOperator.IsNumber(src.Right)) dest.Right=src.Right;
+    if (IFrameSplitOperator.IsNumber(src.Bottom)) dest.Bottom=src.Bottom;
 }
 
 
@@ -55514,6 +55532,79 @@ function IChartDrawPicture()
     //复制
     //this.CopyData=function() { }
     //this.PtInButtons=function(x, y) { }
+
+
+    //计算标签页大小
+    this.CalculateLabelSize=function(labelInfo)
+    {
+        var config=labelInfo.Config;
+        this.Canvas.font=config.Font;
+        this.Canvas.textAlign="left";
+        this.Canvas.textBaseline="top";
+        var lineHeight=this.Canvas.measureText("擎").width+2;
+
+        var maxWidth=0, lineCount=0, labelHeight=config.Mergin.Top+config.Mergin.Bottom;
+        for(var i=0;i<labelInfo.AryText.length;++i)
+        {
+            if (i>0) labelHeight+=config.LineSpace;
+
+            var item=labelInfo.AryText[i];
+            item.NameWidth=0;
+            item.TextWidth=0;
+            if (item.Name) item.NameWidth=this.Canvas.measureText(item.Name).width+2;
+            if (item.Text) item.TextWidth=this.Canvas.measureText(item.Text).width+2;
+
+            var itemWidth=item.NameWidth+item.TextWidth;
+            if (maxWidth<itemWidth) maxWidth=itemWidth;
+            ++lineCount;
+
+            labelHeight+=lineHeight;
+        }
+
+        var labelWidth=maxWidth+config.Mergin.Left+config.Mergin.Right;
+
+        labelInfo.Width=labelWidth;
+        labelInfo.Height=labelHeight;
+        labelInfo.LineHeight=lineHeight;
+    }
+
+    this.DrawDefaultLabel=function(labelInfo, rtBG)
+    {
+        var config=labelInfo.Config;
+
+        if (config.BGColor)
+        {
+            this.Canvas.fillStyle=config.BGColor
+            this.Canvas.fillRect(ToFixedRect(rtBG.Left),ToFixedRect(rtBG.Top),ToFixedRect(rtBG.Width),ToFixedRect(rtBG.Height)); 
+        }
+    
+        var xText=rtBG.Left+config.Mergin.Left;
+        var yText=rtBG.Top+config.Mergin.Top;
+        for(var i=0;i<labelInfo.AryText.length;++i)
+        {
+            var item=labelInfo.AryText[i];
+
+            if (i>0) yText+=config.LineSpace;
+
+            if (item.Name)
+            {
+                this.Canvas.fillStyle=item.NameColor;
+                this.Canvas.fillText(item.Name,xText,yText);
+            }
+            
+            if (item.Text)
+            {
+                var xOut=xText+item.NameWidth;
+                if (config.TextAlign==1) //右对齐
+                    xOut=rtBG.Right-config.Mergin.Right-item.TextWidth;
+                
+                this.Canvas.fillStyle=item.TextColor;
+                this.Canvas.fillText(item.Text,xOut ,yText);
+            }
+
+            yText+=labelInfo.LineHeight;
+        }
+    }
 }
 
 IChartDrawPicture.ColorToRGBA=function(color,opacity)
@@ -55652,7 +55743,8 @@ IChartDrawPicture.ArrayDrawPricture=
     { Name:"FibRetracement", ClassName:"ChartFibRetracement", Create:function() { return new ChartFibRetracement(); }},     //斐波那契回测
     { Name:"FibSpeedResistanceFan", ClassName:"ChartFibSpeedResistanceFan", Create:function() { return new ChartFibSpeedResistanceFan(); }}, //斐波那契扇形
     { Name:"PriceRange", ClassName:"ChartPriceRange", Create:function() { return new ChartPriceRange(); }},
-    { Name:"DateRange", ClassName:"ChartDateRange", Create:function() { return new ChartDateRange(); }}
+    { Name:"DateRange", ClassName:"ChartDateRange", Create:function() { return new ChartDateRange(); }},
+    { Name:"InfoLine", ClassName:"ChartInfoLine", Create:function() { return new ChartInfoLine(); }},
 ];
 
 IChartDrawPicture.MapIonFont=new Map(
@@ -60515,9 +60607,13 @@ function ChartDrawMonitorLine()
     this.LabelConfig=
     { 
         Font:`${12*GetDevicePixelRatio()}px 微软雅黑`, 
-        BGColor:"rgb(30,144,255)", YTextOffset:4,
+        BGColor:"rgb(30,144,255)",
         LineColor:"rgba(255,215,0,0.8)",
         LineDash:[3,5],
+
+        Mergin:{ Left:5, Right:5, Top:5, Bottom:4 },
+        LineSpace:5,    //行间距
+        TextAlign:1,    //对齐方式 0=left 1=right
     }
 
     this.PointToValue_Backup=this.PointToValue;
@@ -60551,7 +60647,9 @@ function ChartDrawMonitorLine()
             if (item.BGColor) dest.BGColor=item.BGColor;
             if (item.LineColor) dest.LineColor=item.LineColor;
             if (item.LineDash) dest.LineDash=item.LineDash;
-            if (IFrameSplitOperator.IsNumber(item.YTextOffset)) dest.YTextOffset=item.YTextOffset;
+            if (IFrameSplitOperator.IsNumber(item.LineSpace)) dest.LineSpace=item.LineSpace;
+            if (IFrameSplitOperator.IsNumber(item.TextAlign)) dest.TextAlign=item.TextAlign;
+            if (item.Mergin) CopyMerginConfig(dest.Mergin, item.Mergin);
         }
 
         if (option.FormatLabelTextCallback) this.FormatLabelTextCallback=option.FormatLabelTextCallback;
@@ -60665,6 +60763,7 @@ function ChartDrawMonitorLine()
     this.DrawLabel=function(labelInfo)
     {
         if (!this.FormatLabelTextCallback) return;
+        labelInfo.Config=this.LabelConfig;
         this.FormatLabelTextCallback(labelInfo);
         if (!IFrameSplitOperator.IsNonEmptyArray(labelInfo.AryText)) return;
         if (!IFrameSplitOperator.IsNumber(labelInfo.YValue)) return;
@@ -60681,54 +60780,14 @@ function ChartDrawMonitorLine()
         ]
         */
 
+        this.CalculateLabelSize(labelInfo);
+
         var y=this.Frame.GetYFromData(labelInfo.YValue,false);
-        this.Canvas.font=this.LabelConfig.Font;
-        this.Canvas.textAlign="left";
-        this.Canvas.textBaseline="top";
-        var lineHeight=this.Canvas.measureText("擎").width+2;
-        var maxWidth=0, lineCount=0;
-        for(var i=0;i<labelInfo.AryText.length;++i)
-        {
-            var item=labelInfo.AryText[i];
-            item.NameWidth=0;
-            item.TextWidth=0;
-            if (item.Name) item.NameWidth=this.Canvas.measureText(item.Name).width+2;
-            if (item.Text) item.TextWidth=this.Canvas.measureText(item.Text).width+2;
-
-            var itemWidth=item.NameWidth+item.TextWidth;
-            if (maxWidth<itemWidth) maxWidth=itemWidth;
-            ++lineCount;
-        }
-
-        var rtBG={ Left:labelInfo.Left+1, Top:y, Width:maxWidth+4, Height:lineHeight*lineCount+4 };
+        var rtBG={ Left:labelInfo.Left+1, Top:y, Width:labelInfo.Width, Height:labelInfo.Height };
         rtBG.Right=rtBG.Left+rtBG.Width;
         rtBG.Bottom=rtBG.Top+rtBG.Height;
-        if (this.LabelConfig.BGColor)
-        {
-            this.Canvas.fillStyle=this.LabelConfig.BGColor
-            this.Canvas.fillRect(ToFixedRect(rtBG.Left),ToFixedRect(rtBG.Top),ToFixedRect(rtBG.Width),ToFixedRect(rtBG.Height)); 
-        }
-
-        var xText=rtBG.Left+2;
-        var yText=rtBG.Top+this.LabelConfig.YTextOffset;
-        for(var i=0;i<labelInfo.AryText.length;++i)
-        {
-            var item=labelInfo.AryText[i];
-
-            if (item.Name)
-            {
-                this.Canvas.fillStyle=item.NameColor;
-                this.Canvas.fillText(item.Name,xText,yText);
-            }
-            
-            if (item.Text)
-            {
-                this.Canvas.fillStyle=item.TextColor;
-                this.Canvas.fillText(item.Text,xText+item.NameWidth ,yText);
-            }
-
-            yText+=lineHeight;
-        }
+        
+        this.DrawDefaultLabel(labelInfo, rtBG);
     }
 }
 
@@ -64547,6 +64606,139 @@ function ChartDateRange()
         this.Canvas.textBaseline="bottom";
         this.Canvas.fillText(text,rtTextBG.Left+2+this.Label.LeftMargin,rtTextBG.Bottom-2);
         
+    }
+}
+
+//线段信息统计
+function ChartInfoLine()
+{
+    this.newMethod=IChartDrawPicture;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartInfoLine';
+    this.PointCount=2;
+    this.Font=12*GetDevicePixelRatio() +"px 微软雅黑";
+
+    this.IsPointIn=this.IsPointIn_XYValue_Line;
+    this.GetXYCoordinate=this.GetXYCoordinate_default;
+    this.IsShowYCoordinate=false;
+    this.CopyData=this.CopyData_default;
+    this.OnlyMoveXIndex=true;
+    this.IsSupportMagnet=true;
+
+    this.LabelConfig=
+    { 
+        Font:`${12*GetDevicePixelRatio()}px 微软雅黑`, 
+        BGColor:"rgba(135, 206 ,250,0.95)", 
+        Mergin:{ Left:10, Right:10, Top:10, Bottom:8 },
+        LineSpace:5,    //行间距
+        TextAlign:1,    //对齐方式 0=left 1=right
+    }
+
+    this.FormatLabelTextCallback=null;
+
+    this.SetOption=function(option)
+    {
+        if (option.LineColor) this.LineColor=option.LineColor;
+        if (option.Label)
+        {
+            var item=option.Label;
+            var dest=this.LabelConfig
+            if (item.Font) dest.Font=item.Font;
+            if (item.BGColor) dest.BGColor=item.BGColor;
+            if (IFrameSplitOperator.IsNumber(item.LineSpace)) dest.LineSpace=item.LineSpace;
+            if (IFrameSplitOperator.IsNumber(item.TextAlign)) dest.TextAlign=item.TextAlign;
+            if (item.Mergin) CopyMerginConfig(dest.Mergin, item.Mergin);
+        }
+
+        if (option.FormatLabelTextCallback) this.FormatLabelTextCallback=option.FormatLabelTextCallback;
+    }
+
+    this.Draw=function()
+    {
+        this.LinePoint=[];
+        if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
+
+        var drawPoint=this.CalculateDrawPoint( {IsCheckX:true, IsCheckY:false} );
+        if (!drawPoint) return;
+        if (drawPoint.length!=2) return;
+
+        this.ClipFrame();
+
+        var ptStart=drawPoint[0];
+        var ptEnd=drawPoint[1];
+
+        this.SetLineWidth();
+        this.Canvas.strokeStyle=this.LineColor;
+        this.Canvas.beginPath();
+        this.Canvas.moveTo(ptStart.X,ptStart.Y);
+        this.Canvas.lineTo(ptEnd.X,ptEnd.Y);
+        this.Canvas.stroke();
+        this.RestoreLineWidth();
+
+        var line={Start:ptStart, End:ptEnd};
+        this.LinePoint.push(line);
+        
+        this.DrawPoint(drawPoint);  //画点
+
+        var labelInfo={ };
+        labelInfo.Config=this.LabelConfig;
+        labelInfo.PtStart=ptStart;
+        labelInfo.PtEnd=ptEnd;
+
+        this.DrawLabel(labelInfo);
+
+        this.Canvas.restore();
+    }
+
+    this.DrawLabel=function(labelInfo)
+    {
+        if (!this.FormatLabelTextCallback) return;
+
+        labelInfo.AryPoint=this.Point;
+        if (this.Status!=10)
+        {
+            labelInfo.AryValue=this.PointToKLine(this.Point);
+        }
+        else
+        {
+            labelInfo.AryValue=this.Value;
+        }
+
+        labelInfo.Data=this.Frame.Data; //数据
+
+        this.FormatLabelTextCallback(labelInfo);
+        if (!IFrameSplitOperator.IsNonEmptyArray(labelInfo.AryText)) return;
+
+        this.CalculateLabelSize(labelInfo);
+
+        var ptStart=labelInfo.PtStart;
+        var ptEnd=labelInfo.PtEnd;
+        if (ptStart.X>ptEnd.X) 
+        {
+            ptStart=labelInfo.PtEnd;
+            ptEnd=labelInfo.PtStart;
+        }
+
+        var config=labelInfo.Config;
+        var xCenter=labelInfo.PtStart.X+(labelInfo.PtEnd.X-labelInfo.PtStart.X)/2;
+        var yCenter=labelInfo.PtStart.Y+(labelInfo.PtEnd.Y-labelInfo.PtStart.Y)/2;
+        if (ptStart.Y<ptEnd.Y)
+        {
+            var rtBG={ Left:xCenter, Bottom:yCenter, Width:labelInfo.Width, Height:labelInfo.Height };
+            rtBG.Right=rtBG.Left+rtBG.Width;
+            rtBG.Top=rtBG.Bottom-rtBG.Height;
+        }
+        else
+        {
+            var rtBG={ Left:xCenter, Top:yCenter, Width:labelInfo.Width, Height:labelInfo.Height };
+            rtBG.Right=rtBG.Left+rtBG.Width;
+            rtBG.Bottom=rtBG.Top+rtBG.Height;
+        }
+
+        this.DrawDefaultLabel(labelInfo, rtBG);
     }
 }
 
@@ -69276,6 +69468,30 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             this.SetCustomShow(this.CustomShow,hisData);
             this.CustomShow=null;
         }
+    }
+
+    this.ShowAllKLine=function()
+    {
+        var chart=this.ChartPaint[0];
+        if (!chart) return false;
+        var kData=chart.Data;
+        if (!kData || !IFrameSplitOperator.IsNonEmptyArray(kData.Data)) return false;
+
+        var xCount=kData.Data.length+this.RightSpaceCount;
+        for(var i=0;i<this.Frame.SubFrame.length;++i)
+        {
+            var item =this.Frame.SubFrame[i].Frame;
+            item.XPointCount=xCount;
+        }
+
+        kData.DataOffset=0;
+        this.CursorIndex=0;
+
+        this.UpdataDataoffset();           //更新数据偏移
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Frame.SetSizeChage(true);
+        this.UpdatePointByCursorIndex(2);   //取消十字光标
+        this.Draw();
     }
 
     this.UpdateMainData=function(hisData, lastDataCount)
