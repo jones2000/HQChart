@@ -34,6 +34,7 @@ function JSDialogDrawTool()
                 { Title: '线段', ClassName: 'hqchart_drawtool icon-draw_line', Type:0, Data:{ ID:"线段" } },
                 { Title: '线段信息', ClassName: 'hqchart_drawtool icon-infoline', Type:0, Data:{ ID:"InfoLine" } },
                 { Title: '射线', ClassName: 'hqchart_drawtool icon-draw_rays', Type:0, Data:{ ID:"射线" } },
+                { Title: "趋势线角度", ClassName:"hqchart_drawtool icon-qushixianjiaodu", Type:0, Data:{ ID:"TrendAngle" }},
                 { Title: '标价线', ClassName: 'hqchart_drawtool icon-price_line', Type:0, Data:{ ID:"标价线" } },
                 { Title: '垂直线', ClassName: 'hqchart_drawtool icon-vertical_line', Type:0, Data:{ ID:"垂直线" } },
                 { Title: '十字线', ClassName: 'hqchart_drawtool icon-tubiao_shizixian', Type:0, Data:{ ID:"十字线" } },
@@ -149,7 +150,7 @@ function JSDialogDrawTool()
     this.LineColorIndex=0;
     this.RandomLineColor=["rgb(255,69,0)", "rgb(0,191,255)", "rgb(255,0,255)", "rgb(255,105,180)"];
     this.LineWidth=1*GetDevicePixelRatio();
-    this.ColumnCount=4;
+    this.ColumnCount=5
 
     this.DragTitle=null;
 

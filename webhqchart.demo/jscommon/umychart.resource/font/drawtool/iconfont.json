@@ -6,6 +6,13 @@
   "description": "hqchart画图工具",
   "glyphs": [
     {
+      "icon_id": "5668811",
+      "name": "趋势线角度",
+      "font_class": "qushixianjiaodu",
+      "unicode": "e60c",
+      "unicode_decimal": 58892
+    },
+    {
       "icon_id": "7414214",
       "name": "info line",
       "font_class": "infoline",

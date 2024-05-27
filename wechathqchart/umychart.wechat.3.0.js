@@ -1244,13 +1244,6 @@ function JSChart(element)
             this.JSChartContainer.ChangeKLineDrawType(drawType);
     }
 
-    //切换数据类
-    this.ChangMainDataControl = function (dataControl) 
-    {
-        if (this.JSChartContainer && typeof (this.JSChartContainer.SetMainDataConotrl) == 'function')
-        this.JSChartContainer.SetMainDataConotrl(dataControl);
-    }
-
     //叠加股票
     this.OverlaySymbol = function (symbol,option) 
     {

@@ -334,11 +334,20 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (IFrameSplitOperator.IsBool(item.IsShowKLineDivTooltip)) chart.IsShowKLineDivTooltip=item.IsShowKLineDivTooltip;
             if (option.KLine.MaxRequestMinuteDayCount>0) chart.MaxRequestMinuteDayCount=option.KLine.MaxRequestMinuteDayCount;
             if (option.KLine.DrawType) chart.KLineDrawType=option.KLine.DrawType;
-            if (option.KLine.FirstShowDate>19910101) chart.CustomShow={ Date:option.KLine.FirstShowDate, PageSize:option.KLine.PageSize };
+            if (option.KLine.FirstShowDate>19910101) chart.CustomShow={ Date:option.KLine.FirstShowDate, PageSize:option.KLine.PageSize };  //!!已弃用 新的格式"CustomShow"
             if (option.KLine.RightSpaceCount>0) chart.RightSpaceCount=option.KLine.RightSpaceCount;
             if (option.KLine.ZoomType>0) chart.ZoomType=option.KLine.ZoomType;
             if (option.KLine.DataWidth>=1) chart.KLineSize={ DataWidth:option.KLine.DataWidth };
             if (IFrameSplitOperator.IsNumber(option.KLine.RightFormula)) chart.RightFormula=option.KLine.RightFormula;
+        }
+
+        //自定义显示位置
+        if (option.CustomShow && IFrameSplitOperator.IsPlusNumber(option.CustomShow.Date))
+        {
+            var item=option.CustomShow;
+            chart.CustomShow={ Date:item.Date };
+            if (IFrameSplitOperator.IsNumber(item.Time)) chart.CustomShow.Time=item.Time;
+            if (IFrameSplitOperator.IsPlusNumber(item.PageSize)) chart.CustomShow.PageSize=item.PageSize;
         }
 
         if (option.EnableFlowCapital)
@@ -1859,12 +1868,6 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         {
             this.JSChartContainer.AddKLineInfo(infoName,bUpdate);
         } 
-    }
-
-    this.ChangMainDataControl=function(dataControl)
-    {
-        if (this.JSChartContainer && typeof(this.JSChartContainer.SetMainDataConotrl)=='function') 
-            this.JSChartContainer.SetMainDataConotrl(dataControl);
     }
 
     this.AddOverlayIndex=function(obj) //{WindowIndex:窗口ID, IndexName:指标ID, Identify:叠加指标ID(可选), API}
@@ -8071,7 +8074,9 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             let sendData={ DrawPicture: drawPicture };
             event.Callback(event,sendData,this);
         }
-        else if (drawPicture.FinishedCallback) drawPicture.FinishedCallback(drawPicture);
+        
+        //单个回调
+        if (drawPicture.FinishedCallback) drawPicture.FinishedCallback(drawPicture);
 
         if (drawPicture.OnFinish) drawPicture.OnFinish();
 
@@ -9604,6 +9609,11 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
             if (deleteCount>0) this.ChartPaintEx=paint;
         }
+    }
+
+    this.ClearCurrnetDrawPicture=function()
+    {
+        this.CurrentChartDrawPicture=null;
     }
 }
 
@@ -55745,6 +55755,7 @@ IChartDrawPicture.ArrayDrawPricture=
     { Name:"PriceRange", ClassName:"ChartPriceRange", Create:function() { return new ChartPriceRange(); }},
     { Name:"DateRange", ClassName:"ChartDateRange", Create:function() { return new ChartDateRange(); }},
     { Name:"InfoLine", ClassName:"ChartInfoLine", Create:function() { return new ChartInfoLine(); }},
+    { Name:"TrendAngle", ClassName:"ChartTrendAngle", Create:function() { return new ChartTrendAngle(); }}
 ];
 
 IChartDrawPicture.MapIonFont=new Map(
@@ -55906,6 +55917,103 @@ function ChartDrawPictureLine()
         }
 
         return aryPoint;
+    }
+}
+
+//趋势线角度
+function ChartTrendAngle()
+{
+    this.newMethod=ChartDrawPictureLine;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartTrendAngle';
+    this.AngleLineLength=100;
+    this.AngleLineDash=[3,3];
+    this.Font=12*GetDevicePixelRatio() +"px 微软雅黑";
+    this.Super_SetOption=this.SetOption;    //父类函数
+
+    this.SetOption=function(option)
+    {
+        if (this.Super_SetOption) this.Super_SetOption(option);
+        if (option)
+        {
+            if (IFrameSplitOperator.IsNumber(option.AngleLineLength)) this.AngleLineLength=option.AngleLineLength;
+            if (option.Font) this.Font=option.Font;
+            if (option.AngleLineDash) this.AngleLineDash=option.AngleLineDash;
+        }
+    }
+
+    this.Draw=function()
+    {
+        this.LinePoint=[];
+        if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
+
+        var drawPoint=this.CalculateDrawPoint( {IsCheckX:true, IsCheckY:false} );
+        if (!drawPoint) return;
+        if (drawPoint.length!=2) return;
+
+        this.ClipFrame();
+
+        var ptStart=drawPoint[0];
+        var ptEnd=drawPoint[1];
+
+        this.SetLineWidth();
+        this.Canvas.strokeStyle=this.LineColor;
+        this.Canvas.beginPath();
+        this.Canvas.moveTo(ptStart.X,ptStart.Y);
+        this.Canvas.lineTo(ptEnd.X,ptEnd.Y);
+        this.Canvas.stroke();
+        this.RestoreLineWidth();
+
+        this.DrawAngle(ptStart, ptEnd);
+
+        var line={Start:ptStart, End:ptEnd};
+        this.LinePoint.push(line);
+        
+        this.DrawPoint(drawPoint);  //画点
+        this.Canvas.restore();
+    }
+
+    this.DrawAngle=function(ptStart, ptEnd)
+    {
+        var pixelRatio=GetDevicePixelRatio();
+        var angle=this.CalculateAngle(ptStart.X, ptStart.Y, ptEnd.X, ptEnd.Y);  //角度
+        var lineLength=this.AngleLineLength*pixelRatio; //角度线长度
+        var ptRight={ X:ptStart.X+lineLength, Y:ptStart.Y };
+
+        if (this.AngleLineDash) this.Canvas.setLineDash(this.AngleLineDash); //画虚线
+
+        this.Canvas.lineWidth=1*GetDevicePixelRatio();
+        this.Canvas.beginPath();
+        this.Canvas.moveTo(ToFixedPoint(ptStart.X),ToFixedPoint(ptStart.Y));
+        this.Canvas.lineTo(ToFixedPoint(ptRight.X),ToFixedPoint(ptRight.Y));
+        this.Canvas.stroke();
+
+        this.Canvas.beginPath();
+        if (angle<=180)
+        {
+            this.Canvas.arc(ptStart.X,ToFixedPoint(ptStart.Y),lineLength,0,(Math.PI / 180)*(360-angle), true);
+            var text=`${angle.toFixed(0)}°`;
+        }
+        else
+        {
+            this.Canvas.arc(ptStart.X,ToFixedPoint(ptStart.Y),lineLength,0,(Math.PI / 180)*(360-angle), false);
+            var text=`${(angle-360).toFixed(0)}°`;
+        }
+        
+        this.Canvas.stroke();
+
+        this.Canvas.textAlign="left";
+        this.Canvas.textBaseline="middle";
+        this.Canvas.font=this.Font;
+        this.Canvas.fillStyle=this.LineColor;
+
+        if (this.AngleLineDash) this.Canvas.setLineDash([]);
+
+       
+        this.Canvas.fillText(text,ptRight.X+5,ptRight.Y);
     }
 }
 
@@ -64688,9 +64796,9 @@ function ChartInfoLine()
         labelInfo.PtStart=ptStart;
         labelInfo.PtEnd=ptEnd;
 
-        this.DrawLabel(labelInfo);
-
         this.Canvas.restore();
+
+        this.DrawLabel(labelInfo);
     }
 
     this.DrawLabel=function(labelInfo)
@@ -68188,7 +68296,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
     this.SourceDataLimit=new Map();     //每个周期缓存数据最大个数 key=周期 value=最大个数 
     this.CtrlMoveStep=5;                //Ctrl+(Left/Right) 移动数据个数  
 
-    this.CustomShow=null;               //首先显示的K线的起始日期 { Date:日期 PageSize:}
+    this.CustomShow=null;               //首先显示的K线的起始日期 { Date:日期, Time:时间, PageSize:}
     this.ZoomType=0;                    //缩放模式 0=最右边固定缩放, 1=十字光标两边缩放
     this.IsZoomLockRight=false;         
     this.KLineSize=null;                //{ DataWidth:, }
@@ -68774,47 +68882,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             var hisData=this.ChartOperator_Temp_GetHistroyData();
             if (!hisData) return;  //数据还没有到达
 
-            var index=null;
-            if (ChartData.IsDayPeriod(this.Period,true))
-            {
-                for(var i=0;i<hisData.Data.length;++i)
-                {
-                    var item=hisData.Data[i];
-                    if (item.Date>=obj.Date)
-                    {
-                        index=i;
-                        break;
-                    }
-                }
-            }
-            else if (ChartData.IsMinutePeriod(this.Period,true))
-            {
-                let findTime=obj.Time;
-                if (IFrameSplitOperator.IsPlusNumber(findTime))
-                {
-                    for(var i=0;i<hisData.Data.length;++i)
-                    {
-                        var item=hisData.Data[i];
-                        if (item.Date>obj.Date || (item.Date==obj.Date && item.Time>=findTime))
-                        {
-                            index=i;
-                            break;
-                        }
-                    }
-                }
-                else    //只有日期
-                {
-                    for(var i=0;i<hisData.Data.length;++i)
-                    {
-                        var item=hisData.Data[i];
-                        if (item.Date>=obj.Date)
-                        {
-                            index=i;
-                            break;
-                        }
-                    }
-                }
-            }
+            var index=this.ChartOperator_GetIndex_ByDateTime(hisData, obj, this.Period, 0);
 
             if (index===null) 
             {
@@ -68932,6 +69000,63 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         this.Frame.SetSizeChage(true);
         this.Draw();
         this.UpdatePointByCursorIndex();   //更新十字光标位子
+    }
+
+    //定位K线的索引
+    //searchType 0模糊匹配  1=精确匹配
+    this.ChartOperator_GetIndex_ByDateTime=function(hisData, dateTime, period, searchType)
+    {
+        if (!hisData) return null;  //数据还没有到达
+        if (!IFrameSplitOperator.IsNonEmptyArray(hisData.Data)) return null;
+        if (!IFrameSplitOperator.IsPlusNumber(dateTime.Date) || dateTime.Date<19810101) return null;
+
+        if (ChartData.IsDayPeriod(period, true))
+        {
+            for(var i=0;i<hisData.Data.length;++i)
+            {
+                var item=hisData.Data[i];
+                if (searchType==1)
+                {
+                    if (item.Date==dateTime.Date) return i;
+                }
+                else
+                {
+                    if (item.Date>=dateTime.Date) return i;
+                }
+            }
+
+            return null;
+        }
+
+        if (ChartData.IsMinutePeriod(period,true) || ChartData.IsMilliSecondPeriod(period))
+        {
+            var findTime=null;
+            if (IFrameSplitOperator.IsNumber(dateTime.Time)) findTime=dateTime.Time;
+            for(var i=0;i<hisData.Data.length;++i)
+            {
+                var item=hisData.Data[i];
+                if (searchType==1)  //精确匹配
+                {
+                    if (findTime==null) return null;
+                    if (item.Date==dateTime.Date && item.Time==findTime) return i;
+                }
+                else
+                {
+                    if (findTime==null) //只有日期
+                    {
+                        if (item.Date>=dateTime.Date) return i;
+                    }
+                    else
+                    {
+                        if (item.Date>dateTime.Date || (item.Date==dateTime.Date && item.Time>=findTime)) return i;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        return null;
     }
 
     this.OnWheel=function(e)
@@ -69552,37 +69677,21 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
     this.SetCustomShow=function(customShow,hisData)
     {
-        if (!customShow || !customShow.Date || customShow.Date<19910101) return;
-
-        var firstDate=customShow.Date;
-        var index=null;
-        for(var i =0;i<hisData.Data.length;++i)
-        {
-            var item=hisData.Data[i];
-            if (item.Date>=firstDate)
-            {
-                index=i;
-                break;
-            }
-        }
+        var index=this.ChartOperator_GetIndex_ByDateTime(hisData,customShow, this.Period, 0);
         if (index===null) 
         {
-            JSConsole.Chart.Log(`[KLineChartContainer::SetCustomShow] Can't find first date=${firstDate}`);
+            JSConsole.Chart.Log("[KLineChartContainer::SetCustomShow] Can't find index by customShow=",customShow);
             return;
         }
 
-        var count=hisData.Data.length-index;
-        if (customShow.PageSize>0) count=customShow.PageSize;
-        
-        var customShowCount=count;
-        var pageSize=this.GetMaxMinPageSize();
-        if (count>pageSize.Max) customShowCount=pageSize.Max;
-        else if (count<pageSize.Min) customShowCount=pageSize.Min;
-        
-        for(var i in this.Frame.SubFrame)
+        if (IFrameSplitOperator.IsPlusNumber(customShow.PageSize))  //调整一屏显示个数 否则使用默认的
         {
-            var item =this.Frame.SubFrame[i].Frame;
-            item.XPointCount=customShowCount;
+            var showCount=customShow.PageSize;
+            for(var i=0;i<this.Frame.SubFrame.length; ++i)
+            {
+                var item =this.Frame.SubFrame[i].Frame;
+                item.XPointCount=showCount;
+            }
         }
         
         this.ChartPaint[0].Data.DataOffset=index;
@@ -72870,6 +72979,14 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                     }
                 }
             }
+
+            if (option.CustomShow && IFrameSplitOperator.IsPlusNumber(option.CustomShow.Date))
+            {
+                var item=option.CustomShow;
+                this.CustomShow={ Date:item.Date };
+                if (IFrameSplitOperator.IsNumber(item.Time)) this.CustomShow.Time=item.Time;
+                if (IFrameSplitOperator.IsPlusNumber(item.PageSize)) this.CustomShow.PageSize=item.PageSize;
+            }
         }
 
         this.ReloadChartDrawPicture();
@@ -73524,11 +73641,6 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         this.CurrentChartDrawPicture=drawPicture;
         //JSConsole.Chart.Log("[KLineChartContainer::CreateChartDrawPicture] ", name,this.CurrentChartDrawPicture);
         return true;
-    }
-
-    this.ClearCurrnetDrawPicture=function()
-    {
-        this.CurrentChartDrawPicture=null;
     }
 
     this.AddChartDrawPicture=function(obj)
