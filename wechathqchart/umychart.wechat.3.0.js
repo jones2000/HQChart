@@ -4621,6 +4621,36 @@ function HQTradeFrame()
         }
     }
 
+    //清空Y轴坐标的最大最小值
+    this.ClearYCoordinateMaxMin=function(windowIndex)
+    {
+        if (IFrameSplitOperator.IsNumber(windowIndex))
+        {
+            var subItem=this.SubFrame[windowIndex];
+            if (!subItem || !subItem.Frame) return;
+
+            var frame=subItem.Frame;
+            if (frame.YMaxMin)
+            {
+                frame.YMaxMin.Max=null;
+                frame.YMaxMin.Min=null;
+            }
+        }
+        else
+        {
+            for(var i=0;i<this.SubFrame.length;++i)
+            {
+                var subItem=this.SubFrame[i];
+                var frame=subItem.Frame;
+                if (frame.YMaxMin)
+                {
+                    frame.YMaxMin.Max=null;
+                    frame.YMaxMin.Min=null;
+                }
+            }
+        }
+    }
+
     this.SetLanguage=function(languageID)
     {
         for(let i in this.SubFrame)
@@ -6512,6 +6542,7 @@ function KLineChartContainer(uielement)
             this.ClearIndexPaint();
             this.CancelAutoUpdate();                    //先停止更新
             this.AutoUpdateEvent(false,"KLineChartContainer::ChangePeriod");
+            this.Frame.ClearYCoordinateMaxMin();
             this.RequestHistoryData();                  //请求日线数据
             //this.ReqeustKLineInfoData();
         }
@@ -6520,6 +6551,7 @@ function KLineChartContainer(uielement)
             this.ClearIndexPaint();
             this.CancelAutoUpdate();                    //先停止更新
             this.AutoUpdateEvent(false,"KLineChartContainer::ChangePeriod");
+            this.Frame.ClearYCoordinateMaxMin();
             this.RequestHistoryMinuteData();            //请求分钟数据
         }
     }
@@ -6682,6 +6714,7 @@ function KLineChartContainer(uielement)
     {
         this.DeleteIndexPaint(windowIndex, true);
         this.WindowIndex[windowIndex] = new ScriptIndex(indexData.Name, indexData.Script, indexData.Args, indexData);    //脚本执行
+        this.Frame.ClearYCoordinateMaxMin(windowIndex);
 
         var bindData = this.ChartPaint[0].Data;
         this.BindIndexData(windowIndex, bindData);   //执行脚本
@@ -6698,6 +6731,7 @@ function KLineChartContainer(uielement)
         //使用API挂接指标数据 API:{ Name:指标名字, Script:指标脚本可以为空, Args:参数可以为空, Url:指标执行地址 }
         var apiItem = indexData.API;
         this.WindowIndex[windowIndex] = new APIScriptIndex(apiItem.Name, apiItem.Script, apiItem.Args, indexData);
+        this.Frame.ClearYCoordinateMaxMin(windowIndex);
 
         var bindData = this.ChartPaint[0].Data;
         this.BindIndexData(windowIndex, bindData);   //执行脚本
@@ -7205,6 +7239,8 @@ function KLineChartContainer(uielement)
         this.CancelAutoUpdate();    //先停止更新
         this.AutoUpdateEvent(false,"KLineChartContainer::ChangeSymbol");
         this.ClearCustomKLine();
+        this.Frame.ClearYCoordinateMaxMin();
+
         this.Symbol = symbol;
 
         if (option && option.KLine)
@@ -9243,6 +9279,8 @@ function MinuteChartContainer(uielement)
         this.ChartSplashPaint.EnableSplash(true);
         this.ResetDataStatus();
         this.ClearIndexPaint();
+        this.Frame.ClearYCoordinateMaxMin();
+
         this.RequestData();
     }
 
@@ -9253,6 +9291,8 @@ function MinuteChartContainer(uielement)
         this.CancelAutoUpdate();    //先停止定时器
         this.ResetDataStatus();
         this.ClearIndexPaint();
+        this.Frame.ClearYCoordinateMaxMin();
+        
         this.RequestData();
     }
 

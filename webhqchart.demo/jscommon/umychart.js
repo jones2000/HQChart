@@ -19041,6 +19041,8 @@ function HQTradeFrame()
         {
             var subItem=this.SubFrame[windowIndex];
             if (!subItem || !subItem.Frame) return;
+
+            var frame=subItem.Frame;
             if (frame.YMaxMin)
             {
                 frame.YMaxMin.Max=null;
@@ -45425,6 +45427,51 @@ function IFrameSplitOperator()
     }
 
     this.SetOption=function(option) { }
+
+    //计算上下预留
+    this.ReservedHeight=function(splitData)
+    {
+        if (!this.Frame) return;
+        if (this.Frame.IsHScreen) return;   //横屏以后再搞
+
+        var yReserved=this.Frame.HorizontalReserved;
+        if (!yReserved) return;
+
+        var reservedHeight=0;
+        if (IFrameSplitOperator.IsPlusNumber(yReserved.Top)) reservedHeight+=yReserved.Top;
+        if (IFrameSplitOperator.IsPlusNumber(yReserved.Bottom)) reservedHeight+=yReserved.Bottom;
+        if (reservedHeight<=0) return;
+
+        var border=this.Frame.GetBorder();
+        var top=border.TopEx;
+        var bottom=border.BottomEx;
+        var srcHeight=bottom-top;
+        if (srcHeight<reservedHeight) return;
+
+        var max=splitData.Max;
+        var min=splitData.Min;
+        if (IFrameSplitOperator.IsPlusNumber(yReserved.Top)) top-=yReserved.Top;
+        if (IFrameSplitOperator.IsPlusNumber(yReserved.Bottom)) bottom+=yReserved.Bottom;
+
+        var value=(max-min)/(bottom-top);   //1个像素点对应的数值
+        if (IFrameSplitOperator.IsPlusNumber(yReserved.Top))
+        {
+            var topValue=value*yReserved.Top;
+            max+=topValue;
+        }
+        
+        if (IFrameSplitOperator.IsPlusNumber(yReserved.Bottom))
+        {
+            var bottomValue=value*yReserved.Bottom;
+            min-=bottomValue;
+        }
+
+        splitData.Max=max;
+        splitData.Min=min;
+
+        this.Frame.HorizontalMax=splitData.Max;
+        this.Frame.HorizontalMin=splitData.Min;
+    }
 }
 
 //字符串格式化 千分位分割
@@ -46077,6 +46124,8 @@ function FrameSplitKLinePriceY()
         }
         */
 
+        this.ReservedHeight(splitData); //预留高度
+        
         JSConsole.Chart.Log(`[FrameSplitKLinePriceY::Operator] fixed . Max=${splitData.Max} Min=${splitData.Min} Count=${splitData.Count}`);
 
         if (this.GetEventCallback)
@@ -46914,50 +46963,6 @@ function FrameSplitY()
             }
         }
     }
-
-    this.ReservedHeight=function(splitData)
-    {
-        if (this.Frame.IsHScreen) return;   //横屏以后再搞
-
-        var yReserved=this.Frame.HorizontalReserved;
-        if (!yReserved) return;
-
-        var reservedHeight=0;
-        if (IFrameSplitOperator.IsPlusNumber(yReserved.Top)) reservedHeight+=yReserved.Top;
-        if (IFrameSplitOperator.IsPlusNumber(yReserved.Bottom)) reservedHeight+=yReserved.Bottom;
-        if (reservedHeight<=0) return;
-
-        var border=this.Frame.GetBorder();
-        var top=border.TopEx;
-        var bottom=border.BottomEx;
-        var srcHeight=bottom-top;
-        if (srcHeight<reservedHeight) return;
-
-        var max=splitData.Max;
-        var min=splitData.Min;
-        if (IFrameSplitOperator.IsPlusNumber(yReserved.Top)) top-=yReserved.Top;
-        if (IFrameSplitOperator.IsPlusNumber(yReserved.Bottom)) bottom+=yReserved.Bottom;
-
-        var value=(max-min)/(bottom-top);   //1个像素点对应的数值
-        if (IFrameSplitOperator.IsPlusNumber(yReserved.Top))
-        {
-            var topValue=value*yReserved.Top;
-            max+=topValue;
-        }
-        
-        if (IFrameSplitOperator.IsPlusNumber(yReserved.Bottom))
-        {
-            var bottomValue=value*yReserved.Bottom;
-            min-=bottomValue;
-        }
-
-        splitData.Max=max;
-        splitData.Min=min;
-
-        this.Frame.HorizontalMax=splitData.Max;
-        this.Frame.HorizontalMin=splitData.Min;
-    }
-
 
     this.FormatValueString=function(value)
     {
@@ -64749,6 +64754,7 @@ function ChartInfoLine()
     this.SetOption=function(option)
     {
         if (option.LineColor) this.LineColor=option.LineColor;
+        if (option.PointColor) this.PointColor=option.PointColor
         if (option.Label)
         {
             var item=option.Label;
@@ -71839,15 +71845,41 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         }
     }
 
+    this.SetFrameAttribute=function(windowIndex, attr)
+    {
+        if (!window || !this.Frame.SubFrame[windowIndex] || !this.Frame.SubFrame[windowIndex].Frame) return;
+        if (!attr) return;
+
+        var frame=this.Frame.SubFrame[windowIndex].Frame;
+
+        if (!IFrameSplitOperator.IsUndefined(attr.HorizontalReserved)) frame.HorizontalReserved=attr.HorizontalReserved;    //Y轴上下预留
+        if (IFrameSplitOperator.IsNumber(attr.TitleHeight)) frame.ChartBorder.TitleHeight=attr.TitleHeight;                 //指标标题高度
+    }
+
+    this.ResetFrameAttribute=function(windowIndex)
+    {
+        if (!window || !this.Frame.SubFrame[windowIndex] || !this.Frame.SubFrame[windowIndex].Frame) return;
+        var frame=this.Frame.SubFrame[windowIndex].Frame;
+
+        frame.HorizontalReserved=null;
+    }
+
+
     //切换成 脚本指标
     this.ChangeScriptIndex=function(windowIndex,indexData,option)
     {
         this.DeleteIndexPaint(windowIndex, true);
         this.WindowIndex[windowIndex]=new ScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
+        this.ResetFrameAttribute(windowIndex);
+        this.Frame.ClearYCoordinateMaxMin(windowIndex);
 
         if (option)
         {
-            if (option.Window) this.SetFrameToolbar(windowIndex,option.Window);
+            if (option.Window) 
+            {
+                this.SetFrameToolbar(windowIndex,option.Window);
+                this.SetFrameAttribute(windowIndex,option.Window);   //窗口属性
+            }
         }
 
         this.OnChangeIndexEvent(windowIndex, { ID:indexData.ID, Name:indexData.Name, FunctionName:"ChangeScriptIndex" });
@@ -71894,14 +71926,20 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         //使用API挂接指标数据 API:{ Name:指标名字, Script:指标脚本可以为空, Args:参数可以为空, Url:指标执行地址 }
         var apiItem=indexData.API;
         this.WindowIndex[windowIndex]=new APIScriptIndex(apiItem.Name,apiItem.Script,apiItem.Args,indexData);
+        this.ResetFrameAttribute(windowIndex);
+        this.Frame.ClearYCoordinateMaxMin(windowIndex);
 
         this.OnChangeIndexEvent(windowIndex, { ID:indexData.ID, Name:indexData.Name, FunctionName:"ChangeAPIIndex" });
 
         if (indexData)
         {
-            if (indexData.Window) this.SetFrameToolbar(windowIndex,indexData.Window);
+            if (indexData.Window) 
+            {
+                this.SetFrameToolbar(windowIndex,indexData.Window);
+                this.SetFrameAttribute(windowIndex,indexData.Window);   //窗口属性
+            }
         }
-
+        
         this.Frame.ClearUpDonwFrameYData({ Index:windowIndex });
         var bindData=this.ChartPaint[0].Data;
         this.BindIndexData(windowIndex,bindData);   //执行脚本

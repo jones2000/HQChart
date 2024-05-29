@@ -919,7 +919,8 @@ function JSDialogModifyDraw()
         this.DivDialog.style.left = left + 'px'
         this.DivDialog.style.top = top + 'px'
 
-        if(e.preventDefault) e.preventDefault();
+        if (e.preventDefault) e.preventDefault();
+        if (e.stopPropagation) e.stopPropagation();
     }
 
     this.DocOnMouseUpTitle=function(e)

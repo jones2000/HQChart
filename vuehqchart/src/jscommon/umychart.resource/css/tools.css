@@ -1467,6 +1467,7 @@ input[type="color"] {
 .UMyChart_Draw_Modify_Dialog_Drag_Div
 {
     width:24px;
+    user-select: none;
 }
 
 .UMyChart_Draw_Modify_Dialog_Button_Div
