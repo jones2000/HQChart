@@ -3691,6 +3691,18 @@ function JSChartContainer(uielement)
         this.ChartDrawPicture.push(drawPicture);
         this.CurrentChartDrawPicture = null;
 
+        //通知上层画好了
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_FINISH_DRAWPICTURE); //完成画图工具事件
+        if (event && event.Callback)
+        {
+            let sendData={ DrawPicture: drawPicture };
+            event.Callback(event,sendData,this);
+        }
+
+        //单个回调
+        if (drawPicture.FinishedCallback) drawPicture.FinishedCallback(drawPicture);
+        if (drawPicture.OnFinish) drawPicture.OnFinish();
+
         return true;
     }
 

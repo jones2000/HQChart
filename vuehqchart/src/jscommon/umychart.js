@@ -2693,7 +2693,7 @@ var JSCHART_MENU_ID=
     CMD_CHANGE_SCRIPT_INDEX_ID:34,      //切换成自定义的脚本指标
 
     CMD_CHANGE_BASELINE_ID:35,          //分时图切换基准线
-
+    CMD_ADD_OVERLAY_INDEX_ID:36,        //添加叠加指标
 }
 
 
@@ -9471,6 +9471,13 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 if (!IFrameSplitOperator.IsString(srcParam)) return;
                 this.DefaultCursor=srcParam;
                 this.UIElement.style.cursor=this.DefaultCursor;
+                break;
+
+            case JSCHART_MENU_ID.CMD_ADD_OVERLAY_INDEX_ID:  //叠加指标 0=windowIndex, 1=indexinfo
+                if (param==null || !aryArgs[1]) return false;
+                var obj=aryArgs[1];
+                obj.WindowIndex=param;
+                this.AddOverlayIndex(obj);
                 break;
         }
     }

@@ -2143,6 +2143,8 @@ var JSCHART_EVENT_ID =
     RECV_MINUTE_DATA: 14,          //分时图数据到达
     ON_CLICK_INDEXTITLE:15,       //点击指标标题事件
     RECV_KLINE_UPDATE_DATA: 16,   //K线日,分钟更新数据到达 
+    ON_CLICK_DRAWPICTURE:17,    //点击画图工具 
+    ON_FINISH_DRAWPICTURE:18,    //完成画图工具    
     ON_INDEXTITLE_DRAW: 19,       //指标标题重绘事件 
     ON_CUSTOM_VERTICAL_DRAW: 20,  //自定义X轴绘制事件 
     ON_ENABLE_SPLASH_DRAW:22,          //开启/关闭过场动画事件
