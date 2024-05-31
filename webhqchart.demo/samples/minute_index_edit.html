@@ -267,21 +267,141 @@
 
                 this.OnSize();  //让K线全屏
                 this.Option.ScriptError=(error)=> { this.ExecuteScriptError(error); }
-                this.Option.NetworkFilter=(data, callback)=>{ HQData.NetworkFilter(data, callback); }
-                this.Chart.SetOption(this.Option);  //设置K线配置
+                this.Option.NetworkFilter=(data, callback)=>{  this.NetworkFilter(data, callback); }
 
-                this.Chart.AddEventCallback(
+                this.Option.EventCallback=
+                [
                     {
-                        event:JSCHART_EVENT_ID.ON_TITLE_DRAW, 
+                        event:JSCHART_EVENT_ID.ON_TITLE_DRAW,
                         callback:(event, data, obj)=>{ this.UpdateTitle(event, data, obj); }
-                    }
-                );
+                    },
+                    {
+                        event:JSCHART_EVENT_ID.ON_CREATE_RIGHT_MENU,
+                        callback:(event, data, obj)=>{ this.OnCreateRightMenu(event, data, obj); }
+                    },
+                    {
+                        event:JSCHART_EVENT_ID.ON_MENU_COMMAND,
+                        callback:(event, data, obj)=>{ this.OnMenuCommand(event, data, obj); }
+                    },
+                ];
 
+                this.Chart.SetOption(this.Option);  //设置K线配置
+            }
+
+
+            this.NetworkFilter=function(data, callback)
+            {
+                console.log(`[KLineChart::NetworkFilter] ${HQData.Explain}`, data);
+
+                switch(data.Name) 
+                {
+                    case "APIScriptIndex::ExecuteScript":
+                        this.GetAPIIndexData(data, callback);
+                        break;
+                    default:
+                        HQData.NetworkFilter(data, callback);
+                        break;
+                }
+            }
+
+            this.GetAPIIndexData=function(data, callback)
+            {
+                data.PreventDefault=true;
+                var request=data.Request;
+                if (request.Data.indexname=='BUY_SELL_INDEX')
+                    this.GetAPIIndx_BUY_SELL_INDEX(data, callback)
+            }
+
+            this.GetAPIIndx_BUY_SELL_INDEX=function(data, callback)
+            {
+                var hqchart=data.HQChart;
+                var kData=hqchart.SourceData;
+
+                //图标信息
+                var SVGData= 
+                { 
+                    name:'图标1', type:1, 
+                    Draw: 
+                    { 
+                        DrawType:'DRAWSVG', 
+                        Family:'iconfont', 
+                        TextFont:"12px 微软雅黑",
+                        IsDrawFirst:true,
+                        Data:[ ]
+                    }
+                };
+
+                var testDataInterval=parseInt(kData.Data.length/10);
+                var ARRAY_TEST_ITEM_DATA=
+                [
+                    { SVGColor:"rgb(255,20,147)", Text:"恭", TextColor:"rgb(220,220,220)" },
+                    { SVGColor:"rgb(0,0,255)", Text:"喜", TextColor:"rgb(220,220,220)" },
+                    { SVGColor:"rgb(30,144,255)", Text:"发", TextColor:"rgb(0,0,0)" },
+                    { SVGColor:"rgb(255,140,0)", Text:"财", TextColor:"rgb(0,0,0)" },
+                    { SVGColor:"rgb(255,99,71)", Text:"财", TextColor:"rgb(0,255,0)" },
+                    { SVGColor:"rgb(72,209,204)", Text:"源", TextColor:"rgb(255,0,0)" },
+                ];
+
+                for(var i=0, j=0;i<kData.Data.length;++i)
+                {
+                    var item=kData.Data[i];
+                    if (i%testDataInterval!=8) continue;
+
+                    var testData=ARRAY_TEST_ITEM_DATA[j%ARRAY_TEST_ITEM_DATA.length];
+                    var drawItem=
+                    { 
+                        Date:item.Date, Time:item.Time, Value:item.Close, 
+                        Text:{ Content:testData.Text, Color:testData.TextColor, YOffset:-6},
+                        SVG: { Symbol:"\ue6a7", Color:testData.SVGColor, Size:24,YOffset:0 },
+                        //Line: { Color:"rgb(255,0,255)", Dash:[5,5], Value:"C", Width:1, SVGBlank:4 },
+                        Tooltip:{ Text:`测试提示信息<br>${IFrameSplitOperator.FormatTimeString(item.Time, "HH:MM")}<br>恭喜发财,财源广进!`}
+                    };
+
+                    SVGData.Draw.Data.push(drawItem);
+                    ++j;
+                }
+
+                var apiData=
+                {
+                    code:0, 
+                    stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+                    outdata: 
+                    { 
+                        data:kData.GetDate(), time:kData.GetTime(), outvar:[SVGData]
+                    } 
+                };
+                
+                console.log('[KLineChart::GetAPIIndx_BUY_SELL_INDEX] apiData ', apiData);
+                callback(apiData);
             }
 
             this.UpdateTitle=function(event, data, obj)
             {
                 console.log("[KLineChart::UpdateTitle] ", data);
+            }
+
+            this.OnCreateRightMenu=function(event, data, obj)
+            {
+                console.log("[KLineChart::OnCreateRightMenu] data=", data);
+                
+                data.MenuData.Menu.push( { Name:JSPopMenu.SEPARATOR_LINE_NAME });
+
+                var indexInfo={ API: { ID:"BUY_SELL_INDEX", Name:'买卖指标', Args:null, Url:'local'}, IsShareY:true, Identify:"DEMO_OVERY_INDEX_8881" };
+                if (obj.GetOverlayIndexByIdentify(indexInfo.Identify))
+                {
+                    var newItem={ Name:`主图${indexInfo.API.Name}示例`, Data:{ ID: JSCHART_MENU_ID.CMD_DELETE_OVERLAY_INDEX_ID, Args:[indexInfo.Identify]}, Checked:true};
+                }
+                else
+                {
+                    var newItem={ Name:`主图${indexInfo.API.Name}示例`, Data:{ ID: JSCHART_MENU_ID.CMD_ADD_OVERLAY_INDEX_ID, Args:[0, indexInfo]}, Checked:false};
+                }
+                
+                data.MenuData.Menu.push(newItem);
+            }
+
+            this.OnMenuCommand=function(event, data, obj)
+            {
+                console.log("[KLineChart::OnMenuCommand] data=", data);
             }
 
             this.OnSize=function(option)  //自适应大小调整
