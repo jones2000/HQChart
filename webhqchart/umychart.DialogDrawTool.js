@@ -41,6 +41,7 @@ function JSDialogDrawTool()
                 { Title: '箭头', ClassName: 'hqchart_drawtool icon-draw_rays', Type:0, Data:{ ID:"箭头" } },
                 { Title: '趋势线', ClassName: 'hqchart_drawtool icon-draw_trendline', Type:0, Data:{ ID:"趋势线" } },
                 { Title: '水平线', ClassName: 'hqchart_drawtool icon-draw_hline', Type:0, Data:{ ID:"水平线" } },
+                { Title: '水平射线', ClassName: 'hqchart_drawtool icon-tubiao_shuipingshexian', Type:0, Data:{ ID:"水平射线" } },
                 { Title: '涂鸦线段', ClassName: 'hqchart_drawtool icon-draw_line', Type:0, Data:{ ID:"涂鸦线段" } },
                 { Title: '阻速线', ClassName: 'hqchart_drawtool icon-draw_resline', Type:0, Data:{ ID:"阻速线" } },
                 { Title: '江恩角度线', ClassName: 'hqchart_drawtool icon-jiangenjiaoduxian', Type:0, Data:{ ID:"江恩角度线" } },

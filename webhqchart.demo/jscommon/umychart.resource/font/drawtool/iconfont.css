@@ -1,8 +1,8 @@
 @font-face {
   font-family: "hqchart_drawtool"; /* Project id 4529603 */
-  src: url('iconfont.woff2?t=1716529516458') format('woff2'),
-       url('iconfont.woff?t=1716529516458') format('woff'),
-       url('iconfont.ttf?t=1716529516458') format('truetype');
+  src: url('iconfont.woff2?t=1717469992388') format('woff2'),
+       url('iconfont.woff?t=1717469992388') format('woff'),
+       url('iconfont.ttf?t=1717469992388') format('truetype');
 }
 
 .hqchart_drawtool {
@@ -11,6 +11,10 @@
   font-style: normal;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-tubiao_shuipingshexian:before {
+  content: "\e79b";
 }
 
 .icon-qushixianjiaodu:before {

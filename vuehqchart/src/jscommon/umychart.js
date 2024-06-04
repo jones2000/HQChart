@@ -11795,6 +11795,8 @@ function AverageWidthFrame()
 
         this.Canvas.font=this.DrawPicture.Font;
         var fontHeight=this.GetFontHeight();
+        this.Canvas.textAlign="left";
+        this.Canvas.textBaseline = "bottom";
 
         if (range.X)
         {
@@ -15207,6 +15209,7 @@ function KLineFrame()
             if (this.BeforeDrawXYCallback) this.BeforeDrawXYCallback(this);
     
             this.DrawTitleBG();
+            this.DrawCustomHorizontalArea();    //Y轴背景区域 在刻度前面绘制
             this.DrawHorizontal();
             this.DrawVertical();
         }
@@ -15999,10 +16002,21 @@ function KLineFrame()
                 case 4: //叠加K线涨幅刻度
                     this.DrawCustomItem(item, mapTextRect);  
                     break;
-                case 5:
-                    this.DrawCustomAreaItem(item);
-                    break;
             }
+        }
+    }
+
+    //Y轴面积背景
+    this.DrawCustomHorizontalArea=function()
+    {
+        if (this.IsMinSize) return;
+        if (this.ChartBorder.IsShowTitleOnly) return;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.CustomHorizontalInfo)) return;
+
+        for(var i=0;i<this.CustomHorizontalInfo.length;++i)
+        {
+            var item=this.CustomHorizontalInfo[i];
+            if (item.Type==5) this.DrawCustomAreaItem(item);
         }
     }
 
@@ -18632,7 +18646,14 @@ function HQTradeFrame()
         if (!drawPicture.GetXYCoordinate) return false;
 
         var range=drawPicture.GetXYCoordinate();
-        drawPicture.Frame.DrawPictureYCoordinate(drawPicture, range, option);
+        if (range && range.IsShowYCoordinate===false)   //隐藏Y轴刻度信息
+        {
+            
+        }
+        else
+        {
+            drawPicture.Frame.DrawPictureYCoordinate(drawPicture, range, option);
+        }
 
         for(var i=0;i<this.SubFrame.length;++i)
         {
@@ -55707,6 +55728,7 @@ IChartDrawPicture.ArrayDrawPricture=
     { Name:"射线", ClassName:'ChartDrawPictureHaflLine',  Create:function() { return new ChartDrawPictureHaflLine(); } },
     { Name:"箭头", ClassName:"ChartDrawArrowLine", Create:function() { return new ChartDrawArrowLine(); } },
     { Name:"水平线", ClassName:'ChartDrawPictureHorizontalLine',  Create:function() { return new ChartDrawPictureHorizontalLine(); }},
+    { Name:"水平射线", ClassName:"ChartDrawPictureHorizontalRay", Create:function() { return new ChartDrawPictureHorizontalRay(); }},
     { Name:"趋势线", ClassName:'ChartDrawPictureTrendLine',  Create:function() { return new ChartDrawPictureTrendLine(); }},
     { Name:"矩形", ClassName:'ChartDrawPictureRect', Create:function() { return new ChartDrawPictureRect(); }},
     { Name:"圆弧线", ClassName:'ChartDrawPictureArc',  Create:function() { return new ChartDrawPictureArc(); }},
@@ -56383,17 +56405,67 @@ function ChartDrawPictureHorizontalLine()
     this.newMethod();
     delete this.newMethod;
 
+    this.ClassName='ChartDrawPictureHorizontalLine';
+    this.PointCount=1;
+    this.IsPointIn=this.IsPointIn_XYValue_Line;
+    this.IsDrawFirst=true;
+    this.LineWidth=1;
     this.Super_SetOption=this.SetOption;    //父类函数
     this.Super_ExportStorageData=this.ExportStorageData;
 
-    this.Label; //{Text:文本, Position: 0=左, 1=右 }
+    this.LabelConfig=
+    { 
+        Left:{ IsShow:true, Margin:{ Left:5, Top:4, Bottom:2, Right:5 } },
+        Right:{ IsShow:true, Margin:{ Left:5, Top:4, Bottom:2, Right:5 } },
+        Font:`${12*GetDevicePixelRatio()}px 微软雅黑`, TextColor:"rgb(255,255,255)" 
+    };
+
+    this.InsideLabelConfig=
+    {
+        Position:0, //0=左, 1=右
+        Font:`${14*GetDevicePixelRatio()}px 微软雅黑`,
+        Margin:{ Left:5, Top:4, Bottom:2, Right:5 },
+        TextColor:"rgb(255,255,255)",
+        BGAlpha:0.8, //背景色透明度
+    }
+
+    this.LabelTitle;
 
     this.SetOption=function(option)
     {
         if (this.Super_SetOption) this.Super_SetOption(option);
         if (option)
         {
-            if (option.Label) this.Label=option.Label;
+            if (option.LabelTitle) this.LabelTitle=option.LabelTitle;
+
+            if (option.Label)
+            {
+                var item=option.Label;
+                if (item.Left)
+                {
+                    var subItem=item.Left;
+                    if (IFrameSplitOperator.IsBool(subItem.IsShow)) this.LabelConfig.Left.IsShow=subItem.IsShow;
+                }
+                
+
+                if (item.Right)
+                {
+                    var subItem=item.Right;
+                    if (IFrameSplitOperator.IsBool(subItem.IsShow)) this.LabelConfig.Right.IsShow=subItem.IsShow;
+                }
+
+                if (item.Font) this.LabelConfig.Font=item.Font;
+                if (item.TextColor) this.LabelConfig.FoTextColornt=item.TextColor;
+            }
+
+            if (option.InsideLabel)
+            {
+                var item=option.InsideLabel;
+                if (item.Font) this.InsideLabelConfig.Font=item.Font;
+                if (item.TextColor) this.InsideLabelConfig.TextColor=item.TextColor;
+                if (IFrameSplitOperator.IsNumber(item.Position)) this.InsideLabelConfig.Position=item.Position;
+                if (IFrameSplitOperator.IsNumber(item.BGAlpha)) this.InsideLabelConfig.BGAlpha=item.BGAlpha;
+            }
         }
     }
 
@@ -56403,17 +56475,13 @@ function ChartDrawPictureHorizontalLine()
         if (this.Super_ExportStorageData) 
         {
             storageData=this.Super_ExportStorageData();
-            if (this.Label) storageData.Label=this.Label;
+            if (this.LabelTitle) storageData.LabelTitle=this.LabelTitle;
         }
 
         return storageData;
     }
 
-    this.PointCount=1;
-    this.ClassName='ChartDrawPictureHorizontalLine';
-    this.IsPointIn=this.IsPointIn_XYValue_Line;
-    this.Font=16*GetDevicePixelRatio() +"px 微软雅黑";
-
+    /*
     this.GetXYCoordinate=function()
     {
         if (this.IsFrameMinSize()) return null;
@@ -56421,6 +56489,7 @@ function ChartDrawPictureHorizontalLine()
 
         return this.PointRange(drawPoint);
     }
+    */
 
     this.Draw=function()
     {
@@ -56454,8 +56523,9 @@ function ChartDrawPictureHorizontalLine()
         }
         else
         {
-            this.Canvas.moveTo(left,drawPoint[0].Y);
-            this.Canvas.lineTo(right,drawPoint[0].Y);
+            var yFixed=ToFixedPoint2(this.LineWidth,drawPoint[0].Y);
+            this.Canvas.moveTo(left,yFixed);
+            this.Canvas.lineTo(right,yFixed);
         }
         this.Canvas.stroke();
         this.RestoreLineWidth();
@@ -56481,88 +56551,316 @@ function ChartDrawPictureHorizontalLine()
         this.DrawPoint(drawPoint);
 
         //显示价格
-        this.LineText(drawPoint[0])
-        /*
-        this.Canvas.fillStyle=this.LineColor;
-        this.Canvas.font=this.Font;
-        if (isHScreen)
-        {
-            this.Canvas.textAlign="left";
-            this.Canvas.textBaseline="bottom";
-            var xText=drawPoint[0].X;
-            var yText=left;
-            this.Canvas.translate(xText, yText);
-            this.Canvas.rotate(90 * Math.PI / 180); //数据和框子旋转180度
-            var yValue=this.Frame.GetYData(drawPoint[0].X);
-            var text=yValue.toFixed(2);
-            if (this.Label)
-            {
-                if (this.Label.Position==0) text=this.Label.Text+yValue.toFixed(2);
-                else if (this.Label.Position==1) text=yValue.toFixed(2)+this.Label.Text;
-            }
-            this.Canvas.fillText(text,0,0);
-        }
-        else
-        {
-            this.Canvas.textAlign="left";
-            this.Canvas.textBaseline="bottom";
-            var yValue=this.Frame.GetYData(drawPoint[0].Y);
-            var text=yValue.toFixed(2);
-            if (this.Label)
-            {
-                if (this.Label.Position==0) text=this.Label.Text+yValue.toFixed(2);
-                else if (this.Label.Position==1) text=yValue.toFixed(2)+this.Label.Text;
-            }
-            this.Canvas.fillText(text,left,drawPoint[0].Y);
-        }
-        */
-        
+        this.DrawInsideLabel(drawPoint[0])
+
         this.Canvas.restore();
+
+        this.DrawValueLabel(drawPoint[0]);
+    }
+ 
+    this.DrawValueLabel=function(point)
+    {
+        if (!point) return;
+        if (this.Frame.IsHScreen) return;   //不支持横屏
+
+        var y=point.Y;
+        var yValue=this.Frame.GetYData(y);
+        var text=yValue.toFixed(2);
+
+        var border=this.Frame.GetBorder();
+        var config=this.LabelConfig;
+
+        this.Canvas.font=config.Font;
+        var textHeight=this.Canvas.measureText("擎").width;
+        var textWidth=this.Canvas.measureText(text).width;
+
+        if (config.Left.IsShow && this.Frame.ChartBorder.Left>5)
+        {
+            var margin=config.Left.Margin;
+            var rtBG={ Right:border.Left-1, Height:textHeight+margin.Top+margin.Bottom, Width:textWidth+margin.Left+margin.Right };
+            rtBG.Top=y-textHeight/2-margin.Top;
+            rtBG.Bottom=rtBG.Top+rtBG.Height;
+            rtBG.Left=rtBG.Right-rtBG.Width;
+
+            this.Canvas.fillStyle=this.LineColor;
+            this.Canvas.fillRect(rtBG.Left, rtBG.Top, rtBG.Width, rtBG.Height);
+
+            this.Canvas.textAlign="left";
+            this.Canvas.textBaseline = "top";
+            var xText=rtBG.Left+margin.Left;
+            var yText=rtBG.Top+margin.Top;
+            this.Canvas.fillStyle=config.TextColor;
+            this.Canvas.fillText(text,xText,yText);
+        }
+
+        if (config.Right.IsShow && this.Frame.ChartBorder.Right>5)
+        {
+            var margin=config.Right.Margin;
+            var rtBG={ Left:border.Right+1, Height:textHeight+margin.Top+margin.Bottom, Width:textWidth+margin.Left+margin.Right };
+            rtBG.Top=y-textHeight/2-margin.Top;
+            rtBG.Bottom=rtBG.Top+rtBG.Height;
+            rtBG.Right=rtBG.Left+rtBG.Width;
+            this.Canvas.fillStyle=this.LineColor;
+            this.Canvas.fillRect(rtBG.Left, rtBG.Top, rtBG.Width, rtBG.Height);
+
+            this.Canvas.textAlign="left";
+            this.Canvas.textBaseline = "top";
+            var xText=rtBG.Left+margin.Left;
+            var yText=rtBG.Top+margin.Top;
+            this.Canvas.fillStyle=config.TextColor;
+            this.Canvas.fillText(text,xText,yText);
+        }
     }
 
-    this.LineText=function(point)
+    this.DrawInsideLabel=function(point)
     {
         if (!point) return;
 
         var isHScreen=this.Frame.IsHScreen;
-        var left=this.Frame.ChartBorder.GetLeft();
+        var config=this.InsideLabelConfig;
+        if (config.Position!=0 && config.Position!=1) return;
+        var margin=config.Margin;
 
         this.Canvas.fillStyle=this.LineColor;
-        this.Canvas.font=this.Font;
+        this.Canvas.font=config.Font;
+        var textHeight=this.Canvas.measureText("擎").width;
+        var border=this.Frame.GetBorder();
 
         if (isHScreen)
         {
-            left=this.Frame.ChartBorder.GetTop();
-            this.Canvas.textAlign="left";
-            this.Canvas.textBaseline="bottom";
-            var xText=point.X;
-            var yText=left;
-            this.Canvas.translate(xText, yText);
-            this.Canvas.rotate(90 * Math.PI / 180); //数据和框子旋转180度
             var yValue=this.Frame.GetYData(point.X);
             var text=yValue.toFixed(2);
-            if (this.Label)
+            if (this.LabelTitle) text=this.LabelTitle+text;
+            var textWidth=this.Canvas.measureText(text).width;
+
+            var rtBG=null;
+            if (config.Position==0) //左
             {
-                if (this.Label.Position==0) text=this.Label.Text+yValue.toFixed(2);
-                else if (this.Label.Position==1) text=yValue.toFixed(2)+this.Label.Text;
+                var rtBG={ Top:border.Top+1, Width:textHeight+margin.Top+margin.Bottom, Height:textWidth+margin.Left+margin.Right, Left:point.X };
+                rtBG.Bottom=rtBG.Top+rtBG.Height;
+                rtBG.Right=rtBG.Left+rtBG.Width;
             }
-            this.Canvas.fillText(text,2,0);
+            else if (config.Position==1)    //右
+            {
+                var rtBG={ Bottom:border.Bottom-1, Width:textHeight+margin.Top+margin.Bottom, Height:textWidth+margin.Left+margin.Right, Left:point.X };
+                rtBG.Top=rtBG.Bottom-rtBG.Height;
+                rtBG.Right=rtBG.Left+rtBG.Width;
+            }
+
+            var bgColor=this.LineColor;
+            if (config.BGAlpha<1) bgColor=IChartDrawPicture.ColorToRGBA(this.LineColor, config.BGAlpha);
+            this.Canvas.fillStyle=bgColor;
+            this.Canvas.fillRect(rtBG.Left, rtBG.Top, rtBG.Width, rtBG.Height);
+            
+            var xText=rtBG.Right-margin.Top;
+            var yText=rtBG.Top+margin.Left;
+            this.Canvas.translate(xText, yText);
+            this.Canvas.rotate(90 * Math.PI / 180); //数据和框子旋转180度
+
+            this.Canvas.textAlign="left";
+            this.Canvas.textBaseline="top";
+            this.Canvas.fillStyle=config.TextColor;
+            this.Canvas.fillText(text,0,0);
         }
         else
         {
-            this.Canvas.textAlign="left";
-            this.Canvas.textBaseline="bottom";
             var yValue=this.Frame.GetYData(point.Y);
             var text=yValue.toFixed(2);
-            if (this.Label)
+            if (this.LabelTitle) text=this.LabelTitle+text;
+            var textWidth=this.Canvas.measureText(text).width;
+
+            var rtBG=null;
+            if (config.Position==0) //左
             {
-                if (this.Label.Position==0) text=this.Label.Text+yValue.toFixed(2);
-                else if (this.Label.Position==1) text=yValue.toFixed(2)+this.Label.Text;
+                var rtBG={ Left:border.Left+1, Height:textHeight+margin.Top+margin.Bottom, Width:textWidth+margin.Left+margin.Right, Bottom:point.Y };
+                rtBG.Top=rtBG.Bottom-rtBG.Height;
+                rtBG.Right=rtBG.Left+rtBG.Width;
             }
-            this.Canvas.fillText(text,left,point.Y);
+            else if (config.Position==1)    //右
+            {
+                var rtBG={ Right:border.Right-1, Height:textHeight+margin.Top+margin.Bottom, Width:textWidth+margin.Left+margin.Right, Bottom:point.Y };
+                rtBG.Top=rtBG.Bottom-rtBG.Height;
+                rtBG.Left=rtBG.Right-rtBG.Width;
+            }
+
+            var bgColor=this.LineColor;
+            if (config.BGAlpha<1) bgColor=IChartDrawPicture.ColorToRGBA(this.LineColor, config.BGAlpha);
+            this.Canvas.fillStyle=bgColor;
+            this.Canvas.fillRect(rtBG.Left, rtBG.Top, rtBG.Width, rtBG.Height);
+
+            var xText=rtBG.Left+margin.Left;
+            var yText=rtBG.Top+margin.Top;
+            this.Canvas.textAlign="left";
+            this.Canvas.textBaseline = "top";
+            this.Canvas.fillStyle=config.TextColor;
+            this.Canvas.fillText(text,xText,yText);
         }
     }
 }
+
+// 画图工具-水平射线线 支持横屏
+function ChartDrawPictureHorizontalRay()
+{
+    this.newMethod=IChartDrawPicture;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartDrawPictureHorizontalRay';
+    this.PointCount=1;
+    this.IsPointIn=this.IsPointIn_XYValue_Line;
+    this.IsDrawFirst=true;
+    this.LineWidth=1;
+    this.Super_SetOption=this.SetOption;    //父类函数
+    this.Super_ExportStorageData=this.ExportStorageData;
+
+    this.LabelConfig=
+    { 
+        Right:{ IsShow:true, Margin:{ Left:5, Top:4, Bottom:2, Right:5 } },
+        Font:`${12*GetDevicePixelRatio()}px 微软雅黑`, TextColor:"rgb(255,255,255)" 
+    };
+
+    this.SetOption=function(option)
+    {
+        if (this.Super_SetOption) this.Super_SetOption(option);
+        if (option)
+        {
+            if (option.LabelTitle) this.LabelTitle=option.LabelTitle;
+
+            if (option.Label)
+            {
+                var item=option.Label;
+                if (item.Right)
+                {
+                    var subItem=item.Right;
+                    if (IFrameSplitOperator.IsBool(subItem.IsShow)) this.LabelConfig.Right.IsShow=subItem.IsShow;
+                }
+
+                if (item.Font) this.LabelConfig.Font=item.Font;
+                if (item.TextColor) this.LabelConfig.FoTextColornt=item.TextColor;
+            }
+        }
+    }
+
+    this.ExportStorageData=function()
+    {
+        var storageData;
+        if (this.Super_ExportStorageData) 
+        {
+            storageData=this.Super_ExportStorageData();
+        }
+        return storageData;
+    }
+
+    this.GetXYCoordinate=function()
+    {
+        if (this.IsFrameMinSize()) return null;
+        var drawPoint=this.CalculateDrawPoint();
+
+        var data=this.PointRange(drawPoint);
+        if (data) data.IsShowYCoordinate=false;
+        return data;
+    }
+
+    this.Draw=function()
+    {
+        this.LinePoint=[];
+        if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
+
+        var drawPoint=this.CalculateDrawPoint();
+        if (!drawPoint || drawPoint.length!=1) return;
+        if (!this.Frame) return;
+        if (this.Value.length!=1) return;
+        if (!this.IsYValueInFrame(this.Value[0].YValue)) return null;
+
+        var isHScreen=this.Frame.IsHScreen;
+        var left=this.Frame.ChartBorder.GetLeft();
+        var right=this.Frame.ChartBorder.GetRight();
+        if (isHScreen)
+        {
+            left=this.Frame.ChartBorder.GetTop();
+            right=this.Frame.ChartBorder.GetBottom();
+        }
+        this.ClipFrame();
+
+        this.Canvas.strokeStyle=this.LineColor;
+        this.SetLineWidth();
+        this.Canvas.beginPath();
+        if (isHScreen)
+        {
+            this.Canvas.moveTo(drawPoint[0].X,drawPoint[0].Y);
+            this.Canvas.lineTo(drawPoint[0].X,right);
+        }
+        else
+        {
+            var yFixed=ToFixedPoint2(this.LineWidth,drawPoint[0].Y);
+            this.Canvas.moveTo(drawPoint[0].X,yFixed);
+            this.Canvas.lineTo(right,yFixed);
+        }
+        this.Canvas.stroke();
+        this.RestoreLineWidth();
+
+        var line={Start:new Point(), End:new Point()};
+        if (isHScreen)
+        {
+            line.Start.X=drawPoint[0].X;
+            line.Start.Y=drawPoint[0].Y;
+            line.End.X=drawPoint[0].X;
+            line.End.Y=right;
+        }
+        else
+        {
+            line.Start.X=drawPoint[0].X;
+            line.Start.Y=drawPoint[0].Y;
+            line.End.X=right;
+            line.End.Y=drawPoint[0].Y;
+        }
+        this.LinePoint.push(line);
+
+        //画点
+        this.DrawPoint(drawPoint);
+
+        this.Canvas.restore();
+
+        this.DrawValueLabel(drawPoint[0]);
+    }
+ 
+    this.DrawValueLabel=function(point)
+    {
+        if (!point) return;
+        if (this.Frame.IsHScreen) return;   //不支持横屏
+
+        var y=point.Y;
+        var yValue=this.Frame.GetYData(y);
+        var text=yValue.toFixed(2);
+
+        var border=this.Frame.GetBorder();
+        var config=this.LabelConfig;
+
+        this.Canvas.font=config.Font;
+        var textHeight=this.Canvas.measureText("擎").width;
+        var textWidth=this.Canvas.measureText(text).width;
+
+        if (config.Right.IsShow && this.Frame.ChartBorder.Right>5)
+        {
+            var margin=config.Right.Margin;
+            var rtBG={ Left:border.Right+1, Height:textHeight+margin.Top+margin.Bottom, Width:textWidth+margin.Left+margin.Right };
+            rtBG.Top=y-textHeight/2-margin.Top;
+            rtBG.Bottom=rtBG.Top+rtBG.Height;
+            rtBG.Right=rtBG.Left+rtBG.Width;
+            this.Canvas.fillStyle=this.LineColor;
+            this.Canvas.fillRect(rtBG.Left, rtBG.Top, rtBG.Width, rtBG.Height);
+
+            this.Canvas.textAlign="left";
+            this.Canvas.textBaseline = "top";
+            var xText=rtBG.Left+margin.Left;
+            var yText=rtBG.Top+margin.Top;
+            this.Canvas.fillStyle=config.TextColor;
+            this.Canvas.fillText(text,xText,yText);
+        }
+    }
+}
+
 
 //水平线2
 function ChartDrawHLine()
