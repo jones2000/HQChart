@@ -112,7 +112,7 @@ function IChartDrawPicture()
     this.LimitFrameID;   //限制在指定窗口绘图
 
     this.TouchConfig={ Point:{ Radius:15 }, Line:{ Width:10 } },
-    
+    this.PixelRatio=null;   //分辨率
 
     //接口函数
     this.SetLastPoint=null; //this.SetLastPoint=function(obj)  obj={X:,Y:}
@@ -992,8 +992,9 @@ function IChartDrawPicture()
     this.IsPointInLine=function(x, y, option)
     {
         if (!this.LinePoint) return -1;
-
+        
         var lineWidth=this.TouchConfig.Line.Width;
+        if (IFrameSplitOperator.IsPlusNumber(this.PixelRatio)) lineWidth=this.PixelRatio*this.TouchConfig.Line.Width
 
         for(var i=0;i<this.LinePoint.length; ++i)
         {

@@ -622,7 +622,7 @@ function JSDialogModifyDraw()
         { Title:"点击线段颜色", ClassName: 'hqchart_drawtool icon-huabi', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_CHANGE_LINE_COLOR_ID }},
         { Title:"点击字体颜色", ClassName: 'hqchart_drawtool icon-zitiyanse', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_CHANGE_FONT_COLOR_ID }},
         { Title:"点击背景色", ClassName: 'hqchart_drawtool icon-zitibeijingse', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_CHANGE_BG_COLOR_ID }},
-        { Title:"删除", ClassName: 'hqchart_drawtool icon-recycle_bin', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_DELETE_DRAW_CHART_ID }}
+        { Title:"删除图形", ClassName: 'hqchart_drawtool icon-recycle_bin', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_DELETE_DRAW_CHART_ID }}
     ];
    
     this.Inital=function(hqchart)
@@ -670,13 +670,24 @@ function JSDialogModifyDraw()
     {
         var divItem=document.createElement("div");
         divItem.className="UMyChart_Draw_Modify_Dialog_Button_Div";
+
+        var spanTooltip=document.createElement("span");
+        spanTooltip.className="UMyChart_Draw_Modify_Tooltip";
+        spanTooltip.innerText=item.Title;
+        divItem.appendChild(spanTooltip);
+
+
         var spanDom=document.createElement("span");
         spanDom.className=item.ClassName;
         spanDom.classList.add("UMyChart_DrawTool_Span");
         divItem.appendChild(spanDom);
+       
 
-        var data={ Div:divItem, Span:spanDom, Parent:parentDivDom, Item:item };
+        var data={ Div:divItem, Span:spanDom, Parent:parentDivDom, Item:item, Tooltip:spanTooltip };
         divItem.onmousedown=(e)=> { this.OnClickButton(e, data); };   //点击
+
+        divItem.onmouseover=(e)=> { this.OnHoverButton(e, data); }
+        divItem.onmouseout=(e)=>{ this.OnLeaveButton(e, data); }
 
         switch(item.Data.ID)
         {
@@ -717,6 +728,18 @@ function JSDialogModifyDraw()
                 this.ModifyFontColor();
                 break;
         }
+    }
+
+    this.OnHoverButton=function(e, data)
+    {
+        //var x=e.clientX;
+        //data.Tooltip.style.left=x+"px";
+        data.Tooltip.style.display="inline";
+    }
+
+    this.OnLeaveButton=function(e, data)
+    {
+        data.Tooltip.style.display="none";
     }
 
     this.Close=function(e)
@@ -862,7 +885,7 @@ function JSDialogModifyDraw()
         if (this.ColorButton)
         {
             var item=this.ColorButton;
-            this.ShowButton(item.Div, bShowLineColor?"block":"none");
+            this.ShowButton(item.Div, bShowLineColor?"inline":"none");
             if (bShowLineColor)
             {
                 item.Span.style['color']=chart.LineColor;
@@ -872,7 +895,7 @@ function JSDialogModifyDraw()
         if (this.BGColorButton)
         {
             var item=this.BGColorButton;
-            this.ShowButton(item.Div, bShowBGColor?"block":"none");
+            this.ShowButton(item.Div, bShowBGColor?"inline":"none");
             if (bShowBGColor)
             {
                 item.Span.style['color']=bgColor;
@@ -882,7 +905,7 @@ function JSDialogModifyDraw()
         if (this.FontColorButton)
         {
             var item=this.FontColorButton;
-            this.ShowButton(item.Div, bShowFontColor?"block":"none");
+            this.ShowButton(item.Div, bShowFontColor?"inline":"none");
             if (bShowFontColor)
             {
                 item.Span.style['color']=fontColor;

@@ -7546,6 +7546,7 @@ function KLineChartContainer(uielement)
         drawPicture.Period=this.Period;
         drawPicture.Right=this.Right;
         drawPicture.Option=this.ChartDrawOption;
+        drawPicture.PixelRatio=this.UIElement.PixelRatio;
         
         if (callback) drawPicture.FinishedCallback=callback;    //完成通知上层回调
         if (option) drawPicture.SetOption(option);
@@ -10397,6 +10398,7 @@ function MinuteChartContainer(uielement)
         drawPicture.Symbol=this.Symbol;
         drawPicture.Period=888888888;
         drawPicture.Option=this.ChartDrawOption;
+        drawPicture.PixelRatio=this.UIElement.PixelRatio;
         
         if (callback) drawPicture.FinishedCallback=callback;    //完成通知上层回调
         if (option) drawPicture.SetOption(option);
