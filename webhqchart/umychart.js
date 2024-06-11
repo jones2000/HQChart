@@ -2154,6 +2154,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
 JSChart.LastVersion=null;   //最新的版本号
 JSChart.EnableCanvasWillReadFrequently=false;   //https://html.spec.whatwg.org/multipage/canvas.html#concept-canvas-will-read-frequently
 JSChart.CorssCursorCanvasKey="hqchart_corsscursor";
+JSChart.TooltipCursorCanvasKey="hqchart_tooltip";
 
 //初始化
 JSChart.Init=function(divElement,bScreen,bCacheCanvas)
@@ -2564,6 +2565,7 @@ var JSCHART_OPERATOR_ID=
     OP_SCROOLBAR_SLIDER_CHANGED:15,    //滑块变动
 
     OP_GOTO:16,     //移动到某一个天或某一个分钟
+    OP_GOTO_BY_DATAINDEX:17,   //的移动到某一个数据起始位置
 }
 
 var JSCHART_DRAG_ID=
@@ -2694,6 +2696,8 @@ var JSCHART_MENU_ID=
 
     CMD_CHANGE_BASELINE_ID:35,          //分时图切换基准线
     CMD_ADD_OVERLAY_INDEX_ID:36,        //添加叠加指标
+
+    CMD_CHANGE_LANGUAGE_ID:37,          //语言切换
 }
 
 
@@ -9479,6 +9483,10 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 obj.WindowIndex=param;
                 this.AddOverlayIndex(obj);
                 break;
+
+            case JSCHART_MENU_ID.CMD_CHANGE_LANGUAGE_ID:
+                if (srcParam) this.SetLanguage(srcParam);
+                break;
         }
     }
 
@@ -10785,15 +10793,21 @@ function AverageWidthFrame()
         if (!text) return;
         
         var pixelRatio=GetDevicePixelRatio();
+        var canvas=this.Canvas;
+        if (this.GetExtraCanvas)
+        {
+            var finder=this.GetExtraCanvas(JSChart.TooltipCursorCanvasKey);
+            if (finder) canvas=finder.Canvas;
+        }
         
         var xCenter=mouseOnToolbar.Rect.Left+mouseOnToolbar.Rect.Width/2;
 
-        this.Canvas.font=this.ButtonTooltip.Font;
-        this.Canvas.textAlign="left";
-        this.Canvas.textBaseline="bottom";
+        canvas.font=this.ButtonTooltip.Font;
+        canvas.textAlign="left";
+        canvas.textBaseline="bottom";
 
         var mergin= this.ButtonTooltip.Mergin;
-        var textWidth=this.Canvas.measureText(text).width+mergin.Left+mergin.Right;
+        var textWidth=canvas.measureText(text).width+mergin.Left+mergin.Right;
         var textHeight=this.GetFontHeight();
         var bgHeight=textHeight+mergin.Top+mergin.Bottom;
         if (mouseOnToolbar.ID=="TitleButton")
@@ -10825,25 +10839,25 @@ function AverageWidthFrame()
         if (IFrameSplitOperator.IsNumber(this.ButtonTooltip.BorderRadius))  //圆角
         {
             var roundRadius=this.ButtonTooltip.BorderRadius;
-            this.Canvas.beginPath();
-            this.Canvas.roundRect(ToFixedPoint(x), ToFixedPoint(y), ToFixedRect(textWidth), ToFixedRect(bgHeight), [roundRadius]);
-            this.Canvas.closePath();
+            canvas.beginPath();
+            canvas.roundRect(ToFixedPoint(x), ToFixedPoint(y), ToFixedRect(textWidth), ToFixedRect(bgHeight), [roundRadius]);
+            canvas.closePath();
 
-            this.Canvas.fillStyle=this.ButtonTooltip.ColorBG;
-            this.Canvas.fill();
+            canvas.fillStyle=this.ButtonTooltip.ColorBG;
+            canvas.fill();
 
-            this.Canvas.strokeStyle=this.ButtonTooltip.ColorBorder;
-            this.Canvas.stroke();
+            canvas.strokeStyle=this.ButtonTooltip.ColorBorder;
+            canvas.stroke();
 
-            this.Canvas.fillStyle=this.ButtonTooltip.Color;
-            this.Canvas.fillText(text, x+mergin.Left, y+bgHeight-mergin.Bottom);
+            canvas.fillStyle=this.ButtonTooltip.Color;
+            canvas.fillText(text, x+mergin.Left, y+bgHeight-mergin.Bottom);
         }
         else
         {
-            this.Canvas.fillStyle=this.ButtonTooltip.ColorBG; 
-            this.Canvas.fillRect(x,y,textWidth,bgHeight);   //画一个背景色, 不然是一个黑的背景
-            this.Canvas.fillStyle=this.ButtonTooltip.Color;
-            this.Canvas.fillText(text, x+mergin.Left,y+bgHeight-mergin.Bottom);
+            canvas.fillStyle=this.ButtonTooltip.ColorBG; 
+            canvas.fillRect(x,y,textWidth,bgHeight);   //画一个背景色, 不然是一个黑的背景
+            canvas.fillStyle=this.ButtonTooltip.Color;
+            canvas.fillText(text, x+mergin.Left,y+bgHeight-mergin.Bottom);
         }
         
 
@@ -69221,6 +69235,29 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
             this.ChartOperator_Temp_Update();
         }
+        else if (id==JSCHART_OPERATOR_ID.OP_GOTO_BY_DATAINDEX)  //{PageSize:可选, DataIndex:起始位置数据索引}
+        {
+            if (!IFrameSplitOperator.IsNumber(obj.DataIndex)) return;
+            var hisData=this.ChartOperator_Temp_GetHistroyData();
+            if (!hisData) return;  //数据还没有到达
+            if (obj.DataIndex<0 || obj.DataIndex>=hisData.Data.length)
+            {
+                JSConsole.Chart.Log(`[KLineChartContainer::ChartOperator] OP_GOTO_BY_DATAINDEX obj.DataIndex=${obj.DataIndex} error.}`);
+                return;
+            }
+
+            var oldXPointCount=this.Frame.SubFrame[0].Frame.XPointCount;
+            var xPointCount=oldXPointCount;
+            if (obj.PageSize>0) xPointCount=obj.PageSize; //调整一屏显示的个数
+            if (xPointCount!=oldXPointCount) this.Frame.SetXShowCount(xPointCount);  //设置X轴显示数据个数
+
+            hisData.DataOffset=obj.DataIndex;
+            this.CursorIndex=0;
+            this.LastPoint.X=null;
+            this.LastPoint.Y=null;
+
+            this.ChartOperator_Temp_Update();
+        }
         else if (id==JSCHART_OPERATOR_ID.OP_CORSSCURSOR_GOTO)   //移动十字光标{ Date:, Time }
         {
             if (!IFrameSplitOperator.IsNumber(obj.Date)) return;
@@ -69671,6 +69708,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
             var frame=g_ChartFrameFactory.Create("KLineFrame", { ID:i });
             frame.Canvas=this.Canvas;
+            frame.GetExtraCanvas=(name)=>{ return this.GetExtraCanvas(name); };
             frame.ChartBorder=border;
             frame.Identify=i;                           //窗口序号
             frame.RightSpaceCount=this.RightSpaceCount; //右边
@@ -69756,6 +69794,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         var frame=g_ChartFrameFactory.Create(frameClassName, { ID:id });
         
         frame.Canvas=this.Canvas;
+        frame.GetExtraCanvas=(name)=>{ return this.GetExtraCanvas(name); };
         frame.ChartBorder=border;
         frame.Identify=id;                   //窗口序号
         frame.GetEventCallback=(id)=> { return this.GetEventCallback(id); };
@@ -74343,7 +74382,16 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                             { Name:"默认", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_DEFAULTCURSOR_ID, Args:["default"]}, Checked:this.DefaultCursor=="default" },
                             { Name:"十字线", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_DEFAULTCURSOR_ID, Args:["crosshair"]}, Checked:this.DefaultCursor=="crosshair" },
                         ]
-                    }
+                    },
+                    { 
+                        Name:"语言设置", 
+                        SubMenu:
+                        [
+                            { Name:"中文", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_LANGUAGE_ID, Args:["CN"]}, Checked:this.LanguageID==JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID  },
+                            { Name:"英语", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_LANGUAGE_ID, Args:["EN"]}, Checked:this.LanguageID==JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID },
+                            { Name:"繁体", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_LANGUAGE_ID, Args:["TC"]}, Checked:this.LanguageID==JSCHART_LANGUAGE_ID.LANGUAGE_TRADITIONAL_CHINESE_ID },
+                        ]
+                    },
                 ]
             }
         ];
@@ -83693,6 +83741,7 @@ function KLineChartHScreenContainer(uielement)
 
             var frame=g_ChartFrameFactory.Create("KLineHScreenFrame", { ID:i });
             frame.Canvas=this.Canvas;
+            frame.GetExtraCanvas=(name)=>{ return this.GetExtraCanvas(name); };
             frame.ChartBorder=border;
             frame.Identify=i;                   //窗口序号
             frame.RightSpaceCount=this.RightSpaceCount; //右边

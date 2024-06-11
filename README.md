@@ -387,6 +387,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 87. [HQChart使用教程97-K线X轴滚动条](https://jones2000.blog.csdn.net/article/details/134133670)   
 88. [HQChart使用教程98-右键菜单2.0使用介绍](https://blog.csdn.net/jones2000/article/details/138841350)   
 89. [HQChart使用教程99-K线窗口设置上下间距](https://jones2000.blog.csdn.net/article/details/139273770)   
+90. [HQChart使用教程100-自定义Y轴分段背景色](https://jones2000.blog.csdn.net/article/details/139498872)   
 
 ##  微信小程序教程
 1. [HQChart小程序教程1-如何快速的创建一个K线图](https://developers.weixin.qq.com/community/develop/article/doc/0006c451ac81589915b89d1c55bc13)   

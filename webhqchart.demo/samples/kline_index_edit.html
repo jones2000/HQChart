@@ -46,6 +46,7 @@
             
             <button class="toolsButton" id="style_black">黑色风格</button>
             <button class="toolsButton" id="style_white">白色风格</button>
+            <button class="toolsButton" id="showAllKLine">显示全部K线</button>
 
         </div>
         <div class="table" id="tools_table">
@@ -112,6 +113,7 @@
     <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
     <script src="../jscommon/umychart.popMenu.js"></script>
     <script src="../jscommon/umychart.DialogDrawTool.js"></script>
+    <script src="../jscommon/umychart.version.js"></script>
     
      <!-- 公式编辑器 -->
     <script src="../jscommon/umychart.resource/js/codemirror/codemirror.js"></script>
@@ -168,8 +170,14 @@
                 Windows: //窗口指标
                 [
                     //{Index:"EMPTY", TitleHeight:1},
-                    {Index:"MA", Overlay:true },
-                    {Index:"MACD", Overlay:true},
+                    {
+                        Index:"MA", Overlay:true,
+                        //HorizontalReserved:{ Top:50, Bottom:50 }
+                    },
+                    {
+                        Index:"MACD", Overlay:true, 
+                        //HorizontalReserved:{ Top:25, Bottom:50 }
+                    },
                     {Index:"VOL", Overlay:true, YAxis: { FloatPrecision:0, StringFormat:2 } },
                 ], 
 
@@ -364,8 +372,8 @@
             this.Create=function()  //创建图形
             {
                 var self=this;
-                //$(window).resize(function() { self.OnSize( {Type:1} ); });    //绑定窗口大小变化事件
-                $(window).resize(function() { self.OnSize(  ); });    //绑定窗口大小变化事件
+                $(window).resize(function() { self.OnSize( {Type:1} ); });    //绑定窗口大小变化事件
+                //$(window).resize(function() { self.OnSize(  ); });    //绑定窗口大小变化事件
 
                 var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID); //读取黑色风格配置
                 JSChart.SetStyle(blackStyle);
@@ -992,11 +1000,30 @@
                     var frameItem=subFrame.Frame;
                     frameItem.YLineExtend=[{ Width:5, Color:penBorder}, { Width:5, Color:penBorder} ];
                     frameItem.XLineExtend=[{ Mode:1, Color:penBorder }];
+
+                    for(var j=0;j<subFrame.OverlayIndex.length;++j)
+                    {
+                        var overlayItem=subFrame.OverlayIndex[j];
+                        var overlayFrame=overlayItem.Frame;
+                        overlayFrame.PenBorder=penBorder;
+
+                        for(var k=0;k<overlayFrame.CustomToolbar.length;++k)
+                        {
+                            var item=overlayFrame.CustomToolbar[k];
+                            if (item.ID=="8889")
+                            {
+                                item.Style.MoveOnColor=buttonColor[1];
+                                item.Style.Color=buttonColor[0];
+                            }
+                        }
+                    }
                 }
 
                 style.ToolbarButtonStyle=1;
+                style.OverlayFrame.BolderPen=style.FrameBorderPen;
                 JSChart.SetStyle(style);
                 this.DivKLine.style.backgroundColor=style.BGColor;   //修改div背景色
+                
                 this.Chart.ReloadResource({ Resource:null, Draw:true , Update:true });  //动态更新颜色配置  
 
             }
@@ -1318,11 +1345,13 @@
                     {
                         item.SubMenu.push({ Name:JSPopMenu.SEPARATOR_LINE_NAME });
                         var indexInfo={ API: { ID:"CLOSE_LINE", Name:'收盘线(后台指标)',Args:null, Url:'local'} };
+                        //indexInfo.Window={ HorizontalReserved:{ Top:100, Bottom:50 } };
                         var newItem={ Name:indexInfo.API.Name, Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_API_INDEX_ID, Args:[frameID, indexInfo]}};
                         item.SubMenu.push(newItem);
 
                         var indexInfo={ Name:"高低均价(自定义脚本)", ID:"HIGH_LOW_AV", Script:"均价:(H+L)/2;高:H;低:L;" };
-                        var newItem={ Name:indexInfo.Name, Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_SCRIPT_INDEX_ID, Args:[frameID, indexInfo]}};
+                        var option=null; //{ Window:{ HorizontalReserved:{ Top:100, Bottom:50 }} };
+                        var newItem={ Name:indexInfo.Name, Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_SCRIPT_INDEX_ID, Args:[frameID, indexInfo, option]}};
                         item.SubMenu.push(newItem);
                     }
                 }
@@ -1355,6 +1384,12 @@
 
                     selectDom.add(new Option(name, i));
                 }
+            }
+
+
+            this.ShowAllKLine=function()
+            {
+                this.Chart.JSChartContainer.ShowAllKLine();
             }
         
         }
@@ -1409,6 +1444,8 @@
 
             $("#style_black").click(function(){ klineControl.ChangeStyle('black') })
             $("#style_white").click(function(){ klineControl.ChangeStyle('white'); })
+
+            $("#showAllKLine").click(function(){ klineControl.ShowAllKLine(); })
 
             DeleteLocalIndex=(e, name)=>{ klineControl.DeleteLocalIndex(e, name); }
             SelectLocalIndex=(e, name)=> { klineControl.SelectLocalIndex(e, name); }
