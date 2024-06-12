@@ -10456,6 +10456,11 @@ function JSDraw(errorHandler,symbolData)
         return color;
     }
 
+    this.STICKTYPE=function(value)
+    {
+        return value;
+    }
+
     //数据左右偏移
     this.XMOVE=function(offset)
     {
@@ -17211,7 +17216,7 @@ function JSExecute(ast,option)
             {
                 let varName;
                 let draw;
-                let color, upColor, downColor;
+                let color, upColor, downColor, stickType;
                 let lineWidth;
                 let colorStick=false;
                 let pointDot=false;
@@ -17356,6 +17361,10 @@ function JSExecute(ast,option)
                             {
                                 downColor=itemExpression.Out;
                             }
+                            else if (itemExpression.Callee.Name=="STICKTYPE")
+                            {
+                                stickType=itemExpression.Out;
+                            }
                             else if (itemExpression.Callee.Name=="XMOVE")
                             {
                                 xOffset=itemExpression.Out;
@@ -17496,6 +17505,7 @@ function JSExecute(ast,option)
                     if (upColor) value.UpColor=upColor;
                     if (downColor) value.DownColor=downColor;
                     if (lineWidth) value.LineWidth=lineWidth;
+                    if (IFrameSplitOperator.IsNumber(stickType)) value.StickType=stickType;
                     this.OutVarTable.push(value);
                 }
                 else if (lineArea && varName)   //LINEAREA 面积
@@ -18029,6 +18039,9 @@ function JSExecute(ast,option)
                 break;
             case "DOWNCOLOR":
                 node.Out=this.Draw.DOWNCOLOR(args[0]);
+                break;
+            case "STICKTYPE":   //柱子类型
+                node.Out=this.Draw.STICKTYPE(args[0]);
                 break;
             case "XMOVE":
                 node.Out=this.Draw.XMOVE(args[0]);
@@ -19183,6 +19196,7 @@ function JSExplainer(ast,option)
                 return `上涨颜色${args[0]}`;
             case "DOWNCOLOR":
                 return `下跌颜色${args[0]}`;
+            case "STICKTYPE":
             case "FIRSTDRAW":
                 return "";
 
@@ -20711,6 +20725,7 @@ function ScriptIndex(name,script,args,option)
 
         if (varItem.UpColor) chart.UpColor=varItem.UpColor;
         if (varItem.DownColor) chart.DownColor=varItem.DownColor;
+        if (IFrameSplitOperator.IsNumber(varItem.StickType)) chart.BarType=varItem.StickType;
         if (varItem.LineWidth) 
         {
             let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
@@ -22622,6 +22637,7 @@ function OverlayScriptIndex(name,script,args,option)
 
         if (varItem.UpColor) chart.UpColor=varItem.UpColor;
         if (varItem.DownColor) chart.DownColor=varItem.DownColor;
+        if (IFrameSplitOperator.IsNumber(varItem.StickType)) chart.BarType=varItem.StickType;
         if (varItem.LineWidth) 
         {
             let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));

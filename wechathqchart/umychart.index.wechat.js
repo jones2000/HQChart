@@ -827,7 +827,8 @@ function ScriptIndex(name, script, args, option)
 
         if (varItem.UpColor) chart.UpColor=varItem.UpColor;
         if (varItem.DownColor) chart.DownColor=varItem.DownColor;
-
+        if (IFrameSplitOperator.IsNumber(varItem.StickType)) chart.BarType=varItem.StickType;
+        
         let titleIndex = windowIndex + 1;
         chart.Data.Data = varItem.Data;
         chart.HistoryData = hisData;
@@ -2099,6 +2100,7 @@ function OverlayScriptIndex(name,script,args,option)
 
         if (varItem.UpColor) chart.UpColor=varItem.UpColor;
         if (varItem.DownColor) chart.DownColor=varItem.DownColor;
+        if (IFrameSplitOperator.IsNumber(varItem.StickType)) chart.BarType=varItem.StickType;
 
         let titleIndex=windowIndex+1;
         chart.Data.Data=varItem.Data;

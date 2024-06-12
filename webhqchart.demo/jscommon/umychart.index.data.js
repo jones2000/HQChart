@@ -79,7 +79,7 @@ function JSIndexScript()
             ['BOLL', this.BOLL],['BOLL副图', this.BOLL2],['BBI', this.BBI],
             ['DKX', this.DKX],['MIKE', this.MIKE],['PBX', this.PBX],
             ['ENE', this.ENE],['MACD', this.MACD],['KDJ', this.KDJ],["MACD2", this.MACD2],
-            ['VOL', this.VOL],["VOL_OVERLAY", this.VOL_OVERLAY], ['RSI', this.RSI],['BRAR', this.BRAR],
+            ['VOL', this.VOL],['VOL2', this.VOL2],["VOL_OVERLAY", this.VOL_OVERLAY], ['RSI', this.RSI],['BRAR', this.BRAR],
             ['WR', this.WR],['BIAS', this.BIAS],['OBV', this.OBV],
             ['DMI', this.DMI],['CR', this.CR],['PSY', this.PSY],
             ['CCI', this.CCI],['DMA', this.DMA],['TRIX', this.TRIX],
@@ -635,6 +635,23 @@ JSIndexScript.prototype.VOL=function()
         OutName:[ {Name:'MA1',DynamicName:"MA{M1}" },  {Name:'MA2',DynamicName:"MA{M2}" }],
         Script: //脚本
 'VOL:VOL,VOLSTICK;\n\
+MA1:MA(VOL,M1);\n\
+MA2:MA(VOL,M2);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.VOL2=function()
+{
+    let data=
+    {
+        Name:'VOL', Description:'成交量', IsMainIndex:false,FloatPrecision:0,
+        Args:[ { Name:'M1', Value:5}, { Name:'M2', Value:10} ],
+        OutName:[ {Name:'MA1',DynamicName:"MA{M1}" },  {Name:'MA2',DynamicName:"MA{M2}" }],
+        Script: //脚本
+'VOL:VOL,VOLSTICK,STICKTYPE(1);\n\
 MA1:MA(VOL,M1);\n\
 MA2:MA(VOL,M2);'
 

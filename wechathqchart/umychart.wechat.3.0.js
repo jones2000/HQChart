@@ -1836,7 +1836,7 @@ function JSChartContainer(uielement)
 
         var jsChart = this;
         var touches = this.GetToucheData(e, jsChart.IsForceLandscape);
-
+        
         if (this.IsPhoneDragging(e)) 
         {
             var drag = jsChart.MouseDrag;

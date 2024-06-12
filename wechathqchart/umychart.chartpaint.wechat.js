@@ -7260,6 +7260,7 @@ function ChartVolStick()
     this.DownColor = g_JSChartResource.DownBarColor;
     this.HistoryData;               //历史数据
     this.KLineDrawType = 0;
+    this.BarType;                   //柱子状态 1=实心 0=空心 2=涨实跌空 如果设置了这个属性， 属性KLineDrawType无效
     this.ClassName = 'ChartVolStick';
     this.MinBarWidth=g_JSChartResource.MinKLineBarWidth; //最小的柱子宽度
 
@@ -7297,28 +7298,22 @@ function ChartVolStick()
                 var y = this.ChartFrame.GetYFromData(value);
                 var barColor=this.GetBarColor(kItem);
                 var bUp = barColor.IsUp;
-                this.Canvas.fillStyle=barColor.Color;
 
                 //高度调整为整数
                 var height = ToFixedRect(Math.abs(yBottom - y)>=1 ? yBottom - y : 1);
                 y = yBottom - height;
-                if (this.KLineDrawType==6)
+                var bSolidBar=this.IsSolidBar(bUp); //实心柱子
+                if (bSolidBar)
+                {
+                    this.Canvas.fillStyle=barColor.Color;
+                    this.Canvas.fillRect(ToFixedRect(left), y, ToFixedRect(dataWidth), height);
+                }
+                else
                 {
                     this.Canvas.strokeStyle=barColor.Color;
                     this.Canvas.beginPath();
                     this.Canvas.rect(ToFixedPoint(left), ToFixedPoint(y), ToFixedRect(dataWidth), height);
                     this.Canvas.stroke();
-                }
-                else if (bUp && (this.KLineDrawType == 1 || this.KLineDrawType == 2 || this.KLineDrawType == 3)) //空心柱子
-                {
-                    this.Canvas.strokeStyle = this.UpColor;
-                    this.Canvas.beginPath();
-                    this.Canvas.rect(ToFixedPoint(left), ToFixedPoint(y), ToFixedRect(dataWidth), height);
-                    this.Canvas.stroke();
-                }
-                else 
-                {
-                    this.Canvas.fillRect(ToFixedRect(left), y, ToFixedRect(dataWidth), height);
                 }
             }
         }
@@ -7378,6 +7373,29 @@ function ChartVolStick()
         else return { Color:this.DownColor, IsUp:false };
     }
 
+     //true=实心 false=空心
+     this.IsSolidBar=function(bUp)
+     {
+         var bSolidBar=true; //实心柱子
+ 
+         if (this.BarType===0 || this.BarType===1 || this.BarType===2)
+         {
+             if (this.BarType===0)   //空心
+                 bSolidBar=false;
+             else if (this.BarType===2)  //涨实跌空
+                 bSolidBar=bUp;
+         }
+         else
+         {
+             if (this.KLineDrawType==6) //完全空心柱
+                 bSolidBar=false;    
+             else if (bUp && (this.KLineDrawType==1 || this.KLineDrawType==2 || this.KLineDrawType==3)) //空心柱子
+                 bSolidBar=false;
+         }
+ 
+         return bSolidBar;
+     }
+
     this.HScreenDraw = function () //横屏画法
     {
         var dataWidth = this.ChartFrame.DataWidth;
@@ -7404,20 +7422,22 @@ function ChartVolStick()
                 var y = this.ChartFrame.GetYFromData(value);
                 var barColor=this.GetBarColor(kItem);
                 var bUp=barColor.IsUp;
-                this.Canvas.fillStyle=barColor.Color;
 
                 //高度调整为整数
                 var height = ToFixedRect(y - yBottom);
-                if (bUp && (this.KLineDrawType == 1 || this.KLineDrawType == 2 || this.KLineDrawType == 3)) //空心柱子
+                var bSolidBar=this.IsSolidBar(bUp); //实心柱子
+
+                if (bSolidBar)
                 {
-                    this.Canvas.strokeStyle = this.UpColor;
+                    this.Canvas.fillStyle=barColor.Color;
+                    this.Canvas.fillRect(yBottom, ToFixedRect(left), height, ToFixedRect(dataWidth));
+                }
+                else
+                {
+                    this.Canvas.strokeStyle=barColor.Color;
                     this.Canvas.beginPath();
                     this.Canvas.rect(ToFixedPoint(yBottom), ToFixedPoint(left), height, ToFixedRect(dataWidth));
                     this.Canvas.stroke();
-                }
-                else 
-                {
-                    this.Canvas.fillRect(yBottom, ToFixedRect(left), height, ToFixedRect(dataWidth));
                 }
             }
         }

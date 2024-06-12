@@ -3371,6 +3371,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
         if (this.TryClickButton(x,y,e))
         {
+            this.IsOnTouch=false;
             return;
         }
 
@@ -3403,11 +3404,13 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
         if (this.TryClickCrossCursor(x,y, e))
         {
+            this.IsOnTouch=false;
             return;
         }
 
         if (this.TryClickChartTooltipData && this.TryClickChartTooltipData(x,y,e))  //预留给外部点击图标什么用的
         {
+            this.IsOnTouch=false;
             return;
         }
 
@@ -7794,6 +7797,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
         if (this.Frame && this.Frame.SetLanguage) this.Frame.SetLanguage(this.LanguageID);
 
+        //this.Frame.ClearYCoordinateMaxMin();
+        this.ResetFrameXYSplit();
         this.Frame.SetSizeChage(true);
         this.Draw();
     }
@@ -23479,6 +23484,7 @@ function ChartKLine()
                         // 15=HLC Area 
                         // 16=kagi
                         // 17=订单流样式4
+                        // 18=订单流样式5
 
     this.CloseLineColor=g_JSChartResource.CloseLineColor;
     this.CloseLineAreaColor=g_JSChartResource.CloseLineAreaColor;
@@ -25141,200 +25147,7 @@ function ChartKLine()
         }
     }
 
-    /*
-    this.DrawKBarV2=function(data, colorData, dataWidth, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen)
-    {
-        var isDrawBorder=false;
-        var isEmptyBar=false;
-        if (colorData.border) isDrawBorder=true;
-        if (colorData.Type===0) isEmptyBar=true;
-
-        if (dataWidth>=4)
-        {
-            if (isDrawBorder)
-            {
-                if ((dataWidth%2)!=0) dataWidth-=1;
-            }
-
-            if (data.High>data.Close)   //上影线
-            {
-                if (colorData.Line)
-                {
-                    this.Canvas.strokeStyle=colorData.Line.Color;
-                    this.Canvas.beginPath();
-                    if (isHScreen)
-                    {
-                        this.Canvas.moveTo(ToFixedPoint(y),ToFixedPoint(x));
-                        this.Canvas.lineTo(ToFixedPoint(Math.max(yClose,yOpen)),ToFixedPoint(x));
-                    }
-                    else
-                    {
-                        if (isDrawBorder)
-                        {
-                            var xFixed=left+dataWidth/2;
-                            this.Canvas.moveTo(ToFixedPoint(xFixed),ToFixedPoint(y));
-                            this.Canvas.lineTo(ToFixedPoint(xFixed),ToFixedPoint(Math.min(yClose,yOpen)));
-                        }
-                        else
-                        {
-                            this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(y));
-                            this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(Math.min(yClose,yOpen)));
-                        }
-                    }
-                    this.Canvas.stroke();
-                }
-                
-                y=yClose;
-            }
-            else
-            {
-                y=yClose;
-            }
-
-            if (isHScreen)
-            {
-                //实心
-                if (!isEmptyBar && colorData.BarColor)
-                {
-                    this.Canvas.fillStyle=colorData.BarColor;
-                    if (Math.abs(yOpen-y)<1)  
-                    {
-                        this.Canvas.fillRect(ToFixedRect(y),ToFixedRect(left),1,ToFixedRect(dataWidth));    //高度小于1,统一使用高度1
-                    }
-                    else
-                    {
-                        this.Canvas.fillRect(ToFixedRect(y),ToFixedRect(left),ToFixedRect(yOpen-y),ToFixedRect(dataWidth));
-                    }
-                }
-
-                if (colorData.Border) //空心
-                {
-                    if (Math.abs(yOpen-y)<1)  
-                    {
-                        this.Canvas.fillStyle=colorData.Border.Color;
-                        this.Canvas.fillRect(ToFixedRect(y),ToFixedRect(left),1,ToFixedRect(dataWidth));    //高度小于1,统一使用高度1
-                    }
-                    else
-                    {
-                        this.Canvas.strokeStyle=colorData.Border.Color;
-                        this.Canvas.beginPath();
-                        this.Canvas.rect(ToFixedPoint(y),ToFixedPoint(left),ToFixedRect(yOpen-y),ToFixedRect(dataWidth));
-                        this.Canvas.stroke();
-                    }
-                }
-            }
-            else
-            {
-                
-                //实心
-                if (!isEmptyBar && colorData.BarColor)
-                {
-                    this.Canvas.fillStyle=colorData.BarColor;
-                    if (Math.abs(yOpen-y)<1)  
-                    {
-                        this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(y),ToFixedRect(dataWidth),1);    //高度小于1,统一使用高度1
-                    }
-                    else
-                    {
-                        this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(Math.min(y,yOpen)),ToFixedRect(dataWidth),ToFixedRect(Math.abs(yOpen-y)));
-                    }
-                }
-
-                if (colorData.Border) //空心
-                {
-                    if (Math.abs(yOpen-y)<1)  
-                    {
-                        this.Canvas.fillStyle=colorData.Border.Color;
-                        this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(y),ToFixedRect(dataWidth),1);    //高度小于1,统一使用高度1
-                    }
-                    else 
-                    {
-                        this.Canvas.strokeStyle=colorData.Border.Color;
-                        this.Canvas.beginPath();
-                        this.Canvas.rect(ToFixedPoint(left),ToFixedPoint(y),ToFixedRect(dataWidth),ToFixedRect(yOpen-y));
-                        this.Canvas.stroke();
-                    }
-                }
-            }
-
-            if (data.Open>data.Low) //下影线
-            {
-                if (colorData.Line)
-                {
-                    this.Canvas.strokeStyle=colorData.Line.Color;
-                    this.Canvas.beginPath();
-                    if (isHScreen)
-                    {
-                        this.Canvas.moveTo(ToFixedPoint(Math.min(yClose,yOpen)),ToFixedPoint(x));
-                        this.Canvas.lineTo(ToFixedPoint(yLow),ToFixedPoint(x));
-                    }
-                    else
-                    {
-                        if (isDrawBorder)
-                        {
-                            var xFixed=left+dataWidth/2;
-                            this.Canvas.moveTo(ToFixedPoint(xFixed),ToFixedPoint(Math.max(yClose,yOpen)));
-                            this.Canvas.lineTo(ToFixedPoint(xFixed),ToFixedPoint(yLow));
-                        }
-                        else
-                        {
-                            this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(Math.max(yClose,yOpen)));
-                            this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(yLow));
-                        }
-                    }
-                    this.Canvas.stroke();
-                }
-            }
-        }
-        else
-        {
-            var lineColor;
-            if (isEmptyBar && colorData.Border)
-            {
-                lineColor=colorData.Border.Color;
-            }
-            else if (!isEmptyBar && colorData.BarColor)
-            {
-                lineColor=colorData.BarColor;
-            }
-
-            if (lineColor)
-            {
-                this.Canvas.strokeStyle=lineColor;
-                this.Canvas.beginPath();
-                if (isHScreen)
-                {
-                    if (data.High==data.Low)
-                    {
-                        this.Canvas.moveTo(yHigh,ToFixedPoint(x));
-                        this.Canvas.lineTo(yLow-1,ToFixedPoint(x));
-                    }
-                    else
-                    {
-                        this.Canvas.moveTo(yHigh,ToFixedPoint(x));
-                        this.Canvas.lineTo(yLow,ToFixedPoint(x));
-                    }
-                }
-                else
-                {
-                    if (data.High==data.Low)
-                    {
-                        this.Canvas.moveTo(ToFixedPoint(x),yHigh);
-                        this.Canvas.lineTo(ToFixedPoint(x),yLow+1);
-                    }
-                    else
-                    {
-                        this.Canvas.moveTo(ToFixedPoint(x),yHigh);
-                        this.Canvas.lineTo(ToFixedPoint(x),yLow);
-                    }
-                    
-                }
-                this.Canvas.stroke();
-            }
-        }
-    }
-    */
-
+    
     this.DrawVirtualBar=function(data, dataWidth, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen)
     {
         var yTop=Math.min(yHigh,yLow), yBottom=Math.max(yHigh,yLow);
@@ -26289,6 +26102,10 @@ function ChartKLine()
         else if (this.DrawType==17)
         {
             this.DrawOrderFlow_Style4();
+        }
+        else if (this.DrawType==18)
+        {
+            this.DrawOrderFlow_Style5();
         }
         else
         {
@@ -27967,6 +27784,13 @@ function ChartKLine()
                 
             }
         }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////
+    //订单流样式5
+    this.DrawOrderFlow_Style5=function()
+    {
+
     }
 
     //////////////////////////////////////////////////////////////
@@ -31778,10 +31602,11 @@ function ChartVolStick()
     this.DownColor=g_JSChartResource.DownBarColor;
     this.HistoryData;               //历史数据
     this.KLineDrawType=0;
+    
     this.ClassName='ChartVolStick';
 
-    this.BarWidth;    //固定宽度 目前只支持宽度为1
-
+    this.BarWidth;                  //固定宽度 目前只支持宽度为1
+    this.BarType;                   //柱子状态 1=实心 0=空心 2=涨实跌空 如果设置了这个属性， 属性KLineDrawType无效
     this.PtInChart=this.PtInBar;
     this.DrawSelectedStatus=this.DrawLinePoint;
 
@@ -31828,27 +31653,23 @@ function ChartVolStick()
                 var y=this.ChartFrame.GetYFromData(value);
                 var barColor=this.GetBarColor(kItem);
                 var bUp=barColor.IsUp;
-                this.Canvas.fillStyle=barColor.Color;
+                
                    
                 var height=ToFixedRect(Math.abs(yBottom-y)>=1?yBottom-y:1);//高度调整为整数, 如果小于1, 统一使用1
                 y=yBottom-height;
-                if (this.KLineDrawType==6)  //完全空心柱
+                var bSolidBar=this.IsSolidBar(bUp); //实心柱子
+
+                if (bSolidBar)
+                {
+                    this.Canvas.fillStyle=barColor.Color;
+                    this.Canvas.fillRect(ToFixedRect(left),y,ToFixedRect(dataWidth),height);
+                }
+                else
                 {
                     this.Canvas.strokeStyle=barColor.Color;
                     this.Canvas.beginPath();
                     this.Canvas.rect(ToFixedPoint(left),ToFixedPoint(y),ToFixedRect(dataWidth),height);
                     this.Canvas.stroke();
-                }
-                else if (bUp && (this.KLineDrawType==1 || this.KLineDrawType==2 || this.KLineDrawType==3)) //空心柱子
-                {
-                    this.Canvas.strokeStyle=this.UpColor;
-                    this.Canvas.beginPath();
-                    this.Canvas.rect(ToFixedPoint(left),ToFixedPoint(y),ToFixedRect(dataWidth),height);
-                    this.Canvas.stroke();
-                }
-                else
-                {
-                    this.Canvas.fillRect(ToFixedRect(left),y,ToFixedRect(dataWidth),height);
                 }
             }
         }
@@ -31922,19 +31743,21 @@ function ChartVolStick()
                 var y=this.ChartFrame.GetYFromData(value);
                 var barColor=this.GetBarColor(kItem);
                 var bUp=barColor.IsUp;
-                this.Canvas.fillStyle=barColor.Color;
                 
                 var height=ToFixedRect(y-yBottom);  //高度调整为整数
-                if (bUp && (this.KLineDrawType==1 || this.KLineDrawType==2 || this.KLineDrawType==3)) //空心柱子
+                var bSolidBar=this.IsSolidBar(bUp); //实心柱子
+
+                if (bSolidBar)
                 {
-                    this.Canvas.strokeStyle=this.UpColor;
-                    this.Canvas.beginPath();
-                    this.Canvas.rect(ToFixedPoint(yBottom),ToFixedPoint(left),height,ToFixedRect(dataWidth));
-                    this.Canvas.stroke();
+                    this.Canvas.fillStyle=barColor.Color;
+                    this.Canvas.fillRect(yBottom,ToFixedRect(left),height,ToFixedRect(dataWidth));
                 }
                 else
                 {
-                    this.Canvas.fillRect(yBottom,ToFixedRect(left),height,ToFixedRect(dataWidth));
+                    this.Canvas.strokeStyle=barColor.Color;
+                    this.Canvas.beginPath();
+                    this.Canvas.rect(ToFixedPoint(yBottom),ToFixedPoint(left),height,ToFixedRect(dataWidth));
+                    this.Canvas.stroke();
                 }
             }
         }
@@ -32008,6 +31831,29 @@ function ChartVolStick()
     {
         if (kItem.Close>=kItem.Open) return { Color:this.UpColor, IsUp:true };  //颜色, 是否是上涨
         else return { Color:this.DownColor, IsUp:false };
+    }
+
+    //true=实心 false=空心
+    this.IsSolidBar=function(bUp)
+    {
+        var bSolidBar=true; //实心柱子
+
+        if (this.BarType===0 || this.BarType===1 || this.BarType===2)
+        {
+            if (this.BarType===0)   //空心
+                bSolidBar=false;
+            else if (this.BarType===2)  //涨实跌空
+                bSolidBar=bUp;
+        }
+        else
+        {
+            if (this.KLineDrawType==6) //完全空心柱
+                bSolidBar=false;    
+            else if (bUp && (this.KLineDrawType==1 || this.KLineDrawType==2 || this.KLineDrawType==3)) //空心柱子
+                bSolidBar=false;
+        }
+
+        return bSolidBar;
     }
 
     this.GetMinuteBarColor=function(kItem, preItem)

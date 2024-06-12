@@ -677,6 +677,14 @@ function JSExplainer(ast,option)
                 else barType="实线空心柱";
                 return `当满足条件${args[0]}时, 在${args[1]}和${args[2]}位置之间画柱状线,宽度为${args[3]},${barType}`;
 
+            case "UPCOLOR":
+                return `上涨颜色${args[0]}`;
+            case "DOWNCOLOR":
+                return `下跌颜色${args[0]}`;
+            case "STICKTYPE":
+            case "FIRSTDRAW":
+                return "";
+
             default:
                 this.ThrowUnexpectedNode(node,`函数${funcName}不存在`);
         }
