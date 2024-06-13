@@ -151,6 +151,10 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![订单流样式4](/小程序行情模块用例/image/hqchart_ordeflow4.png)    
 [https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_orderflow_v2(type=17).html](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_orderflow_v2(type=17).html) 
 
+* 订单流5   
+![订单流样式4](/小程序行情模块用例/image/hqchart_ordeflow5.png)    
+[https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_orderflow_v2(type=17).html](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_orderflow_v2(type=18).html) 
+
 * 固定范围成交量分布图
 ![成交量分布图](/小程序行情模块用例/image/hqchart_volprofile.gif)
 * 可视范围成交量分布图
