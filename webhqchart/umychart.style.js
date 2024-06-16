@@ -456,6 +456,13 @@ function GetBlackStyle()
             AreaColor:"rgba(26,13,7,0.5)",     //面积
         },
 
+        RectDrag:
+        {
+            LineColor:"rgb(220,220,220)",          
+            LineWidth:1*GetDevicePixelRatio(),
+            BGColor:"rgba(220,220,220,0.2)",     //面积
+        },
+
         SelectedChart:
         {
             LineWidth:1,
