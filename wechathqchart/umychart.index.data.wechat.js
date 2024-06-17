@@ -3224,7 +3224,7 @@ JSIndexScript.prototype.TEST = function ()
             
             Script: //脚本
                 //"T2:KDJ.J;"+
-                "DRAWBAND(OPEN,RGB(0,224,224),CLOSE,RGB(255,96,96));"
+                "收盘价:C;成交量:VOL, SINGLELINE, RGB(100,100,100);"
                 //"T2:IF(KDJ.J>-10,KDJ.J#WEEK,0);"
                 
 

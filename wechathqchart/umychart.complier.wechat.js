@@ -13016,6 +13016,7 @@ function JSExecute(ast,option)
                     var isExData = false;
                     var isDotLine = false;
                     var isOverlayLine = false;    //叠加线
+                    var isSingleLine=false;     //独立线段
                     var isNoneName=false;
                     var isShowTitle=true;
                     //显示在位置之上,对于DRAWTEXT和DRAWNUMBER等函数有用,放在语句的最后面(不能与LINETHICK等函数共用),比如:
@@ -13062,6 +13063,7 @@ function JSExecute(ast,option)
                             else if (value=="LINEAREA") lineArea=true;
                             else if (value=="STEPLINE") stepLine=true;
                             else if (value==="DRAWABOVE") isDrawAbove=true;
+                            else if (value==="SINGLELINE") isSingleLine=true;
                             else if (value.indexOf('COLOR')==0) color=value;
                             else if (value.indexOf("RGBX")==0 && value.length==10) color=value; //RGBX+“RRGGBB”
                             else if (value.indexOf('LINETHICK')==0) lineWidth=value;
@@ -13299,6 +13301,7 @@ function JSExecute(ast,option)
                         if (isExData == true) value.IsExData = true;
                         if (isDotLine == true) value.IsDotLine = true;
                         if (isOverlayLine == true) value.IsOverlayLine = true;
+                        if (isSingleLine == true) value.IsSingleLine = true;
                         if (isNoneName==true) value.NoneName=true;
                         if (isShowTitle==false) value.IsShowTitle=false;
                         if (stepLine==true) value.Type=7;
@@ -13329,6 +13332,7 @@ function JSExecute(ast,option)
                         if (isExData == true) value.IsExData = true;
                         if (isDotLine == true) value.IsDotLine = true;
                         if (isOverlayLine == true) value.IsOverlayLine = true;
+                        if (isSingleLine == true) value.IsSingleLine = true;
                         if (isShowTitle==false) value.IsShowTitle=false;
                         if (stepLine==true) value.Type=7;
                         this.OutVarTable.push(value);

@@ -17231,6 +17231,7 @@ function JSExecute(ast,option)
                 let isExData=false;
                 let isDotLine=false;
                 let isOverlayLine=false;    //叠加线
+                let isSingleLine=false;     //独立线段
                 var isNoneName=false;
                 var isShowTitle=true;
                 //显示在位置之上,对于DRAWTEXT和DRAWNUMBER等函数有用,放在语句的最后面(不能与LINETHICK等函数共用),比如:
@@ -17287,9 +17288,11 @@ function JSExecute(ast,option)
                         else if (value==="DRAWCENTER") isDrawCenter=true;
                         else if (value=="DRAWBELOW") isDrawBelow=true;
                         else if (value=="STEPLINE") stepLine=true;
+                        else if (value=="SINGLELINE") isSingleLine=true;
                         else if (value.indexOf('COLOR')==0) color=value;
                         else if (value.indexOf("RGBX")==0 && value.length==10) color=value; //RGBX+“RRGGBB”
                         else if (value.indexOf('LINETHICK')==0) lineWidth=value;
+                        
 
                         else if (value=="ALIGN0") drawAlign=0;
                         else if (value=="ALIGN1") drawAlign=1;
@@ -17538,6 +17541,7 @@ function JSExecute(ast,option)
                     if (isExData==true) value.IsExData = true;
                     if (isDotLine==true) value.IsDotLine=true;
                     if (isOverlayLine==true) value.IsOverlayLine=true;
+                    if (isSingleLine==true) value.IsSingleLine=true;
                     if (isNoneName==true) value.NoneName=true;
                     if (isShowTitle==false) value.IsShowTitle=false;
                     if (stepLine==true) value.Type=7;
@@ -17573,6 +17577,7 @@ function JSExecute(ast,option)
                     if (isExData==true) value.IsExData = true;
                     if (isDotLine==true) value.IsDotLine=true;
                     if (isOverlayLine==true) value.IsOverlayLine=true;
+                    if (isSingleLine==true) value.IsSingleLine=true;
                     if (isShowTitle==false) value.IsShowTitle=false;
                     if (stepLine==true) value.Type=7;
                     this.OutVarTable.push(value);
@@ -20400,6 +20405,54 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(line);
     }
 
+    this.CreateSingleLine=function(hqChart,windowIndex,varItem,id,lineType)
+    {
+        var line=new ChartSingleLine();
+        line.Canvas=hqChart.Canvas;
+        line.DrawType=1;
+        line.Name=varItem.Name;
+        line.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        line.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        line.Identify=this.Guid;
+        if (varItem.Color) line.Color=this.GetColor(varItem.Color);
+        else line.Color=this.GetDefaultColor(id);
+
+        if (varItem.LineWidth) 
+        {
+            let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
+            if (!isNaN(width) && width>0) line.LineWidth=width;
+        }
+
+        if (varItem.IsDotLine) line.IsDotLine=true; //虚线
+        if (varItem.IsShow==false) line.IsShow=false;
+
+        let titleIndex=windowIndex+1;
+        line.Data.Data=varItem.Data;
+
+        this.ReloadChartResource(hqChart,windowIndex,line);
+        
+        if (varItem.IsShowTitle===false)    //NOTEXT 不绘制标题
+        {
+
+        }
+        else if (IFrameSplitOperator.IsString(varItem.Name) && varItem.Name.indexOf("NOTEXT")==0) //标题中包含NOTEXT不绘制标题
+        {
+
+        }
+        else
+        {
+            if (varItem.NoneName) 
+                hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(line.Data,null,line.Color);
+            else
+                hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(line.Data,varItem.Name,line.Color);
+
+            this.SetTitleData(hqChart.TitlePaint[titleIndex].Data[id],line);
+        }
+        
+        this.SetChartIndexName(line);
+        hqChart.ChartPaint.push(line);
+    }
+
     //创建柱子
     this.CreateBar=function(hqChart,windowIndex,varItem,id)
     {
@@ -21704,6 +21757,7 @@ function ScriptIndex(name,script,args,option)
             if (item.Type==0)  
             {
                 if (item.IsOverlayLine) this.CreateOverlayLine(hqChart,windowIndex,item,i,item.Type);
+                else if (item.IsSingleLine) this.CreateSingleLine(hqChart,windowIndex,item,i,item.Type);
                 else this.CreateLine(hqChart,windowIndex,item,i,item.Type);
             }
             else if (item.Type==1)

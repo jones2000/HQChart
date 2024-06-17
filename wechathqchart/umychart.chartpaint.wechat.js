@@ -3692,6 +3692,86 @@ function ChartLine()
     }
 }
 
+//独立线段
+//独立线段
+function ChartSingleLine()
+{
+    this.newMethod=ChartLine;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartSingleLine';     //类名
+    this.MaxMin=null;    //当前的显示范围
+
+    this.Draw=function()
+    {
+        this.MaxMin=null;
+        if (!this.IsShow || this.ChartFrame.IsMinSize || !this.IsVisible) return;
+        if (this.IsHideScriptIndex()) return;
+
+        if (!this.Data || !this.Data.Data) return;
+
+        this.MaxMin=this.GetCurrentMaxMin();
+        if (!this.MaxMin) return;
+        if (!IFrameSplitOperator.IsNumber(this.MaxMin.Max) || !IFrameSplitOperator.IsNumber(this.MaxMin.Min)) return;
+
+        switch(this.DrawType)
+        {
+            
+            default: 
+                return this.DrawStraightLine();
+        }
+    }
+
+    //获取当前页的最大最小值
+    this.GetCurrentMaxMin=function()
+    {
+        var xPointCount=this.ChartFrame.XPointCount;
+        var range={ Max:null, Min:null };
+
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        {
+            var value=this.Data.Data[i];
+            if (!IFrameSplitOperator.IsNumber(value)) conintue;
+
+            if (range.Max==null) range.Max=value;
+            if (range.Min==null) range.Min=value;
+
+            if (range.Max<value) range.Max=value;
+            if (range.Min>value) range.Min=value;
+        }
+
+        return range;
+    }
+
+    this.GetMaxMin=function()
+    {
+        return { Max:null, Min:null };
+    }
+
+    this.GetYFromData=function(value)
+    {
+        var bHScreen = (this.ChartFrame.IsHScreen === true);
+
+        if (bHScreen)
+        {
+            if (value <= this.MaxMin.Min) return this.ChartBorder.GetLeftEx();
+            if (value >= this.MaxMin.Max) return this.ChartBorder.GetRightEx();
+
+            var width = this.ChartBorder.GetWidthEx() * (value - this.MaxMin.Min) / (this.MaxMin.Max - this.MaxMin.Min);
+            return this.ChartBorder.GetLeftEx() + width;
+        }
+        else
+        {
+            if(value<=this.MaxMin.Min) return this.ChartBorder.GetBottomEx();
+            if(value>=this.MaxMin.Max) return this.ChartBorder.GetTopEx();
+    
+            var height=this.ChartBorder.GetHeightEx()*(value-this.MaxMin.Min)/(this.MaxMin.Max-this.MaxMin.Min);
+            return this.ChartBorder.GetBottomEx()-height;
+        }
+    }
+}
+
 //面积图 支持横屏
 function ChartArea()
 {
@@ -9971,6 +10051,8 @@ export
     ChartSplashPaint,
     GetFontHeight,
     ColorToRGBA,
+    ChartSingleLine,
+    
 };
 /*
 module.exports =

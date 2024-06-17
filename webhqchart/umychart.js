@@ -2579,7 +2579,7 @@ var JSCHART_EVENT_ID=
 
 
     ON_CHANGE_INDEX:150,        //切换指标
-    ON_MENU_COMMAND:151,        //菜单时间回调
+    ON_MENU_COMMAND:151,        //菜单事件回调
     ON_CREATE_RIGHT_MENU:152,   //创建右键菜单
 
     ON_FORMAT_CALL_AUCTION_INDEX_TITLE:153, //集合竞价指标窗口标题内容
@@ -20755,6 +20755,7 @@ function ChartData()
             var yClose=this.Data[index].YClose;
 
             result[index]=HistoryData.Copy(this.Data[index]);
+            result[index].RightSeed=seed;
 
             for(--index; index>=0; --index)
             {
@@ -20785,6 +20786,7 @@ function ChartData()
             var seed=1;
             var close=this.Data[index].Close;
             result[index]=HistoryData.Copy(this.Data[index]);
+            result[index].RightSeed=seed;
 
             for(++index;index<this.Data.length;++index)
             {
@@ -31111,6 +31113,86 @@ function ChartOverlayLine()
         }
 
         return range;
+    }
+}
+
+//独立线段
+function ChartSingleLine()
+{
+    this.newMethod=ChartLine;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartSingleLine';     //类名
+    this.MaxMin=null;    //当前的显示范围
+
+    this.Draw=function()
+    {
+        this.MaxMin=null;
+        if (!this.IsShow || this.ChartFrame.IsMinSize || !this.IsVisible) return;
+        if (this.IsShowIndexTitleOnly()) return;
+        if (this.IsHideScriptIndex()) return;
+
+        if (!this.Data || !this.Data.Data) return;
+
+        this.MaxMin=this.GetCurrentMaxMin();
+        if (!this.MaxMin) return;
+        if (!IFrameSplitOperator.IsNumber(this.MaxMin.Max) || !IFrameSplitOperator.IsNumber(this.MaxMin.Min)) return;
+
+        switch(this.DrawType)
+        {
+            
+            default: 
+                return this.DrawStraightLine();
+        }
+    }
+
+    //获取当前页的最大最小值
+    this.GetCurrentMaxMin=function()
+    {
+        var xPointCount=this.ChartFrame.XPointCount;
+        var range={ Max:null, Min:null };
+
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        {
+            var value=this.Data.Data[i];
+            if (!IFrameSplitOperator.IsNumber(value)) conintue;
+
+            if (range.Max==null) range.Max=value;
+            if (range.Min==null) range.Min=value;
+
+            if (range.Max<value) range.Max=value;
+            if (range.Min>value) range.Min=value;
+        }
+
+        return range;
+    }
+
+    this.GetMaxMin=function()
+    {
+        return { Max:null, Min:null };
+    }
+
+    this.GetYFromData=function(value)
+    {
+        var bHScreen = (this.ChartFrame.IsHScreen === true);
+
+        if (bHScreen)
+        {
+            if (value <= this.MaxMin.Min) return this.ChartBorder.GetLeftEx();
+            if (value >= this.MaxMin.Max) return this.ChartBorder.GetRightEx();
+
+            var width = this.ChartBorder.GetWidthEx() * (value - this.MaxMin.Min) / (this.MaxMin.Max - this.MaxMin.Min);
+            return this.ChartBorder.GetLeftEx() + width;
+        }
+        else
+        {
+            if(value<=this.MaxMin.Min) return this.ChartBorder.GetBottomEx();
+            if(value>=this.MaxMin.Max) return this.ChartBorder.GetTopEx();
+    
+            var height=this.ChartBorder.GetHeightEx()*(value-this.MaxMin.Min)/(this.MaxMin.Max-this.MaxMin.Min);
+            return this.ChartBorder.GetBottomEx()-height;
+        }
     }
 }
 
