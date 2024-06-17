@@ -113,6 +113,8 @@ function JSIndexScript()
             ["ICHIMOKU",this.ICHIMOKU],["CDP-STD", this.CDP_STD],["TBP-STD",this.TBP_STD],
             ["ADX", this.ADX],
 
+            ["持仓量", this.VOL_POSITION],  //成交量+持仓量
+
             //通达信特色指标
             ["散户线", this.ShareholderCount],["NXTS", this.NXTS],["FKX", this.FKX],["两融资金", this.Margin4],
             ["ZSDB",this.ZSDB],
@@ -3346,6 +3348,20 @@ JSIndexScript.prototype.CJL = function ()
         Script: //脚本
 "成交量:VOL,VOLSTICK;\n\
 持仓量:VOLINSTK,LINEOVERLAY;"
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.VOL_POSITION=function()
+{
+    let data =
+    {
+        Name: '持仓量', Description: '持仓量', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+            "成交量:VOL,VOLSTICK;\n\
+持仓量:VOLINSTK,SINGLELINE;"
     };
 
     return data;

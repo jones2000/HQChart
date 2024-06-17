@@ -109,6 +109,7 @@ function JSIndexScript()
             ['EMA', this.EMA3], ['EMA4', this.EMA4], ['EMA5', this.EMA5],['EMA6', this.EMA6],
 
             ['CJL2', this.CJL],  //期货持仓量
+            ["持仓量", this.VOL_POSITION],  //成交量+持仓量
 
             //指南针
             ["ZNZ_CBAND", this.ZNZ_CBAND],["ZNZ_RPY2",this.ZNZ_RPY2],["ZNZ_RPY1", this.ZNZ_RPY1],
@@ -3258,6 +3259,20 @@ JSIndexScript.prototype.CJL = function ()
         Script: //脚本
             "成交量:VOL,VOLSTICK;\n\
 持仓量:VOLINSTK,LINEOVERLAY;"
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.VOL_POSITION=function()
+{
+    let data =
+    {
+        Name: '持仓量', Description: '持仓量', IsMainIndex: false,
+        Args: [],
+        Script: //脚本
+            "成交量:VOL,VOLSTICK;\n\
+持仓量:VOLINSTK,SINGLELINE;"
     };
 
     return data;

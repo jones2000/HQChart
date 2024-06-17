@@ -31156,7 +31156,7 @@ function ChartSingleLine()
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
             var value=this.Data.Data[i];
-            if (!IFrameSplitOperator.IsNumber(value)) conintue;
+            if (!IFrameSplitOperator.IsNumber(value)) continue;
 
             if (range.Max==null) range.Max=value;
             if (range.Min==null) range.Min=value;
