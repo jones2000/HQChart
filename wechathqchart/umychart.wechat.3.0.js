@@ -2185,6 +2185,7 @@ function JSChartContainer(uielement)
         for (var i=0; i<this.ChartPaint.length; ++i) //图形
         {
             var item = this.ChartPaint[i];
+            if (item.ChartFrame && this.IsHideFrame(item.ChartFrame)) continue;
             if (item.IsDrawFirst) item.Draw();
         }
 
@@ -2194,6 +2195,7 @@ function JSChartContainer(uielement)
         for (var i=0; i<this.ChartPaint.length; ++i) //图形2 框架内图形
         {
             var item = this.ChartPaint[i];
+            if (item.ChartFrame && this.IsHideFrame(item.ChartFrame)) continue;
             if (!item.IsDrawFirst) item.Draw();
         }
 
@@ -2303,6 +2305,17 @@ function JSChartContainer(uielement)
 
         this.LastDrawStatus = 'FullDraw';
         this.Canvas.draw(false);
+    }
+
+    //窗口高度是否是0
+    this.IsHideFrame=function(frame)
+    {
+        if (!frame) return false;
+        if (!IFrameSplitOperator.IsNumber(frame.Identify)) return false;
+        if (frame.Identify<0) return false;
+        var item= this.Frame.SubFrame[frame.Identify];
+        if (!item) return false;
+        return item.Height<=0;
     }
 
     //当前屏K线涨幅Y轴刻度

@@ -44,7 +44,11 @@ JSUniAppCanvasHelper.MeasureText=function(text, canvas)
 		else if (/\./.test(item)) 
 		{
 			width += 2.7;
-		} 
+        } 
+        else if (/,/.test(item)) 
+		{
+			width += 2.7;
+		}
 		else if (/-/.test(item)) 
 		{
 			width += 3.25;
