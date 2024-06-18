@@ -1426,11 +1426,11 @@ function MinuteHScreenFrame()
 
     this.GetYFromData = function (value) 
     {
-        if (value <= this.HorizontalMin) return this.ChartBorder.GetLeft();
+        if (value <= this.HorizontalMin) return this.ChartBorder.GetLeftEx();
         if (value >= this.HorizontalMax) return this.ChartBorder.GetRightEx();
 
         var width = this.ChartBorder.GetWidthEx() * (value - this.HorizontalMin) / (this.HorizontalMax - this.HorizontalMin);
-        return this.ChartBorder.GetLeft() + width;
+        return this.ChartBorder.GetLeftEx() + width;
     }
 
     //画Y轴

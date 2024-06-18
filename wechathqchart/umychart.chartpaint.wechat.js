@@ -9486,8 +9486,8 @@ function ChartMinutePriceLine()
         if (isHScreen === true) chartright = this.ChartBorder.GetBottom();
         var xPointCount = this.ChartFrame.XPointCount;
         var minuteCount = this.ChartFrame.MinuteCount;
-        var bottom = this.ChartBorder.GetBottomEx();
-        var left = this.ChartBorder.GetLeftEx();
+        var bottom = this.ChartBorder.GetBottom();
+        var left = this.ChartBorder.GetLeft();
 
         var bFirstPoint = true;
         var ptFirst = {}; //第1个点
@@ -9533,7 +9533,7 @@ function ChartMinutePriceLine()
                     {
                         this.Canvas.lineTo(left, x);
                         this.Canvas.lineTo(left, ptFirst.X);
-                        this.SetFillStyle(this.AreaColor, this.ChartBorder.GetRightEx(), bottom, this.ChartBorder.GetLeftEx(), bottom);
+                        this.SetFillStyle(this.AreaColor, this.ChartBorder.GetRight(), bottom, this.ChartBorder.GetLeftEx(), bottom);
                     }
                     else 
                     {
@@ -9557,7 +9557,7 @@ function ChartMinutePriceLine()
                 {
                     this.Canvas.lineTo(left, x);
                     this.Canvas.lineTo(left, ptFirst.X);
-                    this.SetFillStyle(this.AreaColor, this.ChartBorder.GetRightEx(), bottom, this.ChartBorder.GetLeftEx(), bottom);
+                    this.SetFillStyle(this.AreaColor, this.ChartBorder.GetRight(), bottom, this.ChartBorder.GetLeftEx(), bottom);
                 }
                 else 
                 {
