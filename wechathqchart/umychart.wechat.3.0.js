@@ -670,6 +670,9 @@ function JSChart(element)
                 if (IFrameSplitOperator.IsNumber(item.YTextBaseline)) chart.Frame.SubFrame[i].Frame.YTextBaseline=item.YTextBaseline;
                 if (IFrameSplitOperator.IsBool(item.IsShowXLine)) chart.Frame.SubFrame[i].Frame.IsShowXLine = item.IsShowXLine;
                 if (IFrameSplitOperator.IsBool(item.IsShowYLine)) chart.Frame.SubFrame[i].Frame.IsShowYLine=item.IsShowYLine;
+
+                if (item.TopSpace >= 0) chart.Frame.SubFrame[i].Frame.ChartBorder.TopSpace = item.TopSpace;
+                if (item.BottomSpace >= 0) chart.Frame.SubFrame[i].Frame.ChartBorder.BottomSpace = item.BottomSpace;
             }
 
             chart.UpdateXShowText();
