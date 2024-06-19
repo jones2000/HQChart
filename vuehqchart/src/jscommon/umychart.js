@@ -34116,8 +34116,8 @@ function ChartMinutePriceLine()
         if (isHScreen===true) chartright=this.ChartBorder.GetBottom();
         var xPointCount=this.ChartFrame.XPointCount;
         var minuteCount=this.ChartFrame.MinuteCount;
-        var bottom=this.ChartBorder.GetBottomEx();
-        var left=this.ChartBorder.GetLeftEx();
+        var bottom=this.ChartBorder.GetBottom();
+        var left=this.ChartBorder.GetLeft();
         var data=this.Data;
 
         this.DrawBeforeOpen();   //盘前
