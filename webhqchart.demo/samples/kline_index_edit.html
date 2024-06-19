@@ -123,6 +123,9 @@
     <script src="../jscommon/umychart.testdata/60000.sh.day.kline.js"></script>
     <script src="../jscommon/umychart.testdata/60000.sh.capital.kline.js"></script>
 
+    <script src="../jscommon/umychart.testdata/000001.sh.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/399001.sz.day.kline.js"></script>
+
     <script src="../jscommon/umychart.testdata/60000.sh.minute.kline.js"></script>
     <script src="../jscommon/umychart.testdata/60000.sh.1minute.kline.js"></script>
 
@@ -135,8 +138,6 @@
     <script src="../jscommon/umychart.testdata/60000.sh.TradeDetal.js"></script>
 
     <script src="../jscommon/umychart.testdata.js"></script>
-
-
 
     <script>
 
@@ -282,6 +283,13 @@
                     IsTitleShowLatestData:true,
                 },
 
+                
+                DragSelectRect:
+                {
+                    Enable:true,
+                    ShowMode:2,
+                    //ZIndex:3,
+                },
                 
                 Border: //边框
                 {
@@ -441,6 +449,10 @@
                     {
                         event:JSCHART_EVENT_ID.ON_CLICK_CROSSCURSOR_RIGHT, 
                         callback:(event, data, obj)=>{ this.ClickCrossCursor(event, data, obj); }
+                    },
+                    {
+                        event:JSCHART_EVENT_ID.RECV_HISTROY_DATA,
+                        callback:(event, data, obj)=>{ this.OnRecvHistoryData(event, data, obj); }
                     }
 
                 ];
@@ -466,10 +478,36 @@
                     case "APIScriptIndex::ExecuteScript":
                         this.GetAPIIndexData(data, callback);
                         break;
+                   
                     default:
                         HQData.NetworkFilter(data, callback);
                         break;
                 }
+            }
+
+            this.ConvertData=function(data, callback)
+            {
+                var symbol=data.Request.Data.symbol;
+                var hqchartData={  symbol: symbol,name: symbol, data:[] };
+
+                for(var i=0;i<test_1.date.length;++i)
+                {
+                    var item=
+                    [ 
+                        test_1.date[i],
+                        test_1.yclose[i],
+                        test_1.open[i],
+                        test_1.high[i],
+                        test_1.low[i],
+                        test_1.close[i],
+                        test_1.vol[i],
+                        test_1.amount[i],
+                    ];
+
+                    hqchartData.data.push(item);
+                }
+
+                callback(hqchartData);
             }
 
             this.GetAPIIndexData=function(data, callback)
@@ -1392,6 +1430,11 @@
                 this.Chart.JSChartContainer.ShowAllKLine();
             }
         
+
+            this.OnRecvHistoryData=function(event, data, obj)
+            {
+                console.log("[KLineChart::OnRecvHistoryData] data=", data);
+            }
         }
 
         function DeleteLocalIndex(e, name)

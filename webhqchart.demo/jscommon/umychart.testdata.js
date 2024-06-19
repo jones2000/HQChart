@@ -55,6 +55,15 @@ HQData.NetworkFilter=function(data, callback)
             HQData.RequestLatestData(data,callback);
             break;
 
+
+        case "KLineChartContainer::RequestOverlayHistoryData":      //叠加股票
+            HQData.RequestOverlayHistoryData(data, callback);
+            break;
+
+        case "KLineChartContainer::RequestOverlayHistoryMinuteData":
+            HQData.RequestOverlayHistoryMinuteData(data, callback);
+            break;
+
        
 
 
@@ -376,3 +385,28 @@ HQData.RequestLatestData=function(data,callback)
 
     callback(hqchartData);
 }
+
+HQData.RequestOverlayHistoryData=function(data, callback)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Data.symbol;
+    var hqchartData={  symbol: symbol,name: symbol };
+    if (symbol=="399001.sz") 
+        hqchartData.data=KLINE_DAY_OVERLAY_DATA2.data
+    else 
+        hqchartData.data=KLINE_DAY_OVERLAY_DATA.data
+        
+    callback(hqchartData);
+}
+
+HQData.RequestOverlayHistoryMinuteData=function(data, callback)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Data.symbol;
+    var hqchartData={  symbol: symbol,name: symbol };
+    hqchartData.data=KLINE_MINUTE_DATA2.data;
+
+    callback(hqchartData);
+}
+
+
