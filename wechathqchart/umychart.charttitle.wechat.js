@@ -1250,6 +1250,17 @@ function DynamicChartTitlePainting()
     this.IsDrawTitleBG=false;    //是否绘制指标名字背景色
     this.BGColor=g_JSChartResource.IndexTitleBGColor;   //指标名字背景颜色
     this.BGBorderColor=g_JSChartResource.IndexTitleBorderColor;
+    this.TitleButtonConfig=
+    { 
+        Mergin:
+        { 
+            Left:g_JSChartResource.IndexTitleButton.Mergin.Left, Top:g_JSChartResource.IndexTitleButton.Mergin.Top, 
+            Bottom:g_JSChartResource.IndexTitleButton.Mergin.Bottom, Right:g_JSChartResource.IndexTitleButton.Mergin.Right
+        }, 
+        Font:g_JSChartResource.IndexTitleButton.Font,
+        RightSpace:g_JSChartResource.IndexTitleButton.RightSpace
+    };
+
     this.TitleColor = g_JSChartResource.IndexTitleColor;   //指标名字颜色
     this.ArgumentsText;         //参数信息
 
@@ -1695,11 +1706,14 @@ function DynamicChartTitlePainting()
             {
                 if (this.IsDrawTitleBG) //绘制指标名背景色
                 {
+                    if (this.TitleButtonConfig.Font)  this.Canvas.font=this.TitleButtonConfig.Font;
+
                     var title=this.Title;
-                    if (this.IsShowNameArrow) title+='▼';
-                    var textWidth=this.Canvas.measureText(title).width;
-                    var bgHeight=this.Canvas.measureText("擎").width+2;
-                    var bgWidth=textWidth+4;
+                    if (this.IsShowNameArrow) title+=' ▼';
+                    var textWidth=this.Canvas.measureText(title).width+this.TitleButtonConfig.Mergin.Left+this.TitleButtonConfig.Mergin.Right;
+                    var textHeight=this.Canvas.measureText("擎").width;
+                    var bgHeight=textHeight+this.TitleButtonConfig.Mergin.Top+this.TitleButtonConfig.Mergin.Bottom;
+                    var bgWidth=textWidth;
 
                     this.Canvas.fillStyle=this.BGColor;
                     if (isHScreen)
@@ -1721,7 +1735,7 @@ function DynamicChartTitlePainting()
                     }
                     else
                     {
-                        this.TitleRect={ Left:left, Top:bottom-bgHeight/2-1, Width:bgWidth, Height:bgHeight };    //保存下标题的坐标
+                        this.TitleRect={ Left:left, Top:bottom-textHeight/2-this.TitleButtonConfig.Mergin.Top, Width:bgWidth, Height:bgHeight };    //保存下标题的坐标
                         this.Canvas.fillRect(this.TitleRect.Left,this.TitleRect.Top,this.TitleRect.Width,this.TitleRect.Height);
 
                         if (this.BGBorderColor)
@@ -1732,9 +1746,11 @@ function DynamicChartTitlePainting()
                     }
 
                     this.Canvas.fillStyle = this.TitleColor;
-                    this.Canvas.fillText(title, left+1, bottom, textWidth);
+                    this.Canvas.fillText(title, left+this.TitleButtonConfig.Mergin.Left, bottom-this.TitleButtonConfig.Mergin.Bottom, textWidth);
 
-                    textWidth=bgWidth+2;
+                    textWidth=bgWidth+this.TitleButtonConfig.RightSpace;
+
+                    this.Canvas.font=this.Font;
                 }
                 else
                 {

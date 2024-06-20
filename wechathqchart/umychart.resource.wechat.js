@@ -42,6 +42,12 @@ function JSChartResource()
     this.IndexTitleColor="rgb(43,54,69)";
     this.DynamicTitleFont = '12px 微软雅黑';        //指标动态标题字体
     this.OverlayIndexTitleBGColor='rgba(255,255,255,0.7)';
+    this.IndexTitleButton=
+    {
+        Mergin:{ Left:5, Top:5, Bottom:1, Right:5 },
+        Font:"11px 微软雅黑" ,
+        RightSpace:5,
+    }
 
     this.UpTextColor = "rgb(238,21,21)";
     this.DownTextColor = "rgb(25,158,0)";
