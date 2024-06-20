@@ -11653,7 +11653,7 @@ function AverageWidthFrame()
         var right=border.RightEx;
         var pixelRatio = GetDevicePixelRatio(); //获取设备的分辨率
         //JSConsole.Chart.Log('[AverageWidthFrame.DrawVertical] bottom',bottom);
-        if (this.ChartBorder.Bottom<=5*GetDevicePixelRatio()) return;   //高度不够 不显示
+        //if (this.ChartBorder.Bottom<=5*GetDevicePixelRatio()) return;   //高度不够 不显示
 
         var mapX=null;
         if (this.GetVerticalXCache) mapX=this.GetVerticalXCache();
@@ -11728,7 +11728,7 @@ function AverageWidthFrame()
                 this.DrawDayVertical(item, x, border);
             }
 
-            if (this.VerticalInfo[i].Message[0]!=null)
+            if (this.VerticalInfo[i].Message[0]!=null && this.ChartBorder.Bottom>5*pixelRatio)
             {
                 if (this.VerticalInfo[i].Font) this.Canvas.font=this.VerticalInfo[i].Font;
 

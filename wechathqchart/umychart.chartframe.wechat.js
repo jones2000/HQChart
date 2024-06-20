@@ -583,8 +583,6 @@ function AverageWidthFrame()
         var bottom = this.ChartBorder.GetBottom();
         var right = this.ChartBorder.GetRight();
 
-        if (this.ChartBorder.Bottom<=5) return;   //高度不够 不显示
-
         var yText = bottom;
         if (this.XMessageAlign == 'bottom') yText = this.ChartBorder.GetChartHeight();
         else this.XMessageAlign = 'top';
