@@ -7362,6 +7362,7 @@ function ChartVolStick()
         var yBottom = this.ChartFrame.GetYFromData(0);
         var isMinute=this.IsMinuteFrame();
 
+        this.Canvas.save();
         if (dataWidth >= this.MinBarWidth) 
         {   //只有K线, 分时图dataWidth=1
             yBottom = ToFixedRect(yBottom);
@@ -7401,6 +7402,7 @@ function ChartVolStick()
         {
             var preKItem=null;
             var barColor=null;
+            this.Canvas.lineWidth=1;
             for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) 
             {
                 var value = this.Data.Data[i];
@@ -7436,6 +7438,8 @@ function ChartVolStick()
                 preKItem=kItem;
             }
         }
+
+        this.Canvas.restore();
     }
 
     this.GetBarColor=function(kItem)

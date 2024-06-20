@@ -11215,7 +11215,19 @@ function AverageWidthFrame()
                     }
                     else    //显示第1行
                     {
-                        this.Canvas.fillText(item.Message[1][0],xText+this.YTextPadding[1],yText);
+                        var text=item.Message[1][0];
+
+                        if (item.TextColor2) this.Canvas.fillStyle=item.TextColor2;
+                        if (rightExtendText && rightExtendText.Align===2 && this.YRightTextInfo)    //右对齐
+                        {
+                            this.Canvas.textAlign="right";
+                            var xRight=this.YRightTextInfo.MainTextWidth+right-this.YTextPadding[1];
+                            this.Canvas.fillText(text,xRight,yText);
+                        }
+                        else
+                        {
+                            this.Canvas.fillText(text,xText+this.YTextPadding[1],yText);
+                        }
                     }
                 }
                 else
@@ -11225,7 +11237,7 @@ function AverageWidthFrame()
                     if (!rtPreRight || (rtRight && !this.IsTextTopBottomOverlap(rtRight,rtPreRight)))
                     {
                         if (item.TextColor2) this.Canvas.fillStyle=item.TextColor2;
-                        if (rightExtendText && rightExtendText.Align===2 && this.YRightTextInfo)
+                        if (rightExtendText && rightExtendText.Align===2 && this.YRightTextInfo)    //右对齐
                         {
                             this.Canvas.textAlign="right";
                             var xRight=this.YRightTextInfo.MainTextWidth+right-this.YTextPadding[1];
@@ -31966,6 +31978,8 @@ function ChartVolStick()
 
         var yBottom=this.ChartFrame.GetYFromData(0);
 
+        this.Canvas.save();
+
         if (dataWidth>=4 && !(this.BarWidth===1))
         {
             yBottom=ToFixedRect(yBottom);
@@ -32007,6 +32021,7 @@ function ChartVolStick()
         {
             var preKItem=null;
             var barColor=null;
+            this.Canvas.linewidth=1*GetDevicePixelRatio();
             for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
             {
                 var value=this.Data.Data[i];
@@ -32041,6 +32056,8 @@ function ChartVolStick()
                 preKItem=kItem;
             }
         }
+
+        this.Canvas.restore();
     }
 
     this.HScreenDraw=function() //横屏画法
