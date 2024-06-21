@@ -9053,6 +9053,7 @@ function MinuteChartContainer(uielement)
         this.TitlePaint[0].Frame = this.Frame.SubFrame[0].Frame;
         this.TitlePaint[0].Canvas = this.Canvas;
         this.TitlePaint[0].LanguageID = this.LanguageID;
+        this.TitlePaint[0].HQChart=this;
 
         //主图叠加画法
         var paint = new ChartOverlayMinutePriceLine();

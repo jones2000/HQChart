@@ -18189,7 +18189,8 @@ function JSExecute(ast,option)
                 return this.SymbolData.GetSymbolPeriodCacheData(JSComplierHelper.GetConvertValueName(funcName),args[0]);
 
             case "SYSPARAM":
-                return this.SymbolData.SysParam(args[0], this);
+                node.Out=this.SymbolData.SysParam(args[0], this);
+                break;
 
             case "TESTSKIP":
                 var bExit=this.Algorithm.TESTSKIP(args[0],node);

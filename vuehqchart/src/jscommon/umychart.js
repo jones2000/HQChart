@@ -78954,6 +78954,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         this.TitlePaint[0].LanguageID=this.LanguageID;
         this.TitlePaint[0].CallAcutionXOperator=new CallAcutionXOperator();
         this.TitlePaint[0].CallAcutionXOperator.Frame=this.Frame.SubFrame[0].Frame;
+        this.TitlePaint[0].HQChart=this;
     }
 
     //切换成 脚本指标
