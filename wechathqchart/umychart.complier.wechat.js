@@ -9093,7 +9093,8 @@ function JSSymbolData(ast,option,jsExecute)
     this.StockData=new Map();  
 
     this.NetworkFilter;                   //网络请求回调 function(data, callback);
-   
+    this.DrawInfo;                        //当前屏信息
+
     //使用option初始化
     if (option)
     {
@@ -9122,6 +9123,7 @@ function JSSymbolData(ast,option,jsExecute)
         if (option.Right) this.Right=option.Right;
         if (option.Period) this.Period=option.Period;
         if (option.KLineRange) this.KLineDateTimeRange=option.KLineRange;
+        if (option.DrawInfo) this.DrawInfo=option.DrawInfo;
     }
 
     this.GetLatestDataKey=function(key)
@@ -11055,6 +11057,69 @@ function JSSymbolData(ast,option,jsExecute)
 
         return 0;
     }
+
+    /*
+    飞狐函数 SYSPARAM
+    SYSPARAM(1)画面上光标位置(K线序号)
+    SYSPARAM(2)主图可见K线最初位置
+    SYSPARAM(3)主图可见K线最后位置，注意：该函数仅K线图形分析且打开十字光标时有效,否则返回值不确定
+    SYSPARAM(4)主图可见K线最高价，注意：该函数仅K线图形分析且打开十字光标时有效,否则返回值不确定
+    SYSPARAM(5)主图可见K线最低价，注意：该函数仅K线图形分析且打开十字光标时有效,否则返回值不确定
+    SYSPARAM(6)画面上光标数值，注意：该函数仅K线图形分析且打开十字光标时有效,否则返回值不确定
+    */
+   this.SysParam=function(id, jsExec)
+   {
+       if (!this.DrawInfo) return [];
+
+       if (id==2)
+       {
+           jsExec.IsUsePageData=true;
+           if (IFrameSplitOperator.IsNumber(this.DrawInfo.Start)) 
+               return this.DrawInfo.Start+1;
+       }
+       else if (id==3)
+       {
+           jsExec.IsUsePageData=true;
+           if (IFrameSplitOperator.IsNumber(this.DrawInfo.End)) 
+               return this.DrawInfo.End+1;
+       }
+       else if (id==4)
+       {
+           jsExec.IsUsePageData=true;
+           if (!IFrameSplitOperator.IsNumber(this.DrawInfo.End) ||!IFrameSplitOperator.IsNumber(this.DrawInfo.Start)) return [];
+           if (!this.Data || !IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return [];
+
+           var high=null;
+           for(var i=this.DrawInfo.Start; i<=this.DrawInfo.End && i<this.Data.Data.length; ++i)
+           {
+               var item=this.Data.Data[i];
+               if (!IFrameSplitOperator.IsNumber(item.High)) continue;
+               if (high==null) high=item.High;
+               else if(high<item.High) high=item.High;
+           }
+
+           return high;
+       }
+       else if (id==5)
+       {
+           jsExec.IsUsePageData=true;
+           if (!IFrameSplitOperator.IsNumber(this.DrawInfo.End) ||!IFrameSplitOperator.IsNumber(this.DrawInfo.Start)) return [];
+           if (!this.Data || !IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return [];
+
+           var low=null;
+           for(var i=this.DrawInfo.Start;i<=this.DrawInfo.End && i<this.Data.Data.length;++i)
+           {
+               var item=this.Data.Data[i];
+               if (!IFrameSplitOperator.IsNumber(item.Low)) continue;
+               if (low==null) low=item.Low;
+               else if(low>item.Low) low=item.Low;
+           }
+
+           return low;
+       }
+
+       return [];
+   }
 
     this.JobArgumentsToArray=function(job, lCount)
     {
@@ -13442,6 +13507,7 @@ function JSExecute(ast,option)
             else
             {
                 if (this.CallbackParam && this.CallbackParam.Self && this.CallbackParam.Self.ClassName==='ScriptIndexConsole') this.CallbackParam.JSExecute=this;
+                if (this.IsUsePageData==true) this.CallbackParam.Self.IsUsePageData=true;
                 this.UpdateUICallback(data,this.CallbackParam);
             }
             
@@ -13766,6 +13832,10 @@ function JSExecute(ast,option)
                 break;
             case "INBLOCK":
                 node.Out=this.SymbolData.IsInBlock(args[0],node);
+                break;
+
+            case "SYSPARAM":
+                node.Out=this.SymbolData.SysParam(args[0], this);
                 break;
 
             case "TESTSKIP":

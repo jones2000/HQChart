@@ -217,7 +217,7 @@ function ScriptIndex(name, script, args, option)
     this.LockCount = 10;
     this.TitleFont=g_JSChartResource.DynamicTitleFont;      //标题字体
     this.IsShortTitle=false;                                //是否显示指标参数
-
+    this.IsUsePageData=false;                               //是否使用了K线界面数据
     this.IsShow=true;       //是否显示图形
 
     this.YAxis=null;    //Y轴刻度设置  { FloatPrecision， StringFormat, EnableRemoveZero }
@@ -319,6 +319,15 @@ function ScriptIndex(name, script, args, option)
             Arguments: this.Arguments,
             IsApiPeriod:hqChart.IsApiPeriod,
         };
+
+        if (hqChart)    //当前屏K线信息
+        {
+            if (hqChart.ChartPaint[0]) 
+            {
+                var item=hqChart.ChartPaint[0];
+                if (item && item.DrawKRange) option.DrawInfo={Start:item.DrawKRange.Start, End:item.DrawKRange.End };
+            }
+        }
 
         if (hqDataType===HQ_DATA_TYPE.HISTORY_MINUTE_ID) option.TrateDate=hqChart.TradeDate;
         if (hqDataType===HQ_DATA_TYPE.MULTIDAY_MINUTE_ID) option.DayCount=hqChart.DayCount;
@@ -2521,6 +2530,7 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
         if (option.API.Url) this.ApiUrl = option.API.Url;
         if (option.API.Name) this.Name = this.ID = option.API.Name;
         if (option.API.ID) this.ID = option.API.ID;
+        if (option.API.IsUsePageData===true) this.IsUsePageData=option.API.IsUsePageData;
     }
 
     //接收到订阅指标数据

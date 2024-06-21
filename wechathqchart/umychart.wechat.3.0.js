@@ -1939,6 +1939,7 @@ function JSChartContainer(uielement)
                         jsChart.UpdateFrameMaxMin();
                         jsChart.ResetFrameXYSplit();
                         jsChart.Draw();
+                        this.OnKLinePageChange("OnTouchMove");
                     }
                     else
                     {
@@ -1987,6 +1988,7 @@ function JSChartContainer(uielement)
                 jsChart.UpdateFrameMaxMin();
                 jsChart.ResetFrameXYSplit();
                 jsChart.Draw();
+                this.OnKLinePageChange("OnTouchMove");
             }
             else        //缩小
             {
@@ -2000,6 +2002,7 @@ function JSChartContainer(uielement)
                 jsChart.UpdateFrameMaxMin();
                 jsChart.ResetFrameXYSplit();
                 jsChart.Draw();
+                this.OnKLinePageChange("OnTouchMove");
             }
 
             phonePinch.Last = { X: touches[0].pageX, Y: touches[0].pageY, X2: touches[1].pageX, Y2: touches[1].pageY };
@@ -6750,6 +6753,32 @@ function KLineChartContainer(uielement)
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Draw();
+    }
+
+    //K线移动
+    this.OnKLinePageChange=function(eventid)
+    {
+        if (!this.ChartPaint[0]) return;
+
+        var bindData=this.ChartPaint[0].Data;
+        for(var i=0;i<this.WindowIndex.length;++i)
+        {
+            var item=this.WindowIndex[i];
+            if (!item) continue;
+            if (item.IsUsePageData===true) this.BindIndexData(i,bindData, { Type:1 });   //执行脚本
+        }
+
+        //叠加指标
+        for(var i=0;i<this.Frame.SubFrame.length;++i)
+        {
+            var item=this.Frame.SubFrame[i];
+            for(var j=0; j<item.OverlayIndex.length; ++j)
+            {
+                var overlayItem=item.OverlayIndex[j];
+                if (overlayItem && overlayItem.Script && overlayItem.Script.IsUsePageData==true)
+                    this.BindOverlayIndexData(overlayItem,i,bindData);
+            }
+        }
     }
 
     //切换api指标
