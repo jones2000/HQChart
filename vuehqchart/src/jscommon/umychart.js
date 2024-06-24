@@ -2583,6 +2583,8 @@ var JSCHART_EVENT_ID=
     ON_CREATE_RIGHT_MENU:152,   //创建右键菜单
 
     ON_FORMAT_CALL_AUCTION_INDEX_TITLE:153, //集合竞价指标窗口标题内容
+
+    ON_FORMAT_KLINE_HIGH_LOW_TITLE:154,     //K线最高最低价格式化内容
 }
 
 var JSCHART_OPERATOR_ID=
@@ -2916,6 +2918,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     this.DisableMouse=false;    //禁止鼠标事件
     this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
     this.PressTime=500;
+    this.IsPress=false;         //是否长按
 
     this.NetworkFilter;         //网络请求回调 function(data, callback);
     this.LastMouseStatus={ MouseOnToolbar:null }; // MouseOnToolbar={ Rect:{}, Title: }
@@ -4469,6 +4472,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         {
             clearTimeout(this.DragTimer);
             this.DragTimer=null;
+            this.IsPress=false;
         }
     }
 
@@ -4506,6 +4510,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     {
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
 
+        this.IsPress=false;
         this.IsOnTouch=true;
         this.TouchDrawCount=0;
         this.PhonePinch=null;
@@ -4646,6 +4651,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 var self=this;
                 this.DragTimer=setTimeout(function()
                 {
+                    self.IsPress=true;
                     if (drag.Click.X==drag.LastMove.X && drag.Click.Y==drag.LastMove.Y) //手指没有移动，出现十字光标
                     {
                         var mouseDrag=self.MouseDrag;
@@ -26228,10 +26234,36 @@ function ChartKLine()
         }
     }
 
+    this.OnFormatHighLowTitle=function(ptMax, ptMin)
+    {
+        if (!ptMax || !ptMin) return null;
+        if (!IFrameSplitOperator.IsNumber(ptMax.Value) || !IFrameSplitOperator.IsNumber(ptMin.Value)) return null;
+
+        var defaultfloatPrecision=GetfloatPrecision(this.Symbol);   //小数位数
+        var title=
+        { 
+            High:ptMax.Value.toFixed(defaultfloatPrecision), 
+            Low:ptMin.Value.toFixed(defaultfloatPrecision) 
+        };
+       
+        if (!this.GetEventCallback) return title;
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_FORMAT_KLINE_HIGH_LOW_TITLE);
+        if (!event || !event.Callback) return title;
+
+        var data={ Max:ptMax, Min:ptMin, Symbol:this.Symbol, Title:{ High:title.High, Low:title.Low }, Decimal:defaultfloatPrecision, PreventDefault:false };
+        event.Callback(event, data, this);
+        if (data.PreventDefault) return data.Title;    //使用外部回调的数值
+
+        return title;
+    }
+
     this.DrawMaxMinPrice=function(ptMax,ptMin)
     {
         if (ptMax.X==null || ptMax.Y==null || ptMax.Value==null) return;
         if (ptMin.X==null || ptMin.Y==null || ptMin.Value==null) return;
+
+        var title=this.OnFormatHighLowTitle(ptMax,ptMin);
+        if (!title) return;
 
         var leftArrow=g_JSChartResource.KLine.MaxMin.LeftArrow;
         var rightArrow=g_JSChartResource.KLine.MaxMin.RightArrow;
@@ -26240,26 +26272,32 @@ function ChartKLine()
 
         var defaultfloatPrecision=GetfloatPrecision(this.Symbol);
         this.Canvas.font=this.TextFont;
-        this.Canvas.fillStyle=this.TextColor;
+       
         var top=this.ChartBorder.GetTopEx();
         var bottom=this.ChartBorder.GetBottomEx();
 
         var ptTop=ptMax;
+        var text=title.High;
+        var textColor=this.TextColor;
         if (this.ChartFrame.CoordinateType==1)  //反转坐标
         {
             if (ptMax.Y<ptMin.Y) ptTop=ptMin;
             this.Canvas.textBaseline='top';
+            var text=title.Low;
+            if (title.LowColor) textColor=title.LowColor;
         }
         else
         {
             if (ptMax.Y>ptMin.Y) ptTop=ptMin;
             this.Canvas.textBaseline='bottom';
+            if (title.HighColor) textColor=title.HighColor;
         }
-        
+
+        this.Canvas.fillStyle=textColor;
         this.Canvas.textAlign=ptTop.Align;
         var left=ptTop.Align=='left'?ptTop.X:ptTop.X;
         if (IFrameSplitOperator.IsNumber(highYOffset)) ptTop.Y+=highYOffset;
-        var text=ptTop.Value.toFixed(defaultfloatPrecision);
+        //var text=ptTop.Value.toFixed(defaultfloatPrecision);
         if (ptTop.Align=='left') text=leftArrow+text;
         else text=text+rightArrow;
         if (ptTop.Y>(top-2))
@@ -26269,21 +26307,27 @@ function ChartKLine()
         }
         
         var ptBottom=ptMin;
+        var text=title.Low;
+        var textColor=this.TextColor;
         if (this.ChartFrame.CoordinateType==1)
         {
             if (ptMin.Y>ptMax.Y) ptBottom=ptMax;
             this.Canvas.textBaseline='bottom';
+            var text=title.High;
+            if (title.HighColor) textColor=title.HighColor;
         }
         else
         {
             if (ptMax.Y>ptMin.Y) ptTop=ptMin;
             this.Canvas.textBaseline='top';
+            if (title.LowColor) textColor=title.LowColor;
         }
+
+        this.Canvas.fillStyle=textColor;
         this.Canvas.textAlign=ptBottom.Align;
-        
         var left=ptBottom.Align=='left'?ptBottom.X:ptBottom.X;
         if (IFrameSplitOperator.IsNumber(lowYOffset)) ptBottom.Y+=lowYOffset;
-        var text=ptMin.Value.toFixed(defaultfloatPrecision);
+        //var text=ptMin.Value.toFixed(defaultfloatPrecision);
         if (ptBottom.Align=='left') text=leftArrow+text;
         else  text=text+rightArrow;
         if (ptBottom.Y<(bottom+1))
@@ -26297,13 +26341,15 @@ function ChartKLine()
     {
         if (ptMax.X==null || ptMax.Y==null || ptMax.Value==null) return;
         if (ptMin.X==null || ptMin.Y==null || ptMin.Value==null) return;
+        var title=this.OnFormatHighLowTitle(ptMax,ptMin);
+        if (!title) return;
 
         var leftArrow=g_JSChartResource.KLine.MaxMin.LeftArrow;
         var rightArrow=g_JSChartResource.KLine.MaxMin.RightArrow;
         var highYOffset=g_JSChartResource.KLine.MaxMin.HighYOffset;
         var lowYOffset=g_JSChartResource.KLine.MaxMin.LowYOffset;
 
-        var defaultfloatPrecision=GetfloatPrecision(this.Symbol);
+        //var defaultfloatPrecision=GetfloatPrecision(this.Symbol);
         var xText=ptMax.Y;
         var yText=ptMax.X;
         if (IFrameSplitOperator.IsNumber(highYOffset)) xText+=highYOffset;
@@ -26311,11 +26357,13 @@ function ChartKLine()
         this.Canvas.translate(xText, yText);
         this.Canvas.rotate(90 * Math.PI / 180);
 
+        var text=title.High;
         this.Canvas.font=this.TextFont;
-        this.Canvas.fillStyle=this.TextColor;
+        if (title.HighColor) this.Canvas.fillStyle=title.HighColor;
+        else this.Canvas.fillStyle=this.TextColor;
         this.Canvas.textAlign=ptMax.Align;
         this.Canvas.textBaseline='bottom';
-        var text=ptMax.Value.toFixed(defaultfloatPrecision);
+        //var text=ptMax.Value.toFixed(defaultfloatPrecision);
         if (ptMax.Align=='left') text=leftArrow+text;
         else  text=text+rightArrow;
         this.Canvas.fillText(text,0,0);
@@ -26329,11 +26377,13 @@ function ChartKLine()
         this.Canvas.translate(xText, yText);
         this.Canvas.rotate(90 * Math.PI / 180);
 
+        var text=title.Low;
         this.Canvas.font=this.TextFont;
-        this.Canvas.fillStyle=this.TextColor;
+        if (title.LowColor) this.Canvas.fillStyle=title.LowColor;
+        else this.Canvas.fillStyle=this.TextColor;
         this.Canvas.textAlign=ptMin.Align;
         this.Canvas.textBaseline='top';
-        var text=ptMin.Value.toFixed(defaultfloatPrecision);
+        //var text=ptMin.Value.toFixed(defaultfloatPrecision);
         if (ptMin.Align=='left') text=leftArrow+text;
         else text=text+rightArrow;
         this.Canvas.fillText(text,0,0);
@@ -77771,6 +77821,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         if(this.DragMode==0) return;
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
 
+        this.IsPress=false;
         this.IsOnTouch=true;
         this.TouchDrawCount=0;
         this.PhonePinch=null;
@@ -77872,6 +77923,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                 {
                     this.DragTimer=setTimeout(function()
                     {
+                        self.IsPress=true;
                         if (drag.Click.X==drag.LastMove.X && drag.Click.Y==drag.LastMove.Y)
                         {
                             var mouseDrag=self.MouseDrag;
@@ -80531,6 +80583,15 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             this.AutoUpdateEvent(true, "MinuteChartContainer::RecvMinuteData");
             this.AutoUpdate();
             return;
+        }
+
+        if (this.IsOnTouch==true)   //正在操作中不更新数据
+        {
+            if (this.SourceData && IFrameSplitOperator.IsNonEmptyArray(this.SourceData.Data))
+            {
+                this.AutoUpdate();
+                return; 
+            }
         }
 
         //原始数据
@@ -83796,6 +83857,7 @@ function KLineChartHScreenContainer(uielement)
     {
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
 
+        this.IsPress=false;
         this.PhonePinch=null;
         this.IsOnTouch=true;
         this.TouchDrawCount=0;
@@ -83915,6 +83977,7 @@ function KLineChartHScreenContainer(uielement)
                 var self=this;
                 this.DragTimer=setTimeout(function()
                 {
+                    self.IsPress=false;
                     if (drag.Click.X==drag.LastMove.X && drag.Click.Y==drag.LastMove.Y) //手指没有移动，出现十字光标
                     {
                         var mouseDrag=self.MouseDrag;

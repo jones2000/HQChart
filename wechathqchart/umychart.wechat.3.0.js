@@ -1560,6 +1560,7 @@ function JSChartContainer(uielement)
 
     this.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
     this.PressTime=800; //长按十字光标显示时间
+    this.IsPress=false; //是否长按
 
     //公共函数转发,不然要导出麻烦
     this.FormatDateString = IFrameSplitOperator.FormatDateString;
@@ -1688,6 +1689,7 @@ function JSChartContainer(uielement)
         {
             clearTimeout(this.TouchTimer);
             this.TouchTimer=null;
+            this.IsPress=false;
         }
     }
 
@@ -1700,6 +1702,7 @@ function JSChartContainer(uielement)
         //if (jsChart.DragMode == 0) return;
 
         this.IsOnTouch=true;
+        this.IsPress=false;
         this.PhonePinch = null;
         this.TouchDrawCount=0; 
 
@@ -1788,6 +1791,7 @@ function JSChartContainer(uielement)
             if (bStartTimer) 
             {
                 this.TouchTimer = setTimeout(function () {
+                    jsChart.IsPress=true;
                     if (drag.Click.X == drag.LastMove.X && drag.Click.Y == drag.LastMove.Y) //手指没有移动，出现十字光标
                     {
                         var mouseDrag = jsChart.MouseDrag;
@@ -8500,6 +8504,7 @@ function MinuteChartContainer(uielement)
     {
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
 
+        this.IsPress=false;
         this.IsOnTouch = true;
         var jsChart = this;
         if (jsChart.DragMode == 0) return;
@@ -8599,6 +8604,7 @@ function MinuteChartContainer(uielement)
                 this.TouchTimer=setTimeout(()=>
                 {
                     this.MouseDrag=null;
+                    this.IsPress=true;
                     T_ShowCorssCursor();
                 }, this.PressTime);
             }
@@ -9649,6 +9655,15 @@ function MinuteChartContainer(uielement)
             if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvMinuteData', this);
             this.AutoUpdate();
             return;
+        }
+
+        if (this.IsOnTouch==true)   //正在操作中不更新数据
+        {
+            if (this.SourceData && IFrameSplitOperator.IsNonEmptyArray(this.SourceData.Data))
+            {
+                this.AutoUpdate();
+                return; 
+            }
         }
 
         //原始数据
@@ -11004,6 +11019,7 @@ function KLineChartHScreenContainer(uielement)
         var jsChart = this;
         if (jsChart.DragMode == 0) return;
 
+        this.IsPress=false;
         this.IsOnTouch = true;
         this.PhonePinch = null;
         this.TouchDrawCount=0;
@@ -11075,6 +11091,7 @@ function KLineChartHScreenContainer(uielement)
             if (this.ChartCorssCursor.IsShow == true) 
             {
                 this.TouchTimer = setTimeout(function () {
+                    jsChart.IsPress=true;
                     if (drag.Click.X == drag.LastMove.X && drag.Click.Y == drag.LastMove.Y) //手指没有移动，出现十字光标
                     {
                         var mouseDrag = jsChart.MouseDrag;

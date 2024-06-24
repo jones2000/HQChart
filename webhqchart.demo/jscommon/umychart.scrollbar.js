@@ -431,7 +431,28 @@ function JSScrollBarChartContainer(uielement)
         if (this.SliderChart) 
         {
             var clickData=this.SliderChart.PtInChart(x,y);
-            if (!clickData) return;
+            if (!clickData) 
+            {
+                if (!this.Frame.PtInClient(x,y)) return;
+
+                //滚动块直接移动到鼠标点击的位置
+                var index=this.Frame.GetXData(x);
+                index=Math.round(index);
+                var pageRange=this.GetPageRange();
+                var showCount=pageRange.ShowCount;
+                var start=index-parseInt(showCount/2);
+                if (start<0) start=0;
+                var end=start+showCount;
+                if (end>=this.Frame.XPointCount) 
+                {
+                    end=this.Frame.XPointCount-1;
+                    start=end-showCount;
+                }
+
+                var drag={ UpdateData:{  StartIndex:start, EndIndex:end, Type:3 } };
+                this.DragUpdate(drag);
+                return;
+            }
 
             this.DragSlider={ Click:{ X:e.clientX, Y:e.clientY }, LastMove:{X:e.clientX, Y:e.clientY}, Data:clickData };
             this.DragSlider.DrawCount=0;    //重绘次数
@@ -440,6 +461,7 @@ function JSScrollBarChartContainer(uielement)
         document.onmousemove=(e)=>{ this.DocOnMouseMove(e); }
         document.onmouseup=(e)=> { this.DocOnMouseUp(e); }
     }
+
 
     //去掉右键菜单
     this.UIOnContextMenu=function(e)
@@ -679,6 +701,9 @@ function JSScrollBarChartContainer(uielement)
     //移动滑块
     this.UpdateXDataOffset=function(obj)
     {
+        if (!obj) return;
+
+        var type=obj.Type;
         if (obj.Type==0)
         {
             var start=this.Frame.GetXData(obj.XStart);
@@ -700,11 +725,17 @@ function JSScrollBarChartContainer(uielement)
             end=parseInt(end);
             this.XOffsetData.End=end;
         }
+        else if (obj.Type==3)
+        {
+            this.XOffsetData.End=obj.EndIndex;
+            this.XOffsetData.Start=obj.StartIndex;
+            type=0;
+        }
 
         var endItem=this.SourceData.Data[this.XOffsetData.End];
         var startItem=this.SourceData.Data[this.XOffsetData.Start];
 
-        var sendData={ Type:obj.Type, Count:this.XOffsetData.Count };
+        var sendData={ Type:type, Count:this.XOffsetData.Count };
         if (this.XOffsetData.End>this.XOffsetData.Start)
         {
             sendData.Start={ Index:this.XOffsetData.Start, Item:startItem};
@@ -1079,6 +1110,18 @@ function JSScrollBarFrame()
             }
         }
     }
+
+    this.PtInClient=function(x,y)
+    {
+        var left=ToFixedPoint(this.ChartBorder.GetLeft());
+        var top=ToFixedPoint(this.ChartBorder.GetTop());
+        var right=ToFixedPoint(this.ChartBorder.GetRight());
+        var bottom=ToFixedPoint(this.ChartBorder.GetBottom());
+
+        if (x>=left && x<=right && y>=top && y<=bottom) return true;
+
+        return false;
+    }
 }
 
 
@@ -1262,6 +1305,8 @@ function SliderChart()
         return null;
     }
 }
+
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // 滚动条K线背景色

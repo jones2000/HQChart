@@ -1760,9 +1760,35 @@ function ChartKLine()
         }
     }
 
-    this.DrawMaxMinPrice = function (ptMax, ptMin) {
+    this.OnFormatHighLowTitle=function(ptMax, ptMin)
+    {
+        if (!ptMax || !ptMin) return null;
+        if (!IFrameSplitOperator.IsNumber(ptMax.Value) || !IFrameSplitOperator.IsNumber(ptMin.Value)) return null;
+
+        var defaultfloatPrecision=JSCommonCoordinateData.GetfloatPrecision(this.Symbol);   //小数位数
+        var title=
+        { 
+            High:ptMax.Value.toFixed(defaultfloatPrecision), 
+            Low:ptMin.Value.toFixed(defaultfloatPrecision) 
+        };
+       
+        if (!this.GetEventCallback) return title;
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_FORMAT_KLINE_HIGH_LOW_TITLE);
+        if (!event || !event.Callback) return title;
+
+        var data={ Max:ptMax, Min:ptMin, Symbol:this.Symbol, Title:{ High:title.High, Low:title.Low }, Decimal:defaultfloatPrecision, PreventDefault:false };
+        event.Callback(event, data, this);
+        if (data.PreventDefault) return data.Title;    //使用外部回调的数值
+
+        return title;
+    }
+
+    this.DrawMaxMinPrice = function (ptMax, ptMin) 
+    {
         if (ptMax.X == null || ptMax.Y == null || ptMax.Value == null) return;
         if (ptMin.X == null || ptMin.Y == null || ptMin.Value == null) return;
+        var title=this.OnFormatHighLowTitle(ptMax,ptMin);
+        if (!title) return;
 
         var leftArrow=g_JSChartResource.KLine.MaxMin.LeftArrow;
         var rightArrow=g_JSChartResource.KLine.MaxMin.RightArrow;
@@ -1771,12 +1797,16 @@ function ChartKLine()
 
         var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.Symbol);
         this.Canvas.font = this.TextFont;
-        this.Canvas.fillStyle = this.TextColor;
+       
         this.Canvas.textAlign = ptMax.Align;
         this.Canvas.textBaseline = 'bottom';
         var left = ptMax.X;
         if (IFrameSplitOperator.IsNumber(highYOffset)) ptMax.Y+=highYOffset;
-        var text = ptMax.Value.toFixed(defaultfloatPrecision);
+        //var text = ptMax.Value.toFixed(defaultfloatPrecision);
+        var text=title.High;
+        var textColor=this.TextColor;
+        if (title.HighColor) textColor=title.HighColor;
+        this.Canvas.fillStyle = textColor;
         if (ptMax.Align == 'left') text = leftArrow + text;
         else text = text + rightArrow;
         this.Canvas.fillText(text, left, ptMax.Y);
@@ -1786,7 +1816,11 @@ function ChartKLine()
         this.Canvas.textBaseline = 'top';
         var left = ptMin.X;
         if (IFrameSplitOperator.IsNumber(lowYOffset)) ptMin.Y+=lowYOffset;
-        text = ptMin.Value.toFixed(defaultfloatPrecision);
+        //text = ptMin.Value.toFixed(defaultfloatPrecision);
+        var text=title.Low;
+        var textColor=this.TextColor;
+        if (title.LowColor) textColor=title.LowColor;
+        this.Canvas.fillStyle = textColor;
         if (ptMin.Align == 'left') text = leftArrow + text;
         else text = text + rightArrow;
         this.Canvas.fillText(text, left, ptMin.Y);
@@ -1797,6 +1831,8 @@ function ChartKLine()
     {
         if (ptMax.X == null || ptMax.Y == null || ptMax.Value == null) return;
         if (ptMin.X == null || ptMin.Y == null || ptMin.Value == null) return;
+        var title=this.OnFormatHighLowTitle(ptMax,ptMin);
+        if (!title) return;
 
         var leftArrow=g_JSChartResource.KLine.MaxMin.LeftArrow;
         var rightArrow=g_JSChartResource.KLine.MaxMin.RightArrow;
@@ -1812,10 +1848,12 @@ function ChartKLine()
         this.Canvas.rotate(90 * Math.PI / 180);
 
         this.Canvas.font = this.TextFont;
-        this.Canvas.fillStyle = this.TextColor;
+         if (title.HighColor) this.Canvas.fillStyle=title.HighColor;
+        else this.Canvas.fillStyle=this.TextColor;
         this.Canvas.textAlign = ptMax.Align;
         this.Canvas.textBaseline = 'bottom';
-        var text = ptMax.Value.toFixed(defaultfloatPrecision);
+        var text=title.High;
+        //var text = ptMax.Value.toFixed(defaultfloatPrecision);
         if (ptMax.Align == 'left') text = leftArrow + text;
         else text = text + rightArrow;
         this.Canvas.fillText(text, 0, 0);
@@ -1830,10 +1868,12 @@ function ChartKLine()
         this.Canvas.rotate(90 * Math.PI / 180);
 
         this.Canvas.font = this.TextFont;
-        this.Canvas.fillStyle = this.TextColor;
+        if (title.LowColor) this.Canvas.fillStyle=title.LowColor;
+        else this.Canvas.fillStyle=this.TextColor;
         this.Canvas.textAlign = ptMin.Align;
         this.Canvas.textBaseline = 'top';
-        var text = ptMin.Value.toFixed(defaultfloatPrecision);
+        var text=title.Low;
+        //var text = ptMin.Value.toFixed(defaultfloatPrecision);
         if (ptMin.Align == 'left') text = leftArrow + text;
         else text = text + rightArrow;
         this.Canvas.fillText(text, 0, 0);
