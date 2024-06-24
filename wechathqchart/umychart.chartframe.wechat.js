@@ -1701,6 +1701,11 @@ function KLineFrame()
     this.CustomVerticalInfo = [];               
     this.DrawCustomVerticalEvent;
     this.RightSpaceCount = 0;
+    this.TitleBorderLine=
+    { 
+        Color:g_JSChartResource.Frame.TitleBorderLine.Color, 
+        Dash:g_JSChartResource.Frame.TitleBorderLine.Dash 
+    };//标题栏底部边框线
 
     this.DrawFrame = function () 
     {
@@ -2229,6 +2234,25 @@ function KLineFrame()
         this.DistanceWidth=0;
         this.LastCalculateStatus.XPointCount=this.XPointCount;
         this.LastCalculateStatus.Width=width;
+    }
+
+    //画标题背景色
+    this.DrawTitleBG=function()
+    {
+        if (!this.TitleBorderLine || !this.TitleBorderLine.Color) return;
+
+        var border=this.GetBorder();
+        if (this.ChartBorder.TopSpace<5) return;
+
+        this.Canvas.save();
+        this.Canvas.strokeStyle=this.TitleBorderLine.Color;
+        if (this.TitleBorderLine.Dash) this.Canvas.setLineDash(this.TitleBorderLine.Dash);   //虚线
+        var x=ToFixedPoint(border.TopTitle);
+        this.Canvas.beginPath();
+        this.Canvas.moveTo(border.Left,x);
+        this.Canvas.lineTo(border.Right,x);
+        this.Canvas.stroke();
+        this.Canvas.restore();
     }
 }
 

@@ -54531,7 +54531,7 @@ function DynamicChartTitlePainting()
             }
         }
 
-        if (this.NameButtonStyle==1)
+        if (this.Canvas.roundRect && this.NameButtonStyle==1)   //判断下是否支持roundRect
         {
             this.Canvas.beginPath();
             this.Canvas.roundRect(ToFixedPoint(rtButton.Left), ToFixedPoint(rtButton.Top), ToFixedRect(rtButton.Width), ToFixedRect(rtButton.Height), [roundRadius]);

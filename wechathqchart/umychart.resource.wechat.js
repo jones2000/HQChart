@@ -82,6 +82,8 @@ function JSChartResource()
         YTextPadding:[2,2],
         StringFormat:0,
         EnableRemoveZero:true,                  //移除小数点后面的0
+
+        TitleBorderLine:{ Color:null, Dash:null },
     };  
     
     this.FrameLogo=
@@ -443,8 +445,16 @@ function JSChartResource()
 
         if (style.Frame) 
         {
+            var item=style.Frame;
             if (style.Frame.XBottomOffset) this.Frame.XBottomOffset = style.Frame.XBottomOffset;
             if (style.Frame.YTopOffset) this.Frame.YTopOffset = style.Frame.YTopOffset;
+            if (item.TitleBorderLine)
+            {
+                var subItem=item.TitleBorderLine;
+                var destItem=this.Frame.TitleBorderLine;
+                if (subItem.Color) destItem.Color=subItem.Color;
+                if (IFrameSplitOperator.IsNonEmptyArray(subItem.Dash)) destItem.Dash=subItem.Dash.slice();
+            }
         }
 
         if (style.FrameLatestPrice) 
