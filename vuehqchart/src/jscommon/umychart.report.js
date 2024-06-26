@@ -4332,7 +4332,7 @@ function ChartReport()
             var rtItem={ Left:left, Top:top,  Width:column.Width, Height:this.RowHeight };
             rtItem.Right=rtItem.Left+rtItem.Width;
             rtItem.Bottom=rtItem.Top+rtItem.Height;
-            this.DrawLine(stock.CloseLine, column, rtItem);
+            if (stock) this.DrawLine(stock.CloseLine, column, rtItem);
         }
         else if (column.Type==REPORT_COLUMN_ID.KLINE_ID)
         {

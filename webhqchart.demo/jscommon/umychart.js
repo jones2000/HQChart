@@ -528,6 +528,8 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
                     chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitType=item.SplitType;
                     chart.Frame.SubFrame[i].Frame.YSplitOperator.DefaultSplitType=item.SplitType;
                 }
+                if (IFrameSplitOperator.IsNumber(item.FilterType)) subFrame.YSplitOperator.FilterType=item.FilterType;
+                
                 if (!isNaN(item.Height)) chart.Frame.SubFrame[i].Height = item.Height;
                 if (item.IsShowLeftText===false || item.IsShowLeftText===true) 
                 {
@@ -1006,6 +1008,8 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
                     chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitType=item.SplitType;
                     chart.Frame.SubFrame[i].Frame.YSplitOperator.DefaultSplitType=item.SplitType;
                 }
+                if (IFrameSplitOperator.IsNumber(item.FilterType)) subFrame.YSplitOperator.FilterType=item.FilterType;
+
                 if (item.IsShowLeftText==false) 
                 {
                     chart.Frame.SubFrame[i].Frame.IsShowYText[0]=item.IsShowLeftText;
@@ -1035,6 +1039,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
                 if (IFrameSplitOperator.IsNumber(item.CloseBeforeButton)) chart.Frame.SubFrame[i].Frame.IsShowCloseButton=item.CloseBeforeButton;
 
                 if (item.ClientBGColor) subFrame.ClientBGColor=item.ClientBGColor;
+                if (!IFrameSplitOperator.IsUndefined(item.HorizontalReserved)) subFrame.HorizontalReserved=item.HorizontalReserved;
             }
 
             chart.UpdateXShowText();
@@ -1151,6 +1156,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
                 if (IFrameSplitOperator.IsBool(item.TitleWindow)) frame.TitleWindow=item.TitleWindow;
 
                 if (IFrameSplitOperator.IsNumber(item.YSplitType)) chart.Frame.SubFrame[index].Frame.YSplitOperator.SplitType=item.YSplitType;
+                if (IFrameSplitOperator.IsNumber(item.FilterType)) chart.Frame.SubFrame[index].Frame.YSplitOperator.FilterType=item.FilterType;
                 if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[index].Frame.ChartBorder.TitleHeight=item.TitleHeight;
                 if (IFrameSplitOperator.IsBool(item.IsDrawTitleBG))  chart.Frame.SubFrame[index].Frame.IsDrawTitleBG=item.IsDrawTitleBG;
                 if (IFrameSplitOperator.IsBool(item.IsShowNameArrow))  chart.Frame.SubFrame[index].Frame.IsShowNameArrow=item.IsShowNameArrow;
@@ -11021,6 +11027,9 @@ function AverageWidthFrame()
         for(var i=this.HorizontalInfo.length-1; i>=0; --i)  //从上往下画分割线
         {
             var item=this.HorizontalInfo[i];
+            if (!IFrameSplitOperator.IsNumber(item.Value)) continue;
+            if (item.Value>this.HorizontalMax || item.Value<this.HorizontalMin) continue;
+
             var y=this.GetYFromData(item.Value);
             if (y!=null && yPrev!=null && Math.abs(y-yPrev)<this.MinYDistance) continue;  //两个坐标在近了 就不画了
             
@@ -45594,7 +45603,7 @@ function IFrameSplitOperator()
         return true;
     }
 
-    this.Filter = function (aryInfo,keepZero) 
+    this.Filter=function(aryInfo, keepZero, filterType) 
     {
         if (this.SplitCount <= 0 || aryInfo.length <= 0 || aryInfo.length <= this.SplitCount) return aryInfo;
 
@@ -45602,17 +45611,28 @@ function IFrameSplitOperator()
         var filter = parseInt(aryInfo.length / this.SplitCount);
         if (filter <= 1) filter = 2;
         var data = [];
-        for (var i = 0; i < aryInfo.length; i += filter) 
+        if (filterType==1)
         {
-            if (i + filter >= aryInfo.length && i != aryInfo.length - 1) //最后一个数据放进去
-            {
-                data.push(aryInfo[aryInfo.length - 1]);
-            }
-            else 
+            for (var i = 0; i < aryInfo.length; i += filter) 
             {
                 data.push(aryInfo[i]);
             }
         }
+        else
+        {
+            for (var i = 0; i < aryInfo.length; i += filter) 
+            {
+                if (i + filter >= aryInfo.length && i != aryInfo.length - 1) //最后一个数据放进去
+                {
+                    data.push(aryInfo[aryInfo.length - 1]);
+                }
+                else 
+                {
+                    data.push(aryInfo[i]);
+                }
+            }
+        }
+        
 
         if (this.SplitCount == 2 && data.length>2) //之显示第1个和最后一个刻度
         {
@@ -45650,7 +45670,7 @@ function IFrameSplitOperator()
         return data;
     }
 
-    this.RemoveZero = function (aryInfo)   //移除小数后面多余的0
+    this.RemoveZero=function(aryInfo)   //移除小数后面多余的0
     {
         //所有的数字小数点后面都0,才会去掉
         var isAllZero = [true, true, true, true];
@@ -47218,6 +47238,7 @@ function FrameSplitY()
     this.FloatPrecision = 2;                  //坐标小数位数(默认2)
     this.FLOATPRECISION_RANGE=[1,0.1,0.01,0.001,0.0001];
     this.SplitType=0;       //0=自动分割  1=固定分割 2=堆积图(0-100)
+    this.FilterType=0;      //自动分割过滤算法
     this.DefaultSplitType=0;
     this.Custom=[];         //[{Type:0}]; 定制刻度
     this.DefaultYMaxMin;    //{ Max:null, Min:null };    //指定最大,最小, Y轴范围必须比最大值大， 比最小值小
@@ -47409,7 +47430,8 @@ function FrameSplitY()
         this.FilterIgnoreYValue();
 
         this.CustomCoordinate();
-        if (this.SplitType!=1) this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo,(splitData.Max>0 && splitData.Min<0));
+        if (this.SplitType!=1) 
+            this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo,(splitData.Max>0 && splitData.Min<0), this.FilterType);
         
         this.RightFrameSplitY();
         this.MainOverlayFrameSplitY();  //主图Y轴绑定叠加Y轴坐标
@@ -48048,6 +48070,8 @@ function FrameSplitMinutePriceY()
         }
 
         this.CustomCoordinate();
+
+        this.ReservedHeight({ Max:this.Frame.HorizontalMax, Min:this.Frame.HorizontalMin });     //预留高度
 
         if (this.GetEventCallback)
         {
@@ -53089,6 +53113,7 @@ function DynamicTitleData(data,name,color)
     this.FloatPrecision=2;                          //小数位数
     this.IsShow=true;   //是否显示
     this.Callback;      //绘制标题回调
+    this.ExtendData;    //扩展数据
 }
 
 function DynamicChartTitlePainting()
@@ -53845,6 +53870,10 @@ function DynamicChartTitlePainting()
                         if (data.Out) return data.Out;
                     }
                 }
+                
+                if (item.DataType=="ChartBand") //默认不输出
+                    return null;
+                
 
                 var arrowSuper=null;    //独立颜色
                 
@@ -90651,8 +90680,8 @@ function FuturesTimeData()
                 [
                     { Value: 900, Text: '9:00' },
                     { Value: 1000, Text: '10:00' },
-                    { Value: 1330, Text: '13:30' },
-                    { Value: 1430, Text: '14:30' },
+                    { Value: 1100, Text: '11:00' },
+                    { Value: 1400, Text: '14:00' },
                     { Value: 1500, Text: '15:00' },
                 ],
                 Min:   //最小模式  

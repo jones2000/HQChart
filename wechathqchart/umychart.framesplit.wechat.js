@@ -89,7 +89,7 @@ function IFrameSplitOperator()
         return true;
     }
 
-    this.Filter = function (aryInfo, keepZero)   //keepZero 保留0轴
+    this.Filter=function (aryInfo, keepZero, filterType)   //keepZero 保留0轴
     {
         if (this.SplitCount <= 0 || aryInfo.length <= 0 || aryInfo.length <= this.SplitCount) return aryInfo;
 
@@ -97,17 +97,27 @@ function IFrameSplitOperator()
         var filter = parseInt(aryInfo.length / this.SplitCount);
         if (filter <= 1) filter = 2;
         var data = [];
-
-        for (var i = 0; i < aryInfo.length; i += filter) 
+        if (filterType==1)
         {
-            if (i + filter >= aryInfo.length && i != aryInfo.length - 1) //最后一个数据放进去
+            for (var i = 0; i < aryInfo.length; i += filter) 
             {
-                data.push(aryInfo[aryInfo.length - 1]);
-            }
-            else {
                 data.push(aryInfo[i]);
             }
         }
+        else
+        {
+            for (var i = 0; i < aryInfo.length; i += filter) 
+            {
+                if (i + filter >= aryInfo.length && i != aryInfo.length - 1) //最后一个数据放进去
+                {
+                    data.push(aryInfo[aryInfo.length - 1]);
+                }
+                else {
+                    data.push(aryInfo[i]);
+                }
+            }
+        }
+        
 
         if (this.SplitCount == 2 && data.length > 2) //之显示第1个和最后一个刻度
         {
@@ -210,6 +220,51 @@ function IFrameSplitOperator()
     this.SetOption=function(option)
     {
 
+    }
+
+    //计算上下预留
+    this.ReservedHeight=function(splitData)
+    {
+        if (!this.Frame) return;
+        if (this.Frame.IsHScreen) return;   //横屏以后再搞
+
+        var yReserved=this.Frame.HorizontalReserved;
+        if (!yReserved) return;
+
+        var reservedHeight=0;
+        if (IFrameSplitOperator.IsPlusNumber(yReserved.Top)) reservedHeight+=yReserved.Top;
+        if (IFrameSplitOperator.IsPlusNumber(yReserved.Bottom)) reservedHeight+=yReserved.Bottom;
+        if (reservedHeight<=0) return;
+
+        var border=this.Frame.GetBorder();
+        var top=border.TopEx;
+        var bottom=border.BottomEx;
+        var srcHeight=bottom-top;
+        if (srcHeight<reservedHeight) return;
+
+        var max=splitData.Max;
+        var min=splitData.Min;
+        if (IFrameSplitOperator.IsPlusNumber(yReserved.Top)) top-=yReserved.Top;
+        if (IFrameSplitOperator.IsPlusNumber(yReserved.Bottom)) bottom+=yReserved.Bottom;
+
+        var value=(max-min)/(bottom-top);   //1个像素点对应的数值
+        if (IFrameSplitOperator.IsPlusNumber(yReserved.Top))
+        {
+            var topValue=value*yReserved.Top;
+            max+=topValue;
+        }
+        
+        if (IFrameSplitOperator.IsPlusNumber(yReserved.Bottom))
+        {
+            var bottomValue=value*yReserved.Bottom;
+            min-=bottomValue;
+        }
+
+        splitData.Max=max;
+        splitData.Min=min;
+
+        this.Frame.HorizontalMax=splitData.Max;
+        this.Frame.HorizontalMin=splitData.Min;
     }
 }
 
@@ -542,6 +597,11 @@ IFrameSplitOperator.IsNonEmptyArray=function(ary)
     return ary.length>0;
 }
 
+IFrameSplitOperator.IsUndefined=function(value)
+{
+    return value===undefined;
+}
+
 //K线Y轴分割
 function FrameSplitKLinePriceY() 
 {
@@ -808,6 +868,7 @@ function FrameSplitY()
     this.newMethod();
     delete this.newMethod;
     this.SplitType=0;                         //0=自动分割  1=固定分割 2=百分比(0-100)
+    this.FilterType=0;   //自动分割过滤算法
     this.DefaultSplitType=0;
     this.FloatPrecision = 2;                  //坐标小数位数(默认2)
     this.EnableRemoveZero=g_JSChartResource.Frame.EnableRemoveZero;
@@ -817,6 +878,7 @@ function FrameSplitY()
 
     this.IsShowYZero = true;
     this.IntegerSplitData = null;
+    
 
     this.Reset=function()   //重置
     {
@@ -943,10 +1005,13 @@ function FrameSplitY()
         }
 
         this.FilterIgnoreYValue();
-        this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo, (splitData.Max > 0 && splitData.Min < 0 && this.IsShowYZero));
+        this.Frame.HorizontalInfo = this.Filter(this.Frame.HorizontalInfo, (splitData.Max > 0 && splitData.Min < 0 && this.IsShowYZero), this.FilterType);
         this.MainOverlayFrameSplitY();  //主图Y轴绑定叠加Y轴坐标
         if (this.EnableRemoveZero) this.RemoveZero(this.Frame.HorizontalInfo);
         this.DynamicMessageText();
+
+        this.ReservedHeight(splitData);
+
         this.Frame.HorizontalMax = splitData.Max;
         this.Frame.HorizontalMin = splitData.Min;
 
@@ -1346,6 +1411,8 @@ function FrameSplitMinutePriceY()
         }
 
         this.CustomCoordinate();
+
+        this.ReservedHeight({ Max:this.Frame.HorizontalMax, Min:this.Frame.HorizontalMin });     //预留高度
 
         if (this.GetEventCallback)
         {

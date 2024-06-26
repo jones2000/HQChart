@@ -3386,7 +3386,7 @@ function JSAlgorithm(errorHandler,symbolData)
         }
         else
         {
-            var i=0;
+            var i=n;
             var lastData=null;
             for(;i<data.length; ++i)
             {
@@ -20811,6 +20811,12 @@ function ScriptIndex(name,script,args,option)
         chart.Data.Data=varItem.Draw.DrawData;
 
         if (IFrameSplitOperator.IsBool(varItem.IsFirstDraw)) chart.IsDrawFirst=varItem.IsFirstDraw;
+
+        var titleIndex=windowIndex+1;
+        var titleData=new DynamicTitleData(chart.Data,varItem.Name,chart.Color);
+        titleData.DataType=chart.ClassName;
+        titleData.ExtendData={ Color:[chart.FirstColor, chart.SecondColor] };
+        hqChart.TitlePaint[titleIndex].Data[id]=titleData;
 
         this.SetChartIndexName(chart);
         hqChart.ChartPaint.push(chart);

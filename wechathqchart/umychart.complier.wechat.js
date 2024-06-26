@@ -3031,7 +3031,7 @@ function JSAlgorithm(errorHandler, symbolData)
         }
         else
         {
-            var i=0;
+            var i=n;
             var lastData=null;
             for(;i<data.length; ++i)
             {
