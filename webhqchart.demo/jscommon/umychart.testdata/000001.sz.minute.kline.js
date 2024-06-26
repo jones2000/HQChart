@@ -2679,3 +2679,25 @@ var KLINE_MINUTE_DATA2 = {
     "count": 7646,
     "code": 0
   }
+
+
+var KLINE_1MINUTE_DATA2=
+{
+    code:0,
+    data:
+    [
+      [
+        20230829,
+        12.65,
+        12.65,
+        12.65,
+        12.65,
+        12.65,
+        1246339,
+        15766208,
+        1500
+      ]
+    ],
+    symbol:"xxx",
+    name:"xxxx",
+}

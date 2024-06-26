@@ -374,7 +374,6 @@ function AverageWidthFrame()
         var borderLeft = this.ChartBorder.Left;
         var titleHeight = this.ChartBorder.TitleHeight;
         if (borderLeft >= 10) return;
-
         if ((borderLeft < 10 && this.IsShowYText[0] === true) || (borderRight < 10 && this.IsShowYText[1] === true))
         {
             var yPrev = null; //上一个坐标y的值
@@ -391,12 +390,13 @@ function AverageWidthFrame()
                     if (item.Font != null) this.Canvas.font = item.Font;
                     this.Canvas.fillStyle = item.TextColor;
                     this.Canvas.textAlign = "left";
+                    var textHeight=this.Canvas.measureText('擎').width;
                     var yText=y;
                     if (y >= bottom - 2) 
                     {
                         this.Canvas.textBaseline = 'bottom';
                     }
-                    else if (y <= top + 2) 
+                    else if (y-textHeight/2 <= top) 
                     {
                         this.Canvas.textBaseline = 'top';
                         yText+=this.YTextTopOffset;
@@ -415,12 +415,13 @@ function AverageWidthFrame()
                     if (item.Font != null) this.Canvas.font = item.Font;
                     this.Canvas.fillStyle = item.TextColor;
                     this.Canvas.textAlign = "right";
+                    var textHeight=this.Canvas.measureText('擎').width;
                     var yText=y;
                     if (y >= bottom - 2) 
                     {
                         this.Canvas.textBaseline = 'bottom';
                     }
-                    else if (y <= top + 2) 
+                    else if (y-textHeight/2 <= top) 
                     {
                         this.Canvas.textBaseline = 'top';
                         yText+=this.YTextTopOffset;

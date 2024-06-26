@@ -78513,3 +78513,24 @@ var KLINE_DAY_OVERLAY_DATA2 =
         ]
     ]
 }
+
+
+var KLINE_1DAY_OVERLAY_DATA2=
+{
+    "stock": 
+    [
+        {
+            "time": 150002,
+            "date": 20230825,
+            "price": 10180.4711,
+            "open": 10197.9573,
+            "yclose": 10256.1896,
+            "high": 10212.6467,
+            "low": 10091.8625,
+            "vol": 10428916190,
+            "amount": 171138489266.7,
+            "symbol": "",
+            "name": ""
+        }
+    ],
+}

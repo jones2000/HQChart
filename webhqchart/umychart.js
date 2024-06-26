@@ -11572,12 +11572,13 @@ function AverageWidthFrame()
                     if (item.Font != null) this.Canvas.font = item.Font;
                     this.Canvas.fillStyle = item.TextColor;
                     this.Canvas.textAlign = "left";
+                    var textHeight=this.Canvas.measureText("擎").width;
                     var yText=y;
                     if (y >= bottom - 2) 
                     {
                         this.Canvas.textBaseline = 'bottom';
                     }
-                    else if (y <= top + 2) 
+                    else if ((y-textHeight/2)<=top) 
                     {
                         this.Canvas.textBaseline = 'top';
                         yText+=this.YTextTopOffset;
@@ -11606,12 +11607,13 @@ function AverageWidthFrame()
                     if (item.Font != null) this.Canvas.font = item.Font;
                     this.Canvas.fillStyle = item.TextColor;
                     this.Canvas.textAlign = "right";
+                    var textHeight=this.Canvas.measureText("擎").width;
                     var yText=y;
                     if (y >= bottom - 2) 
                     {
                         this.Canvas.textBaseline = 'bottom';
                     }
-                    else if (y <= top + 2) 
+                    else if (y-textHeight/2 <= top) 
                     {
                         this.Canvas.textBaseline = 'top';
                         yText+=this.YTextTopOffset;
@@ -71934,7 +71936,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
         //绑定数据
         this.UpdateMainData(bindData,lastDataCount);
-        this.BindInstructionIndexData(bindData);    //执行指示脚本
+        this.UpdateOverlayMinuteRealtimeData(data);     //更新叠加股票数据
+        this.BindInstructionIndexData(bindData);        //执行指示脚本
 
         for(var i=0; i<this.Frame.SubFrame.length; ++i)
         {
@@ -76705,7 +76708,7 @@ KLineChartContainer.JsonDataToMinuteRealtimeDataV2=function(data,symbol)
     var date = 0, yclose = 1, open = 2, high = 3, low = 4, close = 5, vol = 6, amount = 7, time = 8, position=9;
     var orderFlow=JSCHART_DATA_FIELD_ID.KLINE_ORDERFLOW;
     var yClose=null; 
-    
+    var aryMinuteData=[];
     for (var i = 0; i < overlayData.data.length; ++i)
     {
         var item = new HistoryData();
@@ -88953,6 +88956,7 @@ var MARKET_SUFFIX_NAME=
     SHFE: '.SHF',        //上期所 (Shanghai Futures Exchange) | 上期所-能源
     SHFE2:'.SHFE',       //上期所 (Shanghai Futures Exchange) | 上期所-能源
     CFFEX: '.CFE',       //中期所 (China Financial Futures Exchange)
+    CFFEX2:'.CFFEX',     //中期所 (China Financial Futures Exchange)
     DCE: '.DCE',         //大连商品交易所(Dalian Commodity Exchange)
     CZCE: '.CZC',        //郑州期货交易所
     GZFE:".GZFE",        //广州期货交易所
@@ -89164,6 +89168,7 @@ var MARKET_SUFFIX_NAME=
     {
         if (!upperSymbol) return false;
         if (upperSymbol.indexOf(this.CFFEX) > 0) return true;
+        if (upperSymbol.indexOf(this.CFFEX2) > 0) return true;
         
         return false;
     },

@@ -199,17 +199,55 @@ HQData.RequestFlowCapitalData=function(data,callback)
     callback(hqchartData);
 }
 
-HQData.RequestRealtimeData=function(data,callback)
+HQData.RequestRealtimeData=function(data, callback)
 {
     data.PreventDefault=true;
     var symbol=data.Request.Data.symbol[0]; //请求的股票代码
 
-    console.log(`[HQData::RequestRealtimeData] Symbol=${symbol}`);
+    if (data.Request.Data.symbol.length>1)  //叠加股票
+    {
+        var hqchartData={ stock:[], code:0 };
+        var arySymbol=data.Request.Data.symbol;
+        for(var i=0;i<arySymbol.length;++i)
+        {
+            var symbol=arySymbol[i];
+            if (i==0)
+            {
+                var stock=KLINE_1DAY_DATA.stock[0];
+                stock.name=symbol;
+                stock.symbol=symbol;
+                hqchartData.stock.push(stock);
+            }
+            else
+            {
+                if (symbol=="399001.sz") 
+                {
+                    var stock=KLINE_1DAY_OVERLAY_DATA2.stock[0];
+                    stock.name=symbol;
+                    stock.symbol=symbol;
+                    hqchartData.stock.push(stock);
+                }
+                else
+                {
+                    var stock=KLINE_1DAY_OVERLAY_DATA.stock[0];
+                    stock.name=symbol;
+                    stock.symbol=symbol;
+                    hqchartData.stock.push(stock);
+                }
+                    
+            } 
+        }
 
-    var hqchartData=KLINE_1DAY_DATA;
-    hqchartData.stock[0].name=symbol;
-    hqchartData.stock[0].symbol=symbol;
-    callback(hqchartData);
+        callback(hqchartData);
+    }
+    else
+    {
+        console.log(`[HQData::RequestRealtimeData] Symbol=${symbol}`);
+        var hqchartData=KLINE_1DAY_DATA;
+        hqchartData.stock[0].name=symbol;
+        hqchartData.stock[0].symbol=symbol;
+        callback(hqchartData);
+    }
 }
 
 
@@ -233,24 +271,71 @@ HQData.RequestMinuteRealtimeData=function(data,callback)
     data.PreventDefault=true;
     var symbol=data.Request.Data.symbol[0]; //请求的股票代码
 
-    console.log(`[HQData::RequestMinuteRealtimeData] Symbol=${symbol}`);
+    if (data.Request.Data.symbol.length>1)  //叠加股票
+    {
+        var hqchartData=JSON.parse(JSON.stringify(KLINE_1MINUTE_DATA));
+        hqchartData.overlay=[]; //叠加数据
+        var arySymbol=data.Request.Data.symbol;
+        for(var i=0;i<arySymbol.length;++i)
+        {
+            var symbol=arySymbol[i];
+            if (i==0)
+            {
+                var kItem=hqchartData.data[0];
+                var price=kItem[5];
+                var value=Math.ceil(Math.random()*10)/1000*price;
+                var bUp=Math.ceil(Math.random()*10)>=5;
+                
+                if (bUp) price+=value;
+                else price-=value;
+                kItem[5]=price;
+                kItem[3]=Math.max(price, kItem[3]);
+                kItem[4]=Math.min(price, kItem[4]);
 
-    var hqchartData=JSON.parse(JSON.stringify(KLINE_1MINUTE_DATA));
+                hqchartData.name=symbol;
+                hqchartData.symbol=symbol;
+            }
+            else
+            {
+                var testData=JSON.parse(JSON.stringify(KLINE_1MINUTE_DATA2));
+                var kItem=testData.data[0];
+                var price=kItem[5];
+                var value=Math.ceil(Math.random()*10)/1000*price;
+                var bUp=Math.ceil(Math.random()*10)>=5;
+                
+                if (bUp) price+=value;
+                else price-=value;
+                kItem[5]=price;
+                kItem[3]=Math.max(price, kItem[3]);
+                kItem[4]=Math.min(price, kItem[4]);
+                var stock={ data:testData.data, symbol:symbol, name:symbol };
+                hqchartData.overlay.push(stock);
+            }
+        }
 
-    var kItem=hqchartData.data[0];
-    var price=kItem[5];
-    var value=Math.ceil(Math.random()*10)/1000*price;
-    var bUp=Math.ceil(Math.random()*10)>=5;
+        callback(hqchartData);
+    }
+    else
+    {
+        console.log(`[HQData::RequestMinuteRealtimeData] Symbol=${symbol}`);
+
+        var hqchartData=JSON.parse(JSON.stringify(KLINE_1MINUTE_DATA));
     
-    if (bUp) price+=value;
-    else price-=value;
-    kItem[5]=price;
-    kItem[3]=Math.max(price, kItem[3]);
-    kItem[4]=Math.min(price, kItem[4]);
-    
-    hqchartData.name=symbol;
-    hqchartData.symbol=symbol;
-    callback(hqchartData);
+        var kItem=hqchartData.data[0];
+        var price=kItem[5];
+        var value=Math.ceil(Math.random()*10)/1000*price;
+        var bUp=Math.ceil(Math.random()*10)>=5;
+        
+        if (bUp) price+=value;
+        else price-=value;
+        kItem[5]=price;
+        kItem[3]=Math.max(price, kItem[3]);
+        kItem[4]=Math.min(price, kItem[4]);
+        
+        hqchartData.name=symbol;
+        hqchartData.symbol=symbol;
+        callback(hqchartData);
+    }
 }
 
 
