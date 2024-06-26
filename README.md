@@ -465,6 +465,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 37. [HQChart使用教程30-K线图如何对接第3方数据37-如何绘制圆点](https://jones2000.blog.csdn.net/article/details/131244845)    
 38. [HQChart使用教程30-K线图如何对接第3方数据38-通达信指标K线数据](https://jones2000.blog.csdn.net/article/details/131439180)  
 39. [HQChart使用教程30-K线图如何对接第3方数据39-缩放下载K线数据历史数据](https://blog.csdn.net/jones2000/article/details/132355466)  
+40. [HQChart使用教程30-K线图如何对接第3方数据40-日K叠加股票增量更新](https://jones2000.blog.csdn.net/article/details/139997350)    
+41. [HQChart使用教程30-K线图如何对接第3方数据41-分钟K线叠加股票增量更新](https://jones2000.blog.csdn.net/article/details/139997565)   
 
 
 ## 第3方数据前端接入教程(分笔明细)
