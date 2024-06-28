@@ -618,6 +618,11 @@ function JSReportChartContainer(uielement)
         this.BlockData=new Map(); 
     }
 
+    this.ClearMapStockData=function()
+    {
+        this.MapStockData=new Map();
+    }
+
     this.ResetSortStatus=function()
     {
         this.SortInfo.Field=-1;
@@ -700,6 +705,57 @@ function JSReportChartContainer(uielement)
         }
 
         this.RequestMemberListData();
+    }
+
+    //设置全部的数据
+    this.SetFullData=function(data)
+    {
+        this.ClearMapStockData();
+        this.ClearData();
+        this.ResetReportStatus();
+        this.ResetSortStatus();
+        this.ResetReportSelectStatus();
+
+        //缓存所有数据
+        var arySymbol=[];
+        if (IFrameSplitOperator.IsNonEmptyArray(data.data))
+        {
+            //0=证券代码 1=股票名称
+            for(var i=0;i<data.data.length;++i)
+            {
+                var item=data.data[i];
+                var symbol=item[0];
+                var stock=null;
+                if (this.MapStockData.has(symbol))
+                {
+                    stock=this.MapStockData.get(symbol);
+                }
+                else
+                {
+                    stock=new HQReportItem();
+                    stock.OriginalSymbol=symbol;
+                    this.MapStockData.set(symbol, stock);
+                }
+
+                stock.Symbol=this.GetSymbolNoSuffix(symbol);
+                stock.Name=item[1];
+                this.ReadStockJsonData(stock, item);
+
+                arySymbol.push(symbol);
+            }
+        }
+
+        //设置显示数据
+        if (IFrameSplitOperator.IsNonEmptyArray(arySymbol))
+        {
+            for(var i=0;i<arySymbol.length;++i)
+            {
+                this.Data.Data.push(arySymbol[i]);
+                this.SourceData.Data.push(arySymbol[i]);
+            }
+        }
+
+        this.Draw();
     }
 
     this.RequestMemberListData=function()
