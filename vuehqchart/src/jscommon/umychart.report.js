@@ -66,8 +66,16 @@ function JSReportChart(divElement)
 
         var requestOption={ Callback:null };
         if (chart.Symbol) requestOption.Callback=function(){ chart.RequestMemberListData(); };
-
-        chart.RequestStockListData(requestOption);   //下载码表     
+        
+        if (option.LoadStockList===false)
+        {
+           chart.ChartSplashPaint.IsEnableSplash=false;
+           chart.Draw();
+        }
+        else
+        {
+            chart.RequestStockListData(requestOption);   //下载码表     
+        }
     }
 
     this.CreateJSReportChartContainer=function(option)
@@ -795,7 +803,7 @@ function JSReportChartContainer(uielement)
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        throw { Name:'JSReportChartContainer::RequestMemberListData', Error:'(板块成分数据)不提供内置测试数据' };
+        //throw { Name:'JSReportChartContainer::RequestMemberListData', Error:'(板块成分数据)不提供内置测试数据' };
     }
 
     this.RecvMemberListData=function(recvData)
@@ -860,7 +868,7 @@ function JSReportChartContainer(uielement)
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        throw { Name:'JSReportChartContainer::RequestStockListData', Error:'(码表数据)不提供内置测试数据' };
+        //throw { Name:'JSReportChartContainer::RequestStockListData', Error:'(码表数据)不提供内置测试数据' };
     }
 
     this.RecvStockListData=function(data, option)
@@ -1074,7 +1082,7 @@ function JSReportChartContainer(uielement)
             if (obj.PreventDefault==true) return;  
         }
 
-        throw { Name:'JSReportChartContainer::RequestStockData', Error:'(报价列表股票数据)不提供内置测试数据' };
+        //throw { Name:'JSReportChartContainer::RequestStockData', Error:'(报价列表股票数据)不提供内置测试数据' };
     }
 
     this.RecvStockData=function(data)
@@ -2995,7 +3003,7 @@ function JSReportChartContainer(uielement)
             if (obj.PreventDefault==true) return;  
         }
 
-        throw { Name:'JSReportChartContainer::RequestStockSortData', Error:'(报价列表股票排序数据)不提供内置测试数据' };
+        //throw { Name:'JSReportChartContainer::RequestStockSortData', Error:'(报价列表股票排序数据)不提供内置测试数据' };
     }
 
     this.RecvStockSortData=function(data)

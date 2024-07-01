@@ -266,6 +266,17 @@ function IFrameSplitOperator()
         this.Frame.HorizontalMax=splitData.Max;
         this.Frame.HorizontalMin=splitData.Min;
     }
+
+    this.SendSplitXCoordinateEvent=function()
+    {
+        if (!this.GetEventCallback) return;
+
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_SPLIT_XCOORDINATE);
+        if (!event || !event.Callback) return;
+
+        var data={ ID:this.Frame.Identify, Frame:this.Frame };
+        event.Callback(event,data,this);
+    }
 }
 
 //字符串格式化 千分位分割
@@ -1359,6 +1370,8 @@ function FrameSplitKLineX()
         else if (ChartData.IsMinutePeriod(this.Period, true)) this.SplitDateTime();
         else if (ChartData.IsSecondPeriod(this.Period)) this.SplitSecond();
         else this.SplitDate();
+
+        this.SendSplitXCoordinateEvent();
     }
 
     this.CreateCoordinateInfo=function()
@@ -1785,6 +1798,8 @@ function FrameSplitMinuteX()
                 this.Frame.VerticalInfo.push(info);
             }
         }
+
+        this.SendSplitXCoordinateEvent();
     }
 }
 

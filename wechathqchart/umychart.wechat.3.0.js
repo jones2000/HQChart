@@ -5561,6 +5561,7 @@ function KLineChartContainer(uielement)
             frame.XSplitOperator = new FrameSplitKLineX();
             frame.XSplitOperator.Frame = frame;
             frame.XSplitOperator.ChartBorder = border;
+            frame.XSplitOperator.GetEventCallback =(id)=> { return this.GetEventCallback(id); }
 
             if (i != windowCount - 1) frame.XSplitOperator.ShowText = false;
 
@@ -5615,6 +5616,7 @@ function KLineChartContainer(uielement)
         frame.XSplitOperator.ChartBorder = border;
         frame.XSplitOperator.ShowText = false;
         frame.XSplitOperator.Period=this.Period;
+        frame.XSplitOperator.GetEventCallback =(id)=> { return this.GetEventCallback(id); }
 
         //K线数据绑定
         var xPointCouont = this.Frame.SubFrame[0].Frame.XPointCount;
@@ -8864,6 +8866,7 @@ function MinuteChartContainer(uielement)
             frame.XSplitOperator = new FrameSplitMinuteX();
             frame.XSplitOperator.Frame = frame;
             frame.XSplitOperator.ChartBorder = border;
+            frame.XSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
             if (i != windowCount - 1) frame.XSplitOperator.ShowText = false;
             frame.XSplitOperator.Operator();
 
@@ -11416,6 +11419,7 @@ function KLineChartHScreenContainer(uielement)
             frame.XSplitOperator = new FrameSplitKLineX();
             frame.XSplitOperator.Frame = frame;
             frame.XSplitOperator.ChartBorder = border;
+            frame.XSplitOperator.GetEventCallback =(id)=> { return this.GetEventCallback(id); }
 
             if (i != windowCount - 1) frame.XSplitOperator.ShowText = false;
 
@@ -11539,6 +11543,7 @@ function MinuteChartHScreenContainer(uielement)
             frame.XSplitOperator = new FrameSplitMinuteX();
             frame.XSplitOperator.Frame = frame;
             frame.XSplitOperator.ChartBorder = border;
+            frame.XSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
             if (i != windowCount - 1) frame.XSplitOperator.ShowText = false;
             frame.XSplitOperator.Operator();
 
