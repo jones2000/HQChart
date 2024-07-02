@@ -61,6 +61,8 @@ function JSReportChart(divElement)
         this.JSChartContainer=chart;
         this.DivElement.JSChart=this;   //div中保存一份
 
+        if (option.EnablePopMenuV2===true) chart.InitalPopMenu();
+
         if (option.Symbol) chart.Symbol=option.Symbol;
         if (option.Name) chart.Name=option.Name;
 
@@ -343,6 +345,8 @@ function JSReportChartContainer(uielement)
 
     this.IsDestroy=false;        //是否已经销毁了
 
+    this.JSPopMenu;             //内置菜单
+
     this.ChartDestory=function()    //销毁
     {
         this.IsDestroy=true;
@@ -358,6 +362,14 @@ function JSReportChartContainer(uielement)
             clearTimeout(this.AutoDragScrollTimer);
             this.AutoDragScrollTimer = null;
         }
+    }
+
+    this.InitalPopMenu=function()   //初始化弹出窗口
+    {
+        if (this.JSPopMenu) return;
+
+        this.JSPopMenu=new JSPopMenu();     //内置菜单
+        this.JSPopMenu.Inital();
     }
 
     this.AutoScrollPage=function(step)
@@ -2682,6 +2694,52 @@ function JSReportChartContainer(uielement)
         }
     }
 
+    this.GetTabPopMenu=function(tabItem)
+    {
+        var aryMenu=[ ];
+
+        if (IFrameSplitOperator.IsNonEmptyArray(tabItem.ArySubMenu))
+        {
+            for(var i=0;i<tabItem.ArySubMenu.length;++i)
+            {
+                var item=tabItem.ArySubMenu[i];
+                var menuItem={ Name:item.Title, Data:{ ID:item.CommandID, Args:[item.ID]} };
+
+                aryMenu.push(menuItem);
+            }
+        }
+
+
+        return aryMenu;
+    }
+
+    this.PopupTabMenu=function(menuData, tab, e)
+    {
+        if (!this.JSPopMenu) return;
+
+        var rtTab=tab.Rect;
+        var pixelRatio=GetDevicePixelRatio();
+        var rtCell={ Left:rtTab.Left/pixelRatio, Right:rtTab.Right/pixelRatio, Bottom:rtTab.Bottom/pixelRatio, Top:rtTab.Top/pixelRatio };
+        rtCell.Width=rtCell.Right-rtCell.Left;
+        rtCell.Height=rtCell.Bottom-rtCell.Top;
+
+        var rtClient=this.UIElement.getBoundingClientRect();
+        var rtScroll=GetScrollPosition();
+
+        var offsetLeft=rtClient.left+rtScroll.Left;
+        var offsetTop=rtClient.top+rtScroll.Top;
+        rtCell.Left+=offsetLeft;
+        rtCell.Right+=offsetLeft;
+        rtCell.Top+=offsetTop;
+        rtCell.Bottom+=offsetTop;
+
+        this.JSPopMenu.CreatePopMenu(menuData);
+        this.JSPopMenu.PopupMenuByTab(rtCell);
+
+        if(e.preventDefault) e.preventDefault();
+        if(e.stopPropagation) e.stopPropagation();
+    }
+
     //点击标签
     this.OnClickTab=function(tabData, e)
     {
@@ -2695,34 +2753,78 @@ function JSReportChartContainer(uielement)
 
         if (tabData.Tab.IsMenu)
         {
+            var menuData={ Menu:this.GetTabPopMenu(tabData.Tab), Position:JSPopMenu.POSITION_ID.TAB_MENU_ID };
+            menuData.ClickCallback=(data)=>{ this.OnClickTabPopMenu(tabData, data); }
+
             var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_REPORT_TABMENU);
             if (event && event.Callback)
             {
-                redraw=true;
-                var rtItem=tabData.Rect;
-                var rtDOM={ Left: rtItem.Left/pixelTatio, Right:rtItem.Right/pixelTatio, Top:rtItem.Top/pixelTatio, Bottom:rtItem.Bottom/pixelTatio };
-
-                var sendData={ Data:tabData, IsSide:{X:x, Y:x}, UIElement:uiElement, Rect:rtDOM, e:e , Redraw:redraw };
+                var sendData={ MenuData:menuData, Tab:tabData, PreventDefault:false, e:e };
                 event.Callback(event, sendData, this);
-                if (IFrameSplitOperator.IsBool(sendData.Redraw)) redraw=sendData.Redraw;
+                if (sendData.PreventDefault==true) return;
             }
 
-            this.SetSelectedTab(tabData.Index); //选中tab
+            this.PopupTabMenu(menuData, tabData.Tab, e);
         }
         else
         {
             var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_REPORT_TAB);
             if (event && event.Callback)
             {
-                var sendData={ Data:tabData, IsSide:{X:x, Y:x}, UIElement:uiElement, e:e , Redraw:redraw };
+                var sendData={ Data:tabData, IsSide:{X:x, Y:x}, UIElement:uiElement, e:e , Redraw:redraw, PreventDefault:false };
                 event.Callback(event, sendData, this);
                 if (IFrameSplitOperator.IsBool(sendData.Redraw)) redraw=sendData.Redraw;
+                if (sendData.PreventDefault==true) return;
             }
 
-            this.SetSelectedTab(tabData.Index);
+            if (tabData.Tab.CommandID==JSCHART_MENU_ID.CMD_REPORT_CHANGE_BLOCK_ID)
+            {
+                this.ExecuteMenuCommand(tabData.Tab.CommandID,  [tabData.Tab.ID]);
+                this.SetSelectedTab(tabData.Index);
+            }
         }
 
         if (redraw) this.Draw();
+    }
+
+    this.OnClickTabPopMenu=function(tabData, data)
+    {
+        JSConsole.Chart.Log('[JSReportChartContainer::OnClickTabPopMenu] ',tabData, data);
+
+        var cmdID=data.Data.ID;     //命令ID
+        var aryArgs=data.Data.Args; //参数
+
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_MENU_COMMAND);  //回调通知外部
+        if (event && event.Callback)
+        {
+            var data={ PreventDefault:false, CommandID:cmdID, Args:aryArgs, SrcData:data, TabData:tabData };
+            event.Callback(event,data,this);
+            if (data.PreventDefault) return;
+        }
+
+        this.ExecuteMenuCommand(cmdID,aryArgs);
+        
+        this.SetSelectedTab(tabData.Index);
+        this.Draw();
+    }
+
+    this.ExecuteMenuCommand=function(cmdID, aryArgs)
+    {
+        JSConsole.Chart.Log('[JSReportChartContainer::ExecuteMenuCommand] cmdID=, aryArgs=', cmdID,aryArgs);
+
+        var param=null, srcParam=null;  //原始值
+        if (IFrameSplitOperator.IsNonEmptyArray(aryArgs))
+        {
+            srcParam=aryArgs[0];
+            if (IFrameSplitOperator.IsNumber(aryArgs[0])) param=aryArgs[0];
+        }
+
+        switch(cmdID)
+        {
+            case JSCHART_MENU_ID.CMD_REPORT_CHANGE_BLOCK_ID:
+                if (srcParam) this.ChangeSymbol(param);
+                break;
+        }
     }
 
     this.SwapColumn=function(leftIndex, rightIndex, option)
@@ -5800,7 +5902,7 @@ function ChartReportTab()
     this.IsShow=true;                   //是否显示
 
     //Tab
-    this.TabList=[];                //{ Title:标题, ID:, IsMenu: 是否菜单 }
+    this.TabList=[];                //{ Title:标题, ID:, IsMenu: 是否菜单, ArySubMenu:[ { Title:, ID: }] }
     this.SelectedTabIndex=-1;
     this.MoveOnTabIndex=-1;
     
@@ -5869,7 +5971,7 @@ function ChartReportTab()
 
             var tabItem={ Title:item.Title, IsMenu:false, FixedSymbol:[], FixedRowCount:0 };
             if (item.ID) tabItem.ID=item.ID;
-            if (item.MenuID) tabItem.MenuID=item.MenuID;
+            if (item.CommandID) tabItem.CommandID=item.CommandID;
             if (IFrameSplitOperator.IsBool(item.IsMenu)) tabItem.IsMenu=item.IsMenu;
             if (IFrameSplitOperator.IsNonEmptyArray(item.FixedSymbol))
             {
@@ -5881,6 +5983,10 @@ function ChartReportTab()
                     ++tabItem.FixedRowCount;
                 }
             }
+
+            if (IFrameSplitOperator.IsNonEmptyArray(item.ArySubMenu))
+                tabItem.ArySubMenu=item.ArySubMenu.slice();
+            
             this.TabList.push(tabItem);
         }
     }

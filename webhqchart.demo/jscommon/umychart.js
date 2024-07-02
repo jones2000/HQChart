@@ -2753,6 +2753,9 @@ var JSCHART_MENU_ID=
     CMD_CHANGE_LANGUAGE_ID:37,          //语言切换
 
     CMD_CHANGE_DRAG_RECT_SHOW_MODE_ID:38,
+
+
+    CMD_REPORT_CHANGE_BLOCK_ID:60,      //报价列表 切换板块ID
 }
 
 

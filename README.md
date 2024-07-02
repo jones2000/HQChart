@@ -296,6 +296,9 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ## T型报价
 * [T型报价](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_TReport.html)  
 
+## 报价列表
+* [报价列表](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_report.html)  
+
 
 
 # 4.使用教程

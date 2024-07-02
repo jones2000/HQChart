@@ -85,6 +85,22 @@ HQData.NetworkFilter=function(data, callback)
         case "TradeDetail::RequestData":
             HQData.TradeDetail_RequestData(data,callback);
             break;
+
+        //////////////////////////////////////////////////////
+        //报价列表数据
+        case "JSReportChartContainer::RequestStockListData":
+            HQData.Report_RequestStockListData(data, callback);          //码表
+            break;
+
+        case "JSReportChartContainer::RequestMemberListData":           //板块成分
+            HQData.Report_RequestMemberListDat(data, callback);
+            break;
+        case "JSDealChartContainer::RequestStockData":                  //股票数据更新
+            HQData.Report_RequestStockData(data, callback);
+            break;
+        case "JSDealChartContainer::RequestStockSortData":              //股票排序数据
+            HQData.Report_RequestStockSortData(data, callback);
+            break;
     }
 }
 
@@ -491,6 +507,287 @@ HQData.RequestOverlayHistoryMinuteData=function(data, callback)
     var hqchartData={  symbol: symbol,name: symbol };
     hqchartData.data=KLINE_MINUTE_DATA2.data;
 
+    callback(hqchartData);
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////
+// 报价列表
+//
+//
+/////////////////////////////////////////////////////////////////////////////////////
+
+//码表
+HQData.Report_RequestStockListData=function(data, callback)
+{
+    data.PreventDefault=true;
+
+    var hqchartData={ data:[] };
+    
+    if (IFrameSplitOperator.IsNonEmptyArray(SHSZ_STOCK_LIST_TEST_DATA.symbol))
+    {
+        //0=证券代码 1=股票名称
+        for(var i=0;i<SHSZ_STOCK_LIST_TEST_DATA.symbol.length;++i)
+        {
+            var symbol=SHSZ_STOCK_LIST_TEST_DATA.symbol[i];
+            var name=SHSZ_STOCK_LIST_TEST_DATA.name[i];
+
+            hqchartData.data.push([symbol,name]);
+        }
+    }
+
+    console.log("[HQData.Report_RequestStockListData] hqchartData",hqchartData);
+    callback(hqchartData);
+
+}
+
+//板块|行业等成分列表
+HQData.Report_RequestMemberListDat=function(data, callback)
+{
+    var symbol=data.Request.Data.symbol;    //板块代码
+    data.PreventDefault=true;
+
+    var hqchartData= { symbol:symbol , name:symbol, data:[] , code:0 };
+    var testDataCount=SHSZ_STOCK_LIST_TEST_DATA.symbol.length;
+    var testIndex=Math.round(Math.random()*(testDataCount-100));
+    var count=parseInt(Math.random()*(200)+100); ;
+
+    for(var i=testIndex, j=0; i<SHSZ_STOCK_LIST_TEST_DATA.symbol.length && j<count; ++i, ++j)
+    {
+        hqchartData.data.push(SHSZ_STOCK_LIST_TEST_DATA.symbol[i]);
+    }
+
+    callback(hqchartData);
+}
+
+HQData.Report_RequestStockData=function(data, callback)
+{
+    var stocks=data.Request.Data.stocks;    //股票列表
+    data.PreventDefault=true;
+
+    var mapStock=new Map();
+    for(var i=0;i<stocks.length;++i)
+    {
+        var item=stocks[i];
+        mapStock.set(item.Symbol,{ Symbol:item.Symbol, Data:null });
+    }
+
+    if (IFrameSplitOperator.IsNonEmptyArray(SHSZ_STOCK_LIST_TEST_DATA.symbol))
+    {
+        for(var i=0;i<SHSZ_STOCK_LIST_TEST_DATA.symbol.length;++i)
+        {
+            var symbol=SHSZ_STOCK_LIST_TEST_DATA.symbol[i];
+            if (!mapStock.has(symbol)) continue;
+            var item=mapStock.get(symbol);
+            var name=SHSZ_STOCK_LIST_TEST_DATA.name[i];
+            var price=SHSZ_STOCK_LIST_TEST_DATA.close[i];
+            var vol=SHSZ_STOCK_LIST_TEST_DATA.vol[i];
+            var newItem=
+            [
+                symbol, 
+                name, 
+                SHSZ_STOCK_LIST_TEST_DATA.yclose[i],
+                SHSZ_STOCK_LIST_TEST_DATA.open[i],
+                SHSZ_STOCK_LIST_TEST_DATA.high[i],
+                SHSZ_STOCK_LIST_TEST_DATA.low[i],
+                price,
+                vol,
+                SHSZ_STOCK_LIST_TEST_DATA.amount[i],
+            ];
+
+            //买价 量
+            newItem[9]=price+0.05;
+            newItem[10]=10;
+
+            //卖价 量
+            newItem[11]=price-0.06;
+            newItem[12]=5;
+
+            //均价
+            newItem[13]=price-0.03;   
+            
+            //内盘
+            newItem[18]=vol/4;  
+            //外盘 
+            newItem[19]=vol/5;  
+
+            newItem[14]=vol*1.5;   //流通股本
+            newItem[15]=vol*1.8;  //总股本
+
+            //换手率
+            newItem[23]=(Math.round(Math.random()*60))/100;
+
+            //名字字段
+            var symbolEx={ Text:name };
+            if (i%20==5)
+                symbolEx.Symbol={ Family:'iconfont', Size:16,  Data:[ { Text:'\ue629', Color:'rgb(255,165,0)'}, { Text:'\ue627', Color:'#1c65db'} ] };
+            else if (i%20==9)
+                symbolEx.Symbol={ Family:'iconfont', Size:16,  Data:[ { Text:'\ue629', Color:'rgb(255,165,0)'}] } ;
+            else if (i%20==18)
+                symbolEx.Symbol={ Family:'iconfont', Size:16,  Data:[ { Text:'\ue627', Color:'#1c65db'}] } ;
+
+            newItem[27]=symbolEx;
+
+
+            //扩展数据 (定制数据)
+            var extendData=[];
+            newItem[30]=extendData;
+
+            //行业
+            extendData[0]="行业X";
+            //地区
+            extendData[1]="地区X";
+            
+            //PE|PB
+            extendData[2]=(Math.round(Math.random()*60))/100;
+            extendData[3]=(Math.round(Math.random()*60))/100;
+            extendData[4]=(Math.round(Math.random()*60))/100;
+            extendData[5]=(Math.round(Math.random()*60))/100;
+
+           
+            //周涨幅
+            extendData[6]=(Math.round(Math.random()*60))/100;
+            extendData[7]=(Math.round(Math.random()*60))/100;
+            extendData[8]=(Math.round(Math.random()*60))/100;
+             
+
+            item.Data=newItem;
+        }
+    }
+
+    var hqchartData={  data:[], code:0 };
+
+    for(var mapItem of mapStock)
+    {
+        var item=mapItem[1];
+        if (!item.Data) continue;
+
+        hqchartData.data.push(item.Data);
+    }
+
+    callback(hqchartData);
+}
+
+HQData.Report_RequestStockSortData=function(data, callback)
+{
+    var blockID=data.Request.Data.symbol;       //板块代码
+    var range=data.Request.Data.range;          //排序范围
+    var column=data.Request.Data.column;        //排序列信息
+    var sortType=data.Request.Data.sort;        //排序方向
+    var pageSize=data.Request.Data.pageSize;
+    data.PreventDefault=true;
+
+    var start=range.start;
+    var end=range.end;
+    if (start>0) start-=pageSize;
+    if (start<0) start=0;
+    end+=pageSize;
+
+    var aryData=data.Self.Data.Data.slice(); //所有的股票
+    var mapStock=new Map();
+    var count=end-start+1;
+    for(var i = 0; i < count; i++)
+    {
+        var index = Math.floor(Math.random()*(aryData.length-1));
+        var symbol =  aryData[index];
+        mapStock.set(symbol, { Symbol:symbol, Index:i+start, Data:null });
+        aryData.splice(index, 1);
+    }
+
+    if (IFrameSplitOperator.IsNonEmptyArray(SHSZ_STOCK_LIST_TEST_DATA.symbol))
+    {
+        for(var i=0;i<SHSZ_STOCK_LIST_TEST_DATA.symbol.length;++i)
+        {
+            var symbol=SHSZ_STOCK_LIST_TEST_DATA.symbol[i];
+            if (!mapStock.has(symbol)) continue;
+            var item=mapStock.get(symbol);
+            var name=SHSZ_STOCK_LIST_TEST_DATA.name[i];
+            var price=SHSZ_STOCK_LIST_TEST_DATA.close[i];
+            var vol=SHSZ_STOCK_LIST_TEST_DATA.vol[i];
+            var newItem=
+            [
+                symbol, 
+                name, 
+                SHSZ_STOCK_LIST_TEST_DATA.yclose[i],
+                SHSZ_STOCK_LIST_TEST_DATA.open[i],
+                SHSZ_STOCK_LIST_TEST_DATA.high[i],
+                SHSZ_STOCK_LIST_TEST_DATA.low[i],
+                price,
+                vol,
+                SHSZ_STOCK_LIST_TEST_DATA.amount[i],
+            ];
+
+            //买价 量
+            newItem[9]=price+0.05;
+            newItem[10]=10;
+
+            //卖价 量
+            newItem[11]=price-0.06;
+            newItem[12]=5;
+
+            //均价
+            newItem[13]=price-0.03;   
+            
+            //内盘
+            newItem[18]=vol/4;  
+            //外盘 
+            newItem[19]=vol/5;  
+
+            newItem[14]=vol*1.5;   //流通股本
+            newItem[15]=vol*1.8;  //总股本
+
+            //换手率
+            newItem[23]=(Math.round(Math.random()*60))/100;
+
+            //名字字段
+            var symbolEx={ Text:name };
+            if (i%20==5)
+                symbolEx.Symbol={ Family:'iconfont', Size:16,  Data:[ { Text:'\ue629', Color:'rgb(255,165,0)'}, { Text:'\ue627', Color:'#1c65db'} ] };
+            else if (i%20==9)
+                symbolEx.Symbol={ Family:'iconfont', Size:16,  Data:[ { Text:'\ue629', Color:'rgb(255,165,0)'}] } ;
+            else if (i%20==18)
+                symbolEx.Symbol={ Family:'iconfont', Size:16,  Data:[ { Text:'\ue627', Color:'#1c65db'}] } ;
+
+            newItem[27]=symbolEx;
+
+
+            //扩展数据 (定制数据)
+            var extendData=[];
+            newItem[30]=extendData;
+
+            //行业
+            extendData[0]="行业X";
+            //地区
+            extendData[1]="地区X";
+            
+            //PE|PB
+            extendData[2]=(Math.round(Math.random()*60))/100;
+            extendData[3]=(Math.round(Math.random()*60))/100;
+            extendData[4]=(Math.round(Math.random()*60))/100;
+            extendData[5]=(Math.round(Math.random()*60))/100;
+
+            
+            //周涨幅
+            extendData[6]=(Math.round(Math.random()*60))/100;
+            extendData[7]=(Math.round(Math.random()*60))/100;
+            extendData[8]=(Math.round(Math.random()*60))/100;
+                
+
+            item.Data=newItem;
+        }
+    }
+
+    var hqchartData={ data:[], index:[], filedindex:column.index, sort:sortType, symbol:blockID };
+
+    for(var mapItem of mapStock)
+    {
+        var item=mapItem[1];
+        if (!item.Data) continue;
+
+        hqchartData.data.push(item.Data);
+        hqchartData.index.push(item.Index);
+    }
+    
     callback(hqchartData);
 }
 

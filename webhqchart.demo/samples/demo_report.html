@@ -1,0 +1,401 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+<title>报价列表</title>  
+    <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
+</head>  
+<body>
+    <div id="report" style="width: 900px;height:400px; overflow:hidden">
+        <div id="menu1" class="tab-menu">
+        </div>
+
+        <div id="menu2" class="tab-menu">
+            <!-- <span id="tabMenuItem1" class="tab-menu-item">船舶制造(S6504)</span> -->
+        </div>
+        <div id="menu3" class="tab-menu">
+            <!-- <span id="tabMenuItem1" class="tab-menu-item">船舶制造(S6504)</span> -->
+        </div>
+    </div>
+
+    <div>
+        <span id='button_1' >前3列固定, 10s更新一次, 键盘操作: PageUP/PageDown 翻页, Up/Down 移动当前选中股票, Left/Right 移动列, 滚轴上下翻页.</span>
+    </div>
+    <div>
+        <span id='button_1' >支持配置列本地排序或远程排序，本页面例子‘名称’本地排序, ‘涨幅’，‘换手’，‘现价’远程排序.</span>
+    </div>
+
+    <div class="line-box">
+        <span id='button_1'>外部切换tab页</span>
+        <span id='button_1' class="btn-style" onclick="ChangeSymbol('399300.sz', { TabSelected:0})">沪深300</span>
+        <span id='button_1' class="btn-style" onclick="ChangeSymbol('000852.sh',{ TabSelected:4})">中证1000</span>
+        <span id='button_1' class="btn-style" onclick="ChangeSymbol('399905.sz',{TabSelected:3})">中证500</span>
+        <span id='button_1' class="btn-style" onclick="ChangeSymbol('GEM.ci',{TabSelected:1})">创业板</span>
+        <span id='button_1' class="btn-style" onclick="ChangeSymbol('SME.ci',{TabSelected:2})">中小板</span>
+    </div>
+
+
+    <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
+    <script src="../jscommon/umychart.resource/js/webfont.js"></script>
+    <script src="../jscommon/umychart.network.js"></script>
+    <script src="../jscommon/umychart.js"></script>             <!-- K线图形 -->
+    <script src="../jscommon/umychart.report.js"></script>    <!-- 麦语言解析执行器 -->
+    <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+    <script src="../jscommon/umychart.popMenu.js"></script>
+
+    <script src="../jscommon/umychart.testdata//shsz_stock_data.js"></script>
+    <script src="../jscommon/umychart.testdata.js"></script>
+
+    <script>
+
+        //JSConsole.Chart.Log=() =>{}
+        //JSConsole.Complier.Log=()=>{}
+
+        MARKET_SUFFIX_NAME.GetMarketStatus = function (symbol)  { return 2; }
+
+        //简单的把K线控件封装下
+        function ReportChart(divDeal)
+        {
+            this.DivDeal=divDeal;
+            this.Chart=JSReportChart.Init(divDeal);   //把报价列表绑定到一个Div上
+            this.MapMemberCache;           //板块缓存
+            
+            //配置信息
+            this.Option= 
+            {
+                Type:'报价列表',   //创建图形类型
+                
+                Symbol:"399300.sz",  //板块代码
+                Name:"沪深300",
+
+                IsAutoUpdate:true,          //是自动更新数据
+                AutoUpdateFrequency:10000,   //数据更新频率
+
+                EnableDragHeader:true,      //允许拖动表头调整顺序
+                
+                //显示列
+                Column:
+                [
+                    {Type:REPORT_COLUMN_ID.INDEX_ID },
+                    {Type:REPORT_COLUMN_ID.SYMBOL_ID, Sort:1, SortType:[0] },
+                    {Type:REPORT_COLUMN_ID.NAME_EX_ID ,Sort:1 , MaxText:"擎擎擎擎擎擎擎"},
+                    {Type:REPORT_COLUMN_ID.INCREASE_ID,Sort:2 },
+                    {Type:REPORT_COLUMN_ID.EXCHANGE_RATE_ID,Sort:2 },
+                    {Type:REPORT_COLUMN_ID.PRICE_ID, Sort:2, ID:1 },
+                    {Type:REPORT_COLUMN_ID.UPDOWN_ID },
+                    {Type:REPORT_COLUMN_ID.BUY_PRICE_ID, ID:2 },
+                    {Type:REPORT_COLUMN_ID.SELL_PRICE_ID },
+                    {Type:REPORT_COLUMN_ID.VOL_ID },
+                    {Type:REPORT_COLUMN_ID.OPEN_ID },
+                    {Type:REPORT_COLUMN_ID.HIGH_ID, },
+                    {Type:REPORT_COLUMN_ID.LOW_ID },
+                    {Type:REPORT_COLUMN_ID.AMOUNT_ID},
+                    {Type:REPORT_COLUMN_ID.YCLOSE_ID },
+                    {Type:REPORT_COLUMN_ID.BUY_VOL_ID },
+                    {Type:REPORT_COLUMN_ID.SELL_VOL_ID },
+                    {Type:REPORT_COLUMN_ID.AVERAGE_PRICE_ID },
+                    {Type:REPORT_COLUMN_ID.AMPLITUDE_ID },
+                    {Type:REPORT_COLUMN_ID.VOL_IN_ID },
+                    {Type:REPORT_COLUMN_ID.VOL_OUT_ID },
+
+                    {Type:REPORT_COLUMN_ID.CUSTOM_NUMBER_TEXT_ID , Title:"1周%" ,TextAlign:"right", DataIndex:6,  Decimal:2, ColorType:1, FormatType:1, MaxText:"-88.88" , ID: 7}, 
+                    {Type:REPORT_COLUMN_ID.CUSTOM_NUMBER_TEXT_ID , Title:"4周%" ,TextAlign:"right", DataIndex:7,  Decimal:2, ColorType:1, FormatType:1, MaxText:"-88.88" , ID: 8}, 
+                    {Type:REPORT_COLUMN_ID.CUSTOM_NUMBER_TEXT_ID , Title:"13周%" ,TextAlign:"right", DataIndex:8,  Decimal:2, ColorType:1, FormatType:1, MaxText:"-88.88" , ID:9}, 
+
+                    {Type:REPORT_COLUMN_ID.CUSTOM_STRING_TEXT_ID , Title:"行业" ,TextAlign:"center", DataIndex:0,MaxText:"擎擎擎擎" ,ID:10 },               
+                    {Type:REPORT_COLUMN_ID.CUSTOM_STRING_TEXT_ID , Title:"地区" ,TextAlign:"left", DataIndex:1, MaxText:"擎擎擎" ,ID:11 },               
+                    {Type:REPORT_COLUMN_ID.CUSTOM_NUMBER_TEXT_ID , Title:"市盈率(静)" ,TextAlign:"left", DataIndex:2, Decimal:2, FormatType:1, MaxText:"数值: 888.88" ,ID:3, IsDrawCallback:true },
+                    {Type:REPORT_COLUMN_ID.CUSTOM_NUMBER_TEXT_ID , Title:"市盈率(TTM)" ,TextAlign:"right", DataIndex:3,  Decimal:2, FormatType:1, MaxText:"888.88",ID:4 }, 
+                    {Type:REPORT_COLUMN_ID.CUSTOM_NUMBER_TEXT_ID , Title:"市盈率(动)" ,TextAlign:"right", DataIndex:4,  Decimal:2, FormatType:1, MaxText:"888.88", ID:5 }, 
+                    {Type:REPORT_COLUMN_ID.CUSTOM_NUMBER_TEXT_ID , Title:"市净率" ,TextAlign:"right", DataIndex:5,  Decimal:2, FormatType:1, MaxText:"888.88" , ID: 6}, 
+                    {Type:REPORT_COLUMN_ID.OUTSTANDING_SHARES_ID},
+                    {Type:REPORT_COLUMN_ID.TOTAL_SHARES_ID},
+                    {Type:REPORT_COLUMN_ID.CIRC_MARKET_VALUE_ID },
+                    {Type:REPORT_COLUMN_ID.MARKET_VALUE_ID },
+                    
+                ],
+                
+                FixedColumn:3,  //固定列
+                //IsShowHeader:false,
+
+                //KeyDown:false,
+                //Wheel:false,
+               
+                EnablePopMenuV2:true,
+
+                Border: //边框
+                {
+                    Left:20,        //左边间距
+                    Right:20,       //右边间距
+                    Bottom:20,      //底部间距
+                    Top:20          //顶部间距
+                },
+
+                
+                Tab:
+                [
+                    { Title:"沪深300", ID:"399300.sz" , CommandID:JSCHART_MENU_ID.CMD_REPORT_CHANGE_BLOCK_ID},
+                    { Title:"创业板", ID:"GEM.ci" , CommandID:JSCHART_MENU_ID.CMD_REPORT_CHANGE_BLOCK_ID},
+                    { Title:"中小板", ID:"SME.ci", CommandID:JSCHART_MENU_ID.CMD_REPORT_CHANGE_BLOCK_ID},
+                    { Title:"中证500", ID:"399905.sz", CommandID:JSCHART_MENU_ID.CMD_REPORT_CHANGE_BLOCK_ID},
+                    { Title:"中证1000", ID:"000852.sh", CommandID:JSCHART_MENU_ID.CMD_REPORT_CHANGE_BLOCK_ID},
+                    { 
+                        Title:"申万一级",  ID:"申万一级", IsMenu:true, 
+                        ArySubMenu:
+                        [
+                            {Title:"有色金属", ID:"S24", CommandID:JSCHART_MENU_ID.CMD_REPORT_CHANGE_BLOCK_ID},
+                            {Title:"综合", ID:"S51", CommandID:JSCHART_MENU_ID.CMD_REPORT_CHANGE_BLOCK_ID},
+                            {Title:"计算机", ID:"S73", CommandID:JSCHART_MENU_ID.CMD_REPORT_CHANGE_BLOCK_ID},
+                            {Title:"通信", ID:"S73", CommandID:JSCHART_MENU_ID.CMD_REPORT_CHANGE_BLOCK_ID},
+                            {Title:"传媒", ID:"S72", CommandID:JSCHART_MENU_ID.CMD_REPORT_CHANGE_BLOCK_ID},
+                        ] 
+                    },
+
+                    //{ Title:"申万二级",  ID:"申万二级", IsMenu:true },
+                    //{ Title:"申万三级",  ID:"申万三级", IsMenu:true }
+                ],
+                
+
+                TabSelected:0,  //默认选中tab页  
+            };
+                 
+            this.Create=function()  //创建图形
+            {
+                $(window).resize(()=> { this.OnSize(); });    //绑定窗口大小变化事件
+
+                this.OnSize();  //全屏
+
+                //黑色风格
+                var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID); //读取黑色风格配置
+                JSChart.SetStyle(blackStyle);
+                this.DivDeal.style.backgroundColor=blackStyle.BGColor; //设置最外面的div背景
+
+                this.Option.NetworkFilter=(data, callback)=>{ this.NetworkFilter(data, callback); };
+
+                this.Option.EventCallback= 
+                [ 
+                    {   //根据大小单显示成交量颜色
+                        event:JSCHART_EVENT_ID.ON_DRAW_DEAL_VOL_COLOR, 
+                        callback:(event, data, obj)=>{ this.GetVolColor(event, data, obj); }  
+                    },
+                    {   //自定义内容
+                        event:JSCHART_EVENT_ID.ON_DRAW_DEAL_TEXT, 
+                        callback:(event, data, obj)=>{ this.GetCustomText(event, data, obj); }  
+                    },
+
+                    {   //单击
+                        event:JSCHART_EVENT_ID.ON_CLICK_REPORT_ROW, 
+                        callback:(event, data, obj)=>{ this.OnClickRow(event, data, obj); }  
+                    },
+                    {   //右键单击
+                        event:JSCHART_EVENT_ID.ON_RCLICK_REPORT_ROW, 
+                        callback:(event, data, obj)=>{ this.OnRClickRow(event, data, obj); }  
+                    },
+
+                    {   //双击
+                        event:JSCHART_EVENT_ID.ON_DBCLICK_REPORT_ROW, 
+                        callback:(event, data, obj)=>{ this.OnDBClickRow(event, data, obj); }  
+                        
+                    },
+
+                    {   //单击表头
+                        event:JSCHART_EVENT_ID.ON_CLICK_REPORT_HEADER, 
+                        callback:(event, data, obj)=>{ this.OnClickHeader(event, data, obj); }  
+                    },
+                    {   //右键单击表头
+                        event:JSCHART_EVENT_ID.ON_RCLICK_REPORT_HEADER, 
+                        callback:(event, data, obj)=>{ this.OnRClickHeader(event, data, obj); }  
+                    },
+
+                    {   //自定义股票名称颜色
+                        event:JSCHART_EVENT_ID.ON_DRAW_REPORT_NAME_COLOR, 
+                        callback:(event, data, obj)=>{ this.OnGetNameColor(event, data, obj); }  
+                    },
+                    {
+                        event:JSCHART_EVENT_ID.ON_DRAW_CUSTOM_TEXT, 
+                        callback:(event, data, obj)=>{ this.OnGetCustomText(event, data, obj); }  
+                    },
+
+                    //点击tab切换板块
+                    {
+                        event:JSCHART_EVENT_ID.ON_CLICK_REPORT_TAB, 
+                        callback:(event, data, obj)=>{ this.OnClickTab(event, data, obj); } 
+                    },
+
+                    //单击TAB菜单项
+                    {
+                        event:JSCHART_EVENT_ID.ON_CLICK_REPORT_TABMENU, 
+                        callback:(event, data, obj)=>{ this.OnClickTabMenu(event, data, obj); } 
+                    }
+                ];
+
+                this.Chart.SetOption(this.Option);  //设置配置
+            }
+
+            this.OnSize=function()  //自适应大小调整
+            {
+                var height= $(window).height()-80;
+                var width = $(window).width();
+                this.DivDeal.style.top='0px';
+                this.DivDeal.style.left='0px';
+                this.DivDeal.style.width=width+'px';
+                this.DivDeal.style.height=height+'px';
+                this.Chart.OnSize();
+            }
+
+            this.NetworkFilter=function(data, callback)
+            {
+                console.log('[ReportChart::NetworkFilter] data', data);
+
+                switch(data.Name)
+                {
+                    default:
+                        HQData.NetworkFilter(data, callback);
+                        break;
+                }
+            }
+
+            this.OnClickRow=function(event, data, obj)
+            {
+                console.log('[ReportChart::OnClickRow] event, data', event , data);
+            }
+
+            this.OnRClickRow=function(event, data, obj)
+            {
+                console.log('[ReportChart::OnRClickRow] event, data', event , data);
+            }
+
+            this.OnDBClickRow=function(event, data, obj)
+            {
+                console.log('[ReportChart::OnDBClickRow] event, data', event , data);
+            }
+
+            this.OnClickHeader=function(event, data, obj)
+            {
+                console.log('[ReportChart::OnClickHeader] event, data', event , data);
+            }
+
+            this.OnRClickHeader=function(event, data, obj)
+            {
+                console.log('[ReportChart::OnRClickHeader] event, data', event , data);
+            }
+
+
+            this.OnGetNameColor=function(event, data, obj)
+            {
+                if (data.Symbol=='600000.sh' || data.Symbol=="000001.sz")
+                {
+                    data.TextColor='rgb(30,144 ,255)';
+                }
+            }
+
+            //根据大小单显示成交量颜色
+            this.GetVolColor=function(event, data, obj) 
+            {
+                if (data.Data.Vol>50000) data.TextColor='rgb(128,0,128)';
+            }
+
+            this.OnGetCustomText=function(event, data, obj) 
+            {
+                //console.log('[ReportChart::OnGetCustomText] event, data', event , data);
+                if (data.Column.ID==3)
+                {
+                    if (IFrameSplitOperator.IsNumber(data.Value))
+                    {
+                        data.Out.TextColor="rgb(220,220,220)";
+                        data.Out.Text=`数值:${data.Value.toFixed(2)}`;
+                        data.Out.BGColor='rgba(100,100,1, 0.5)';
+                    }
+                    else
+                    {
+                        data.Out.TextColor="rgb(0,0,0)";
+                        data.Out.Text=`数值:--.--`;
+                        data.Out.BGColor='rgba(169,169,169,0.5)';
+                    }
+                }
+
+                //data.Out.Text=out.Text;
+                //data.Out.TextColor=out.Color;
+                //data.Out.TextAlign='center';
+            }
+
+            this.OnClickTab=function(event, data, obj)
+            {
+                console.log('[ReportChart::OnClickTab] event, data', event , data);
+                //var tabItem=data.Data.Tab;
+                //var symbol=tabItem.ID;  //板块ID;
+                //this.Chart.ChangeSymbol(symbol);
+            }
+
+            this.OnClickTabMenu=function(event, data, obj)
+            {
+
+            }
+            
+        }
+
+        var g_reportCtrl;
+    
+        $(function () 
+        {
+            const font = new FontFace("iconfont",`url('../jscommon/umychart.resource/font/iconfont.woff?t=1690947130935') format('woff')`);
+            document.fonts.add(font);    //把字体添加到 document.font（FontFaceSet）中
+            font.load();    // 加载字体
+
+            var reportCtrl=new ReportChart(document.getElementById('report'));
+
+            // 等待到所有的字体都加载完毕
+            document.fonts.ready.then(() => 
+            {
+                reportCtrl.Create();
+            });
+
+            g_reportCtrl=reportCtrl;
+
+        })
+
+        function ChangeSymbol(symbol, option)
+        {
+            g_reportCtrl.Chart.ChangeSymbol(symbol,option);
+        }
+
+    </script>  
+</body>  
+</html>
+
+
+<style>
+
+.line-box
+{
+    height: 25px;
+}
+
+.btn-style
+{
+    margin:5px,8px;
+    border: 1px solid #ececec;
+    background-color: #A9A9A9;
+    cursor: pointer;
+}
+
+.tab-menu
+{
+    min-width: 100px;
+    /* width: 100px; */
+    background-color: rgb(253,253,253);
+    position: absolute;
+    visibility:hidden;
+}
+
+.tab-menu-item
+{
+    cursor: pointer;
+    display: block;
+}
+    
+        
+</style>
