@@ -2213,6 +2213,7 @@ function HQPriceStringFormat()
     {
         this.RText = null;
         this.RComplexText=null;
+        this.PercentageText=null;
         if (IFrameSplitOperator.IsString(this.RValue)) this.RText = this.RValue;
         if (!this.Value) return false;
 

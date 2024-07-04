@@ -122,6 +122,11 @@ function JSChartResource()
     this.CorssCursorHPenColor = "rgb(130,130,130)";          //十字光标线段颜色(水平)
     this.CorssCursorVPenColor = "rgb(130,130,130)";          //十字光标线段颜色(垂直)
 
+    this.CorssCursor=
+    {
+        RightMargin: { Left:2, Right:2, Top:2, Bottom:1 }
+    }
+
     this.Domain = "http://127.0.0.1:8080";               //API域名
     this.CacheDomain = "http://127.0.0.1:8087";     //缓存域名
 
@@ -403,7 +408,14 @@ function JSChartResource()
             TextColor:"rgb(0,0,0)",
             BGColor:"rgba(180,180,180,0.5)",
             Mergin:{ Left:5, Right:5, Top:4, Bottom:2 },
-        }
+        },
+
+        CloseLine:
+        {
+            CloseColor:"rgb(30,144,255)",
+            YCloseColor:"rgba(105,105,105,0.5)",  //昨收线
+            AreaColor:'rgba(0,191,255,0.2)',
+        },
     }
 
     // //自定义风格
@@ -797,6 +809,17 @@ function JSChartResource()
 
         return ary.length>0;
     }
+}
+
+
+JSChartResource.CopyMargin=function(dest,src)
+{
+    if (!src || !dest) return;
+
+    if (IFrameSplitOperator.IsNumber(src.Left)) dest.Left=src.Left;
+    if (IFrameSplitOperator.IsNumber(src.Top)) dest.Top=src.Top;
+    if (IFrameSplitOperator.IsNumber(src.Right)) dest.Right=src.Right;
+    if (IFrameSplitOperator.IsNumber(src.Bottom)) dest.Bottom=src.Bottom;
 }
 
 var g_JSChartResource = new JSChartResource();

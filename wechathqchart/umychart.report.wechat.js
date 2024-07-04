@@ -2300,6 +2300,14 @@ function ChartReport()
         Bottom:g_JSChartResource.Report.LimitBorder.Mergin.Bottom
     }
 
+    //走势图
+    this.CloseLineConfig=
+    { 
+        CloseColor:g_JSChartResource.Report.CloseLine.CloseColor,
+        YCloseColor:g_JSChartResource.Report.CloseLine.YCloseColor,
+        AreaColor:g_JSChartResource.Report.CloseLine.AreaColor
+    }
+
     //股票代码+股票名称
     this.ItemSymbolFontConfig={Size:g_JSChartResource.Report.Item.SymbolFont.Size, Name:g_JSChartResource.Report.Item.SymbolFont.Name};
     this.ItemNameFontConfg={Size:g_JSChartResource.Report.Item.NameFont.Size, Name:g_JSChartResource.Report.Item.NameFont.Name};
@@ -2459,6 +2467,10 @@ function ChartReport()
                 if (IFrameSplitOperator.IsNumber(item.FormatType)) colItem.FormatType=item.FormatType;   //输出样式
                 if (IFrameSplitOperator.IsNumber(item.ValueType)) colItem.FormatType=item.ValueType;   //输出样式
                 if (IFrameSplitOperator.IsBool(item.IsDrawCallback)) colItem.IsDrawCallback=item.IsDrawCallback;
+            }
+            else if (item.Type==REPORT_COLUMN_ID.CLOSE_LINE_ID)
+            {
+                if (IFrameSplitOperator.IsBool(item.IsDrawArea)) colItem.IsDrawArea=item.IsDrawArea;
             }
 
             this.Column.push(colItem);
@@ -3127,7 +3139,7 @@ function ChartReport()
             var rtItem={ Left:left, Top:top,  Width:column.Width, Height:this.RowHeight };
             rtItem.Right=rtItem.Left+rtItem.Width;
             rtItem.Bottom=rtItem.Top+rtItem.Height;
-            this.DrawLine(stock.CloseLine, column, rtItem);
+            if (stock) this.DrawLine(stock.CloseLine, column, rtItem);
         }
 
         this.DrawItemText(drawInfo.Text, drawInfo.TextColor, drawInfo.TextAlign, x, top, textWidth);
@@ -3518,10 +3530,28 @@ function ChartReport()
         }
 
         this.Canvas.save();
+        var yCenter=null;
+        if (IFrameSplitOperator.IsNumber(lineData.YClose))
+        {
+            var y=Temp_GetYFromData(lineData.YClose);
+            y=ToFixedPoint(y);
+            yCenter=y;
+
+            this.Canvas.setLineDash([2,2]);
+            this.Canvas.strokeStyle=this.CloseLineConfig.YCloseColor; 
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(left,y);
+            this.Canvas.lineTo(right,y);
+            this.Canvas.stroke();
+
+            this.Canvas.setLineDash([]);
+        }
+
         if (lineData.Color) this.Canvas.strokeStyle=lineData.Color;
         else this.Canvas.strokeStyle=column.TextColor; 
 
         var bFirstPoint=true;
+        var ptFirst={}; //第1个点
         var drawCount=0, x,y;
         for(var i=0; i<lineData.Data.length; ++i)
         {
@@ -3536,6 +3566,7 @@ function ChartReport()
                 this.Canvas.beginPath();
                 this.Canvas.moveTo(x,y);
                 bFirstPoint=false;
+                ptFirst={ X:x, Y:y };
             }
             else
             {
@@ -3545,8 +3576,38 @@ function ChartReport()
             ++drawCount;
         }
 
-        if (drawCount>0) this.Canvas.stroke();
+        if (drawCount>0) 
+        {
+            this.Canvas.stroke();
+            if (column.IsDrawArea && IFrameSplitOperator.IsNumber(yCenter))
+            {
+                this.Canvas.lineTo(x,yCenter);
+                this.Canvas.lineTo(ptFirst.X,yCenter);
+                this.Canvas.closePath();
+                this.SetFillStyle(this.CloseLineConfig.AreaColor,left,top, left,bottom);
+                this.Canvas.fill();
+            }
+        }
+
         this.Canvas.restore();
+    }
+
+    this.SetFillStyle=function(color, x0, y0, x1, y1)
+    {
+        if (Array.isArray(color))
+        {
+            let gradient = this.Canvas.createLinearGradient(x0, y0, x1, y1);
+            var offset=1/(color.length);
+            for(var i in color)
+            {
+                gradient.addColorStop(i*offset, color[i]);
+            }
+            this.Canvas.fillStyle=gradient;
+        }
+        else
+        {
+            this.Canvas.fillStyle=color;
+        }
     }
 
     //外部配置显示格式 颜色 对齐方式

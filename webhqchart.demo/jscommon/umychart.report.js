@@ -346,6 +346,7 @@ function JSReportChartContainer(uielement)
     this.IsDestroy=false;        //是否已经销毁了
 
     this.JSPopMenu;             //内置菜单
+    this.IsShowRightMenu=true;
 
     this.ChartDestory=function()    //销毁
     {
@@ -1569,6 +1570,18 @@ function JSReportChartContainer(uielement)
 
     //去掉右键菜单
     this.UIOnContextMenu=function(e)
+    {
+        if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
+
+        if (!this.IsShowRightMenu) return;
+
+        var x = e.clientX-this.UIElement.getBoundingClientRect().left;
+        var y = e.clientY-this.UIElement.getBoundingClientRect().top;
+
+        if(typeof(this.OnRightMenu)=='function') this.OnRightMenu(x,y,e);   //右键菜单事件
+    }
+
+    this.OnRightMenu=function(x,y,e)
     {
         e.preventDefault();
     }
@@ -3742,6 +3755,14 @@ function ChartReport()
         return null;
     }
 
+    this.ClipClient=function()
+    {
+        this.Canvas.save();
+        this.Canvas.beginPath();
+        this.Canvas.rect(this.RectClient.Left,this.RectClient.Top,(this.RectClient.Right-this.RectClient.Left),(this.RectClient.Bottom-this.RectClient.Top));
+        //this.Canvas.stroke(); //调试用
+        this.Canvas.clip();
+    }
 
     this.Draw=function()
     {
@@ -3753,12 +3774,7 @@ function ChartReport()
         if (this.SizeChange) this.CalculateSize();
         else this.UpdateCacheData();
 
-        this.Canvas.save();
-
-        this.Canvas.beginPath();
-        this.Canvas.rect(this.RectClient.Left,this.RectClient.Top,(this.RectClient.Right-this.RectClient.Left),(this.RectClient.Bottom-this.RectClient.Top));
-        //this.Canvas.stroke(); //调试用
-        this.Canvas.clip();
+        this.ClipClient();
 
         this.DrawHeader();
         this.DrawBody();
@@ -3771,7 +3787,9 @@ function ChartReport()
             this.Tab.DrawScrollbar(this.RectClient.Left,bottom-this.BottomToolbarHeight, this.RectClient.Right, bottom);
         }
 
+        this.ClipClient();
         this.DrawBorder();
+        this.Canvas.restore();
 
         this.DrawDragRow();
 

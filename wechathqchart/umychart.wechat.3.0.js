@@ -2331,6 +2331,7 @@ function JSChartContainer(uielement)
         if (!frame) return false;
         if (!IFrameSplitOperator.IsNumber(frame.Identify)) return false;
         if (frame.Identify<0) return false;
+        if (!this.Frame.SubFrame) return false;
         var item= this.Frame.SubFrame[frame.Identify];
         if (!item) return false;
         return item.Height<=0;
