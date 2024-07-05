@@ -49564,6 +49564,7 @@ function ChartCorssCursor()
                         for(var i=0;i<=frame.OverlayIndex.length;++i)
                         {
                             var item=frame.OverlayIndex[i];
+                            if (!item || !item.Frame) continue;
                             if (item.Frame.IsShow===false) continue;
                             if (!item.Frame.GetXHorizontal) continue;
 
