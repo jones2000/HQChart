@@ -16,18 +16,76 @@ function JSReportChart(divElement)
     this.DivElement=divElement;
     this.JSChartContainer;              //表格控件
 
-     //h5 canvas
-     this.CanvasElement=document.createElement("canvas");
-     this.CanvasElement.className='jsreportlist-drawing';
-     this.CanvasElement.id=Guid();
-     this.CanvasElement.setAttribute("tabindex",0);
-     if (this.CanvasElement.style) this.CanvasElement.style.outline='none';
-     if(divElement.hasChildNodes())
-     {
-         JSConsole.Chart.Log("[JSReportChart::JSReportChart] divElement hasChildNodes", divElement.childNodes);
-     }
-     divElement.appendChild(this.CanvasElement);
+    //h5 canvas
+    this.CanvasElement=document.createElement("canvas");
+    this.CanvasElement.className='jsreportlist-drawing';
+    this.CanvasElement.id=Guid();
+    this.CanvasElement.setAttribute("tabindex",0);
+    if (this.CanvasElement.style) this.CanvasElement.style.outline='none';
+    if(divElement.hasChildNodes())
+    {
+        JSConsole.Chart.Log("[JSReportChart::JSReportChart] divElement hasChildNodes", divElement.childNodes);
+    }
+    divElement.appendChild(this.CanvasElement);
 
+      //额外的画布
+    this.MapExtraCanvasElement=new Map();   //key=画布名字, value={ Element:, Canvas:}
+
+    this.CreateExtraCanvasElement=function(name, option)
+    {
+        if (this.MapExtraCanvasElement.has(name)) return this.MapExtraCanvasElement.get(name);
+
+        var element=document.createElement("canvas");
+        element.className='jsreportlist-drawing-extra';
+        element.id=Guid();
+        if (name==JSChart.CorssCursorCanvasKey)  
+            element.setAttribute("tabindex",5);
+        else 
+            element.setAttribute("tabindex",1);
+
+        if (element.style) 
+        {
+            element.style.outline='none';
+            element.style.position="absolute";
+            element.style.left='0px';
+            element.style.top='0px';
+            element.style["pointer-events"]="none";
+        }
+
+        if (option)
+        {
+            if (IFrameSplitOperator.IsNumber(option.TabIndex))  element.setAttribute("tabindex",option.TabIndex);
+            if (IFrameSplitOperator.IsNumber(option.ZIndex))  element.style["z-index"]=option.ZIndex;
+        }
+
+        if (this.CanvasElement)
+        {
+            element.height=this.CanvasElement.height;
+            element.width=this.CanvasElement.width;
+            if (element.style)
+            {
+                element.style.width=this.CanvasElement.style.width;
+                element.style.height=this.CanvasElement.style.height
+            }
+        }
+
+        divElement.appendChild(element);
+
+        var item={ Element:element, Canvas:null };
+        this.MapExtraCanvasElement.set(name, item);
+    }
+
+    this.GetExtraCanvas=function(name)
+    {
+        if (!this.MapExtraCanvasElement.has(name)) return null;
+
+        var item=this.MapExtraCanvasElement.get(name);
+        if (!item.Element) return null;
+
+        if (!item.Canvas) item.Canvas=item.Element.getContext("2d");
+        
+        return item;
+    }
 
     this.OnSize=function()
     {
@@ -41,6 +99,19 @@ function JSReportChart(divElement)
         var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
         this.CanvasElement.height*=pixelTatio;
         this.CanvasElement.width*=pixelTatio;
+
+        //扩展画布
+        for(var mapItem of this.MapExtraCanvasElement)
+        {
+            var item=mapItem[1];
+            var element=item.Element;
+            if (!element) continue;
+
+            element.height=this.CanvasElement.height;
+            element.width=this.CanvasElement.width;
+            element.style.width=this.CanvasElement.style.width;
+            element.style.height=this.CanvasElement.style.height;
+        }
 
         JSConsole.Chart.Log(`[JSReportChart::OnSize] devicePixelRatio=${window.devicePixelRatio}, height=${this.CanvasElement.height}, width=${this.CanvasElement.width}`);
 
@@ -92,6 +163,9 @@ function JSReportChart(divElement)
         if (IFrameSplitOperator.IsBool(option.EnableDragRow)) chart.EnableDragRow=option.EnableDragRow;
         if (IFrameSplitOperator.IsNumber(option.DragRowType)) chart.DragRowType=option.DragRowType;
         if (IFrameSplitOperator.IsBool(option.EnableDragHeader)) chart.EnableDragHeader=option.EnableDragHeader;
+        if (IFrameSplitOperator.IsNumber(option.WheelPageType)) chart.WheelPageType=option.WheelPageType;
+        if (IFrameSplitOperator.IsBool(option.PageUpDownCycle)) chart.PageUpDownCycle=option.PageUpDownCycle;
+        
         if (option.VScrollbar) chart.SetVScrollbar(option.VScrollbar);
         if (option.SortInfo)
         {
@@ -199,6 +273,8 @@ function JSReportChart(divElement)
         }
     }
 }
+
+JSReportChart.TooltipCursorCanvasKey="hq_report_tooltip";   //提示信息
 
 
 JSReportChart.Init=function(divElement)
@@ -337,6 +413,7 @@ function JSReportChartContainer(uielement)
     
     this.PageUpDownCycle=true;  //翻页循环
     this.DragPageCycle=true;    //手机翻页循环
+    this.WheelPageType=0;       //鼠标滚轴翻页模式 0=一页一页翻  1=一条一条翻
 
     //拖拽滚动条
     this.DragXScroll=null;  //{Start:{x,y}, End:{x, y}}
@@ -416,6 +493,15 @@ function JSReportChartContainer(uielement)
         return;
     }
 
+
+    //清空画布
+    this.ClearCanvas=function(canvas)
+    {
+        if (!canvas) return;
+        if (!this.UIElement) return;
+
+        canvas.clearRect(0,0,this.UIElement.width,this.UIElement.height);
+    }
 
     //清空固定行数据
     this.ClearFixedRowData=function()
@@ -1361,20 +1447,43 @@ function JSReportChartContainer(uielement)
         if (!IFrameSplitOperator.IsObjectExist(e.wheelDelta))
             wheelValue=e.deltaY* -0.01;
 
-        if (wheelValue<0)   //下一页
+        if (this.WheelPageType==1)
         {
-            if (this.GotoNextPage(this.PageUpDownCycle)) 
+            console.log(`[OnWheel] wheelValue=${wheelValue}`);
+            if (wheelValue<0)   //下
             {
-                this.Draw();
-                this.DelayUpdateStockData();
+                if (this.GotoNextItem(1))
+                {
+                    this.Draw();
+                    this.DelayUpdateStockData();
+                }
+            }
+            else if (wheelValue>0)  //上
+            {
+                if (this.GotoNextItem(-1))
+                {
+                    this.Draw();
+                    this.DelayUpdateStockData();
+                }
             }
         }
-        else if (wheelValue>0)  //上一页
+        else
         {
-            if (this.GotoPreviousPage(this.PageUpDownCycle)) 
+            if (wheelValue<0)   //下一页
             {
-                this.Draw();
-                this.DelayUpdateStockData();
+                if (this.GotoNextPage(this.PageUpDownCycle)) 
+                {
+                    this.Draw();
+                    this.DelayUpdateStockData();
+                }
+            }
+            else if (wheelValue>0)  //上一页
+            {
+                if (this.GotoPreviousPage(this.PageUpDownCycle)) 
+                {
+                    this.Draw();
+                    this.DelayUpdateStockData();
+                }
             }
         }
 
@@ -2248,6 +2357,43 @@ function JSReportChartContainer(uielement)
     {
         var chart=this.ChartPaint[0];
         return chart;
+    }
+
+    this.GotoNextItem=function(step)
+    {
+        if (step==0) return false;
+        if (!this.Data || !IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return false;
+        var chart=this.ChartPaint[0];
+        if (!chart) return false;
+        var pageSize=chart.GetPageSize();
+        if (pageSize>this.Data.Data.length) return false;
+
+        var moveCount=0;
+        if (step>0)
+        {
+            for(var i=0;i<step;++i)
+            {
+                if (this.Data.YOffset+pageSize>=this.Data.Data.length)
+                    break;
+
+                ++this.Data.YOffset;
+                ++moveCount;
+            }
+        }
+        else if (step<0)
+        {
+            step=Math.abs(step);
+            for(var i=0;i<step;++i)
+            {
+                if (this.Data.YOffset<=0) 
+                    break;
+
+                --this.Data.YOffset;
+                ++moveCount;
+            }
+        }
+
+        return moveCount>0
     }
 
     this.GotoNextPage=function(bCycle) //bCycle 是否循环
@@ -3605,8 +3751,10 @@ function ChartReport()
             if (item.Type==REPORT_COLUMN_ID.CUSTOM_STRING_TEXT_ID)
             {
                 if (!IFrameSplitOperator.IsNumber(item.DataIndex) && !IFrameSplitOperator.IsNumber(item.BlockIndex)) continue;
+                colItem.FormatType=0;   //0=默认格式 1=长度不够使用...
                 if (IFrameSplitOperator.IsNumber(item.DataIndex)) colItem.DataIndex=item.DataIndex;   //数据在扩展数据索引列
                 if (IFrameSplitOperator.IsNumber(item.BlockIndex)) colItem.BlockIndex=item.BlockIndex;
+                if (IFrameSplitOperator.IsNumber(item.FormatType)) colItem.FormatType=item.FormatType;   //输出样式
             }
             else if (item.Type==REPORT_COLUMN_ID.CUSTOM_NUMBER_TEXT_ID)
             {
@@ -4562,8 +4710,67 @@ function ChartReport()
             }
 
             this.DrawItemBG(drawInfo);
-            this.DrawItemText(drawInfo.Text, drawInfo.TextColor, drawInfo.TextAlign, x, top, textWidth, drawInfo.BGColor);
+
+            if (column.Type==REPORT_COLUMN_ID.CUSTOM_STRING_TEXT_ID) 
+                this.DrawCustomText(drawInfo,column, x, top, textWidth);
+            else
+                this.DrawItemText(drawInfo.Text, drawInfo.TextColor, drawInfo.TextAlign, x, top, textWidth, drawInfo.BGColor);
         }
+    }
+
+    this.DrawCustomText=function(drawInfo, column, left, top, cellWidth)
+    {
+        if (!drawInfo.Text) return;
+
+        var text=drawInfo.Text;
+        var x=left;
+        if (drawInfo.TextAlign=='center')
+        {
+            x=left+cellWidth/2;
+            this.Canvas.textAlign="center";
+        }
+        else if (drawInfo.TextAlign=='right')
+        {
+            x=left+cellWidth-2;
+            this.Canvas.textAlign="right";
+        }
+        else
+        {
+            x+=2;
+            this.Canvas.textAlign="left";
+        }
+
+        var textWidth=this.Canvas.measureText(text).width+1;
+        var bClip=false;
+        if (textWidth>=cellWidth)   //长度超过单元格 裁剪
+        {
+            if (column.FormatType==2)
+            {
+                var count=text.length+5;
+                text="";
+                for(var i=0;i<count;++i)
+                    text+="#";
+            }
+            else if (column.FormatType==1)
+            {
+                text=this.TextEllipsis(text, cellWidth, column.MaxText);
+            }
+
+            this.Canvas.save();
+            bClip=true;
+
+            var rtCell={ Left:left, Top:top+this.ItemMergin.Top, Width:cellWidth, Height:this.RowHeight };
+            this.Canvas.beginPath();
+            this.Canvas.rect(rtCell.Left, rtCell.Top, rtCell.Width, rtCell.Height);
+            //this.Canvas.stroke(); //调试用
+            this.Canvas.clip();
+        }
+
+        this.Canvas.textBaseline="middle";
+        this.Canvas.fillStyle=drawInfo.TextColor;
+        this.Canvas.fillText(text,x,top+this.ItemMergin.Top+this.RowHeight/2);
+
+        if (bClip) this.Canvas.restore();
     }
 
     this.DrawSymbolName=function(data, column, left, top, rowType)
@@ -6362,6 +6569,11 @@ function ChartVScrollbar()
         var rtBar = {Right:right-this.Mergin.Right, Top:y, Width:buttonSize, Height: this.ScrollBarHeight };
         rtBar.Left=rtBar.Right-buttonSize;
         rtBar.Bottom=rtBar.Top+rtBar.Height;
+        if (rtBar.Bottom>rtBottom.Top-2) 
+        {
+            rtBar.Bottom=rtBottom.Top-2;
+            rtBar.Top=rtBar.Bottom-rtBar.Height;
+        }
 
         this.RectScroll.Top=rtTop;
         this.RectScroll.Bottom=rtBottom;

@@ -5068,6 +5068,52 @@ function ChartMultiText()
     this.Color = g_JSChartResource.DefaultTextColor;
     this.IsHScreen = false;   //是否横屏
 
+    this.BuildKey=function(item)
+    {
+        if (IFrameSplitOperator.IsNumber(item.Time))
+        {
+            var key=`${item.Date}-${item.Time}`;
+        }
+        else
+        {
+            var key=`${item.Date}`;
+        }
+        
+        return key;
+    }
+
+    this.GetShowTextData=function()
+    {
+        var xPointCount=this.ChartFrame.XPointCount;
+        var offset=this.Data.DataOffset;
+
+        var mapText=new Map();  //key='date-time' value={ Data:[] }
+        for(var i=0; i<this.Texts.length; ++i)
+        {
+            var item=this.Texts[i];
+            if (!item.Text) continue;
+            if (!IFrameSplitOperator.IsNumber(item.Index)) continue;
+
+            var index=item.Index-offset;
+            if (index>=0 && index<xPointCount)
+            {
+                var key=this.BuildKey(item);
+                if (mapText.has(key))
+                {
+                    var textItem=mapText.get(key);
+                    textItem.Data.push(item);
+                }
+                else
+                {
+                    var textItem={ Data:[item] };
+                    mapText.set(key, textItem);
+                }
+            }
+        }
+
+        return mapText;
+    }
+
     this.Draw = function () 
     {
         if (!this.IsShow || this.ChartFrame.IsMinSize) return;
@@ -5075,67 +5121,109 @@ function ChartMultiText()
         if (!this.Texts) return;
 
         this.IsHScreen = (this.ChartFrame.IsHScreen === true);
-        var xPointCount = this.ChartFrame.XPointCount;
-        var offset = this.Data.DataOffset;
-        var left = this.ChartBorder.GetLeft();
-        var right = this.ChartBorder.GetRight();
 
-        if (this.IsHScreen) 
+        var mapText=this.GetShowTextData();
+        if (mapText.size<=0) return;
+
+        this.Canvas.save();
+        this.DrawAllText(mapText);
+        this.Canvas.restore();
+    }
+
+    this.DrawAllText=function(mapText)
+    {
+        var bHScreen=(this.ChartFrame.IsHScreen===true);
+        var isMinute=this.IsMinuteFrame();
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xPointCount=this.ChartFrame.XPointCount;
+
+        if (bHScreen)
         {
-            left = this.ChartBorder.GetTop();
-            right = this.ChartBorder.GetBottom();
+            var border=this.ChartBorder.GetHScreenBorder();
+            var chartright=border.BottomEx;
+            var chartleft=border.TopEx;
+            var xOffset=border.TopEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var left=this.ChartBorder.GetTop();
+            var right=this.ChartBorder.GetBottom();
+            var top=border.RightEx;
+            var bottom=border.LeftEx;
+        }
+        else
+        {
+            var border=this.ChartBorder.GetBorder();
+            var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.RightEx;
+            var chartleft=border.LeftEx;
+            var left=this.ChartBorder.GetLeft();
+            var right=this.ChartBorder.GetRight();
+            var top=border.TopEx;
+            var bottom=border.BottomEx;
         }
 
-        for (var i in this.Texts) 
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
         {
-            var item = this.Texts[i];
-            if (!item.Text) continue;
-            if (!IFrameSplitOperator.IsNumber(item.Index)) continue;
+            var kItem=this.Data.Data[i];
+            if (!kItem) continue;
 
-            var index = item.Index - offset;
-            if (index >= 0 && index < xPointCount) 
+            var key=this.BuildKey(kItem);
+            if (!mapText.has(key)) continue;
+
+            var left=xOffset;
+            var right=xOffset+dataWidth;
+            if (right>chartright) break;
+            var x=left+(right-left)/2;
+
+            var textItem=mapText.get(key);
+            for(var k=0;k<textItem.Data.length;++k)
             {
-                var x = this.ChartFrame.GetXFromIndex(index);
-                var y = this.ChartFrame.GetYFromData(item.Value);
+                var item=textItem.Data[k];
+                var y=top;
+                if (item.Value=="TOP") y=top;
+                else if (item.Value=="BOTTOM") y=bottom;
+                else y=this.ChartFrame.GetYFromData(item.Value, false);
 
-                if (item.Color) this.Canvas.fillStyle = item.Color;
+                if (item.Color)  this.Canvas.fillStyle = item.Color;
                 else this.Canvas.fillStyle = this.Color;
                 if (item.Font) this.Canvas.font = item.Font;
-                else this.Canvas.font = this.Font;
+                else this.Canvas.font=this.Font;
 
-                var textWidth = this.Canvas.measureText(item.Text).width;
-                this.Canvas.textAlign = 'center';
-                if (x + textWidth / 2 >= right)
+                var textWidth=this.Canvas.measureText(item.Text).width;
+                this.Canvas.textAlign='center';
+                if (x+textWidth/2>=chartright) 
                 {
-                    this.Canvas.textAlign = 'right';
-                    x = right;
+                    this.Canvas.textAlign='right';
+                    x=chartright;
                 }
-                else if (x - textWidth / 2 < left) 
+                else if (x-textWidth/2<chartleft)
                 {
                     this.Canvas.textAlign = 'left';
-                    x = left;
+                    x=chartleft;
                 }
-                if (item.Baseline == 1) this.Canvas.textBaseline = 'top';
-                else if (item.Baseline == 2) this.Canvas.textBaseline = 'bottom';
+                
+                if (item.Baseline==1) this.Canvas.textBaseline='top';
+                else if (item.Baseline==2) this.Canvas.textBaseline='bottom';
                 else this.Canvas.textBaseline = 'middle';
-                if (this.IsHScreen) //横屏旋转
+
+                if (this.IsHScreen)
                 {
-                    this.Canvas.save();
+                    this.Canvas.save(); 
                     this.Canvas.translate(y, x);
                     this.Canvas.rotate(90 * Math.PI / 180);
-                    this.Canvas.fillText(item.Text, 0, 0);
+                    this.Canvas.fillText(item.Text,0,0);
                     this.Canvas.restore();
                 }
                 else
                 {
+                    if (IFrameSplitOperator.IsNumber(item.YMove)) y+=item.YMove;
                     this.Canvas.fillText(item.Text, x, y);
                 }
-                
+
                 if (item.Line)
                 {
                     var kItem=this.Data.Data[item.Index];
                     var price=item.Line.KData=="H"? kItem.High:kItem.Low;
-                    var yPrice=this.ChartFrame.GetYFromData(price);
+                    var yPrice=this.ChartFrame.GetYFromData(price, false);
                     var yText=y;
                     if (Array.isArray(item.Line.Offset) && item.Line.Offset.length==2)
                     {
@@ -5155,9 +5243,9 @@ function ChartMultiText()
                     if (item.Line.Width>0) this.Canvas.lineWidth=item.Line.Width;   //线宽
                     this.Canvas.strokeStyle = item.Line.Color;
                     this.Canvas.beginPath();
-                    if (this.IsHScreen) 
+                    if (this.IsHScreen)
                     {
-                        this.Canvas.moveTo(yText,ToFixedPoint(x));
+                        this.Canvas.moveTo(yText, ToFixedPoint(x));
                         this.Canvas.lineTo(yPrice,ToFixedPoint(x));
                     }
                     else
@@ -5165,6 +5253,7 @@ function ChartMultiText()
                         this.Canvas.moveTo(ToFixedPoint(x),yText);
                         this.Canvas.lineTo(ToFixedPoint(x),yPrice);
                     }
+                    
                     this.Canvas.stroke();
                     this.Canvas.restore();
                 }

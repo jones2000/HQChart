@@ -27,6 +27,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
     this.DivElement=divElement;
     this.DivToolElement=null;           //工具条
     this.JSChartContainer;              //画图控件
+    this.ResizeListener;
 
     //h5 canvas
     this.CanvasElement=document.createElement("canvas");
@@ -1704,6 +1705,8 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         this.JSChartContainer=chart;
         chart.DivElement=this.DivElement;
 
+        if (option.EnableResize==true) this.CreateResizeListener();
+
         if (option.DefaultCursor) chart.DefaultCursor=option.DefaultCursor;
         if (option.OnCreatedCallback) option.OnCreatedCallback(chart);
 
@@ -1744,6 +1747,19 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             this.DivElement.JSChart=this;   //div中保存一份
             this.JSChartContainer.Draw();
         }
+    }
+
+    this.CreateResizeListener=function()
+    {
+        this.ResizeListener = new ResizeObserver((entries)=>{ this.OnDivResize(entries); });
+        this.ResizeListener.observe(this.DivElement);
+    }
+
+    this.OnDivResize=function(entries)
+    {
+        JSConsole.Chart.Log("[JSChart::OnDivResize] entries=", entries);
+
+        this.OnSize( {Type:1} );
     }
 
     //创建工具条
@@ -37981,6 +37997,7 @@ function ChartMultiText()
         {
             var border=this.ChartBorder.GetHScreenBorder();
             var chartright=border.BottomEx;
+            var chartleft=border.TopEx;
             var xOffset=border.TopEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
             var left=this.ChartBorder.GetTop();
             var right=this.ChartBorder.GetBottom();
@@ -37992,6 +38009,7 @@ function ChartMultiText()
             var border=this.ChartBorder.GetBorder();
             var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
             var chartright=border.RightEx;
+            var chartleft=border.LeftEx;
             var left=this.ChartBorder.GetLeft();
             var right=this.ChartBorder.GetRight();
             var top=border.TopEx;
@@ -38027,16 +38045,17 @@ function ChartMultiText()
 
                 var textWidth=this.Canvas.measureText(item.Text).width;
                 this.Canvas.textAlign='center';
-                if (x+textWidth/2>=right) 
+                if (x+textWidth/2>=chartright) 
                 {
                     this.Canvas.textAlign='right';
-                    x=right;
+                    x=chartright;
                 }
-                else if (x-textWidth/2<left)
+                else if (x-textWidth/2<chartleft)
                 {
                     this.Canvas.textAlign = 'left';
-                    x=left;
+                    x=chartleft;
                 }
+                
                 if (item.Baseline==1) this.Canvas.textBaseline='top';
                 else if (item.Baseline==2) this.Canvas.textBaseline='bottom';
                 else this.Canvas.textBaseline = 'middle';
