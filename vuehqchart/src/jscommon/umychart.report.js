@@ -38,7 +38,7 @@ function JSReportChart(divElement)
         var element=document.createElement("canvas");
         element.className='jsreportlist-drawing-extra';
         element.id=Guid();
-        if (name==JSChart.CorssCursorCanvasKey)  
+        if (name==JSReportChart.CorssCursorCanvasKey)  
             element.setAttribute("tabindex",5);
         else 
             element.setAttribute("tabindex",1);
@@ -133,6 +133,10 @@ function JSReportChart(divElement)
         this.DivElement.JSChart=this;   //div中保存一份
 
         if (option.EnablePopMenuV2===true) chart.InitalPopMenu();
+        if (option.EnableTooltip) 
+        {
+            this.CreateExtraCanvasElement(JSReportChart.TooltipCursorCanvasKey, { ZIndex:99 });
+        }
 
         if (option.Symbol) chart.Symbol=option.Symbol;
         if (option.Name) chart.Name=option.Name;
@@ -154,6 +158,8 @@ function JSReportChart(divElement)
     this.CreateJSReportChartContainer=function(option)
     {
         var chart=new JSReportChartContainer(this.CanvasElement);
+        chart.GetExtraCanvas=(name)=>{ return this.GetExtraCanvas(name); }
+
         chart.Create(option);
 
         if (option.NetworkFilter) chart.NetworkFilter=option.NetworkFilter;
@@ -354,6 +360,9 @@ function JSReportChartContainer(uielement)
     this.SplashTitle={ StockList:"下载码表中.....", MemberList:"下载成分中....." } ;
 
     this.Canvas=uielement.getContext("2d");         //画布
+    
+    this.TooltipCanvas;
+    this.ChartTooltip;
 
     this.Tooltip=document.createElement("div");
     this.Tooltip.className='jsreport-tooltip';
@@ -425,6 +434,8 @@ function JSReportChartContainer(uielement)
     this.JSPopMenu;             //内置菜单
     this.IsShowRightMenu=true;
 
+    this.LastMouseStatus={ MoveStatus:null, TooltipStatus:null };
+   
     this.ChartDestory=function()    //销毁
     {
         this.IsDestroy=true;
@@ -575,6 +586,12 @@ function JSReportChartContainer(uielement)
 
         this.ChartPaint[0]=chart;
 
+         //提示信息
+        var chartTooltip=new ChartCellTooltip();
+        chartTooltip.Frame=this.Frame;
+        chartTooltip.ChartBorder=this.Frame.ChartBorder;
+        this.ChartTooltip=chartTooltip;
+
         //页脚
         if (option && option.PageInfo===true)
         {
@@ -686,6 +703,8 @@ function JSReportChartContainer(uielement)
         {
             this.DelayDraw(500);
         }
+
+        this.DrawTooltip(this.LastMouseStatus.TooltipStatus);
     }
 
     this.DelayDraw=function(frequency)
@@ -1452,6 +1471,7 @@ function JSReportChartContainer(uielement)
             console.log(`[OnWheel] wheelValue=${wheelValue}`);
             if (wheelValue<0)   //下
             {
+                this.LastMouseStatus.TooltipStatus=null;
                 if (this.GotoNextItem(1))
                 {
                     this.Draw();
@@ -1460,6 +1480,7 @@ function JSReportChartContainer(uielement)
             }
             else if (wheelValue>0)  //上
             {
+                this.LastMouseStatus.TooltipStatus=null;
                 if (this.GotoNextItem(-1))
                 {
                     this.Draw();
@@ -1471,6 +1492,7 @@ function JSReportChartContainer(uielement)
         {
             if (wheelValue<0)   //下一页
             {
+                this.LastMouseStatus.TooltipStatus=null;
                 if (this.GotoNextPage(this.PageUpDownCycle)) 
                 {
                     this.Draw();
@@ -1479,6 +1501,7 @@ function JSReportChartContainer(uielement)
             }
             else if (wheelValue>0)  //上一页
             {
+                this.LastMouseStatus.TooltipStatus=null;
                 if (this.GotoPreviousPage(this.PageUpDownCycle)) 
                 {
                     this.Draw();
@@ -1700,7 +1723,13 @@ function JSReportChartContainer(uielement)
         var pixelTatio = GetDevicePixelRatio();
         var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
         var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
+        
+        this.LastMouseStatus.OnMouseMove=null;
 
+        var bDrawTooltip=false;
+        if (this.LastMouseStatus.TooltipStatus) bDrawTooltip=true;
+        this.LastMouseStatus.TooltipStatus=null;
+        
         if (this.DragRow) return;
         if (this.DrawHeader) return;
         if (this.DragColumnWidth) return;
@@ -1720,10 +1749,11 @@ function JSReportChartContainer(uielement)
             }
         }
 
+        this.LastMouseStatus.OnMouseMove={ X:x, Y:y };
         var mouseStatus={ Cursor:"default", Name:"Default"};;   //鼠标状态
         var report=this.GetReportChart();
-        var cell=null;
         var bDraw=false;
+        
         if (report)
         {
             var dragHeaderWidth=report.PtInHeaderDragBorder(x,y);
@@ -1734,7 +1764,12 @@ function JSReportChartContainer(uielement)
             }
             else
             {
-                cell=report.PtInCell(x,y);  //是否在单元格(EnableTooltip)
+                var tooltipData=report.GetTooltipData(x,y);  //单元格提示信息
+                if (tooltipData)
+                {
+                    this.LastMouseStatus.TooltipStatus={ X:x, Y:y, Data:tooltipData };
+                    bDrawTooltip=true;
+                }
             }
 
             var scrollbar=report.VScrollbar;
@@ -1750,16 +1785,20 @@ function JSReportChartContainer(uielement)
             }
         }
 
+
+        /* 目前没有用到
         var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_REPORT_MOUSE_MOVE);
         if (event)
         {
             var sendData={X:x, Y:y, Cell:cell };
             event.Callback(event,sendData,this);
         }
+        */
 
         if (mouseStatus) this.UIElement.style.cursor=mouseStatus.Cursor;
 
         if (bDraw) this.Draw();
+        else if (bDrawTooltip) this.DrawTooltip(this.LastMouseStatus.TooltipStatus);
     }
 
     this.UIOnMounseOut=function(e)
@@ -3328,6 +3367,28 @@ function JSReportChartContainer(uielement)
 
         return true;
     }
+
+    this.DrawTooltip=function(tooltipStatus)
+    {
+        if (!this.GetExtraCanvas) return;
+        if (!this.TooltipCanvas)
+        {
+            var finder=this.GetExtraCanvas(JSReportChart.TooltipCursorCanvasKey);
+            if (!finder) return;
+            this.TooltipCanvas=finder.Canvas;
+        }
+
+        if (!this.TooltipCanvas) return;
+        this.ClearCanvas(this.TooltipCanvas);
+        if (!this.ChartTooltip) return;
+
+        if (!tooltipStatus || !tooltipStatus.Data) return;
+
+        this.ChartTooltip.Canvas=this.TooltipCanvas;
+        this.ChartTooltip.Point={ X:tooltipStatus.X, Y:tooltipStatus.Y };
+        this.ChartTooltip.Data=tooltipStatus.Data.Data;
+        this.ChartTooltip.Draw();
+    }
 }
 
 
@@ -3638,6 +3699,9 @@ function ChartReport()
 
     this.RectClient={};
 
+    //{ Rect:rtItem, Stock:stock, Index:index, Column:column, RowType:rowType, Type:drawInfo.Tooltip.Type, Data:{ AryText:[ {Text:xx} ]} };
+    //Type:1=数据截断
+    // { Text, Color, Title:, TitleColor, Space, Margin:{ Left, Top, Right, Bottom }}
     this.TooltipRect=[];
 
     this.ReloadResource=function(resource)
@@ -3736,7 +3800,6 @@ function ChartReport()
             if (item.FullColBGColor) colItem.FullColBGColor=item.FullColBGColor;    //整列背景色
             if (item.HeaderBGColor) colItem.HeaderBGColor=item.HeaderBGColor;       //表头背景色
             if (IFrameSplitOperator.IsNumber(item.Sort)) colItem.Sort=item.Sort;
-            if (IFrameSplitOperator.IsBool(item.EnableTooltip)) colItem.EnableTooltip=item.EnableTooltip;
             if (IFrameSplitOperator.IsNumber(item.FixedWidth)) colItem.FixedWidth=item.FixedWidth;
             if (IFrameSplitOperator.IsBool(item.EnableDragWidth)) colItem.EnableDragWidth=item.EnableDragWidth;
             if (IFrameSplitOperator.IsBool(item.IsDrawCallback)) colItem.IsDrawCallback=item.IsDrawCallback;
@@ -4452,7 +4515,7 @@ function ChartReport()
         var x=left+this.ItemMergin.Left;
         var textWidth=column.Width-this.ItemMergin.Left-this.ItemMergin.Right;
         var stock=data.Stock;
-        var drawInfo={ Text:null, TextColor:column.TextColor , TextAlign:column.TextAlign };
+        var drawInfo={ Text:null, TextColor:column.TextColor , TextAlign:column.TextAlign, Tooltip:null };
         var rtItem={ Left:left, Top:top,  Width:column.Width, Height:this.RowHeight };
         rtItem.Right=rtItem.Left+rtItem.Width;
         rtItem.Bottom=rtItem.Top+rtItem.Height;
@@ -4463,12 +4526,6 @@ function ChartReport()
             this.DrawItemBG({ Rect:rtItem, BGColor:column.FullColBGColor });
         }
         
-        //tooltip提示
-        if (column.EnableTooltip===true)
-        {
-            this.TooltipRect.push({ Rect:rtItem, Stock:stock, Index:index, Column:column, RowType:rowType })
-        }
-
         if (column.Type==REPORT_COLUMN_ID.INDEX_ID)
         {
             if (rowType==1) return; //固定行序号空
@@ -4716,6 +4773,14 @@ function ChartReport()
             else
                 this.DrawItemText(drawInfo.Text, drawInfo.TextColor, drawInfo.TextAlign, x, top, textWidth, drawInfo.BGColor);
         }
+
+        //tooltip提示
+        if (drawInfo.Tooltip)
+        {
+            //Type:1=数据截断
+            var tooltipData={ Rect:rtItem, Stock:stock, Index:index, Column:column, RowType:rowType, Type:drawInfo.Tooltip.Type, Data:drawInfo.Tooltip.Data };
+            this.TooltipRect.push(tooltipData);
+        }
     }
 
     this.DrawCustomText=function(drawInfo, column, left, top, cellWidth)
@@ -4764,6 +4829,13 @@ function ChartReport()
             this.Canvas.rect(rtCell.Left, rtCell.Top, rtCell.Width, rtCell.Height);
             //this.Canvas.stroke(); //调试用
             this.Canvas.clip();
+
+            //数据截断提示信息
+            drawInfo.Tooltip=
+            { 
+                Type:1, 
+                Data:{ AryText:[ {Text:drawInfo.Text} ] }
+            }
         }
 
         this.Canvas.textBaseline="middle";
@@ -6041,8 +6113,7 @@ function ChartReport()
 
     }
 
-    //坐标所在单元格
-    this.PtInCell=function(x,y)
+    this.GetTooltipData=function(x,y)
     {
         if (!IFrameSplitOperator.IsNonEmptyArray(this.TooltipRect)) return null;
 
@@ -6054,9 +6125,11 @@ function ChartReport()
 
             if (x>=rt.Left && x<=rt.Right && y>=rt.Top && y<=rt.Bottom)
             {
-                return { Rect:item.Rect, Stock:item.Stock, Column:item.Column, Index:item.Index };
+                return { Rect:item.Rect, Stock:item.Stock, Column:item.Column, Index:item.Index, Type:item.Type, Data:item.Data };
             }
         }
+
+        return null;
     }
 
     this.PtInHeaderDragBorder=function(x, y)
@@ -6646,5 +6719,168 @@ function ChartVScrollbar()
         var value=rtItem.Bottom-rtItem.Top-this.ScrollBarHeight;
         var pos =parseInt((this.MaxPos * (y - rtItem.Top)) / value);
         return pos;
+    }
+}
+
+
+function ChartCellTooltip()
+{
+    this.Canvas;                            //画布
+    this.ChartBorder;                       //边框信息
+    this.ChartFrame;                        //框架画法
+    this.Name;                              //名称
+    this.ClassName='ChartCellTooltip';      //类名
+    
+    this.BGColor="rgba(255,255,225, 0.9)";
+    this.BorderColor="rgb(0,0,0)";
+    this.Margin={ Left:5, Right:5, Top:4, Bottom:5 };
+    this.Font=`${13*GetDevicePixelRatio()}px 微软雅黑`;
+    this.TextColor="rgb(0,0,0)";
+    this.YOffset=20;
+    this.XOffset=5;
+
+    this.Point; //{ X, Y}
+    this.Data;  //{ AryText:[ { Text, Color, Title:, TitleColor, Space, Margin:{ Left, Top, Right, Bottom }}  ]}   
+    
+
+    this.Draw=function()
+    {
+        if (!this.Canvas) return;
+        if (!this.Data || !IFrameSplitOperator.IsNonEmptyArray(this.Data.AryText)) return;
+        if (!this.Point) return;
+
+        var size={ Width:0, Height:0, Text:[] };
+        this.CalculateTextSize(this.Data.AryText, size);
+        if (!IFrameSplitOperator.IsNonEmptyArray(size.Text)) return;
+
+        this.DrawTooltip(this.Data.AryText, size);
+    }
+
+    this.CalculateTextSize=function(aryText, size)
+    {
+        var width=0, height=0;
+        for(var i=0;i<aryText.length;++i)
+        {
+            var item=aryText[i];
+            var titleHeight=0, titleWidth=0;
+            if (!item.Title && !item.Text) continue;
+
+            if (item.Title)
+            {
+                if (item.TitleFont) this.Canvas.font=item.TitleFont;
+                else this.Canvas.font=this.Font;
+
+                titleWidth=this.Canvas.measureText(item.Title).width;   
+                titleHeight=this.Canvas.measureText("擎").width;
+            }
+
+            var textWidth=0, textHeight=0;
+            if (item.Text)
+            {
+                if (item.Font) this.Canvas.font=item.Font;
+                else this.Canvas.font=this.Font;
+
+                textWidth=this.Canvas.measureText(item.Text).width;   
+                textHeight=this.Canvas.measureText("擎").width;
+            }
+
+            var itemWidth=titleWidth+textWidth;
+            var itemHeight=Math.max(textHeight,titleHeight);
+
+            if (IFrameSplitOperator.IsNumber(item.Space)) itemWidth+=item.Space;
+
+            if (item.Margin)
+            {
+                var margin=item.Margin;
+                if (IFrameSplitOperator.IsNumber(margin.Left)) itemWidth+=margin.Left;
+                if (IFrameSplitOperator.IsNumber(margin.Right)) itemWidth+=margin.Right;
+                if (IFrameSplitOperator.IsNumber(margin.Top)) itemHeight+=margin.Top;
+                if (IFrameSplitOperator.IsNumber(margin.Bottom)) itemHeight+=margin.Bottom;
+            }
+
+            if (width<itemWidth) width=itemWidth;
+            height+=itemHeight;
+
+            size.Text[i]={ Width: itemWidth, Height:itemHeight, TitleWidth:titleWidth, TextWidth:textWidth };
+        }
+
+        if (this.Margin)
+        {
+            var margin=this.Margin;
+            if (IFrameSplitOperator.IsNumber(margin.Left)) width+=margin.Left;
+            if (IFrameSplitOperator.IsNumber(margin.Right)) width+=margin.Right;
+            if (IFrameSplitOperator.IsNumber(margin.Top)) height+=margin.Top;
+            if (IFrameSplitOperator.IsNumber(margin.Bottom)) height+=margin.Bottom;
+        }
+
+        size.Width=width;
+        size.Height=height;
+    }
+
+    this.DrawTooltip=function(aryText, size)
+    {
+        var rtBG={ Left:this.Point.X+this.XOffset, Top:this.Point.Y+this.YOffset, Width:size.Width, Height:size.Height };
+        rtBG.Right=rtBG.Left+rtBG.Width;
+        rtBG.Bottom=rtBG.Top+rtBG.Height;
+
+        var border=this.ChartBorder.GetBorder();
+        if (rtBG.Bottom>border.ChartHeight)
+        {
+            rtBG.Bottom=this.Point.Y;
+            rtBG.Top=rtBG.Bottom-rtBG.Height;
+        }
+
+        if (rtBG.Right>border.ChartWidth)
+        {
+            rtBG.Right=this.Point.X;
+            rtBG.Left=rtBG.Right-rtBG.Width;
+        }
+
+        if (this.BGColor)
+        {
+            this.Canvas.fillStyle=this.BGColor;
+            this.Canvas.fillRect(ToFixedPoint(rtBG.Left),ToFixedPoint(rtBG.Top),ToFixedRect(rtBG.Width),ToFixedRect(rtBG.Height));
+        }
+        
+        if (this.BorderColor)
+        {
+            this.Canvas.strokeStyle=this.BorderColor;
+            this.Canvas.strokeRect(ToFixedPoint(rtBG.Left),ToFixedPoint(rtBG.Top),ToFixedRect(rtBG.Width),ToFixedRect(rtBG.Height));
+        }
+
+        var left=rtBG.Left;
+        var top=rtBG.Top;
+        if (this.Margin && IFrameSplitOperator.IsNumber(this.Margin.Left)) left+=this.Margin.Left;
+        if (this.Margin && IFrameSplitOperator.IsNumber(this.Margin.Top)) top+=this.Margin.Top;
+
+        var xText, yText=top;
+        for(var i=0;i<aryText.length;++i)
+        {
+            var item=aryText[i];
+            if (!item.Title && !item.Text) continue;
+            var itemSize=size.Text[i];
+
+            xText=left;
+            yText+=itemSize.Height;
+
+            if (item.Margin && IFrameSplitOperator.IsNumber(item.Margin.Left)) xText+=item.Margin.Left;
+            if (item.Margin && IFrameSplitOperator.IsNumber(item.Margin.Bottom)) yText-=item.Margin.Bottom;
+            if (item.Title)
+            {
+                if (item.TitleColor) this.Canvas.fillStyle=item.TitleColor;
+                else this.Canvas.fillStyle=this.TextColor;
+                this.Canvas.fillText(item.Title,xText,yText,itemSize.TitleWidth);
+                xText+=itemSize.titleWidth;
+                if (IFrameSplitOperator.IsNumber(item.Space)) xText+=item.Space;
+            }
+
+            if (item.Text)
+            {
+                if (item.Color) this.Canvas.fillStyle=item.Color;
+                else this.Canvas.fillStyle=this.TextColor;
+                this.Canvas.fillText(item.Text,xText,yText,itemSize.TextWidth);
+            }
+
+        }
     }
 }

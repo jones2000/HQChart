@@ -10534,13 +10534,9 @@ MinuteChartContainer.JsonDataToMinuteData = function (data)
 
         if (jsData.date > 0) date = jsData.date;    //分钟数据中有日期 优先使用
         item.DateTime = date.toString() + " " + jsData.time.toString();
-        item.Date = data.stock[0].date;
+        item.Date = date;
         item.Time = jsData.time;
-        if (8<jsData.length && jsData[8]>0) 
-        {
-            item.Date=jsData[8];    //日期
-            item.DateTime=item.Date.toString()+" "+jsData[0].toString();
-        }
+       
         if (isFutures || isSHO || isSZO) item.Position = jsData.position;  //期货 期权有持仓
 
         if (yClose && item.Close) item.Increase = (item.Close - yClose) / yClose * 100; //涨幅 (最新价格-昨收)/昨收*100
@@ -12524,6 +12520,7 @@ var JSCommon=
     IFrameSplitOperator: IFrameSplitOperator,
     ChartData: ChartData,
     DataPlus: DataPlus,
+    
     KLineTooltipPaint: KLineTooltipPaint,
     MARKET_SUFFIX_NAME: MARKET_SUFFIX_NAME,
     JSCommonCoordinateData:JSCommonCoordinateData,

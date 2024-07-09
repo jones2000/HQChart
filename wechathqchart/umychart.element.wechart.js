@@ -22,6 +22,7 @@ function JSCanvasElement()
     this.ID;
     this.WebGLCanvas;
     this.IsUniApp=false;    //uniapp app程序
+    this.IsUniAppX=false;
     this.IsDingTalk=false;  //钉钉小程序
     this.IsDouYin=false;    //抖音小程序
     this.CanvasNode=null;
@@ -96,7 +97,17 @@ function JSCanvasElement()
             }
         }
 
-       
+        if (this.IsUniAppX)
+        {
+            var element = uni.getElementById(this.ID);
+            canvas = element.getContext("2d");
+
+            const dpr = uni.getSystemInfoSync().pixelRatio;
+            element.width = element.offsetWidth * dpr;
+            element.height = element.offsetHeight * dpr;
+            canvas.scale(dpr, dpr);
+            canvas.draw = () => { };
+        }
 
         return canvas;
     }
