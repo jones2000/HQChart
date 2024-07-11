@@ -42,6 +42,7 @@
         {
             this.DivDeal=divDeal;
             this.Chart=JSReportChart.Init(divDeal);   //把报价列表绑定到一个Div上
+            this.CacheTotalData={ DayCount:60, StockCount:0, Vol:0 } ;//合计信息
            
             //配置信息
             this.Option= 
@@ -120,9 +121,20 @@
                         SortType:[1,2,0]
                     },  
                     { 
+                        Type:REPORT_COLUMN_ID.CUSTOM_NUMBER_TEXT_ID , Title:"成交额(万)" ,TextAlign:"right", 
+                        DataIndex:8,
+                        MaxText:"999999.88",
+                        ID:3,
+                        Decimal:2, 
+                        FormatType:1,
+                        EnableDragWidth:true,
+                        Sort:1,
+                        SortType:[1,2,0]
+                    },  
+                    { 
                         Type:REPORT_COLUMN_ID.CUSTOM_NUMBER_TEXT_ID , Title:"溢价率(%)" ,TextAlign:"right", 
                         DataIndex:4,
-                        MaxText:"9999.99" ,
+                        MaxText:"99999.99" ,
                         ID:4,
                         Decimal:2, 
                         ColorType:1,
@@ -130,7 +142,7 @@
                         EnableDragWidth:true,
                         Icon:
                         { 
-                            Family:"iconfont", Size:16, Symbol:"\ue698", Color:"rgb(169,169,169)", Margin:{Left:2, Bottom:1 },
+                            Family:"iconfont", Size:16, Symbol:"\ue698", Color:"rgb(169,169,169)", Margin:{Left:2, Bottom:3 },
                             Tooltip:{ Data:{ AryText:[ {Title:"折价率:", TitleColor:"rgb(255,0,0)", Space:10, Text:"(成交价-最新价)/最新价*100"} ] } }
                         },
                         Sort:1,
@@ -166,6 +178,7 @@
                 PageUpDownCycle:false,
                 //EnableDragHeader:true,      //允许拖动表头调整顺序
                 EnableTooltip:true,
+                FixedRowCount:1,
 
                 //SortInfo:{ Field:5, Sort: 1 },   //默认排序信息
 
@@ -206,7 +219,10 @@
 
                 this.Option.EventCallback= 
                 [ 
-                    
+                    {   //固定行
+                        event:JSCHART_EVENT_ID.ON_DRAW_REPORT_FIXEDROW_TEXT, 
+                        callback:(event, data, obj)=>{ this.OnDrawFoxedRowText(event, data, obj); }  
+                    }
                 ];
 
                 this.Chart.SetOption(this.Option);  //设置配置
@@ -259,8 +275,41 @@
                 this.Chart.JSChartContainer.SetFullData({data:data});
             }
 
+
+            this.OnDrawFoxedRowText=function(event, data, obj)
+            {
+                console.log('[ReportChart::OnDrawFoxedRowText] event, data', event , data);
+
+                switch(data.ColIndex)
+                {
+                    case 0:
+                        data.Out.Text="合计";
+                        data.Out.TextColor="rgb(255,140,0)";
+                        data.Out.TextAlign="center";
+                        break;
+                    case 1:
+                        data.Out.Text=`${this.CacheTotalData.DayCount} 天`;
+                        data.Out.TextColor="rgb(245,253,166)";
+                        data.Out.TextAlign="center";
+                        break;
+                    case 2:
+                        data.Out.Text=`${this.CacheTotalData.StockCount} 家`;
+                        data.Out.TextColor="rgb(245,253,166)";
+                        data.Out.TextAlign="center";
+                        break;
+                    case 6:
+                        data.Out.Text=`${this.CacheTotalData.Vol.toFixed(0)}`;
+                        data.Out.TextColor="rgb(245,253,166)";
+                        data.Out.TextAlign="right";
+                        break;
+                }
+            }
+
             this.CreateTestData=function()
             {
+                this.CacheTotalData.Vol=0;
+                this.CacheTotalData.StockCount=0;
+                var setSymbol=new Set();
                 var aryData=[];
                 for(var i=0;i<BLOCK_TRADE_TEST_DATA.data.data.length;++i)
                 {
@@ -280,10 +329,16 @@
                     extendData[5]=item.turnoverVol/10000;
                     extendData[6]=item.buyerName;
                     extendData[7]=item.sellerName;
+                    extendData[8]=item.turnoverVal/10000;
+
+                    this.CacheTotalData.Vol+=extendData[5];
                    
-                        
+                    setSymbol.add(item.code); 
                     aryData.push(rowItem);
                 }
+
+                this.CacheTotalData.StockCount=setSymbol.size;
+
                 return aryData;
             }
         }

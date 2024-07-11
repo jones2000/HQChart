@@ -67124,8 +67124,17 @@ function JSChartResource()
         {
             Color:"rgb(60,60,60)",      //表头文字颜色
             SortColor:"rgb(255,0,0)",   //排序箭头颜色
-            Mergin:{ Left:5, Right:5, Top:4, Bottom:2},    //表头四周间距
-            Font:{ Size:12, Name:"微软雅黑" }   //表头字体
+            Mergin:{ Left:5, Right:5, Top:4, Bottom:4 },    //表头四周间距
+            Font:{ Size:12, Name:"微软雅黑" },   //表头字体
+        },
+
+        //排序图标
+        SortIcon:
+        {
+            Size:12, Family:"iconfont",
+            Arrow:[null, "\ue6b2", "\ue6b1"],
+            Color:[null, "rgb(255,0,0)", "rgb(255,0,0)"],
+            Margin:{ Left:0, Bottom:6 }
         },
 
         Item:
@@ -68070,7 +68079,6 @@ function JSChartResource()
         {
             var header=item.Header;
             if (header.Color) this.Report.Header.Color=header.Color;
-            if (header.SortColor) this.Report.Header.SortColor=header.SortColor;
             if (header.Mergin)
             {
                 var mergin=header.Mergin;

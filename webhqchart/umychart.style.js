@@ -526,7 +526,7 @@ function GetBlackStyle()
             {
                 Color:"RGB(245,245,245)",
                 SortColor:"rgb(255,0,0)",
-                Mergin:{ Left:5, Right:5, Top:4, Bottom:2 },
+                //Mergin:{ Left:5, Right:5, Top:4, Bottom:2 },
                 Font:{ Size:12, Name:"微软雅黑" }
             },
     

@@ -1791,7 +1791,7 @@ function JSReportChartContainer(uielement)
                 var tooltipData=report.GetTooltipData(x,y);  //单元格提示信息
                 if (tooltipData)
                 {
-                    this.LastMouseStatus.TooltipStatus={ X:x, Y:y, Data:tooltipData };
+                    this.LastMouseStatus.TooltipStatus={ X:e.clientX, Y:e.clientY, Data:tooltipData };
                     bDrawTooltip=true;
                 }
             }
@@ -3659,7 +3659,7 @@ function ChartReport()
     //表头配置
     this.HeaderFontConfig={ Size:g_JSChartResource.Report.Header.Font.Size, Name:g_JSChartResource.Report.Header.Font.Name };
     this.HeaderColor=g_JSChartResource.Report.Header.Color;
-    this.SortColor=g_JSChartResource.Report.Header.SortColor;      //排序箭头颜色
+    
     this.HeaderMergin=
     { 
         Left:g_JSChartResource.Report.Header.Mergin.Left, 
@@ -3667,6 +3667,20 @@ function ChartReport()
         Top:g_JSChartResource.Report.Header.Mergin.Top, 
         Bottom:g_JSChartResource.Report.Header.Mergin.Bottom
     };
+
+    //排序图标
+    this.SortConfig=
+    {
+        Size:g_JSChartResource.Report.SortIcon.Size, 
+        Family:g_JSChartResource.Report.SortIcon.Family,
+        Arrow:g_JSChartResource.Report.SortIcon.Arrow.slice(),
+        Color:g_JSChartResource.Report.SortIcon.Color.slice(),
+        Margin:
+        { 
+            Left:g_JSChartResource.Report.SortIcon.Margin.Left, 
+            Bottom:g_JSChartResource.Report.SortIcon.Margin.Bottom
+        }
+    }
 
     //表格内容配置
     this.ItemFontConfig={ Size:g_JSChartResource.Report.Item.Font.Size, Name:g_JSChartResource.Report.Item.Font.Name };
@@ -3730,6 +3744,7 @@ function ChartReport()
 
     //缓存
     this.HeaderFont=12*GetDevicePixelRatio() +"px 微软雅黑";
+    this.SortFont=null,
     this.ItemFont=15*GetDevicePixelRatio() +"px 微软雅黑";
     this.ItemFixedFont=15*GetDevicePixelRatio() +"px 微软雅黑";
     this.ItemSymbolFont=12*GetDevicePixelRatio() +"px 微软雅黑";
@@ -3773,7 +3788,7 @@ function ChartReport()
         //表头配置
         this.HeaderFontConfig={ Size:g_JSChartResource.Report.Header.Font.Size, Name:g_JSChartResource.Report.Header.Font.Name };
         this.HeaderColor=g_JSChartResource.Report.Header.Color;
-        this.SortColor=g_JSChartResource.Report.Header.SortColor;      //排序箭头颜色
+        
         this.HeaderMergin=
         { 
             Left:g_JSChartResource.Report.Header.Mergin.Left, 
@@ -3806,6 +3821,20 @@ function ChartReport()
             Left:g_JSChartResource.Report.LimitBorder.Mergin.Left, 
             Right:g_JSChartResource.Report.LimitBorder.Mergin.Right,
             Bottom:g_JSChartResource.Report.LimitBorder.Mergin.Bottom
+        }
+
+        //排序图标
+        this.SortConfig=
+        {
+            Size:g_JSChartResource.Report.SortIcon.Size, 
+            Family:g_JSChartResource.Report.SortIcon.Family,
+            Arrow:g_JSChartResource.Report.SortIcon.Arrow.slice(),
+            Color:g_JSChartResource.Report.SortIcon.Color.slice(),
+            Margin:
+            { 
+                Left:g_JSChartResource.Report.SortIcon.Margin.Left, 
+                Bottom:g_JSChartResource.Report.SortIcon.Margin.Bottom
+            }
         }
 
         for(var i=0;i<this.Column.length;++i)
@@ -4134,6 +4163,7 @@ function ChartReport()
 
         this.RowHeight=this.GetFontHeight(this.ItemFont,"擎")+ this.ItemMergin.Top+ this.ItemMergin.Bottom;
         this.FixedRowHeight=this.GetFontHeight(this.ItemFixedFont,"擎")+ this.ItemMergin.Top+ this.ItemMergin.Bottom;
+        this.SortFont=`${this.SortConfig.Size*pixelRatio}px ${ this.SortConfig.Family}`;
 
         this.Canvas.font=this.ItemFont;
         var itemWidth=0;
@@ -4186,8 +4216,8 @@ function ChartReport()
             var item=this.Column[i];
             if (!item.Title || item.Title.length<=0) continue;
             var text=item.Title;
-            if (item.Sort>0) text+="↓"; 
             itemWidth=this.Canvas.measureText(text).width;
+            if (item.Sort>0) itemWidth+this.SortConfig.Size*pixelRatio;
             itemWidth+=(4+this.HeaderMergin.Left+this.HeaderMergin.Right);
             if (item.Width<itemWidth) item.Width=itemWidth;
         }
@@ -4195,7 +4225,6 @@ function ChartReport()
         this.HeaderHeight=this.GetFontHeight(this.HeaderFont,"擎")+ this.HeaderMergin.Top+ this.HeaderMergin.Bottom;
         if (!this.IsShowHeader) this.HeaderHeight=0;
         if (this.FixedRowCount<=0) this.FixedRowHeight=0;
-
         
         this.RowCount=parseInt((this.RectClient.Bottom-this.RectClient.Top-this.HeaderHeight-(this.FixedRowHeight*this.FixedRowCount))/this.RowHeight);
 
@@ -4217,6 +4246,7 @@ function ChartReport()
         var left=this.RectClient.Left;
         var top=this.RectClient.Top;
         var y=top+this.HeaderMergin.Top+(this.HeaderHeight-this.HeaderMergin.Top-this.HeaderMergin.Bottom)/2;
+        var yBottom=top+this.HeaderHeight;
 
         this.Canvas.font=this.HeaderFont;
         
@@ -4256,16 +4286,16 @@ function ChartReport()
             var textSize={ }
             if (this.SortInfo && this.SortInfo.Field==i && this.SortInfo.Sort>0)
             {
-                this.DrawSortHeader(item.Title,item.TextAlign,x,y,textWidth,this.SortInfo.Sort, textSize);
+                this.DrawSortHeader(item.Title,item.TextAlign,x,yBottom,textWidth,this.SortInfo.Sort, textSize);
             }
             else
             {
-                this.DrawText(item.Title,item.TextAlign,x,y,textWidth,textSize);
+                this.DrawText(item.Title,item.TextAlign,x,yBottom,textWidth,textSize);
             }
 
             if (iconWidth>0)
             {
-                this.DrawHeaderIcon(item.Icon, textSize.Right, y, i, item);
+                this.DrawHeaderIcon(item.Icon, textSize.Right, yBottom, i, item);
                 this.Canvas.font=this.HeaderFont;
             }
 
@@ -4309,16 +4339,16 @@ function ChartReport()
             var textSize={ }
             if (this.SortInfo && this.SortInfo.Field==i && this.SortInfo.Sort>0)
             {
-                this.DrawSortHeader(item.Title,item.TextAlign,x,y,textWidth,this.SortInfo.Sort,textSize);
+                this.DrawSortHeader(item.Title,item.TextAlign,x,yBottom,textWidth,this.SortInfo.Sort,textSize);
             }
             else
             {
-                this.DrawText(item.Title,item.TextAlign,x,y,textWidth,textSize);
+                this.DrawText(item.Title,item.TextAlign,x,yBottom,textWidth,textSize);
             }
 
             if (iconWidth>0)
             {
-                this.DrawHeaderIcon(item.Icon, textSize.Right, y, i, item);
+                this.DrawHeaderIcon(item.Icon, textSize.Right, yBottom, i, item);
                 this.Canvas.font=this.HeaderFont;
             }
 
@@ -4326,7 +4356,7 @@ function ChartReport()
         } 
     }
 
-    this.DrawText=function(text, textAlign, x, y, cellWidth, textSize)
+    this.DrawText=function(text, textAlign, x, yBottom, cellWidth, textSize)
     {
         var textWidth=this.Canvas.measureText(text).width;
         if (textAlign=='center')
@@ -4339,8 +4369,8 @@ function ChartReport()
         }
 
         this.Canvas.textAlign="left";
-        this.Canvas.textBaseline="middle";
-        this.Canvas.fillText(text,x,y);
+        this.Canvas.textBaseline="bottom";
+        this.Canvas.fillText(text,x,yBottom-this.HeaderMergin.Bottom);
 
         if (textSize) 
         {
@@ -4349,7 +4379,7 @@ function ChartReport()
         }
     }
 
-    this.DrawHeaderIcon=function(icon, x, y, index, column)
+    this.DrawHeaderIcon=function(icon, x, yBottom, index, column)
     {
         var iconFont=`${icon.Size}px ${icon.Family}`;
         this.Canvas.font=iconFont;
@@ -4357,29 +4387,29 @@ function ChartReport()
         if (icon.Color) this.Canvas.fillStyle=icon.Color;
 
         var xIcon=x;
-        var yIcon=y;
+        var yIcon=yBottom;
         if (icon.Margin && IFrameSplitOperator.IsNumber(icon.Margin.Left)) xIcon+=icon.Margin.Left;
         if (icon.Margin && IFrameSplitOperator.IsNumber(icon.Margin.Bottom)) yIcon-=icon.Margin.Bottom;
         this.Canvas.fillText(icon.Symbol, xIcon, yIcon);
 
         if (icon.Tooltip)
         {
-            var rtIcon={ Left:xIcon, Top:yIcon-icon.Size/2, Width:icon.Size, Height:icon.Size };
+            var rtIcon={ Left:xIcon, Bottom:yIcon, Width:icon.Size, Height:icon.Size };
             rtIcon.Right=rtIcon.Left+rtIcon.Width;
-            rtIcon.Bottom=rtIcon.Top+rtIcon.Height;
+            rtIcon.Top=rtIcon.Bottom-rtIcon.Height;
 
             var tooltipData={ Rect:rtIcon, Type:2, Column:column, Index:index, Data:icon.Tooltip.Data };
             this.TooltipRect.push(tooltipData);
         }
     }
 
-    this.DrawSortHeader=function(text, textAlign, x, y, width, sortType,textSize)
+    this.DrawSortHeader=function(text, textAlign, x, yBottom, width, sortType,textSize)
     {
-        var sortText=sortType==1?"↓":"↑";
-        var sortTextWidth=this.Canvas.measureText(sortText).width;
-        var textWidth=this.Canvas.measureText(text).width+2;
-        this.Canvas.textBaseline="middle";
-        this.Canvas.textAlign="left";
+        var pixelRatio=GetDevicePixelRatio();
+        var sortText=this.SortConfig.Arrow[sortType];
+        this.Canvas.font=this.HeaderFont;
+        var textWidth=this.Canvas.measureText(text).width;
+        var sortTextWidth=this.SortConfig.Size*pixelRatio+this.SortConfig.Margin.Left;
 
         if (textAlign=='center')
         {
@@ -4390,9 +4420,20 @@ function ChartReport()
             x=(x+width)-sortTextWidth-textWidth;
         }
 
-        this.Canvas.fillText(text,x,y);
-        this.Canvas.fillStyle=this.SortColor;
-        this.Canvas.fillText(sortText,x+textWidth,y);
+        this.Canvas.textBaseline="bottom";
+        this.Canvas.textAlign="left";
+
+        var xText=x;
+        this.Canvas.font=this.HeaderFont;
+        this.Canvas.fillStyle=this.HeaderColor;
+        this.Canvas.fillText(text,xText,yBottom-this.HeaderMergin.Bottom);
+
+        xText+=(textWidth+this.SortConfig.Margin.Left);
+        this.Canvas.font=this.SortFont;
+        this.Canvas.fillStyle=this.SortConfig.Color[sortType];
+        this.Canvas.fillText(sortText,xText,yBottom-this.SortConfig.Margin.Bottom);
+
+        this.Canvas.font=this.HeaderFont;
         this.Canvas.fillStyle=this.HeaderColor;
 
         if (textSize)
