@@ -124,15 +124,14 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
     this.OnSize=function(option) 
     {
         //画布大小通过div获取 如果有style里的大小 使用style里的
+        var height=this.DivElement.offsetHeight;
+        var width=this.DivElement.offsetWidth;
         if (this.DivElement.style.height && this.DivElement.style.width)
         {
-            var height=parseInt(this.DivElement.style.height.replace("px",""));
-            var width=parseInt(this.DivElement.style.width.replace("px",""));
-        }
-        else
-        {
-            var height=this.DivElement.offsetHeight;
-            var width=this.DivElement.offsetWidth;
+            if (this.DivElement.style.height.includes("px"))
+                height=parseInt(this.DivElement.style.height.replace("px",""));
+            if (this.DivElement.style.width.includes("px"))
+                width=parseInt(this.DivElement.style.width.replace("px",""));
         }
         
         if (this.ToolElement)
@@ -67198,9 +67197,9 @@ function JSChartResource()
             Mergin:{ Left:5, Right:5, Top:4, Bottom:2 },
 
             TabTitleColor:'rgb(60,60,60)',
-            TabSelectedTitleColor:'rgb(0,0,0)',
-            TabSelectedBGColor:"rgb(252,252,252)",
-            TabMoveOnTitleColor:"rgb(0,0,0)",
+            TabSelectedTitleColor:'rgb(255,255,255)',
+            TabSelectedBGColor:"rgb(234,85,4)",
+            TabMoveOnTitleColor:"rgb(234,85,4)",
             TabBGColor:"rgb(220,220,220)"
         },
 

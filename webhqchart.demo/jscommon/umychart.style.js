@@ -592,7 +592,7 @@ function GetBlackStyle()
     
                 TabTitleColor:'rgb(153,153,153)',
                 TabSelectedTitleColor:'rgb(255,255,255)',
-                TabSelectedBGColor:"rgb(13,12,15)",
+                TabSelectedBGColor:"rgb(234,85,4)",
                 TabMoveOnTitleColor:"rgb(255,255,255)",
                 TabBGColor:"rgb(28,28,31)"
             },

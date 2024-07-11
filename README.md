@@ -232,6 +232,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![T型报价](/小程序行情模块用例/image/TReport_demo.gif)  
 * 大数据表格
 ![大数据表格](/小程序行情模块用例/image/report_bigdata_demo.gif)  
+![大宗交易](/小程序行情模块用例/image/report_block_trade_demo.png)   
 
 
 
@@ -298,6 +299,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 
 ## 报价列表
 * [报价列表](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_report.html)  
+* [大宗交易列表](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_report_block_trade.html)  
 
 
 

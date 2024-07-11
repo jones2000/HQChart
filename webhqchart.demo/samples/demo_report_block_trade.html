@@ -1,0 +1,361 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+<title>大宗交易报表</title>  
+    <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
+</head>  
+<body>
+    <div>
+        <span id='button_1' >键盘操作: PageUP/PageDown 翻页, Up/Down 移动当前选中股票, Left/Right 移动列.</span>
+    </div>
+
+    <div id="report" style="width:100%;height:400px">
+        
+    </div>
+
+    <div class="line-box">
+        <span id='button_1' class="btn-style" onclick="ChangeTestData()">重新加载数据</span>
+    </div>
+
+    <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
+    <script src="../jscommon/umychart.resource/js/webfont.js"></script>
+    <script src="../jscommon/umychart.network.js"></script>
+    <script src="../jscommon/umychart.js"></script>             <!-- K线图形 -->
+    <script src="../jscommon//umychart.report.js"></script>
+    <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+
+    <script src="./localdata/blockTrade_Test.js"></script>
+
+    <script>
+
+        //JSConsole.Chart.Log=() =>{}
+        //JSConsole.Complier.Log=()=>{}
+
+        MARKET_SUFFIX_NAME.GetMarketStatus = function (symbol)  { return 2; }
+
+        //简单的把K线控件封装下
+        function ReportChart(divDeal)
+        {
+            this.DivDeal=divDeal;
+            this.Chart=JSReportChart.Init(divDeal);   //把报价列表绑定到一个Div上
+           
+            //配置信息
+            this.Option= 
+            {
+                Type:'报价列表',   //创建图形类型
+                
+                Symbol:"大宗交易",  //板块代码
+                Name:"大宗交易",
+
+                IsAutoUpdate:false,          //是自动更新数据
+                AutoUpdateFrequency:10000,   //数据更新频率
+
+                Tab:
+                [
+                    { Title:"大宗交易", ID:"大宗交易" },
+                ],
+
+                TabSelected:0,
+                
+                //显示列
+                Column:
+                [
+                    { 
+                        Type:REPORT_COLUMN_ID.INDEX_ID, MaxText:"99999" 
+                    },
+                    { 
+                        Type:REPORT_COLUMN_ID.DATE_ID , Title:"交易日期" ,TextAlign:"center", 
+                        Sort:1,
+                        SortType:[1,2,0]
+                    },
+                    {
+                        Type:REPORT_COLUMN_ID.CUSTOM_STRING_TEXT_ID , Title:"股票代码" ,TextAlign:"center", 
+                        DataIndex:0,
+                        MaxText:"9999999" ,
+                        ID:2,
+                        Sort:1,
+                        SortType:[1,2,0]
+                    },
+                    {
+                        Type:REPORT_COLUMN_ID.CUSTOM_STRING_TEXT_ID , Title:"股票简称" ,TextAlign:"center", 
+                        DataIndex:1,
+                        MaxText:"擎擎擎擎擎" ,
+                        ID:3,
+                        Sort:1,
+                        SortType:[1,2,0]
+                    },
+                    { 
+                        Type:REPORT_COLUMN_ID.CUSTOM_NUMBER_TEXT_ID , Title:"最新价" ,TextAlign:"right", 
+                        DataIndex:2,
+                        MaxText:"99999.88",
+                        ID:3,
+                        Decimal:2, 
+                        EnableDragWidth:true,
+                        Sort:1,
+                        SortType:[1,2,0]
+                    },  
+                    { 
+                        Type:REPORT_COLUMN_ID.CUSTOM_NUMBER_TEXT_ID , Title:"成交价" ,TextAlign:"right", 
+                        DataIndex:3,
+                        MaxText:"99999.88",
+                        ID:3,
+                        Decimal:2, 
+                        EnableDragWidth:true,
+                        Sort:1,
+                        SortType:[1,2,0]
+                    },  
+                    { 
+                        Type:REPORT_COLUMN_ID.CUSTOM_NUMBER_TEXT_ID , Title:"成交量(万)" ,TextAlign:"right", 
+                        DataIndex:5,
+                        MaxText:"999999.88",
+                        ID:3,
+                        Decimal:2, 
+                        FormatType:1,
+                        EnableDragWidth:true,
+                        Sort:1,
+                        SortType:[1,2,0]
+                    },  
+                    { 
+                        Type:REPORT_COLUMN_ID.CUSTOM_NUMBER_TEXT_ID , Title:"溢价率(%)" ,TextAlign:"right", 
+                        DataIndex:4,
+                        MaxText:"9999.99" ,
+                        ID:4,
+                        Decimal:2, 
+                        ColorType:1,
+                        FormatType:1,
+                        EnableDragWidth:true,
+                        Icon:
+                        { 
+                            Family:"iconfont", Size:16, Symbol:"\ue698", Color:"rgb(169,169,169)", Margin:{Left:2, Bottom:1 },
+                            Tooltip:{ Data:{ AryText:[ {Title:"折价率:", TitleColor:"rgb(255,0,0)", Space:10, Text:"(成交价-最新价)/最新价*100"} ] } }
+                        },
+                        Sort:1,
+                        SortType:[1,2,0]
+                    }, 
+                    { 
+                        Type:REPORT_COLUMN_ID.CUSTOM_STRING_TEXT_ID , Title:"买方营业部" ,TextAlign:"center", 
+                        DataIndex:6,
+                        MaxText:"擎擎擎擎擎擎擎擎擎擎擎擎擎擎擎擎擎擎擎擎擎擎擎擎" ,
+                        ID:4,
+                        FormatType:1,
+                        EnableDragWidth:true,
+                        Sort:1,
+                        SortType:[1,2,0]
+                    },  
+                    { 
+                        Type:REPORT_COLUMN_ID.CUSTOM_STRING_TEXT_ID , Title:"卖方营业部" ,TextAlign:"center", 
+                        DataIndex:7,
+                        MaxText:"擎擎擎擎擎擎擎擎擎擎擎擎擎擎擎擎擎擎擎擎擎擎擎擎" ,
+                        ID:4,
+                        FormatType:1,
+                        EnableDragWidth:true,
+                        Sort:1,
+                        SortType:[1,2,0]
+                    },                  
+                ],
+                
+                FixedColumn:3,      //固定列
+                SelectedModel:1,
+
+                TextOverflowStyle:1,
+                WheelPageType:0,
+                PageUpDownCycle:false,
+                //EnableDragHeader:true,      //允许拖动表头调整顺序
+                EnableTooltip:true,
+
+                //SortInfo:{ Field:5, Sort: 1 },   //默认排序信息
+
+                //IsShowHeader:false,
+
+                VScrollbar:{ Enable:true },
+                LoadStockList:false,
+
+                EnableResize:true,
+                WheelPageType:1,
+
+                //KeyDown:false,
+                //Wheel:false,
+
+                //BorderLine:0,
+
+                Border: //边框
+                {
+                    Left:5,        //左边间距
+                    Right:5,       //右边间距
+                    Bottom:5,      //底部间距
+                    Top:5          //顶部间距
+                },
+            };
+                 
+            this.Create=function()  //创建图形
+            {
+                $(window).resize(()=> { this.OnSize(); });    //绑定窗口大小变化事件
+
+                this.OnSize();  //全屏
+
+                //黑色风格
+                var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID); //读取黑色风格配置
+                JSReportChart.SetStyle(blackStyle);
+                this.DivDeal.style.backgroundColor=blackStyle.BGColor; //设置最外面的div背景
+        
+                //this.Option.NetworkFilter=(data, callback)=>{ this.NetworkFilter(data, callback); };
+
+                this.Option.EventCallback= 
+                [ 
+                    
+                ];
+
+                this.Chart.SetOption(this.Option);  //设置配置
+
+                this.ChangeTestData();
+            }
+
+            this.OnSize=function()  //自适应大小调整
+            {
+                var height= $(window).height()-100;
+                //var width = $(window).width()*0.3;
+                this.DivDeal.style.top='0px';
+                this.DivDeal.style.left='0px';
+                //this.DivDeal.style.width=width+'px';
+                this.DivDeal.style.height=height+'px';
+            }
+
+            this.OnClickRow=function(event, data, obj)
+            {
+                console.log('[ReportChart::OnClickRow] event, data', event , data);
+            }
+
+            this.OnRClickRow=function(event, data, obj)
+            {
+                console.log('[ReportChart::OnRClickRow] event, data', event , data);
+            }
+
+            this.OnDBClickRow=function(event, data, obj)
+            {
+                console.log('[ReportChart::OnDBClickRow] event, data', event , data);
+            }
+
+            this.OnClickHeader=function(event, data, obj)
+            {
+                console.log('[ReportChart::OnClickHeader] event, data', event , data);
+            }
+
+            this.OnRClickHeader=function(event, data, obj)
+            {
+                console.log('[ReportChart::OnRClickHeader] event, data', event , data);
+            }
+
+            this.ChangeTestData=function()
+            {
+                //this.CreateTestData();
+                //var aryColumn=this.GetColumn(); //列
+                //this.Chart.SetColumn(aryColumn, { Redraw:true });
+
+                var data=this.CreateTestData();
+                this.Chart.JSChartContainer.SetFullData({data:data});
+            }
+
+            this.CreateTestData=function()
+            {
+                var aryData=[];
+                for(var i=0;i<BLOCK_TRADE_TEST_DATA.data.data.length;++i)
+                {
+                    var item=BLOCK_TRADE_TEST_DATA.data.data[i];
+
+
+                    var rowItem=[`${item.id}`];
+                    var extendData=[];
+                    rowItem[30]=extendData;
+                    rowItem[36]=item.tradingDay;
+                    
+                    extendData[0]=this.Chart.JSChartContainer.GetSymbolNoSuffix(item.code);
+                    extendData[1]=item.name;
+                    extendData[2]=item.closePrice;
+                    extendData[3]=item.strikePrice;
+                    extendData[4]=item.priceRate;
+                    extendData[5]=item.turnoverVol/10000;
+                    extendData[6]=item.buyerName;
+                    extendData[7]=item.sellerName;
+                   
+                        
+                    aryData.push(rowItem);
+                }
+                return aryData;
+            }
+        }
+
+        var g_reportCtrl;
+        
+        $(function () 
+        {
+
+            var reportCtrl=new ReportChart(document.getElementById('report'));
+            reportCtrl.Create();
+            g_reportCtrl=reportCtrl;
+        })
+
+       
+        function ChangeTestData()
+        {
+            g_reportCtrl.ChangeTestData()
+        }
+
+        function ChangeStyle(styleName)
+        {
+            if (styleName=="white") 
+            {
+                var resource=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.WHITE_ID);
+                JSChart.SetStyle(resource);
+                g_reportCtrl.DivDeal.style.backgroundColor="rgb(255,255,255)"; //设置最外面的div背景
+                g_reportCtrl.Chart.ReloadResource({Redraw:true});
+            }
+            else if (styleName=="black")
+            {
+                var resource=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID);
+                JSChart.SetStyle(resource);
+                g_reportCtrl.DivDeal.style.backgroundColor=resource.BGColor; //设置最外面的div背景
+                g_reportCtrl.Chart.ReloadResource({Redraw:true});
+            }
+        }
+
+    </script>  
+</body>  
+</html>
+
+
+<style>
+
+.line-box
+{
+    height: 25px;
+}
+
+.btn-style
+{
+    margin:5px,8px;
+    border: 1px solid #ececec;
+    background-color: #A9A9A9;
+    cursor: pointer;
+}
+
+.tab-menu
+{
+    min-width: 100px;
+    /* width: 100px; */
+    background-color: rgb(253,253,253);
+    position: absolute;
+    visibility:hidden;
+}
+
+.tab-menu-item
+{
+    cursor: pointer;
+    display: block;
+}
+    
+        
+</style>
