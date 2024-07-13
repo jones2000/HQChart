@@ -56,6 +56,7 @@ function JSPopMenu()
         
         
         var rootData={ Root:root, TBody:tbody, Table:table };
+        root.JSMenuData=rootData;
         for(var i=0;i<data.Menu.length;++i)
         {
             var item=data.Menu[i];
@@ -158,6 +159,7 @@ function JSPopMenu()
             subTable.appendChild(subTbody);
        
             var subRootData={ Root:subRoot, TBody:subTbody, Table:subTable };
+            subRoot.JSMenuData=subRootData;
             var preTrDom=null;
             for(var i=0;i<item.SubMenu.length;++i)
             {
@@ -292,6 +294,17 @@ function JSPopMenu()
         {
             parentItem.PopMenu.style.visibility="hidden";
             if (parentItem.PopRow) parentItem.PopRow.classList.remove(this.SelectedClassName);
+
+            var popMenuData=parentItem.PopMenu.JSMenuData;
+            for(var i=0;i<50;++i)   //隐藏子菜单 最多50层
+            {
+                if (!popMenuData) break;
+                if (!popMenuData.PopMenu) break;
+
+                popMenuData.PopMenu.style.visibility="hidden";
+
+                popMenuData=popMenuData.PopMenu;
+            }
 
             parentItem.PopMenu=null;
             parentItem.PopRow=null;

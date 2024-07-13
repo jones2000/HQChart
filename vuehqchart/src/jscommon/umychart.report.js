@@ -4539,6 +4539,9 @@ function ChartReport()
 
         textTop=top+this.FixedRowHeight*this.FixedRowCount;
         this.Canvas.font=this.ItemFont;
+
+        var eventDrawBG=this.GetEventCallback(JSCHART_EVENT_ID.ON_DRAW_REPORT_ROW_BG);
+        var selectedSymbol=this.GetSelectedSymbol();
         for(var i=this.Data.YOffset, j=0; i<this.Data.Data.length && j<this.RowCount ;++i, ++j)
         {
             var symbol=this.Data.Data[i];
@@ -4578,6 +4581,18 @@ function ChartReport()
                 bFillRow=false;
             }
 
+            if (eventDrawBG && eventDrawBG.Callback)
+            {
+                //Out:{ BGColor: } 
+                var sendData={ RowIndex:i, Symbol:symbol, Out:null, Selected:selectedSymbol };
+                eventDrawBG.Callback(eventDrawBG,sendData,this);
+                if (sendData.Out && sendData.Out.BGColor)
+                {
+                    this.Canvas.fillStyle=sendData.Out.BGColor;
+                    this.Canvas.fillRect(left,textTop,rowWidth,this.RowHeight);   
+                }
+            }
+
             if (bFillRow)
             {
                 this.Canvas.fillStyle=this.SelectedColor;
@@ -4590,6 +4605,18 @@ function ChartReport()
 
             textTop+=this.RowHeight;
         }
+    }
+
+    this.GetSelectedSymbol=function()
+    {
+        if (this.SelectedRow<0) return null;
+
+        var index=this.SelectedRow;
+        if (this.SelectedModel==0)  //当前屏选中
+            index=this.Data.YOffset+this.SelectedRow;
+
+        var symbol=this.Data.Data[index];
+        return symbol;
     }
 
 

@@ -2598,6 +2598,8 @@ var JSCHART_EVENT_ID=
     ON_TREPORT_LOCAL_SORT:126,                //T型报价列表本地排序
     ON_CLICK_TREPORT_ROW:127,                 //左键点击点击T型报价列表
 
+    ON_DRAW_REPORT_ROW_BG:140,              //报价列表整行背景
+
 
     ON_CHANGE_INDEX:150,        //切换指标
     ON_MENU_COMMAND:151,        //菜单事件回调

@@ -48690,52 +48690,68 @@ HQData.NetworkFilter=function(data, callback)
 
     switch(data.Name) 
     {
+        //HQChart使用教程29-走势图如何对接第3方数据1
         case 'MinuteChartContainer::RequestMinuteData':                 //分时图数据对接
+            //HQChart使用教程29-走势图如何对接第3方数据2-最新分时数据
             HQData.RequestMinuteData(data, callback);
             break;
+        
         case "MinuteChartContainer::RequestHistoryMinuteData":          //多日分时图
+            //HQChart使用教程29-走势图如何对接第3方数据3-多日分时数据
             HQData.RequestMinuteDaysData(data, callback);
             break;
 
+        //HQChart使用教程30-K线图如何对接第3方数据1
         case 'KLineChartContainer::RequestHistoryData':                 //日线全量数据下载
+            //HQChart使用教程30-K线图如何对接第3方数据2-日K数据
             HQData.RequestHistoryData(data,callback);
             break;
         case 'KLineChartContainer::RequestRealtimeData':                //日线实时数据更新
+            //HQChart使用教程30-K线图如何对接第3方数据14-轮询增量更新日K数据
             HQData.RequestRealtimeData(data,callback);
             break;
         case 'KLineChartContainer::RequestFlowCapitalData':             //流通股本
+            //HQChart使用教程30-K线图如何对接第3方数据4-流通股本数据
             HQData.RequestFlowCapitalData(data,callback);
             break;
 
         case 'KLineChartContainer::ReqeustHistoryMinuteData':           //分钟全量数据下载
+            //HQChart使用教程30-K线图如何对接第3方数据3-1分钟K数据
             HQData.RequestHistoryMinuteData(data, callback);
             break;
         case 'KLineChartContainer::RequestMinuteRealtimeData':          //分钟增量数据更新
+            //HQChart使用教程30-K线图如何对接第3方数据15-轮询增量更新1分钟K线数据
             HQData.RequestMinuteRealtimeData(data,callback);
             break;
 
         case "JSSymbolData::GetVariantData":                            //额外的变量数据
+            //HQChart使用教程30-K线图如何对接第3方数据29-板块字符串函数数据[GNBLOCK,GNBLOCKNUM......]
             HQData.RequestIndexVariantData(data,callback);
             break;
 
         case "JSSymbolData::GetOtherSymbolData":
+            //HQChart使用教程30-K线图如何对接第3方数据31-获取指定品种的K线数据
             HQData.RequestOtherSymbolData(data, callback);
             break;
 
         case "AnnouncementInfo::RequestData":
+            //HQChart使用教程30-K线图如何对接第3方数据20-信息地雷公告数据
             HQData.AnnouncementInfo_RequestData(data,callback);
             break;
 
         case "JSSymbolData::GetLatestData":
+            //HQChart使用教程30-K线图如何对接第3方数据30-即时行情数据DYNAINFO
             HQData.RequestLatestData(data,callback);
             break;
 
 
         case "KLineChartContainer::RequestOverlayHistoryData":      //叠加股票
+            //HQChart使用教程30-K线图如何对接第3方数据16-日K叠加股票
             HQData.RequestOverlayHistoryData(data, callback);
             break;
 
         case "KLineChartContainer::RequestOverlayHistoryMinuteData":
+            //HQChart使用教程30-K线图如何对接第3方数据17- 分钟K叠加股票
             HQData.RequestOverlayHistoryMinuteData(data, callback);
             break;
 
@@ -48764,16 +48780,20 @@ HQData.NetworkFilter=function(data, callback)
         //////////////////////////////////////////////////////
         //报价列表数据
         case "JSReportChartContainer::RequestStockListData":
+            //HQChart使用教程95-报价列表对接第3方数据1-码表数据
             HQData.Report_RequestStockListData(data, callback);          //码表
             break;
 
         case "JSReportChartContainer::RequestMemberListData":           //板块成分
+            //HQChart使用教程95-报价列表对接第3方数据2-板块成分数据
             HQData.Report_RequestMemberListDat(data, callback);
             break;
         case "JSDealChartContainer::RequestStockData":                  //股票数据更新
+            //HQChart使用教程95-报价列表对接第3方数据3-股票数据
             HQData.Report_RequestStockData(data, callback);
             break;
         case "JSDealChartContainer::RequestStockSortData":              //股票排序数据
+            //HQChart使用教程95-报价列表对接第3方数据4-股票排序数据
             HQData.Report_RequestStockSortData(data, callback);
             break;
     }
