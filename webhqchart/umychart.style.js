@@ -622,6 +622,13 @@ function GetBlackStyle()
                 BarColor:"rgba(48,48,48,0.9)",
                 BorderColor:'rgba(48,48,48,0.9)',
                 BGColor:"rgba(211,211,211,0.5)",
+            },
+
+            CheckBox:
+            {
+                Family:"iconfont", Size:15,
+                Checked:{ Color:"rgb(237,60,31)", Symbol:"\ue6b3", DisableColor:"rgb(112,128,144)" },
+                Unchecked:{ Color:"rgb(237,60,31)", Symbol:"\ue6b4", DisableColor:"rgb(112,128,144)" },
             }
         },
 

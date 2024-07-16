@@ -182,6 +182,7 @@ function JSReportChart(divElement)
         if (IFrameSplitOperator.IsBool(option.EnableDragHeader)) chart.EnableDragHeader=option.EnableDragHeader;
         if (IFrameSplitOperator.IsNumber(option.WheelPageType)) chart.WheelPageType=option.WheelPageType;
         if (IFrameSplitOperator.IsBool(option.PageUpDownCycle)) chart.PageUpDownCycle=option.PageUpDownCycle;
+       
         
         if (option.VScrollbar) chart.SetVScrollbar(option.VScrollbar);
         if (option.SortInfo)
@@ -195,6 +196,7 @@ function JSReportChart(divElement)
         if (reportChart)
         {
             if (IFrameSplitOperator.IsNumber(option.TextOverflowStyle)) reportChart.TextOverflowStyle=option.TextOverflowStyle;
+            if (IFrameSplitOperator.IsNumber(option.MultiSelectModel)) reportChart.MultiSelectModel=option.MultiSelectModel;
         }
 
         this.SetChartBorder(chart, option);
@@ -758,6 +760,7 @@ function JSReportChartContainer(uielement)
         {
             chart.SelectedRow=-1;
             chart.SelectedFixedRow=-1;
+            chart.MultiSelectedRow=[];
         } 
     }
 
@@ -1361,6 +1364,8 @@ function JSReportChartContainer(uielement)
 
         if (IFrameSplitOperator.IsNumber(item[35])) stock.Time=item[35];    //时间 hhmm / hhmmss / hhmmss.fff
         if (IFrameSplitOperator.IsNumber(item[36])) stock.Date=item[36];    //日期
+
+        if (IFrameSplitOperator.IsBool(item[37])) stock.Checked=item[37];
     }
 
 
@@ -1788,6 +1793,12 @@ function JSReportChartContainer(uielement)
             }
             else
             {
+                var bottonData=report.GetButtonData(x,y)
+                if (bottonData)
+                {
+                    mouseStatus={ Cursor:"pointer", Name:"Botton"};
+                }
+
                 var tooltipData=report.GetTooltipData(x,y);  //单元格提示信息
                 if (tooltipData)
                 {
@@ -2592,6 +2603,100 @@ function JSReportChartContainer(uielement)
         if (!IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return null;
 
         var result={ Redraw:false, Update:false };  //Redraw=重绘, Update=更新数据
+
+        if (chart.MultiSelectModel==1)
+        {
+            var pageStatus=chart.GetCurrentPageStatus();
+            if (IFrameSplitOperator.IsNonEmptyArray(pageStatus.MultiSelectedRow))
+            {
+                var selected=pageStatus.MultiSelectedRow[0];
+                if (step>0)
+                {
+                    if (selected==this.Data.Data.length-1) return result;
+
+                    if (selected<0 || selected<pageStatus.Start || selected>pageStatus.End)
+                    {
+                        chart.MultiSelectedRow=[pageStatus.Start];
+                        result.Redraw=true;
+                        return result;
+                    }
+
+                    var offset=this.Data.YOffset;
+                    for(var i=0;i<step;++i)
+                    {
+                        ++selected;
+                        if (selected>pageStatus.End) ++offset;
+
+                        if (selected>=this.Data.Data.length)
+                        {
+                            selected=0;
+                            offset=0;
+                        }
+                    }
+
+                    result.Redraw=true;
+                    result.Update=(offset!=this.Data.YOffset);
+
+                    chart.MultiSelectedRow=[selected];
+                    this.Data.YOffset=offset;
+
+                    return result;
+        
+                }
+                else if (step<0)
+                {
+                    if (selected==0) return result;
+
+                    if (selected<0 || selected<pageStatus.Start || selected>pageStatus.End)
+                    {
+                        chart.MultiSelectedRow=[pageStatus.End];
+                        result.Redraw=true;
+                        return result;
+                    }
+    
+                    step=Math.abs(step);
+                    var offset=this.Data.YOffset;
+                    for(var i=0;i<step;++i)
+                    {
+                        --selected;
+                        if (selected<pageStatus.Start) --offset;
+    
+                        if (selected<0)
+                        {
+                            selected=this.Data.Data.length-1;
+                            offset=this.Data.Data.length-pageSize;
+                            if (offset<0) offset=0;
+                        }
+                    }
+    
+                    result.Redraw=true;
+                    result.Update=(offset!=this.Data.YOffset);
+    
+                    chart.MultiSelectedRow=[selected];
+                    this.Data.YOffset=offset;
+    
+                    return result;
+                }
+                else
+                {
+                    return null;
+                }
+
+                return result;
+            }
+            else
+            {
+                var selected=-1;
+                if (step>0) selected=pageStatus.Start;
+                else if (step<0) selected=pageStatus.End;
+                else return null;
+
+                chart.MultiSelectedRow=[selected];
+                result.Redraw=true;
+            }
+
+            return result;
+        }
 
         
         if (chart.SelectedModel==0)     //不可翻页模式, 只能在当前页移动
@@ -3565,6 +3670,13 @@ var REPORT_COLUMN_ID=
 
     TIME_ID:31,             //时间 hhmmss / hhmm / hhmmss.fff
     DATE_ID:32,             //日期
+
+    CHECKBOX_ID:33,         //单选框
+    CHECKBOX2_ID:34,
+    CHECKBOX3_ID:35,
+    CHECKBOX4_ID:36,
+    CHECKBOX5_ID:37,
+    CHECKBOX6_ID:38,
     
 
     SYMBOL_NAME_ID:99,
@@ -3638,6 +3750,10 @@ function ChartReport()
     this.SelectedRow=-1;                //选中行ID
     this.SelectedFixedRow=-1;           //选中固定行ID
     this.IsDrawBorder=1;                //是否绘制单元格边框
+
+    //多选模式
+    this.MultiSelectModel=0;            //0=禁用 1=开启     
+    this.MultiSelectedRow=[];           //选中行
 
     this.ShowSymbol=[];                 //显示的股票列表 { Index:序号(排序用), Symbol:股票代码 }
     this.DragRow;                       //拖拽行
@@ -3738,6 +3854,8 @@ function ChartReport()
         DistanceWidth:g_JSChartResource.Report.KLine.DistanceWidth
     }
 
+    this.CheckBoxConfig=CloneData(g_JSChartResource.Report.CheckBox);
+
     //股票代码+股票名称
     this.ItemSymbolFontConfig={Size:g_JSChartResource.Report.Item.SymbolFont.Size, Name:g_JSChartResource.Report.Item.SymbolFont.Name};
     this.ItemNameFontConfg={Size:g_JSChartResource.Report.Item.NameFont.Size, Name:g_JSChartResource.Report.Item.NameFont.Name};
@@ -3756,6 +3874,7 @@ function ChartReport()
     this.RowHeight=0;           //行高度
     this.BottomToolbarHeight=0;  //底部工具条高度
     this.IsShowAllColumn=false;   //是否已显示所有列
+    this.DevicePixelRatio=GetDevicePixelRatio();  //分辨率
 
     //{ 
     //  Type:列id, Title:标题, TextAlign:文字对齐方式, MaxText:文字最大宽度 , TextColor:文字颜色, Sort:0=不支持排序 1=本地排序 0=远程排序, 
@@ -3776,8 +3895,13 @@ function ChartReport()
     // { Text, Color, Title:, TitleColor, Space, Margin:{ Left, Top, Right, Bottom }}
     this.TooltipRect=[];
 
+    //{ Rect:rtItem, Type: 0=checkedbox, 1=button, 2=link , Stock, Index:index, Column:column }
+    this.ButtonRect=[]; 
+
     this.ReloadResource=function(resource)
     {
+        this.DevicePixelRatio=GetDevicePixelRatio()
+
         this.UpColor=g_JSChartResource.Report.UpTextColor;
         this.DownColor=g_JSChartResource.Report.DownTextColor;
         this.UnchagneColor=g_JSChartResource.Report.UnchagneTextColor; 
@@ -4041,6 +4165,8 @@ function ChartReport()
             { Type:REPORT_COLUMN_ID.TIME_ID, Title:"时间", TextAlign:"left", ValueType:0, TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"99:99:99.999" },
             { Type:REPORT_COLUMN_ID.DATE_ID, Title:"日期", TextAlign:"left", FormatType:0, TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"9999-99-99" },
 
+            { Type:REPORT_COLUMN_ID.CHECKBOX_ID, Title:"", TextAlign:"center", FixedWidth:20*GetDevicePixelRatio() }
+
             
         ];
 
@@ -4066,7 +4192,9 @@ function ChartReport()
     {
         this.ShowSymbol=[];
         this.TooltipRect=[];
-       
+        this.ButtonRect=[];
+        this.DevicePixelRatio=GetDevicePixelRatio()
+
         if (this.GlobalOption) this.GlobalOption.FlashBGCount=0;
 
         if (this.SizeChange) this.CalculateSize();
@@ -4118,7 +4246,14 @@ function ChartReport()
 
     this.GetCurrentPageStatus=function()    //{ Start:起始索引, End:结束索引（数据）, PageSize:页面可以显示几条记录, IsEnd:是否是最后一页, IsSinglePage:是否只有一页数据}
     {
-        var result={ Start:this.Data.YOffset, PageSize:this.RowCount, IsEnd:false, SelectedRow:this.SelectedRow, IsSinglePage:false, DataCount:0 };
+        var result={ Start:this.Data.YOffset, PageSize:this.RowCount, IsEnd:false, SelectedRow:this.SelectedRow, IsSinglePage:false, DataCount:0, MultiSelectModel:this.MultiSelectModel };
+        if (this.MultiSelectModel==1)
+        {
+            result.SelectedRow=-1;
+            result.MultiSelectedRow=this.MultiSelectedRow.slice();
+            result.MultiSelectedRow.sort((left, right)=>{ return left>right; });
+        }
+
         if (IFrameSplitOperator.IsNonEmptyArray(this.Data.Data))
         {
             result.End=this.Data.YOffset+this.RowCount-1;
@@ -4542,19 +4677,31 @@ function ChartReport()
 
         var eventDrawBG=this.GetEventCallback(JSCHART_EVENT_ID.ON_DRAW_REPORT_ROW_BG);
         var selectedSymbol=this.GetSelectedSymbol();
+
+        var setSelected;
+        if (this.MultiSelectModel==1) setSelected=new Set(this.MultiSelectedRow);
+
         for(var i=this.Data.YOffset, j=0; i<this.Data.Data.length && j<this.RowCount ;++i, ++j)
         {
             var symbol=this.Data.Data[i];
 
             var bFillRow=false;
-            if (this.SelectedModel==0)
+            if (this.MultiSelectModel==1)
             {
-                if (j==this.SelectedRow) bFillRow=true; //选中行
+                if (setSelected.has(i)) bFillRow=true;
             }
             else
             {
-                if (i==this.SelectedRow) bFillRow=true; //选中行
+                if (this.SelectedModel==0)
+                {
+                    if (j==this.SelectedRow) bFillRow=true; //选中行
+                }
+                else
+                {
+                    if (i==this.SelectedRow) bFillRow=true; //选中行
+                }
             }
+            
 
             if (this.DragRow)
             {
@@ -4584,7 +4731,7 @@ function ChartReport()
             if (eventDrawBG && eventDrawBG.Callback)
             {
                 //Out:{ BGColor: } 
-                var sendData={ RowIndex:i, Symbol:symbol, Out:null, Selected:selectedSymbol };
+                var sendData={ RowIndex:i, Symbol:symbol, Out:null, Selected:selectedSymbol, MultiSelectModel:this.MultiSelectModel };
                 eventDrawBG.Callback(eventDrawBG,sendData,this);
                 if (sendData.Out && sendData.Out.BGColor)
                 {
@@ -4609,14 +4756,32 @@ function ChartReport()
 
     this.GetSelectedSymbol=function()
     {
-        if (this.SelectedRow<0) return null;
+        if (this.MultiSelectModel==1)
+        {
+            if (!IFrameSplitOperator.IsNonEmptyArray(this.MultiSelectedRow)) return null;
 
-        var index=this.SelectedRow;
-        if (this.SelectedModel==0)  //当前屏选中
-            index=this.Data.YOffset+this.SelectedRow;
+            var aryData=[];
+            for(var i=0;i<this.MultiSelectedRow.length;++i)
+            {
+                var item=this.Data.Data[this.MultiSelectedRow[i]];
+                if (!item) continue;
 
-        var symbol=this.Data.Data[index];
-        return symbol;
+                aryData.push(item);
+            }
+
+            return aryData;
+        }
+        else
+        {
+            if (this.SelectedRow<0) return null;
+
+            var index=this.SelectedRow;
+            if (this.SelectedModel==0)  //当前屏选中
+                index=this.Data.YOffset+this.SelectedRow;
+    
+            var symbol=this.Data.Data[index];
+            return [symbol];
+        }
     }
 
 
@@ -4944,6 +5109,18 @@ function ChartReport()
         {
             this.FormaDateDrawInfo(column, stock, drawInfo, data);
         }
+        else if (column.Type==REPORT_COLUMN_ID.CHECKBOX_ID)
+        {
+            rtItem={ Left:left, Top:top,  Width:column.Width, Height:this.RowHeight };
+            rtItem.Right=rtItem.Left+rtItem.Width;
+            rtItem.Bottom=rtItem.Top+rtItem.Height;
+            drawInfo.Rect=rtItem;
+            drawInfo.Checked=false;
+            drawInfo.Font=`${this.CheckBoxConfig.Size*this.DevicePixelRatio}px ${this.CheckBoxConfig.Family}`;
+            if (stock && IFrameSplitOperator.IsBool(stock.Checked))
+                drawInfo.Checked=stock.Checked;
+        }
+        
 
         //拖拽行颜色
         if (rowType==3) 
@@ -4956,6 +5133,10 @@ function ChartReport()
         else if (column.Type==REPORT_COLUMN_ID.CUSTOM_ICON_ID)
         {
             this.DrawIconItem(drawInfo, x, top, textWidth);
+        }
+        else if (column.Type==REPORT_COLUMN_ID.CHECKBOX_ID)
+        {
+            this.DrawCheckbox(drawInfo, left, top, itemWidth);
         }
         else
         {
@@ -4986,6 +5167,12 @@ function ChartReport()
             //Type:1=数据截断
             var tooltipData={ Rect:rtItem, Stock:stock, Index:index, Column:column, RowType:rowType, Type:drawInfo.Tooltip.Type, Data:drawInfo.Tooltip.Data };
             this.TooltipRect.push(tooltipData);
+        }
+
+        if (drawInfo.Botton)
+        {
+            var buttonData={ Stock:stock, Index:index, Column:column, Rect:drawInfo.Botton.Rect, Type:drawInfo.Botton.Type };
+            this.ButtonRect.push(buttonData);
         }
     }
 
@@ -5504,6 +5691,36 @@ function ChartReport()
         this.Canvas.font=this.ItemFont;
     }
 
+    this.DrawCheckbox=function(drawInfo, left, top, width)
+    {
+        var textAlign=drawInfo.TextAlign;
+        var size=this.CheckBoxConfig.Size*this.DevicePixelRatio;
+        //var boxWidth=size+this.CheckBoxConfig.Margin.Left+this.CheckBoxConfig.Margin.Right;
+        var x=left+this.CheckBoxConfig.Margin.Left;
+        var y=top+this.RowHeight-this.CheckBoxConfig.Margin.Bottom;
+        if (textAlign=='center') x=left+width/2-size/2;
+        else if (textAlign=='right') x=left+width-this.CheckBoxConfig.Margin.Right;
+
+        this.Canvas.font=drawInfo.Font;
+        this.Canvas.textBaseline="bottom";
+        this.Canvas.textAlign="left";
+        if (drawInfo.Checked===true)
+        {
+            this.Canvas.fillStyle=this.CheckBoxConfig.Checked.Color;
+            this.Canvas.fillText(this.CheckBoxConfig.Checked.Symbol,x,y);
+        }
+        else if (drawInfo.Checked===false)
+        {
+            this.Canvas.fillStyle=this.CheckBoxConfig.Unchecked.Color;
+            this.Canvas.fillText(this.CheckBoxConfig.Unchecked.Symbol,x,y);
+        }
+
+        var rtBox={ Left:x, Bottom:y, Width:size, Height:size };
+        rtBox.Right=rtBox.Left+rtBox.Width;
+        rtBox.Top=rtBox.Bottom-rtBox.Height;
+        drawInfo.Botton={ Rect:rtBox, Type:0 };
+    }
+
     //字体由外面设置
     this.TextEllipsis=function(text, maxWidth, maxText)
     {
@@ -6016,6 +6233,7 @@ function ChartReport()
 
             this.SelectedFixedRow=row.Index;
             this.SelectedRow=-1;
+            this.MultiSelectedRow=[];
 
             return { Type:4, Redraw:bRedraw, Row:row };  //行
         }
@@ -6023,18 +6241,45 @@ function ChartReport()
         var row=this.PtInBody(x,y);
         if (row)
         {
+            var btnStatus={ Redraw:false };
+            this.OnClickButton(x, y, e, btnStatus);
+
             var bRedraw=true;
-            if (this.SelectedModel==0) 
+            if (this.MultiSelectModel==1)
             {
-                if (this.SelectedRow==row.Index) bRedraw=false;
-                this.SelectedRow=row.Index;
+                if (e && e.ctrlKey) //多选
+                {
+                    var pos=this.MultiSelectedRow.indexOf(row.DataIndex);
+                    if (pos>=0) this.MultiSelectedRow.splice(pos,1);
+                    else this.MultiSelectedRow.push(row.DataIndex);
+                    
+                }
+                else if (e && e.shiftKey)   //批量多选
+                {
+                    this.OnShiftClickRow(row);
+                }
+                else
+                {
+                    if (this.MultiSelectedRow.length==1 && this.MultiSelectedRow[0]==row.DataIndex) bRedraw=false;
+                    else this.MultiSelectedRow=[row.DataIndex];
+                }
+
                 this.SelectedFixedRow=-1;
             }
-            else 
+            else
             {
-                if (this.SelectedRow==row.DataIndex) bRedraw=false;
-                this.SelectedRow=row.DataIndex;
-                this.SelectedFixedRow=-1;
+                if (this.SelectedModel==0) 
+                {
+                    if (this.SelectedRow==row.Index) bRedraw=false;
+                    this.SelectedRow=row.Index;
+                    this.SelectedFixedRow=-1;
+                }
+                else 
+                {
+                    if (this.SelectedRow==row.DataIndex) bRedraw=false;
+                    this.SelectedRow=row.DataIndex;
+                    this.SelectedFixedRow=-1;
+                }
             }
     
             var eventID=JSCHART_EVENT_ID.ON_CLICK_REPORT_ROW;
@@ -6042,7 +6287,7 @@ function ChartReport()
             
             this.SendClickEvent(eventID, { Data:row, X:x, Y:y, e:e, Inside:insidePoint, UIElement:uiElement });
 
-            return { Type:2, Redraw:bRedraw, Row:row };  //行
+            return { Type:2, Redraw:bRedraw || btnStatus.Redraw, Row:row };  //行
         }
 
         var header=this.PtInHeader(x,y);
@@ -6063,6 +6308,62 @@ function ChartReport()
         }
 
         return null;
+    }
+
+    this.OnShiftClickRow=function(row)
+    {
+        if (this.MultiSelectedRow.length<=0)
+        {
+            this.MultiSelectedRow.push(row.DataIndex);
+            return;
+        }
+
+        var max=null, min=null;
+        for(var i=0;i<this.MultiSelectedRow.length;++i)
+        {
+            var value=this.MultiSelectedRow[i];
+            if (max==null || max<value) max=value;
+            if (min==null || min>value) min=value;
+            if (value==row.DataIndex)   //移除
+            {
+                this.MultiSelectedRow.splice(i,1);
+                return;
+            }
+        }
+
+        if (max==min)
+        {
+            var start=row.DataIndex, end=max;
+            if (start>end)
+            {
+                start=max;
+                end=row.DataIndex;
+            }
+
+            this.MultiSelectedRow=[];
+            for(var i=start;i<=end;++i)
+            {
+                this.MultiSelectedRow.push(i);
+            }
+        }
+        else
+        {
+            if (row.DataIndex<=max && row.DataIndex>=min)
+            {
+                this.MultiSelectedRow.push(row.DataIndex);
+            }
+            else
+            {
+                var start=Math.min(row.DataIndex, min);
+                var end=Math.max(row.DataIndex, max);
+                this.MultiSelectedRow=[];
+                for(var i=start;i<=end;++i)
+                {
+                    this.MultiSelectedRow.push(i);
+                }
+            }
+        }
+        
     }
 
     this.OnDrawgRow=function(x, y, e) //Type: 5=顶部  6=空白行 2=行 7=底部
@@ -6099,6 +6400,33 @@ function ChartReport()
         if (j<this.RowCount) return { Type:6 };
 
         return { Type:7 };
+    }
+
+    this.OnClickButton=function(x, y, e, status)
+    {
+        if (e.button!=0) return false;
+
+        var buttonData=this.GetButtonData(x,y);
+        if (!buttonData) return true;
+        
+        if (buttonData.Type===0)
+        {
+            var sendData={ Column:buttonData.Column, Index:buttonData.Index, Stock:buttonData.Stock, PreventDefault: false };
+            this.SendClickEvent(JSCHART_EVENT_ID.ON_CLICK_REPORT_CHECKBOX, sendData)
+
+            if (!sendData.PreventDefault)
+            {
+                if (IFrameSplitOperator.IsBool(buttonData.Stock.Checked))
+                    buttonData.Stock.Checked=!buttonData.Stock.Checked;
+                else 
+                    buttonData.Stock.Checked=true;
+            }
+
+            status.Redraw=true;
+            return true;
+        }
+        
+        return false;
     }
 
     this.OnDblClick=function(x,y,e)
@@ -6336,6 +6664,24 @@ function ChartReport()
         }
 
         return null;
+    }
+
+    this.GetButtonData=function(x,y)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.ButtonRect)) return null;
+
+        for(var i=0;i<this.ButtonRect.length;++i)
+        {
+            var item=this.ButtonRect[i];
+
+            var rt=item.Rect;
+            if (!rt) continue;
+
+            if (x>=rt.Left && x<=rt.Right && y>=rt.Top && y<=rt.Bottom)
+            {
+                return { Rect:item.Rect, Stock:item.Stock, Column:item.Column, Index:item.Index, Type:item.Type };
+            }
+        }
     }
 
     this.PtInHeaderDragBorder=function(x, y)

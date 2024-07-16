@@ -2599,6 +2599,7 @@ var JSCHART_EVENT_ID=
     ON_CLICK_TREPORT_ROW:127,                 //左键点击点击T型报价列表
 
     ON_DRAW_REPORT_ROW_BG:140,              //报价列表整行背景
+    ON_CLICK_REPORT_CHECKBOX:141,           //报价列表checkbox
 
 
     ON_CHANGE_INDEX:150,        //切换指标
@@ -67239,6 +67240,15 @@ function JSChartResource()
             BorderColor:'rgba(180,180,180,0.9)',
             BGColor:"rgba(234,239,248,0.9)",
             BarWidth:{ Size:12 }
+        },
+
+        CheckBox:
+        {
+            Family:"iconfont", Size:15,
+            Checked:{ Color:"rgb(33,148,240)", Symbol:"\ue6b3", DisableColor:"rgb(112,128,144)" },
+            Unchecked:{ Color:"rgb(33,148,240)", Symbol:"\ue6b4", DisableColor:"rgb(112,128,144)" },
+
+            Margin:{ Left:5, Right:5, Bottom:2, Top:4 },
         }
     },
 
@@ -68253,6 +68263,33 @@ function JSChartResource()
             if (subItem.BarColor) dest.VScrollbar.BarColor=subItem.BarColor;
             if (subItem.BorderColor) dest.VScrollbar.BorderColor=subItem.BorderColor;
             if (subItem.BGColor) dest.VScrollbar.BGColor=subItem.BGColor;
+        }
+
+        if (item.CheckBox)
+        {
+            var subItem=item.CheckBox;
+            if (subItem.Family) dest.CheckBox.Family=subItem.Family;
+            if (IFrameSplitOperator.IsNumber(subItem.Size)) dest.CheckBox.Size=subItem.Size;
+
+            if (subItem.Checked)
+            {
+                var child=subItem.Checked;
+                if (child.Color) dest.CheckBox.Checked.Color=child.Color;
+                if (child.Symbol) dest.CheckBox.Checked.Symbol=child.Symbol;
+                if (child.DisableColor) dest.CheckBox.Checked.DisableColor=child.DisableColor;
+            }
+
+            if (subItem.Unchecked)
+            {
+                var child=subItem.Unchecked;
+                if (child.Color) dest.CheckBox.Unchecked.Color=child.Color;
+                if (child.Symbol) dest.CheckBox.Unchecked.Symbol=child.Symbol;
+                if (child.DisableColor) dest.CheckBox.Unchecked.DisableColor=child.DisableColor;
+
+               
+            }
+
+            CopyMarginConfig(dest.CheckBox.Margin, subItem.Margin);
         }
         
     }

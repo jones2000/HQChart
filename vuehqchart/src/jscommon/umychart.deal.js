@@ -1008,6 +1008,10 @@ function ChartDealList()
                 if (!IFrameSplitOperator.IsNumber(item.DataIndex)) continue;
                 colItem.DataIndex=item.DataIndex;   //柱子数据所在原始数据索引列
             }
+            else if (item.Type==DEAL_COLUMN_ID.TIME_ID)
+            {
+                if (IFrameSplitOperator.IsString(item.Foramt)) colItem.Foramt=item.Foramt;  //设置时间格式
+            }
 
             this.Column.push(colItem);
         }
