@@ -3671,13 +3671,7 @@ var REPORT_COLUMN_ID=
     TIME_ID:31,             //时间 hhmmss / hhmm / hhmmss.fff
     DATE_ID:32,             //日期
 
-    CHECKBOX_ID:33,         //单选框
-    CHECKBOX2_ID:34,
-    CHECKBOX3_ID:35,
-    CHECKBOX4_ID:36,
-    CHECKBOX5_ID:37,
-    CHECKBOX6_ID:38,
-    
+    CHECKBOX_ID:33,         //单选框 
 
     SYMBOL_NAME_ID:99,
 
@@ -3685,6 +3679,7 @@ var REPORT_COLUMN_ID=
     CUSTOM_NUMBER_TEXT_ID:101,      //自定义数值型
     CUSTOM_DATETIME_TEXT_ID:102,    //自定义日期类型
     CUSTOM_ICON_ID:103,             //自定义图标
+    CUSTOM_CHECKBOX_ID:104,         //自定义checkbox
 }
 
 var MAP_COLUMN_FIELD=new Map([
@@ -4053,6 +4048,14 @@ function ChartReport()
                 if (IFrameSplitOperator.IsNumber(item.ValueType)) colItem.FormatType=item.ValueType;   //输出样式
                 
             }
+            else if (item.Type==REPORT_COLUMN_ID.CUSTOM_CHECKBOX_ID)
+            {
+                if (!IFrameSplitOperator.IsNumber(item.DataIndex) && !IFrameSplitOperator.IsNumber(item.BlockIndex)) continue;
+                if (IFrameSplitOperator.IsNumber(item.DataIndex)) colItem.DataIndex=item.DataIndex;                  //数据在扩展数据索引列
+                if (IFrameSplitOperator.IsNumber(item.BlockIndex)) colItem.BlockIndex=item.BlockIndex;
+                if (item.CheckBox) colItem.CheckBox=CloneData(item.CheckBox);
+                else colItem.CheckBox=CloneData(g_JSChartResource.Report.CheckBox);
+            }
             else if (item.Type==REPORT_COLUMN_ID.CUSTOM_ICON_ID)
             {
 
@@ -4069,6 +4072,7 @@ function ChartReport()
             {
                 if (IFrameSplitOperator.IsNumber(item.FormatType)) colItem.FormatType=item.FormatType;
             }
+            
 
             this.Column.push(colItem);
         }
@@ -4165,7 +4169,9 @@ function ChartReport()
             { Type:REPORT_COLUMN_ID.TIME_ID, Title:"时间", TextAlign:"left", ValueType:0, TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"99:99:99.999" },
             { Type:REPORT_COLUMN_ID.DATE_ID, Title:"日期", TextAlign:"left", FormatType:0, TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"9999-99-99" },
 
-            { Type:REPORT_COLUMN_ID.CHECKBOX_ID, Title:"", TextAlign:"center", FixedWidth:20*GetDevicePixelRatio() }
+            { Type:REPORT_COLUMN_ID.CHECKBOX_ID, Title:"", TextAlign:"center", FixedWidth:20*GetDevicePixelRatio() },
+
+            { Type:REPORT_COLUMN_ID.CUSTOM_CHECKBOX_ID, Title:"",  TextAlign:"center", FixedWidth:20*GetDevicePixelRatio() },
 
             
         ];
@@ -5116,9 +5122,20 @@ function ChartReport()
             rtItem.Bottom=rtItem.Top+rtItem.Height;
             drawInfo.Rect=rtItem;
             drawInfo.Checked=false;
-            drawInfo.Font=`${this.CheckBoxConfig.Size*this.DevicePixelRatio}px ${this.CheckBoxConfig.Family}`;
+            drawInfo.Enable=true;
+            drawInfo.CheckBox=this.CheckBoxConfig;
+            drawInfo.Data=stock;
             if (stock && IFrameSplitOperator.IsBool(stock.Checked))
                 drawInfo.Checked=stock.Checked;
+        }
+        else if (column.Type==REPORT_COLUMN_ID.CUSTOM_CHECKBOX_ID)
+        {
+            rtItem={ Left:left, Top:top,  Width:column.Width, Height:this.RowHeight };
+            rtItem.Right=rtItem.Left+rtItem.Width;
+            rtItem.Bottom=rtItem.Top+rtItem.Height;
+            drawInfo.Rect=rtItem;
+
+            this.GetCustomCheckBoxDrawInfo(data, column, drawInfo);
         }
         
 
@@ -5134,7 +5151,7 @@ function ChartReport()
         {
             this.DrawIconItem(drawInfo, x, top, textWidth);
         }
-        else if (column.Type==REPORT_COLUMN_ID.CHECKBOX_ID)
+        else if (column.Type==REPORT_COLUMN_ID.CHECKBOX_ID || column.Type==REPORT_COLUMN_ID.CUSTOM_CHECKBOX_ID)
         {
             this.DrawCheckbox(drawInfo, left, top, itemWidth);
         }
@@ -5171,7 +5188,7 @@ function ChartReport()
 
         if (drawInfo.Botton)
         {
-            var buttonData={ Stock:stock, Index:index, Column:column, Rect:drawInfo.Botton.Rect, Type:drawInfo.Botton.Type };
+            var buttonData={ Stock:stock, Index:index, Column:column, Rect:drawInfo.Botton.Rect, Type:drawInfo.Botton.Type, Data:drawInfo.Data };
             this.ButtonRect.push(buttonData);
         }
     }
@@ -5425,6 +5442,19 @@ function ChartReport()
             this.GetCustomIconData(column, data.Symbol, drawInfo, data);
             return;
         }
+    }
+
+    this.GetCustomCheckBoxDrawInfo=function(data, column, drawInfo)
+    {
+        var checkData=this.GetExtendData(data, column);
+        if (!checkData) return;
+        if (!IFrameSplitOperator.IsBool(checkData.Checked)) return;
+
+        drawInfo.Checked=checkData.Checked;
+        drawInfo.Enable=true;
+        drawInfo.Data=checkData;
+        if (IFrameSplitOperator.IsBool(checkData.DisableCheckBox)) drawInfo.Enable=!checkData.DisableCheckBox;
+        drawInfo.CheckBox=column.CheckBox;
     }
 
     this.FormaTimeDrawInfo=function(column, stock, drawInfo, data)
@@ -5693,32 +5723,40 @@ function ChartReport()
 
     this.DrawCheckbox=function(drawInfo, left, top, width)
     {
+        if (!IFrameSplitOperator.IsBool(drawInfo.Checked)) return;
+        if (!drawInfo.CheckBox) return;
+
+        drawInfo.Font=`${drawInfo.CheckBox.Size*this.DevicePixelRatio}px ${drawInfo.CheckBox.Family}`;
         var textAlign=drawInfo.TextAlign;
-        var size=this.CheckBoxConfig.Size*this.DevicePixelRatio;
-        //var boxWidth=size+this.CheckBoxConfig.Margin.Left+this.CheckBoxConfig.Margin.Right;
-        var x=left+this.CheckBoxConfig.Margin.Left;
-        var y=top+this.RowHeight-this.CheckBoxConfig.Margin.Bottom;
+        var size=drawInfo.CheckBox.Size*this.DevicePixelRatio;
+        var x=left+drawInfo.CheckBox.Margin.Left;
+        var y=top+this.RowHeight-drawInfo.CheckBox.Margin.Bottom;
         if (textAlign=='center') x=left+width/2-size/2;
-        else if (textAlign=='right') x=left+width-this.CheckBoxConfig.Margin.Right;
+        else if (textAlign=='right') x=left+width-drawInfo.CheckBox.Margin.Right;
 
         this.Canvas.font=drawInfo.Font;
         this.Canvas.textBaseline="bottom";
         this.Canvas.textAlign="left";
         if (drawInfo.Checked===true)
         {
-            this.Canvas.fillStyle=this.CheckBoxConfig.Checked.Color;
-            this.Canvas.fillText(this.CheckBoxConfig.Checked.Symbol,x,y);
+            if (drawInfo.Enable===false)  this.Canvas.fillStyle=drawInfo.CheckBox.Checked.DisableColor;
+            else this.Canvas.fillStyle=drawInfo.CheckBox.Checked.Color;
+            this.Canvas.fillText(drawInfo.CheckBox.Checked.Symbol,x,y);
         }
         else if (drawInfo.Checked===false)
         {
-            this.Canvas.fillStyle=this.CheckBoxConfig.Unchecked.Color;
-            this.Canvas.fillText(this.CheckBoxConfig.Unchecked.Symbol,x,y);
+            if (drawInfo.Enable===false)  this.Canvas.fillStyle=drawInfo.CheckBox.Unchecked.DisableColor;
+            else this.Canvas.fillStyle=drawInfo.CheckBox.Unchecked.Color;
+            this.Canvas.fillText(drawInfo.CheckBox.Unchecked.Symbol,x,y);
         }
 
-        var rtBox={ Left:x, Bottom:y, Width:size, Height:size };
-        rtBox.Right=rtBox.Left+rtBox.Width;
-        rtBox.Top=rtBox.Bottom-rtBox.Height;
-        drawInfo.Botton={ Rect:rtBox, Type:0 };
+        if (drawInfo.Enable)
+        {
+            var rtBox={ Left:x, Bottom:y, Width:size, Height:size };
+            rtBox.Right=rtBox.Left+rtBox.Width;
+            rtBox.Top=rtBox.Bottom-rtBox.Height;
+            drawInfo.Botton={ Rect:rtBox, Type:0 };
+        }
     }
 
     //字体由外面设置
@@ -6411,15 +6449,15 @@ function ChartReport()
         
         if (buttonData.Type===0)
         {
-            var sendData={ Column:buttonData.Column, Index:buttonData.Index, Stock:buttonData.Stock, PreventDefault: false };
+            var sendData={ Column:buttonData.Column, Index:buttonData.Index, Stock:buttonData.Stock, Data:buttonData.Data, PreventDefault: false };
             this.SendClickEvent(JSCHART_EVENT_ID.ON_CLICK_REPORT_CHECKBOX, sendData)
 
             if (!sendData.PreventDefault)
             {
-                if (IFrameSplitOperator.IsBool(buttonData.Stock.Checked))
-                    buttonData.Stock.Checked=!buttonData.Stock.Checked;
+                if (IFrameSplitOperator.IsBool(buttonData.Data.Checked))
+                    buttonData.Data.Checked=!buttonData.Data.Checked;
                 else 
-                    buttonData.Stock.Checked=true;
+                    buttonData.Data.Checked=true;
             }
 
             status.Redraw=true;
@@ -6679,7 +6717,7 @@ function ChartReport()
 
             if (x>=rt.Left && x<=rt.Right && y>=rt.Top && y<=rt.Bottom)
             {
-                return { Rect:item.Rect, Stock:item.Stock, Column:item.Column, Index:item.Index, Type:item.Type };
+                return { Rect:item.Rect, Stock:item.Stock, Column:item.Column, Index:item.Index, Type:item.Type, Data:item.Data };
             }
         }
     }
