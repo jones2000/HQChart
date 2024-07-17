@@ -9298,6 +9298,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     //右键菜单
     this.PopupMenuByRClick=function(menuData, x, y)
     {
+        if (!this.JSPopMenu) return;
+
         var rtClient=this.UIElement.getBoundingClientRect();
         var rtScroll=GetScrollPosition();
 
@@ -56357,6 +56359,7 @@ IChartDrawPicture.ArrayDrawPricture=
     { Name:"文本", ClassName:'ChartDrawPictureText', Create:function() { return new ChartDrawPictureText(); }},
     { Name:"江恩角度线", ClassName:'ChartDrawPictureGannFan',  Create:function() { return new ChartDrawPictureGannFan(); }},
     { Name:"阻速线", ClassName:'ChartDrawPictureResistanceLine',  Create:function() { return new ChartDrawPictureResistanceLine(); }},
+    { Name:"阻速线2", ClassName:'ChartDrawPictureResistanceLineV2',  Create:function() { return new ChartDrawPictureResistanceLineV2(); }},
     { Name:"黄金分割", ClassName:'ChartDrawPictureGoldenSection',  Create:function() { return new ChartDrawPictureGoldenSection(); }},
     { Name:"百分比线", ClassName:'ChartDrawPicturePercentage',  Create:function() { return new ChartDrawPicturePercentage(); }},
     { Name:"波段线", ClassName:'ChartDrawPictureWaveBand',  Create:function() { return new ChartDrawPictureWaveBand(); }},
@@ -59750,6 +59753,23 @@ function ChartDrawPictureGannFan()
     this.IsPointIn=this.IsPointIn_XYValue_Line;
     this.LinePoint=[];
     this.Font=16*GetDevicePixelRatio() +"px 微软雅黑";
+    this.LineDash=[5,10];
+    this.EnableDottedLine=false;    //辅助线是否使用虚线
+    this.EnableArea=true;           //是否绘制面积图
+
+    this.Super_SetOption=this.SetOption;    //父类函数
+
+    this.SetOption=function(option)
+    {
+        if (this.Super_SetOption) this.Super_SetOption(option);
+        if (option)
+        {
+            if (option.Font) this.Font=option.Font;
+            if (Array.isArray(option.LineDash)) this.LineDash=option.LineDash;
+            if (IFrameSplitOperator.IsBool(option.EnableDottedLine)) this.EnableDottedLine=option.EnableDottedLine;
+            if (IFrameSplitOperator.IsBool(option.EnableArea)) this.EnableArea=option.EnableArea;
+        }
+    }
 
 
     this.Draw=function()
@@ -59767,10 +59787,10 @@ function ChartDrawPictureGannFan()
         var quadrant=this.GetQuadrant(drawPoint[0],drawPoint[1]);
 
         this.SetLineWidth();
-        if (quadrant===1 || quadrant===4)
+        if (quadrant===1 || quadrant===2 || quadrant===3 || quadrant===4)
         {
             this.CalculateLines(drawPoint[0],drawPoint[1],quadrant);
-            this.DrawArea();
+            if (this.EnableArea) this.DrawArea();
 
             for(var i in this.LinePoint)
             {
@@ -59798,7 +59818,7 @@ function ChartDrawPictureGannFan()
     this.GetQuadrant=function(ptStart,ptEnd)
     {
         if (ptStart.X<ptEnd.X && ptStart.Y>ptEnd.Y) return 1;
-        else if (ptStart.X<ptEnd.X && ptStart.Y>ptEnd.Y) return 2;
+        else if (ptStart.X>ptEnd.X && ptStart.Y>ptEnd.Y) return 2;
         else if (ptStart.X < ptEnd.X && ptStart.Y< ptEnd.Y) return 4;
         else return 3;
     }
@@ -59807,7 +59827,7 @@ function ChartDrawPictureGannFan()
     //isDotline 是否是虚线
     this.DrawLine=function(ptStart,ptEnd,isDottedline)
     {
-        if (isDottedline) this.Canvas.setLineDash([5,10]);
+        if (isDottedline) this.Canvas.setLineDash(this.LineDash);
 
         this.Canvas.strokeStyle=this.LineColor;
         this.Canvas.beginPath();
@@ -59869,27 +59889,15 @@ function ChartDrawPictureGannFan()
         var lineHeight=Math.abs(ptStart.Y-ptEnd.Y);
         if (quadrant===1)
         {
-            /*
-            var line={Start:ptLineStart, End:new Point(), IsDottedLine:false};
-            line.End.X=ptStart.X;
-            line.End.Y=top;
-            this.LinePoint.push(line);
-
-            line={Start:ptLineStart, End:new Point(), IsDottedLine:false};
-            line.End.X=right;
-            line.End.Y=ptStart.Y;
-            this.LinePoint.push(line);
-            */
-
             var extendLine=this.CalculateExtendLinePoint(ptStart,ptEnd);
             var line={Start:ptLineStart, End:extendLine.Start, IsDottedLine:false,PtEnd:ptLineEnd, Text:'1:1'};
             this.LinePoint.push(line);
 
-            for(var i in SPLIT_LINE_VALUE)
+            for(var i=0;i<SPLIT_LINE_VALUE.length; ++i)
             {
                 if (lineWidth>5)
                 {
-                    line={Start:ptLineStart, End:null, IsDottedLine:false,PtEnd:new Point(),Text:SPLIT_LINE_X_TITLE[i]};
+                    line={Start:ptLineStart, End:null, IsDottedLine:this.EnableDottedLine,PtEnd:new Point(),Text:SPLIT_LINE_X_TITLE[i]};
                     line.PtEnd.Y=ptEnd.Y;
                     line.PtEnd.X=ptStart.X+lineWidth*SPLIT_LINE_VALUE[i];
                     var extendLine=this.CalculateExtendLinePoint(line.Start,line.PtEnd);
@@ -59898,7 +59906,7 @@ function ChartDrawPictureGannFan()
                 }
                 if (lineHeight>5)
                 {
-                    line={Start:ptLineStart, End:null, IsDottedLine:false,PtEnd:new Point(), Text:SPLIT_LINE_Y_TITLE[i]};
+                    line={Start:ptLineStart, End:null, IsDottedLine:this.EnableDottedLine,PtEnd:new Point(), Text:SPLIT_LINE_Y_TITLE[i]};
                     line.PtEnd.Y=ptStart.Y-lineHeight*SPLIT_LINE_VALUE[i];
                     line.PtEnd.X=ptEnd.X;
                     var extendLine=this.CalculateExtendLinePoint(line.Start,line.PtEnd);
@@ -59908,38 +59916,58 @@ function ChartDrawPictureGannFan()
             }
             
         }
-        else if (quadrant==4)
+        else if (quadrant==2)
         {
-            /*
-            var line={Start:ptLineStart, End:new Point(), IsDottedLine:false};
-            line.End.X=ptStart.X;
-            line.End.Y=bottom;
+            var extendLine=this.CalculateExtendLinePoint(ptStart,ptEnd);
+            var line={Start:ptLineStart, End:extendLine.Start, IsDottedLine:false,PtEnd:ptLineEnd, Text:'1:1'};
             this.LinePoint.push(line);
 
-            line={Start:ptLineStart, End:new Point(), IsDottedLine:false};
-            line.End.X=right;
-            line.End.Y=ptStart.Y;
-            this.LinePoint.push(line);
-            */
+            for(var i=0;i<SPLIT_LINE_VALUE.length; ++i)
+            {
+                
+                if (lineWidth>5)
+                {
+                    line={Start:ptLineStart, End:null, IsDottedLine:this.EnableDottedLine,PtEnd:new Point(),Text:SPLIT_LINE_X_TITLE[i]};
+                    line.PtEnd.Y=ptEnd.Y;
+                    line.PtEnd.X=ptStart.X-lineWidth*SPLIT_LINE_VALUE[i];
+                    var extendLine=this.CalculateExtendLinePoint(line.Start,line.PtEnd);
+                    line.End=extendLine.Start;
+                    this.LinePoint.push(line);
+                }
 
+                
+                if (lineHeight>5)
+                {
+                    line={Start:ptLineStart, End:null, IsDottedLine:this.EnableDottedLine,PtEnd:new Point(), Text:SPLIT_LINE_Y_TITLE[i]};
+                    line.PtEnd.Y=ptStart.Y-lineHeight*SPLIT_LINE_VALUE[i];
+                    line.PtEnd.X=ptEnd.X;
+                    var extendLine=this.CalculateExtendLinePoint(line.Start,line.PtEnd);
+                    line.End=extendLine.Start;
+                    this.LinePoint.push(line);
+                }
+                    
+            }
+        }
+        else if (quadrant==3)
+        {
             var extendLine=this.CalculateExtendLinePoint(ptStart,ptEnd);
             var line={Start:ptLineStart, End:extendLine.End, IsDottedLine:false,PtEnd:ptLineEnd, Text:'1:1'};
             this.LinePoint.push(line);
 
-            for(var i in SPLIT_LINE_VALUE)
+            for(var i=0;i<SPLIT_LINE_VALUE.length; ++i)
             {
                 if (lineWidth>5)
                 {
-                    line={Start:ptLineStart, End:null, IsDottedLine:false,PtEnd:new Point(),Text:SPLIT_LINE_X_TITLE[i]};
+                    line={Start:ptLineStart, End:null, IsDottedLine:this.EnableDottedLine,PtEnd:new Point(),Text:SPLIT_LINE_X_TITLE[i]};
                     line.PtEnd.Y=ptEnd.Y;
-                    line.PtEnd.X=ptStart.X+lineWidth*SPLIT_LINE_VALUE[i];
+                    line.PtEnd.X=ptStart.X-lineWidth*SPLIT_LINE_VALUE[i];
                     var extendLine=this.CalculateExtendLinePoint(line.Start,line.PtEnd);
                     line.End=extendLine.End;
                     this.LinePoint.push(line);
                 }
                 if (lineHeight>5)
                 {
-                    line={Start:ptLineStart, End:null, IsDottedLine:false,PtEnd:new Point(), Text:SPLIT_LINE_Y_TITLE[i]};
+                    line={Start:ptLineStart, End:null, IsDottedLine:this.EnableDottedLine,PtEnd:new Point(), Text:SPLIT_LINE_Y_TITLE[i]};
                     line.PtEnd.Y=ptStart.Y+lineHeight*SPLIT_LINE_VALUE[i];
                     line.PtEnd.X=ptEnd.X;
                     var extendLine=this.CalculateExtendLinePoint(line.Start,line.PtEnd);
@@ -59948,7 +59976,38 @@ function ChartDrawPictureGannFan()
                 }
             }
         }
-        else return false;
+        else if (quadrant==4)
+        {
+            var extendLine=this.CalculateExtendLinePoint(ptStart,ptEnd);
+            var line={Start:ptLineStart, End:extendLine.End, IsDottedLine:false,PtEnd:ptLineEnd, Text:'1:1'};
+            this.LinePoint.push(line);
+
+            for(var i=0;i<SPLIT_LINE_VALUE.length; ++i)
+            {
+                if (lineWidth>5)
+                {
+                    line={Start:ptLineStart, End:null, IsDottedLine:this.EnableDottedLine,PtEnd:new Point(),Text:SPLIT_LINE_X_TITLE[i]};
+                    line.PtEnd.Y=ptEnd.Y;
+                    line.PtEnd.X=ptStart.X+lineWidth*SPLIT_LINE_VALUE[i];
+                    var extendLine=this.CalculateExtendLinePoint(line.Start,line.PtEnd);
+                    line.End=extendLine.End;
+                    this.LinePoint.push(line);
+                }
+                if (lineHeight>5)
+                {
+                    line={Start:ptLineStart, End:null, IsDottedLine:this.EnableDottedLine,PtEnd:new Point(), Text:SPLIT_LINE_Y_TITLE[i]};
+                    line.PtEnd.Y=ptStart.Y+lineHeight*SPLIT_LINE_VALUE[i];
+                    line.PtEnd.X=ptEnd.X;
+                    var extendLine=this.CalculateExtendLinePoint(line.Start,line.PtEnd);
+                    line.End=extendLine.End;
+                    this.LinePoint.push(line);
+                }
+            }
+        }
+        else 
+        {
+            return false;
+        }
 
         return true;
     }
@@ -59987,11 +60046,11 @@ function ChartDrawPictureResistanceLine()
             var line={Start:ptLineStart, End:extendLine.Start, IsDottedLine:false,PtEnd:ptLineEnd, Text:'1:1'};
             this.LinePoint.push(line);
 
-            for(var i in SPLIT_LINE_VALUE)
+            for(var i=0;i<SPLIT_LINE_VALUE.length; ++i)
             {
                 if (lineHeight>5)
                 {
-                    line={Start:ptLineStart, End:null, IsDottedLine:false,PtEnd:new Point(), Text:SPLIT_LINE_Y_TITLE[i]};
+                    line={Start:ptLineStart, End:null, IsDottedLine:this.EnableDottedLine,PtEnd:new Point(), Text:SPLIT_LINE_Y_TITLE[i]};
                     line.PtEnd.Y=ptStart.Y-lineHeight*SPLIT_LINE_VALUE[i];
                     line.PtEnd.X=ptEnd.X;
                     var extendLine=this.CalculateExtendLinePoint(line.Start,line.PtEnd);
@@ -59999,19 +60058,38 @@ function ChartDrawPictureResistanceLine()
                     this.LinePoint.push(line);
                 }
             }
-            
         }
-        else if (quadrant==4)
+        else if (quadrant==2)
+        {
+            var extendLine=this.CalculateExtendLinePoint(ptStart,ptEnd);
+            var line={Start:ptLineStart, End:extendLine.Start, IsDottedLine:false,PtEnd:ptLineEnd, Text:'1:1'};
+            this.LinePoint.push(line);
+
+            for(var i=0;i<SPLIT_LINE_VALUE.length; ++i)
+            {
+                if (lineHeight>5)
+                {
+                    line={Start:ptLineStart, End:null, IsDottedLine:this.EnableDottedLine,PtEnd:new Point(), Text:SPLIT_LINE_Y_TITLE[i]};
+                    line.PtEnd.Y=ptStart.Y-lineHeight*SPLIT_LINE_VALUE[i];
+                    line.PtEnd.X=ptEnd.X;
+                    var extendLine=this.CalculateExtendLinePoint(line.Start,line.PtEnd);
+                    line.End=extendLine.Start;
+                    this.LinePoint.push(line);
+                }
+                    
+            }
+        }
+        else if (quadrant==3)
         {
             var extendLine=this.CalculateExtendLinePoint(ptStart,ptEnd);
             var line={Start:ptLineStart, End:extendLine.End, IsDottedLine:false,PtEnd:ptLineEnd, Text:'1:1'};
             this.LinePoint.push(line);
 
-            for(var i in SPLIT_LINE_VALUE)
+            for(var i=0;i<SPLIT_LINE_VALUE.length; ++i)
             {
                 if (lineHeight>5)
                 {
-                    line={Start:ptLineStart, End:null, IsDottedLine:false,PtEnd:new Point(), Text:SPLIT_LINE_Y_TITLE[i]};
+                    line={Start:ptLineStart, End:null, IsDottedLine:this.EnableDottedLine,PtEnd:new Point(), Text:SPLIT_LINE_Y_TITLE[i]};
                     line.PtEnd.Y=ptStart.Y+lineHeight*SPLIT_LINE_VALUE[i];
                     line.PtEnd.X=ptEnd.X;
                     var extendLine=this.CalculateExtendLinePoint(line.Start,line.PtEnd);
@@ -60020,7 +60098,29 @@ function ChartDrawPictureResistanceLine()
                 }
             }
         }
-        else return false;
+        else if (quadrant==4)
+        {
+            var extendLine=this.CalculateExtendLinePoint(ptStart,ptEnd);
+            var line={Start:ptLineStart, End:extendLine.End, IsDottedLine:false,PtEnd:ptLineEnd, Text:'1:1'};
+            this.LinePoint.push(line);
+
+            for(var i=0;i<SPLIT_LINE_VALUE.length; ++i)
+            {
+                if (lineHeight>5)
+                {
+                    line={Start:ptLineStart, End:null, IsDottedLine:this.EnableDottedLine,PtEnd:new Point(), Text:SPLIT_LINE_Y_TITLE[i]};
+                    line.PtEnd.Y=ptStart.Y+lineHeight*SPLIT_LINE_VALUE[i];
+                    line.PtEnd.X=ptEnd.X;
+                    var extendLine=this.CalculateExtendLinePoint(line.Start,line.PtEnd);
+                    line.End=extendLine.End;
+                    this.LinePoint.push(line);
+                }
+            }
+        }
+        else 
+        {
+            return false;
+        }
 
         return true;
     }
@@ -60046,6 +60146,22 @@ function ChartDrawPictureResistanceLine()
         this.Canvas.fill();
     }
 }
+
+//阻速线2  （高 3等份）通达信版本
+function ChartDrawPictureResistanceLineV2()
+{
+    this.newMethod=ChartDrawPictureResistanceLine;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartDrawPictureResistanceLineV2';
+    this.EnableDottedLine=true;    //辅助线是否使用虚线
+    this.LineDash=[4,8];
+    this.EnableArea=false;
+}
+
+
+
 
 //黄金分割线
 function ChartDrawPictureGoldenSection()
