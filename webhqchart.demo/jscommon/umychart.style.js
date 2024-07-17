@@ -532,7 +532,7 @@ function GetBlackStyle()
     
             Item:
             {
-                Mergin:{ Top:2, Bottom:0,Left:5, Right:5 },
+                Mergin:{ Top:2, Bottom:4,Left:5, Right:5 },
                 Font:{ Size:15, Name:"微软雅黑"},
                 BarMergin:{ Top:2, Left:3, Right:3, Bottom:2 },
                 NameFont:{ Size:14, Name:"微软雅黑" },

@@ -1597,7 +1597,7 @@ function DynamicChartTitlePainting()
         this.DrawItem(false,true);
     }
 
-    this.GetTitleItem=function(item, isShowLastData)
+    this.GetTitleItem=function(item, isShowLastData, titleIndex)
     {
         if (!item || !item.Data || !item.Data.Data) return null;
         if (item.Data.Data.length <= 0) return null;
@@ -1607,6 +1607,8 @@ function DynamicChartTitlePainting()
         var aryText=null;
 
         var value = null;
+        var dataIndex=-1;
+
         if (item.DataType == "StraightLine")  //直线只有1个数据
         {
             value = item.Data.Data[0];
@@ -1617,9 +1619,10 @@ function DynamicChartTitlePainting()
             var index = this.CursorIndex - 0.5;
             if (index<0) index=0;
             index = parseInt(index.toFixed(0));
-            if (item.Data.DataOffset + index >= item.Data.Data.length) return null;
+            var dataIndex=item.Data.DataOffset+index;
+            if (dataIndex >= item.Data.Data.length) return null;
 
-            value = item.Data.Data[item.Data.DataOffset + index];
+            value = item.Data.Data[dataIndex];
             if (value == null) return null;
 
             if (item.DataType == "HistoryData-Vol") 
@@ -1638,6 +1641,22 @@ function DynamicChartTitlePainting()
             }
             else 
             {
+                if (this.GetEventCallback)
+                {
+                    var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_FORMAT_INDEX_OUT_TEXT);
+                    if (event)
+                    {
+                        var data=
+                        { 
+                            Item:item, Index:titleIndex, Data:this.Data, FrameID:this.Frame.Identify,
+                            DataIndex:dataIndex, Value:value,
+                            Out:null
+                         };
+                        event.Callback(event,data,this);
+                        if (data.Out) return data.Out;
+                    }
+                }
+
                 if (item.GetTextCallback) valueText = item.GetTextCallback(value, item);
                 else valueText = this.FormatValue(value, item);
             }
@@ -1790,7 +1809,7 @@ function DynamicChartTitlePainting()
             for (var i=0; i<this.Data.length && this.IsShowMainIndexTitle; ++i) 
             {
                 var item = this.Data[i];
-                var outText=this.GetTitleItem(item, false);
+                var outText=this.GetTitleItem(item, false, i);
                 if (!outText) continue;
 
                 var valueText=outText.Text;

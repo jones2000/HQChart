@@ -3680,6 +3680,7 @@ var REPORT_COLUMN_ID=
     CUSTOM_DATETIME_TEXT_ID:102,    //自定义日期类型
     CUSTOM_ICON_ID:103,             //自定义图标
     CUSTOM_CHECKBOX_ID:104,         //自定义checkbox
+    CUSTOM_BUTTON_ID:105,           //自定义按钮
 }
 
 var MAP_COLUMN_FIELD=new Map([
@@ -4056,6 +4057,13 @@ function ChartReport()
                 if (item.CheckBox) colItem.CheckBox=CloneData(item.CheckBox);
                 else colItem.CheckBox=CloneData(g_JSChartResource.Report.CheckBox);
             }
+            else if (item.Type==REPORT_COLUMN_ID.CUSTOM_BUTTON_ID)
+            {
+                if (!IFrameSplitOperator.IsNumber(item.DataIndex) && !IFrameSplitOperator.IsNumber(item.BlockIndex)) continue;
+                if (IFrameSplitOperator.IsNumber(item.DataIndex)) colItem.DataIndex=item.DataIndex;                  //数据在扩展数据索引列
+                if (IFrameSplitOperator.IsNumber(item.BlockIndex)) colItem.BlockIndex=item.BlockIndex;
+                if (item.Button) colItem.Button=CloneData(item.Button);
+            }
             else if (item.Type==REPORT_COLUMN_ID.CUSTOM_ICON_ID)
             {
 
@@ -4173,7 +4181,7 @@ function ChartReport()
 
             { Type:REPORT_COLUMN_ID.CUSTOM_CHECKBOX_ID, Title:"",  TextAlign:"center", FixedWidth:20*GetDevicePixelRatio() },
 
-            
+            { Type:REPORT_COLUMN_ID.CUSTOM_BUTTON_ID, Title:"", TextAlign:"center", FixedWidth:50*GetDevicePixelRatio() }
         ];
 
         for(var i=0;i<DEFAULT_COLUMN.length;++i)
@@ -5137,6 +5145,15 @@ function ChartReport()
 
             this.GetCustomCheckBoxDrawInfo(data, column, drawInfo);
         }
+        else if (column.Type==REPORT_COLUMN_ID.CUSTOM_BUTTON_ID)
+        {
+            rtItem={ Left:left, Top:top,  Width:column.Width, Height:this.RowHeight };
+            rtItem.Right=rtItem.Left+rtItem.Width;
+            rtItem.Bottom=rtItem.Top+rtItem.Height;
+            drawInfo.Rect=rtItem;
+            
+            this.GetCustomButtonDrawInfo(data, column, drawInfo);
+        }
         
 
         //拖拽行颜色
@@ -5154,6 +5171,10 @@ function ChartReport()
         else if (column.Type==REPORT_COLUMN_ID.CHECKBOX_ID || column.Type==REPORT_COLUMN_ID.CUSTOM_CHECKBOX_ID)
         {
             this.DrawCheckbox(drawInfo, left, top, itemWidth);
+        }
+        else if (column.Type==REPORT_COLUMN_ID.CUSTOM_BUTTON_ID)
+        {
+            this.DrawButton(drawInfo, left, top, itemWidth);
         }
         else
         {
@@ -5248,9 +5269,9 @@ function ChartReport()
             }
         }
 
-        this.Canvas.textBaseline="middle";
+        this.Canvas.textBaseline="bottom";
         this.Canvas.fillStyle=drawInfo.TextColor;
-        this.Canvas.fillText(text,x,top+this.ItemMergin.Top+this.RowHeight/2);
+        this.Canvas.fillText(text,x,top+this.RowHeight-this.ItemMergin.Bottom);
 
         if (bClip) this.Canvas.restore();
     }
@@ -5457,6 +5478,19 @@ function ChartReport()
         drawInfo.CheckBox=column.CheckBox;
     }
 
+    this.GetCustomButtonDrawInfo=function(data, column, drawInfo)
+    {
+        var buttonData=this.GetExtendData(data, column);
+        if (!buttonData) return;
+
+        drawInfo.Text=buttonData.Title;
+        drawInfo.Button=column.Button;
+        drawInfo.Font=column.Button.Font;
+        drawInfo.Enable=true;
+        drawInfo.Data=buttonData;
+        if (IFrameSplitOperator.IsBool(buttonData.Enable)) drawInfo.Enable=buttonData.Enable;
+    }
+
     this.FormaTimeDrawInfo=function(column, stock, drawInfo, data)
     {
         if (!IFrameSplitOperator.IsNumber(stock.Time)) return;
@@ -5617,9 +5651,9 @@ function ChartReport()
             }
         }
 
-        this.Canvas.textBaseline="middle";
+        this.Canvas.textBaseline="bottom";
         this.Canvas.fillStyle=textColor;
-        this.Canvas.fillText(text,x,top+this.ItemMergin.Top+this.RowHeight/2);
+        this.Canvas.fillText(text,x,top+this.RowHeight-this.ItemMergin.Bottom);
 
         if (bClip) this.Canvas.restore();
     }
@@ -5756,6 +5790,46 @@ function ChartReport()
             rtBox.Right=rtBox.Left+rtBox.Width;
             rtBox.Top=rtBox.Bottom-rtBox.Height;
             drawInfo.Botton={ Rect:rtBox, Type:0 };
+        }
+    }
+
+    this.DrawButton=function(drawInfo, left, top, width)
+    {
+        if (!drawInfo.Button) return;
+
+        var rtBG=
+        { 
+            Left:left+drawInfo.Button.Margin.Left, Top:top+drawInfo.Button.Margin.Top, 
+            Height:this.RowHeight-drawInfo.Button.Margin.Top-drawInfo.Button.Margin.Bottom, 
+            Width:width-drawInfo.Button.Margin.Left-drawInfo.Button.Margin.Right
+        }
+        rtBG.Right=rtBG.Left+rtBG.Width;
+        rtBG.Bottom=rtBG.Top+rtBG.Height;
+
+        var bgColor=drawInfo.Button.BGColor, textColor=drawInfo.Button.TextColor;
+        if (drawInfo.Enable===false)
+        {
+            bgColor=drawInfo.Button.Disable.BGColor;
+            textColor=drawInfo.Button.Disable.TextColor;
+        }
+
+        this.Canvas.fillStyle=bgColor;
+        this.Canvas.fillRect(rtBG.Left, rtBG.Top,rtBG.Width,rtBG.Height);
+
+        this.Canvas.font=drawInfo.Font;
+        this.Canvas.textBaseline="bottom";
+        this.Canvas.textAlign="left";
+        this.Canvas.fillStyle=textColor;
+        var textWidth=this.Canvas.measureText(drawInfo.Text).width;
+
+        var x=rtBG.Left;
+        if (textWidth<rtBG.Width) x+=(rtBG.Width-textWidth)/2;
+        var y=rtBG.Bottom-drawInfo.Button.TextMargin.Bottom;
+        this.Canvas.fillText(drawInfo.Text,x,y);
+
+        if (drawInfo.Enable)
+        {
+            drawInfo.Botton={ Rect:rtBG, Type:1 };
         }
     }
 
@@ -6447,7 +6521,7 @@ function ChartReport()
         var buttonData=this.GetButtonData(x,y);
         if (!buttonData) return true;
         
-        if (buttonData.Type===0)
+        if (buttonData.Type===0)    //checkbox
         {
             var sendData={ Column:buttonData.Column, Index:buttonData.Index, Stock:buttonData.Stock, Data:buttonData.Data, PreventDefault: false };
             this.SendClickEvent(JSCHART_EVENT_ID.ON_CLICK_REPORT_CHECKBOX, sendData)
@@ -6459,6 +6533,14 @@ function ChartReport()
                 else 
                     buttonData.Data.Checked=true;
             }
+
+            status.Redraw=true;
+            return true;
+        }
+        else if (buttonData.Type===1)   //button
+        {
+            var sendData={ Column:buttonData.Column, Index:buttonData.Index, Stock:buttonData.Stock, Data:buttonData.Data };
+            this.SendClickEvent(JSCHART_EVENT_ID.ON_CLICK_REPORT_BUTTON, sendData)
 
             status.Redraw=true;
             return true;

@@ -2600,6 +2600,7 @@ var JSCHART_EVENT_ID=
 
     ON_DRAW_REPORT_ROW_BG:140,              //报价列表整行背景
     ON_CLICK_REPORT_CHECKBOX:141,           //报价列表checkbox
+    ON_CLICK_REPORT_BUTTON:142,             //报价列表按钮
 
 
     ON_CHANGE_INDEX:150,        //切换指标
@@ -2772,8 +2773,12 @@ var JSCHART_MENU_ID=
 
     CMD_CHANGE_DRAG_RECT_SHOW_MODE_ID:38,
 
+    CMD_SHOW_CORSS_LINE_ID:39,          //显示十字光标线
+
 
     CMD_REPORT_CHANGE_BLOCK_ID:60,      //报价列表 切换板块ID
+
+    
 }
 
 
@@ -9553,6 +9558,13 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 if (param!=null)
                 {
                     if (this.ChartDragSelectRect) this.ChartDragSelectRect.ShowMode=param;
+                }
+                break;
+
+            case JSCHART_MENU_ID.CMD_SHOW_CORSS_LINE_ID:
+                if (IFrameSplitOperator.IsBool(srcParam))
+                {
+                    if (this.ChartCorssCursor) this.ChartCorssCursor.IsShowCorss=srcParam;
                 }
                 break;
         }
@@ -67147,7 +67159,7 @@ function JSChartResource()
 
         Item:
         {
-            Mergin:{ Top:2, Bottom:0,Left:5, Right:5 }, //单元格四周间距
+            Mergin:{ Top:2, Bottom:4,Left:5, Right:5 }, //单元格四周间距
             Font:{ Size:15, Name:"微软雅黑"},
             BarMergin:{ Top:2, Left:3, Right:3, Bottom:2 },//单元格字体
             NameFont:{ Size:14, Name:"微软雅黑" },
@@ -74918,6 +74930,9 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         if (this.GetExtendChartByClassName("SessionBreaksPaint")) bBGSpit=true;
         if (this.GetExtendChartByClassName('StockChip')) bShowStockChip=true;       //筹码
 
+        var bShowCorss=false;   //十字光标十字线
+        if (this.ChartCorssCursor) bShowCorss=this.ChartCorssCursor.IsShowCorss;
+
         var aryMenu=
         [
             { 
@@ -75076,6 +75091,9 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                     { Name:"画图工具", Data:{ ID:JSCHART_MENU_ID.CMD_SHOW_DRAWTOOL_ID, Args:[]}, Checked:this.IsShowDrawToolDialog() },
 
                     { Name:"移动筹码图", Data:{ ID:bShowStockChip?JSCHART_MENU_ID.CMD_HIDE_STOCKCHIP_ID:JSCHART_MENU_ID.CMD_SHOW_STOCKCHIP_ID, Args:[]}, Checked:bShowStockChip},
+
+                    { Name:"十字光标线", Data:{ ID:JSCHART_MENU_ID.CMD_SHOW_CORSS_LINE_ID, Args:[!bShowCorss]}, Checked:bShowCorss },
+
                     { Name:JSPopMenu.SEPARATOR_LINE_NAME },
                     { 
                         Name:"鼠标形状", 
@@ -78580,6 +78598,9 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             if (item && item.Symbol) aryOverlaySymbol.push(item.Symbol)
         }
 
+        var bShowCorss=false;   //十字光标十字线
+        if (this.ChartCorssCursor) bShowCorss=this.ChartCorssCursor.IsShowCorss;
+
         var aryMenu=
         [
             { 
@@ -78648,6 +78669,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                 SubMenu:
                 [
                     { Name:"画图工具", Data:{ ID:JSCHART_MENU_ID.CMD_SHOW_DRAWTOOL_ID, Args:[]}, Checked:this.IsShowDrawToolDialog()},
+                    { Name:"十字光标线", Data:{ ID:JSCHART_MENU_ID.CMD_SHOW_CORSS_LINE_ID, Args:[!bShowCorss]}, Checked:bShowCorss },
 
                     {
                         Name:"区间选择样式", 
@@ -78657,7 +78679,9 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                             { Name:"样式2", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_DRAG_RECT_SHOW_MODE_ID, Args:[1]}, Checked:1==this.ChartDragSelectRect.ShowMode },
                             { Name:"样式3", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_DRAG_RECT_SHOW_MODE_ID, Args:[2]}, Checked:2==this.ChartDragSelectRect.ShowMode },
                         ]
-                    }
+                    },
+
+                    
                 ]
             }
 
