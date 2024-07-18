@@ -56358,6 +56358,7 @@ IChartDrawPicture.ArrayDrawPricture=
     { Name:"价格通道线", ClassName:'ChartDrawPicturePriceChannel',  Create:function() { return new ChartDrawPicturePriceChannel(); }},
     { Name:"文本", ClassName:'ChartDrawPictureText', Create:function() { return new ChartDrawPictureText(); }},
     { Name:"江恩角度线", ClassName:'ChartDrawPictureGannFan',  Create:function() { return new ChartDrawPictureGannFan(); }},
+    { Name:"江恩角度线2", ClassName:'ChartDrawPictureGannFan',  Create:function() { return new ChartDrawPictureGannFanV2(); }},
     { Name:"阻速线", ClassName:'ChartDrawPictureResistanceLine',  Create:function() { return new ChartDrawPictureResistanceLine(); }},
     { Name:"阻速线2", ClassName:'ChartDrawPictureResistanceLineV2',  Create:function() { return new ChartDrawPictureResistanceLineV2(); }},
     { Name:"黄金分割", ClassName:'ChartDrawPictureGoldenSection',  Create:function() { return new ChartDrawPictureGoldenSection(); }},
@@ -59756,6 +59757,7 @@ function ChartDrawPictureGannFan()
     this.LineDash=[5,10];
     this.EnableDottedLine=false;    //辅助线是否使用虚线
     this.EnableArea=true;           //是否绘制面积图
+    this.IsShowTitle=true;
 
     this.Super_SetOption=this.SetOption;    //父类函数
 
@@ -59768,9 +59770,9 @@ function ChartDrawPictureGannFan()
             if (Array.isArray(option.LineDash)) this.LineDash=option.LineDash;
             if (IFrameSplitOperator.IsBool(option.EnableDottedLine)) this.EnableDottedLine=option.EnableDottedLine;
             if (IFrameSplitOperator.IsBool(option.EnableArea)) this.EnableArea=option.EnableArea;
+            if (IFrameSplitOperator.IsBool(option.IsShowTitle)) this.IsShowTitle=option.IsShowTitle;
         }
     }
-
 
     this.Draw=function()
     {
@@ -59792,16 +59794,19 @@ function ChartDrawPictureGannFan()
             this.CalculateLines(drawPoint[0],drawPoint[1],quadrant);
             if (this.EnableArea) this.DrawArea();
 
-            for(var i in this.LinePoint)
+            for(var i=0; i<this.LinePoint.length; ++i)
             {
                 var item=this.LinePoint[i];
                 this.DrawLine(item.Start,item.End,item.IsDottedLine);
             }
 
-            for(var i in this.LinePoint)
+            if (this.IsShowTitle)
             {
-                var item =this.LinePoint[i];
-                if (item.Text && item.PtEnd) this.DrawTitle(item.PtEnd,item.Text);
+                for(var i=0; i<this.LinePoint.length; ++i)
+                {
+                    var item =this.LinePoint[i];
+                    if (item.Text && item.PtEnd) this.DrawTitle(item.PtEnd,item.Text);
+                }
             }
         }
         else
@@ -60013,13 +60018,68 @@ function ChartDrawPictureGannFan()
     }
 }
 
+
+//江恩角度线（Gann Fan） 通达信版本
+function ChartDrawPictureGannFanV2()
+{
+    this.newMethod=ChartDrawPictureGannFan;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartDrawPictureGannFanV2';
+    this.EnableDottedLine=true;    //辅助线是否使用虚线
+    this.LineDash=[4,8];
+    this.EnableArea=false;
+
+    this.Super_CalculateLines=this.CalculateLines;
+
+    this.CalculateLines=function(ptStart,ptEnd,quadrant)
+    {
+        if (!this.Super_CalculateLines(ptStart,ptEnd,quadrant)) return false;
+
+        var border=this.Frame.ChartBorder.GetBorder();
+        if (quadrant==1)
+        {
+            var line={ Start:ptStart, End:{ X:border.Right, Y:ptStart.Y}, IsDottedLine:false, PtEnd:null, Text:null };
+            this.LinePoint.push(line);
+
+            var line={ Start:ptStart, End:{ X:ptStart.X, Y:border.TopEx }, IsDottedLine:false, PtEnd:null, Text:null };
+            this.LinePoint.push(line);
+        }
+        else if (quadrant==2)
+        {
+            var line={ Start:ptStart, End:{ X:ptStart.X, Y:border.TopEx }, IsDottedLine:false, PtEnd:null, Text:null };
+            this.LinePoint.push(line);
+
+            var line={ Start:ptStart, End:{ X:border.Left, Y:ptStart.Y}, IsDottedLine:false, PtEnd:null, Text:null };
+            this.LinePoint.push(line);
+        }
+        else if (quadrant==3)
+        {
+            var line={ Start:ptStart, End:{ X:border.Left, Y:ptStart.Y}, IsDottedLine:false, PtEnd:null, Text:null };
+            this.LinePoint.push(line);
+
+            var line={ Start:ptStart, End:{ X:ptStart.X, Y:border.BottomEx }, IsDottedLine:false, PtEnd:null, Text:null };
+            this.LinePoint.push(line);
+        }
+        else if (quadrant==4)
+        {
+            var line={ Start:ptStart, End:{ X:ptStart.X, Y:border.BottomEx }, IsDottedLine:false, PtEnd:null, Text:null };
+            this.LinePoint.push(line);
+
+            var line={ Start:ptStart, End:{ X:border.Right, Y:ptStart.Y}, IsDottedLine:false, PtEnd:null, Text:null };
+            this.LinePoint.push(line);
+        }
+    }
+}
+
 //阻速线  （高 3等份）
 function ChartDrawPictureResistanceLine()
 {
     this.newMethod=ChartDrawPictureGannFan;   //派生
     this.newMethod();
     delete this.newMethod;
-
+    
     this.ClassName='ChartDrawPictureResistanceLine';
 
     //计算线段
@@ -60158,6 +60218,7 @@ function ChartDrawPictureResistanceLineV2()
     this.EnableDottedLine=true;    //辅助线是否使用虚线
     this.LineDash=[4,8];
     this.EnableArea=false;
+    this.IsShowTitle=false;
 }
 
 
