@@ -460,7 +460,8 @@ function JSReportChartContainer(uielement)
     this.JSPopMenu;             //内置菜单
     this.IsShowRightMenu=true;
 
-    this.LastMouseStatus={ MoveStatus:null, TooltipStatus:null };
+    //MouseOnStatus:{ RowIndex:行, ColumnIndex:列} 
+    this.LastMouseStatus={ MoveStatus:null, TooltipStatus:null, MouseOnStatus:null };
    
     this.ChartDestory=function()    //销毁
     {
@@ -699,6 +700,7 @@ function JSReportChartContainer(uielement)
         this.Canvas.clearRect(0,0,this.UIElement.width,this.UIElement.height);
         var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
         this.Canvas.lineWidth=pixelTatio;       //手机端需要根据分辨率比调整线段宽度
+        this.LastMouseStatus.MouseOnStatus=null;
 
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash)
         {
@@ -715,14 +717,14 @@ function JSReportChartContainer(uielement)
         {
             var item=this.ChartPaint[i];
             if (item.IsDrawFirst)
-                item.Draw();
+                item.Draw(this.LastMouseStatus);
         }
 
         for(var i=0; i<this.ChartPaint.length; ++i)
         {
             var item=this.ChartPaint[i];
             if (!item.IsDrawFirst)
-                item.Draw();
+                item.Draw(this.LastMouseStatus);
         }
 
         if (this.GlobalOption.FlashBGCount>0)
@@ -1753,6 +1755,7 @@ function JSReportChartContainer(uielement)
         var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
         var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
         
+        var oldMouseOnStatus=this.LastMouseStatus.MouseOnStatus;
         this.LastMouseStatus.OnMouseMove=null;
 
         var bDrawTooltip=false;
@@ -1764,6 +1767,7 @@ function JSReportChartContainer(uielement)
         if (this.DragColumnWidth) return;
 
         var tabChart=this.GetTabChart();
+        var bDrawTab=false;
         if (tabChart)
         {
             var tabData=tabChart.PtInTab(x,y);
@@ -1773,8 +1777,17 @@ function JSReportChartContainer(uielement)
                 if (tabChart.MoveOnTabIndex!=index)
                 {
                     tabChart.MoveOnTabIndex=index;
-                    this.Draw();
+                    bDrawTab=true;
                 }
+            }
+            else
+            {
+                if (tabChart.MoveOnTabIndex>=0) 
+                {
+                    tabChart.MoveOnTabIndex=-1;
+                    bDrawTab=true;
+                }
+                    
             }
         }
 
@@ -1793,12 +1806,28 @@ function JSReportChartContainer(uielement)
             }
             else
             {
-                var bottonData=report.GetButtonData(x,y)
-                if (bottonData)
+                var buttonData=report.GetButtonData(x,y);
+                var mouseOnStatus=null;
+                if (buttonData)
                 {
                     mouseStatus={ Cursor:"pointer", Name:"Botton"};
+                    if (buttonData.Type==1 || buttonData.Type==0 || buttonData.Type==2)
+                    {
+                        mouseOnStatus={ Index:buttonData.Index, ColumnIndex:buttonData.ColumnIndex };
+                    }
                 }
 
+                //console.log("[UIOnMouseMove] ", oldMouseOnStatus, mouseOnStatus)
+                if ((!oldMouseOnStatus && mouseOnStatus) || (oldMouseOnStatus && !mouseOnStatus))
+                {
+                    bDraw=true;
+                }
+                else if (oldMouseOnStatus && mouseOnStatus)
+                {
+                    if (oldMouseOnStatus.Index!=mouseOnStatus.Index || oldMouseOnStatus.ColumnIndex!=mouseOnStatus.ColumnIndex)
+                        bDraw=true;
+                }
+                   
                 var tooltipData=report.GetTooltipData(x,y);  //单元格提示信息
                 if (tooltipData)
                 {
@@ -1832,7 +1861,7 @@ function JSReportChartContainer(uielement)
 
         if (mouseStatus) this.UIElement.style.cursor=mouseStatus.Cursor;
 
-        if (bDraw) this.Draw();
+        if (bDraw || bDrawTab) this.Draw();
         else if (bDrawTooltip) this.DrawTooltip(this.LastMouseStatus.TooltipStatus);
     }
 
@@ -3150,7 +3179,7 @@ function JSReportChartContainer(uielement)
         switch(cmdID)
         {
             case JSCHART_MENU_ID.CMD_REPORT_CHANGE_BLOCK_ID:
-                if (srcParam) this.ChangeSymbol(param);
+                if (srcParam) this.ChangeSymbol(srcParam);
                 break;
         }
     }
@@ -3681,6 +3710,8 @@ var REPORT_COLUMN_ID=
     CUSTOM_ICON_ID:103,             //自定义图标
     CUSTOM_CHECKBOX_ID:104,         //自定义checkbox
     CUSTOM_BUTTON_ID:105,           //自定义按钮
+    CUSTOM_PROGRESS_ID:106,         //进度条
+    CUSTOM_LINK_ID:107,              //链接
 }
 
 var MAP_COLUMN_FIELD=new Map([
@@ -3851,6 +3882,9 @@ function ChartReport()
     }
 
     this.CheckBoxConfig=CloneData(g_JSChartResource.Report.CheckBox);
+    this.LinkConfig=CloneData(g_JSChartResource.Report.Link);
+    this.ProgressBarConfig=CloneData(g_JSChartResource.Report.ProgressBar);
+    this.ButtonConfig=CloneData(g_JSChartResource.Report.Button);
 
     //股票代码+股票名称
     this.ItemSymbolFontConfig={Size:g_JSChartResource.Report.Item.SymbolFont.Size, Name:g_JSChartResource.Report.Item.SymbolFont.Name};
@@ -3893,6 +3927,8 @@ function ChartReport()
 
     //{ Rect:rtItem, Type: 0=checkedbox, 1=button, 2=link , Stock, Index:index, Column:column }
     this.ButtonRect=[]; 
+
+    this.LastMouseStatus;
 
     this.ReloadResource=function(resource)
     {
@@ -3984,6 +4020,10 @@ function ChartReport()
 
         if (this.Tab) this.Tab.ReloadResource(resource);
         if (this.VScrollbar) this.VScrollbar.ReloadResource(resource);
+
+        this.CheckBoxConfig=CloneData(g_JSChartResource.Report.CheckBox);
+        this.LinkConfig=CloneData(g_JSChartResource.Report.Link);
+        this.ProgressBarConfig=CloneData(g_JSChartResource.Report.ProgressBar);
     }
 
     this.SetColumn=function(aryColumn)
@@ -4055,7 +4095,7 @@ function ChartReport()
                 if (IFrameSplitOperator.IsNumber(item.DataIndex)) colItem.DataIndex=item.DataIndex;                  //数据在扩展数据索引列
                 if (IFrameSplitOperator.IsNumber(item.BlockIndex)) colItem.BlockIndex=item.BlockIndex;
                 if (item.CheckBox) colItem.CheckBox=CloneData(item.CheckBox);
-                else colItem.CheckBox=CloneData(g_JSChartResource.Report.CheckBox);
+                else colItem.CheckBox=this.CheckBoxConfig;
             }
             else if (item.Type==REPORT_COLUMN_ID.CUSTOM_BUTTON_ID)
             {
@@ -4063,6 +4103,23 @@ function ChartReport()
                 if (IFrameSplitOperator.IsNumber(item.DataIndex)) colItem.DataIndex=item.DataIndex;                  //数据在扩展数据索引列
                 if (IFrameSplitOperator.IsNumber(item.BlockIndex)) colItem.BlockIndex=item.BlockIndex;
                 if (item.Button) colItem.Button=CloneData(item.Button);
+                else colItem.Button=this.ButtonConfig;
+            }
+            else if (item.Type==REPORT_COLUMN_ID.CUSTOM_PROGRESS_ID)
+            {
+                if (!IFrameSplitOperator.IsNumber(item.DataIndex) && !IFrameSplitOperator.IsNumber(item.BlockIndex)) continue;
+                if (IFrameSplitOperator.IsNumber(item.DataIndex)) colItem.DataIndex=item.DataIndex;                  //数据在扩展数据索引列
+                if (IFrameSplitOperator.IsNumber(item.BlockIndex)) colItem.BlockIndex=item.BlockIndex;
+                if (item.ProgressBar) colItem.ProgressBar=CloneData(item.ProgressBar);
+                else colItem.ProgressBar=this.ProgressBarConfig;
+            }
+            else if (item.Type==REPORT_COLUMN_ID.CUSTOM_LINK_ID)
+            {
+                if (!IFrameSplitOperator.IsNumber(item.DataIndex) && !IFrameSplitOperator.IsNumber(item.BlockIndex)) continue;
+                if (IFrameSplitOperator.IsNumber(item.DataIndex)) colItem.DataIndex=item.DataIndex;                  //数据在扩展数据索引列
+                if (IFrameSplitOperator.IsNumber(item.BlockIndex)) colItem.BlockIndex=item.BlockIndex;
+                if (item.Link) colItem.Link=CloneData(item.Link);
+                else colItem.Link=this.LinkConfig;
             }
             else if (item.Type==REPORT_COLUMN_ID.CUSTOM_ICON_ID)
             {
@@ -4181,7 +4238,9 @@ function ChartReport()
 
             { Type:REPORT_COLUMN_ID.CUSTOM_CHECKBOX_ID, Title:"",  TextAlign:"center", FixedWidth:20*GetDevicePixelRatio() },
 
-            { Type:REPORT_COLUMN_ID.CUSTOM_BUTTON_ID, Title:"", TextAlign:"center", FixedWidth:50*GetDevicePixelRatio() }
+            { Type:REPORT_COLUMN_ID.CUSTOM_BUTTON_ID, Title:"", TextAlign:"center", FixedWidth:50*GetDevicePixelRatio() },
+            { Type:REPORT_COLUMN_ID.CUSTOM_PROGRESS_ID, Title:"进度条", TextAlign:"center", FixedWidth:100*GetDevicePixelRatio() },
+            { Type:REPORT_COLUMN_ID.CUSTOM_LINK_ID, Title:"链接地址", TextAlign:"center", MaxText:"擎擎擎擎擎" }
         ];
 
         for(var i=0;i<DEFAULT_COLUMN.length;++i)
@@ -4202,12 +4261,13 @@ function ChartReport()
         this.Canvas.clip();
     }
 
-    this.Draw=function()
+    this.Draw=function(lastMouseStatus)
     {
         this.ShowSymbol=[];
         this.TooltipRect=[];
         this.ButtonRect=[];
         this.DevicePixelRatio=GetDevicePixelRatio()
+        this.LastMouseStatus=lastMouseStatus;
 
         if (this.GlobalOption) this.GlobalOption.FlashBGCount=0;
 
@@ -4239,6 +4299,7 @@ function ChartReport()
             this.VScrollbar.DrawScrollbar(this.RectClient.Left,this.RectClient.Top+this.HeaderHeight, this.RectClient.Right, bottom-this.BottomToolbarHeight-4);
         }
 
+        this.LastMouseStatus=null;
         this.SizeChange=false;
     }
 
@@ -4878,7 +4939,7 @@ function ChartReport()
         for(var i=0;i<this.FixedColumn && i<this.Column.length;++i)
         {
             var item=this.Column[i];
-            this.DrawItem(dataIndex, data, item, left, top, rowType);
+            this.DrawItem(dataIndex, data, item, left, top, rowType, i);
             left+=item.Width;
 
             if (left>=chartRight) break;
@@ -4887,20 +4948,24 @@ function ChartReport()
         for(var i=this.FixedColumn+this.Data.XOffset;i<this.Column.length;++i)
         {
             var item=this.Column[i];
-            this.DrawItem(dataIndex, data, item, left, top, rowType);
+            this.DrawItem(dataIndex, data, item, left, top, rowType, i);
             left+=item.Width;
 
             if (left>=chartRight) break;
         }
     }
 
-    this.DrawItem=function(index, data, column, left, top, rowType)
+    this.DrawItem=function(index, data, column, left, top, rowType, columnIndex)
     {
         var itemWidth=column.Width;
         var x=left+this.ItemMergin.Left;
         var textWidth=column.Width-this.ItemMergin.Left-this.ItemMergin.Right;
         var stock=data.Stock;
-        var drawInfo={ Text:null, TextColor:column.TextColor , TextAlign:column.TextAlign, Tooltip:null };
+        var drawInfo=
+        { 
+            Text:null, TextColor:column.TextColor , TextAlign:column.TextAlign, Tooltip:null, 
+            Index:index, ColumnIndex:columnIndex
+        };
         var rtItem={ Left:left, Top:top,  Width:column.Width, Height:this.RowHeight };
         rtItem.Right=rtItem.Left+rtItem.Width;
         rtItem.Bottom=rtItem.Top+rtItem.Height;
@@ -5154,6 +5219,19 @@ function ChartReport()
             
             this.GetCustomButtonDrawInfo(data, column, drawInfo);
         }
+        else if (column.Type==REPORT_COLUMN_ID.CUSTOM_PROGRESS_ID)
+        {
+            rtItem={ Left:left, Top:top,  Width:column.Width, Height:this.RowHeight };
+            rtItem.Right=rtItem.Left+rtItem.Width;
+            rtItem.Bottom=rtItem.Top+rtItem.Height;
+            drawInfo.Rect=rtItem;
+            
+            this.GetCustomProgressBarDrawInfo(data, column, drawInfo);
+        }
+        else if (column.Type==REPORT_COLUMN_ID.CUSTOM_LINK_ID)
+        {
+            this.GetCustomLinkDrawInfo(data, column, drawInfo);
+        }
         
 
         //拖拽行颜色
@@ -5175,6 +5253,14 @@ function ChartReport()
         else if (column.Type==REPORT_COLUMN_ID.CUSTOM_BUTTON_ID)
         {
             this.DrawButton(drawInfo, left, top, itemWidth);
+        }
+        else if (column.Type==REPORT_COLUMN_ID.CUSTOM_PROGRESS_ID)
+        {
+            this.DrawProgressBar(drawInfo, left, top, itemWidth);
+        }
+        else if (column.Type==REPORT_COLUMN_ID.CUSTOM_LINK_ID)
+        {
+            this.DrawLinkText(drawInfo, x, top, textWidth);
         }
         else
         {
@@ -5209,7 +5295,7 @@ function ChartReport()
 
         if (drawInfo.Botton)
         {
-            var buttonData={ Stock:stock, Index:index, Column:column, Rect:drawInfo.Botton.Rect, Type:drawInfo.Botton.Type, Data:drawInfo.Data };
+            var buttonData={ Stock:stock, Index:index, ColumnIndex:columnIndex, Column:column, Rect:drawInfo.Botton.Rect, Type:drawInfo.Botton.Type, Data:drawInfo.Data };
             this.ButtonRect.push(buttonData);
         }
     }
@@ -5491,6 +5577,36 @@ function ChartReport()
         if (IFrameSplitOperator.IsBool(buttonData.Enable)) drawInfo.Enable=buttonData.Enable;
     }
 
+    this.GetCustomProgressBarDrawInfo=function(data, column, drawInfo)
+    {
+        var barData=this.GetExtendData(data, column);
+        if (!barData) return;
+
+        drawInfo.Text=barData.Title;
+        drawInfo.ProgressBar=column.ProgressBar;
+        drawInfo.Enable=true;
+        drawInfo.Value=barData.Value;   //占比
+        drawInfo.Data=barData;
+        if (IFrameSplitOperator.IsBool(barData.Enable)) drawInfo.Enable=barData.Enable;
+        if (barData.TextColor) drawInfo.TextColor=barData.TextColor;
+        if (barData.BarColor) drawInfo.BarColor=barData.BarColor;
+        if (barData.BGColor) drawInfo.BGColor=barData.BGColor;
+    }
+
+    this.GetCustomLinkDrawInfo=function(data, column, drawInfo)
+    {
+        var linkData=this.GetExtendData(data, column);
+        if (!linkData) return;
+
+        drawInfo.Text=linkData.Title;
+        drawInfo.Link=column.Link;
+        drawInfo.Enable=true;
+        drawInfo.Data=linkData;
+        drawInfo.MaxText=column.MaxText;
+        if (IFrameSplitOperator.IsBool(linkData.Enable)) drawInfo.Enable=linkData.Enable;
+        if (linkData.TextColor) drawInfo.TextColor=linkData.TextColor;
+    }
+
     this.FormaTimeDrawInfo=function(column, stock, drawInfo, data)
     {
         if (!IFrameSplitOperator.IsNumber(stock.Time)) return;
@@ -5760,35 +5876,57 @@ function ChartReport()
         if (!IFrameSplitOperator.IsBool(drawInfo.Checked)) return;
         if (!drawInfo.CheckBox) return;
 
-        drawInfo.Font=`${drawInfo.CheckBox.Size*this.DevicePixelRatio}px ${drawInfo.CheckBox.Family}`;
+        var config=drawInfo.CheckBox;
+        drawInfo.Font=`${config.Size*this.DevicePixelRatio}px ${config.Family}`;
         var textAlign=drawInfo.TextAlign;
         var size=drawInfo.CheckBox.Size*this.DevicePixelRatio;
         var x=left+drawInfo.CheckBox.Margin.Left;
         var y=top+this.RowHeight-drawInfo.CheckBox.Margin.Bottom;
+
         if (textAlign=='center') x=left+width/2-size/2;
-        else if (textAlign=='right') x=left+width-drawInfo.CheckBox.Margin.Right;
+        else if (textAlign=='right') x=left+width-config.Margin.Right;
+
+        var rtBox={ Left:x, Bottom:y, Width:size, Height:size };
+        rtBox.Right=rtBox.Left+rtBox.Width;
+        rtBox.Top=rtBox.Bottom-rtBox.Height;
+
+        //鼠标在上面
+        var bMouseOn=false;
+        if (drawInfo.Enable && this.LastMouseStatus && this.LastMouseStatus.OnMouseMove)
+        {
+            var xMouse=this.LastMouseStatus.OnMouseMove.X;
+            var yMouse=this.LastMouseStatus.OnMouseMove.Y;
+            if (xMouse>rtBox.Left && xMouse<rtBox.Right && yMouse>rtBox.Top && yMouse<rtBox.Bottom)
+            {
+                bMouseOn=true;
+                this.LastMouseStatus.MouseOnStatus={ Index:drawInfo.Index, ColumnIndex:drawInfo.ColumnIndex, Type:0 };
+            }
+        }
 
         this.Canvas.font=drawInfo.Font;
         this.Canvas.textBaseline="bottom";
         this.Canvas.textAlign="left";
         if (drawInfo.Checked===true)
         {
-            if (drawInfo.Enable===false)  this.Canvas.fillStyle=drawInfo.CheckBox.Checked.DisableColor;
-            else this.Canvas.fillStyle=drawInfo.CheckBox.Checked.Color;
-            this.Canvas.fillText(drawInfo.CheckBox.Checked.Symbol,x,y);
+            var textColor=config.Checked.Color;
+            if (drawInfo.Enable===false) textColor=config.Checked.DisableColor;
+            else if (bMouseOn) textColor=config.Checked.MouseOnColor;
+
+            this.Canvas.fillStyle=textColor;
+            this.Canvas.fillText(config.Checked.Symbol,x,y);
         }
         else if (drawInfo.Checked===false)
         {
-            if (drawInfo.Enable===false)  this.Canvas.fillStyle=drawInfo.CheckBox.Unchecked.DisableColor;
-            else this.Canvas.fillStyle=drawInfo.CheckBox.Unchecked.Color;
-            this.Canvas.fillText(drawInfo.CheckBox.Unchecked.Symbol,x,y);
+            var textColor=config.Unchecked.Color;
+            if (drawInfo.Enable===false)  textColor=config.Unchecked.DisableColor;
+            else if (bMouseOn) textColor=config.Unchecked.MouseOnColor;
+
+            this.Canvas.fillStyle=textColor;
+            this.Canvas.fillText(config.Unchecked.Symbol,x,y);
         }
 
         if (drawInfo.Enable)
         {
-            var rtBox={ Left:x, Bottom:y, Width:size, Height:size };
-            rtBox.Right=rtBox.Left+rtBox.Width;
-            rtBox.Top=rtBox.Bottom-rtBox.Height;
             drawInfo.Botton={ Rect:rtBox, Type:0 };
         }
     }
@@ -5797,6 +5935,7 @@ function ChartReport()
     {
         if (!drawInfo.Button) return;
 
+        var config=drawInfo.Button;
         var rtBG=
         { 
             Left:left+drawInfo.Button.Margin.Left, Top:top+drawInfo.Button.Margin.Top, 
@@ -5806,11 +5945,26 @@ function ChartReport()
         rtBG.Right=rtBG.Left+rtBG.Width;
         rtBG.Bottom=rtBG.Top+rtBG.Height;
 
-        var bgColor=drawInfo.Button.BGColor, textColor=drawInfo.Button.TextColor;
+        var bgColor=config.BGColor, textColor=config.TextColor;
         if (drawInfo.Enable===false)
         {
-            bgColor=drawInfo.Button.Disable.BGColor;
-            textColor=drawInfo.Button.Disable.TextColor;
+            bgColor=config.Disable.BGColor;
+            textColor=config.Disable.TextColor;
+        }
+        else
+        {
+            if (this.LastMouseStatus && this.LastMouseStatus.OnMouseMove && config.MouseOn)
+            {
+                var x=this.LastMouseStatus.OnMouseMove.X;
+                var y=this.LastMouseStatus.OnMouseMove.Y;
+                if (x>rtBG.Left && x<rtBG.Right && y>rtBG.Top && y<rtBG.Bottom)
+                {
+                    bgColor=config.MouseOn.BGColor;
+                    textColor=config.MouseOn.TextColor;
+
+                    this.LastMouseStatus.MouseOnStatus={ Index:drawInfo.Index, ColumnIndex:drawInfo.ColumnIndex, Type:1 };
+                }
+            }
         }
 
         this.Canvas.fillStyle=bgColor;
@@ -5830,6 +5984,142 @@ function ChartReport()
         if (drawInfo.Enable)
         {
             drawInfo.Botton={ Rect:rtBG, Type:1 };
+        }
+    }
+
+    this.DrawProgressBar=function(drawInfo, left, top, width)
+    {
+        if (!drawInfo.ProgressBar) return;
+
+        var config=drawInfo.ProgressBar;
+        var rtBG=
+        { 
+            Left:left+config.Margin.Left, Top:top+config.Margin.Top, 
+            Height:this.RowHeight-config.Margin.Top-config.Margin.Bottom, 
+            Width:width-config.Margin.Left-config.Margin.Right
+        }
+        rtBG.Right=rtBG.Left+rtBG.Width;
+        rtBG.Bottom=rtBG.Top+rtBG.Height;
+
+        var bgColor=config.BGColor;
+        var barColor=config.BarColor;
+        var textColor=config.TextColor;
+        if (drawInfo.Enable===false)
+        {
+            bgColor=config.Disable.BGColor;
+            barColor=config.Disable.BarColor;
+            textColor=config.Disable.TextColor;
+        }
+
+        if (drawInfo.BGColor) bgColor=drawInfo.BGColor;
+        if (drawInfo.TextColor) textColor=drawInfo.TextColor;
+        if (drawInfo.BarColor) barColor=drawInfo.BarColor;
+
+        if (bgColor)
+        {
+            this.Canvas.fillStyle=bgColor;
+            this.Canvas.fillRect(rtBG.Left, rtBG.Top,rtBG.Width,rtBG.Height);
+        }
+
+        var fullBarWidth=rtBG.Width-config.BarMargin.Left-config.BarMargin.Right;
+        var value=drawInfo.Value;   // 0-1 进度条
+        var rtBar={ Left:rtBG.Left+config.BarMargin.Left, Top:rtBG.Top+config.BarMargin.Top, Bottom:rtBG.Bottom-config.BarMargin.Bottom, Width:0 };
+        if (value>0)
+        {
+            if (value>1) value=1;
+            rtBar.Width=fullBarWidth*value;
+            rtBar.Height=rtBar.Bottom-rtBar.Top;
+            if (rtBar.Width<1) rtBG.Width=1;
+    
+            this.Canvas.fillStyle=barColor;
+            this.Canvas.fillRect(rtBar.Left, rtBar.Top,rtBar.Width,rtBar.Height);
+        }
+
+        if (textColor && drawInfo.Text)
+        {
+            this.Canvas.font=config.Font;
+            this.Canvas.textBaseline="bottom";
+            this.Canvas.textAlign="left";
+
+            this.Canvas.fillStyle=textColor;
+            var xText=rtBar.Left+config.TextMargin.Left;
+            var yText=rtBar.Bottom-config.TextMargin.Bottom;
+            this.Canvas.fillText(drawInfo.Text, xText, yText);
+        }
+    }
+
+    this.DrawLinkText=function(drawInfo, left, top, width)
+    {
+        if (!drawInfo.Link || !drawInfo.Text) return;
+
+        var config=drawInfo.Link;
+        var text=drawInfo.Text;
+        var textAlign=drawInfo.TextAlign;
+        var font=config.Font;
+        var color=config.TextColor;
+
+       
+
+        this.Canvas.font=font;
+        var textWidth=this.Canvas.measureText(text).width;
+        var textHeight=this.Canvas.measureText("擎").width;
+        var x=left;
+        if (width>=textWidth)
+        {
+            if (textAlign=='center') x=left+(width-textWidth)/2;
+            else if (textAlign=='right') x=left+width-textWidth;
+        }
+        else
+        {
+            text=this.TextEllipsis(text, width, drawInfo.MaxText);
+            textWidth=this.Canvas.measureText(text).width;
+
+            //数据截断提示信息
+            drawInfo.Tooltip=
+            { 
+                Type:2, 
+                Data:{ AryText:[ {Text:drawInfo.Text} ] }
+            }
+        }
+
+        var rtText={Left:x, Bottom:top+this.RowHeight-this.ItemMergin.Bottom, Height:textHeight, Width:textWidth };
+        rtText.Right=rtText.Left+rtText.Width;
+        rtText.Top=rtText.Bottom-rtText.Height;
+
+        var drawLine=false; //下划线
+        if (drawInfo.Enable===false) 
+        {
+            color=config.Disable.TextColor;
+        }
+        else if (this.LastMouseStatus && this.LastMouseStatus.OnMouseMove && config.MouseOn)
+        {
+            var x=this.LastMouseStatus.OnMouseMove.X;
+            var y=this.LastMouseStatus.OnMouseMove.Y;
+            if (x>rtText.Left && x<rtText.Right && y>rtText.Top && y<rtText.Bottom)
+            {
+                color=config.MouseOn.TextColor;
+                drawLine=true;
+                this.LastMouseStatus.MouseOnStatus={ Index:drawInfo.Index, ColumnIndex:drawInfo.ColumnIndex, Type:2 };
+            }
+        }
+
+        this.Canvas.textBaseline="bottom";
+        this.Canvas.textAlign="left";
+        this.Canvas.fillStyle=color;
+        this.Canvas.fillText(text,rtText.Left, rtText.Bottom);
+
+        if (drawLine)
+        {
+            this.Canvas.strokeStyle=color;
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(rtText.Left,rtText.Bottom);
+            this.Canvas.lineTo(rtText.Right,rtText.Bottom);
+            this.Canvas.stroke();
+        }
+
+        if (drawInfo.Enable)
+        {
+            drawInfo.Botton={ Rect:rtText, Type:2 };
         }
     }
 
@@ -6545,6 +6835,14 @@ function ChartReport()
             status.Redraw=true;
             return true;
         }
+        else if (buttonData.Type===2)   //link
+        {
+            var sendData={ Column:buttonData.Column, Index:buttonData.Index, Stock:buttonData.Stock, Data:buttonData.Data };
+            this.SendClickEvent(JSCHART_EVENT_ID.ON_CLICK_REPORT_LINK, sendData)
+
+            status.Redraw=true;
+            return true;
+        }
         
         return false;
     }
@@ -6799,7 +7097,7 @@ function ChartReport()
 
             if (x>=rt.Left && x<=rt.Right && y>=rt.Top && y<=rt.Bottom)
             {
-                return { Rect:item.Rect, Stock:item.Stock, Column:item.Column, Index:item.Index, Type:item.Type, Data:item.Data };
+                return { Rect:item.Rect, Stock:item.Stock, Column:item.Column, Index:item.Index, Type:item.Type, Data:item.Data, ColumnIndex:item.ColumnIndex };
             }
         }
     }

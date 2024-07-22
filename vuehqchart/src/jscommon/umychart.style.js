@@ -627,8 +627,29 @@ function GetBlackStyle()
             CheckBox:
             {
                 Family:"iconfont", Size:15,
-                Checked:{ Color:"rgb(237,60,31)", Symbol:"\ue6b3", DisableColor:"rgb(112,128,144)" },
-                Unchecked:{ Color:"rgb(237,60,31)", Symbol:"\ue6b4", DisableColor:"rgb(112,128,144)" },
+                Checked:{ Color:"rgb(69,147,238)", Symbol:"\ue6b3", DisableColor:"rgb(120,120,120)", MouseOnColor:"rgb(69,147,238)" },
+                Unchecked:{ Color:"rgb(210,210,210)", Symbol:"\ue6b4", DisableColor:"rgb(120,120,120)", MouseOnColor:"rgb(69,147,238)" },
+            },
+
+            Link:
+            {
+                Font:`${12*GetDevicePixelRatio()}px 微软雅黑`,
+                TextColor:"rgb(0,144,255)",
+
+                Disable:{ TextColor:"rgb(211,211,211)" },
+                MouseOn:{ TextColor:"rgb(0,144,255)" },
+            },
+
+            ProgressBar:
+            {
+                BGColor:"rgb(20,24,28)",
+                BarColor:"rgb(47,124,197)",
+                Margin:{ Left:2, Right:2, Bottom:2, Top:2 },
+                BarMargin:{ Left:2, Right:2, Bottom:2, Top:2 },
+                TextColor:"rgb(230,230,230)",
+                Font:`${12*GetDevicePixelRatio()}px 微软雅黑`,
+                TextMargin:{ Left:40, Right:2, Bottom:2, Top:2},
+                Disable:{ BGColor:"rgb(61,61,61)", BarColor:"rgb(131,131,131)", TextColor:"rgb(159,161,159)"}
             }
         },
 

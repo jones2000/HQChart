@@ -2601,6 +2601,7 @@ var JSCHART_EVENT_ID=
     ON_DRAW_REPORT_ROW_BG:140,              //报价列表整行背景
     ON_CLICK_REPORT_CHECKBOX:141,           //报价列表checkbox
     ON_CLICK_REPORT_BUTTON:142,             //报价列表按钮
+    ON_CLICK_REPORT_LINK:143,               //报价列表 链接
 
 
     ON_CHANGE_INDEX:150,        //切换指标
@@ -67439,10 +67440,46 @@ function JSChartResource()
         CheckBox:
         {
             Family:"iconfont", Size:15,
-            Checked:{ Color:"rgb(33,148,240)", Symbol:"\ue6b3", DisableColor:"rgb(112,128,144)" },
-            Unchecked:{ Color:"rgb(33,148,240)", Symbol:"\ue6b4", DisableColor:"rgb(112,128,144)" },
+            Checked:{ Color:"rgb(69,147,238)", Symbol:"\ue6b3", DisableColor:"rgb(230,230,230)", MouseOnColor:"rgb(69,147,238)" },
+            Unchecked:{ Color:"rgb(120,120,120)", Symbol:"\ue6b4", DisableColor:"rgb(230,230,230)", MouseOnColor:"rgb(69,147,238)" },
 
             Margin:{ Left:5, Right:5, Bottom:2, Top:4 },
+        },
+
+        Link:
+        {
+            Font:`${12*GetDevicePixelRatio()}px 微软雅黑`,
+            TextColor:"rgb(30,144,255)",
+
+            Disable:{ TextColor:"rgb(211,211,211)" },
+            MouseOn:{ TextColor:"rgb(30,144,255)" },
+        },
+
+        ProgressBar:
+        {
+            BGColor:"rgb(229,231,238)",
+            BarColor:"rgb(26,125,255)",
+            Margin:{ Left:2, Right:2, Bottom:2, Top:2 },
+            BarMargin:{ Left:2, Right:2, Bottom:2, Top:2 },
+            TextColor:"rgb(0,0,0)",
+            Font:`${12*GetDevicePixelRatio()}px 微软雅黑`,
+            TextMargin:{ Left:40, Right:2, Bottom:2, Top:2},
+            Disable:{ BGColor:"rgb(229,231,238)", BarColor:"rgb(131,131,131)", TextColor:"rgb(159,161,159)"}
+        },
+
+        Button:
+        {
+            BGColor:"rgb(61,134,180)",
+            TextColor:"rgb(255,255,255)",
+            BorderColor:"rgb(200,200,200)",
+
+            Disable:{ BGColor:"rgb(105,105,105)", TextColor:"rgb(169,169,169)"},
+            MouseOn:{ BGColor:"rgb(57,125,169)", TextColor:"rgb(230,230,230)" },
+
+            Margin:{ Left:5, Right:5, Bottom:2, Top:2 },
+            TextMargin:{ Bottom:2 },
+
+            Font:`${12*GetDevicePixelRatio()}px 微软雅黑`
         }
     },
 
@@ -68484,6 +68521,58 @@ function JSChartResource()
             }
 
             CopyMarginConfig(dest.CheckBox.Margin, subItem.Margin);
+        }
+
+        if (item.Link)
+        {
+            var subItem=item.Link;
+            if (subItem.Font) dest.Link.Font=subItem.Font;
+            if (subItem.TextColor) dest.Link.TextColor=subItem.TextColor;
+            if (subItem.Disable && subItem.Disable.TextColor) dest.Link.Disable.TextColor=subItem.Disable.TextColor;
+            if (subItem.MouseOn && subItem.MouseOn.TextColor) dest.Link.MouseOn.TextColor=subItem.MouseOn.TextColor;
+        }
+
+        if (item.ProgressBar)
+        {
+            var subItem=item.ProgressBar;
+            if (subItem.BGColor) dest.ProgressBar.BGColor=subItem.BGColor;
+            if (subItem.BarColor) dest.ProgressBar.BarColor=subItem.BarColor;
+            if (subItem.TextColor) dest.ProgressBar.TextColor=subItem.TextColor;
+            if (subItem.Font) dest.ProgressBar.Font=subItem.Font;
+            if (subItem.Disable)
+            {
+                if (subItem.Disable.BGColor) dest.ProgressBar.Disable.BGColor=subItem.Disable.BGColor;
+                if (subItem.Disable.BarColor) dest.ProgressBar.Disable.BarColor=subItem.Disable.BarColor;
+                if (subItem.Disable.TextColor) dest.ProgressBar.Disable.TextColor=subItem.Disable.TextColor;
+            }
+
+            CopyMarginConfig(dest.ProgressBar.Margin, subItem.Margin);
+            CopyMarginConfig(dest.ProgressBar.BarMargin, subItem.BarMargin);
+            CopyMarginConfig(dest.ProgressBar.TextMargin, subItem.TextMargin);
+        }
+
+        if (item.Buttom)
+        {
+            var subItem=item.Buttom;
+            if (subItem.BGColor) dest.Buttom.BGColor=subItem.BGColor;
+            if (subItem.TextColor) dest.Buttom.TextColor=subItem.TextColor;
+            if (subItem.BorderColor) dest.Buttom.BorderColor=subItem.BorderColor;
+            if (subItem.Font) dest.Buttom.Font=subItem.Font;
+
+            if (subItem.Disable)
+            {
+                if (subItem.Disable.BGColor) dest.Buttom.Disable.BGColor=subItem.Disable.BGColor;
+                if (subItem.Disable.TextColor) dest.Buttom.Disable.TextColor=subItem.Disable.TextColor;
+            }
+
+            if (subItem.MouseOn)
+            {
+                if (subItem.MouseOn.BGColor) dest.Buttom.MouseOn.BGColor=subItem.MouseOn.BGColor;
+                if (subItem.MouseOn.TextColor) dest.Buttom.MouseOn.TextColor=subItem.MouseOn.TextColor;
+            }
+
+            CopyMarginConfig(dest.Buttom.Margin, subItem.Margin);
+            CopyMarginConfig(dest.Buttom.TextMargin, subItem.TextMargin);
         }
         
     }

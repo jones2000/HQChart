@@ -15,26 +15,36 @@ function JSScrollBarChart(divElement)
 {
     this.DivElement=divElement;
     this.JSChartContainer;              //表格控件
+    this.ResizeListener;
 
-     //h5 canvas
-     this.CanvasElement=document.createElement("canvas");
-     this.CanvasElement.className='jsscrollbar-drawing';
-     this.CanvasElement.id=Guid();
-     this.CanvasElement.setAttribute("tabindex",0);
-     if (this.CanvasElement.style) this.CanvasElement.style.outline='none';
-     if(divElement.hasChildNodes())
-     {
-         JSConsole.Chart.Log("[JSScrollBarChart::JSScrollBarChart] divElement hasChildNodes", divElement.childNodes);
-     }
-     divElement.appendChild(this.CanvasElement);
+    //h5 canvas
+    this.CanvasElement=document.createElement("canvas");
+    this.CanvasElement.className='jsscrollbar-drawing';
+    this.CanvasElement.id=Guid();
+    this.CanvasElement.setAttribute("tabindex",0);
+    if (this.CanvasElement.style) this.CanvasElement.style.outline='none';
+    if(divElement.hasChildNodes())
+    {
+        JSConsole.Chart.Log("[JSScrollBarChart::JSScrollBarChart] divElement hasChildNodes", divElement.childNodes);
+    }
+    divElement.appendChild(this.CanvasElement);
 
 
     this.OnSize=function()
     {
         //画布大小通过div获取
-        var height=parseInt(this.DivElement.style.height.replace("px",""));
+        var height=this.DivElement.offsetHeight;
+        var width=this.DivElement.offsetWidth;
+        if (this.DivElement.style.height && this.DivElement.style.width)
+        {
+            if (this.DivElement.style.height.includes("px"))
+                height=parseInt(this.DivElement.style.height.replace("px",""));
+            if (this.DivElement.style.width.includes("px"))
+                width=parseInt(this.DivElement.style.width.replace("px",""));
+        }  
+
         this.CanvasElement.height=height;
-        this.CanvasElement.width=parseInt(this.DivElement.style.width.replace("px",""));
+        this.CanvasElement.width=width;
         this.CanvasElement.style.width=this.CanvasElement.width+'px';
         this.CanvasElement.style.height=this.CanvasElement.height+'px';
 
@@ -56,12 +66,14 @@ function JSScrollBarChart(divElement)
 
         if (!chart) return false;
 
+        this.JSChartContainer=chart;
+        this.DivElement.JSChart=this;   //div中保存一份
+
+        if (option.EnableResize==true) this.CreateResizeListener();
+
         if (option.OnCreatedCallback) option.OnCreatedCallback(chart);
 
         chart.Draw();
-
-        this.JSChartContainer=chart;
-        this.DivElement.JSChart=this;   //div中保存一份
     }
 
     this.CreateJSScrollBarChartContainer=function(option)
@@ -104,6 +116,18 @@ function JSScrollBarChart(divElement)
 
         if (IFrameSplitOperator.IsBool(item.AutoLeft)) chart.AutoMargin.Left=item.AutoLeft;
         if (IFrameSplitOperator.IsBool(item.AutoRight)) chart.AutoMargin.Right=item.AutoRight;
+    }
+
+    this.CreateResizeListener=function()
+    {
+        this.ResizeListener = new ResizeObserver((entries)=>{ this.OnDivResize(entries); });
+        this.ResizeListener.observe(this.DivElement);
+    }
+
+    this.OnDivResize=function(entries)
+    {
+        JSConsole.Chart.Log("[JSScrollBarChart::OnDivResize] entries=", entries);
+        this.OnSize( );
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -251,6 +275,11 @@ function JSScrollBarChartContainer(uielement)
         this.IsDestroy=true;
     }
 
+    this.GetHQChart=function()
+    {
+        return this.HQChart;
+    }
+
     //设置事件回调
     //{event:事件id, callback:回调函数}
     this.AddEventCallback=function(object)
@@ -327,6 +356,36 @@ function JSScrollBarChartContainer(uielement)
         //this.UIElement.ontouchstart=(e)=> { this.OnTouchStart(e); } 
         //this.UIElement.ontouchmove=(e)=> {this.OnTouchMove(e); }
         //this.UIElement.ontouchend=(e)=> {this.OnTouchEnd(e); } 
+    }
+
+    //创建一个图形
+    this.CreateChartPaint=function(name)
+    {
+        var chart=g_ChartPaintFactory.Create(name);
+        if (!chart) return null;
+
+        chart.ChartFrame=this.Frame;
+        chart.ChartBorder=this.Frame.ChartBorder;
+        chart.Canvas=this.Canvas;
+        chart.Data=this.Frame.Data;
+        chart.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+        chart.GetHQChartCallback=()=>{ return this.GetHQChart(); }
+
+        return chart;
+    }
+
+    this.GetChartPaintByClassName=function(name)
+    {
+        for(var i=0; i<this.ChartPaint.length; ++i)
+        {
+            var item=this.ChartPaint[i];
+            if (item.ClassName==name)
+            {
+                return { Chart:item, Index:i };
+            }
+        }
+
+        return null;
     }
 
     this.Draw=function()
