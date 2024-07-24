@@ -2602,6 +2602,7 @@ var JSCHART_EVENT_ID=
     ON_CLICK_REPORT_CHECKBOX:141,           //报价列表checkbox
     ON_CLICK_REPORT_BUTTON:142,             //报价列表按钮
     ON_CLICK_REPORT_LINK:143,               //报价列表 链接
+    ON_CREATE_REPORT_HEADER_MENU:144,       //报价列表 表头菜单
 
 
     ON_CHANGE_INDEX:150,        //切换指标
@@ -2778,8 +2779,10 @@ var JSCHART_MENU_ID=
 
 
     CMD_REPORT_CHANGE_BLOCK_ID:60,      //报价列表 切换板块ID
-
-    
+    CMD_REPORT_COLUMN_SORT_ID:61,       //报价列表 表头排序  Arg[列序号, 排序方向]
+    CMD_REPORT_COLUMN_DEL_ID:62,        //报价列表 删除列
+    CMD_REPORT_COLUMN_MOVE_ID:63,       //报价列表 列移动
+    CMD_REPORT_COLUMN_FILTER_ID:64,     //报价列表 筛选
 }
 
 
@@ -56411,7 +56414,8 @@ IChartDrawPicture.ArrayDrawPricture=
     { Name:"PriceRange", ClassName:"ChartPriceRange", Create:function() { return new ChartPriceRange(); }},
     { Name:"DateRange", ClassName:"ChartDateRange", Create:function() { return new ChartDateRange(); }},
     { Name:"InfoLine", ClassName:"ChartInfoLine", Create:function() { return new ChartInfoLine(); }},
-    { Name:"TrendAngle", ClassName:"ChartTrendAngle", Create:function() { return new ChartTrendAngle(); }}
+    { Name:"TrendAngle", ClassName:"ChartTrendAngle", Create:function() { return new ChartTrendAngle(); }},
+    { Name:"ArrowMarker", ClassName:"ChartArrowMarker", Create:function() { return new ChartArrowMarker(); } },
 ];
 
 IChartDrawPicture.MapIonFont=new Map(
@@ -56932,6 +56936,103 @@ function ChartDrawArrowLine()
         this.LinePoint.push(line);
         
         this.DrawPoint([drawPoint[0]]);  //画点
+        this.Canvas.restore();
+    }
+}
+
+function ChartArrowMarker()
+{
+    this.newMethod=IChartDrawPicture;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartArrowMarker';
+    this.IsPointIn=this.IsPointIn_XYValue_Line;
+   
+    this.InsideAngle=25;
+    this.InsideWidth=70;
+
+    this.OutAngle=35;
+    this.OutWidth=100;
+
+    this.GetXYCoordinate=this.GetXYCoordinate_default;
+    this.OnlyMoveXIndex=true;
+    this.IsSupportMagnet=true;
+
+    this.Super_SetOption=this.SetOption;    //父类函数
+
+    this.SetOption=function(option)
+    {
+        this.Super_SetOption(option);
+
+        if (option.AreaColor) this.AreaColor=option.AreaColor;
+        else this.AreaColor=IChartDrawPicture.ColorToRGBA(this.LineColor, 0.6);
+    }
+
+    this.CalculatePoint=function(angle, ptStart, ptEnd, lineWidth)
+    {
+        var theta=angle;            //三角斜边一直线夹角
+        var headlen=lineWidth;      //三角斜边长度
+
+        var angle = Math.atan2(ptStart.Y - ptEnd.Y, ptStart.X - ptEnd.X) * 180 / Math.PI,
+        angle1 = (angle + theta) * Math.PI / 180,
+        angle2 = (angle - theta) * Math.PI / 180,
+        topX = headlen * Math.cos(angle1),
+        topY = headlen * Math.sin(angle1),
+        botX = headlen * Math.cos(angle2),
+        botY = headlen * Math.sin(angle2);
+
+        return { Top:{X:topX+ptEnd.X, Y:topY+ptEnd.Y}, Bottom:{X:botX+ptEnd.X, Y:botY+ptEnd.Y} };
+    }
+
+    this.Draw=function()
+    {
+        this.LinePoint=[];
+        if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
+
+        var drawPoint=this.CalculateDrawPoint( {IsCheckX:true, IsCheckY:true} );
+        if (!drawPoint) return;
+        if (drawPoint.length!=2) return;
+
+        this.ClipFrame();
+
+        var ptStart=drawPoint[0];
+        var ptEnd=drawPoint[1];
+
+        //计算箭头 的两条边线坐标
+        var outArrow=this.CalculatePoint(this.OutAngle, ptStart, ptEnd, this.OutWidth);
+        var insideArrow=this.CalculatePoint(this.InsideAngle, ptStart, ptEnd, this.InsideWidth);
+
+        this.Canvas.beginPath();
+        this.Canvas.moveTo(ptStart.X,ptStart.Y);
+        this.Canvas.lineTo(insideArrow.Top.X,insideArrow.Top.Y);
+        this.Canvas.lineTo(outArrow.Top.X,outArrow.Top.Y);
+        this.Canvas.lineTo(ptEnd.X,ptEnd.Y);
+        this.Canvas.lineTo(outArrow.Bottom.X,outArrow.Bottom.Y);
+        this.Canvas.lineTo(insideArrow.Bottom.X,insideArrow.Bottom.Y);
+        this.Canvas.lineTo(ptStart.X,ptStart.Y);
+
+        this.Canvas.strokeStyle=this.LineColor;
+        this.Canvas.stroke();
+
+        this.Canvas.closePath();
+        this.Canvas.fillStyle=this.AreaColor;
+        this.Canvas.fill();
+
+        /*
+        if (this.IsSelected)
+        {
+            this.Canvas.strokeStyle='rgba(255,0,0,0.5)';
+            this.Canvas.lineWidth=20 * GetDevicePixelRatio();
+            this.Canvas.stroke();
+        }
+        */
+
+        var line={Start:ptStart, End:ptEnd};
+        this.LinePoint.push(line);
+        
+        this.DrawPoint([ptStart,ptEnd]);  //画点
         this.Canvas.restore();
     }
 }
@@ -65707,6 +65808,9 @@ function ChartPriceRange()
 
         this.DrawArrow({X:ToFixedPoint(xCenter), Y:ptStart.Y}, {X:ToFixedPoint(xCenter), Y:ptEnd.Y});
 
+        var bottom=this.Frame.ChartBorder.GetBottomEx();
+        var top=this.Frame.ChartBorder.GetTopEx();
+
         //文字输出
         var startValue=this.Frame.GetYData(ptStart.Y,false);
         var endValue=this.Frame.GetYData(ptEnd.Y,false);
@@ -65721,6 +65825,23 @@ function ChartPriceRange()
         if (diffValue>0) rtTextBG.Top=ptEnd.Y-rtTextBG.Height-4;
         else rtTextBG.Top=ptEnd.Y+4;
         rtTextBG.Bottom=rtTextBG.Top+rtTextBG.Height;
+
+        if (diffValue>0)
+        {
+            if (rtTextBG.Top<=top)
+            {
+                rtTextBG.Top=top;
+                rtTextBG.Bottom=rtTextBG.Top+rtTextBG.Height;
+            }
+        }
+        else
+        {
+            if (rtTextBG.Bottom>=bottom)
+            {
+                rtTextBG.Bottom=bottom;
+                rtTextBG.Top=rtTextBG.Bottom-rtTextBG.Height;
+            }
+        }
 
         if (this.Label.EnableBGColor)
         {
@@ -65828,6 +65949,7 @@ function ChartDateRange()
 
         
         //文字输出
+        var bottom=this.Frame.ChartBorder.GetBottomEx();
         var startIndex=this.Frame.GetXData(ptStart.X,false);
         var endIndex=this.Frame.GetXData(ptEnd.X,false);
         var barCount=endIndex-startIndex+1;
@@ -65838,6 +65960,12 @@ function ChartDateRange()
         var textWidth=this.Canvas.measureText(text).width+4+(this.Label.LeftMargin+this.Label.RightMargin);
         var rtTextBG={ Left:xCenter-textWidth/2, Top:ptEnd.Y+4, Width:textWidth, Height:textHeight+2 };
         rtTextBG.Bottom=rtTextBG.Top+rtTextBG.Height;
+
+        if (rtTextBG.Bottom>=bottom)
+        {
+            rtTextBG.Bottom=bottom;
+            rtTextBG.Top=rtTextBG.Bottom-rtTextBG.Height;
+        }
 
         if (this.Label.EnableBGColor)
         {

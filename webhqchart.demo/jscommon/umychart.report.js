@@ -862,6 +862,52 @@ function JSReportChartContainer(uielement)
         this.RequestMemberListData();
     }
 
+    //更新数据
+    this.UpdateFullData=function(data)
+    {
+        var arySymbol=[];   
+        if (IFrameSplitOperator.IsNonEmptyArray(data.data))
+        {
+            //0=证券代码 1=股票名称
+            for(var i=0;i<data.data.length;++i)
+            {
+                var item=data.data[i];
+                var symbol=item[0];
+                var stock=null;
+                if (this.MapStockData.has(symbol))
+                {
+                    stock=this.MapStockData.get(symbol);
+                }
+                else
+                {
+                    stock=new HQReportItem();
+                    stock.OriginalSymbol=symbol;
+                    this.MapStockData.set(symbol, stock);
+                    
+                }
+
+                stock.Symbol=this.GetSymbolNoSuffix(symbol);
+                stock.Name=item[1];
+                this.ReadStockJsonData(stock, item);
+                arySymbol.push(symbol);
+            }
+        }
+
+        //设置显示数据
+        this.Data.Data=[];
+        this.SourceData.Data=[];
+        if (IFrameSplitOperator.IsNonEmptyArray(arySymbol))
+        {
+            for(var i=0;i<arySymbol.length;++i)
+            {
+                this.Data.Data.push(arySymbol[i]);
+                this.SourceData.Data.push(arySymbol[i]);
+            }
+        }
+
+        this.Draw();
+    }
+
     //设置全部的数据
     this.SetFullData=function(data)
     {
@@ -871,6 +917,9 @@ function JSReportChartContainer(uielement)
         this.ResetSortStatus();
         this.ResetReportSelectStatus();
 
+        this.UpdateFullData(data);
+
+        /*
         //缓存所有数据
         var arySymbol=[];
         if (IFrameSplitOperator.IsNonEmptyArray(data.data))
@@ -911,6 +960,7 @@ function JSReportChartContainer(uielement)
         }
 
         this.Draw();
+        */
     }
 
     this.RequestMemberListData=function()
@@ -2968,10 +3018,73 @@ function JSReportChartContainer(uielement)
         }
     }
 
+    //列排序
+    this.SortColumn=function(index, sortType)
+    {
+        if (index<0) return false;
+        var reportChart=this.GetReportChart();
+        if (!reportChart) return false;
+
+        var column=reportChart.Column[index];
+        
+        if (!column) return false;
+        if (column.Sort!=1 && column.Sort!=2) return false;
+
+        var sortInfo={ Field:index, Sort:sortType };
+        if (sortInfo.Sort==0)   //不排序还原
+        {
+            this.Data.Data=[];
+            if (IFrameSplitOperator.IsNonEmptyArray(this.SourceData.Data))
+                this.Data.Data=this.SourceData.Data.slice();
+        }
+        else if (sortInfo.Sort==1 || sortInfo.Sort==2)
+        {
+            if (column.Sort==1)  //本地排序
+            {
+                var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_REPORT_LOCAL_SORT);
+                if (event && event.Callback)
+                {
+                    var sendData={ Column:column, SortInfo:sortInfo, SymbolList:this.Data.Data, Result:null };
+                    event.Callback (event, sendData, this);
+                    if (Array.isArray(sendData.Result)) this.Data.Data=sendData.Result;
+                }
+                else
+                {
+                    this.Data.Data.sort((left, right)=> { return this.LocalSort(left, right, column, sortInfo.Sort); });
+                }
+            }
+            else if (column.Sort==2) //远程排序
+            {
+                if (!IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return;
+                
+                this.SortInfo.Field=sortInfo.Field;
+                this.SortInfo.Sort=sortInfo.Sort;
+                this.Data.YOffset=0;
+                this.ResetReportSelectStatus();
+                this.RequestStockSortData(column, sortInfo.Field, sortInfo.Sort);   //远程排序
+                return true;
+            }
+        }
+
+        this.Data.YOffset=0;
+        this.ResetReportSelectStatus();
+        this.SortInfo.Field=sortInfo.Field;
+        this.SortInfo.Sort=sortInfo.Sort;
+        this.Draw();
+        this.DelayUpdateStockData();
+        return true;
+    }
+
     //点表头
     this.OnClickHeader=function(clickData, e)
     {
         var header=clickData.Header;
+        if (header.Column && header.Column.EnablePopupHeaderMenu)
+        {
+            this.PopupHeaderMenu(clickData, e);
+            return;
+        }
+
         if (header.Column && (header.Column.Sort==1 || header.Column.Sort==2))
         {
             var index=header.Index;
@@ -3048,6 +3161,52 @@ function JSReportChartContainer(uielement)
                 this.DelayUpdateStockData();
             }
         }
+    }
+
+    this.PopupHeaderMenu=function(clickData, e)
+    {
+        if (!this.JSPopMenu) return;
+        if (!this.GetEventCallback) return;
+
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CREATE_REPORT_HEADER_MENU);
+        if (!event || !event.Callback) return;
+
+        var header=clickData.Header;
+        var column=header.Column;
+        var menuData={ Menu:null, Position:JSPopMenu.POSITION_ID.DROPDOWN_MENU_ID };
+        menuData.ClickCallback=(data)=>{ this.OnClickHeaderMenu(column, data); }
+        
+        var sendData={ MenuData:menuData, Column:column, Index:header.Index, PreventDefault:false, e:e };
+        event.Callback(event, sendData, this);
+        if (sendData.PreventDefault==true) return;
+
+        if (!menuData.Menu) return;
+
+        this.PopupMenuByDrapdown(menuData, header.Rect);
+    }
+
+    //下拉菜单
+    this.PopupMenuByDrapdown=function(menuData, rtButton)
+    {
+        if (!this.JSPopMenu) return;
+
+        var pixelRatio=GetDevicePixelRatio();
+        var rtCell={ Left:rtButton.Left/pixelRatio, Right:rtButton.Right/pixelRatio, Bottom:rtButton.Bottom/pixelRatio, Top:rtButton.Top/pixelRatio };
+        rtCell.Width=rtCell.Right-rtCell.Left;
+        rtCell.Height=rtCell.Bottom-rtCell.Top;
+
+        var rtClient=this.UIElement.getBoundingClientRect();
+        var rtScroll=GetScrollPosition();
+
+        var offsetLeft=rtClient.left+rtScroll.Left;
+        var offsetTop=rtClient.top+rtScroll.Top;
+        rtCell.Left+=offsetLeft;
+        rtCell.Right+=offsetLeft;
+        rtCell.Top+=offsetTop;
+        rtCell.Bottom+=offsetTop;
+
+        this.JSPopMenu.CreatePopMenu(menuData);
+        this.JSPopMenu.PopupMenuByDrapdown(rtCell);
     }
 
     this.GetTabPopMenu=function(tabItem)
@@ -3165,6 +3324,24 @@ function JSReportChartContainer(uielement)
         this.Draw();
     }
 
+    this.OnClickHeaderMenu=function(menuData, data)
+    {
+        JSConsole.Chart.Log('[JSReportChartContainer::OnClickHeaderMenu] ',menuData, data);
+
+        var cmdID=data.Data.ID;
+        var aryArgs=data.Data.Args;
+
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_MENU_COMMAND);  //回调通知外部
+        if (event && event.Callback)
+        {
+            var data={ PreventDefault:false, CommandID:cmdID, Args:aryArgs, SrcData:data, MenuData:menuData };
+            event.Callback(event,data,this);
+            if (data.PreventDefault) return;
+        }
+
+        this.ExecuteMenuCommand(cmdID,aryArgs);
+    }
+
     this.ExecuteMenuCommand=function(cmdID, aryArgs)
     {
         JSConsole.Chart.Log('[JSReportChartContainer::ExecuteMenuCommand] cmdID=, aryArgs=', cmdID,aryArgs);
@@ -3181,6 +3358,22 @@ function JSReportChartContainer(uielement)
             case JSCHART_MENU_ID.CMD_REPORT_CHANGE_BLOCK_ID:
                 if (srcParam) this.ChangeSymbol(srcParam);
                 break;
+            case JSCHART_MENU_ID.CMD_REPORT_COLUMN_SORT_ID:
+                if (IFrameSplitOperator.IsNumber(param) && IFrameSplitOperator.IsNumber(aryArgs[1]))
+                    this.SortColumn(param, aryArgs[1]);
+                break;
+            case JSCHART_MENU_ID.CMD_REPORT_COLUMN_MOVE_ID:
+                if (IFrameSplitOperator.IsNumber(param) && IFrameSplitOperator.IsNumber(aryArgs[1]))
+                {
+                    var leftIndex=param;
+                    var rightIndex=param+aryArgs[1];
+                    this.SwapColumn(leftIndex, rightIndex, {Redraw:true});
+                }
+                break;
+            case JSCHART_MENU_ID.CMD_REPORT_COLUMN_DEL_ID:
+                if (IFrameSplitOperator.IsNumber(param))
+                    this.DeleteColumn(param, {Redraw:true});
+                break;
         }
     }
 
@@ -3190,6 +3383,20 @@ function JSReportChartContainer(uielement)
         if (!reportChart) return;
 
         if (!reportChart.SwapColumn(leftIndex, rightIndex)) return;
+
+        if (option && option.Redraw)
+        {
+            this.SetSizeChange(true);
+            this.Draw();
+        }
+    }
+
+    this.DeleteColumn=function(index, option)
+    {
+        var reportChart=this.GetReportChart();
+        if (!reportChart) return;
+
+        if (!reportChart.DeleteColumn(index)) return;
 
         if (option && option.Redraw)
         {
@@ -4052,6 +4259,9 @@ function ChartReport()
             else colItem.IsDrawCallback=false;
             if (item.Icon) colItem.Icon=item.Icon;
 
+            //点击表头弹出菜单
+            if (IFrameSplitOperator.IsBool(item.EnablePopupHeaderMenu)) colItem.EnablePopupHeaderMenu=item.EnablePopupHeaderMenu;
+
             if (item.Sort==1 || item.Sort==2)   //1本地排序 2=远程排序
             {
                 colItem.SortType=[1,2];         //默认 降序 ，升序
@@ -4156,6 +4366,15 @@ function ChartReport()
         this.Column[leftIndex]=this.Column[rightIndex];
         this.Column[rightIndex]=tempItem;
 
+        return true;
+    }
+
+    this.DeleteColumn=function(index)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.Column)) return false;
+        if (index<0 || index>=this.Column.length) return false;
+       
+        this.Column.splice(index,1);
         return true;
     }
 

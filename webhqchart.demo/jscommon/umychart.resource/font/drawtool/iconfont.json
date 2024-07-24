@@ -6,6 +6,20 @@
   "description": "hqchart画图工具",
   "glyphs": [
     {
+      "icon_id": "392156",
+      "name": "箭头",
+      "font_class": "big_arrow",
+      "unicode": "e6a5",
+      "unicode_decimal": 59045
+    },
+    {
+      "icon_id": "12779708",
+      "name": "长箭头",
+      "font_class": "bottom-arrow-solid",
+      "unicode": "e60d",
+      "unicode_decimal": 58893
+    },
+    {
       "icon_id": "12209969",
       "name": "边框",
       "font_class": "biankuang",
