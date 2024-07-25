@@ -7032,7 +7032,14 @@ function ChartReport()
         
         if (buttonData.Type===0)    //checkbox
         {
-            var sendData={ Column:buttonData.Column, Index:buttonData.Index, Stock:buttonData.Stock, Data:buttonData.Data, PreventDefault: false };
+            var sendData=
+            { 
+                Column:buttonData.Column, Index:buttonData.Index, Stock:buttonData.Stock, ColumnIndex:buttonData.ColumnIndex, 
+                Data:buttonData.Data, Value:true,
+                PreventDefault: false 
+            };
+            if (IFrameSplitOperator.IsBool(buttonData.Data.Checked)) sendData.Value=!buttonData.Data.Checked;
+
             this.SendClickEvent(JSCHART_EVENT_ID.ON_CLICK_REPORT_CHECKBOX, sendData)
 
             if (!sendData.PreventDefault)
@@ -7048,7 +7055,7 @@ function ChartReport()
         }
         else if (buttonData.Type===1)   //button
         {
-            var sendData={ Column:buttonData.Column, Index:buttonData.Index, Stock:buttonData.Stock, Data:buttonData.Data };
+            var sendData={ Column:buttonData.Column, Index:buttonData.Index, Stock:buttonData.Stock, ColumnIndex:buttonData.ColumnIndex, Data:buttonData.Data };
             this.SendClickEvent(JSCHART_EVENT_ID.ON_CLICK_REPORT_BUTTON, sendData)
 
             status.Redraw=true;
@@ -7056,7 +7063,7 @@ function ChartReport()
         }
         else if (buttonData.Type===2)   //link
         {
-            var sendData={ Column:buttonData.Column, Index:buttonData.Index, Stock:buttonData.Stock, Data:buttonData.Data };
+            var sendData={ Column:buttonData.Column, Index:buttonData.Index, Stock:buttonData.Stock, ColumnIndex:buttonData.ColumnIndex, Data:buttonData.Data };
             this.SendClickEvent(JSCHART_EVENT_ID.ON_CLICK_REPORT_LINK, sendData)
 
             status.Redraw=true;
