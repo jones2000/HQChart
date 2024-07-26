@@ -112,6 +112,7 @@ function JSDialogDrawTool()
             [
                 { Title: '价格范围', ClassName: 'hqchart_drawtool icon-shijianfanwei', Type:0, Data:{ ID:"PriceRange" }  },
                 { Title: '时间范围', ClassName: 'hqchart_drawtool icon-jiagefanwei', Type:0, Data:{ ID:"DateRange" }  },
+                { Title: "价格和时间范围", ClassName:"hqchart_drawtool icon-jiagefanwei", Type:0, Data:{ ID:"DatePriceRange" } },
                 { Title: "监测线", ClassName:"hqchart_drawtool icon-jiance", Type:0, Data:{ ID:"MonitorLine"} },
             ]
         },

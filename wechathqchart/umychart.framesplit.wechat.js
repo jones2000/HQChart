@@ -1664,9 +1664,10 @@ function FrameSplitMinutePriceY()
 
     this.CustomCoordinate = function ()    //自定义刻度
     {
+        this.Frame.CustomHorizontalInfo = [];
         if (!this.Custom) return;
 
-        for (var i in this.Custom) 
+        for (var i=0; i<this.Custom.length; ++i) 
         {
             var item = this.Custom[i];
             if (item.Type == 1) 

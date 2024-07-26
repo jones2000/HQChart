@@ -2792,6 +2792,8 @@ function JSChartContainer(uielement)
             if (!subItem || !subItem.Frame) continue;
 
             var frame=subItem.Frame;
+            frame.YCustomSplit=true;    //自定义刻度每次都调用
+
             var key=frame.Identify;
             var item=
             { 

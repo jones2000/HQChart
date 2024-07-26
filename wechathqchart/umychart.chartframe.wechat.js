@@ -66,6 +66,7 @@ function IChartFramePainting()
     this.SizeChange = true;               //大小是否改变
     this.XYSplit = true;                  //XY轴坐标信息改变
     this.XSplit=true;                     //X轴坐标信息改变
+    this.YCustomSplit=true;               //Y轴自定刻度
 
     this.HorizontalMax;                 //Y轴最大值
     this.HorizontalMin;                 //Y轴最小值
@@ -102,6 +103,7 @@ function IChartFramePainting()
         this.SizeChange = false;
         this.XYSplit = false;
         this.XSplit=false;
+        this.YCustomSplit=false;
     }
 
     this.DrawFrame = function () { }
@@ -1230,7 +1232,15 @@ function MinuteFrame()
     //分割x,y轴坐标信息
     this.SplitXYCoordinate = function () 
     {
-        if (this.XYSplit == false) return;
+        if (this.XYSplit == false) 
+        {
+            if (this.YCustomSplit)
+            {
+                if (this.YSplitOperator && this.YSplitOperator.CustomCoordinate) this.YSplitOperator.CustomCoordinate();
+            }
+            return;
+        }
+
         if (this.YSplitOperator != null) this.YSplitOperator.Operator();
         if (this.XSplitOperator != null) this.XSplitOperator.Operator();
     }
@@ -1580,6 +1590,7 @@ function OverlayMinuteFrame()
         this.SizeChange=false;
         this.XYSplit=false;
         this.XSplit=false;
+        this.YCustomSplit=false;
     }
 
     this.GetScaleTextWidth=function()
@@ -2044,6 +2055,10 @@ function KLineFrame()
             if (this.XSplit)
             {
                 if (this.XSplitOperator) this.XSplitOperator.Operator();
+            }
+
+            if (this.YCustomSplit)
+            {
                 if (this.YSplitOperator && this.YSplitOperator.CustomCoordinate) this.YSplitOperator.CustomCoordinate();
             }
             return;
