@@ -105,7 +105,9 @@ function GetBlackStyle()
                 UpColor:"rgb(238,21,21)",   //上涨
                 DownColor:"rgb(25,158,0)",  //下跌
                 UnchangeColor:"rgb(190, 190 ,190)"  //不变
-            }
+            },
+
+            NameArrow:{ Color:"rgb(190, 190 ,190)", Space:2, Symbol:'▼' },
         },
     
         Title:

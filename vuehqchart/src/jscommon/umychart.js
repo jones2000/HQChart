@@ -692,7 +692,8 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
 
             if (IFrameSplitOperator.IsNumber(item.TitleHeight)) chart.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight=item.TitleHeight;
             else item.TitleHeight=chart.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight;
-            if (IFrameSplitOperator.IsBool(item.IsShowTitleArrow)) chart.Frame.SubFrame[i].Frame.IsShowTitleArrow=item.IsShowTitleArrow;
+            if (IFrameSplitOperator.IsBool(item.IsShowTitleArrow)) frame.IsShowTitleArrow=item.IsShowTitleArrow;
+            if (IFrameSplitOperator.IsNumber(item.TitleArrowType)) frame.TitleArrowType=item.TitleArrowType;
             if (item.IsShowIndexName==false) chart.Frame.SubFrame[i].Frame.IsShowIndexName=false;
             if (item.IsShowOverlayIndexName==false) chart.Frame.SubFrame[i].Frame.IsShowOverlayIndexName=false;
             if (IFrameSplitOperator.IsNumber(item.IndexParamSpace)) chart.Frame.SubFrame[i].Frame.IndexParamSpace=item.IndexParamSpace;
@@ -1161,7 +1162,8 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
                 if (IFrameSplitOperator.IsBool(item.IsDrawTitleBG))  chart.Frame.SubFrame[index].Frame.IsDrawTitleBG=item.IsDrawTitleBG;
                 if (IFrameSplitOperator.IsBool(item.IsShowNameArrow))  chart.Frame.SubFrame[index].Frame.IsShowNameArrow=item.IsShowNameArrow;
 
-                if (IFrameSplitOperator.IsBool(item.IsShowTitleArrow)) chart.Frame.SubFrame[index].Frame.IsShowTitleArrow=item.IsShowTitleArrow;
+                if (IFrameSplitOperator.IsBool(item.IsShowTitleArrow)) frame.IsShowTitleArrow=item.IsShowTitleArrow;
+                if (IFrameSplitOperator.IsNumber(item.TitleArrowType)) frame.TitleArrowType=item.TitleArrowType;
                 if (item.IsShowIndexName==false) chart.Frame.SubFrame[index].Frame.IsShowIndexName=false;
                 if (item.IsShowOverlayIndexName==false) chart.Frame.SubFrame[index].Frame.IsShowOverlayIndexName=false;
                 if (!IFrameSplitOperator.IsUndefined(item.HorizontalReserved)) frame.HorizontalReserved=item.HorizontalReserved;
@@ -1572,7 +1574,6 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
                 if (IFrameSplitOperator.IsBool(item.IsShowNameArrow))  chart.Frame.SubFrame[i].Frame.IsShowNameArrow=item.IsShowNameArrow;
 
                 if (IFrameSplitOperator.IsNumber(item.TitleHeight)) chart.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight=item.TitleHeight;
-
                 if (IFrameSplitOperator.IsBool(item.IsShowTitleArrow)) chart.Frame.SubFrame[i].Frame.IsShowTitleArrow=item.IsShowTitleArrow;
                 if (item.IsShowIndexName==false) chart.Frame.SubFrame[i].Frame.IsShowIndexName=false;
                 if (item.IsShowOverlayIndexName==false) chart.Frame.SubFrame[i].Frame.IsShowOverlayIndexName=false;
@@ -8396,6 +8397,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             else windowItem.TitleHeight=frame.ChartBorder.TitleHeight;
 
             if (IFrameSplitOperator.IsBool(windowItem.IsShowTitleArrow)) frame.IsShowTitleArrow=windowItem.IsShowTitleArrow;
+            if (IFrameSplitOperator.IsNumber(windowItem.TitleArrowType)) frame.TitleArrowType=windowItem.TitleArrowType;
             if (IFrameSplitOperator.IsBool(windowItem.IsShowIndexName)) frame.IsShowIndexName=windowItem.IsShowIndexName;
             if (IFrameSplitOperator.IsNumber(windowItem.IndexParamSpace)) frame.IndexParamSpace=windowItem.IndexParamSpace;
             if (IFrameSplitOperator.IsNumber(windowItem.IndexTitleSpace)) frame.IndexTitleSpace=windowItem.IndexTitleSpace;
@@ -8458,6 +8460,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         if (IFrameSplitOperator.IsNumber(option.SplitCount)) subFrame.Frame.YSplitOperator.SplitCount=option.SplitCount;
         if (IFrameSplitOperator.IsNumber(option.TitleHeight)) subFrame.Frame.ChartBorder.TitleHeight=option.TitleHeight;
         if (IFrameSplitOperator.IsBool(option.IsShowTitleArrow)) subFrame.Frame.IsShowTitleArrow=option.IsShowTitleArrow;
+        if (IFrameSplitOperator.IsNumber(option.TitleArrowType)) subFrame.Frame.TitleArrowType=option.TitleArrowType;
         if (IFrameSplitOperator.IsBool(option.IsShowIndexName)) subFrame.Frame.IsShowIndexName=option.IsShowIndexName;
         if (IFrameSplitOperator.IsBool(option.IsShowOverlayIndexName)) subFrame.Frame.IsShowOverlayIndexName=option.IsShowOverlayIndexName;
         if (IFrameSplitOperator.IsNumber(option.IndexParamSpace)) subFrame.Frame.IndexParamSpace=option.IndexParamSpace;
@@ -10298,6 +10301,7 @@ function IChartFramePainting()
     this.YSpecificMaxMin=null;         //指定Y轴最大最小值
     this.IsShowBorder = true;          //是否显示边框
     this.IsShowTitleArrow=true;        //是否显示指标信息上涨下跌箭头
+    this.TitleArrowType=g_JSChartResource.IndexTitle.ArrowType;             //指标信息上涨下跌箭头类型 0=独立颜色 1=跟指标名字颜色一致
     this.IsShowIndexName=true;         //是否显示指标名字
     this.IsShowOverlayIndexName=true;  //是否显示叠加指标名字
     //this.OverlayIndexType= { Position:0, LineSpace:5 };
@@ -46430,6 +46434,22 @@ IFrameSplitOperator.IsNumber=function(value)
     return typeof(value)=='number';
 }
 
+//批量判断是否是数值类型
+IFrameSplitOperator.IsNumberV2=function(...aryValue)
+{
+    if (!aryValue) return false;
+    if (aryValue.length==0) return false;
+
+    for(const value of aryValue)
+    {
+        if (value==null) return false;
+        if (isNaN(value)) return false;
+        if (typeof(value)!='number') return false;
+    }
+   
+    return true;
+}
+
 //判断是否是正数
 IFrameSplitOperator.IsPlusNumber=function(value)
 {
@@ -53310,9 +53330,11 @@ function DynamicChartTitlePainting()
     this.ColorIndex;    //五彩K线名字 {Name:'名字'}
     this.IsShowColorIndexTitle=true;
     this.IsShowUpDownArrow=true;   //指标数据是否显示 上涨下跌箭头
+    this.TitleArrowType=0;         //指标数据上涨下跌箭头类型 0=独立颜色 1=跟指标颜色一致
     this.IsShowIndexName=true;     //是否显示指标名字
     this.IsShowIndexTitle=true;    //是否显示指标标题信息
     this.IsShowNameArrow=false;
+    this.NameArrowConfig=CloneData(g_JSChartResource.IndexTitle.NameArrow);
 
     this.TradeIndex;    //专家系统名字{Name:'名字', Param:'参数'}
     this.IsShowTradeIndexTitle=true;
@@ -53781,6 +53803,7 @@ function DynamicChartTitlePainting()
         this.IsDrawTitleBG=this.Frame.IsDrawTitleBG;
         this.IsShowNameArrow=this.Frame.IsShowNameArrow;
         this.IsShowUpDownArrow=this.Frame.IsShowTitleArrow;
+        this.TitleArrowType=this.Frame.TitleArrowType;
         this.IsShowIndexName=this.Frame.IsShowIndexName;
         this.IsShowOverlayIndexName=this.Frame.IsShowOverlayIndexName;
         this.OverlayIndexType.Position=this.Frame.OverlayIndexType.Position;
@@ -54065,6 +54088,8 @@ function DynamicChartTitlePainting()
                         if (preValue>value) arrowSuper={ Text:'↓', TextColor:this.UpDownArrowConfig.DownColor };
                         else if (preValue<value) arrowSuper={ Text:'↑', TextColor:this.UpDownArrowConfig.UpColor};
                         else arrowSuper={ Text:'→', TextColor:this.UpDownArrowConfig.UnchangeColor };
+
+                        if (this.TitleArrowType==1) arrowSuper.TextColor=item.Color;
                     }
                 }
             
@@ -54572,10 +54597,16 @@ function DynamicChartTitlePainting()
             if (this.IsDrawTitleBG)
             {
                 var title=this.Title;
-                if (this.IsShowNameArrow) title+='▼';
                 var textWidth=this.Canvas.measureText(title).width;
+                var arrowWidth=0;
+                if (this.IsShowNameArrow && this.NameArrowConfig)
+                {
+                    arrowWidth=this.Canvas.measureText(this.NameArrowConfig.Symbol).width;
+                    if (IFrameSplitOperator.IsNumber(this.NameArrowConfig.Space)) arrowWidth+=this.NameArrowConfig.Space;
+                }
+
                 var bgHeight=this.Canvas.measureText("擎").width+4*pixelRatio;
-                var bgWidth=textWidth+4*pixelRatio;
+                var bgWidth=textWidth+arrowWidth+4*pixelRatio;
                 
                 this.TitleRect= 
                 {
@@ -54595,15 +54626,24 @@ function DynamicChartTitlePainting()
                     this.Canvas.strokeRect(ToFixedPoint(drawRect.Left),ToFixedPoint(drawRect.Top),ToFixedRect(drawRect.Width),ToFixedRect(drawRect.Height));
                 }
 
+                var xText=left+2*pixelRatio;
                 this.Canvas.fillStyle=this.TitleColor;
-                this.Canvas.fillText(title,left+2*pixelRatio,bottom,textWidth);
+                this.Canvas.fillText(title,xText,bottom);
+                xText+=textWidth;
+                if (this.IsShowNameArrow && this.NameArrowConfig)
+                {
+                    if (IFrameSplitOperator.IsNumber(this.NameArrowConfig.Space)) xText+=this.NameArrowConfig.Space;
+                    this.Canvas.fillStyle=this.NameArrowConfig.Color;
+                    this.Canvas.fillText(this.NameArrowConfig.Symbol,xText,bottom);
+                }
+
                 left+=bgWidth+2*pixelRatio;
                 left+=this.TitleSpace;
             }
             else
             {
                 this.Canvas.fillStyle=this.TitleColor;
-                this.Canvas.fillText(this.Title,left,bottom,textWidth);
+                this.Canvas.fillText(this.Title,left,bottom);
                 left+=textWidth;
                 left+=this.TitleSpace;
             }
@@ -54716,11 +54756,17 @@ function DynamicChartTitlePainting()
     {
         var pixelRatio=GetDevicePixelRatio();
         var title=this.Title;
-        if (this.IsShowNameArrow) title+='▼';
         var textWidth=this.Canvas.measureText(title).width;
+        var arrowWidth=0;
+        if (this.IsShowNameArrow && this.NameArrowConfig)
+        {
+            arrowWidth=this.Canvas.measureText(this.NameArrowConfig.Symbol).width;
+            if (IFrameSplitOperator.IsNumber(this.NameArrowConfig.Space)) arrowWidth+=this.NameArrowConfig.Space;
+        }
+
         var bgHeight=this.Canvas.measureText("擎").width+4*pixelRatio;
         var roundRadius=this.BorderRoundRadius*pixelRatio;
-        var bgWidth=textWidth+4*pixelRatio+roundRadius*2;
+        var bgWidth=textWidth+arrowWidth+4*pixelRatio+roundRadius*2;
        
         rtButton.Top=rtButton.YCenter-bgHeight/2-1,
         rtButton.Width=bgWidth;
@@ -54766,8 +54812,16 @@ function DynamicChartTitlePainting()
             }
         }
         
+        var xText=rtButton.Left+roundRadius+2*pixelRatio;
         this.Canvas.fillStyle=this.TitleColor;
-        this.Canvas.fillText(title,rtButton.Left+roundRadius+2*pixelRatio,rtButton.YCenter,textWidth);
+        this.Canvas.fillText(title,xText,rtButton.YCenter);
+        xText+=textWidth;
+        if (this.IsShowNameArrow && this.NameArrowConfig)
+        {
+            if (IFrameSplitOperator.IsNumber(this.NameArrowConfig.Space)) xText+=this.NameArrowConfig.Space;
+            this.Canvas.fillStyle=this.NameArrowConfig.Color;
+            this.Canvas.fillText(this.NameArrowConfig.Symbol,xText,rtButton.YCenter);
+        }
     }
 
     //绘制按钮
@@ -66790,7 +66844,11 @@ function JSChartResource()
             UpColor:"rgb(238,21,21)",   //上涨
             DownColor:"rgb(25,158,0)",  //下跌
             UnchangeColor:"rgb(0,0,0)"  //不变
-        }
+        },
+
+        ArrowType:0,
+
+        NameArrow:{ Color:"rgb(43,54,69)", Space:2, Symbol:'▼' },
     }
 
     this.Title={
@@ -68087,6 +68145,16 @@ function JSChartResource()
                 if (subItem.UpColor) this.IndexTitle.UpDownArrow.UpColor = subItem.UpColor;
                 if (subItem.DownColor) this.IndexTitle.UpDownArrow.DownColor = subItem.DownColor;
                 if (subItem.UnchangeColor) this.IndexTitle.UpDownArrow.UnchangeColor = subItem.UnchangeColor;
+            }
+
+            if (IFrameSplitOperator.IsNumber(item.ArrowType)) this.IndexTitle.ArrowType=item.ArrowType;
+
+            if (item.NameArrow)
+            {
+                var subItem=item.NameArrow;
+                if (subItem.Color) this.IndexTitle.NameArrow.Color = subItem.Color;
+                if (subItem.Symbol) this.IndexTitle.NameArrow.Symbol = subItem.Symbol;
+                if (IFrameSplitOperator.IsNumber(subItem.Space)) this.IndexTitle.NameArrow.Space = subItem.Space;
             }
         }
 
@@ -74059,7 +74127,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
                 if (IFrameSplitOperator.IsNumber(item.TitleHeight)) this.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight=item.TitleHeight;
                 else item.TitleHeight=this.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight;
-                if (IFrameSplitOperator.IsBool(item.IsShowTitleArrow)) this.Frame.SubFrame[i].Frame.IsShowTitleArrow=item.IsShowTitleArrow;
+                if (IFrameSplitOperator.IsBool(item.IsShowTitleArrow)) subFrame.Frame.IsShowTitleArrow=item.IsShowTitleArrow;
+                if (IFrameSplitOperator.IsNumber(item.TitleArrowType)) subFrame.Frame.TitleArrowType=item.TitleArrowType;
                 if (item.IsShowIndexName==false) this.Frame.SubFrame[i].Frame.IsShowIndexName=false;
                 if (item.IsShowOverlayIndexName==false) this.Frame.SubFrame[i].Frame.IsShowOverlayIndexName=false;
                 if (IFrameSplitOperator.IsNumber(item.IndexParamSpace)) this.Frame.SubFrame[i].Frame.IndexParamSpace=item.IndexParamSpace;

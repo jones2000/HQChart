@@ -37,6 +37,18 @@ function IsNumber(value)
     return true;
 }
 
+//深拷贝
+function CloneData(data)
+{
+    if (!data) return null;
+
+    var strData=JSON.stringify(data);
+    var item= JSON.parse(strData);
+    
+    return item;
+}
+
+
 //历史K线数据
 function HistoryData()
 {
@@ -2325,7 +2337,8 @@ export
     JSCHART_DATA_FIELD_ID,
     PhoneDBClick,
     HQ_DATA_TYPE,
-    OVERLAY_STATUS_ID
+    OVERLAY_STATUS_ID,
+    CloneData
 };
 
 /*

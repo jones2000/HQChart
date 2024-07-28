@@ -13,6 +13,9 @@
 import { IFrameSplitOperator } from "./umychart.framesplit.wechat";
 
 
+
+
+
 function JSChartResource() 
 {
     this.TooltipBGColor = "rgb(255, 255, 255)"; //背景色
@@ -47,6 +50,20 @@ function JSChartResource()
         Mergin:{ Left:5, Top:5, Bottom:1, Right:5 },
         Font:"11px 微软雅黑" ,
         RightSpace:5,
+    }
+
+    this.IndexTitle=
+    {
+        UpDownArrow:    //数值涨跌箭头
+        {
+            UpColor:"rgb(238,21,21)",   //上涨
+            DownColor:"rgb(25,158,0)",  //下跌
+            UnchangeColor:"rgb(0,0,0)"  //不变
+        },
+
+        ArrowType:0,
+
+        NameArrow:{ Color:"rgb(43,54,69)", Space:2, Symbol:'▼' },
     }
 
     this.UpTextColor = "rgb(238,21,21)";
@@ -455,6 +472,28 @@ function JSChartResource()
         if (style.FrameSplitTextFont) this.FrameSplitTextFont = style.FrameSplitTextFont;
         if (style.FrameTitleBGColor) this.FrameTitleBGColor = style.FrameTitleBGColor;
 
+        if (style.IndexTitle)
+        {
+            var item=style.IndexTitle;
+            if (item.UpDownArrow)
+            {
+                var subItem=item.UpDownArrow;
+                if (subItem.UpColor) this.IndexTitle.UpDownArrow.UpColor = subItem.UpColor;
+                if (subItem.DownColor) this.IndexTitle.UpDownArrow.DownColor = subItem.DownColor;
+                if (subItem.UnchangeColor) this.IndexTitle.UpDownArrow.UnchangeColor = subItem.UnchangeColor;
+            }
+
+            if (IFrameSplitOperator.IsNumber(item.ArrowType)) this.IndexTitle.ArrowType=item.ArrowType;
+
+            if (item.NameArrow)
+            {
+                var subItem=item.NameArrow;
+                if (subItem.Color) this.IndexTitle.NameArrow.Color = subItem.Color;
+                if (subItem.Symbol) this.IndexTitle.NameArrow.Symbol = subItem.Symbol;
+                if (IFrameSplitOperator.IsNumber(subItem.Space)) this.IndexTitle.NameArrow.Space = subItem.Space;
+            }
+        }
+
         if (style.Frame) 
         {
             var item=style.Frame;
@@ -822,6 +861,7 @@ JSChartResource.CopyMargin=function(dest,src)
     if (IFrameSplitOperator.IsNumber(src.Bottom)) dest.Bottom=src.Bottom;
 }
 
+
 var g_JSChartResource = new JSChartResource();
 
 var JSCHART_LANGUAGE_ID =
@@ -975,7 +1015,7 @@ export
     JSChartResource,
     g_JSChartResource,
     g_JSChartLocalization,
-    JSCHART_LANGUAGE_ID
+    JSCHART_LANGUAGE_ID,
 };
 /*
 module.exports =

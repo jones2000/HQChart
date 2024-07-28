@@ -296,6 +296,18 @@ function GetWhiteStyle()
         UnchagneTextColor: "rgb(0,0,0)",
         CloseLineColor: 'rgb(178,34,34)',
 
+        IndexTitle:
+        {
+            UpDownArrow:    //数值涨跌箭头
+            {
+                UpColor:"rgb(238,21,21)",   //上涨
+                DownColor:"rgb(25,158,0)",  //下跌
+                UnchangeColor:"rgb(190, 190 ,190)"  //不变
+            },
+
+            NameArrow:{ Color:"rgb(190, 190 ,190)", Space:2, Symbol:'▼' },
+        },
+
         FrameBorderPen: "rgb(225,236,242)",     //边框
         FrameSplitPen: "rgb(225,236,242)",          //分割线
         FrameSplitTextColor: "rgb(51,51,51)",     //刻度文字颜色

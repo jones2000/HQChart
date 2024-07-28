@@ -491,6 +491,7 @@ function JSChart(element)
             if (item.Change != null) chart.Frame.SubFrame[i].Frame.ChangeIndex = item.Change;
             if (IFrameSplitOperator.IsBool(item.IsDrawTitleBG))  chart.Frame.SubFrame[i].Frame.IsDrawTitleBG=item.IsDrawTitleBG;
             if (IFrameSplitOperator.IsBool(item.IsShowNameArrow))  chart.Frame.SubFrame[i].Frame.IsShowNameArrow=item.IsShowNameArrow;
+            if (IFrameSplitOperator.IsBool(item.IsShowTitleArrow)) frame.IsShowTitleArrow=item.IsShowTitleArrow;
             if (typeof (item.UpdateUICallback) == 'function') chart.WindowIndex[i].UpdateUICallback = item.UpdateUICallback;
             if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight = item.TitleHeight;
             if (item.IsShowIndexName == false) chart.Frame.SubFrame[i].Frame.IsShowIndexName = false;
@@ -786,6 +787,7 @@ function JSChart(element)
             if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[index].Frame.ChartBorder.TitleHeight = item.TitleHeight;   //指标标题高度
             if (IFrameSplitOperator.IsBool(item.IsDrawTitleBG))  chart.Frame.SubFrame[index].Frame.IsDrawTitleBG=item.IsDrawTitleBG;
             if (IFrameSplitOperator.IsBool(item.IsShowNameArrow))  chart.Frame.SubFrame[index].Frame.IsShowNameArrow=item.IsShowNameArrow;
+            if (IFrameSplitOperator.IsBool(item.IsShowTitleArrow)) chart.Frame.SubFrame[index].Frame.IsShowTitleArrow=item.IsShowTitleArrow;
             if (IFrameSplitOperator.IsNumber(item.YSplitType)) chart.Frame.SubFrame[index].Frame.YSplitOperator.SplitType=item.YSplitType;
         }
 
@@ -3242,6 +3244,7 @@ function JSChartContainer(uielement)
             if (IFrameSplitOperator.IsNumber(windowItem.IndexTitleSpace))frame.IndexTitleSpace = windowItem.IndexTitleSpace;
             if (IFrameSplitOperator.IsBool(windowItem.IsDrawTitleBG))  frame.IsDrawTitleBG=windowItem.IsDrawTitleBG;
             if (IFrameSplitOperator.IsBool(windowItem.IsShowNameArrow))  frame.IsShowNameArrow=windowItem.IsShowNameArrow;
+            if (IFrameSplitOperator.IsBool(windowItem.IsShowTitleArrow)) frame.IsShowTitleArrow=windowItem.IsShowTitleArrow;
         }
 
         if (frameItem)
