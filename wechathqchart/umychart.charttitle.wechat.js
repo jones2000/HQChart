@@ -1896,6 +1896,8 @@ function DynamicChartTitlePainting()
                                 var outItem=titleItem.TextEx[n];
                                 this.Canvas.fillStyle=outItem.TextColor;
                                 outItem.Width=this.Canvas.measureText(outItem.Text).width+2;
+                                if ((left+outItem.Width)>right) break;
+
                                 this.Canvas.fillText(outItem.Text,left,bottom,outItem.Width);
                                 left+=outItem.Width;
                             }

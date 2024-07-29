@@ -9294,36 +9294,58 @@ function ChartCorssCursor()
             }
         }
 
-        if (this.ShowTextMode.Bottom == 1 && this.StringFormatX.Operator()) 
+        //Bottom==8 自定义X轴文字位置
+        if ((this.ShowTextMode.Bottom == 1 || this.ShowTextMode.Bottom==8) && this.StringFormatX.Operator()) 
         {
             var text = this.StringFormatX.Text;
             this.Canvas.font = this.Font;
 
             this.Canvas.fillStyle = this.TextBGColor;
             var textWidth = this.Canvas.measureText(text).width + 4;    //前后各空2个像素
-            if (x - textWidth / 2 < 3)    //左边位置不够了, 顶着左边画
+            var bShowText=true;
+            var yText=bottom + 2;   //文字顶部坐标
+            if (this.ShowTextMode.Bottom==8)
             {
-                this.Canvas.fillRect(x - 1, bottom + 2, textWidth, this.TextHeight);
-                this.Canvas.textAlign = "left";
-                this.Canvas.textBaseline = "top";
-                this.Canvas.fillStyle = this.TextColor;
-                this.Canvas.fillText(text, x + 1, bottom + 2, textWidth);
+                var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CUSTOM_CORSSCURSOR_POSITION);
+                if (event && event.Callback)
+                {
+                    var yCenter=yText+this.TextHeight/2;
+                    var yTop=yText;
+                    var sendData={ YCenter:yCenter, YTop:yTop, Height:this.TextHeight, IsShowText:bShowText };
+                    event.Callback(event, sendData, this);
+
+                    yCenter=sendData.YCenter;
+                    yText=sendData.YTop;
+                    bShowText=sendData.IsShowText;
+                }
             }
-            else if ((right - left) - x < textWidth) 
-            {            //右边位置不够用，顶着右边画
-                this.Canvas.fillRect(x - textWidth, bottom + 2, textWidth, this.TextHeight);
-                this.Canvas.textAlign = "right";
-                this.Canvas.textBaseline = "top";
-                this.Canvas.fillStyle = this.TextColor;
-                this.Canvas.fillText(text, x - 1, bottom + 2, textWidth);
-            }
-            else 
+
+            if (bShowText)
             {
-                this.Canvas.fillRect(x - textWidth / 2, bottom + 2, textWidth, this.TextHeight);
-                this.Canvas.textAlign = "center";
-                this.Canvas.textBaseline = "top";
-                this.Canvas.fillStyle = this.TextColor;
-                this.Canvas.fillText(text, x, bottom + 2, textWidth);
+                if (x - textWidth / 2 < 3)    //左边位置不够了, 顶着左边画
+                {
+                    this.Canvas.fillRect(x - 1, yText, textWidth, this.TextHeight);
+                    this.Canvas.textAlign = "left";
+                    this.Canvas.textBaseline = "top";
+                    this.Canvas.fillStyle = this.TextColor;
+                    this.Canvas.fillText(text, x + 1, yText, textWidth);
+                }
+                else if ((right - left) - x < textWidth) 
+                {            //右边位置不够用，顶着右边画
+                    this.Canvas.fillRect(x - textWidth, yText, textWidth, this.TextHeight);
+                    this.Canvas.textAlign = "right";
+                    this.Canvas.textBaseline = "top";
+                    this.Canvas.fillStyle = this.TextColor;
+                    this.Canvas.fillText(text, x - 1, yText, textWidth);
+                }
+                else 
+                {
+                    this.Canvas.fillRect(x - textWidth / 2, yText, textWidth, this.TextHeight);
+                    this.Canvas.textAlign = "center";
+                    this.Canvas.textBaseline = "top";
+                    this.Canvas.fillStyle = this.TextColor;
+                    this.Canvas.fillText(text, x, yText, textWidth);
+                }
             }
         }
     }
@@ -9640,43 +9662,60 @@ function ChartCorssCursor()
             }
         }
 
-        if (this.ShowTextMode.Bottom === 1 && this.StringFormatX.Operator()) {
+        if ((this.ShowTextMode.Bottom === 1 ||this.ShowTextMode.Bottom==8)  && this.StringFormatX.Operator()) 
+        {
             var text = this.StringFormatX.Text;
             this.Canvas.font = this.Font;
 
             this.Canvas.fillStyle = this.TextBGColor;
             var textWidth = this.Canvas.measureText(text).width + 4;    //前后各空2个像素
-            if (y - textWidth / 2 < 3)    //左边位置不够了, 顶着左边画
+            var bShowText=true;
+            var yText = y;
+            var xText=left;
+
+            if (this.ShowTextMode.Bottom==8)
             {
-                var xText = left;
-                var yText = y;
-                this.Canvas.save();
-                this.Canvas.translate(xText, yText);
-                this.Canvas.rotate(90 * Math.PI / 180); //数据和框子旋转180度
+                var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CUSTOM_CORSSCURSOR_POSITION);
+                if (event && event.Callback)
+                {
+                    var sendData={ XText:xText, Height:this.TextHeight, IsShowText:bShowText };
+                    event.Callback(event, sendData, this);
 
-                this.Canvas.fillRect(0, 0, textWidth, this.TextHeight);
-                this.Canvas.textAlign = "center";
-                this.Canvas.textBaseline = "top";
-                this.Canvas.fillStyle = this.TextColor;
-                this.Canvas.fillText(text, 0, 0, textWidth);
-
-                this.Canvas.restore();
+                    xText=sendData.XText;
+                    bShowText=sendData.IsShowText;
+                }
             }
-            else {
-                var xText = left;
-                var yText = y;
 
-                this.Canvas.save();
-                this.Canvas.translate(xText, yText);
-                this.Canvas.rotate(90 * Math.PI / 180); //数据和框子旋转180度
+            if (bShowText)
+            {
+                if (y - textWidth / 2 < 3)    //左边位置不够了, 顶着左边画
+                {
+                    this.Canvas.save();
+                    this.Canvas.translate(xText, yText);
+                    this.Canvas.rotate(90 * Math.PI / 180); //数据和框子旋转180度
 
-                this.Canvas.fillRect(-(textWidth / 2), 0, textWidth, this.TextHeight);
-                this.Canvas.textAlign = "center";
-                this.Canvas.textBaseline = "top";
-                this.Canvas.fillStyle = this.TextColor;
-                this.Canvas.fillText(text, 0, 0, textWidth);
+                    this.Canvas.fillRect(0, 0, textWidth, this.TextHeight);
+                    this.Canvas.textAlign = "center";
+                    this.Canvas.textBaseline = "top";
+                    this.Canvas.fillStyle = this.TextColor;
+                    this.Canvas.fillText(text, 0, 0, textWidth);
 
-                this.Canvas.restore();
+                    this.Canvas.restore();
+                }
+                else 
+                {
+                    this.Canvas.save();
+                    this.Canvas.translate(xText, yText);
+                    this.Canvas.rotate(90 * Math.PI / 180); //数据和框子旋转180度
+
+                    this.Canvas.fillRect(-(textWidth / 2), 0, textWidth, this.TextHeight);
+                    this.Canvas.textAlign = "center";
+                    this.Canvas.textBaseline = "top";
+                    this.Canvas.fillStyle = this.TextColor;
+                    this.Canvas.fillText(text, 0, 0, textWidth);
+
+                    this.Canvas.restore();
+                }
             }
         }
     }

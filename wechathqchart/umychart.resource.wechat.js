@@ -62,6 +62,7 @@ function JSChartResource()
         },
 
         ArrowType:0,
+        EnableIndexArrow:true,  //指标数值是否带上涨下跌箭头
 
         NameArrow:{ Color:"rgb(43,54,69)", Space:2, Symbol:'▼' },
     }
@@ -484,7 +485,8 @@ function JSChartResource()
             }
 
             if (IFrameSplitOperator.IsNumber(item.ArrowType)) this.IndexTitle.ArrowType=item.ArrowType;
-
+            if (IFrameSplitOperator.IsBool(item.EnableIndexArrow)) this.IndexTitle.EnableIndexArrow=item.EnableIndexArrow;
+            
             if (item.NameArrow)
             {
                 var subItem=item.NameArrow;

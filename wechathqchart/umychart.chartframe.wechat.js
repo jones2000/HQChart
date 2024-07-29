@@ -85,7 +85,7 @@ function IChartFramePainting()
     this.IndexParamSpace = 2;            //指标参数数值显示间距
     this.IndexTitleSpace=0;             //指标标题到参数之间的间距
 
-    this.IsShowTitleArrow=true;        //是否显示指标信息上涨下跌箭头
+    this.IsShowTitleArrow=g_JSChartResource.IndexTitle.EnableIndexArrow;        //是否显示指标信息上涨下跌箭头
     this.TitleArrowType=g_JSChartResource.IndexTitle.ArrowType;             //指标信息上涨下跌箭头类型 0=独立颜色 1=跟指标名字颜色一致
 
     //上锁信息
