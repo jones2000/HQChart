@@ -9933,6 +9933,36 @@ function CopyMarginConfig(dest,src)
 function CopyMerginConfig(dest,src) { CopyMarginConfig(dest,src); }
 
 
+//数值比较
+function NumberCompare() { }
+
+//<
+NumberCompare.LT=function(left, right)
+{
+    if (IFrameSplitOperator.IsNumberV2(left, right))
+    {
+        //==
+        if (Math.abs(left - right)< 0.0000001) return false;
+    }
+
+    return left<right;
+}
+
+//>
+NumberCompare.GT=function(left, right)
+{
+    if (IFrameSplitOperator.IsNumberV2(left, right))
+    {
+        //==
+        if (Math.abs(left - right)< 0.0000001) return false;
+    }
+
+    return left>right;
+}
+
+
+
+
 function Point()
 {
     this.X;
@@ -11091,7 +11121,8 @@ function AverageWidthFrame()
         {
             var item=this.HorizontalInfo[i];
             if (!IFrameSplitOperator.IsNumber(item.Value)) continue;
-            if (item.Value>this.HorizontalMax || item.Value<this.HorizontalMin) continue;
+            if (NumberCompare.GT(item.Value,this.HorizontalMax) || NumberCompare.LT(item.Value,this.HorizontalMin)) 
+                continue;
 
             var y=this.GetYFromData(item.Value);
             if (y!=null && yPrev!=null && Math.abs(y-yPrev)<this.MinYDistance) continue;  //两个坐标在近了 就不画了
