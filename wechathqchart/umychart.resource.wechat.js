@@ -38,6 +38,14 @@ function JSChartResource()
     this.Minute.AreaPriceColor = 'rgba(50,171,205,0.1)';
     this.Minute.AvPriceColor = "rgb(238,127,9)";
 
+    this.Minute.NightDay=
+    { 
+        NightBGColor:"rgba(0,0,0,0.2)",
+        Font:`12px 微软雅黑`,
+        Day: { Color:"rgb(0,0,0)", BGColor:"rgb(179,179,179)", BorderColor:"rgb(179,179,179)", Margin:{ Left:5, Top:2, Bottom:2, Right:5 } },
+        Night: { Color:"rgb(0,0,0)", BGColor:"rgb(179,179,179)", BorderColor:"rgb(179,179,179)", Margin:{ Left:5, Top:2, Bottom:2, Right:5 } },
+    }
+
     this.DefaultTextColor = "rgb(43,54,69)";
     this.DefaultTextFont = '14px 微软雅黑';
     this.IndexTitleBGColor='rgb(217,219,220)';     //指标名字背景色
@@ -47,7 +55,7 @@ function JSChartResource()
     this.OverlayIndexTitleBGColor='rgba(255,255,255,0.7)';
     this.IndexTitleButton=
     {
-        Mergin:{ Left:5, Top:5, Bottom:1, Right:5 },
+        Mergin:{ Left:5, Top:2, Bottom:1, Right:5 },
         Font:"11px 微软雅黑" ,
         RightSpace:5,
     }
@@ -454,6 +462,28 @@ function JSChartResource()
             if (style.Minute.AreaPriceColor) this.Minute.AreaPriceColor = style.Minute.AreaPriceColor;
             if (IFrameSplitOperator.IsNumber(style.Minute.PriceLineWidth)) this.Minute.PriceLineWidth = style.Minute.PriceLineWidth;
             
+            if (style.Minute.NightDay)
+            {
+                var item=style.Minute.NightDay;
+                if (item.NightBGColor) this.Minute.NightDay.NightBGColor=item.NightBGColor;
+                if (item.Font) this.Minute.NightDay.Font=item.Font;
+                if (item.Day)
+                {
+                    var subItem=item.Day;
+                    if (subItem.Color) this.Minute.NightDay.Day.Color=subItem.Color;
+                    if (subItem.BGColor) this.Minute.NightDay.Day.BGColor=subItem.BGColor;
+                    if (subItem.BorderColor) this.Minute.NightDay.Day.BorderColor=subItem.BorderColor;
+                    JSChartResource.CopyMargin(this.Minute.NightDay.Day.Margin,subItem.Margin);
+                }
+                if (item.Night)
+                {
+                    var subItem=item.Night;
+                    if (subItem.Color) this.Minute.NightDay.Night.Color=subItem.Color;
+                    if (subItem.BGColor) this.Minute.NightDay.Night.BGColor=subItem.BGColor;
+                    if (subItem.BorderColor) this.Minute.NightDay.Night.BorderColor=subItem.BorderColor;
+                    CopyMargJSChartResource.CopyMargininConfig(this.Minute.NightDay.Night.Margin,subItem.Margin);
+                }
+            }
         }
         if (style.DefaultTextColor) this.DefaultTextColor = style.DefaultTextColor;
         if (style.DefaultTextFont) this.DefaultTextFont = style.DefaultTextFont;
@@ -960,7 +990,11 @@ function JSChartLocalization()
 
         //深度图
         ["Depth-Price", {CN:"委托价", EN:"Price", TC:'委托價'}],
-        ["Depth-Sum", {CN:"累计", EN:"Sum", TC:'累計'}]
+        ["Depth-Sum", {CN:"累计", EN:"Sum", TC:'累計'}],
+
+        //日盘|夜盘
+        ["日盘",{CN:'日盘', EN:'Day', TC:'日盤'}],
+        ["夜盘",{CN:'夜盘', EN:'Night', TC:'夜盤'} ]
 
     ]);
 

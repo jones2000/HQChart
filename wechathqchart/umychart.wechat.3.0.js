@@ -623,7 +623,8 @@ function JSChart(element)
         if (IFrameSplitOperator.IsBool(option.EnableZoomIndexWindow)) chart.EnableZoomIndexWindow=option.EnableZoomIndexWindow; //双击缩放附图
         if (IFrameSplitOperator.IsNumber(option.DrawMoveWaitTime)) chart.DrawMoveWaitTime=option.DrawMoveWaitTime;
         if (IFrameSplitOperator.IsNumber(option.PressTime))  chart.PressTime=option.PressTime;
-        
+        if (IFrameSplitOperator.IsBool(option.EnableNightDayBG)) chart.EnableNightDayBG=option.EnableNightDayBG;
+
         if (option.Language) 
         {
             var value=g_JSChartLocalization.GetLanguageID(option.Language);
@@ -4394,6 +4395,7 @@ function HQTradeFrame()
         for (var i=0; i<this.SubFrame.length; ++i) 
         {
             var item = this.SubFrame[i];
+            if (item.Height <= 0) continue;
             item.Frame.DrawInsideHorizontal();
         }
     }
@@ -4606,6 +4608,17 @@ function HQTradeFrame()
         }
 
         return -1;
+    }
+
+    this.SetDayCount=function(dayCount)
+    {
+        for(var i=0;i<this.SubFrame.length;++i)
+        {
+            var item=this.SubFrame[i];
+            if (!item.Frame) continue;
+
+            item.Frame.DayCount=dayCount;
+        }
     }
 
     this.ZoomUp = function (cursorIndex) 
@@ -8516,6 +8529,7 @@ function MinuteChartContainer(uielement)
 
     this.DataStatus={ MultiDay:false, LatestDay:false };      //MultiDay=多日  LatestDay:当天
 
+    this.EnableNightDayBG=false;    //是否启动夜盘背景色
     //手机拖拽
     this.ontouchstart = function (e) 
     {
@@ -8849,6 +8863,8 @@ function MinuteChartContainer(uielement)
             frame.Identify=i;
             if (i < 2) frame.ChartBorder.TitleHeight = 0;
             frame.XPointCount = 243;
+            frame.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+            frame.HQChart=this;
 
             var DEFAULT_HORIZONTAL = [9, 8, 7, 6, 5, 4, 3, 2, 1];
             frame.HorizontalMax = DEFAULT_HORIZONTAL[0];
@@ -8914,6 +8930,8 @@ function MinuteChartContainer(uielement)
         frame.ChartBorder=border;
         frame.Identify=id;                   //窗口序号
         frame.XPointCount=243;
+        frame.GetEventCallback=(id)=> { return this.GetEventCallback(id); };
+        frame.HQChart=this;
 
         if (id>=2)
         {
@@ -9537,7 +9555,7 @@ function MinuteChartContainer(uielement)
 
         this.SourceData = sourceData;
         this.TradeDate = this.DayData[0].Date;
-        
+        this.Frame.SetDayCount(this.DayData.length);
         var upperSymbol=this.Symbol.toUpperCase();
         var yClose=this.DayData[0].YClose;
         var isFutures=MARKET_SUFFIX_NAME.IsFutures(upperSymbol);
@@ -9690,6 +9708,7 @@ function MinuteChartContainer(uielement)
         sourceData.Data = aryMinuteData;
 
         this.TradeDate = data.data.stock[0].date;
+        this.Frame.SetDayCount(1);  //单日数据
 
         this.SourceData = sourceData;
         this.Symbol = data.data.stock[0].symbol;
@@ -9761,6 +9780,7 @@ function MinuteChartContainer(uielement)
         this.UpdateLatestMinuteDataV2(minuteData);
         var sourceData=this.SourceData;
         var aryMinuteData=this.SourceData.Data;
+        this.Frame.SetDayCount(1);  //单日数据
         var upperSymbol = this.Symbol.toUpperCase();
         var isFutures = MARKET_SUFFIX_NAME.IsFutures(upperSymbol);
         var yClose=minuteData.YClose;
@@ -11528,6 +11548,8 @@ function MinuteChartHScreenContainer(uielement)
             if (i < 2) frame.ChartBorder.TitleHeight = 0;
             frame.XPointCount = 243;
             frame.Identify=i;
+            frame.HQChart=this;
+            frame.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
 
             var DEFAULT_HORIZONTAL = [9, 8, 7, 6, 5, 4, 3, 2, 1];
             frame.HorizontalMax = DEFAULT_HORIZONTAL[0];

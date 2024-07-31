@@ -283,6 +283,14 @@ function GetWhiteStyle()
             VolBarColor : "rgb(238,127,9)",
             PriceColor : "rgb(50,171,205)",
             AvPriceColor : "rgb(238,127,9)",
+
+            NightDay:
+            { 
+                NightBGColor:"rgb(22,22,22)",
+                Font:`12px 微软雅黑`,
+                Day: { Color:"rgb(153,153,153)", BGColor:"rgb(51,51,51)", BorderColor:"rgb(51,51,51)", Margin:{ Left:5, Top:2, Bottom:2, Right:5 } },
+                Night: { Color:"rgb(153,153,153)", BGColor:"rgb(51,51,51)", BorderColor:"rgb(51,51,51)", Margin:{ Left:5, Top:2, Bottom:2, Right:5 } },
+            }
         },
 
         DefaultTextColor: "rgb(43,54,69)",

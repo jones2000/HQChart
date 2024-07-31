@@ -81,6 +81,13 @@ function GetBlackStyle()
             {
                 BGColor:"rgba(105,105,105,0.5)",
                 AvPriceColor:'rgb(248,248,255)'     //均线
+            },
+            NightDay:
+            { 
+                NightBGColor:"rgb(22,22,22)",
+                Font:`${12*GetDevicePixelRatio()}px 微软雅黑`,
+                Day: { Color:"rgb(153,153,153)", BGColor:"rgb(51,51,51)", BorderColor:"rgb(51,51,51)", Margin:{ Left:5, Top:2, Bottom:2, Right:5 } },
+                Night: { Color:"rgb(153,153,153)", BGColor:"rgb(51,51,51)", BorderColor:"rgb(51,51,51)", Margin:{ Left:5, Top:2, Bottom:2, Right:5 } },
             }
         },
     

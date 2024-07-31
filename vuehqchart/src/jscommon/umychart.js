@@ -860,6 +860,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         if (IFrameSplitOperator.IsBool(option.EnableNewIndex)) chart.EnableNewIndex=option.EnableNewIndex;
         if (IFrameSplitOperator.IsBool(option.EnableIndexChartDrag)) chart.EnableIndexChartDrag=option.EnableIndexChartDrag;
         if (IFrameSplitOperator.IsBool(option.EnableVerifyRecvData)) chart.EnableVerifyRecvData=option.EnableVerifyRecvData;
+        if (IFrameSplitOperator.IsBool(option.EnableNightDayBG)) chart.EnableNightDayBG=option.EnableNightDayBG;
 
         if (option.GlobalOption)
         {
@@ -2614,6 +2615,8 @@ var JSCHART_EVENT_ID=
 
     ON_FORMAT_KLINE_HIGH_LOW_TITLE:154,     //K线最高最低价格式化内容
     ON_CUSTOM_CORSSCURSOR_POSITION:155,    //自定义十字光标X轴的输出的位置
+
+    ON_CUSTOM_MINUTE_NIGHT_DAY_X_INDEX:156,   //日盘夜盘的分界线
 }
 
 var JSCHART_OPERATOR_ID=
@@ -8402,11 +8405,18 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             if (IFrameSplitOperator.IsBool(windowItem.IsShowIndexName)) frame.IsShowIndexName=windowItem.IsShowIndexName;
             if (IFrameSplitOperator.IsNumber(windowItem.IndexParamSpace)) frame.IndexParamSpace=windowItem.IndexParamSpace;
             if (IFrameSplitOperator.IsNumber(windowItem.IndexTitleSpace)) frame.IndexTitleSpace=windowItem.IndexTitleSpace;
+            if (!IFrameSplitOperator.IsUndefined(windowItem.HorizontalReserved)) frame.HorizontalReserved=windowItem.HorizontalReserved;    //Y轴上下预留
         }
 
         if (frameItem)
         {
             if (frameItem.SplitCount) frame.YSplitOperator.SplitCount=frameItem.SplitCount;
+            if (IFrameSplitOperator.IsNumber(frameItem.SplitType)) 
+            {
+                frame.YSplitOperator.SplitType=frameItem.SplitType;
+                frame.YSplitOperator.DefaultSplitType=frameItem.SplitType;
+            }
+
             if (IFrameSplitOperator.IsBool(frameItem.IsShowXLine)) frame.IsShowXLine=frameItem.IsShowXLine;
             if (IFrameSplitOperator.IsBool(frameItem.IsShowYLine)) frame.IsShowYLine=frameItem.IsShowYLine;
 
@@ -12931,6 +12941,8 @@ function MinuteFrame()
     this.BeforeOpenVerticalInfo=[];      //盘前集合竞价X轴
     this.AfterCloseVerticalInfo=[];      //收盘集合竞价X轴
 
+    this.NightDayConfig=CloneData(g_JSChartResource.Minute.NightDay);
+
     this.DrawFrame=function()
     {
         if (!this.IsMinSize)
@@ -12941,6 +12953,8 @@ function MinuteFrame()
             this.YInsideOffset=0;
 
             if (this.BeforeDrawXYCallback) this.BeforeDrawXYCallback(this);
+
+            this.DrawNightDayBG();  //绘制夜盘 日盘背景
 
             this.DrawTitleBG();
             this.DrawHorizontal();
@@ -13383,6 +13397,86 @@ function MinuteFrame()
 
             this.Canvas.fillRect(left,top,width,height);
         }
+    }
+
+    this.DrawNightDayBG=function()
+    {
+        if (this.DayCount!=1) return;
+        if (!this.HQChart) return;
+        if (!this.HQChart.EnableNightDayBG) return;
+
+        var symbol=this.HQChart.Symbol;
+        if (!symbol) return;
+
+        var xIndex=-1;
+        //获取夜盘和日期的分界线X索引位置
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CUSTOM_MINUTE_NIGHT_DAY_X_INDEX)
+        if (!event || !event.Callback) return;
+
+        var sendData={ Symbol:symbol, XIndex:xIndex, MinuteTimeStringData:g_MinuteTimeStringData };
+        event.Callback(event,sendData,this);
+        xIndex=sendData.XIndex;
+        if (xIndex<0) return;
+
+        var border=this.ChartBorder.GetBorder();
+        var x=this.GetXFromIndex(xIndex);
+
+        var rtNight={ Left: border.Left, Top:border.TopEx, Right:x, Bottom:border.Bottom };
+        rtNight.Width=rtNight.Right-rtNight.Left;
+        rtNight.Height=rtNight.Bottom-rtNight.Top;
+
+        this.Canvas.fillStyle = this.NightDayConfig.NightBGColor;
+        this.Canvas.fillRect(rtNight.Left, rtNight.Top, rtNight.Width, rtNight.Height);
+
+        if (this.Identify!=0) return;
+
+        //显示 日盘夜盘文字
+        this.Canvas.font=this.NightDayConfig.Font;
+		this.Canvas.textBaseline = "bottom";
+		this.Canvas.textAlign = 'left';
+		var aryTitle=[{ Title:"夜盘", Position:1, Config:this.NightDayConfig.Night }, { Title:"日盘", Position:0,Config:this.NightDayConfig.Day }];
+		var textHeight= this.Canvas.measureText("擎").width;
+		for(var i=0;i<aryTitle.length;++i)
+		{
+			var item=aryTitle[i];
+            var text=g_JSChartLocalization.GetText(item.Title,this.HQChart.LanguageID);
+			var testWidth = this.Canvas.measureText(text).width;
+			var rtItem=
+			{ 
+				Width:testWidth+item.Config.Margin.Left+item.Config.Margin.Right, 
+				Height:textHeight+item.Config.Margin.Top+item.Config.Margin.Bottom,
+				Bottom:border.Bottom
+			};
+			rtItem.Top=rtItem.Bottom-rtItem.Height;
+
+			if (item.Position===1) 
+			{
+				rtItem.Right=x-1;
+				rtItem.Left=rtItem.Right-rtItem.Width;
+			}
+			else 
+			{
+				rtItem.Left=x+1;
+				rtItem.Right=rtItem.Left+rtItem.Width;
+			}
+
+			if (item.Config.BGColor)
+			{
+				this.Canvas.fillStyle = item.Config.BGColor;
+				this.Canvas.fillRect(rtItem.Left, rtItem.Top, rtItem.Width, rtItem.Height);
+			}
+
+			if (item.Config.BorderColor)
+			{
+				this.Canvas.strokeStyle = item.Config.BorderColor;
+				this.Canvas.strokeRect(ToFixedPoint(rtItem.Left), ToFixedPoint(rtItem.Top), ToFixedRect(rtItem.Width), ToFixedRect(rtItem.Height));
+			}
+
+            
+			this.Canvas.fillStyle = item.Config.Color;
+			this.Canvas.fillText(text, rtItem.Left+item.Config.Margin.Left, rtItem.Bottom-item.Config.Margin.Bottom );
+		}
+        
     }
 
     //选中的画图工具X轴坐标信息
@@ -14964,6 +15058,89 @@ function MinuteHScreenFrame()
         return this.GetLeftExtendYFromData(value,isLimit,obj);
     }
 
+    this.DrawNightDayBG=function()
+    {
+        if (this.DayCount!=1) return;
+        if (!this.HQChart) return;
+        if (!this.HQChart.EnableNightDayBG) return;
+
+        var symbol=this.HQChart.Symbol;
+        if (!symbol) return;
+
+        var xIndex=-1;
+        //获取夜盘和日期的分界线X索引位置
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CUSTOM_MINUTE_NIGHT_DAY_X_INDEX)
+        if (!event || !event.Callback) return;
+
+        var sendData={ Symbol:symbol, XIndex:xIndex, MinuteTimeStringData:g_MinuteTimeStringData };
+        event.Callback(event,sendData,this);
+        xIndex=sendData.XIndex;
+        if (xIndex<0) return;
+
+        var border=this.ChartBorder.GetHScreenBorder();
+        var y=this.GetXFromIndex(xIndex);
+
+        var rtNight={ Left: border.Left, Top:border.Top, Right:border.RightEx, Bottom:y };
+        rtNight.Width=rtNight.Right-rtNight.Left;
+        rtNight.Height=rtNight.Bottom-rtNight.Top;
+
+        this.Canvas.fillStyle = this.NightDayConfig.NightBGColor;
+        this.Canvas.fillRect(rtNight.Left, rtNight.Top, rtNight.Width, rtNight.Height);
+
+        if (this.Identify!=0) return;
+
+        //显示 日盘夜盘文字
+        this.Canvas.font=this.NightDayConfig.Font;
+		this.Canvas.textBaseline = "bottom";
+		this.Canvas.textAlign = 'left';
+		var aryTitle=[{ Title:"夜盘", Position:1, Config:this.NightDayConfig.Night }, { Title:"日盘", Position:0,Config:this.NightDayConfig.Day }];
+		var textHeight= this.Canvas.measureText("擎").width;
+		for(var i=0;i<aryTitle.length;++i)
+		{
+			var item=aryTitle[i];
+            var text=g_JSChartLocalization.GetText(item.Title,this.HQChart.LanguageID);
+			var testWidth = this.Canvas.measureText(text).width;
+			var rtItem=
+			{ 
+				Height:testWidth+item.Config.Margin.Left+item.Config.Margin.Right, 
+				Width:textHeight+item.Config.Margin.Top+item.Config.Margin.Bottom,
+				Left:border.Left
+			};
+			rtItem.Right=rtItem.Left+rtItem.Width;
+
+			if (item.Position===1) 
+			{
+				rtItem.Bottom=y-1;
+				rtItem.Top=rtItem.Bottom-rtItem.Height;
+			}
+			else 
+			{
+				rtItem.Top=y+1;
+				rtItem.Bottom=rtItem.Top+rtItem.Height;
+			}
+
+			if (item.Config.BGColor)
+			{
+				this.Canvas.fillStyle = item.Config.BGColor;
+				this.Canvas.fillRect(rtItem.Left, rtItem.Top, rtItem.Width, rtItem.Height);
+			}
+
+			if (item.Config.BorderColor)
+			{
+				this.Canvas.strokeStyle = item.Config.BorderColor;
+				this.Canvas.strokeRect(ToFixedPoint(rtItem.Left), ToFixedPoint(rtItem.Top), ToFixedRect(rtItem.Width), ToFixedRect(rtItem.Height));
+			}
+
+			this.Canvas.fillStyle = item.Config.Color;
+            var xText=rtItem.Left;
+            var yText=rtItem.Top;
+            this.Canvas.save();
+            this.Canvas.translate(xText,yText);
+            this.Canvas.rotate(90 * Math.PI / 180);
+			this.Canvas.fillText(text, item.Config.Margin.Left, -item.Config.Margin.Bottom);
+            this.Canvas.restore();
+		}
+    }
 
 }
 
@@ -18890,6 +19067,7 @@ function HQTradeFrame()
         for (var i in this.SubFrame) 
         {
           var item = this.SubFrame[i];
+          if (item.Height<=0) continue;
           if (item.Frame.DrawInsideHorizontal) item.Frame.DrawInsideHorizontal();
         }
     }
@@ -50300,7 +50478,7 @@ function ChartCorssCursor()
             }
         }
 
-        //X轴 Bottom=10 使用第1个指标框位置
+        //X轴 Bottom=8 自定义X轴文字位置
         if ((this.ShowTextMode.Bottom===1 || this.ShowTextMode.Bottom==8) && this.StringFormatX.Operator())
         {
             var text=this.StringFormatX.Text;
@@ -66833,6 +67011,14 @@ function JSChartResource()
         Point:{ Color:"rgb(65,105,225)", Radius:2*GetDevicePixelRatio() },
     };
 
+    this.Minute.NightDay=
+    { 
+        NightBGColor:"rgba(0,0,0,0.2)",
+        Font:`${12*GetDevicePixelRatio()}px 微软雅黑`,
+        Day: { Color:"rgb(0,0,0)", BGColor:"rgb(179,179,179)", BorderColor:"rgb(179,179,179)", Margin:{ Left:5, Top:2, Bottom:2, Right:5 } },
+        Night: { Color:"rgb(0,0,0)", BGColor:"rgb(179,179,179)", BorderColor:"rgb(179,179,179)", Margin:{ Left:5, Top:2, Bottom:2, Right:5 } },
+    }
+
     this.DefaultTextColor="rgb(43,54,69)";                          //图形中默认的字体颜色
     this.DefaultTextFont=14*GetDevicePixelRatio() +'px 微软雅黑';    //图形中默认的字体
     this.TitleFont=13*GetDevicePixelRatio() +'px 微软雅黑';          //指标显示,tooltip显示字体
@@ -68117,6 +68303,29 @@ function JSChartResource()
                     if (item.Point.Radius)  this.Minute.After.Point.Radius=item.Point.Radius;
                 }
             }
+
+            if (style.Minute.NightDay)
+            {
+                var item=style.Minute.NightDay;
+                if (item.NightBGColor) this.Minute.NightDay.NightBGColor=item.NightBGColor;
+                if (item.Font) this.Minute.NightDay.Font=item.Font;
+                if (item.Day)
+                {
+                    var subItem=item.Day;
+                    if (subItem.Color) this.Minute.NightDay.Day.Color=subItem.Color;
+                    if (subItem.BGColor) this.Minute.NightDay.Day.BGColor=subItem.BGColor;
+                    if (subItem.BorderColor) this.Minute.NightDay.Day.BorderColor=subItem.BorderColor;
+                    CopyMarginConfig(this.Minute.NightDay.Day.Margin,subItem.Margin);
+                }
+                if (item.Night)
+                {
+                    var subItem=item.Night;
+                    if (subItem.Color) this.Minute.NightDay.Night.Color=subItem.Color;
+                    if (subItem.BGColor) this.Minute.NightDay.Night.BGColor=subItem.BGColor;
+                    if (subItem.BorderColor) this.Minute.NightDay.Night.BorderColor=subItem.BorderColor;
+                    CopyMarginConfig(this.Minute.NightDay.Night.Margin,subItem.Margin);
+                }
+            }
         }
 
         if (style.DefaultTextColor) this.DefaultTextColor = style.DefaultTextColor;
@@ -69328,7 +69537,11 @@ function JSChartLocalization()
         ["Toolbar-"+JSCHART_BUTTON_ID.CHIP_LONG, {CN:"远期成本分布", EN:"Long chip", TC:"远期成本分布"}],
         ["Toolbar-"+JSCHART_BUTTON_ID.CHIP_DEFULT, {CN:"默认筹码分布", EN:"Default chip", TC:"默认筹码分布"}],
         ["Toolbar-"+JSCHART_BUTTON_ID.DRAW_PICTURE_DELETE, {CN:"删除", EN:"Delete", TC:"删除"}],
-        ["Toolbar-"+JSCHART_BUTTON_ID.DRAW_PICTURE_SETTING, {CN:"设置", EN:"Setting", TC:"设置"}]
+        ["Toolbar-"+JSCHART_BUTTON_ID.DRAW_PICTURE_SETTING, {CN:"设置", EN:"Setting", TC:"设置"}],
+
+        //日盘|夜盘
+        ["日盘",{CN:'日盘', EN:'Day', TC:'日盤'}],
+        ["夜盘",{CN:'夜盘', EN:'Night', TC:'夜盤'} ]
     ]);
 
     this.GetText=function(key,language)
@@ -77847,6 +78060,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
     this.ZoomStepPixel=50;
     this.BaselineType=0;    //基准线类型 0=最新昨收盘 1=多日前昨收盘
+    this.EnableNightDayBG=false;    //是否启动夜盘背景色
 
     //集合竞价设置 obj={ Left:true/false, Right:true/false, MultiDay:{Left:, Right:} }
     this.SetCallCationDataBorder=function(obj)
@@ -79637,6 +79851,8 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             frame.GlobalOption=this.GlobalOption;
             if (i<2) frame.ChartBorder.TitleHeight=0;
             frame.XPointCount=243;
+            frame.HQChart=this;
+            frame.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
 
             if (i>=2)
             {
@@ -79726,6 +79942,8 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         frame.Identify=id;                   //窗口序号
         frame.XPointCount=243;
         frame.GlobalOption=this.GlobalOption;
+        frame.HQChart=this;
+        frame.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
         
 
         if (id>=2)
@@ -85359,6 +85577,8 @@ function MinuteChartHScreenContainer(uielement)
             frame.Identify=i;
             if (i<2) frame.ChartBorder.TitleHeight=0;
             frame.XPointCount=243;
+            frame.HQChart=this;
+            frame.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
 
             var DEFAULT_HORIZONTAL=[9,8,7,6,5,4,3,2,1];
             frame.HorizontalMax=DEFAULT_HORIZONTAL[0];
