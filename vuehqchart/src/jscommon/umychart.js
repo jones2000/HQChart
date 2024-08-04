@@ -56,7 +56,6 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
     //改参数div
     this.ModifyIndexDialog=new ModifyIndexDialog(divElement);
     this.ChangeIndexDialog=new ChangeIndexDialog(divElement);
-    this.MinuteDialog=new MinuteDialog(divElement);
 
     //额外的画布
     this.MapExtraCanvasElement=new Map();   //key=画布名字, value={ Element:, Canvas:}
@@ -293,7 +292,6 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         //创建改参数div
         chart.ModifyIndexDialog=this.ModifyIndexDialog;
         chart.ChangeIndexDialog=this.ChangeIndexDialog;
-        chart.MinuteDialog=this.MinuteDialog;
 
         var pixelRatio=GetDevicePixelRatio();
         
@@ -340,7 +338,6 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (option.KLine.MaxReqeustDataCount>0) chart.MaxRequestDataCount=option.KLine.MaxReqeustDataCount; //兼容老版本
             if (option.KLine.MaxRequestDataCount>0) chart.MaxRequestDataCount=option.KLine.MaxRequestDataCount;
             if (option.KLine.Info && option.KLine.Info.length>0) chart.SetKLineInfo(option.KLine.Info,false);
-            if (option.KLine.KLineDoubleClick==false) chart.MinuteDialog=this.MinuteDialog=null;
             if (IFrameSplitOperator.IsBool(item.IsShowTooltip)) chart.IsShowTooltip=item.IsShowTooltip;
             if (IFrameSplitOperator.IsBool(item.IsShowKLineDivTooltip)) chart.IsShowKLineDivTooltip=item.IsShowKLineDivTooltip;
             if (option.KLine.MaxRequestMinuteDayCount>0) chart.MaxRequestMinuteDayCount=option.KLine.MaxRequestMinuteDayCount;
@@ -740,7 +737,6 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         //创建改参数div
         chart.ModifyIndexDialog=this.ModifyIndexDialog;
         chart.ChangeIndexDialog=this.ChangeIndexDialog;
-        chart.MinuteDialog=this.MinuteDialog;
         
         //右键菜单
         if (IFrameSplitOperator.IsBool(option.IsShowRightMenu)) chart.IsShowRightMenu=option.IsShowRightMenu;
@@ -752,7 +748,6 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (option.KLine.Period>=0) chart.Period=option.KLine.Period;
             if (option.KLine.MaxRequestDataCount>0) chart.MaxRequestDataCount=option.KLine.MaxRequestDataCount;
             if (option.KLine.Info && option.KLine.Info.length>0) chart.SetKLineInfo(option.KLine.Info,false);
-            if (option.KLine.KLineDoubleClick==false) chart.MinuteDialog=this.MinuteDialog=null;
             if (option.KLine.PageSize>0)  chart.PageSize=option.KLine.PageSize;
             if (option.KLine.IsShowTooltip==false) chart.IsShowTooltip=false;
         }
@@ -1348,6 +1343,8 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         
     }
 
+    /*废弃 
+    //统一全部使用 MinuteChartContainer
     //历史分钟走势图
     this.CreateHistoryMinuteChartContainer=function(option)
     {
@@ -1409,6 +1406,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
 
         return chart;
     }
+    */
 
     this.CreateKLineTrainChartContainer=function(option)
     {
@@ -1684,9 +1682,6 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
                 break;
             case "迷你分钟走势图":
                 chart=this.CreateMinMinuteChartContainer(option);
-                break;
-            case "历史分钟走势图":
-                chart=this.CreateHistoryMinuteChartContainer(option);
                 break;
             case 'K线训练':
             case 'K线训练横屏':
@@ -2781,6 +2776,7 @@ var JSCHART_MENU_ID=
     CMD_CHANGE_DRAG_RECT_SHOW_MODE_ID:38,
 
     CMD_SHOW_CORSS_LINE_ID:39,          //显示十字光标线
+    CMD_ENABLE_POP_MINUTE_CHART_ID:40,  //双击弹分时图
 
 
     CMD_REPORT_CHANGE_BLOCK_ID:60,      //报价列表 切换板块ID
@@ -7913,6 +7909,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
         if (option.Update && this.Update) this.Update( {UpdateCursorIndexType:2} );       //是否立即更新并重绘
         else if (option.Draw==true) this.Draw(); //是否立即重绘
+
+        if (this.PopMinuteChart) this.PopMinuteChart.ReloadResource(option);
     }
 
     this.ReloadBorder=function(option)  //根据页面缩放调整对应边框的尺长
@@ -9589,6 +9587,21 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 if (IFrameSplitOperator.IsBool(srcParam))
                 {
                     if (this.ChartCorssCursor) this.ChartCorssCursor.IsShowCorss=srcParam;
+                }
+                break;
+         
+            case JSCHART_MENU_ID.CMD_ENABLE_POP_MINUTE_CHART_ID://双击弹分时图
+                if (IFrameSplitOperator.IsBool(srcParam))
+                {
+                    if (srcParam) 
+                    {
+                        this.DestroyPopMinuteChart();
+                        this.InitalPopMinuteChart( {KLine:{KLineDoubleClick:true}} );
+                    }
+                    else 
+                    {
+                        this.DestroyPopMinuteChart();
+                    }
                 }
                 break;
         }
@@ -15185,6 +15198,7 @@ function OverlayMinuteFrame()
     this.IsShow=true;               //坐标是否显示
     this.IsShareY=false;            //使用和主框架公用Y轴
     this.IsCalculateYMaxMin=true;   //是否计算Y最大最小值
+    this.IsShowMainFrame=0;         //是否显示在主框架坐标上 1=左边 2=右边
 
     this.Draw=function()
     {
@@ -56720,6 +56734,7 @@ IChartDrawPicture.ArrayDrawPricture=
     { Name:"InfoLine", ClassName:"ChartInfoLine", Create:function() { return new ChartInfoLine(); }},
     { Name:"TrendAngle", ClassName:"ChartTrendAngle", Create:function() { return new ChartTrendAngle(); }},
     { Name:"ArrowMarker", ClassName:"ChartArrowMarker", Create:function() { return new ChartArrowMarker(); } },
+    { Name:"BarsPattern", ClassName:"ChartBarsPattern", Create:function() { return new ChartBarsPattern(); } },
 ];
 
 IChartDrawPicture.MapIonFont=new Map(
@@ -66617,6 +66632,22 @@ function ChartInfoLine()
     }
 }
 
+function ChartBarsPattern()
+{
+    this.newMethod=IChartDrawPicture;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartBarsPattern';
+    this.PointCount=2;
+    this.KData=null; //K线数据 []
+
+    this.Draw=function()
+    {
+
+    }
+}
+
 
 function ChartDrawStorage()
 {
@@ -66975,6 +67006,12 @@ function JSChartResource()
 
     this.TooltipBGColor="rgb(255, 255, 255)"; //背景色
     this.TooltipAlpha=0.92;                  //透明度
+
+    this.PopMinuteChart=
+    {
+        BGColor:"rgba(250,250,250,0.95)",
+        BorderColor:"rgb(0,0,0)",
+    }
 
     this.SelectRectBGColor="rgba(1,130,212,0.06)"; //背景色
  //   this.SelectRectAlpha=0.06;                  //透明度
@@ -68357,6 +68394,13 @@ function JSChartResource()
                     CopyMarginConfig(this.Minute.NightDay.Night.Margin,subItem.Margin);
                 }
             }
+        }
+
+        if (style.PopMinuteChart)
+        {
+            var item=style.PopMinuteChart;
+            if (item.BGColor) this.PopMinuteChart.BGColor=item.BGColor;
+            if (item.BorderColor) this.PopMinuteChart.BorderColor=item.BorderColor;
         }
 
         if (style.DefaultTextColor) this.DefaultTextColor = style.DefaultTextColor;
@@ -70317,7 +70361,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
     this.StockHistoryDayApiUrl= g_JSChartResource.Domain+'/API/StockHistoryDay';    //股票历史数据
     this.TickApiUrl=g_JSChartResource.Domain+'/API/StockDetail';                    //当天分笔数据
 
-    this.MinuteDialog;      //双击历史K线 弹出分钟走势图
+    this.PopMinuteChart=null;   //双击历史K线 弹出分钟走势图
 
     this.BeforeBindMainData=null;   //function(funcName)   在BindMainData() 调用前回调用
     this.AfterBindMainData=null;    //function(funcName)   在BindMainData() 调用前后调用
@@ -71249,10 +71293,50 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
         if (bRegisterKeydown) this.UIElement.addEventListener("keydown", (e)=>{ this.OnKeyDown(e); }, true);            //键盘消息
         if (bRegisterWheel) this.UIElement.addEventListener("wheel", (e)=>{ this.OnWheel(e); }, true);                  //上下滚动消息
+
+        this.InitalPopMinuteChart(option);
     }
 
-    
+    this.InitalPopMinuteChart=function(option)
+    {
+        if (!option || !option.KLine) return false;
+        var item=option.KLine;
+        if (item.KLineDoubleClick===true)
+        {
+            this.PopMinuteChart=new JSPopMinuteChart();
+            this.PopMinuteChart.Inital(this);
+            return true;
+        }
+        
+        return false;
+    }
 
+    this.DestroyPopMinuteChart=function()
+    {
+        if (!this.PopMinuteChart) return;
+
+        this.PopMinuteChart.Destroy();
+        this.PopMinuteChart=null;
+    }
+
+    this.ShowMinuteChartDialog=function(data, x,y)
+    {
+        if (!this.PopMinuteChart) return;
+        if (!data.Tooltip || !data.Chart) return;
+
+        var rtClient=this.UIElement.getBoundingClientRect();
+        var rtScroll=GetScrollPosition();
+
+        x+=(rtClient.left+rtScroll.Left);
+        y+=(rtClient.top+rtScroll.Top);
+
+        var date=data.Tooltip.Data.Date;
+        var symbol=data.Chart.Symbol;
+
+        this.PopMinuteChart.Show({ Date:date, Symbol:symbol, Data:data.Tooltip.Data }, x,y);
+    }
+
+   
     this.OnCustomKeyDown=function(keyID, e) //自定义键盘事件
     {
         if (keyID==37 && e.ctrlKey) //Ctrl+Left
@@ -75880,6 +75964,9 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         var bShowCorss=false;   //十字光标十字线
         if (this.ChartCorssCursor) bShowCorss=this.ChartCorssCursor.IsShowCorss;
 
+        var bPopMinuteChart=false;
+        if (this.PopMinuteChart) bPopMinuteChart=true;
+
         var aryMenu=
         [
             { 
@@ -76040,6 +76127,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                     { Name:"移动筹码图", Data:{ ID:bShowStockChip?JSCHART_MENU_ID.CMD_HIDE_STOCKCHIP_ID:JSCHART_MENU_ID.CMD_SHOW_STOCKCHIP_ID, Args:[]}, Checked:bShowStockChip},
 
                     { Name:"十字光标线", Data:{ ID:JSCHART_MENU_ID.CMD_SHOW_CORSS_LINE_ID, Args:[!bShowCorss]}, Checked:bShowCorss },
+
+                    { Name:"双击弹分时图", Data:{ ID:JSCHART_MENU_ID.CMD_ENABLE_POP_MINUTE_CHART_ID, Args:[!bPopMinuteChart]}, Checked:bPopMinuteChart},
 
                     { Name:JSPopMenu.SEPARATOR_LINE_NAME },
                     { 
@@ -76595,16 +76684,13 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                 }
             }
         }
-        
-        var event=null;
-        if (this.mapEvent.has(JSCHART_EVENT_ID.DBCLICK_KLINE)) event=this.mapEvent.get(JSCHART_EVENT_ID.DBCLICK_KLINE);
-
-        if (!this.MinuteDialog && !event) return;
 
         var tooltip=new TooltipData();
         if (!this.PtInChartPaintTooltip(x,y,tooltip)) return;
         if (!tooltip.Data) return;
 
+        var event=null;
+        if (this.mapEvent.has(JSCHART_EVENT_ID.DBCLICK_KLINE)) event=this.mapEvent.get(JSCHART_EVENT_ID.DBCLICK_KLINE);
         if (event)
         {
             if (this.ClickChartTimer!=null) //清空单击定时器
@@ -76613,15 +76699,15 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                 this.ClickChartTimer=null;
             }
             
-            var data={ Tooltip:tooltip, Stock:{Symbol:this.Symbol, Name:this.Name }, X:e.clientX, Y:e.clientY };
+            var data={ Tooltip:tooltip, Stock:{Symbol:this.Symbol, Name:this.Name }, X:e.clientX, Y:e.clientY, PreventDefault:false };
             event.Callback(event,data,this);
+            if (data.PreventDefault) return;
         }
 
-        if (this.MinuteDialog)
-        {
-            e.data={Chart:this,Tooltip:tooltip};
-            this.MinuteDialog.DoModal(e);
-        }
+        //内置弹分时图
+        if (!this.PopMinuteChart) return;
+
+        this.ShowMinuteChartDialog({ Chart:this,Tooltip:tooltip, e:e }, x,y);
     }
 
     this.CancelAutoUpdate=function()    //关闭停止更新
@@ -78173,7 +78259,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         {
             this.ShowCallAuctionData({ Left:false, Right:false, MultiDay:{ Left:false, Right:false } });
         }
-        if (button.ID==JSCHART_BUTTON_ID.CLOSE_OVERLAY_INDEX)
+        else if (button.ID==JSCHART_BUTTON_ID.CLOSE_OVERLAY_INDEX)
         {
             var id=button.IndexID;
             if (id) this.DeleteOverlayWindowsIndex(id);
@@ -79618,6 +79704,17 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                 [
                     { Name:"画图工具", Data:{ ID:JSCHART_MENU_ID.CMD_SHOW_DRAWTOOL_ID, Args:[]}, Checked:this.IsShowDrawToolDialog()},
                     { Name:"十字光标线", Data:{ ID:JSCHART_MENU_ID.CMD_SHOW_CORSS_LINE_ID, Args:[!bShowCorss]}, Checked:bShowCorss },
+                    { Name:JSPopMenu.SEPARATOR_LINE_NAME },
+                    
+                    { 
+                        Name:"语言设置", 
+                        SubMenu:
+                        [
+                            { Name:"中文", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_LANGUAGE_ID, Args:["CN"]}, Checked:this.LanguageID==JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID  },
+                            { Name:"英语", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_LANGUAGE_ID, Args:["EN"]}, Checked:this.LanguageID==JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID },
+                            { Name:"繁体", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_LANGUAGE_ID, Args:["TC"]}, Checked:this.LanguageID==JSCHART_LANGUAGE_ID.LANGUAGE_TRADITIONAL_CHINESE_ID },
+                        ]
+                    },
 
                     {
                         Name:"区间选择样式", 
@@ -82673,10 +82770,10 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         frame.MainFrame=subFrame.Frame;
         frame.ChartBorder=subFrame.Frame.ChartBorder;
         frame.GlobalOption=this.GlobalOption;
-        if (obj.ShowRightText===true) frame.IsShow=true;
-        else if (obj.ShowRightText===false) frame.IsShow=false;
-        if (obj.IsShareY===true) frame.IsShareY=true;
+        if (IFrameSplitOperator.IsBool(obj.ShowRightText)) frame.IsShow=obj.ShowRightText;
+        if (IFrameSplitOperator.IsBool(obj.IsShareY)) frame.IsShareY=obj.IsShareY;
         if (IFrameSplitOperator.IsBool(obj.IsCalculateYMaxMin)) frame.IsCalculateYMaxMin=obj.IsCalculateYMaxMin;   //是否计算Y最大最小值
+        if (IFrameSplitOperator.IsNumber(obj.IsShowMainFrame)) frame.IsShowMainFrame=obj.IsShowMainFrame;
 
         frame.YSplitOperator=new FrameSplitY();
         frame.YSplitOperator.LanguageID=this.LanguageID;
@@ -84012,6 +84109,7 @@ MinuteChartContainer.JosnDataToAfterCloseDataArray=function(data)
 /*
     历史分钟走势图
 */
+/*  废弃 统一使用 MinuteChartContainer
 function HistoryMinuteChartContainer(uielement)
 {
     this.newMethod=MinuteChartContainer;   //派生
@@ -84056,17 +84154,6 @@ function HistoryMinuteChartContainer(uielement)
         this.TitlePaint[0].Frame=this.Frame.SubFrame[0].Frame;
         this.TitlePaint[0].Canvas=this.Canvas;
         this.TitlePaint[0].IsShowDate=true;
-
-        /*
-        //主图叠加画法
-        var paint=new ChartOverlayKLine();
-        paint.Canvas=this.Canvas;
-        paint.ChartBorder=this.Frame.SubFrame[0].Frame.ChartBorder;
-        paint.ChartFrame=this.Frame.SubFrame[0].Frame;
-        paint.Name="Overlay-KLine";
-        this.OverlayChartPaint[0]=paint;
-        */
-
     }
 
     //设置交易日期
@@ -84212,6 +84299,7 @@ HistoryMinuteChartContainer.JsonDataToMinuteData=function(data)
 
     return aryMinuteData;
 }
+*/
 
 /////////////////////////////////////////////////////////////////////////////
 //  自定义指数
@@ -88790,142 +88878,6 @@ function KLineInfoTooltip(divElement)
         if(!tooltip || tooltip.ID==null) return;
 
         tooltip.Hide();
-    }
-}
-
-//历史K线上双击 弹出分钟走势图框
-function MinuteDialog(divElement)
-{
-    this.newMethod=IDivDialog;   //派生
-    this.newMethod(divElement);
-    delete this.newMethod;
-
-
-    this.JSChart=null;
-    this.Height=500;
-    this.Width=600;
-    this.Symbol;
-    this.TradeDate;
-    this.HistoryData;
-
-    //显示窗口
-    this.Show=function(left,top,width,height)
-    {
-        var div=document.getElementById(this.ID);
-        if (!div) return false;
-
-        var findDiv=div.getElementsByClassName("minute-hqchart");
-        if (!findDiv || findDiv.length!=1) return false;
-        var klineDiv=findDiv[0];
-
-        if (IFrameSplitOperator.IsNumber(width)) div.style.width=width+"px";
-        if (IFrameSplitOperator.IsNumber(height)) div.style.height=height+"px";
-        if (IFrameSplitOperator.IsNumber(left)) div.style.left=left+"px";
-        if (IFrameSplitOperator.IsNumber(top)) div.style.top=top+"px";
-
-        div.style.display='block';
-
-        var klineWdith=klineDiv.offsetWidth;
-        var klineTop=klineDiv.offsetTop;
-        klineDiv.style.width=klineWdith+"px";
-        klineDiv.style.height=(height-klineTop-5)+"px";
-    }
-
-    this.Create=function()
-    {
-        this.ID=Guid();
-        var div=document.createElement('div');
-        div.className='jchart-kline-minute-box';
-        div.id=this.ID;
-        var hqchartID=Guid();
-        div.innerHTML=`<div><div class='minute-dialog-title'><span></span><strong class='close-munite icon iconfont icon-close'></strong></div><div class='minute-hqchart' id='${hqchartID}' ></div></div>`;
-        div.style.width=this.Height+'px';
-        div.style.height=this.Width+'px';
-
-        this.DivElement.appendChild(div);
-        this.JSChart=JSChart.Init(document.getElementById(hqchartID));
-
-        var option=
-        {
-            Type:'历史分钟走势图',
-            Symbol:this.Symbol,     //股票代码
-            IsAutoUpdate:false,       //是自动更新数据
-
-            IsShowRightMenu:false,   //右键菜单
-            HistoryMinute: { TradeDate:this.TradeDate, IsShowName:false, IsShowDate:false }   //显示的交易日期
-        };
-
-        this.JSChart.SetOption(option);
-    }
-
-    this.BindClose=function(chart)
-    {
-        //关闭按钮
-        $("#"+this.ID+" .close-munite").click(
-            {
-                Chart:chart
-            },
-            function(event)
-            {
-                var chart=event.data.Chart;
-                chart.MinuteDialog.Hide();
-            }
-        );
-    }
-
-    this.DoModal=function(event)
-    {
-        this.UpColor=g_JSChartResource.UpTextColor;
-        this.DownColor=g_JSChartResource.DownTextColor;
-        this.UnchagneColor=g_JSChartResource.UnchagneTextColor;
-
-        var chart=event.data.Chart;
-        var tooltip=event.data.Tooltip;
-        var dialog=chart.MinuteDialog;
-
-        dialog.Symbol=chart.Symbol;
-        dialog.TradeDate=tooltip.Data.Date;
-
-        if(!dialog) return;
-        if (dialog.ID==null)
-        {
-            dialog.Create();   //第1次 需要创建div
-        }
-        else
-        {
-            dialog.JSChart.JSChartContainer.TradeDate=dialog.TradeDate;
-            dialog.JSChart.ChangeSymbol(this.Symbol);
-        }
-
-        var left=event.clientX;
-        var top=event.clientY+10;
-
-        var pixelTatio=GetDevicePixelRatio();
-        dialog.Show(500/pixelTatio,100/pixelTatio,600,500);
-        dialog.JSChart.OnSize();
-
-        this.BindClose(chart);
-
-        this.GetColor=function(price,yclse)
-        {
-            if(price>yclse) return this.UpColor;
-            else if (price<yclse) return this.DownColor;
-            else return this.UnchagneColor;
-        }
-
-        var strName = event.data.Chart.Name;
-        var strData=event.data.Tooltip.Data;
-        var date=new Date(parseInt(strData.Date/10000),(strData.Date/100%100-1),strData.Date%100);
-        var strDate = strData.Date.toString();
-        var strNewDate=strDate.substring(0,4)+"-"+strDate.substring(4,6)+"-"+strDate.substring(6,8);  //转换时间格式
-        var str = "<span>"+strName+"</span>"+"<span>"+strNewDate+"</span>&nbsp;"+
-            "<span style='color:"+this.GetColor(strData.Open,strData.YClose)+";'>开:"+strData.Open.toFixed(2)+"</span>"+
-            "<span style='color:"+this.GetColor(strData.High,strData.YClose)+";'>高:"+strData.High.toFixed(2)+"</span>"+
-            "<span style='color:"+this.GetColor(strData.Low,strData.YClose)+";'>低:"+strData.Low.toFixed(2)+"</span>"+
-            "<span style='color:"+this.GetColor(strData.Close,strData.YClose)+";'>收:"+strData.Close.toFixed(2)+"</span>"+
-            "<span style='color:"+this.VolColor+";'>量:"+IFrameSplitOperator.FormatValueString(strData.Vol,2)+"</span>"+
-            "<span style='color:"+this.AmountColor+";'>额:"+IFrameSplitOperator.FormatValueString(strData.Amount,2)+"</span>";
-        $(".minute-dialog-title span").html(str);
     }
 }
 

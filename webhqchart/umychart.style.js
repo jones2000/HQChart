@@ -90,6 +90,12 @@ function GetBlackStyle()
                 Night: { Color:"rgb(153,153,153)", BGColor:"rgb(51,51,51)", BorderColor:"rgb(51,51,51)", Margin:{ Left:5, Top:2, Bottom:2, Right:5 } },
             }
         },
+
+        PopMinuteChart:
+        {
+            BGColor:"rgba(0,0,0,0.95)",
+            BorderColor:"rgb(230,230,230)",
+        },
     
     
         DefaultTextColor: "rgb(101,104,112)",

@@ -1496,6 +1496,48 @@ input[type="color"] {
 }
 
 
+/*
+    弹出分时图对话框
+*/
+.jchart_pop_minute_dailog
+{
+    position: absolute;
+    height: 500px;
+    width: 600px;
+    z-index: 999;
+    visibility:'hidden';
+    background-color: rgba(255,255,255,0.95);
+    border: solid 1px rgba(200, 210, 219, 0.92);
+    display: flex;
+    flex-flow: column;  
+}
+
+.jschart_pop_minute_chart
+{
+    flex: 1
+}
+
+.jschart_pop_minute_chart_Title_Div
+{
+    padding-left: 2px;
+    height:20px;
+    border-bottom: 1px solid;
+    border-color: rgb(204,204,204);
+    display: flex;
+    cursor: default;
+    user-select: none;
+    background-color:rgb(222,222,222)
+}
+
+.jschart_pop_minute_chart_Close_Div
+{
+    margin-left: auto;
+    padding-right: 4px;
+    cursor:pointer;
+}
+
+
+
 
 
 

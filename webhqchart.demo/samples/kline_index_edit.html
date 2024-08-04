@@ -113,6 +113,7 @@
     <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
     <script src="../jscommon/umychart.popMenu.js"></script>
     <script src="../jscommon/umychart.DialogDrawTool.js"></script>
+    <script src="../jscommon/umychart.PopMinuteChart.js"></script>
     <script src="../jscommon/umychart.version.js"></script>
     
      <!-- 公式编辑器 -->
@@ -136,6 +137,8 @@
     <script src="../jscommon/umychart.testdata/60000.sh.NewsInteract.js"></script>
     <script src="../jscommon/umychart.testdata/60000.sh.BlockTrading.js"></script>
     <script src="../jscommon/umychart.testdata/60000.sh.TradeDetal.js"></script>
+
+    <script src="../jscommon/umychart.testdata/60000.sh.day.minute.js"></script>
 
     <script src="../jscommon/umychart.testdata.js"></script>
 
@@ -173,6 +176,7 @@
                     //{Index:"EMPTY", TitleHeight:1},
                     {
                         Index:"MA", Overlay:true,
+                        //TitleArrowType:1,
                         //HorizontalReserved:{ Top:50, Bottom:50 }
                     },
                     {
@@ -229,10 +233,11 @@
                 EnablePopMenuV2:true,
                 EnableDrawToolDialogV2:true,
                 EnableModifyDrawDialogV2:true,
+                EnableResize:true,
 
                 //EnableVerifyRecvData:true,
 
-                CorssCursorInfo: { Right:1, DateFormatType:3, HPenType:1, VPenType:1, IsShowClose:false, VLineType:0,RightButton:{ Enable:true }, IsShowCorss:true, PriceFormatType:0, DataFormatType:0 },
+                CorssCursorInfo: { Right:1, Bottom:10, DateFormatType:3, HPenType:1, VPenType:1, IsShowClose:false, VLineType:0,RightButton:{ Enable:true }, IsShowCorss:true, PriceFormatType:0, DataFormatType:0 },
                 EnableZoomIndexWindow:true,
 
                 DrawTool:       //画图工具
@@ -253,7 +258,7 @@
                     IsShowTooltip:true,                 //是否显示K线提示信息
                     DrawType:0,      //K线类型 0=实心K线柱子 1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积图
                     //FirstShowDate:20161201,
-                    KLineDoubleClick:false, //禁止双击弹框
+                    KLineDoubleClick:true, //禁止双击弹框
                     RightSpaceCount:2,
                     ZoomType:0,
                     
@@ -358,8 +363,8 @@
                         
                     },
 
-                    { SplitCount:5, BottomSpace:18 },
-                    { SplitCount:4 }
+                    { SplitCount:5, BottomSpace:18,FilterType:1 },
+                    { SplitCount:4,FilterType:1 }
                 ],
 
                 ExtendChart:    //扩展图形
@@ -380,7 +385,7 @@
             this.Create=function()  //创建图形
             {
                 var self=this;
-                $(window).resize(function() { self.OnSize( {Type:1} ); });    //绑定窗口大小变化事件
+                $(window).resize(function() { self.OnSize(); });    //绑定窗口大小变化事件
                 //$(window).resize(function() { self.OnSize(  ); });    //绑定窗口大小变化事件
 
                 var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID); //读取黑色风格配置
@@ -393,6 +398,8 @@
                 resource.DownBarColor='rgb(84,255,255)';
                 resource.Frame.XBottomOffset=4;
                 resource.IndexTitleMerginLeft=3*GetDevicePixelRatio();
+                //resource.IndexTitle.ArrowType=1;
+                resource.IndexTitle.EnableIndexArrow=false;
 
                 this.Option.EventCallback=
                 [
@@ -453,17 +460,41 @@
                     {
                         event:JSCHART_EVENT_ID.RECV_HISTROY_DATA,
                         callback:(event, data, obj)=>{ this.OnRecvHistoryData(event, data, obj); }
+                    },
+                    {
+                        event:JSCHART_EVENT_ID.ON_FORMAT_KLINE_HIGH_LOW_TITLE,
+                        callback:(event, data, obj)=>{ this.OnFormatKLineHighLowTitle(event, data, obj); }
+                    },
+                    {
+                        event:JSCHART_EVENT_ID.ON_FORMAT_INDEX_OUT_TEXT,
+                        callback:(event, data, obj)=>{ this.OnFormatIndexOutText(event, data, obj); }
                     }
 
                 ];
 
                 this.OnSize();  //让K线全屏
+                this.Option.OnCreatedCallback=(chart)=>{ this.OnCreateHQChart(chart); }
                 this.Option.ScriptError=(error)=> { this.ExecuteScriptError(error); }
                 this.Option.NetworkFilter=(data, callback)=>{ this.NetworkFilter(data, callback); }
                 this.Chart.SetOption(this.Option);  //设置K线配置
 
 
                 this.UpdateWindowsSelectDOM();
+            }
+
+            this.OnCreateHQChart=function(chart)
+            {
+                if (chart.PopMinuteChart)   //修改弹出分时图
+                {
+                    chart.PopMinuteChart.Minute.Option.Windows=
+                    [
+                        { 
+                            Index:"RSI", 
+                            Overlay:false,
+                            MaxMin:false,
+                        }
+                    ];
+                }
             }
 
             this.NetworkFilter=function(data, callback)
@@ -711,9 +742,9 @@
                 
                 this.DivKLine.style.top='0px';
                 this.DivKLine.style.left='0px';
-                this.DivKLine.style.width=width+'px';
+                //this.DivKLine.style.width=width+'px';
                 this.DivKLine.style.height=height+'px';
-                this.Chart.OnSize(option);
+                //this.Chart.OnSize(option);
             }
 
             this.ChangeSymbol=function(symbol)
@@ -1435,6 +1466,24 @@
             {
                 console.log("[KLineChart::OnRecvHistoryData] data=", data);
             }
+
+            this.OnFormatKLineHighLowTitle=function(event, data, obj)
+            {
+                console.log("[KLineChart::OnFormatKLineHighLowTitle] data=", data);
+
+                return;
+
+                data.PreventDefault=true;
+                data.Title.High+="!!"
+                data.Title.HighColor="rgb(255,0,255)";
+                data.Title.Low+="!!"
+                data.Title.LowColor="rgb(34,139,34)";
+            }
+
+            this.OnFormatIndexOutText=function(event, data, obj)
+            {
+                console.log("[KLineChart::OnFormatIndexOutText] data=", data);
+            }
         }
 
         function DeleteLocalIndex(e, name)
@@ -1497,6 +1546,10 @@
             JSComplier.AddFunction({ Name:'FUNC_DEMO',   Description:'自定义函数1', IsDownload:false } );
             JSComplier.AddVariant({ Name:'VAR_DEMO',   Description:'自定义变量1' } );
 
+
+            console.log(`[Math.ceil] 3=${Math.ceil(3)}`);
+            console.log(`[Math.ceil] 0.1=${Math.ceil(0.125)}`);
+
         })
 
       
@@ -1511,7 +1564,7 @@
 
 #kline
 {
-    width: 900px;
+    width:100%;
     height:400px;
     position: relative;
     overflow:hidden;
