@@ -66,6 +66,8 @@ function JSPopMinuteChart()
 
         var chart=JSChart.Init(divChart);
         this.Minute.JSChart=chart;
+        //语言跟主图保持一致
+        if (this.HQChart) this.Minute.Option.Language=g_JSChartLocalization.GetLanguageName(this.HQChart.LanguageID);
         this.Minute.Option.OnCreatedCallback=(chart)=>{ this.OnCreateHQChart(chart); }
         this.Minute.Option.NetworkFilter=(data, callback)=>{ this.NetworkFilter(data, callback); }
         chart.SetOption(this.Minute.Option);  //设置K线配置
@@ -192,6 +194,13 @@ function JSPopMinuteChart()
         this.DivDialog.style["border-color"]=g_JSChartResource.PopMinuteChart.BorderColor;
 
         if (this.Minute.JSChart) this.Minute.JSChart.ReloadResource(option);
+    }
+
+    this.SetLanguage=function(language)
+    {
+        if (!this.DivDialog) return;
+
+        if (this.Minute.JSChart) this.Minute.JSChart.SetLanguage(language);
     }
 }
 

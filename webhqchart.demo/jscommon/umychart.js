@@ -7838,7 +7838,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         if (!IFrameSplitOperator.IsNumber(languageID))
         {
             console.warn(`[JSChartContainer::SetLanguage] language=${language} error`);
-                return;
+            return;
         }
 
         if (this.LanguageID==languageID) return;
@@ -7864,6 +7864,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         this.ResetFrameXYSplit();
         this.Frame.SetSizeChage(true);
         this.Draw();
+
+        if (this.PopMinuteChart) this.PopMinuteChart.SetLanguage(language);
     }
 
     this.ReloadTiltePaintResource=function(resource)  //重新加载配置
@@ -69661,6 +69663,21 @@ function JSChartLocalization()
         }
 
         return languageID;
+    }
+
+    this.GetLanguageName=function(id)
+    {
+        switch(id)
+        {
+            case JSCHART_LANGUAGE_ID.LANGUAGE_ENGLISH_ID:
+                return "EN";
+            case JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID:
+                return "CN";
+            case JSCHART_LANGUAGE_ID.LANGUAGE_TRADITIONAL_CHINESE_ID:
+                return "TC"
+            default:
+                return null;
+        }
     }
 };
 
