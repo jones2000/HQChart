@@ -15,6 +15,7 @@ function JSReportChart(divElement)
 {
     this.DivElement=divElement;
     this.JSChartContainer;              //表格控件
+    this.ResizeListener;                //大小变动监听
 
     //h5 canvas
     this.CanvasElement=document.createElement("canvas");
@@ -140,6 +141,16 @@ function JSReportChart(divElement)
 
         this.JSChartContainer=chart;
         this.DivElement.JSChart=this;   //div中保存一份
+
+        //注册事件
+        if (option.EventCallback)
+        {
+            for(var i=0;i<option.EventCallback.length;++i)
+            {
+                var item=option.EventCallback[i];
+                chart.AddEventCallback(item);
+            }
+        }
 
         if (option.EnableResize==true) this.CreateResizeListener();
 

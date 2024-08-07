@@ -871,3 +871,24 @@ HQData.Report_RequestStockSortData=function(data, callback)
 }
 
 
+
+HQData.Keyboard_RequestSymbolList=function(data, callback)
+{
+    //加载数据
+    var recv={ symbollist:SYMBOL_LIST };
+    var arySymbol=[];
+    for(var i=0;i<recv.symbollist.length;++i)
+    {
+        var item=recv.symbollist[i];
+        var shortSymbol=item[0];
+        shortSymbol=shortSymbol.replace(".sh", "");
+        shortSymbol=shortSymbol.replace(".sz", "");
+        var symbolItem={ Symbol:item[0], Name:item[1], ShortSymbol:shortSymbol, Spell:item[3], Type:item[2] };
+        if (i%5==0) symbolItem.Color="rgb(255,0,0)";
+        arySymbol.push(symbolItem);
+    }
+
+    callback(arySymbol);
+}
+
+

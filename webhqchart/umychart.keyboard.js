@@ -16,6 +16,7 @@ function JSKeyboardChart(divElement)
 {
     this.DivElement=divElement;
     this.JSChartContainer;              //表格控件
+    this.ResizeListener;                //大小变动监听
 
      //h5 canvas
      this.CanvasElement=document.createElement("canvas");
@@ -33,9 +34,18 @@ function JSKeyboardChart(divElement)
     this.OnSize=function()
     {
         //画布大小通过div获取
-        var height=parseInt(this.DivElement.style.height.replace("px",""));
+        var height=this.DivElement.offsetHeight;
+        var width=this.DivElement.offsetWidth;
+        if (this.DivElement.style.height && this.DivElement.style.width)
+        {
+            if (this.DivElement.style.height.includes("px"))
+                height=parseInt(this.DivElement.style.height.replace("px",""));
+            if (this.DivElement.style.width.includes("px"))
+                width=parseInt(this.DivElement.style.width.replace("px",""));
+        }
+       
         this.CanvasElement.height=height;
-        this.CanvasElement.width=parseInt(this.DivElement.style.width.replace("px",""));
+        this.CanvasElement.width=width;
         this.CanvasElement.style.width=this.CanvasElement.width+'px';
         this.CanvasElement.style.height=this.CanvasElement.height+'px';
 
@@ -61,6 +71,18 @@ function JSKeyboardChart(divElement)
 
         this.JSChartContainer=chart;
         this.DivElement.JSChart=this;   //div中保存一份
+
+        //注册事件
+        if (option.EventCallback)
+        {
+            for(var i=0;i<option.EventCallback.length;++i)
+            {
+                var item=option.EventCallback[i];
+                chart.AddEventCallback(item);
+            }
+        }
+
+        if (option.EnableResize==true) this.CreateResizeListener();
 
         chart.Draw();
     }
@@ -104,6 +126,18 @@ function JSKeyboardChart(divElement)
         chart.Frame.ChartBorder.Right*=pixelTatio;
         chart.Frame.ChartBorder.Top*=pixelTatio;
         chart.Frame.ChartBorder.Bottom*=pixelTatio;
+    }
+
+    this.CreateResizeListener=function()
+    {
+        this.ResizeListener = new ResizeObserver((entries)=>{ this.OnDivResize(entries); });
+        this.ResizeListener.observe(this.DivElement);
+    }
+
+    this.OnDivResize=function(entries)
+    {
+        JSConsole.Chart.Log("[JSKeyboardChart::OnDivResize] entries=", entries);
+        this.OnSize();
     }
 
     /////////////////////////////////////////////////////////////////////////////

@@ -63,6 +63,7 @@ export default {
     //键盘精灵
     JSKeyboardChart:JSKeyboardChart,
     KEYBOARD_COLUMN_ID:KEYBOARD_COLUMN_ID,
+    JSPopKeyboard:JSPopKeyboard,
 
     //X轴滚动条
     JSScrollBarChart:JSScrollBarChart,

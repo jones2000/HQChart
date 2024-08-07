@@ -114,6 +114,8 @@
     <script src="../jscommon/umychart.popMenu.js"></script>
     <script src="../jscommon/umychart.DialogDrawTool.js"></script>
     <script src="../jscommon/umychart.PopMinuteChart.js"></script>
+    <script src="../jscommon/umychart.keyboard.js"></script>
+    <script src="../jscommon/umychart.PopKeyboard.js"></script>
     <script src="../jscommon/umychart.version.js"></script>
     
      <!-- 公式编辑器 -->
@@ -139,6 +141,8 @@
     <script src="../jscommon/umychart.testdata/60000.sh.TradeDetal.js"></script>
 
     <script src="../jscommon/umychart.testdata/60000.sh.day.minute.js"></script>
+
+    <script src="../jscommon/umychart.testdata/symbollist_shsz.js"></script>
 
     <script src="../jscommon/umychart.testdata.js"></script>
 
@@ -1542,14 +1546,43 @@
             DeleteLocalIndex=(e, name)=>{ klineControl.DeleteLocalIndex(e, name); }
             SelectLocalIndex=(e, name)=> { klineControl.SelectLocalIndex(e, name); }
 
-
+            //自定义函数和变量
             JSComplier.AddFunction({ Name:'FUNC_DEMO',   Description:'自定义函数1', IsDownload:false } );
             JSComplier.AddVariant({ Name:'VAR_DEMO',   Description:'自定义变量1' } );
 
+            
+            var hqKeyboard=new JSPopKeyboard();
+            hqKeyboard.Keyboard.Option.EventCallback=
+            [
+                {
+                    event:JSCHART_EVENT_ID.ON_KEYBOARD_SELECTED,
+                    callback:(event, data, obj)=>
+                    { 
+                        console.log("[JSCHART_EVENT_ID.ON_KEYBOARD_SELECTED] data", data)
+                        hqKeyboard.Hide();
 
-            console.log(`[Math.ceil] 3=${Math.ceil(3)}`);
-            console.log(`[Math.ceil] 0.1=${Math.ceil(0.125)}`);
+                        if (data && data.Data && data.Data.Symbol)
+                        {
+                            klineControl.Chart.Focus();
+                            klineControl.ChangeSymbol(data.Data.Symbol);
+                        } 
+                    }
+                },
+            ]
+            hqKeyboard.Inital();
+            hqKeyboard.Create();
+            HQData.Keyboard_RequestSymbolList(null, (data)=>{ hqKeyboard.SetSymbolData(data); });
 
+            document.addEventListener('keydown', (event) =>
+            {
+                var div=document.getElementById('kline'); 
+                if (div.contains(event.target)) //在K线上才出来键盘精灵
+                {
+                    hqKeyboard.OnGlobalKeydown(event) 
+                }
+            });
+
+            document.addEventListener("mousedown", (event)=>{  hqKeyboard.OnGlobalMouseDown(event) })
         })
 
       

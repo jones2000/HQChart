@@ -80576,6 +80576,12 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
         if (!bRefreshData)
         {
+            if (!this.SourceData)   //无数据 不需要执行指标
+            {
+                this.Draw();    
+                return;
+            }
+
             var bindData=this.SourceData;
             for(var i=0;i<count;++i)
             {
