@@ -500,6 +500,11 @@ function MinuteTooltipPaint()
             value = (item.Close - this.YClose) / this.YClose * 100;
             color = this.KLineTitlePaint.GetColor(value, 0);
             text = value.toFixed(2) + '%';
+            if (this.YClose===0)
+            {
+                text="--.--";
+                color=this.TitleColor;
+            }
             aryText.push({Title:title, TitleColor:this.TitleColor, Text:text, Color:color });
         }
 

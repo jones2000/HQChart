@@ -1562,7 +1562,7 @@ function FrameSplitMinutePriceY()
             var strPrice=price.toFixed(defaultfloatPrecision);  //价格刻度字符串
             if (this.IsShowLeftText) coordinate.Message[0]=strPrice;
 
-            if (this.YClose)
+            if (IFrameSplitOperator.IsNumber(this.YClose) && this.YClose!=0)
             {
                 var per=(price/this.YClose-1)*100;
                 if (per>0) coordinate.TextColor=g_JSChartResource.UpTextColor;
@@ -1642,7 +1642,7 @@ function FrameSplitMinutePriceY()
             coordinate.Value = price;
             coordinate.Message[0] = price.toFixed(defaultfloatPrecision);
 
-            if (IFrameSplitOperator.IsNumber(this.YClose))
+            if (IFrameSplitOperator.IsNumber(this.YClose) && this.YClose!=0)
             {
                 var per = (price / this.YClose - 1) * 100;
                 if (per > 0) coordinate.TextColor = g_JSChartResource.UpTextColor;

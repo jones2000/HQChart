@@ -41634,9 +41634,17 @@ function MinuteTooltipPaint()
         if (IFrameSplitOperator.IsNumber(close) && IFrameSplitOperator.IsNumber(this.YClose))
         {
             title=g_JSChartLocalization.GetText('Tooltip-Increase',this.LanguageID);
-            var value=(close-this.YClose)/this.YClose*100;
-            color = this.TitlePaint.GetColor(value, 0);
-            text = value.toFixed(2)+'%';
+            if (this.YClose===0)
+            {
+                text = '--.--';
+                color = this.TitleColor;
+            }
+            else
+            {
+                var value=(close-this.YClose)/this.YClose*100;
+                color = this.TitlePaint.GetColor(value, 0);
+                text = value.toFixed(2)+'%';
+            }
             aryText.push({Title:title, TitleColor:this.TitleColor, Text:text, Color:color });
         } 
 
@@ -42058,7 +42066,7 @@ function MinuteLeftTooltipPaint()
     this.ForamtIncrease=function(price, TitleID)
     {
         if (!IFrameSplitOperator.IsNumber(price) || price==0) return null;
-        
+       
         var value=(price-this.YClose)/this.YClose*100;
         var titleItem=
         { 
@@ -42067,6 +42075,13 @@ function MinuteLeftTooltipPaint()
             Text:value.toFixed(2)+'%',
             TextColor:this.GetColor(value, 0)
         };
+
+        if (this.YClose===0) 
+        {
+            titleItem.Text="--.--";
+            titleItem.TextColor=this.TitleColor
+        }
+           
 
         return titleItem;
     }
@@ -48784,7 +48799,7 @@ function FrameSplitMinutePriceY()
             var strPrice=price.toFixed(defaultfloatPrecision);  //价格刻度字符串
             if (this.IsShowLeftText) coordinate.Message[0]=strPrice;
 
-            if (this.YClose)
+            if (this.YClose && this.YClose!=0)
             {
                 var per=(price/this.YClose-1)*100;
                 if (per>0) coordinate.TextColor=g_JSChartResource.UpTextColor;
@@ -48868,7 +48883,7 @@ function FrameSplitMinutePriceY()
             var strPrice=price.toFixed(defaultfloatPrecision);  //价格刻度字符串
             if (this.IsShowLeftText) coordinate.Message[0]=strPrice
 
-            if (IFrameSplitOperator.IsNumber(this.YClose))
+            if (IFrameSplitOperator.IsNumber(this.YClose) && this.YClose!=0)
             {
                 var per=(price/this.YClose-1)*100;
                 if (per>0) coordinate.TextColor=g_JSChartResource.UpTextColor;
