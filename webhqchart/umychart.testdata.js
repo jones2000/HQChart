@@ -884,7 +884,16 @@ HQData.Keyboard_RequestSymbolList=function(data, callback)
         shortSymbol=shortSymbol.replace(".sh", "");
         shortSymbol=shortSymbol.replace(".sz", "");
         var symbolItem={ Symbol:item[0], Name:item[1], ShortSymbol:shortSymbol, Spell:item[3], Type:item[2] };
-        if (i%5==0) symbolItem.Color="rgb(255,0,0)";
+        if (symbolItem.Type=="EQA") 
+        {
+            symbolItem.TypeName="股票";
+        }
+        else if (symbolItem.Type=="IDX") 
+        {
+            symbolItem.TypeName="指数";
+            symbolItem.Color="rgb(30,144,255)";
+        }
+
         arySymbol.push(symbolItem);
     }
 

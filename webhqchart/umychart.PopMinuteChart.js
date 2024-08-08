@@ -46,7 +46,7 @@ function JSPopMinuteChart()
         divDom.appendChild(divTitle);
        
         var divInfoText=document.createElement("div");
-        divInfoText.className="";
+        divInfoText.className="jschart_pop_minute_chart_Title";
         divInfoText.innerText="分时图";
         this.DivInfoText=divInfoText;
         divTitle.appendChild(divInfoText);

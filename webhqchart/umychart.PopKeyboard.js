@@ -49,9 +49,20 @@ function JSPopKeyboard()
 
         var divTitle=document.createElement("div");
         divTitle.className='jschart_keyboard_Title_Div';
-        divTitle.innerText=this.Title;
         divTitle.onmousedown=(e)=>{ this.OnMouseDownTitle(e); }
         divDom.appendChild(divTitle);
+
+        var divInfoText=document.createElement("div");
+        divInfoText.className="jschart_keyboard_Title";
+        divInfoText.innerText=this.Title;
+        this.DivInfoText=divInfoText;
+        divTitle.appendChild(divInfoText);
+
+        var divClose=document.createElement("div");
+        divClose.className='jschart_keyboard_Close_Div';
+        divClose.innerText="x";
+        divClose.onmousedown=(e)=>{ this.Hide(); }
+        divTitle.appendChild(divClose);
 
         var divInput=document.createElement("div");
         divInput.className='jschart_keyboard_Input_Div';
@@ -257,7 +268,7 @@ JSPopKeyboard.GetOption=function()
             Top:1          //顶部间距
         },
 
-        BorderLine:0,
+        BorderLine:1|2|4|8,
         EnableResize:true
     };
 

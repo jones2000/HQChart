@@ -1156,7 +1156,8 @@ var KEYBOARD_COLUMN_ID=
     SHORT_SYMBOL_ID:0,  //不带后缀代码
     SYMBOL_ID:1,     
     NAME_ID:2,      //简称
-    TYPE_ID:3       //类型
+    TYPE_ID:3,       //类型
+    TYPE_NAME_ID:4,      //类型中文名字
 }
 
 
@@ -1204,7 +1205,9 @@ function ChartSymbolList()
     [
         { Type:KEYBOARD_COLUMN_ID.SHORT_SYMBOL_ID, Title:"代码", TextAlign:"left", Width:null, MaxText:"888888" },
         { Type:KEYBOARD_COLUMN_ID.NAME_ID, Title:"名称", TextAlign:"left", Width:null, MaxText:"擎擎擎擎擎擎" },
-        { Type:KEYBOARD_COLUMN_ID.TYPE_ID, Title:"类型", TextAlign:"right", Width:null, MaxText:"擎擎擎擎" },
+        //{ Type:KEYBOARD_COLUMN_ID.TYPE_ID, Title:"类型", TextAlign:"right", Width:null, MaxText:"擎擎擎擎" },
+        { Type:KEYBOARD_COLUMN_ID.TYPE_NAME_ID, Title:"类型", TextAlign:"right", Width:null, MaxText:"擎擎擎擎" },
+        
     ];
 
     this.RectClient={ };
@@ -1229,7 +1232,7 @@ function ChartSymbolList()
         this.Canvas.save();
 
         this.Canvas.beginPath();
-        this.Canvas.rect(this.RectClient.Left,this.RectClient.Top,(this.RectClient.Right-this.RectClient.Left),(this.RectClient.Bottom-this.RectClient.Top));
+        this.Canvas.rect(this.RectClient.Left,this.RectClient.Top+1,(this.RectClient.Right-this.RectClient.Left),(this.RectClient.Bottom-(this.RectClient.Top+1)));
         //this.Canvas.stroke(); //调试用
         this.Canvas.clip();
 
@@ -1450,11 +1453,11 @@ function ChartSymbolList()
                 if (stock.Color) drawInfo.TextColor=stock.Color;
             }
         }
-        else if (column.Type==KEYBOARD_COLUMN_ID.TYPE_ID)
+        else if (column.Type==KEYBOARD_COLUMN_ID.TYPE_NAME_ID)
         {
-            if (stock && stock.Type) 
+            if (stock && stock.TypeName) 
             {
-                drawInfo.Text=this.TextEllipsis(stock.Type, textWidth, column.MaxText);
+                drawInfo.Text=this.TextEllipsis(stock.TypeName, textWidth, column.MaxText);
                 if (stock.Color) drawInfo.TextColor=stock.Color;
             }
         }

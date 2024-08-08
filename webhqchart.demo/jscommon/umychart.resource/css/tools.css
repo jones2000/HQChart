@@ -1574,25 +1574,38 @@ input[type="color"] {
     display: flex;
     cursor: default;
     user-select: none;
-    background-color:rgb(222,222,222)
+    background-color:rgb(222,222,222);
+    
+}
+.jschart_keyboard_Close_Div
+{
+    margin-left: auto;
+    padding-right: 4px;
+    cursor:pointer;
+}
+
+.jschart_keyboard_Title
+{
+    margin-left:2px;
 }
 
 .jschart_keyboard_Input_Div
 {
     display: flex;
     height:25px;
-    
 }
 
 .jschart_keyboard_input
 {
     width:100%;
     margin:2px;
+    border: 1px solid rgb(192,192,192);
 }
 
 .jschart_keyboard_Chart_Div
 {
-    flex: 1
+    flex: 1;
+    margin:2px;
 }
 
 
