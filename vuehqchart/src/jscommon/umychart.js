@@ -68246,6 +68246,16 @@ function JSChartResource()
             NameFont:{ Size:14, Name:"微软雅黑" },
             SymbolFont:{ Size:12, Name:"微软雅黑" }
         },
+
+        VScrollbar:
+        {
+            ScrollBarHeight:50,
+            ButtonColor:"rgba(252,252,252,0.8)",
+            BarColor:"rgba(168,168,168,0.9)",
+            BorderColor:'rgba(180,180,180,0.9)',
+            BGColor:"rgba(234,239,248,0.9)",
+            BarWidth:{ Size:8 }
+        },
     },
 
     //滚动条

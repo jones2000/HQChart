@@ -7773,7 +7773,7 @@ function ChartVScrollbar()
     this.ChartBorder;                   //边框信息
     this.ChartFrame;                    //框架画法
     this.Name;                          //名称
-    this.ClassName='ChartReportTab';       //类名
+    this.ClassName='ChartVScrollbar';       //类名
     this.IsDrawFirst=false;
     this.GetEventCallback;              //获取事件
     this.Report;

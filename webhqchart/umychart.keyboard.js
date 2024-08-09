@@ -257,6 +257,7 @@ function JSKeyboardChartContainer(uielement)
    
     //拖拽滚动条
     this.DragYScroll=null;  //{Start:{x,y}, End:{x, y}}
+
     this.IsDestroy=false;        //是否已经销毁了
 
     this.ChartDestory=function()    //销毁
@@ -297,6 +298,7 @@ function JSKeyboardChartContainer(uielement)
             this.Data.Data=aryExactQuery.concat(aryFuzzyQuery);
 
         this.ChartPaint[0].SelectedRow=0;
+        this.ChartPaint[0].SizeChange=true;
 
         JSConsole.Chart.Log(`[JSKeyboardChart:Search] search=${strSearch}, source=${this.SourceData.Data.length} match=${this.Data.Data.length}`);
 
@@ -372,6 +374,12 @@ function JSKeyboardChartContainer(uielement)
         chart.GetStockDataCallback=(symbol)=>{ return this.GetStockData(symbol);}
         chart.Data=this.Data;
         this.ChartPaint[0]=chart;
+
+        chart.VScrollbar=new ChartKeyboardVScrollbar();
+        chart.VScrollbar.Frame=this.Frame;
+        chart.VScrollbar.Canvas=this.Canvas;
+        chart.VScrollbar.ChartBorder=this.Frame.ChartBorder;
+        chart.VScrollbar.Report=chart;
 
         if (option)
         {
@@ -624,7 +632,7 @@ function JSKeyboardChartContainer(uielement)
 
     this.UIOnMouseDown=function(e)
     {
-        this.DragXScroll=null;
+        this.DragYScroll=null;
         this.DragMove={ Click:{ X:e.clientX, Y:e.clientY }, Move:{X:e.clientX, Y:e.clientY}, PreMove:{X:e.clientX, Y:e.clientY } };
 
         var pixelTatio = GetDevicePixelRatio();
@@ -642,6 +650,29 @@ function JSKeyboardChartContainer(uielement)
             {
                 if (clickData.Redraw==true)
                     this.Draw();
+            }
+            else if (clickData.Type==5 && e.button==0)  //右侧滚动条
+            {
+                var scroll=clickData.VScrollbar;
+                if (scroll.Type==1) //顶部按钮
+                {
+                    if (this.MoveYOffset(-1)) 
+                        this.Draw();
+                }
+                else if (scroll.Type==2)   //底部按钮
+                {
+                    if (this.MoveYOffset(1)) 
+                        this.Draw();
+                }
+                else if (scroll.Type==3)    //滚动条
+                {
+                    this.DragYScroll={ Click:{X:x, Y:y}, LastMove:{X:x, Y:y} };
+                }
+                else if (scroll.Type==4)    //滚动条内部
+                {
+                    if (this.SetYOffset(scroll.Pos)) 
+                        this.Draw();
+                }
             }
         }
 
@@ -688,68 +719,17 @@ function JSKeyboardChartContainer(uielement)
         var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
         var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
 
-        //JSConsole.Chart.Log(`[JSReportChartContainer::DocOnMouseMove] x=${x}, y=${y}`);
-        
-        if (this.DragRow)
-        {
-            var drag=this.DragRow;
-            var moveSetpY=drag.LastMove.Y-e.clientY;
-            if (Math.abs(moveSetpY)<2) return;
-            var reportChart=this.GetReportChart();
-            drag.LastMove.X=e.clientX;
-            drag.LastMove.Y=e.clientY;
-            drag.Inside={X:x, Y:y};
-
-            if (reportChart) 
-            {
-                var moveRow=reportChart.OnDrawgRow(x,y,e);
-                if (moveRow )
-                {
-                    if (moveRow.Type==2)
-                    {
-                        if (moveRow.Data.DataIndex!=drag.Data.Row.DataIndex)
-                        {
-                            drag.MoveRow=moveRow;
-                        }
-                    }
-                    else if (moveRow.Type==7)
-                    {
-                        var pageStatus=reportChart.GetCurrentPageStatus();
-                        if (!pageStatus.IsEnd)
-                        {
-                            this.MoveYOffset(1, false);
-                            drag.MoveRow=null;
-
-                            this.EnablePageScroll=true;
-                            this.AutoScrollPage(2);
-                        }
-                    }
-                    else if (moveRow.Type==5)
-                    {
-                        if (this.Data.YOffset>0)
-                        {
-                            this.MoveYOffset(-1, false);
-                            drag.MoveRow=null;
-
-                            this.EnablePageScroll=true;
-                            this.AutoScrollPage(-2);
-                        }
-                    }
-                }
-                reportChart.DragRow=drag;
-            }
-
-            this.Draw();
-        }
-        else if (this.DragXScroll)
+        if (this.DragYScroll)
         {
             var chart=this.ChartPaint[0];
-            if (!chart || !chart.Tab) return;
+            if (!chart || !chart.VScrollbar) return;
 
-            this.DragXScroll.LastMove.X=x;
-            this.DragXScroll.LastMove.Y=y;
-            var pos=chart.Tab.GetScrollPostionByPoint(x,y);
-            if (this.SetXOffset(pos)) this.Draw();
+            this.DragYScroll.LastMove.X=x;
+            this.DragYScroll.LastMove.Y=y;
+
+            var pos=chart.VScrollbar.GetScrollPostionByPoint(x,y);
+            if (this.SetYOffset(pos)) 
+                this.Draw();
         }
     }
 
@@ -758,6 +738,8 @@ function JSKeyboardChartContainer(uielement)
         //清空事件
         document.onmousemove=null;
         document.onmouseup=null; 
+
+        this.DragYScroll=null;
 
         var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_KEYBOARD_MOUSEUP)
         if (event && event.Callback)
@@ -1065,6 +1047,21 @@ function JSKeyboardChartContainer(uielement)
             return result;
         }
     }
+
+    this.SetYOffset=function(pos)
+    {
+        if (!IFrameSplitOperator.IsNumber(pos)) return false;
+        var chart=this.ChartPaint[0];
+        if (!chart) return false;
+
+        var maxOffset=chart.GetYScrollRange();
+        if (pos<0) pos=0;
+        if (pos>maxOffset) pos=maxOffset;
+
+        this.Data.YOffset=pos;
+
+        return true;
+    }
 }
 
 function JSKeyboardFrame()
@@ -1074,14 +1071,14 @@ function JSKeyboardFrame()
 
     this.BorderLine=null;                   //1=上 2=下 4=左 8=右
 
-    this.BorderColor=g_JSChartResource.Report.BorderColor;    //边框线
+    this.BorderColor=g_JSChartResource.Keyboard.BorderColor;    //边框线
 
     this.LogoTextColor=g_JSChartResource.FrameLogo.TextColor;
     this.LogoTextFont=g_JSChartResource.FrameLogo.Font;
 
-    this.ReloadResource=function(resource)
+    this.ReloadResource=function(option)
     {
-        this.BorderColor=g_JSChartResource.Report.BorderColor;    //边框线
+        this.BorderColor=g_JSChartResource.Keyboard.BorderColor;    //边框线
         this.LogoTextColor=g_JSChartResource.FrameLogo.TextColor;
         this.LogoTextFont=g_JSChartResource.FrameLogo.Font;
     }
@@ -1178,10 +1175,12 @@ function ChartSymbolList()
     this.IsDrawBorder=false;            //是否绘制单元格边框
 
     this.ShowSymbol=[];                 //显示的股票列表 { Index:序号(排序用), Symbol:股票代码 }
+
+    this.VScrollbar;                    //竖向滚动条
    
     this.BorderColor=g_JSChartResource.Keyboard.BorderColor;          //边框线
     this.SelectedColor=g_JSChartResource.Keyboard.SelectedColor;      //选中行
-    this.TextColor=g_JSChartResource.Keyboard.TextColor;                //文字颜色
+    this.TextColor=g_JSChartResource.Keyboard.TextColor;              //文字颜色
 
     //表格内容配置
     this.ItemFontConfig={ Size:g_JSChartResource.Keyboard.Item.Font.Size, Name:g_JSChartResource.Keyboard.Item.Font.Name };
@@ -1214,7 +1213,11 @@ function ChartSymbolList()
 
     this.ReloadResource=function(resource)
     {
-       
+        this.BorderColor=g_JSChartResource.Keyboard.BorderColor;          //边框线
+        this.SelectedColor=g_JSChartResource.Keyboard.SelectedColor;      //选中行
+        this.TextColor=g_JSChartResource.Keyboard.TextColor;              //文字颜色
+
+        if (this.VScrollbar) this.VScrollbar.ReloadResource(resource);
     }
 
     this.SetColumn=function(aryColumn)
@@ -1229,6 +1232,7 @@ function ChartSymbolList()
         if (this.SizeChange) this.CalculateSize();
         else this.UpdateCacheData();
 
+        var bShowVScrollbar=this.IsShowVScrollbar();
         this.Canvas.save();
 
         this.Canvas.beginPath();
@@ -1241,6 +1245,12 @@ function ChartSymbolList()
         
         this.DrawBorder();
 
+        if (this.VScrollbar && bShowVScrollbar)
+        {
+            var bottom=this.ChartBorder.GetBottom();
+            this.VScrollbar.DrawScrollbar(this.RectClient.Left,this.RectClient.Top+2, this.RectClient.Right+this.VScrollbar.ButtonSize+2, bottom-2);
+        }
+
         this.SizeChange=false;
     }
 
@@ -1251,6 +1261,12 @@ function ChartSymbolList()
         this.RectClient.Right=this.ChartBorder.GetRight();
         this.RectClient.Top=this.ChartBorder.GetTop();
         this.RectClient.Bottom=this.ChartBorder.GetBottom();
+
+        var bShowVScrollbar=this.IsShowVScrollbar();
+        if (bShowVScrollbar && this.VScrollbar && this.VScrollbar.Enable)
+        {
+            this.RectClient.Right-=(this.VScrollbar.ButtonSize+2);
+        }
     }
 
     this.GetPageSize=function(recalculate) //recalculate 是否重新计算
@@ -1284,6 +1300,8 @@ function ChartSymbolList()
 
     this.CalculateSize=function()   //计算大小
     {
+        if (this.VScrollbar && this.VScrollbar.Enable) this.VScrollbar.CalculateSize();
+
         this.UpdateCacheData();
 
         var pixelRatio=GetDevicePixelRatio();
@@ -1478,6 +1496,7 @@ function ChartSymbolList()
         else if (textAlign=='right')
         {
             x=left+width-2;
+            if (left+width-2>this.RectClient.Right) x=this.RectClient.Right-2;
             this.Canvas.textAlign="right";
         }
         else
@@ -1531,6 +1550,12 @@ function ChartSymbolList()
             var uiElement={Left:this.UIElement.getBoundingClientRect().left, Top:this.UIElement.getBoundingClientRect().top};
         else
             var uiElement={Left:null, Top:null};
+
+        if (this.VScrollbar)
+        {
+            var item=this.VScrollbar.OnMouseDown(x,y,e);
+            if (item) return { Type:5, VScrollbar:item };   //右侧滚动条
+        }
 
         var row=this.PtInBody(x,y);
         if (row)
@@ -1691,6 +1716,57 @@ function ChartSymbolList()
         {
             event.Callback(event,data,this);
         }
+    }
+
+    this.GetYScrollRange=function()
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return 0;
+
+        var maxOffset=this.Data.Data.length-this.RowCount;
+
+        return maxOffset;
+    }
+
+    //大于1屏数据 显示滚动条
+    this.IsShowVScrollbar=function()
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return false;
+        
+        return this.Data.Data.length>this.RowCount;
+    }
+}
+
+//纵向滚动条
+function ChartKeyboardVScrollbar()
+{
+    this.newMethod=ChartVScrollbar;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartKeyboardVScrollbar';
+    this.Enable=true;
+
+    this.ScrollBarHeight=g_JSChartResource.Keyboard.VScrollbar.ScrollBarHeight;
+    this.ButtonColor=g_JSChartResource.Keyboard.VScrollbar.ButtonColor;
+    this.BarColor=g_JSChartResource.Keyboard.VScrollbar.BarColor;
+    this.BorderColor=g_JSChartResource.Keyboard.VScrollbar.BorderColor;
+    this.BGColor=g_JSChartResource.Keyboard.VScrollbar.BGColor;
+    this.Mergin={ Left:2, Right:2, Top:2, Bottom:2 };
+    this.BarWithConfig={ Size:g_JSChartResource.Keyboard.VScrollbar.BarWidth.Size };
+
+    this.ReloadResource=function(resource)
+    {
+        this.ScrollBarHeight=g_JSChartResource.Keyboard.VScrollbar.ScrollBarHeight;
+        this.ButtonColor=g_JSChartResource.Keyboard.VScrollbar.ButtonColor;
+        this.BarColor=g_JSChartResource.Keyboard.VScrollbar.BarColor;
+        this.BorderColor=g_JSChartResource.Keyboard.VScrollbar.BorderColor;
+        this.BGColor=g_JSChartResource.Keyboard.VScrollbar.BGColor;
+        this.BarWithConfig={ Size:g_JSChartResource.Keyboard.VScrollbar.BarWidth.Size };
+    }
+
+    this.IsShowCallback=function()
+    {
+        return true;
     }
 }
 

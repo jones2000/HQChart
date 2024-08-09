@@ -1554,7 +1554,7 @@ input[type="color"] {
 {
     position: absolute;
     width: 230px; 
-    height:380px;
+    height:360px;
     left: 1px;
     top: 1px;
     z-index: 999;
