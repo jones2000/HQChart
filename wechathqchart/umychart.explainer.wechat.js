@@ -90,7 +90,25 @@ function JSExplainer(ast,option)
         ["HYSYL","指数市盈率或个股所属行业的市盈率"],
         ["HYSJL","指数市净率或个股所属行业的市净率"],
 
-        ['DRAWNULL',"无效数据"]
+        ['DRAWNULL',"无效数据"],
+
+        ["LARGEINTRDVOL","逐笔买入大单成交量"],
+        ["LARGEOUTTRDVOL","逐笔卖出大单成交量"],
+        ["TRADENUM", "逐笔成交总单数"],         
+        ["TRADEINNUM", "逐笔买入成交单数"],       
+        ["TRADEOUTNUM", "逐笔卖出成交单数"],      
+        ["LARGETRDINNUM", "逐笔买入大单成交单数"],   
+        ["LARGETRDOUTNUM", "逐笔卖出大单成交单数"],  
+        ["CUR_BUYORDER", "总委买量"],    
+        ["CUR_SELLORDER", "总委卖量"],   
+        ["ACTINVOL", "主动买成交量"],         
+        ["ACTOUTVOL", "主动卖成交量"],        
+        ["BIDORDERVOL", "累计总有效委买量"],     
+        ["BIDCANCELVOL", "累计总有效撤买量"],    
+        ["AVGBIDPX", "最新委买均价"],         
+        ["OFFERORDERVOL", "累计总有效委卖量"],   
+        ["OFFERCANCELVOL", "累计总有效撤卖量"],   
+        ["AVGOFFERPX", "最新委卖均价"],
 
     ]);   
 
@@ -590,7 +608,11 @@ function JSExplainer(ast,option)
                         return `${args[1]}日内${args[0]}新低距今天数`; 
                     } 
                 } 
-            ]
+            ],
+
+            ["L2_VOLNUM", { Name:"L2_VOLNUM", Param:{ Count:2 }, ToString:function(args) { return `单数分档`; } }],
+            ["L2_VOL", { Name:"L2_VOL", Param:{ Count:2 }, ToString:function(args) { return `成交量分档`; } }],
+            ["L2_AMO", { Name:"L2_AMO", Param:{ Count:2 }, ToString:function(args) { return `成交额分档`; } }],
         ]
     );
 

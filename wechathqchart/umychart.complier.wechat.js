@@ -53,6 +53,38 @@ var g_JSComplierResource=
         Data:new Map()  //自定义函数 key=函数名, Value:{ID:函数名, Callback: }
     },
 
+    CustomDataFunction: //自定义数据函数 
+    {
+        //自定义函数 key=变量名, Value:{ Name:变量名, Description:描述信息, ArgCount:参数个数 }
+        Data:new Map(
+        [
+            [
+                "L2_VOLNUM",
+                { 
+                    Name:"L2_VOLNUM",
+                    Description:"单数分档,按: N(0--1):(超大+大)/(中+小),M(0--1):买/卖二类,沪深京品种的资金流向,仅日线以上周期,用于特定版本", 
+                    ArgCount:2 
+                }
+            ],
+            [
+                "L2_VOL", 
+                { 
+                    Name:"L2_VOL",
+                    Description:"成交量分档,按: N(0--3):超大/大/中/小四档处理,M(0--3):买入/卖出/主买/主卖四类,沪深京品种的资金流向,仅日线以上周期,用于特定版本", 
+                    ArgCount:2 
+                }
+            ],
+            [
+                "L2_AMO", 
+                { 
+                    Name:"L2_AMO",
+                    Description:"成交额分档,按: N(0--3):超大/大/中/小四档处理,M(0--3):买入/卖出/主买/主卖四类,沪深京品种的资金流向,仅日线以上周期,用于特定版本", 
+                    ArgCount:2 
+                }
+            ]
+        ])  
+    },
+
     CustomVariant:  //自定义变量
     {
         Data:new Map()  //自定义函数 key=变量名, Value:{ Name:变量名, Description:描述信息 }
@@ -61,6 +93,12 @@ var g_JSComplierResource=
     IsCustomFunction:function(name)
     {
         if (g_JSComplierResource.CustomFunction.Data.has(name)) return true;
+        return false;
+    },
+
+    IsCustomDataFunction:function(name)
+    {
+        if (g_JSComplierResource.CustomDataFunction.Data.has(name)) return true;
         return false;
     },
 
@@ -881,7 +919,15 @@ function Node()
             "CAPITAL","TOTALCAPITAL","EXCHANGE",
             "HYBLOCK","DYBLOCK","GNBLOCK","FGBLOCK","ZSBLOCK","ZHBLOCK","ZDBLOCK","HYZSCODE",
             "GNBLOCKNUM","FGBLOCKNUM","ZSBLOCKNUM","ZHBLOCKNUM","ZDBLOCKNUM",
-            "HYSYL","HYSJL","FROMOPEN"
+            "HYSYL","HYSJL","FROMOPEN",
+            //资金流向
+            "LARGEINTRDVOL","LARGEOUTTRDVOL",
+            "TRADENUM","TRADEINNUM","TRADEOUTNUM",
+            "LARGETRDINNUM","LARGETRDOUTNUM",
+            "CUR_BUYORDER","CUR_SELLORDER",
+            "ACTINVOL","ACTOUTVOL",
+            "BIDORDERVOL","BIDCANCELVOL","AVGBIDPX", 
+            "OFFERORDERVOL","OFFERCANCELVOL","AVGOFFERPX", 
         ]);
         
         if (setVariantName.has(varName))
@@ -907,6 +953,15 @@ function Node()
         if (g_JSComplierResource.IsCustomFunction(callee.Name)) 
         {
             var item={FunctionName:callee.Name, ID:JS_EXECUTE_JOB_ID.JOB_CUSTOM_FUNCTION_DATA, Args:args}
+            if (token) item.Token={ Index:token.Start, Line:token.LineNumber};
+            this.FunctionData.push(item);
+            return;
+        }
+
+        //自定义数据函数
+        if (g_JSComplierResource.IsCustomDataFunction(callee.Name))
+        {
+            var item={FunctionName:callee.Name, ID:JS_EXECUTE_JOB_ID.JOB_CUSTOM_DATA_FUNCTION, Args:args}
             if (token) item.Token={ Index:token.Start, Line:token.LineNumber};
             this.FunctionData.push(item);
             return;
@@ -10941,6 +10996,57 @@ function JSSymbolData(ast,option,jsExecute)
         }
     }
 
+    this.GetCustomFunctionDataV2=function(jobItem)
+    {
+        var funcName=jobItem.FunctionName;
+        var functionInfo=g_JSComplierResource.CustomDataFunction.Data.get(funcName);
+        if (!functionInfo) return;
+
+        var aryArgs=this.JobArgumentsToArray(jobItem, functionInfo.ArgCount);
+        var key=this.GetStockDataKey(jobItem,aryArgs);
+        
+        if (this.StockData.has(key)) return this.Execute.RunNextJob();  //一个函数只能缓存一个数据, 保存多个外部自己保存
+
+        var self=this;
+        if (this.NetworkFilter)
+        {
+            var dateRange=this.Data.GetDateRange();
+            var obj=
+            {
+                Name:'JSSymbolData::GetCustomFunctionData', //类名::函数名
+                Explain:'自定义函数数据下载',
+                JobID:jobItem.ID,
+                Request:
+                { 
+                    Url:"数据地址", Type:'POST', 
+                    Data:
+                    { 
+                        FunctionName:jobItem.FunctionName, 
+                        symbol: this.Symbol, daterange:dateRange,
+                        JobItem:jobItem, //函数编译信息
+                        Key:key,
+                        period:this.Period,
+                        right:this.Right,
+                    } 
+                },
+                Self:this,
+                FunctionInfo:functionInfo,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(recvData) 
+            { 
+                if (recvData.Error) self.AddStockValueError(key,recvData.Error);
+                else self.RecvStockValue(recvData.Data,jobItem,key,recvData.DataType);
+                self.Execute.RunNextJob();
+            });
+        }
+        else
+        {
+            this.AddStockValueError(key, `自定义函数${key}下载失败`);
+            this.Execute.RunNextJob();
+        }
+    }
+
     this.RecvStockValue=function(recvData,jobItem,key,dataType)
     {
         if (!recvData)
@@ -12469,6 +12575,7 @@ var JS_EXECUTE_JOB_ID=
 
     JOB_CUSTOM_FUNCTION_DATA:6000,       //自定义函数
     JOB_CUSTOM_VARIANT_DATA:6001,        //自定义变量
+    JOB_CUSTOM_DATA_FUNCTION:6002,     //自定义数据函数
 
     JOB_DOWNLOAD_MARGIN_BALANCE: 1000,           //融资融券余额
     JOB_DOWNLOAD_MARGIN_RATE: 1001,              //融资占比
@@ -12493,9 +12600,6 @@ var JS_EXECUTE_JOB_ID=
     JOB_DOWNLOAD_NEWS_ANALYSIS_COMPANYNEWS: 2007,          //官网新闻
     JOB_DOWNLOAD_NEWS_ANALYSIS_TOPMANAGERS: 2008,          //高管要闻
     JOB_DOWNLOAD_NEWS_ANALYSIS_PLEDGE: 2009,               //股权质押
-
-    JOB_CUSTOM_FUNCTION_DATA: 6000,       //自定义函数
-    JOB_CUSTOM_VARIANT_DATA: 6001,        //自定义变量
 
     JOB_DOWNLOAD_CUSTOM_API_DATA: 30000,    //自定义数据
 
@@ -12621,7 +12725,25 @@ function JSExecute(ast,option)
         ['DRAWNULL', null],
         ["NULL",null], 
 
-        ["MACHINEDATE",null],["MACHINETIME",null],["MACHINEWEEK",null]
+        ["MACHINEDATE",null],["MACHINETIME",null],["MACHINEWEEK",null],
+
+        ['LARGEINTRDVOL', null],    //逐笔买入大单成交量,相当于L2_VOL(0,0)+L2_VOL(1,0),沪深京品种的资金流向,仅日线以上周期,用于特定版本
+        ['LARGEOUTTRDVOL', null],    //逐笔卖出大单成交量,相当于L2_VOL(0,1)+L2_VOL(1,1),沪深京品种的资金流向,仅日线以上周期,用于特定版本
+        ["TRADENUM", null],         //逐笔成交总单数,沪深京品种的资金流向,仅日线以上周期,用于特定版本
+        ["TRADEINNUM", null],       //逐笔买入成交单数,相当于L2_VOLNUM(0,0)+L2_VOLNUM(1,0),沪深京品种的资金流向,仅日线以上周期,用于特定版本
+        ["TRADEOUTNUM", null],      //逐笔卖出成交单数,相当于L2_VOLNUM(0,1)+L2_VOLNUM(1,1),沪深京品种的资金流向,仅日线以上周期,用于特定版本
+        ["LARGETRDINNUM", null],    //逐笔买入大单成交单数,相当于L2_VOLNUM(0,0),沪深京品种的资金流向,仅日线以上周期,用于特定版本
+        ["LARGETRDOUTNUM", null],   //逐笔卖出大单成交单数,相当于L2_VOLNUM(0,1),沪深京品种的资金流向,仅日线以上周期,用于特定版本
+        ["CUR_BUYORDER", null],     //总委买量,序列数据,专业版等(资金流向功能)沪深京品种行情专用
+        ["CUR_SELLORDER", null],    //总委卖量,序列数据,专业版等(资金流向功能)沪深京品种行情专用
+        ["ACTINVOL", null],         //主动买成交量,相当于L2_VOL(0,2)+L2_VOL(1,2)+L2_VOL(2,2)+L2_VOL(3,2),沪深京品种的资金流向,仅日线以上周期,用于特定版本
+        ["ACTOUTVOL", null],        //主动卖成交量,相当于L2_VOL(0,3)+L2_VOL(1,3)+L2_VOL(2,3)+L2_VOL(3,3),沪深京品种的资金流向,仅日线以上周期,用于特定版本
+        ["BIDORDERVOL", null],      //累计总有效委买量,专业版等(资金流向功能)沪深京品种行情专用 累计总有效委买量-累计总有效撤买量=总买+总成交量
+        ["BIDCANCELVOL", null],     //累计总有效撤买量,专业版等(资金流向功能)沪深京品种行情专用  累计总有效委买量-累计总有效撤买量=总买+总成交量
+        ["AVGBIDPX", null],         //专业版等(资金流向功能)沪深京品种行情专用:最新委买均价
+        ["OFFERORDERVOL", null],    //累计总有效委卖量,专业版等(资金流向功能)沪深京品种行情专用  累计总有效委卖量-累计总有效撤卖量=总卖+总成交量
+        ["OFFERCANCELVOL", null],   //累计总有效撤卖量,专业版等(资金流向功能)沪深京品种行情专用  累计总有效委卖量-累计总有效撤卖量=总卖+总成交量
+        ["AVGOFFERPX", null],       //专业版等(资金流向功能)沪深京品种行情专用:最新委卖均价
     ]);   
 
     this.SymbolData=new JSSymbolData(this.AST,option,this);
@@ -12686,6 +12808,9 @@ function JSExecute(ast,option)
 
             case JS_EXECUTE_JOB_ID.JOB_CUSTOM_FUNCTION_DATA:
                 return this.SymbolData.GetCustomFunctionData(jobItem);  
+
+            case JS_EXECUTE_JOB_ID.JOB_CUSTOM_DATA_FUNCTION:
+                    return this.SymbolData.GetCustomFunctionDataV2(jobItem);
 
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_BALANCE:
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_MARGIN_RATE:
@@ -12795,6 +12920,24 @@ function JSExecute(ast,option)
             case "HYSJL":
 
             case 'FROMOPEN':
+
+            case "LARGEINTRDVOL":
+            case "LARGEOUTTRDVOL":
+            case "TRADENUM":
+            case "TRADEINNUM":
+            case "TRADEOUTNUM":
+            case "LARGETRDINNUM": 
+            case "LARGETRDOUTNUM":
+            case "CUR_BUYORDER":
+            case "CUR_SELLORDER": 
+            case "ACTINVOL":
+            case "ACTOUTVOL":
+            case "BIDORDERVOL":
+            case "BIDCANCELVOL":
+            case "AVGBIDPX":
+            case "OFFERORDERVOL":
+            case "OFFERCANCELVOL":
+            case "AVGOFFERPX":
                 return this.SymbolData.GetStockCacheData({ VariantName:name, Node:node });
             case 'SETCODE':
                 return this.SymbolData.SETCODE();
@@ -12853,6 +12996,8 @@ function JSExecute(ast,option)
                 return this.SymbolData.WEEKOFYEAR();
             case "DAYSTOTODAY":
                 return this.SymbolData.DAYSTOTODAY();
+            default:
+                this.ThrowUnexpectedNode(node, '变量'+name+'不存在', name);
         }
     }
 
@@ -13663,6 +13808,14 @@ function JSExecute(ast,option)
             }
 
             return node.Out;
+        }
+
+        if (g_JSComplierResource.IsCustomDataFunction(funcName))
+        {
+            var functionInfo=g_JSComplierResource.CustomDataFunction.Data.get(funcName);
+            node.Out=this.SymbolData.GetStockCacheData( {FunctionName:funcName, Args:args, ArgCount:functionInfo.ArgCount, Node:node } );
+            node.Draw=null;
+            return  node.Out;
         }
 
         switch(funcName)

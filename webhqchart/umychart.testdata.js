@@ -59,6 +59,14 @@ HQData.NetworkFilter=function(data, callback)
             HQData.RequestIndexVariantData(data,callback);
             break;
 
+        case "JSSymbolData::GetCustomFunctionData":                      //自定义函数数据下载
+            HQData.CustomFunction_RequestData(data,callback);
+            break;
+
+        case "JSSymbolData::GetCustomVariantData":                       //自定义函数数据下载
+            HQData.CustomVarData_RequestData(data,callback);
+            break;
+
         case "JSSymbolData::GetOtherSymbolData":
             //HQChart使用教程30-K线图如何对接第3方数据31-获取指定品种的K线数据
             HQData.RequestOtherSymbolData(data, callback);
@@ -105,6 +113,10 @@ HQData.NetworkFilter=function(data, callback)
 
         case "TradeDetail::RequestData":
             HQData.TradeDetail_RequestData(data,callback);
+            break;
+
+        case "JSSymbolData::GetFinance":    //财务数据
+            HQData.Finance_RequestData(data,callback);
             break;
 
         //////////////////////////////////////////////////////
@@ -436,6 +448,7 @@ HQData.RequestMinuteRealtimeData=function(data,callback)
 
 HQData.RequestIndexVariantData=function(data,callback)
 {
+    data.PreventDefault=true;
     var varName=data.Request.Data.VariantName;  //变量名称
     if (varName=="FROMOPEN") 
     {
@@ -445,6 +458,102 @@ HQData.RequestIndexVariantData=function(data,callback)
         hqchartData.DataType=1;
         callback(hqchartData);
     }
+    else if (varName=="FGBLOCK")
+    {
+        var hqchartData={ DataType:1, Data:{Value:"融资融券 大盘股 MSCI成份 周期股 沪股通标的"} }; //返回所属风格板块.
+        callback(hqchartData);
+    }
+    else if (varName=="GNBLOCK")
+    {
+        var hqchartData={ DataType:1,  Data:{ Value:"含可转债 跨境支付CIPS"} }; //返回所属概念板块.
+        callback(hqchartData);
+    }
+    else if (varName=="HYBLOCK")
+    {
+        var hqchartData={ DataType:1,  Data:{Value:"全国性银行"}}; //返回品种所属行业.
+        callback(hqchartData);
+    }
+    else if (varName=="DYBLOCK")
+    {
+        var hqchartData={ DataType:1, Data:{Value:"上海板块"} }; //返回品种所属地域..
+        callback(hqchartData);
+    }
+    else if (varName=="CAPITAL")
+    {
+        var hqchartData={ DataType:1, Data:{ Value:29352177375 } }; // 当前流通股本,单位为手,债券1手为10张,其它为100
+        callback(hqchartData);
+    }
+    else if (varName=="LARGEINTRDVOL")
+    {
+        //测试数据
+        var kData=data.Self.Data;
+        var hqchartData={ DataType:2, Data:[] };
+        for(var i=0;i<kData.Data.length;++i)
+        {
+            var kItem=kData.Data[i];
+            hqchartData.Data.push({ Date:kItem.Date, Time:kItem.Time, Value:kItem.Vol*0.15 });
+        }
+        callback(hqchartData);
+    }
+    else if (varName=="LARGEOUTTRDVOL")
+    {
+        //测试数据
+        var kData=data.Self.Data;
+        var hqchartData={ DataType:2, Data:[] };
+        for(var i=0;i<kData.Data.length;++i)
+        {
+            var kItem=kData.Data[i];
+            hqchartData.Data.push({ Date:kItem.Date, Time:kItem.Time, Value:kItem.Vol*0.17 });
+        }
+        callback(hqchartData);
+    }
+
+}
+
+HQData.CustomFunction_RequestData=function(data, callback)
+{
+    data.PreventDefault=true;
+    var funcName=data.Request.Data.FunctionName;
+    var hqchartData=null;
+
+    if (funcName=='L2_VOL')
+    {
+        var args=data.Request.Data.JobItem.Args;
+        var param=[ args[0].Value, args[1].Value ];
+
+        var hqchartData={ DataType:2, Data:[] };
+        var kData=data.Self.Data;
+        for(var i=0;i<kData.Data.length;++i)
+        {
+            var kItem=kData.Data[i];
+            hqchartData.Data.push({ Date:kItem.Date, Time:kItem.Time, Value:kItem.Vol/3 });
+        }
+    }
+    
+    callback(hqchartData);
+}
+
+HQData.CustomVarData_RequestData=function(data, callback)
+{
+    data.PreventDefault=true;
+    var varName=data.Request.Data.VariantName;
+    if (varName=="DCLOSE")
+    {
+        var hqchartData={ DataType:2, Data:[] };
+        var kData=data.Self.Data;
+        for(var i=0;i<kData.Data.length;++i)
+        {
+            var kItem=kData.Data[i];
+            hqchartData.Data.push({ Date:kItem.Date, Time:kItem.Time, Value:kItem.Close });
+        }
+
+        callback(hqchartData);
+    }
+    else
+    {
+        throw `${varName} 没有对接. [HQData.CustomVarData_RequestData]`
+    }
+
 
 }
 
@@ -587,6 +696,18 @@ HQData.RequestOverlayHistoryMinuteData=function(data, callback)
     hqchartData.data=KLINE_MINUTE_DATA2.data;
 
     callback(hqchartData);
+}
+
+
+HQData.Finance_RequestData=function(data,callback)
+{
+    data.PreventDefault=true;
+    var id=data.Request.Data.id;
+    var hqchartData=null;
+    if (id==7)  // 流通股本(随时间可能有变化)
+        hqchartData=TEST_FINANCE_7.data;
+
+    if (hqchartData) callback(hqchartData);
 }
 
 
