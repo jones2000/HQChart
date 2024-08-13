@@ -1605,11 +1605,11 @@ function JSParser(code)
         return this.LookAhead.Type==7 /*Punctuator*/ && this.LookAhead.Value==value;
     }
 
-    this.Expect=function(value)
+    this.Expect=function(value, message)
     {
         let token=this.NextToken();
         if (token.Type!=7 /*Punctuator*/ || token.Value!=value)
-            this.ThrowUnexpectedToken(token);
+            this.ThrowUnexpectedToken(token, message);
     }
 
     //是否是赋值操作符
@@ -2034,7 +2034,7 @@ function JSParser(code)
     // Quietly expect a comma when in tolerant mode, otherwise delegates to expect().
     this.ExpectCommaSeparator=function()
     {
-        this.Expect(',');
+        this.Expect(',',"函数参数格式错误");
     }
 
     // https://tc39.github.io/ecma262/#sec-primary-expression
@@ -14397,7 +14397,8 @@ function JSSymbolData(ast,option,jsExecute)
             };
             this.NetworkFilter(obj, function(recvData) 
             { 
-                self.RecvStockValue(recvData,jobItem,key,0);
+                if (recvData.Error) self.AddStockValueError(key,recvData.Error);
+                else self.RecvStockValue(recvData,jobItem,key,0);
                 self.Execute.RunNextJob();
             });
 

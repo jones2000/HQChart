@@ -302,6 +302,7 @@ function JSChart(element)
 
         if (option.SourceDatatLimit) chart.SetSourceDatatLimit(option.SourceDatatLimit);
         if (option.EnableZoomUpDown) chart.EnableZoomUpDown=option.EnableZoomUpDown;
+        if (option.EnableMoveData) chart.EnableMoveData=option.EnableMoveData;
         if (option.TouchMoveMinAngle) chart.TouchMoveMinAngle=option.TouchMoveMinAngle;
         if (IFrameSplitOperator.IsBool(option.EnableScrollUpDown)) chart.EnableScrollUpDown=option.EnableScrollUpDown;
         if (option.ZoomStepPixel>0) chart.ZoomStepPixel=option.ZoomStepPixel;
@@ -1847,6 +1848,19 @@ function JSChartContainer(uielement)
         }
     }
 
+    this.StartMoveTimer=function(touches, e)
+    {
+        var x = touches[0].clientX;
+        var y = touches[0].clientY;
+        this.LastMovePoint={ X:x, Y:y };
+        if (this.DrawMoveTimer) return;
+        this.DrawMoveTimer=setTimeout(()=>
+        {
+            if (!this.LastMovePoint) return;
+            this.OnMouseMove(this.LastMovePoint.X, this.LastMovePoint.Y, e);
+            this.DrawMoveTimer=null;
+        }, this.DrawMoveWaitTime);
+    }
 
     this.ontouchmove = function (e) 
     {
@@ -1854,23 +1868,13 @@ function JSChartContainer(uielement)
 
         var jsChart = this;
         var touches = this.GetToucheData(e, jsChart.IsForceLandscape);
-        
+
         if (this.IsPhoneDragging(e)) 
         {
             var drag = jsChart.MouseDrag;
             if (drag == null) 
             {
-                var x = touches[0].clientX;
-                var y = touches[0].clientY;
-                this.LastMovePoint={ X:x, Y:y };
-                if (this.DrawMoveTimer) return;
-                this.DrawMoveTimer=setTimeout(()=>
-                {
-                    if (!this.LastMovePoint) return;
-                    this.OnMouseMove(this.LastMovePoint.X, this.LastMovePoint.Y, e);
-                    this.DrawMoveTimer=null;
-                }, this.DrawMoveWaitTime);
-
+                this.StartMoveTimer(touches, e);
             }
             else 
             {
@@ -1941,6 +1945,12 @@ function JSChartContainer(uielement)
                             this.ClearTouchTimer();
                             return;
                         }
+                    }
+
+                    if (this.EnableMoveData && this.EnableMoveData.Touch===false)
+                    {
+                        jsChart.MouseDrag = null;
+                        return;
                     }
 
                     if (moveSetp < 5) return;
@@ -5260,6 +5270,7 @@ function KLineChartContainer(uielement)
     this.StepPixel = 4;                   //移动一个数据需要的像素
     this.ZoomStepPixel = 5;               //放大缩小手势需要的最小像素
     this.EnableZoomUpDown=null;         //是否手势/键盘/鼠标允许缩放{ Touch:true/false, Mouse:true/false, Keyboard:true/false, Wheel:true/false }
+    this.EnableMoveData=null;            //是否可以移动K线 { Touch:true/false }
 
     this.DragDownload = {
         Day: { Enable: false, IsEnd: false, Status: 0 },      //日线数据拖拽下载(暂不支持) Status: 0空闲 1 下载中

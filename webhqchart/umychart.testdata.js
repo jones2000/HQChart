@@ -488,10 +488,13 @@ HQData.RequestIndexVariantData=function(data,callback)
         //测试数据
         var kData=data.Self.Data;
         var hqchartData={ DataType:2, Data:[] };
+        var testValue=0.15;
         for(var i=0;i<kData.Data.length;++i)
         {
             var kItem=kData.Data[i];
-            hqchartData.Data.push({ Date:kItem.Date, Time:kItem.Time, Value:kItem.Vol*0.15 });
+            hqchartData.Data.push({ Date:kItem.Date, Time:kItem.Time, Value:kItem.Vol*testValue });
+            testValue+=0.01;
+            if (testValue>0.23) testValue=0.15;
         }
         callback(hqchartData);
     }
@@ -505,6 +508,12 @@ HQData.RequestIndexVariantData=function(data,callback)
             var kItem=kData.Data[i];
             hqchartData.Data.push({ Date:kItem.Date, Time:kItem.Time, Value:kItem.Vol*0.17 });
         }
+        callback(hqchartData);
+    }
+    else
+    {
+        var error= `变量'${varName}' 没有对接数据. [HQData.RequestIndexVariantData]`;
+        var hqchartData={ Error:error }; 
         callback(hqchartData);
     }
 
@@ -529,6 +538,11 @@ HQData.CustomFunction_RequestData=function(data, callback)
             hqchartData.Data.push({ Date:kItem.Date, Time:kItem.Time, Value:kItem.Vol/3 });
         }
     }
+    else
+    {
+        var error= `函数'${funcName}' 没有对接数据. [HQData.CustomFunction_RequestData]`;
+        var hqchartData={ Error:error }; 
+    }
     
     callback(hqchartData);
 }
@@ -551,7 +565,9 @@ HQData.CustomVarData_RequestData=function(data, callback)
     }
     else
     {
-        throw `${varName} 没有对接. [HQData.CustomVarData_RequestData]`
+        var error= `变量'${varName}' 没有对接数据. [HQData.CustomVarData_RequestData]`;
+        var hqchartData={ Error:error }; 
+        callback(hqchartData);
     }
 
 
@@ -705,7 +721,14 @@ HQData.Finance_RequestData=function(data,callback)
     var id=data.Request.Data.id;
     var hqchartData=null;
     if (id==7)  // 流通股本(随时间可能有变化)
+    {
         hqchartData=TEST_FINANCE_7.data;
+    }
+    else 
+    {
+        var error= `Finance(${id}) 没有对接数据. [HQData.Finance_RequestData]`;
+        hqchartData={ Error:error }; 
+    }
 
     if (hqchartData) callback(hqchartData);
 }
