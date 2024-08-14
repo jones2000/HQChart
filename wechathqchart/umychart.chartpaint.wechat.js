@@ -300,6 +300,7 @@ function ChartKLine()
         Text:{ Color:g_JSChartResource.PriceGapStyple.Text.Color, Font: g_JSChartResource.PriceGapStyple.Text.Font } 
     };
     this.AryPriceGapCache=[];   //缺口数据 { }
+    this.OneLimitBarType=0;    //一字板颜色类型 4个价格全部都在同一个价位上 0=使用平盘颜色 1=跟昨收比较
 
     this.DrawAKLine = function ()  //美国线
     {
@@ -1078,6 +1079,11 @@ function ChartKLine()
 
     this.DrawKBar_Unchagne=function(data, dataWidth, unchagneColor, drawType, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen) //平线
     {
+        if (this.OneLimitBarType===1 && this.IsOneLimitBar(data))    //一字板
+        {
+            unchagneColor=this.GetOneLimitBarColor(data);
+        }
+
         if (dataWidth >= this.MinBarWidth) 
         {
             if ((dataWidth%2)!=0) dataWidth-=1;
@@ -1165,6 +1171,23 @@ function ChartKLine()
             this.Canvas.strokeStyle = unchagneColor;
             this.Canvas.stroke();
         }
+    }
+
+    //是否是一字板
+    this.IsOneLimitBar=function(kItem)
+    {
+        if (kItem.Open==kItem.Close && kItem.High==kItem.Low && kItem.Open==kItem.High) return true;
+        return false;
+    }
+ 
+    //一字板颜色 和昨收比较
+    this.GetOneLimitBarColor=function(kItem)
+    {
+        if (!kItem || !IFrameSplitOperator.IsNumber(kItem.YClose)) return this.UnchagneColor;
+
+        if (kItem.Close>kItem.YClose) return this.UpColor;
+        else if (kItem.Close<kItem.YClose) return this.DownColor;
+        else return this.UnchagneColor;
     }
 
     this.DrawKBar_Custom=function(data, dataWidth, barColor, drawType, option, x, y, left, right, yLow, yHigh, yOpen, yClose, border, isHScreen)

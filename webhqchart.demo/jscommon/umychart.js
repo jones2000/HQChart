@@ -571,6 +571,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (option.KLine.ShowKLine == false) klineChart.IsShow = false;
             if (option.KLine.InfoPosition>0) klineChart.InfoPosition=option.KLine.InfoPosition;
             if (IFrameSplitOperator.IsBool(item.IsShowMaxMinPrice)) klineChart.IsShowMaxMinPrice=item.IsShowMaxMinPrice;
+            if (IFrameSplitOperator.IsNumber(item.OneLimitBarType)) klineChart.OneLimitBarType=item.OneLimitBarType;
             if (item.PriceGap)
             {
                 if (IFrameSplitOperator.IsBool(item.PriceGap.Enable)) klineChart.PriceGap.Enable=item.PriceGap.Enable;
@@ -23922,7 +23923,8 @@ function ChartKLine()
     this.CustomKLine;       //自定义K线, key=date*1000000+time,  key={ Color:, DrawType: }
     this.DrawKRange={ Start:null, End:null };   //当前屏K线的索引{ Start: , End:}
 
-    this.IsThinAKBar=true;  //美国线 柱子是否是线段 (false=柱子)
+    this.IsThinAKBar=true;      //美国线 柱子是否是线段 (false=柱子)
+    this.OneLimitBarType=0;    //一字板颜色类型 4个价格全部都在同一个价位上 0=使用平盘颜色 1=跟昨收比较
 
     this.HighLowBarColor=g_JSChartResource.HighLowBarColor;
     this.HighLowTextConfig=
@@ -25020,6 +25022,11 @@ function ChartKLine()
 
     this.DrawKBar_Unchagne=function(data, dataWidth, unchagneColor, drawType, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen) //平线
     {
+        if (this.OneLimitBarType===1&& this.IsOneLimitBar(data))    //一字板
+        {
+            unchagneColor=this.GetOneLimitBarColor(data);
+        }
+
         if (dataWidth>=4)
         {
             if ((dataWidth%2)!=0) dataWidth-=1;
@@ -25105,6 +25112,23 @@ function ChartKLine()
             this.Canvas.strokeStyle=unchagneColor;
             this.Canvas.stroke();
         }
+    }
+
+    //是否是一字板
+    this.IsOneLimitBar=function(kItem)
+    {
+        if (kItem.Open==kItem.Close && kItem.High==kItem.Low && kItem.Open==kItem.High) return true;
+        return false;
+    }
+
+    //一字板颜色 和昨收比较
+    this.GetOneLimitBarColor=function(kItem)
+    {
+        if (!kItem || !IFrameSplitOperator.IsNumber(kItem.YClose)) return this.UnchagneColor;
+
+        if (kItem.Close>kItem.YClose) return this.UpColor;
+        else if (kItem.Close<kItem.YClose) return this.DownColor;
+        else return this.UnchagneColor;
     }
 
     this.DrawKBar_Custom=function(data, dataWidth, barColor, drawType, option, x, y, left, right, yLow, yHigh, yOpen, yClose, border, isHScreen)
