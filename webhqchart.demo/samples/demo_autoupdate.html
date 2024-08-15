@@ -1,0 +1,276 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>分时图-自动更新</title>  
+    <!-- 加载资源 -->
+    <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
+    <!--<link rel='stylesheet' href="//at.alicdn.com/t/font_1196214_0bk7uvfe17nq.css"/> -->
+</head>  
+<body>
+    <div id="divminute" style="width: 900px;height:400px;position: relative;">
+    </div>
+
+    <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
+    <script src="../jscommon/umychart.resource/js/webfont.js"></script>
+    <script src="../jscommon/umychart.network.js"></script>
+    <script src="../jscommon/umychart.js"></script>             <!-- K线图形 -->
+    <script src="../jscommon/umychart.complier.js"></script>    <!-- 麦语言解析执行器 -->
+    <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
+    <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+    
+    <script src="../jscommon/umychart.testdata/60000.sh.day.minute.js"></script>
+    <script src="../jscommon/umychart.testdata/60000.sh.5day.minute.js"></script>
+    <script src="../jscommon/umychart.testdata.js"></script>
+
+    <script>
+
+        MARKET_SUFFIX_NAME.GetMarketStatus=(symbol) => { return 2; }//一直交易
+
+        //简单的把分时控件封装下
+        function MinuteChart(divMinute)
+        {
+            this.DivMinute=divMinute;
+            this.Chart=JSChart.Init(divMinute);   //把分时图绑定到一个Div上
+
+            this.TestDayData;
+            this.TestDayData2;
+
+            this.CreateTestData=function()
+            {
+                var testData=CloneData(MINUTE_1DAY_DATA);
+                this.TestDayData={ DataIndex:200, Data:testData.stock[0] };
+                this.TestDayData.Count=this.TestDayData.Data.minute.length;
+
+                this.TestDayData2={ DataIndex:0, Data:CloneData(MINUTE_5DAY_DATA.data[2]) };
+                this.TestDayData2.Data.date=20230708;
+                this.TestDayData2.Count=this.TestDayData2.Data.minute.length;
+
+            }
+
+            //分时图配置信息
+            this.Option= {
+                Type:'分钟走势图',   //创建图形类型
+                //Type:'分钟走势图横屏',
+
+                Windows: //窗口指标
+                [
+                   { Index:"MACD" },
+                   //{Index:"RSI", IsDrawTitleBG:true }
+                ], 
+
+                OverlayIndex:
+                [
+                   
+                ],  //叠加指标
+                
+                
+                Symbol:'600000.sh',         // cf1909.czc
+                IsAutoUpdate:true,          //是自动更新数据
+                AutoUpdateFrequency:500,   //数据更新频率
+                DayCount:5,                     //1 最新交易日数据 >1 多日走势图
+                IsShowRightMenu:true,       //是否显示右键菜单
+                //CorssCursorTouchEnd:true,
+                
+                EnableSelectRect:true,
+                EnableZoomIndexWindow:true,
+               
+                CorssCursorInfo:{  Left:2, Right:1, Bottom:1,RightTextFormat:0,IsFixXLastTime:true, RightButton:{ Enable:true } ,PriceFormatType:0,DataFormatType:0, },
+
+                MinuteLine:
+                {
+                    IsDrawAreaPrice:true,      //是否画价格面积图
+                    //IsShowAveragePrice:false,   //不显示均线
+                    //SplitType:2,
+                },
+
+                MinuteTitle:
+                {
+                    IsShowTime:true,
+                    IsShowName:true,
+                    IsShowDate:false,
+                    IsShowVolTitle:true,
+                    //IsAlwaysShowLastData:true,
+                    IsTitleShowLatestData:true,
+                },
+
+                MinuteVol:
+                {
+                    BarColorType:1,
+                },
+
+                //Language:'EN',
+                //EnableBorderDrag:false,
+
+                IsDrawPictureXY:true,
+
+                SelectedChart:{ EnableSelected: true, EnableMoveOn:true },
+                EnableIndexChartDrag:true,
+
+                EnableSelectRect:true,
+    
+                Border: //边框
+                {
+                    Left:80,    //左边间距
+                    Right:20,     //右边间距
+                    Top:25,
+                    Bottom:25,
+
+                    //AutoLeft:{ Blank:10, MinWidth:60 },
+                    AutoRight:{ Blank:10, MinWidth:60 },
+                },
+                
+                Frame:  //子框架设置
+                [
+                    { SplitCount:5 },
+                    { SplitCount:4, },
+                    { SplitCount:4, },
+                    { SplitCount:4, },
+                ],
+
+                Overlay:    //叠加股票 目前只支持1只股票
+                [
+                    //{Symbol:'603190.sh', OverlayType:1, IsCalcuateMaxMin:true, Color:"rgb(250,0,0)" },
+                    //{Symbol:'000001.sz'}
+                ],
+
+                ExtendChart:    //扩展图形
+                [
+                    //{Name:'MinuteTooltip' }, //手机端tooltip
+                    {Name:'MinutePCTooltip' }, //PC端tooltip
+                    //{Name:"画图工具"}
+                ]
+            };
+                 
+            this.Create=function()  //创建图形
+            {
+                this.CreateTestData();
+
+                var self=this;
+                $(window).resize(function() { self.OnSize(); });    //绑定窗口大小变化事件
+
+                JSChart.EnableCanvasWillReadFrequently=true;
+                var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID); //读取黑色风格配置
+                JSChart.SetStyle(blackStyle);
+                this.DivMinute.style.backgroundColor=blackStyle.BGColor; //设置最外面的div背景
+                var resource=JSChart.GetResource();
+                resource.ToolbarButtonStyle=1;
+                //resource.Minute.FrameSplitTextColor='rgb(55,20,147)';
+                //resource.FrameBorderPen='rgb(255,0,0)';
+
+                //resource.Minute.AreaPriceColor=['rgba(255,0,0,0.5)', "rgba(0,255,0,0.5)", 'rgba(0,0,255,0.5)'];
+                //resource.Minute.AreaPriceColor='rgba(0,0,255,0.1)';
+
+                this.OnSize();  //让分时图全屏
+                this.Option.NetworkFilter=(data, callback)=>{ this.NetworkFilter(data, callback); }
+                this.Chart.SetOption(this.Option);  //设置K线配置
+
+                //外部处理鼠标滚轴事件
+                this.Chart.JSChartContainer.OnWheel=(e)=> { this.OnWheel(e); }
+            }
+
+            this.NetworkFilter=function(data, callback)
+            {
+                console.log('[MinuteChart::NetworkFilter] data', data);
+
+                switch(data.Name)
+                {
+                    case 'MinuteChartContainer::RequestMinuteData':                 //分时图数据对接
+                        //HQChart使用教程29-走势图如何对接第3方数据2-最新分时数据
+                        this.RequestMinuteData(data, callback);
+                        break;
+
+                    default:
+                        HQData.NetworkFilter(data, callback);
+                        break;
+                }
+            }
+
+            this.RequestMinuteData=function(data, callback)
+            {
+                data.PreventDefault=true;
+                var symbol=data.Request.Data.symbol[0];             //请求的股票代码
+   
+                console.log(`[MinuteChart::RequestMinuteData] Symbol=${symbol}`);
+
+                var step=5;
+                setTimeout(()=>
+                {
+                    if (this.TestDayData.DataIndex<this.TestDayData.Count)
+                    {
+                        var srcStock=this.TestDayData.Data;
+                        var count=this.TestDayData.DataIndex+step;
+                        if (count>=this.TestDayData.Count) count=this.TestDayData.Count;
+
+                        var stockItem={ date:srcStock.date, minute:srcStock.minute.slice(0,count), yclose:srcStock.yclose, symbol:symbol, name:symbol };
+                        var hqchartData={code:0, stock:[stockItem] };
+
+                        this.TestDayData.DataIndex=count;
+
+                        callback(hqchartData);
+                    }
+                    else
+                    {
+                        var srcStock=this.TestDayData2.Data;
+                        var count=this.TestDayData2.DataIndex+step;
+                        if (count>=this.TestDayData2.Count) count=this.TestDayData2.Count;
+
+                        var stockItem={ date:srcStock.date, minute:[], yclose:srcStock.yclose, symbol:symbol, name:symbol };
+                        for(var i=0;i<count;++i)
+                        {
+                            var item=srcStock.minute[i];
+                            var newItem={ };
+                            newItem.date=srcStock.date;
+                            newItem.time=item[0];
+                            newItem.open=item[1];
+                            newItem.high=item[3];
+                            newItem.low=item[4];
+                            newItem.price=item[2];
+                            newItem.vol=item[5];
+                            newItem.amount=item[6];
+                            newItem.avprice=item[7];
+
+                            stockItem.minute.push(newItem);
+                        }
+
+                        var hqchartData={code:0, stock:[stockItem] };
+
+                        this.TestDayData2.DataIndex=count;
+
+                        callback(hqchartData);
+                    }
+                   
+                }, 50);
+            }
+
+            this.ChangeSymbol=function(symbol, option)
+            {
+                this.Chart.ChangeSymbol(symbol,option);
+            }
+
+            this.OnSize=function()  //自适应大小调整
+            {
+                var height= $(window).height()-30;
+                var width = $(window).width();
+                this.DivMinute.style.top='px';
+                this.DivMinute.style.left='px';
+                this.DivMinute.style.width=width+'px';
+                this.DivMinute.style.height=height+'px';
+                this.Chart.OnSize();
+            }
+            
+
+        }
+
+        $(function () 
+        {
+            WebFont.load({ custom: { families: ['iconfont'] } });   //预加载下iconfont资源
+            var minuteControl=new MinuteChart(document.getElementById('divminute'));
+            minuteControl.Create();
+        })
+
+    </script>  
+</body>  
+</html>
