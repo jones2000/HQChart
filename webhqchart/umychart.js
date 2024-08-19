@@ -35970,6 +35970,303 @@ function ChartMACD()
     }
 }
 
+function ChartClipColorStick()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName="ChartClipColorStick";
+    this.UpColor=g_JSChartResource.UpBarColor;
+    this.DownColor=g_JSChartResource.DownBarColor;
+    this.LineWidth=1;
+    //差值线
+    this.DownDiffColor=g_JSChartResource.DownBarColor;
+    this.UpDiffColor=g_JSChartResource.UpBarColor;
+
+    this.BaseLineColor; //基准线
+
+    this.BaseValue=0;
+    this.Super_GetMaxMin=this.GetMaxMin;    //父类的方法
+
+    this.SetOption=function(option)
+    {
+        if (!option) return;
+
+        if (option.UpColor) this.UpColor=option.UpColor;
+        if (option.DownColor) this.DownColor=option.DownColor;
+        if (option.DownDiffColor) this.DownDiffColor=option.DownDiffColor;
+        if (option.UpDiffColor) this.UpDiffColor=option.UpDiffColor;
+        if (option.BaseLineColor) this.BaseLineColor=option.BaseLineColor;
+        if (IFrameSplitOperator.IsNumber(option.BaseValue)) this.BaseValue=option.BaseValue;
+    }
+
+    this.Draw=function()
+    {
+        if (!this.IsShow || this.ChartFrame.IsMinSize || !this.IsVisible) return;
+        if (this.IsShowIndexTitleOnly()) return;
+        if (this.IsHideScriptIndex()) return;
+
+        if (this.NotSupportMessage)
+        {
+            this.DrawNotSupportmessage();
+            return;
+        }
+
+        this.Canvas.save();
+        var dataWidth=this.ChartFrame.DataWidth;
+        var lineWidth=this.LineWidth*GetDevicePixelRatio();
+        if (this.LineWidth==50) lineWidth=dataWidth;
+        else if (lineWidth>dataWidth) lineWidth=dataWidth;
+        
+        if (IFrameSplitOperator.IsNumber(this.BaseValue) && this.BaseValue!=0)
+        {
+            this.DrawBaseLine();
+
+            if (this.BaseValue>0)  this.DrawBars(lineWidth, true);
+            else this.DrawBars(lineWidth, false);
+        }
+        else
+        {
+            //上下分开画
+            this.DrawBars(lineWidth, true);
+            this.DrawBars(lineWidth, false);
+        }
+
+
+        this.Canvas.restore();
+    }
+
+    this.DrawBars=function(lineWidth, bUpBar)
+    {
+        var isMinute=this.IsMinuteFrame();
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xPointCount=this.ChartFrame.XPointCount;
+        var isHSCreen=this.ChartFrame.IsHScreen===true;
+
+        if (isHSCreen)
+        {
+            var border=this.ChartBorder.GetHScreenBorder();
+            var xOffset=border.TopEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.BottomEx;
+            var lockRect=this.GetLockRect();
+            if (lockRect) chartright=lockRect.Top;
+        }
+        else
+        {
+            var border=this.ChartBorder.GetBorder();
+            var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+
+            var chartright=border.RightEx;
+            var lockRect=this.GetLockRect();
+            if (lockRect) chartright=lockRect.Left;
+        }
+
+        var yBottom=this.ChartFrame.GetYFromData(this.BaseValue);
+        var aryBar=[], aryDiffBar=[];
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var value=this.Data.Data[i];
+            if (value==null) continue;
+            if (bUpBar)
+            {
+                if (value<0) continue;
+            }
+            else
+            {
+                if (value>=0) continue;
+            }
+
+            if (isMinute)
+            {
+                var x=this.ChartFrame.GetXFromIndex(j);
+            }
+            else
+            {
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                if (right>chartright) break;
+                var x=left+(right-left)/2;
+            }
+
+            if (x>chartright) break;
+
+            var bDiffBar=false;
+            var diffValue=null;
+            if (this.BaseValue>0)
+            {
+                if (value<this.BaseValue)
+                {
+                    bDiffBar=true;
+                    diffValue=this.BaseValue-(this.BaseValue-value);
+                }
+            }
+            else if (this.BaseValue<0)
+            {
+                if (value>this.BaseValue)
+                {
+                    bDiffBar=true;
+                    diffValue=this.BaseValue+(value-this.BaseValue)
+                }
+            }
+            
+            if (!bDiffBar)
+            {
+                var y=this.ChartFrame.GetYFromData(value);
+                aryBar.push({X:x, Y:y});
+            }
+            else
+            {
+                var y=this.ChartFrame.GetYFromData(diffValue);
+                aryDiffBar.push({X:x, Y:y});
+            }
+        }
+
+        this.Canvas.lineWidth=lineWidth;
+        if (bUpBar) this.Canvas.strokeStyle=this.UpColor;
+        else this.Canvas.strokeStyle=this.DownColor;
+
+        this.DrawStick(aryBar,lineWidth,yBottom);
+
+        if (this.BaseValue>0)
+        {
+            this.Canvas.strokeStyle=this.UpDiffColor;
+            this.DrawStick(aryDiffBar,lineWidth,yBottom);
+        }
+        else if (this.BaseValue<0)
+        {
+            this.Canvas.strokeStyle=this.DownDiffColor;
+            this.DrawStick(aryDiffBar,lineWidth,yBottom);
+        }
+
+    }
+
+    this.DrawStick=function(aryData, lineWidth, yBottom)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryData)) return;
+
+        var isHSCreen=this.ChartFrame.IsHScreen===true;
+        var drawCount=0;
+        this.Canvas.beginPath();
+        for(var i=0; i<aryData.length; ++i)
+        {
+            var item=aryData[i];
+            var y=item.Y;
+            var xFix=ToFixedPoint2(lineWidth, item.X); //毛边修正
+
+            if (isHSCreen)
+            {
+                this.Canvas.moveTo(yBottom,ToFixedPoint(x));
+                this.Canvas.lineTo(y,ToFixedPoint(x));
+            }
+            else
+            {
+                this.Canvas.moveTo(xFix,yBottom);
+                this.Canvas.lineTo(xFix,y);
+            }
+            
+            ++drawCount;
+        }
+
+        if (drawCount>0) this.Canvas.stroke();
+    }
+
+    this.DrawBaseLine=function()
+    {
+        if (!IFrameSplitOperator.IsNumber(this.BaseValue) || this.BaseValue==0) return;
+        if (!this.BaseLineColor) return;
+
+        var isHSCreen=this.ChartFrame.IsHScreen===true;
+        var border=this.ChartFrame.GetBorder();
+        var y=this.ChartFrame.GetYFromData(this.BaseValue);
+
+        this.Canvas.strokeStyle=this.BaseLineColor;
+        this.Canvas.lineWidth=1*GetDevicePixelRatio();
+
+        if (isHSCreen)
+        {
+
+        }
+        else
+        {
+            var yFix=ToFixedPoint(y);
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(border.Left,yFix);
+            this.Canvas.lineTo(border.Right,yFix);
+            this.Canvas.stroke();
+        }
+    }
+
+    this.GetMaxMin=function()
+    {
+        if (!IFrameSplitOperator.IsNumber(this.BaseValue) || this.BaseValue==0)
+            return this.Super_GetMaxMin();
+        
+        var xPointCount=this.ChartFrame.XPointCount;
+        var start=this.Data.DataOffset;
+        if (this.ChartFrame.GlobalOption && this.ChartFrame.GlobalOption.IsValueFullRange)
+        {
+            start=0;
+            xPointCount=this.Data.Data.length;
+        }
+        
+        var range={ Min:null, Max:null }, maxDiffValue=null;   //基准值的差值
+        if(!this.Data || !this.Data.Data) return range;
+
+        if (this.BaseValue>0) range.Min=this.BaseValue;
+        else range.Max=this.BaseValue;
+
+        for(var i=start,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        {
+            var value=this.Data.Data[i];
+            if (value==null || isNaN(value)) continue;
+
+            if (this.BaseValue>0)
+            {
+                if (value<0) continue;
+
+                if (value<this.BaseValue)
+                {
+                    var diffValue=this.BaseValue-value;
+                    if (maxDiffValue==null || maxDiffValue<diffValue) maxDiffValue=diffValue;
+                    continue;
+                }
+            }
+            else
+            {
+                if (value>0) continue;
+
+                if (value>this.BaseValue) 
+                {
+                    var diffValue=value-this.BaseValue;
+                    if (maxDiffValue==null || maxDiffValue<diffValue) maxDiffValue=diffValue;
+                    continue;
+                }
+            }
+
+            if (range.Max==null) range.Max=value;
+            if (range.Min==null) range.Min=value;
+
+            if (range.Max<value) range.Max=value;
+            if (range.Min>value) range.Min=value;
+        }
+
+        if (this.BaseValue>0)
+        {
+            if (IFrameSplitOperator.IsNumber(maxDiffValue) && IFrameSplitOperator.IsNumber(range.Min))
+                range.Min-=maxDiffValue;
+        }
+        else
+        {
+            if (IFrameSplitOperator.IsNumber(maxDiffValue) && IFrameSplitOperator.IsNumber(range.Max))
+                range.Max+=maxDiffValue;
+        }
+
+        return range;
+    }
+}
+
 //柱子
 function ChartBar()
 {

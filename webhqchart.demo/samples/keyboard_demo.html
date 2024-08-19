@@ -10,12 +10,6 @@
 </head>  
 <body>
 
-    <div style="width: 230px; height:380px; position: absolute; display: none; background:#F8F8FF;  z-index:999" id="div_keyboard">
-        <div id="div_title"><span>HQChart 键盘精灵</span></div>
-        <div><input type="text" id='div_input_symbol'/></div>
-        <div id="div_search_list"></div>
-    </div>
-   
     <div id="kline"></div>
 
     <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
@@ -26,244 +20,18 @@
     <script src="../jscommon/umychart.complier.js"></script>    <!-- 麦语言解析执行器 -->
     <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
     <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+    <script src="../jscommon/umychart.popMenu.js"></script>
+    <script src="../jscommon/umychart.DialogDrawTool.js"></script>
+    <script src="../jscommon/umychart.PopMinuteChart.js"></script>
+    <script src="../jscommon/umychart.report.js"></script>
     <script src="../jscommon/umychart.keyboard.js"></script>
+    <script src="../jscommon/umychart.PopKeyboard.js"></script>
+    <script src="../jscommon/umychart.version.js"></script>
 
     <script src="../jscommon/umychart.NetworkFilterTest.js"></script>
-    <script src="./localdata/symbollist_shsz.js"></script>
+    <script src="../jscommon/umychart.testdata/symbollist_shsz.js"></script>
     
     <script>
-
-        //简单的把K线控件封装下
-        function KeyboardChart(divDialog, divInput, div)
-        {
-            this.DivElement=div;
-            this.DivDialog=divDialog;
-            this.DivInput=divInput;
-            this.Chart=JSKeyboardChart.Init(div);   //把报价列表绑定到一个Div上
-            this.ChangeSymbolCallback;
-           
-            //配置信息
-            this.Option= 
-            {
-                Type:'键盘精灵',   //创建图形类型
-               
-                Border: //边框
-                {
-                    Left:1,        //左边间距
-                    Right:1,       //右边间距
-                    Bottom:1,      //底部间距
-                    Top:1          //顶部间距
-                },
-
-                BorderLine:0,
-            };
-                 
-            this.Create=function()  //创建图形
-            {
-                $(window).resize(()=> { this.OnSize(); });    //绑定窗口大小变化事件
-
-                this.OnSize();  //全屏
-
-                this.Chart.SetOption(this.Option);  //设置配置
-                this.Chart.AddEventCallback(
-                    {
-                        event:JSCHART_EVENT_ID.ON_KEYBOARD_SELECTED,
-                        callback:(event, data, chart)=>{ this.OnSelectedSymbol(event, data, chart);}
-                    }
-                )
-                this.Chart.AddEventCallback(
-                    {
-                        event:JSCHART_EVENT_ID.ON_KEYBOARD_MOUSEUP,
-                        callback:(event, data, chart)=>{ this.OnChartMouseUp(event, data, chart);}
-                    }
-                )
-
-                this.DivInput.addEventListener("keydown", (event)=>{ this.OnKeydown(event); });
-                this.DivInput.addEventListener("keyup", (event)=>{ this.OnKeyup(event); });
-                document.addEventListener('keydown', (event) =>{ this.OnGlobalKeydown(event) });
-                document.addEventListener("mousedown", (event)=>{  this.OnGlobalMouseDown(event) })
-
-                this.RequestSymbolList();
-            }
-
-            this.OnSelectedSymbol=function(event, data, obj)
-            {
-                console.log("[KeyboardChart::OnSelectedSymbol] data", data)
-                this.Hide();
-
-                if (data && data.Data && data.Data.Symbol && this.ChangeSymbolCallback) 
-                {
-                    this.ChangeSymbolCallback(data.Data.Symbol);
-                    this.SendKeyToTDX(data.Data.Symbol);
-                }
-            }
-
-            this.OnChartMouseUp=function(event, data, chart)
-            {
-                this.DivInput.focus();
-            }
-
-            this.OnSize=function()  //自适应大小调整
-            {
-                var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
-                var div=this.DivDialog;
-                var text=this.DivInput;
-                var divTitle=document.getElementById('div_title');
-
-                var dialogHeight=div.offsetHeight;
-                var dialogWidth=div.offsetWidth;
-                var top= $(window).height()-dialogHeight-2*pixelTatio;
-                var left = $(window).width()-dialogWidth-2*pixelTatio;
-
-                
-
-                div.style.top=top+'px';
-                div.style.left=left+'px';
-
-                var height=div.offsetHeight-text.offsetHeight-divTitle.offsetHeight;
-                var width = div.offsetWidth;
-                this.DivElement.style.top='0px';
-                this.DivElement.style.left='0px';
-                this.DivElement.style.width=width+'px';
-                this.DivElement.style.height=height+'px';
-                this.Chart.OnSize();
-            }
-
-            this.OnKeydown=function(event)
-            {
-                var aryKey=new Set([
-                    40, 
-                    38, 
-                    13,
-                    33,
-                    34
-                ]);
-
-                if (aryKey.has(event.keyCode))  
-                {
-                    this.Chart.OnKeyDown(event);
-                }
-            }
-
-            this.OnKeyup=function(event)
-            {
-                var code=event.keyCode;
-                if ((code>=48 && code<=57) || (code>=65 && code<=90) || (code>=97 && code<=122) || code==8)
-                {
-                    var strText=this.DivInput.value;
-                    strText=strText.toUpperCase();
-                    if (strText.length==0)
-                    {
-                        this.DivDialog.style.display='none';
-                        this.DivInput.value="";
-                        this.Chart.ClearSearch();
-                    }
-                    else
-                    {
-                        this.Chart.Search(strText);
-                    }
-                }
-            }
-
-            this.SetSearchString=function(strText)
-            {
-                this.DivInput.value=strText;
-                strText=strText.toUpperCase();
-                this.Chart.Search(strText);
-            }
-
-            this.Display=function()
-            {
-                this.DivDialog.style.display='block';
-                this.DivElement.style.display="block";
-                this.DivInput.style.display="block";
-            }
-
-            this.Hide=function()
-            {
-                this.DivDialog.style.display='none';
-                this.DivInput.value="";
-                this.Chart.ClearSearch();
-            }
-
-            this.OnGlobalKeydown=function(event)
-            {
-                var code=event.keyCode;
-                if (this.DivDialog.style.display=='none' && (code>=48 && code<=57) || (code>=65 && code<=90) || (code>=97 && code<=122))
-                {
-                    this.Display();
-                    this.DivInput.focus();
-
-                    //调整显示位置
-                    this.OnSize();
-                }
-                else if (code==27 && this.DivDialog.style.display=='block')
-                {
-                    this.Hide();
-                }
-            }
-
-            this.OnGlobalMouseDown=function(event)
-            {
-                if (this.DivDialog.style.display=='none') return;
-
-                if (!this.DivDialog.contains(event.target))
-                {
-                    this.Hide();
-                }
-                
-            }
-
-            this.RequestSymbolList=function()
-            {
-                this.RecvSymbolList({symbollist:SYMBOL_LIST});
-            }
-
-            this.RecvSymbolList=function(recv)
-            {
-                //加载数据
-                var arySymbol=[];
-                for(var i=0;i<recv.symbollist.length;++i)
-                {
-                    var item=recv.symbollist[i];
-                    var shortSymbol=item[0];
-                    shortSymbol=shortSymbol.replace(".sh", "");
-                    shortSymbol=shortSymbol.replace(".sz", "");
-                    var symbolItem={ Symbol:item[0], Name:item[1], ShortSymbol:shortSymbol, Spell:item[3], Type:item[2] };
-                    if (i%5==0) symbolItem.Color="rgb(255,0,0)";
-                    arySymbol.push(symbolItem);
-                }
-
-                this.Chart.SetSymbolData(arySymbol);
-            }
-
-
-            this.SendKeyToTDX=function(symbol)
-            {
-                var url="http://localhost:8868/SendSymbol";
-                var postData={ symbol:symbol };
-                var strPost=JSON.stringify(postData);
-
-                $.ajax(
-                {
-                    url: url,
-                    type:"post",
-                    data:strPost,
-                    contentType: "application/json; charset=utf-8",
-                    dataType: "json",
-                    async:true,
-                    success: (recvdata)=>
-                    {
-                        console.log("[KeyboardChart::SendKeyToTDX] recvdata", recvdata);
-                    },
-                    error:(request)=>
-                    {
-                        //self.RecvError(request,RECV_DATA_TYPE.BASE_DATA);
-                    }
-                });
-            }
-        }
-
 
         //简单的把K线控件封装下
         function KLineChart(divKLine)
@@ -294,7 +62,7 @@
                 IsAutoUpdate:true,       //是自动更新数据
                 AutoUpdateFrequency:30000,   //数据更新频率
                 
-
+                EnablePopMenuV2:true,
                 IsShowRightMenu:true,          //右键菜单
                 CorssCursorInfo: { Right:2, DateFormatType:3, HPenType:1, VPenType:1 ,VLineType:0,RightButton:{ Enable:true }, IsShowCorss:true, PriceFormatType:0, DataFormatType:0 },
                 EnableZoomIndexWindow:true,
@@ -307,7 +75,7 @@
                     MaxRequestDataCount:600,   //数据个数
                     MaxRequestMinuteDayCount:5, //分钟数据获取几天数据  默认取5天数据
                     PageSize:50,               //一屏显示多少数据
-                    IsShowTooltip:false,                 //是否显示K线提示信息
+                    IsShowTooltip:true,                 //是否显示K线提示信息
                     DrawType:0,      //K线类型 0=实心K线柱子 1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积图
                     KLineDoubleClick:false, //禁止双击弹框
                     RightSpaceCount:3,
@@ -385,18 +153,42 @@
             var klineControl=new KLineChart(document.getElementById('kline'));
             klineControl.Create();
 
-            var divReport=document.getElementById('div_search_list');
-            var divDialog=document.getElementById('div_keyboard');
-            var divInput=document.getElementById('div_input_symbol');
+            var hqKeyboard=new JSPopKeyboard();
 
-            var reportCtrl=new KeyboardChart(divDialog, divInput, divReport);
-            reportCtrl.Create();
+            hqKeyboard.Keyboard.Option.EventCallback=
+            [
+                {
+                    event:JSCHART_EVENT_ID.ON_KEYBOARD_SELECTED,    //切换股票
+                    callback:(event, data, obj)=>
+                    { 
+                        console.log("[JSCHART_EVENT_ID.ON_KEYBOARD_SELECTED] data", data)
+                        hqKeyboard.Hide();
 
-            reportCtrl.ChangeSymbolCallback=function(sybmol)
-            { 
-                klineControl.ChangeSymbol(sybmol); 
-                klineControl.Chart.SetFocus();
-            }
+                        if (data && data.Data && data.Data.Symbol)
+                        {
+                            klineControl.Chart.Focus();
+                            klineControl.ChangeSymbol(data.Data.Symbol);
+                        } 
+                    }
+                },
+            ]
+
+            hqKeyboard.Inital();
+            hqKeyboard.Create();
+            HQData.Keyboard_RequestSymbolList(null, (data)=>{ hqKeyboard.SetSymbolData(data); });   //请求码表数据
+
+            document.addEventListener('keydown', (event) =>
+            {
+                var div=document.getElementById('kline'); 
+                if (div.contains(event.target)) //在K线上才出来键盘精灵
+                {
+                    hqKeyboard.OnGlobalKeydown(event) 
+                }
+            });
+
+            document.addEventListener("mousedown", (event)=>{  hqKeyboard.OnGlobalMouseDown(event) })
+
+            klineControl.Chart.Focus(); //设置焦点在K线上
         })
 
     </script>  
@@ -411,28 +203,5 @@
     position: relative
 }
 
-.div_keyboard
-{
-    width: 230px; 
-    height:380px; 
-    position: absolute; 
-    display: none; 
-    background:#F8F8FF;  
-    z-index:999
-}
-
-.div_input_symbol
-{
-    display: none; 
-    height:25px
-}
-
-/*
-.div_search_list
-{
-    
-}
-*/
-    
         
 </style>

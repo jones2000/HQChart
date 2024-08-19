@@ -4370,7 +4370,7 @@ function ChartStickLine()
             else this.Canvas.lineWidth=1;
             this.Canvas.strokeStyle=this.Color;
         }
-        else if (this.LineWidth==50)
+        else if (this.LineWidth==50 || this.LineWidth==3)
         {
             if (dataWidth >= this.MinBarWidth) 
             {
@@ -4384,12 +4384,10 @@ function ChartStickLine()
                 this.Canvas.strokeStyle = this.Color;
             }  
         }
-        else if (this.LineWidth < 100) 
+        else if (this.LineWidth < 300) 
         {
             var LineWidth = this.LineWidth;
-            if (dataWidth <= 4) LineWidth = 1;
-            else if (dataWidth < LineWidth) LineWidth = parseInt(dataWidth);
-            if (LineWidth<1) LineWidth=1;   //太小了用1
+            if (LineWidth<1) LineWidth=1;    //太小了用1
             this.Canvas.lineWidth = LineWidth;
             this.Canvas.strokeStyle = this.Color;
         }

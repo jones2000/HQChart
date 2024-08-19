@@ -20025,6 +20025,8 @@ var SCRIPT_CHART_NAME=
     OVERLAY_BARS:"OVERLAY_BARS",     //叠加柱子图
     KLINE_TABLE:"KLINE_TABLE",
     SCATTER_PLOT:"SCATTER_PLOT",     //散点图
+
+    CLIP_COLOR_STICK:"CLIP_COLOR_STICK",  //上下柱子 裁剪
 }
 
 
@@ -21597,10 +21599,17 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
 
          var titleIndex=windowIndex+1;
-        var titleData=new DynamicTitleData(chart.Data,chart.Name, null);
-        titleData.DataType="ChartMultiLine";
-        titleData.Lines=chart.Lines;
-        hqChart.TitlePaint[titleIndex].Data[i]=titleData;
+        if (varItem.IsShowTitle===false)
+        {
+
+        }
+        else
+        {
+            var titleData=new DynamicTitleData(chart.Data,chart.Name, null);
+            titleData.DataType="ChartMultiLine";
+            titleData.Lines=chart.Lines;
+            hqChart.TitlePaint[titleIndex].Data[i]=titleData;
+        }
     }
 
     this.CreateMultiPoint=function(hqChart,windowIndex,varItem,i)
@@ -21774,6 +21783,33 @@ function ScriptIndex(name,script,args,option)
         chart.Radius=varItem.Draw.Radius;
 
         hqChart.ChartPaint.push(chart);
+    }
+
+    this.CreateClipColorStick=function(hqChart,windowIndex,varItem,id)
+    {
+        var chart=new ChartClipColorStick();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        chart.HQChart=hqChart;
+        chart.Identify=this.Guid;
+
+        chart.Data.Data=varItem.Draw.DrawData;
+        if (varItem.Option && chart.SetOption) chart.SetOption(varItem.Option);
+        hqChart.ChartPaint.push(chart);
+
+        var titleIndex=windowIndex+1;
+        if (varItem.IsShowTitle===false)
+        {
+
+        }
+        else
+        {
+            var clrTitle=this.GetDefaultColor(id);
+            if (varItem.Option && varItem.Option.TitleColor) clrTitle=this.GetColor(varItem.Option.TitleColor);
+            hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(chart.Data,varItem.Name,clrTitle);
+        }
     }
 
     this.CreateColorKLine=function(hqChart,windowIndex,varItem,i)
@@ -22092,6 +22128,9 @@ function ScriptIndex(name,script,args,option)
                         break;
                     case SCRIPT_CHART_NAME.SCATTER_PLOT:
                         this.CreateScatterPlot(hqChart,windowIndex,item,i);
+                        break;
+                    case SCRIPT_CHART_NAME.CLIP_COLOR_STICK:
+                        this.CreateClipColorStick(hqChart,windowIndex,item,i);
                         break;
                     default:
                         {
@@ -24352,6 +24391,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     if (IFrameSplitOperator.IsBool(draw.IsFullRangeMaxMin)) drawItem.IsFullRangeMaxMin=draw.IsFullRangeMaxMin;
                     if (draw.Arrow) drawItem.Arrow=draw.Arrow;
                     if (IFrameSplitOperator.IsNumber(draw.LineWidth)) drawItem.LineWidth=draw.LineWidth;
+                    
 
                     result.push(outVarItem);
                 }
@@ -24525,6 +24565,20 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     outVarItem.Draw=drawItem;
                     if (draw.LineWidth) outVarItem.LineWidth=draw.LineWidth;
                     
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType==SCRIPT_CHART_NAME.CLIP_COLOR_STICK)
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=this.FittingArray(draw.Data,date,time,hqChart);
+
+                    outVarItem.Draw=drawItem;
+                    if (draw.LineWidth) outVarItem.LineWidth=draw.LineWidth;
+                    if (draw.UpColor) outVarItem.UpColor=draw.UpColor;
+                    if (draw.DownColor) outVarItem.DownColor=draw.DownColor;
+
                     result.push(outVarItem);
                 }
                 else
@@ -24729,7 +24783,8 @@ function APIScriptIndex(name,script,args,option, isOverlay)
         for(var i=0;i<outVar.length;++i)
         {
             var item=outVar[i];
-            var outVarItem={Name:item.name,Type:item.type}
+            var outVarItem={ Name:item.name,Type:item.type };
+            if (IFrameSplitOperator.IsBool(item.IsShowTitle)) outVarItem.IsShowTitle = item.IsShowTitle;  //是否显示指标标题
             if (item.data)
             {
                 outVarItem.Data=this.FittingMinuteArray(item.data,date,time,hqChart);
@@ -24789,6 +24844,17 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     drawItem.DrawData=this.FittingMinuteArray(draw.DrawData,date,time,hqChart,1);
                     outVarItem.Draw=drawItem;
 
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType==SCRIPT_CHART_NAME.CLIP_COLOR_STICK)
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=this.FittingMinuteArray(draw.Data,date,time,hqChart);
+
+                    outVarItem.Draw=drawItem;
+                    if (draw.Option) outVarItem.Option=draw.Option;
                     result.push(outVarItem);
                 }
                 else if (draw.DrawType=='MULTI_LINE')
