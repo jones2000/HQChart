@@ -247,7 +247,8 @@ function JSKeyboardChartContainer(uielement)
     this.NetworkFilter;                                 //数据回调接口
     this.Data={ XOffset:0, YOffset:0, Data:[] };        //股票列表
     this.MapSymbol=new Map();
-    this.SourceData={ Data:[] }                                //码表数据 Data:[ { Symbol:, Spell, Name:, Color:}] 
+    this.SourceData={ Data:[] }               //码表数据 Data:[ { Symbol:, Spell, Name:, Color: TypeName:, TypeID } ] 
+    this.FunctionKeyData=[];                  //功能键 { Priority:, Data:[ { Symbol:, Spell, Name:, Color:, TypeName:, TypeID } ] 
 
     //事件回调
     this.mapEvent=new Map();   //通知外部调用 key:JSCHART_EVENT_ID value:{Callback:回调,}
@@ -274,10 +275,44 @@ function JSKeyboardChartContainer(uielement)
         if (option && option.Redraw==true) this.Draw();
     }
 
+    this.SearchFunctionKeyData=function(strSearch)
+    {
+        if (strSearch.length<=0) return null;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.FunctionKeyData)) return null;
+
+        var aryData=[];
+        for(var i=0; i<this.FunctionKeyData.length; ++i)
+        {
+            var groupData=this.FunctionKeyData[i];
+            if (!groupData) continue;
+            if (!IFrameSplitOperator.IsNonEmptyArray(groupData.Data)) continue;
+
+            var aryExactQuery=[];   //精确查询
+            var aryFuzzyQuery=[];   //模糊查询
+            var aryEqualQuery=[];   //相等
+
+            for(var j=0;j<groupData.Data.length;++j)
+            {
+                var item=groupData.Data[j];
+                if (this.SearchSymbol(item, strSearch, aryExactQuery, aryFuzzyQuery,aryEqualQuery)) continue;
+            }
+
+            if (IFrameSplitOperator.IsNonEmptyArray(aryEqualQuery)) aryData.push(...aryEqualQuery); 
+            if (IFrameSplitOperator.IsNonEmptyArray(aryExactQuery)) aryData.push(...aryExactQuery); 
+            if (IFrameSplitOperator.IsNonEmptyArray(aryFuzzyQuery)) aryData.push(...aryFuzzyQuery); 
+        }
+
+        if (aryData.length>0) return aryData;
+        
+        return null;
+    }
+
     this.Search=function(strText)
     {
         var aryExactQuery=[];   //精确查询
         var aryFuzzyQuery=[];   //模糊查询
+        var aryEqualQuery=[];   //相等
+        var aryFuncKeyQuery=null;
         this.MapSymbol.clear();
         this.Data.Data=[];
         this.Data.XOffset=0;
@@ -286,17 +321,21 @@ function JSKeyboardChartContainer(uielement)
         var strSearch=strText.trim();
         if (strSearch.length>0)
         {
+            aryFuncKeyQuery=this.SearchFunctionKeyData(strSearch);
+           
             for(var i=0;i<this.SourceData.Data.length;++i)
             {
                 var item=this.SourceData.Data[i];
-                if (this.SearchSymbol(item, strSearch, aryExactQuery, aryFuzzyQuery)) continue;
+                if (this.SearchSymbol(item, strSearch, aryExactQuery, aryFuzzyQuery, aryEqualQuery)) continue;
                 else if (this.SearchSpell(item, strSearch, aryExactQuery, aryFuzzyQuery)) continue;
             }
         }
-        
-        if (IFrameSplitOperator.IsNonEmptyArray(aryExactQuery) || IFrameSplitOperator.IsNonEmptyArray(aryFuzzyQuery))
-            this.Data.Data=aryExactQuery.concat(aryFuzzyQuery);
 
+        if (IFrameSplitOperator.IsNonEmptyArray(aryFuncKeyQuery)) this.Data.Data.push(...aryFuncKeyQuery);
+        if (IFrameSplitOperator.IsNonEmptyArray(aryEqualQuery))  this.Data.Data.push(...aryEqualQuery);
+        if (IFrameSplitOperator.IsNonEmptyArray(aryExactQuery))  this.Data.Data.push(...aryExactQuery);
+        if (IFrameSplitOperator.IsNonEmptyArray(aryFuzzyQuery))  this.Data.Data.push(...aryFuzzyQuery);
+           
         this.ChartPaint[0].SelectedRow=0;
         this.ChartPaint[0].SizeChange=true;
 
@@ -305,12 +344,13 @@ function JSKeyboardChartContainer(uielement)
         this.Draw();
     }
 
-    this.SearchSymbol=function(item, strText, aryExactQuery, aryFuzzyQuery)
+    this.SearchSymbol=function(item, strText, aryExactQuery, aryFuzzyQuery, aryEqualQuery)
     {
         var find=item.Symbol.indexOf(strText);
         if (find<0) return false;
 
-        if (find==0) aryExactQuery.push(item.Symbol);
+        if (item.Symbol==strText) aryEqualQuery.push(item.Symbol);
+        else if (find==0) aryExactQuery.push(item.Symbol);
         else aryFuzzyQuery.push(item.Symbol);
 
         this.MapSymbol.set(item.Symbol, item);
@@ -335,8 +375,21 @@ function JSKeyboardChartContainer(uielement)
 
     this.SetSymbolData=function(arySymbol)
     {
-        this.SourceData.Data=arySymbol;
-        
+        this.SourceData.Data=[];
+        for(var i=0;i<arySymbol.length;++i)
+        {
+            var item=arySymbol[i];
+            if (IFrameSplitOperator.IsNumber(item.Priority))
+            {
+                if (!this.FunctionKeyData[item.Priority]) this.FunctionKeyData[item.Priority]={ Priority:item.Priority, Data:[] };
+                this.FunctionKeyData[item.Priority].Data.push(item);
+            }
+            else
+            {
+                this.SourceData.Data.push(item);
+            }
+        }
+
         /*
         //测试
         this.MapSymbol.clear();
@@ -609,11 +662,13 @@ function JSKeyboardChartContainer(uielement)
         if (!chart) return false;
 
         var data=chart.GetSelectedSymbol();
+        var selItem=this.MapSymbol.get(data.Symbol);
+        if (!selItem) return false;
 
         var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_KEYBOARD_SELECTED)
         if (event && event.Callback)
         {
-            event.Callback(event, { Data:data }, this);
+            event.Callback(event, { Data:data, RowData:selItem }, this);
         }
     }
 
@@ -1223,6 +1278,38 @@ function ChartSymbolList()
     this.SetColumn=function(aryColumn)
     {
         if (!IFrameSplitOperator.IsNonEmptyArray(aryColumn)) return;
+
+        this.Column=[];
+        for(var i=0;i<aryColumn.length;++i)
+        {
+            var item=aryColumn[i];
+            var colItem=this.GetDefaultColunm(item.Type);
+            if (!colItem) continue;
+
+            if (item.Title) colItem.Title=item.Title;
+            if (item.TextAlign) colItem.TextAlign=item.TextAlign;
+            if (item.MaxText) colItem.MaxText=item.MaxText;
+
+            this.Column.push(colItem);
+        }
+    }
+
+    this.GetDefaultColunm=function(id)
+    {
+        var DEFAULT_COLUMN=
+        [
+            { Type:KEYBOARD_COLUMN_ID.SHORT_SYMBOL_ID, Title:"代码", TextAlign:"left", Width:null, MaxText:"888888" },
+            { Type:KEYBOARD_COLUMN_ID.NAME_ID, Title:"名称", TextAlign:"left", Width:null, MaxText:"擎擎擎擎擎擎" },
+            { Type:KEYBOARD_COLUMN_ID.TYPE_NAME_ID, Title:"类型", TextAlign:"right", Width:null, MaxText:"擎擎擎擎" },
+        ];
+
+        for(var i=0;i<DEFAULT_COLUMN.length;++i)
+        {
+            var item=DEFAULT_COLUMN[i];
+            if (item.Type==id) return item;
+        }
+
+        return null;
     }
 
     this.Draw=function()

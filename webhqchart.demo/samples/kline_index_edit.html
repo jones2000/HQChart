@@ -270,6 +270,7 @@
                     KLineDoubleClick:true, //禁止双击弹框
                     RightSpaceCount:2,
                     ZoomType:0,
+                    //OneLimitBarType:1,
                     
                     //PageSize:30,               //一屏显示多少数据
                     DataWidth:10,
@@ -1566,11 +1567,23 @@
                         console.log("[JSCHART_EVENT_ID.ON_KEYBOARD_SELECTED] data", data)
                         hqKeyboard.Hide();
 
-                        if (data && data.Data && data.Data.Symbol)
+                        if (!data || !data.RowData) return;
+                        
+                        var selItem=data.RowData;
+                        if (selItem.Data.Type===0)
                         {
                             klineControl.Chart.Focus();
-                            klineControl.ChangeSymbol(data.Data.Symbol);
-                        } 
+                            klineControl.ChangeSymbol(selItem.Data.Symbol);
+                        }
+                        else if (selItem.Data.Type===1)
+                        {
+                            klineControl.Chart.Focus();
+                            klineControl.Chart.ChangeIndex(0,selItem.Data.Index);
+                        }
+                        else if (selItem.Data.Type===2)
+                        {
+                            alert(`跳转'${selItem.Data.PageName}'页面`);
+                        }
                     }
                 },
             ]

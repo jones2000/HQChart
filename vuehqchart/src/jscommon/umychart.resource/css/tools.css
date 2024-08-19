@@ -1553,8 +1553,8 @@ input[type="color"] {
 .jchart_pop_keyboard_dailog
 {
     position: absolute;
-    width: 230px; 
-    height:360px;
+    width: 300px; 
+    height:440px;
     left: 1px;
     top: 1px;
     z-index: 999;

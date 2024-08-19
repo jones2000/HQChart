@@ -269,7 +269,15 @@ JSPopKeyboard.GetOption=function()
         },
 
         BorderLine:1|2|4|8,
-        EnableResize:true
+        EnableResize:true,
+
+        //{ Type:列id, Title:标题, TextAlign:文字对齐方式, MaxText:文字最大宽度 , TextColor:文字颜色, Sort:0=不支持排序 1=本地排序 0=远程排序 }
+        Column:   
+        [
+            { Type:KEYBOARD_COLUMN_ID.SHORT_SYMBOL_ID, Title:"代码", TextAlign:"left", Width:null, MaxText:"888888" },
+            { Type:KEYBOARD_COLUMN_ID.NAME_ID, Title:"名称", TextAlign:"left", Width:null, MaxText:"擎擎擎擎擎擎擎擎" },
+            { Type:KEYBOARD_COLUMN_ID.TYPE_NAME_ID, Title:"类型", TextAlign:"right", Width:null, MaxText:"擎擎擎擎擎" },
+        ]
     };
 
     return option;

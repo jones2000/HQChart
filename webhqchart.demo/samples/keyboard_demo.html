@@ -115,7 +115,7 @@
                 $(window).resize(function() { self.OnSize( ); });    //绑定窗口大小变化事件
 
                 var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID); //读取黑色风格配置
-                blackStyle.DisableLogo=true;
+                //blackStyle.DisableLogo=true;
 
                 JSChart.SetStyle(blackStyle);
                 this.DivKLine.style.backgroundColor=blackStyle.BGColor; //设置最外面的div背景
@@ -164,11 +164,23 @@
                         console.log("[JSCHART_EVENT_ID.ON_KEYBOARD_SELECTED] data", data)
                         hqKeyboard.Hide();
 
-                        if (data && data.Data && data.Data.Symbol)
+                        if (!data || !data.RowData) return;
+                        
+                        var selItem=data.RowData;
+                        if (selItem.Data.Type===0)
                         {
                             klineControl.Chart.Focus();
-                            klineControl.ChangeSymbol(data.Data.Symbol);
-                        } 
+                            klineControl.ChangeSymbol(selItem.Data.Symbol);
+                        }
+                        else if (selItem.Data.Type===1)
+                        {
+                            klineControl.Chart.Focus();
+                            klineControl.Chart.ChangeIndex(0,selItem.Data.Index);
+                        }
+                        else if (selItem.Data.Type===2)
+                        {
+                            alert(`跳转'${selItem.Data.PageName}'页面`);
+                        }
                     }
                 },
             ]

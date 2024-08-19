@@ -1027,7 +1027,7 @@ HQData.Keyboard_RequestSymbolList=function(data, callback)
         var shortSymbol=item[0];
         shortSymbol=shortSymbol.replace(".sh", "");
         shortSymbol=shortSymbol.replace(".sz", "");
-        var symbolItem={ Symbol:item[0], Name:item[1], ShortSymbol:shortSymbol, Spell:item[3], Type:item[2] };
+        var symbolItem={ Symbol:item[0], Name:item[1], ShortSymbol:shortSymbol, Spell:item[3], Type:item[2], Data:{ Symbol:item[0], Type:0 }  };
         if (symbolItem.Type=="EQA") 
         {
             symbolItem.TypeName="股票";
@@ -1041,6 +1041,15 @@ HQData.Keyboard_RequestSymbolList=function(data, callback)
         arySymbol.push(symbolItem);
     }
 
+    arySymbol.push( { Symbol:"01", Name:"分时成交明细", TypeName:"功能键", Priority:1, Color:"rgb(220,20,60)" , Data:{ PageName:"分时成交明细", Type:2 }} );
+    arySymbol.push( { Symbol:"02", Name:"分价表", TypeName:"功能键", Priority:1, Color:"rgb(220,20,60)" ,Data:{ PageName:"分价表", Type:2 }} );
+    arySymbol.push( { Symbol:"06", Name:"自选股", TypeName:"功能键", Priority:1 , Color:"rgb(220,20,60)", Data:{ PageName:"自选股", Type:2 }} );
+
+    arySymbol.push( { Symbol:"MACD", Name:"平滑异同平均线", TypeName:"指标", Priority:2 , Color:"rgb(0,0,255)", Data:{ Index:"MACD", Type:1 }} );
+    arySymbol.push( { Symbol:"RSI", Name:"相对强弱指标", TypeName:"指标", Priority:2, Color:"rgb(0,0,255)",Data:{ Index:"RSI", Type:1 }}  );
+    arySymbol.push( { Symbol:"MA", Name:"均线", TypeName:"指标", Priority:2, Color:"rgb(0,0,255)" ,Data:{ Index:"MA", Type:1 } } );
+    arySymbol.push( { Symbol:"BOLL", Name:"布林线", TypeName:"指标", Priority:2, Color:"rgb(0,0,255)" ,Data:{ Index:"BOLL", Type:1 } } );
+    
     callback(arySymbol);
 }
 
