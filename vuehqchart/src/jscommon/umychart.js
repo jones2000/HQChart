@@ -35988,6 +35988,7 @@ function ChartClipColorStick()
 
     this.BaseValue=0;
     this.Super_GetMaxMin=this.GetMaxMin;    //父类的方法
+    this.ValueRange;    //{ Max:, Min: }    //固定最大最小值
 
     this.SetOption=function(option)
     {
@@ -35999,6 +36000,7 @@ function ChartClipColorStick()
         if (option.UpDiffColor) this.UpDiffColor=option.UpDiffColor;
         if (option.BaseLineColor) this.BaseLineColor=option.BaseLineColor;
         if (IFrameSplitOperator.IsNumber(option.BaseValue)) this.BaseValue=option.BaseValue;
+        if (option.ValueRange) this.ValueRange=option.ValueRange;
     }
 
     this.Draw=function()
@@ -36202,6 +36204,12 @@ function ChartClipColorStick()
     {
         if (!IFrameSplitOperator.IsNumber(this.BaseValue) || this.BaseValue==0)
             return this.Super_GetMaxMin();
+
+        if (this.ValueRange)    //固定最大最小
+        {
+            var range={ Min:this.ValueRange.Min, Max:this.ValueRange.Max };
+            return range;
+        }
         
         var xPointCount=this.ChartFrame.XPointCount;
         var start=this.Data.DataOffset;
