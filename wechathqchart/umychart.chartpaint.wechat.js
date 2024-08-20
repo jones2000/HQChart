@@ -4334,9 +4334,31 @@ function ChartStickLine()
 
     this.ClassName ='ChartStickLine';
     this.Color = "rgb(255,193,37)";   //线段颜色
-    this.LineWidth = 2;               //线段宽度
-    this.BarType = 0;                 //柱子类型 0=实心 1=空心
+    this.BarType = 0;                 //柱子类型  0=实心 1=空心 -1=画虚线空心柱
+    this.LineDotted=[3,3];            //虚线设置
+    this.Width=0;                       //柱子宽度 0=1 3,50=k线宽度 101=K线宽度+间距宽度
     this.MinBarWidth=g_JSChartResource.MinKLineBarWidth; //最小的柱子宽度
+
+    this.SetEmptyBar=function()         //设置空心柱子
+    {
+        if (this.BarType!=1 && this.BarType!=-1) return false;
+
+        this.Canvas.lineWidth=1;
+        this.Canvas.strokeStyle=this.Color;
+        var emptyBGColor=g_JSChartResource.EmptyBarBGColor;
+        if (emptyBGColor) this.Canvas.fillStyle=emptyBGColor;
+        if (this.BarType==-1)   //虚线
+        {
+            this.Canvas.setLineDash(this.LineDotted);   //虚线
+        }
+
+        return true;
+    }
+
+    this.IsEmptyBar=function()
+    {
+        return (this.BarType==1 || this.BarType==-1);
+    }
 
     this.Draw = function () 
     {
@@ -4353,29 +4375,38 @@ function ChartStickLine()
         var dataWidth = this.ChartFrame.DataWidth;
         var distanceWidth = this.ChartFrame.DistanceWidth;
         var chartright = this.ChartBorder.GetRight();
-        if (isHScreen) chartright = this.ChartBorder.GetBottom();
         var xPointCount = this.ChartFrame.XPointCount;
-        var xOffset = this.ChartBorder.GetLeft() + distanceWidth / 2.0 + 2.0;
-        if (isHScreen) xOffset = this.ChartBorder.GetTop() + distanceWidth / 2.0 + 2.0;
-
+        var xOffset = this.ChartBorder.GetLeft() + distanceWidth / 2.0 + g_JSChartResource.FrameLeftMargin;
         var isMinute=this.IsMinuteFrame();
+
+        if (isHScreen)
+        {
+            chartright = this.ChartBorder.GetBottom();
+            xOffset = this.ChartBorder.GetTop() + distanceWidth / 2.0 + g_JSChartResource.FrameLeftMargin;
+        } 
 
         this.Canvas.save();
         var bFillBar = false;
         var bFillKLine = false;
+        var emptyBGColor=g_JSChartResource.EmptyBarBGColor;
 
         if (isMinute)
         {
-            if (this.LineWidth>1) this.Canvas.lineWidth=2;
+            if (this.Width>1) this.Canvas.lineWidth=2;
             else this.Canvas.lineWidth=1;
             this.Canvas.strokeStyle=this.Color;
         }
-        else if (this.LineWidth==50 || this.LineWidth==3)
+        else if(this.Width==0)
+        {
+            this.SetEmptyBar();
+        }
+        else if (this.Width==50 || this.Width==3)
         {
             if (dataWidth >= this.MinBarWidth) 
             {
                 bFillKLine = true;
-                this.Canvas.fillStyle = this.Color;
+                this.SetEmptyBar();
+                if (!this.IsEmptyBar()) this.Canvas.fillStyle = this.Color;
                 this.Canvas.strokeStyle = this.Color;
             }
             else    //太细了 画竖线
@@ -4384,18 +4415,27 @@ function ChartStickLine()
                 this.Canvas.strokeStyle = this.Color;
             }  
         }
-        else if (this.LineWidth < 300) 
+        else if (this.Width==101)
         {
-            var LineWidth = this.LineWidth;
-            if (LineWidth<1) LineWidth=1;    //太小了用1
-            this.Canvas.lineWidth = LineWidth;
-            this.Canvas.strokeStyle = this.Color;
+            var lineWidth=dataWidth+distanceWidth+1;
+            this.Canvas.lineWidth=lineWidth;
+            this.Canvas.strokeStyle=this.Color;
+        }
+        else if (this.Width <=3 ) 
+        {
+            var minWidth=2;
+            var barWidth=dataWidth*(this.Width/3);
+            if (barWidth<minWidth) barWidth=minWidth;
+            this.SetEmptyBar();
+            if (!this.IsEmptyBar()) this.Canvas.fillStyle=this.Color;
+            bFillBar=true;
         }
         else 
         {
-            bFillBar = true;
-            this.Canvas.fillStyle = this.Color;
-            var fixedWidth = 2;
+            var barWidth=this.Width;
+            this.SetEmptyBar();
+            if (!this.IsEmptyBar()) this.Canvas.fillStyle=this.Color;
+            bFillBar=true;
         }
 
         for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) 
@@ -4407,7 +4447,17 @@ function ChartStickLine()
             var price2 = value.Value2;
             if (price2 == null) price2 = 0;
 
-            var x = this.ChartFrame.GetXFromIndex(j);
+            if (isMinute)
+            {
+                var x=this.ChartFrame.GetXFromIndex(j);
+            }
+            else
+            {
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                var x=left+(right-left)/2;
+            }
+
             var y = this.ChartFrame.GetYFromData(price);
             var y2 = this.ChartFrame.GetYFromData(price2);
 
@@ -4415,16 +4465,39 @@ function ChartStickLine()
 
             if (bFillBar) 
             {
-                var left = xOffset - fixedWidth;
-                if (isHScreen) 
+                if (isHScreen)
                 {
-                    this.Canvas.fillRect(Math.min(y, y2), left, Math.abs(y - y2), dataWidth + distanceWidth + fixedWidth * 2);
+                    var left=x-barWidth/2;
+                    var width=barWidth;
+                    if (this.IsEmptyBar()) //空心
+                    {
+                        this.Canvas.beginPath();
+                        this.Canvas.rect(ToFixedPoint(Math.min(y,y2)),ToFixedPoint(left),ToFixedRect(Math.abs(y-y2)),ToFixedRect(width));
+                        this.Canvas.stroke();
+                    }
+                    else
+                    {
+                        this.Canvas.fillRect(ToFixedRect(Math.min(y,y2)),ToFixedRect(left),ToFixedRect(Math.abs(y-y2)),ToFixedRect(width));
+                    }
                 }
-                else 
+                else
                 {
-                    var barWidth = dataWidth + distanceWidth + fixedWidth * 2;
-                    if (left + barWidth > chartright) barWidth = chartright - left; //不要超过右边框子
-                    this.Canvas.fillRect(left, ToFixedRect(Math.min(y, y2)), barWidth, ToFixedRect(Math.abs(y - y2)));
+                    var left=x-barWidth/2;
+                    var width=barWidth;
+                    if (left+width>chartright) width=chartright-left; //不要超过右边框子
+                    if (this.IsEmptyBar()) //空心
+                    {
+                        if (emptyBGColor)
+                            this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(Math.min(y,y2)),ToFixedRect(width),ToFixedRect(Math.abs(y-y2)));
+
+                        this.Canvas.beginPath();
+                        this.Canvas.rect(ToFixedPoint(left),ToFixedPoint(Math.min(y,y2)),ToFixedRect(width),ToFixedRect(Math.abs(y-y2)));
+                        this.Canvas.stroke();
+                    }
+                    else
+                    {
+                        this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(Math.min(y,y2)),ToFixedRect(width),ToFixedRect(Math.abs(y-y2)));
+                    }
                 }
             }
             else if (bFillKLine) 

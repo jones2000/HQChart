@@ -28,6 +28,7 @@ function JSChartResource()
     this.UpBarColor = "rgb(238,21,21)";
     this.DownBarColor = "rgb(25,158,0)";
     this.UnchagneBarColor = "rgb(0,0,0)";
+    this.EmptyBarBGColor="rgb(255,255,255)";  //空心柱子背景色
     this.MinKLineBarWidth=4;                        //最小的柱子宽度 比这个还小就画直线 
     this.MinColorKBarWidth=4;
 
@@ -454,6 +455,7 @@ function JSChartResource()
         if (style.UpBarColor) this.UpBarColor = style.UpBarColor;
         if (style.DownBarColor) this.DownBarColor = style.DownBarColor;
         if (style.UnchagneBarColor) this.UnchagneBarColor = style.UnchagneBarColor;
+        if (style.EmptyBarBGColor) this.EmptyBarBGColor=style.EmptyBarBGColor;
         if (style.Minute) 
         {
             if (style.Minute.VolBarColor) this.Minute.VolBarColor = style.Minute.VolBarColor;

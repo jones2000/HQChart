@@ -23,7 +23,8 @@ function GetBlackStyle()
         UpBarColor: "rgb(238,21,21)",
         DownBarColor: "rgb(25,158,0)",
         UnchagneBarColor: "rgb(199,199,199)",
-
+        EmptyBarBGColor:'rgb(0,0,0)',   //空心柱子背景色
+        
         Minute: {
         VolBarColor: null,
         PriceColor: "rgb(25,180,231)",

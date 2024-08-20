@@ -581,8 +581,8 @@ function ScriptIndex(name, script, args, option)
     {
         let bar = new ChartStickLine();
         bar.Canvas = hqChart.Canvas;
-        if (varItem.Draw.Width > 0) bar.LineWidth = varItem.Draw.Width;
-        else bar.LineWidth=1;
+        if (varItem.Draw.Width > 0) bar.Width = varItem.Draw.Width;
+        else bar.Width=1;
 
         bar.Name = varItem.Name;
         bar.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
