@@ -6,6 +6,20 @@
   "description": "hqchart画图工具",
   "glyphs": [
     {
+      "icon_id": "6151227",
+      "name": "unlock",
+      "font_class": "unlock",
+      "unicode": "e7fa",
+      "unicode_decimal": 59386
+    },
+    {
+      "icon_id": "6151228",
+      "name": "lock",
+      "font_class": "lock",
+      "unicode": "e7fb",
+      "unicode_decimal": 59387
+    },
+    {
       "icon_id": "392156",
       "name": "箭头",
       "font_class": "big_arrow",

@@ -22,6 +22,8 @@ var JS_DRAWTOOL_MENU_ID=
     CMD_CHANGE_FONT_COLOR_ID:7, //切换字体颜色
     CMD_CHANGE_BG_COLOR_ID:8,    //切换背景色
     CMD_CHANGE_BORDER_COLOR_ID:9,   //边框颜色
+
+    CMD_LOCK_DRAW_CHART_ID:10,      //上锁
 };
 
 function JSDialogDrawTool()
@@ -618,6 +620,7 @@ function JSDialogModifyDraw()
     this.BGColorButton=null;
     this.FontColorButton=null;
     this.BorderColorButton=null;
+    this.LockButton=null;
 
     this.RandomLineColor=["rgb(255,69,0)", "rgb(173,255,47)", "rgb(238,154,73)", "rgb(255,105,180)"];               //线段颜色
     this.RandomBGColor=["rgba(210,251,209，0.8)", "rgb(217,217,253)", "rgb(255,208,204)", "rgb(252,249,206)"];      //背景颜色
@@ -630,7 +633,9 @@ function JSDialogModifyDraw()
         { Title:"修改字体颜色", ClassName: 'hqchart_drawtool icon-zitiyanse', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_CHANGE_FONT_COLOR_ID }},
         { Title:"修改背景颜色", ClassName: 'hqchart_drawtool icon-zitibeijingse', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_CHANGE_BG_COLOR_ID }},
         { Title:"修改边框颜色", ClassName: 'hqchart_drawtool icon-biankuang', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_CHANGE_BORDER_COLOR_ID }},
-        { Title:"删除图形", ClassName: 'hqchart_drawtool icon-recycle_bin', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_DELETE_DRAW_CHART_ID }}
+        { Title:"上锁", ClassName: 'hqchart_drawtool icon-lock', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_LOCK_DRAW_CHART_ID }},
+        { Title:"删除图形", ClassName: 'hqchart_drawtool icon-recycle_bin', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_DELETE_DRAW_CHART_ID }},
+
     ];
    
     this.Inital=function(hqchart)
@@ -714,6 +719,10 @@ function JSDialogModifyDraw()
                 this.BorderColorButton=data;
                 divItem.style.display="none";
                 break;
+            case JS_DRAWTOOL_MENU_ID.CMD_LOCK_DRAW_CHART_ID:
+                this.LockButton=data;
+                this.LockButton.Span.style['color']="rgb(220,220,220)";
+                break;
 
         }
 
@@ -742,6 +751,9 @@ function JSDialogModifyDraw()
                 break;
             case JS_DRAWTOOL_MENU_ID.CMD_CHANGE_BORDER_COLOR_ID:
                 this.ModifyBorderColor();
+                break;
+            case JS_DRAWTOOL_MENU_ID.CMD_LOCK_DRAW_CHART_ID:
+                this.ModifyLockChart();
                 break;
         }
     }
@@ -867,6 +879,14 @@ function JSDialogModifyDraw()
         this.HQChart.Draw();
     }
 
+    this.ModifyLockChart=function()
+    {
+        if (!this.ChartPicture || !this.HQChart) return;
+        this.ChartPicture.EnableMove=!this.ChartPicture.EnableMove;
+
+        if (this.LockButton) this.LockButton.Span.style['color']=this.ChartPicture.EnableMove?"rgb(220,220,220)":"rgb(0,0,0)";
+    }
+
     this.ModifyBorderColor=function()
     {
         if (!this.ChartPicture || !this.HQChart) return;
@@ -963,7 +983,12 @@ function JSDialogModifyDraw()
                 item.Span.style['color']=borderColor;
             }
         }
-        
+
+        if (this.LockButton) 
+        {
+            var item=this.LockButton;
+            item.Span.style['color']=this.ChartPicture.EnableMove?"rgb(220,220,220)":"rgb(0,0,0)";
+        }
     }
 
     this.OnMouseDownTitle=function(e)

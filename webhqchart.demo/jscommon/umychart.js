@@ -3639,7 +3639,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                     this.SelectChartDrawPicture=null;
                     this.ClearChartDrawPicture(drawPictrueData.ChartDrawPicture);
                 }
-                else if (drawPictrueData.ChartDrawPicture.EnableMove==true)
+                else
                 {
                     this.UpDownDrag=null;   //画图优先
                     this.CurrentChartDrawPicture=drawPictrueData.ChartDrawPicture;
@@ -3659,12 +3659,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                     //this.SelectChartDrawPicture=drawPictrueData.ChartDrawPicture;
                     this.SelectChartDrawPicture.DragInfo={Click:{X:e.clientX,Y:e.clientY}};
                 }
-                else
-                {
-                    this.CurrentChartDrawPicture=null;
-                    this.SelectChartDrawPicture=null;
-                }
-               
+                
                 var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_DRAWPICTURE); //选中画图工具事件
                 if (event && event.Callback)
                 {
@@ -3853,7 +3848,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             var sendData={X:x, Y:y, e:e, ChartDrag:this.CustomChartDrag, Drag:drag };
             this.TryDragMove_CustomChartDrag(sendData);
         }
-        else if (this.CurrentChartDrawPicture)
+        else if (this.CurrentChartDrawPicture && this.CurrentChartDrawPicture.EnableMove===true)
         {
             var drawPicture=this.CurrentChartDrawPicture;
             if (drawPicture.Status==1 || drawPicture.Status==2)
@@ -4660,21 +4655,12 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 var pixelTatio = GetDevicePixelRatio(); //鼠标移动坐标是原始坐标 需要乘以放大倍速
                 if (this.GetChartDrawPictureByPoint(drawPictrueData))
                 {
-                    if (drawPictrueData.ChartDrawPicture.EnableMove==true)  //是否可以移动
-                    {
-                        drawPictrueData.ChartDrawPicture.Status=20;
-                        drawPictrueData.ChartDrawPicture.ValueToPoint();
-                        drawPictrueData.ChartDrawPicture.MovePointIndex=drawPictrueData.PointIndex;
-                        drawPictrueData.ChartDrawPicture.IsSelected=true;
-                        this.CurrentChartDrawPicture=drawPictrueData.ChartDrawPicture;
-                        this.SelectChartDrawPicture=drawPictrueData.ChartDrawPicture;
-                       
-                    }
-                    else
-                    {
-                        this.CurrentChartDrawPicture=null;
-                        this.SelectChartDrawPicture=null;
-                    }
+                    drawPictrueData.ChartDrawPicture.Status=20;
+                    drawPictrueData.ChartDrawPicture.ValueToPoint();
+                    drawPictrueData.ChartDrawPicture.MovePointIndex=drawPictrueData.PointIndex;
+                    drawPictrueData.ChartDrawPicture.IsSelected=true;
+                    this.CurrentChartDrawPicture=drawPictrueData.ChartDrawPicture;
+                    this.SelectChartDrawPicture=drawPictrueData.ChartDrawPicture;
 
                     var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_DRAWPICTURE); //选中画图工具事件
                     if (event && event.Callback)
@@ -4809,7 +4795,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
                 //JSConsole.Chart.Log(`[JSChartContainer::OnTouchMove]  moveAngle=${moveAngle} , moveUpDown=${moveUpDown}, moveSetp=${moveSetp}`);
 
-                if (this.CurrentChartDrawPicture)
+                if (this.CurrentChartDrawPicture && this.CurrentChartDrawPicture.EnableMove===true)
                 {
                     var drawPicture=this.CurrentChartDrawPicture;
                     if (drawPicture.Status==1 || drawPicture.Status==2)
@@ -79604,20 +79590,13 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                     drawPictrueData.Y=(touches[0].clientY-uielement.getBoundingClientRect().top);
                     if (this.GetChartDrawPictureByPoint(drawPictrueData))
                     {
-                        if (drawPictrueData.ChartDrawPicture.EnableMove==true)
-                        {
-                            drawPictrueData.ChartDrawPicture.Status=20;
-                            drawPictrueData.ChartDrawPicture.ValueToPoint();
-                            drawPictrueData.ChartDrawPicture.MovePointIndex=drawPictrueData.PointIndex;
-                            drawPictrueData.ChartDrawPicture.IsSelected=true;
-                            this.CurrentChartDrawPicture=drawPictrueData.ChartDrawPicture;
-                            this.SelectChartDrawPicture=drawPictrueData.ChartDrawPicture;
-                        }
-                        else
-                        {
-                            this.CurrentChartDrawPicture=null;
-                            this.SelectChartDrawPicture=null;
-                        }
+                       
+                        drawPictrueData.ChartDrawPicture.Status=20;
+                        drawPictrueData.ChartDrawPicture.ValueToPoint();
+                        drawPictrueData.ChartDrawPicture.MovePointIndex=drawPictrueData.PointIndex;
+                        drawPictrueData.ChartDrawPicture.IsSelected=true;
+                        this.CurrentChartDrawPicture=drawPictrueData.ChartDrawPicture;
+                        this.SelectChartDrawPicture=drawPictrueData.ChartDrawPicture;
                         
                         let event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_DRAWPICTURE); //选中画图工具事件
                         if (event && event.Callback)
@@ -79706,7 +79685,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                 var moveUpDown=Math.abs(drag.LastMove.Y-touches[0].clientY);
                 moveSetp=parseInt(moveSetp);
 
-                if (this.CurrentChartDrawPicture)
+                if (this.CurrentChartDrawPicture && this.CurrentChartDrawPicture.EnableMove===true)
                 {
                     var drawPicture=this.CurrentChartDrawPicture;
                     if (drawPicture.Status==1 || drawPicture.Status==2)
