@@ -754,8 +754,9 @@ HQData.Report_RequestStockListData=function(data, callback)
         {
             var symbol=SHSZ_STOCK_LIST_TEST_DATA.symbol[i];
             var name=SHSZ_STOCK_LIST_TEST_DATA.name[i];
-
-            hqchartData.data.push([symbol,name]);
+            var item=[symbol,name];
+            //item[88]=1;
+            hqchartData.data.push(item);
         }
     }
 
@@ -850,6 +851,20 @@ HQData.Report_RequestStockData=function(data, callback)
                 symbolEx.Symbol={ Family:'iconfont', Size:16,  Data:[ { Text:'\ue627', Color:'#1c65db'}] } ;
 
             newItem[27]=symbolEx;
+
+
+            newItem[38]=HQData.GetRandomTestData(10,20000);        //持仓量
+            newItem[39]=HQData.GetRandomTestData(10,100);        //结算价
+            newItem[40]=HQData.GetRandomTestData(10,100);        //昨结算价
+            newItem[41]=HQData.GetRandomTestData(10,20000);        //开仓量
+            newItem[42]=HQData.GetRandomTestData(10,20000);        //平仓量
+
+            //1,3,5,10,15 涨速%
+            newItem[43]=HQData.GetRandomTestData(-90,90); 
+            newItem[44]=HQData.GetRandomTestData(-90,90); 
+            newItem[45]=HQData.GetRandomTestData(-90,90); 
+            newItem[46]=HQData.GetRandomTestData(-90,90); 
+            newItem[47]=HQData.GetRandomTestData(-90,90); 
 
 
             //扩展数据 (定制数据)
@@ -1051,6 +1066,14 @@ HQData.Keyboard_RequestSymbolList=function(data, callback)
     arySymbol.push( { Symbol:"BOLL", Name:"布林线", TypeName:"指标", Priority:2, Color:"rgb(0,0,255)" ,Data:{ Index:"BOLL", Type:1 } } );
     
     callback(arySymbol);
+}
+
+
+HQData.GetRandomTestData=function(min, max)   //测试数据
+{
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min; //含最大值，含最小值 
 }
 
 

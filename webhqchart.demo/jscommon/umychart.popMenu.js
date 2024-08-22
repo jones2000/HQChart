@@ -129,7 +129,7 @@ function JSPopMenu()
             }
             else if (i==2)  //快捷方式
             {
-
+                if (item.Text) tdDom.innerText=item.Text;
             }
             else if (i==3)  //箭头
             {

@@ -2613,6 +2613,7 @@ var JSCHART_EVENT_ID=
     ON_CUSTOM_CORSSCURSOR_POSITION:155,    //自定义十字光标X轴的输出的位置
 
     ON_CUSTOM_MINUTE_NIGHT_DAY_X_INDEX:156,   //日盘夜盘的分界线
+    ON_CUSTOM_MINUTE_BG:157,                    //自定义分时图背景颜色
 }
 
 var JSCHART_OPERATOR_ID=
@@ -4659,13 +4660,23 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 var pixelTatio = GetDevicePixelRatio(); //鼠标移动坐标是原始坐标 需要乘以放大倍速
                 if (this.GetChartDrawPictureByPoint(drawPictrueData))
                 {
-                    drawPictrueData.ChartDrawPicture.Status=20;
-                    drawPictrueData.ChartDrawPicture.ValueToPoint();
-                    drawPictrueData.ChartDrawPicture.MovePointIndex=drawPictrueData.PointIndex;
-                    drawPictrueData.ChartDrawPicture.IsSelected=true;
-                    this.CurrentChartDrawPicture=drawPictrueData.ChartDrawPicture;
-                    this.SelectChartDrawPicture=drawPictrueData.ChartDrawPicture;
-                    let event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_DRAWPICTURE); //选中画图工具事件
+                    if (drawPictrueData.ChartDrawPicture.EnableMove==true)  //是否可以移动
+                    {
+                        drawPictrueData.ChartDrawPicture.Status=20;
+                        drawPictrueData.ChartDrawPicture.ValueToPoint();
+                        drawPictrueData.ChartDrawPicture.MovePointIndex=drawPictrueData.PointIndex;
+                        drawPictrueData.ChartDrawPicture.IsSelected=true;
+                        this.CurrentChartDrawPicture=drawPictrueData.ChartDrawPicture;
+                        this.SelectChartDrawPicture=drawPictrueData.ChartDrawPicture;
+                       
+                    }
+                    else
+                    {
+                        this.CurrentChartDrawPicture=null;
+                        this.SelectChartDrawPicture=null;
+                    }
+
+                    var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_DRAWPICTURE); //选中画图工具事件
                     if (event && event.Callback)
                     {
                         let sendData={ DrawPicture: drawPictrueData.ChartDrawPicture };
@@ -12230,8 +12241,17 @@ function AverageWidthFrame()
         var pixelTatio = GetDevicePixelRatio();
         var defaultTextHeight=18*pixelTatio;
         var textHeight=defaultTextHeight;
-        
-        var y = this.GetYFromData(item.Value);
+        var y;
+
+        if (item.Value=="TopEx") y=border.TopEx;
+        else if (item.Value=="TopTitle") y=border.TopTitle;
+        else if (item.Value=="Top") y=border.Top;
+        else if (item.Value=="BottomEx") y=border.BottomEx;
+        else if (item.Value=="Bottom") y=border.Bottom;
+        else y = this.GetYFromData(item.Value);
+
+        if (IFrameSplitOperator.IsNumber(item.YOffset)) y+=item.YOffset;
+
         var position=0;
         var emptyBGColor;
         if (item.ExtendData && item.ExtendData.Custom)
@@ -13002,6 +13022,7 @@ function MinuteFrame()
             if (this.BeforeDrawXYCallback) this.BeforeDrawXYCallback(this);
 
             this.DrawNightDayBG();  //绘制夜盘 日盘背景
+            this.DrawCustomBG();    //绘制自定义背景色
 
             this.DrawTitleBG();
             this.DrawHorizontal();
@@ -13446,6 +13467,60 @@ function MinuteFrame()
         }
     }
 
+    this.DrawCustomBG=function()
+    {
+        if (!this.HQChart) return;
+        if (this.IsHScreen) return;
+
+        var symbol=this.HQChart.Symbol;
+        if (!symbol) return;
+
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CUSTOM_MINUTE_BG)
+        if (!event || !event.Callback) return;
+
+        var aryDay=null;
+        if (this.DayCount>1)
+        {
+            if (!IFrameSplitOperator.IsNonEmptyArray(this.HQChart.DayData)) return;
+            aryDay=[];
+            for(var i=this.HQChart.DayData.length-1;i>=0;--i)
+            {
+                aryDay.push({ Date:this.HQChart.DayData[i].Date, BGColor:null } );
+            }
+        }
+        else if (this.DayCount==1)
+        {
+            if (!IFrameSplitOperator.IsPlusNumber(this.HQChart.DataStatus.LatestDate)) return;
+            aryDay=[{ Date:this.HQChart.DataStatus.LatestDate, BGColor:null }];
+        }
+
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryDay)) return;
+        
+        var sendData={ XPointCount:this.XPointCount, DayCount:this.DayCount, MinuteCount:this.MinuteCount , AryDay:aryDay, PreventDefault:false };
+        event.Callback(event, sendData, this);
+        if (sendData.PreventDefault) return;
+
+        var border=this.ChartBorder.GetBorder();
+        for(var i=0;i<aryDay.length;++i)
+        {
+            var item=aryDay[i];
+            if (!item.BGColor) continue;
+
+            var start=i*this.MinuteCount;
+            var end=start+this.MinuteCount-1;
+
+            var xStart=this.GetXFromIndex(start);
+            var xEnd=this.GetXFromIndex(end);
+
+            var rtDay={Left:xStart, Top:border.Top, Right:xEnd, Bottom:border.Bottom };
+            rtDay.Width=rtDay.Right-rtDay.Left;
+            rtDay.Height=rtDay.Bottom-rtDay.Top;
+
+            this.Canvas.fillStyle =item.BGColor;
+            this.Canvas.fillRect(rtDay.Left, rtDay.Top, rtDay.Width, rtDay.Height);
+        }
+    }
+
     this.DrawNightDayBG=function()
     {
         if (this.DayCount!=1) return;
@@ -13770,6 +13845,7 @@ function MinuteFrame()
             {
                 case 0:
                 case 1:
+                case 10://自定义的
                     this.DrawCustomItem(item);  //自定义刻度
                     break;
             }
@@ -16408,6 +16484,7 @@ function KLineFrame()
                 case 2: //当前屏最后一个K线价格刻度
                 case 3: //主图K线涨幅刻度
                 case 4: //叠加K线涨幅刻度
+                case 10://自定义的
                     this.DrawCustomItem(item, mapTextRect);  
                     break;
             }
@@ -79527,12 +79604,21 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                     drawPictrueData.Y=(touches[0].clientY-uielement.getBoundingClientRect().top);
                     if (this.GetChartDrawPictureByPoint(drawPictrueData))
                     {
-                        drawPictrueData.ChartDrawPicture.Status=20;
-                        drawPictrueData.ChartDrawPicture.ValueToPoint();
-                        drawPictrueData.ChartDrawPicture.MovePointIndex=drawPictrueData.PointIndex;
-                        drawPictrueData.ChartDrawPicture.IsSelected=true;
-                        this.CurrentChartDrawPicture=drawPictrueData.ChartDrawPicture;
-                        this.SelectChartDrawPicture=drawPictrueData.ChartDrawPicture;
+                        if (drawPictrueData.ChartDrawPicture.EnableMove==true)
+                        {
+                            drawPictrueData.ChartDrawPicture.Status=20;
+                            drawPictrueData.ChartDrawPicture.ValueToPoint();
+                            drawPictrueData.ChartDrawPicture.MovePointIndex=drawPictrueData.PointIndex;
+                            drawPictrueData.ChartDrawPicture.IsSelected=true;
+                            this.CurrentChartDrawPicture=drawPictrueData.ChartDrawPicture;
+                            this.SelectChartDrawPicture=drawPictrueData.ChartDrawPicture;
+                        }
+                        else
+                        {
+                            this.CurrentChartDrawPicture=null;
+                            this.SelectChartDrawPicture=null;
+                        }
+                        
                         let event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_DRAWPICTURE); //选中画图工具事件
                         if (event && event.Callback)
                         {

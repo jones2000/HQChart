@@ -17,6 +17,7 @@ function JSPopKeyboard()
     this.InputDOM=null;
     this.Title="HQChart 键盘精灵"
     this.ID=Guid();
+    this.ActiveDOM=null;    //启动键盘精灵是的控件
 
     this.Keyboard=
     {
@@ -212,6 +213,11 @@ function JSPopKeyboard()
         this.DivDialog.style.visibility='hidden';
         this.InputDOM.value="";
         this.Keyboard.JSChart.ClearSearch();
+        if (this.ActiveDOM)
+        {
+            if (this.ActiveDOM.focus) this.ActiveDOM.focus();   //把焦点换回去
+            this.ActiveDOM=null;
+        }
     }
 
     this.IsShow=function()
@@ -229,6 +235,7 @@ function JSPopKeyboard()
         {
             this.Show();
             this.InputDOM.focus();
+            if (event.target) this.ActiveDOM=event.target;
         }
         else if (code==27 && this.IsShow())
         {

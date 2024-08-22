@@ -1786,12 +1786,21 @@ function JSChartContainer(uielement)
                 var drawPictrueData={ X:pt.X, Y:pt.Y, PixelRatio:this.UIElement.PixelRatio };
                 if (this.GetChartDrawPictureByPoint(drawPictrueData))
                 {
-                    drawPictrueData.ChartDrawPicture.Status=20;
-                    drawPictrueData.ChartDrawPicture.ValueToPoint();
-                    drawPictrueData.ChartDrawPicture.MovePointIndex=drawPictrueData.PointIndex;
-                    drawPictrueData.ChartDrawPicture.IsSelected=true;
-                    this.CurrentChartDrawPicture=drawPictrueData.ChartDrawPicture;
-                    this.SelectChartDrawPicture=drawPictrueData.ChartDrawPicture;
+                    if (drawPictrueData.ChartDrawPicture.EnableMove==true)
+                    {
+                        drawPictrueData.ChartDrawPicture.Status=20;
+                        drawPictrueData.ChartDrawPicture.ValueToPoint();
+                        drawPictrueData.ChartDrawPicture.MovePointIndex=drawPictrueData.PointIndex;
+                        drawPictrueData.ChartDrawPicture.IsSelected=true;
+                        this.CurrentChartDrawPicture=drawPictrueData.ChartDrawPicture;
+                        this.SelectChartDrawPicture=drawPictrueData.ChartDrawPicture;
+                    }
+                    else
+                    {
+                        this.CurrentChartDrawPicture=null;
+                        this.SelectChartDrawPicture=null;
+                    }
+                    
                     let event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_DRAWPICTURE); //选中画图工具事件
                     if (event && event.Callback)
                     {
@@ -8609,12 +8618,21 @@ function MinuteChartContainer(uielement)
                 var drawPictrueData={ X:pt.X, Y:pt.Y, PixelRatio:this.UIElement.PixelRatio };
                 if (this.GetChartDrawPictureByPoint(drawPictrueData))
                 {
-                    drawPictrueData.ChartDrawPicture.Status=20;
-                    drawPictrueData.ChartDrawPicture.ValueToPoint();
-                    drawPictrueData.ChartDrawPicture.MovePointIndex=drawPictrueData.PointIndex;
-                    drawPictrueData.ChartDrawPicture.IsSelected=true;
-                    this.CurrentChartDrawPicture=drawPictrueData.ChartDrawPicture;
-                    this.SelectChartDrawPicture=drawPictrueData.ChartDrawPicture;
+                    if (drawPictrueData.ChartDrawPicture.EnableMove==true)
+                    {
+                        drawPictrueData.ChartDrawPicture.Status=20;
+                        drawPictrueData.ChartDrawPicture.ValueToPoint();
+                        drawPictrueData.ChartDrawPicture.MovePointIndex=drawPictrueData.PointIndex;
+                        drawPictrueData.ChartDrawPicture.IsSelected=true;
+                        this.CurrentChartDrawPicture=drawPictrueData.ChartDrawPicture;
+                        this.SelectChartDrawPicture=drawPictrueData.ChartDrawPicture;
+                    }
+                    else
+                    {
+                        this.CurrentChartDrawPicture=null;
+                        this.SelectChartDrawPicture=null;
+                    }
+                  
                     let event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_DRAWPICTURE); //选中画图工具事件
                     if (event && event.Callback)
                     {

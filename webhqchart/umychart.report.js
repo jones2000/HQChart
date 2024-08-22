@@ -1102,6 +1102,7 @@ function JSReportChartContainer(uielement)
 
                 stock.Symbol=this.GetSymbolNoSuffix(symbol);
                 stock.Name=item[1];
+                if (IFrameSplitOperator.IsNumber(item[88])) stock.PriceColorType=item[88];
                 this.ReadStockJsonData(stock, item);
             }
         }
@@ -1346,7 +1347,9 @@ function JSReportChartContainer(uielement)
     {
         //0=证券代码 1=股票名称 2=昨收 3=开 4=高 5=低 6=收 7=成交量 8=成交金额, 9=买价 10=买量 11=卖价 12=卖量 13=均价 14=流通股 15=总股本 16=涨停价 17=跌停价
         //18=内盘 19=外盘 20=现量 21=涨幅% 22=涨跌 23=换手率% 24=振幅% 25=流通市值 26=总市值
-        //30=全局扩展数据  31=当前板块扩展数据
+        //30=全局扩展数据  31=当前板块扩展数据 36=日期字段
+
+        //88=价格颜色类型
 
         if (IFrameSplitOperator.IsString(item[1])) stock.Name=item[1];
         if (IFrameSplitOperator.IsNumber(item[2])) stock.YClose=item[2];
@@ -1429,6 +1432,19 @@ function JSReportChartContainer(uielement)
         if (IFrameSplitOperator.IsNumber(item[36])) stock.Date=item[36];    //日期
 
         if (IFrameSplitOperator.IsBool(item[37])) stock.Checked=item[37];
+
+        if (IFrameSplitOperator.IsNumber(item[38])) stock.Position=item[38];        //持仓量
+        if (IFrameSplitOperator.IsNumber(item[39])) stock.FClose=item[39];          //结算价
+        if (IFrameSplitOperator.IsNumber(item[40])) stock.YFClose=item[40];         //昨结算价
+        if (IFrameSplitOperator.IsNumber(item[41])) stock.OpenPosition=item[41];    //开仓量
+        if (IFrameSplitOperator.IsNumber(item[42])) stock.ClosePosition=item[42];   //平仓量
+
+        //1,3,5,10,15 涨速%
+        if (IFrameSplitOperator.IsNumber(item[43])) stock.RSpeed1M=item[43]; 
+        if (IFrameSplitOperator.IsNumber(item[44])) stock.RSpeed3M=item[44]; 
+        if (IFrameSplitOperator.IsNumber(item[45])) stock.RSpeed5M=item[45]; 
+        if (IFrameSplitOperator.IsNumber(item[46])) stock.RSpeed10M=item[46]; 
+        if (IFrameSplitOperator.IsNumber(item[47])) stock.RSpeed15M=item[47]; 
     }
 
 
@@ -1613,6 +1629,8 @@ function JSReportChartContainer(uielement)
         if (!reportChart) return;
 
         var keyID = e.keyCode ? e.keyCode :e.which;
+        if (keyID==116) return; //F15刷新不处理
+
         switch(keyID)
         {
             case 33:    //page up
@@ -3230,6 +3248,7 @@ function JSReportChartContainer(uielement)
             {
                 var item=tabItem.ArySubMenu[i];
                 var menuItem={ Name:item.Title, Data:{ ID:item.CommandID, Args:[item.ID]} };
+                if (item.Text) menuItem.Text=item.Text;
 
                 aryMenu.push(menuItem);
             }
@@ -3920,6 +3939,20 @@ var REPORT_COLUMN_ID=
 
     CHECKBOX_ID:33,         //单选框 
 
+    FUTURES_POSITION_ID:34,      //期货持仓量
+    FUTURES_CLOSE_ID:35,         //期货结算价
+    FUTURES_YCLOSE_ID:36,        //期货昨结算
+    FUTURES_OPEN_POSITION_ID:37,    //期货开仓量
+    FUTURES_CLOSE_POSITION_ID:38,    //期货平仓量
+
+
+    //1,3,5,10,15分钟涨速
+    RISING_SPEED_1M_ID:60,  
+    RISING_SPEED_3M_ID:61,  
+    RISING_SPEED_5M_ID:62,
+    RISING_SPEED_10M_ID:63,
+    RISING_SPEED_15M_ID:64,
+
     SYMBOL_NAME_ID:99,
 
     CUSTOM_STRING_TEXT_ID:100,      //自定义字符串文本
@@ -3932,6 +3965,7 @@ var REPORT_COLUMN_ID=
     CUSTOM_LINK_ID:107,              //链接
 }
 
+//数据对应字段名对照表
 var MAP_COLUMN_FIELD=new Map([
     [REPORT_COLUMN_ID.SYMBOL_ID, "Symbol"],
     [REPORT_COLUMN_ID.NAME_ID, "Name"],
@@ -3967,6 +4001,18 @@ var MAP_COLUMN_FIELD=new Map([
     [REPORT_COLUMN_ID.NAME_EX_ID, "NameEx"],
 
     [REPORT_COLUMN_ID.DATE_ID, "Date"],
+
+    [REPORT_COLUMN_ID.FUTURES_POSITION_ID, "Position"],
+    [REPORT_COLUMN_ID.FUTURES_CLOSE_ID, "FClose"],
+    [REPORT_COLUMN_ID.FUTURES_YCLOSE_ID, "YFClose"],
+    [REPORT_COLUMN_ID.FUTURES_OPEN_POSITION_ID, "OpenPosition"],
+    [REPORT_COLUMN_ID.FUTURES_CLOSE_POSITION_ID, "ClosePosition"],
+
+    [REPORT_COLUMN_ID.RISING_SPEED_1M_ID, "RSpeed1M"],
+    [REPORT_COLUMN_ID.RISING_SPEED_3M_ID, "RSpeed3M"],
+    [REPORT_COLUMN_ID.RISING_SPEED_5M_ID, "RSpeed5M"],
+    [REPORT_COLUMN_ID.RISING_SPEED_10M_ID, "RSpeed10M"],
+    [REPORT_COLUMN_ID.RISING_SPEED_15M_ID, "RSpeed15M"],
 ]);
 
 function ChartReport()
@@ -4470,7 +4516,19 @@ function ChartReport()
 
             { Type:REPORT_COLUMN_ID.CUSTOM_BUTTON_ID, Title:"", TextAlign:"center", FixedWidth:50*GetDevicePixelRatio() },
             { Type:REPORT_COLUMN_ID.CUSTOM_PROGRESS_ID, Title:"进度条", TextAlign:"center", FixedWidth:100*GetDevicePixelRatio() },
-            { Type:REPORT_COLUMN_ID.CUSTOM_LINK_ID, Title:"链接地址", TextAlign:"center", MaxText:"擎擎擎擎擎" }
+            { Type:REPORT_COLUMN_ID.CUSTOM_LINK_ID, Title:"链接地址", TextAlign:"center", MaxText:"擎擎擎擎擎" },
+
+            { Type:REPORT_COLUMN_ID.FUTURES_POSITION_ID, Title:"持仓量", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Vol, Width:null, MaxText:"8888888" },
+            { Type:REPORT_COLUMN_ID.FUTURES_CLOSE_ID, Title:"结算价", TextAlign:"right", Width:null, MaxText:"8888888" },
+            { Type:REPORT_COLUMN_ID.FUTURES_YCLOSE_ID, Title:"昨结算价", TextAlign:"right", Width:null, MaxText:"8888888" },
+            { Type:REPORT_COLUMN_ID.FUTURES_OPEN_POSITION_ID, Title:"开仓量", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, Width:null, MaxText:"8888888" },
+            { Type:REPORT_COLUMN_ID.FUTURES_CLOSE_POSITION_ID, Title:"平仓量", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, Width:null, MaxText:"8888888" },
+
+            { Type:REPORT_COLUMN_ID.RISING_SPEED_1M_ID, Title:"涨速%", TextAlign:"right", Width:null, MaxText:"-888.88" },
+            { Type:REPORT_COLUMN_ID.RISING_SPEED_3M_ID, Title:"3分涨速%", TextAlign:"right", Width:null, MaxText:"-888.88" },
+            { Type:REPORT_COLUMN_ID.RISING_SPEED_5M_ID, Title:"5分涨速%", TextAlign:"right", Width:null, MaxText:"-888.88" },
+            { Type:REPORT_COLUMN_ID.RISING_SPEED_10M_ID, Title:"10分涨速%", TextAlign:"right", Width:null, MaxText:"-888.88" },
+            { Type:REPORT_COLUMN_ID.RISING_SPEED_15M_ID, Title:"15分涨速%", TextAlign:"right", Width:null, MaxText:"-888.88" },
         ];
 
         for(var i=0;i<DEFAULT_COLUMN.length;++i)
@@ -5299,6 +5357,17 @@ function ChartReport()
 
             this.FormatDrawInfo(column, stock, drawInfo, data);
         }
+        else if (column.Type==REPORT_COLUMN_ID.FUTURES_CLOSE_ID || column.Type==REPORT_COLUMN_ID.FUTURES_YCLOSE_ID)
+        {
+            var fieldName=MAP_COLUMN_FIELD.get(column.Type);
+            if (stock && IFrameSplitOperator.IsNumber(stock[fieldName]))
+            {
+                var value=stock[fieldName];
+                this.GetPriceDrawInfo(value, stock, data, drawInfo);
+            }
+
+            this.FormatDrawInfo(column, stock, drawInfo, data);
+        }
         else if (column.Type==REPORT_COLUMN_ID.SELL_PRICE_ID)
         {
             if (stock) this.GetPriceDrawInfo(stock.SellPrice, stock, data, drawInfo);
@@ -5368,7 +5437,9 @@ function ChartReport()
 
             this.FormatDrawInfo(column, stock, drawInfo, data);
         }
-        else if (column.Type==REPORT_COLUMN_ID.INCREASE_ID || column.Type==REPORT_COLUMN_ID.AMPLITUDE_ID || column.Type==REPORT_COLUMN_ID.UPDOWN_ID)
+        else if (column.Type==REPORT_COLUMN_ID.INCREASE_ID || column.Type==REPORT_COLUMN_ID.AMPLITUDE_ID || column.Type==REPORT_COLUMN_ID.UPDOWN_ID ||
+            column.Type==REPORT_COLUMN_ID.RISING_SPEED_1M_ID || column.Type==REPORT_COLUMN_ID.RISING_SPEED_3M_ID || column.Type==REPORT_COLUMN_ID.RISING_SPEED_5M_ID || 
+            column.Type==REPORT_COLUMN_ID.RISING_SPEED_10M_ID || column.Type==REPORT_COLUMN_ID.RISING_SPEED_15M_ID )
         {
             var fieldName=MAP_COLUMN_FIELD.get(column.Type);
             if (stock && IFrameSplitOperator.IsNumber(stock[fieldName]))
@@ -5376,6 +5447,18 @@ function ChartReport()
                 var value=stock[fieldName];
                 drawInfo.Text=value.toFixed(2);
                 drawInfo.TextColor=this.GetUpDownColor(value,0);
+            }
+
+            this.FormatDrawInfo(column, stock, drawInfo, data);
+        }
+        else if (column.Type==REPORT_COLUMN_ID.FUTURES_POSITION_ID || column.Type==REPORT_COLUMN_ID.FUTURES_OPEN_POSITION_ID || column.Type==REPORT_COLUMN_ID.FUTURES_CLOSE_POSITION_ID)
+        {
+            //持仓量原始值输出
+            var fieldName=MAP_COLUMN_FIELD.get(column.Type);
+            if (stock && IFrameSplitOperator.IsNumber(stock[fieldName]))
+            {
+                var value=stock[fieldName];
+                drawInfo.Text=value.toFixed(0);
             }
 
             this.FormatDrawInfo(column, stock, drawInfo, data);
@@ -5902,10 +5985,21 @@ function ChartReport()
         if (!IFrameSplitOperator.IsNumber(price)) return false;
 
         drawInfo.Text=price.toFixed(data.Decimal);
-        if (!IFrameSplitOperator.IsNumber(stock.YClose))  
+
+        var yClose=null;
+        if (stock.PriceColorType===1)    //昨结算价 计算颜色
+        {
+            if (IFrameSplitOperator.IsNumber(stock.YFClose))  yClose=stock.YFClose;
+        }
+        else    //昨收价 计算颜色
+        {
+            if (IFrameSplitOperator.IsNumber(stock.YClose))  yClose=stock.YClose;
+        }
+
+        if (!IFrameSplitOperator.IsNumber(yClose))  
             drawInfo.TextColor=this.UnchagneColor;
         else  
-            drawInfo.TextColor=this.GetUpDownColor(price, stock.YClose);
+            drawInfo.TextColor=this.GetUpDownColor(price, yClose);
 
         if (option && option.LimitBG)
         {
