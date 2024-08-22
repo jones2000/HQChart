@@ -1786,7 +1786,8 @@ function JSChartContainer(uielement)
                 var drawPictrueData={ X:pt.X, Y:pt.Y, PixelRatio:this.UIElement.PixelRatio };
                 if (this.GetChartDrawPictureByPoint(drawPictrueData))
                 {
-                    drawPictrueData.ChartDrawPicture.Status=20;
+                    if (drawPictrueData.ChartDrawPicture.EnableMove===true)
+                        drawPictrueData.ChartDrawPicture.Status=20;
                     drawPictrueData.ChartDrawPicture.ValueToPoint();
                     drawPictrueData.ChartDrawPicture.MovePointIndex=drawPictrueData.PointIndex;
                     drawPictrueData.ChartDrawPicture.IsSelected=true;
@@ -8610,7 +8611,8 @@ function MinuteChartContainer(uielement)
                 var drawPictrueData={ X:pt.X, Y:pt.Y, PixelRatio:this.UIElement.PixelRatio };
                 if (this.GetChartDrawPictureByPoint(drawPictrueData))
                 {
-                    drawPictrueData.ChartDrawPicture.Status=20;
+                    if (drawPictrueData.ChartDrawPicture.EnableMove===true)
+                        drawPictrueData.ChartDrawPicture.Status=20;
                     drawPictrueData.ChartDrawPicture.ValueToPoint();
                     drawPictrueData.ChartDrawPicture.MovePointIndex=drawPictrueData.PointIndex;
                     drawPictrueData.ChartDrawPicture.IsSelected=true;

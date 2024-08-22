@@ -3652,7 +3652,9 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
                     if (bDraw) this.Draw();
 
-                    drawPictrueData.ChartDrawPicture.Status=20;
+                    if (drawPictrueData.ChartDrawPicture.EnableMove==true)
+                        drawPictrueData.ChartDrawPicture.Status=20;
+                    
                     drawPictrueData.ChartDrawPicture.ValueToPoint();
                     drawPictrueData.ChartDrawPicture.MovePointIndex=drawPictrueData.PointIndex;
                     //this.CurrentChartDrawPicture=drawPictrueData.ChartDrawPicture;
@@ -4655,7 +4657,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 var pixelTatio = GetDevicePixelRatio(); //鼠标移动坐标是原始坐标 需要乘以放大倍速
                 if (this.GetChartDrawPictureByPoint(drawPictrueData))
                 {
-                    drawPictrueData.ChartDrawPicture.Status=20;
+                    if (drawPictrueData.ChartDrawPicture.EnableMove==true)
+                        drawPictrueData.ChartDrawPicture.Status=20;
                     drawPictrueData.ChartDrawPicture.ValueToPoint();
                     drawPictrueData.ChartDrawPicture.MovePointIndex=drawPictrueData.PointIndex;
                     drawPictrueData.ChartDrawPicture.IsSelected=true;
@@ -79590,8 +79593,8 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                     drawPictrueData.Y=(touches[0].clientY-uielement.getBoundingClientRect().top);
                     if (this.GetChartDrawPictureByPoint(drawPictrueData))
                     {
-                       
-                        drawPictrueData.ChartDrawPicture.Status=20;
+                        if (drawPictrueData.ChartDrawPicture.EnableMove==true)
+                            drawPictrueData.ChartDrawPicture.Status=20;
                         drawPictrueData.ChartDrawPicture.ValueToPoint();
                         drawPictrueData.ChartDrawPicture.MovePointIndex=drawPictrueData.PointIndex;
                         drawPictrueData.ChartDrawPicture.IsSelected=true;
