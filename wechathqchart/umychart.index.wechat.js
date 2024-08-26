@@ -422,7 +422,15 @@ function ScriptIndex(name, script, args, option)
             if (!isNaN(width) && width > 0) line.LineWidth = width;
         }
 
-        if (varItem.IsDotLine) line.IsDotLine = true; //虚线
+        if (varItem.IsDotLine) 
+        {
+            line.IsDotLine = true; //虚线
+            line.LineDash=g_JSChartResource.DOTLINE.LineDash.slice();
+        }
+
+        //虚线设置
+        if (IFrameSplitOperator.IsNonEmptyArray(varItem.LineDash)) line.LineDash=varItem.LineDash;
+
         if (varItem.IsShow == false) line.IsShow = false;
 
         let titleIndex = windowIndex + 1;

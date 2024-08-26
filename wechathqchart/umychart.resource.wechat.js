@@ -359,6 +359,11 @@ function JSChartResource()
         Radius:2
     }
 
+    this.DOTLINE=
+    {
+        LineDash:[3,5]
+    }
+
     //深度图
     this.DepthChart=
     {
@@ -712,6 +717,12 @@ function JSChartResource()
         {
             var item=style.POINTDOT;
             if (this.IsNumber(item.Radius)) this.POINTDOT.Radius=item.Radius;
+        }
+
+        if (style.DOTLINE)
+        {
+            var item=style.DOTLINE;
+            if (IFrameSplitOperator.IsNonEmptyArray(item.LineDash)) this.DOTLINE.LineDash=item.LineDash.slice();
         }
 
         if (style.Report)

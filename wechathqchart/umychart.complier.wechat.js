@@ -8985,6 +8985,12 @@ function JSDraw(errorHandler, symbolData)
         return offset;
     }
 
+    this.LINEDASH=function(aryData)
+    {
+        if (IFrameSplitOperator.IsNonEmptyArray(aryData)) return aryData.slice();
+        return [];
+    }
+
     //该函数和DRAWTEXT连用
     //{ Color:背景色, Border:边框颜色, Margin=[上,下,左, 右] }
     this.BACKGROUND=function(color, borderColor, left, right, top, bottom)
@@ -13239,6 +13245,7 @@ function JSExecute(ast,option)
                     var bgConfig=null;
                     var vLineConfig=null;
                     var xOffset=null, yOffset=null;
+                    var lineDash=null;
                     for(var j=0 ; j<item.Expression.Expression.length; ++j)
                     {
                         let itemExpression=item.Expression.Expression[j];
@@ -13359,6 +13366,11 @@ function JSExecute(ast,option)
                                 else if (itemExpression.Callee.Name=="YMOVE")
                                 {
                                     yOffset=itemExpression.Out;
+                                }
+                                else if (itemExpression.Callee.Name=="LINEDASH")
+                                {
+                                    if (IFrameSplitOperator.IsNonEmptyArray(itemExpression.Out))
+                                        lineDash=itemExpression.Out.slice();
                                 }
                                 else if (itemExpression.Callee.Name=="SOUND")
                                 {
@@ -13510,6 +13522,7 @@ function JSExecute(ast,option)
                         if (isShow == false) value.IsShow = false;
                         if (isExData == true) value.IsExData = true;
                         if (isDotLine == true) value.IsDotLine = true;
+                        if (IFrameSplitOperator.IsNonEmptyArray(lineDash)) value.LineDash=lineDash;
                         if (isOverlayLine == true) value.IsOverlayLine = true;
                         if (isSingleLine == true) value.IsSingleLine = true;
                         if (isNoneName==true) value.NoneName=true;
@@ -13541,6 +13554,7 @@ function JSExecute(ast,option)
                         if (isShow == false) value.IsShow = false;
                         if (isExData == true) value.IsExData = true;
                         if (isDotLine == true) value.IsDotLine = true;
+                        if (IFrameSplitOperator.IsNonEmptyArray(lineDash)) value.LineDash=lineDash;
                         if (isOverlayLine == true) value.IsOverlayLine = true;
                         if (isSingleLine == true) value.IsSingleLine = true;
                         if (isShowTitle==false) value.IsShowTitle=false;
@@ -13905,6 +13919,9 @@ function JSExecute(ast,option)
                 break;
             case "YMOVE":
                 node.Out=this.Draw.YMOVE(args[0]);
+                break;
+            case "LINEDASH":
+                node.Out=this.Draw.LINEDASH(args);
                 break;
             case 'DRAWRECTREL':
                 node.Draw = this.Draw.DRAWRECTREL(args[0], args[1], args[2], args[3], args[4]);
