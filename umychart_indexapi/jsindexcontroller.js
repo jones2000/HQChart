@@ -208,6 +208,10 @@ function JSIndexController(req,res,next)
             if (item.LineWidth) outItem.linewidth=item.LineWidth;
             if (item.IsShow==false) outItem.isshow = false;
             if (item.IsExData==true) outItem.isexdata = true;
+            if (item.IsDotLine==true) outItem.isDotLine=true;
+            if (item.IsShowTitle==false) outItem.isShowTitle=false;
+            if (item.LineDash) outItem.lineDash=item.LineDash;
+            if (item.IsSingleLine==true) outItem.IsSingleLine=item.isSingleLine;
             if (item.Draw) outItem.Draw=item.Draw;  //Draw里面数据太多了, 返回数据字段就不转写成小写了, 太麻烦了
             this.OutData.outvar.push(outItem);
         }
