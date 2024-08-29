@@ -1738,7 +1738,9 @@ function OverlayScriptIndex(name,script,args,option)
                     case "DRAWTEXTREL":
                         this.CreateDrawText(hqChart,windowIndex,item,i);
                         break;
-
+                    case "DRAWCOLORKLINE":
+                        this.CreateDrawColorKLine(hqChart,windowIndex,item,i);
+                        break;
                     case SCRIPT_CHART_NAME.OVERLAY_BARS:
                         this.CreateStackedBar(hqChart,windowIndex,item,i);
                         break;
@@ -2006,6 +2008,24 @@ function OverlayScriptIndex(name,script,args,option)
 
         //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
 
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateDrawColorKLine=function(hqChart,windowIndex,varItem,id)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartColorKline();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.DrawName="DRAWCOLORKLINE";
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+
+        chart.Data.Data=varItem.Draw.DrawData;
+        if (IFrameSplitOperator.IsBool(varItem.Draw.IsEmptyBar)) chart.IsEmptyBar=varItem.Draw.IsEmptyBar;
+        if (varItem.Draw.Color) chart.Color=varItem.Draw.Color;
         frame.ChartPaint.push(chart);
     }
 
@@ -2724,6 +2744,8 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
                 if (IFrameSplitOperator.IsBool(item.isshow)) outVarItem.IsShow = item.isshow;
                 if (item.isexdata == true) outVarItem.IsExData = true;
                 if (item.BreakPoint) outVarItem.BreakPoint=item.BreakPoint;
+                if (item.UpColor) outVarItem.UpColor=item.UpColor;
+                if (item.DownColor) outVarItem.DownColor=item.DownColor;
                 if (IFrameSplitOperator.IsBool(item.isDotLine)) outVarItem.IsDotLine = item.isDotLine;
                 if (IFrameSplitOperator.IsNonEmptyArray(item.lineDash)) outVarItem.LineDash=item.lineDash;
                 if (IFrameSplitOperator.IsBool(item.isSingleLine))  outVarItem.IsSingleLine=item.isSingleLine;
@@ -2870,6 +2892,31 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
 
                     outVarItem.Draw=drawItem;
                     outVarItem.Name=draw.DrawType;
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType=="PARTLINE")
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=this.FittingArray(draw.DrawData,date,time,hqChart,1);
+
+                    outVarItem.Draw=drawItem;
+                    if (draw.LineWidth) outVarItem.LineWidth=draw.LineWidth;
+                    
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType=="DRAWCOLORKLINE")
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=this.FittingArray(draw.DrawData,date,time,hqChart,1);
+
+                    outVarItem.Draw=drawItem;
+                    if (draw.Color) drawItem.Color=draw.Color;
+                    if (IFrameSplitOperator.IsBool(draw.IsEmptyBar)) drawItem.IsEmptyBar=draw.IsEmptyBar;
+                    
                     result.push(outVarItem);
                 }
             }
@@ -3213,6 +3260,19 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
                     this.GetKLineData(drawItem.DrawData, hqChart);
                     outVarItem.Draw=drawItem;
 
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType=="DRAWCOLORKLINE")
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=this.FittingArray(draw.DrawData,date,time,hqChart,1);
+
+                    outVarItem.Draw=drawItem;
+                    if (draw.Color) drawItem.Color=draw.Color;
+                    if (IFrameSplitOperator.IsBool(draw.IsEmptyBar)) drawItem.IsEmptyBar=draw.IsEmptyBar;
+                    
                     result.push(outVarItem);
                 }
             }
