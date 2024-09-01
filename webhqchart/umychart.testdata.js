@@ -105,6 +105,7 @@ HQData.NetworkFilter=function(data, callback)
             break;
 
         case "ResearchInfo::RequestData":
+            HQData.ResearchInfo_RequestData(data,callback);
             break;
 
         case "BlockTrading::RequestData":
@@ -624,7 +625,15 @@ HQData.PforecastInfo_RequestData=function(data,callback)
         var kItem=kData.Data[i];
         if (i%10!=4) continue;
 
-        var itemReport={ date:kItem.Date, time:kItem.Time, title:`公告(${j}) xxxx`, }
+        var year=parseInt(kItem.Date/10000);  //年份
+        var month=parseInt(kItem.Date/100)%100;
+        var reprotDate=0;
+        if (month>10) reprotDate=year*10000+1231;
+        else if (month>6) reprotDate=year*10000+930;
+        else if (month>3) reprotDate=year*10000+630;
+        else reprotDate=year*10000+331;
+
+        var itemReport={ date:kItem.Date, time:kItem.Time, title:`业绩预增`, reportdate:reprotDate, fweek:{ week1:0.04, week4:0.02 } }
 
         hqchartData.report.push(itemReport);
 
@@ -640,6 +649,29 @@ HQData.InvestorInfo_RequestData=function(data,callback)
     var symbol=data.Request.Symbol;
 
     callback(TEST_NEWSINTERACT_DATA);
+}
+
+HQData.ResearchInfo_RequestData=function(data,callback)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Symbol;
+
+    var hqchartData={ symbol:symbol, list:[] };
+
+    var kData=data.HQChart.ChartPaint[0].Data;
+    for(var i=0, j=1;i<kData.Data.length;++i)
+    {
+        var kItem=kData.Data[i];
+        if (i%20!=4) continue;
+
+        var itemReport={ researchdate:kItem.Date, id:i, level:[j%4], type:"xxx调研。" };
+
+        hqchartData.list.push(itemReport);
+
+        ++j;
+    }
+
+    callback(hqchartData);
 }
 
 HQData.BlockTrading_RequestData=function(data,callback)
