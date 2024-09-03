@@ -4400,6 +4400,8 @@ function ChartStickLine()
         else if(this.Width==0)
         {
             this.SetEmptyBar();
+            this.Canvas.lineWidth=1;
+            this.Canvas.strokeStyle=this.Color;
         }
         else if (this.Width==50 || this.Width==3)
         {

@@ -7096,6 +7096,12 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             this.Frame.ResetXSplit();
     }
 
+    this.ResetFrameYCustomSplit=function(windowIndex)
+    {
+        if (typeof(this.Frame.ResetYCustomSplit)=='function')
+            this.Frame.ResetYCustomSplit(windowIndex);
+    }
+
     this.UpdateFrameMaxMinV2=function()
     {
         var mapFrame=new Map(); //key=frameid, value:{ ChartPaint:[] }
@@ -12249,7 +12255,67 @@ function AverageWidthFrame()
 
         if (item.Message[0] && borderLeft>=10)
         {
+            if (item.Font != null) this.Canvas.font = item.Font;
+            var textInfo=this.GetCustomItemTextInfo(item,true,pixelTatio);
+            var textWidth=textInfo.MaxWidth;
+            var itemLeft=left-textWidth;
+            var fontHeight=this.GetFontHeight();
+            var textHeight=fontHeight>defaultTextHeight? fontHeight:defaultTextHeight;
+            this.Canvas.textAlign = "right";
+            this.Canvas.textBaseline = "middle";
 
+            var yText=null;
+            if (position==1) 
+            {
+                yText=border.TopEx;
+                if (IFrameSplitOperator.IsNumber(outRange.TopYOffset)) yText+=outRange.TopYOffset;
+            }
+            else if (position==2) 
+            {
+                yText=border.BottomEx+textHeight;
+                if (IFrameSplitOperator.IsNumber(outRange.BottomYOffset)) yText+=outRange.BottomYOffset;
+            }
+
+            for(var i=0;i<textInfo.Text.length;++i)
+            {
+                var itemText=textInfo.Text[i];
+                var rtBG={ Left:itemLeft, Width:itemText.Width, Bottom:yText, Height:textHeight };
+                rtBG.Top=rtBG.Bottom-rtBG.Height;
+                rtBG.Right=rtBG.Left+rtBG.Width;
+
+                if (item.ExtendLine && item.ExtendLine[0])  //右侧延长线
+                {
+                    var exLine=item.ExtendLine[0];
+                    if (IFrameSplitOperator.IsNumber(exLine.Width))
+                    {
+                        var yLine=rtBG.Bottom;
+                        if (position==2) yLine=rtBG.Top;
+                        var lineType=item.LineType;
+                        if (IFrameSplitOperator.IsNumber(outRange.ExtendLine.Type)) lineType=outRange.ExtendLine.Type;
+                        if (i==0) this.DrawLine(left,left-exLine.Width,yLine,item.LineColor,lineType,item);
+
+                        rtBG.Left-=exLine.Width;
+                        rtBG.Right-=exLine.Width;
+                    }
+                }
+
+                this.Canvas.fillStyle=outRange.BGColor;
+                this.Canvas.fillRect(rtBG.Left,rtBG.Top,rtBG.Width,rtBG.Height);
+                if (outRange.Border && outRange.Border.Color)
+                {
+                    if (IFrameSplitOperator.IsNonEmptyArray(outRange.Border.LineDash))
+                        this.Canvas.setLineDash(outRange.Border.LineDash);   //虚线
+
+                    this.Canvas.strokeStyle = outRange.Border.Color;
+                    this.Canvas.strokeRect(ToFixedPoint(rtBG.Left), ToFixedPoint(rtBG.Top), ToFixedRect(rtBG.Width), ToFixedRect(rtBG.Height));
+                }
+
+                this.Canvas.fillStyle = outRange.TextColor;
+                this.Canvas.fillText(itemText.Text, rtBG.Right - 1*pixelTatio, rtBG.Top+rtBG.Height/2+1*pixelTatio);
+
+                yText+=textHeight+1;
+            }
+            
         }
         else if (item.Message[1] && borderRight>=10)
         {
@@ -12458,6 +12524,18 @@ function AverageWidthFrame()
                         {
                             var rectLeft=left-textWidth;
                             var textLeft=left-(textWidth-itemText.Width);
+                        }
+
+
+                        if (item.ExtendLine && item.ExtendLine[0])  //右侧延长线
+                        {
+                            var exLine=item.ExtendLine[0];
+                            if (IFrameSplitOperator.IsNumber(exLine.Width))
+                            {
+                                if (i==0) this.DrawLine(left,left-exLine.Width,y,item.LineColor,item.LineType,item);
+                                textLeft-=exLine.Width;
+                                rectLeft-=exLine.Width
+                            }
                         }
 
                         if (emptyBGColor)
@@ -19656,6 +19734,24 @@ function HQTradeFrame()
         for(let i in this.SubFrame)
         {
             this.SubFrame[i].Frame.XSplit=true;
+        }
+    }
+
+    this.ResetYCustomSplit=function(windowIndex)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.SubFrame)) return;
+
+        if (IFrameSplitOperator.IsNumber(windowIndex) && windowIndex>=0)
+        {
+            var item=this.SubFrame[windowIndex];
+            if (item.Frame) item.Frame.YCustomSplit=true;
+        }
+        else
+        {
+            for(var i=0;i<this.SubFrame.length;++i)
+            {
+                this.SubFrame[i].Frame.YCustomSplit=true;
+            }
         }
     }
 
@@ -33201,9 +33297,11 @@ function ChartStickLine()
             else this.Canvas.lineWidth=GetDevicePixelRatio();
             this.Canvas.strokeStyle=this.Color;
         }
-        else if(this.Width==0)
+        else if(this.Width==0)  //宽度时0，使用宽度1
         {
             this.SetEmptyBar();
+            this.Canvas.lineWidth=GetDevicePixelRatio();
+            this.Canvas.strokeStyle=this.Color;
         }
         else if (this.Width==3 || this.Width==50)   //3和50 K线宽度
         {
