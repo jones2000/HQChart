@@ -1789,6 +1789,13 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             this.JSChartContainer.ChangeIndex(windowIndex,indexName,option);
     }
 
+    //切换一个窗口指标，包含叠加指标，以及这个窗口的属性
+    this.ChangeIndexWindow=function(windowIndex, option)
+    {
+        if (this.JSChartContainer && typeof(this.JSChartContainer.ChangeIndexWindow)=='function')
+            this.JSChartContainer.ChangeIndexWindow(windowIndex, option);
+    }
+
     this.AddIndexWindow=function(indexName,option)
     {
         if (this.JSChartContainer && typeof(this.JSChartContainer.AddIndexWindow)=='function')
@@ -9795,6 +9802,101 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         this.ChartDragSelectRect.SetFirstPoint(ptStart.X, ptStart.Y);
         this.ChartDragSelectRect.SetSecondPoint(ptEnd.X, ptEnd.Y);
         this.ChartDragSelectRect.Draw();
+    }
+
+    //切换窗口指标 option={ Window:{}, OverlayIndex:[], Frame:{ }}
+    this.ChangeIndexWindow=function(windowIndex, option)
+    {
+        JSConsole.Chart.Log('[KLineChartContainer::ChangeIndexWindow] windowIndex, option', windowIndex, option);
+        if (windowIndex<0 || windowIndex>=this.Frame.SubFrame.length) return false;
+        if (!option) return false;
+
+        var frame=this.Frame.SubFrame[windowIndex];
+        if (option.Delete)
+        {
+            var item=option.Delete;
+            if (item.Window===true) this.DeleteIndexPaint(windowIndex);             //删除主指标
+            if (item.Overlay===true) this.DeleteWindowsOverlayIndex(windowIndex);    //清空叠加指标
+        }
+        
+        //清空标题栏
+        var titleIndex=windowIndex+1;
+        this.TitlePaint[titleIndex].Data=[];
+        this.TitlePaint[titleIndex].Title=null;
+
+        if (option.Window)   //主指标
+        {
+            this.DeleteIndexPaint(windowIndex);             //删除主指标
+
+            var item=option.Window;
+
+            if (item.Script)    //自定义指标脚本
+            {
+                this.WindowIndex[windowIndex]=new ScriptIndex(item.Name,item.Script,item.Args,item);    //脚本执行
+            }
+            else if (item.API)  //后台指标
+            {
+                var apiItem=item.API;
+                this.WindowIndex[windowIndex]=new APIScriptIndex(apiItem.Name,apiItem.Script,apiItem.Args,item);
+            }
+            else
+            {
+                var indexID=item.Index;
+                var indexItem=JSIndexMap.Get(indexID);
+                if (indexItem)
+                {
+                    this.WindowIndex[windowIndex]=indexItem.Create();
+                    this.CreateWindowIndex(windowIndex);
+                }
+                else
+                {
+                    var systemScript = new JSIndexScript();
+                    var indexInfo = systemScript.Get(indexID);
+                    if (indexInfo)
+                    {
+                        JSIndexScript.ModifyAttribute(indexInfo,item);
+                        this.WindowIndex[windowIndex]=new ScriptIndex(indexInfo.Name,indexInfo.Script,indexInfo.Args,indexInfo);    //脚本执行
+                    }
+                }
+            }
+
+            this.SetSubFrameAttribute(frame, item, option.Frame);
+        }
+
+        //叠加指标
+        var aryOverlayIndex=[];
+        if (IFrameSplitOperator.IsNonEmptyArray(option.OverlayIndex))
+        {
+            this.DeleteWindowsOverlayIndex(windowIndex);    //清空叠加指标
+
+            for(var i=0;i<option.OverlayIndex.length;++i)
+            {
+                var item=option.OverlayIndex[i];
+                if (item.Index) item.IndexName=item.Index;
+                item.WindowIndex=windowIndex;
+                if (item.Windows>=0) item.WindowIndex=item.Windows;
+
+                var overlay=this.CreateOverlayWindowsIndex(item);
+                if (!overlay) continue;
+
+                aryOverlayIndex.push({ WindowsIndex:item.WindowIndex, Overlay:overlay });
+            }
+        }
+
+        //刷新指标
+        var bindData=this.ChartPaint[0].Data;
+        this.BindIndexData(windowIndex,bindData);   //请求主指标
+
+        for(var i=0;i<aryOverlayIndex.length;++i)   //请求叠加指标
+        {
+            var item=aryOverlayIndex[i];
+            this.BindOverlayIndexData(item.Overlay,item.WindowsIndex,bindData);
+        }
+
+        this.UpdataDataoffset();           //更新数据偏移
+        this.ResetFrameXYSplit();
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Draw();
     }
 }
 
@@ -93097,6 +93199,7 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.CZCE + '-SA', {Time:6,Decimal:0, Name:"纯碱"}],
         [MARKET_SUFFIX_NAME.CZCE + '-PF', {Time:6,Decimal:0, Name:"短纤"}],
         [MARKET_SUFFIX_NAME.CZCE + '-PK', {Time:0,Decimal:0, Name:"花生"}],
+        [MARKET_SUFFIX_NAME.CZCE + '-PR', {Time:6,Decimal:0, Name:"瓶片"}],
 
 
         //中期所 

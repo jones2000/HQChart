@@ -2120,6 +2120,7 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.CZCE + '-SA', {Time:6,Decimal:0, Name:"纯碱"}],
         [MARKET_SUFFIX_NAME.CZCE + '-PF', {Time:6,Decimal:0, Name:"短纤"}],
         [MARKET_SUFFIX_NAME.CZCE + '-PK', {Time:0,Decimal:0, Name:"花生"}],
+        [MARKET_SUFFIX_NAME.CZCE + '-PR', {Time:6,Decimal:0, Name:"瓶片"}],
         
         //中期所
         [MARKET_SUFFIX_NAME.CFFEX + '-TF', {Time:1,Decimal:3,Name:"二债"}],
