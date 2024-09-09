@@ -57495,6 +57495,26 @@ HQData.NetworkFilter=function(data, callback)
         case "TradeDetail::RequestData":
             HQData.TradeDetail_RequestData(data,callback);
             break;
+
+        case "JSSymbolData::GetGPJYValue":
+            HQData.GPJYValue_RequestData(data,callback);
+            break;
+        case "JSSymbolData::GetSCJYValue":
+            HQData.SCJYValue_RequestData(data,callback);
+            break;
+        case "JSSymbolData::GetBKJYValue":
+            HQData.BKJYValue_RequestData(data,callback);
+            break;
+
+        case "JSSymbolData::GetGPJYOne":
+            HQData.GPJYOne_RequestData(data,callback);
+            break;
+        case "JSSymbolData::GetSCJYOne":
+            HQData.SCJYOne_RequestData(data,callback);
+            break;
+        case "JSSymbolData::GetBKJYOne":
+            HQData.BKJYOne_RequestData(data,callback);
+            break;
     }
 }
 
@@ -57508,6 +57528,7 @@ HQData.RequestMinuteData=function(data, callback)
     var hqchartData=MINUTE_1DAY_DATA;
     hqchartData.stock[0].symbol=symbol;
     hqchartData.stock[0].name=symbol;
+    //hqchartData.stock[0].minute.length=85;
 
     callback({data:hqchartData});
 }
@@ -57704,6 +57725,122 @@ HQData.TradeDetail_RequestData=function(data,callback)
     var symbol=data.Request.Symbol;
 
     callback({data:TEST_TRADE_DETAL_DATA});
+}
+
+//GPJYVALUE(ID,N,TYPE),ID为数据编号,N表示第几个数据(取1或2),TYPE:为1表示做平滑处理,没有数据的周期返回上一周期的值;为0表示不做平滑处理;2表示没有数据则为0.
+HQData.GPJYValue_RequestData=function(data,callback)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Data.symbol;
+    var id=data.Request.Data.Args[0];
+    var n=data.Request.Data.Args[1];
+    var type=data.Request.Data.Args[2];
+
+    var aryData=[];
+    var kData=data.Self.Data;
+    for(var i=0;i<kData.Data.length;++i)
+    {
+        var kItem=kData.Data[i];
+        if (i%50==15)
+        {
+            var value=HQData.GetRandomTestData(10,100)
+            aryData.push({ Date:kItem.Date, Time:kItem.Time, Value:value });
+        }
+    }
+    
+    callback(aryData);
+}
+
+HQData.SCJYValue_RequestData=function(data,callback)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Data.symbol;
+    var id=data.Request.Data.Args[0];
+    var n=data.Request.Data.Args[1];
+    var type=data.Request.Data.Args[2];
+
+    var aryData=[];
+    var kData=data.Self.Data;
+    for(var i=0;i<kData.Data.length;++i)
+    {
+        var kItem=kData.Data[i];
+        if (i%50==20)
+        {
+            var value=HQData.GetRandomTestData(1000,2000)
+            aryData.push({ Date:kItem.Date, Time:kItem.Time, Value:value });
+        }
+    }
+    
+    callback(aryData);
+}
+
+HQData.BKJYValue_RequestData=function(data,callback)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Data.symbol;
+    var id=data.Request.Data.Args[0];
+    var n=data.Request.Data.Args[1];
+    var type=data.Request.Data.Args[2];
+
+    var aryData=[];
+    var kData=data.Self.Data;
+    for(var i=0;i<kData.Data.length;++i)
+    {
+        var kItem=kData.Data[i];
+        if (i%60==33)
+        {
+            var value=HQData.GetRandomTestData(500,1000)
+            aryData.push({ Date:kItem.Date, Time:kItem.Time, Value:value });
+        }
+    }
+    
+    callback(aryData);
+}
+
+HQData.GPJYOne_RequestData=function(data,callback)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Data.symbol;
+    var id=data.Request.Data.Args[0];
+    var n=data.Request.Data.Args[1];
+    var year=data.Request.Data.Args[2];
+    var day=data.Request.Data.Args[3];
+
+    var value=HQData.GetRandomTestData(800,1200);
+    callback({ Date:20230509, Value:value});
+}
+
+HQData.SCJYOne_RequestData=function(data,callback)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Data.symbol;
+    var id=data.Request.Data.Args[0];
+    var n=data.Request.Data.Args[1];
+    var year=data.Request.Data.Args[2];
+    var day=data.Request.Data.Args[3];
+
+    var value=HQData.GetRandomTestData(400,500);
+    callback({ Date:20230509, Value:value});
+}
+
+HQData.BKJYOne_RequestData=function(data,callback)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Data.symbol;
+    var id=data.Request.Data.Args[0];
+    var n=data.Request.Data.Args[1];
+    var year=data.Request.Data.Args[2];
+    var day=data.Request.Data.Args[3];
+
+    var value=HQData.GetRandomTestData(900,2000);
+    callback({ Date:20230509, Value:value});
+}
+
+HQData.GetRandomTestData=function(min, max)   //测试数据
+{
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min; //含最大值，含最小值 
 }
 
 

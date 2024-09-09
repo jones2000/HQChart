@@ -1254,20 +1254,17 @@ function Node(ErrorHandler)
             return;
         }
 
-        if (callee.Name=='GPJYVALUE')
+        //专业财务数据
+        for(var i=0;i<JS_ARRAY_PROFESSIONAL_FINANCE.length;++i)
         {
-            var item={ ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_GPJYVALUE, Args:args,  FunctionName:callee.Name };
-            if (token) item.Token={ Index:token.Start, Line:token.LineNumber };
-            this.FunctionData.push(item);
-            return;
-        }
-
-        if (callee.Name=="SCJYVALUE")
-        {
-            var item={ ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SCJYVALUE, Args:args,  FunctionName:callee.Name };
-            if (token) item.Token={ Index:token.Start, Line:token.LineNumber };
-            this.FunctionData.push(item);
-            return;
+            var financeItem=JS_ARRAY_PROFESSIONAL_FINANCE[i];
+            if (financeItem.Name==callee.Name)
+            {
+                var item={ ID:financeItem.JobID, Args:args,  FunctionName:callee.Name };
+                if (token) item.Token={ Index:token.Start, Line:token.LineNumber };
+                this.FunctionData.push(item);
+                return;
+            }
         }
 
         if (callee.Name==='MARGIN')
@@ -14433,23 +14430,41 @@ function JSSymbolData(ast,option,jsExecute)
         apiDownload.Download();
     }
 
-    this.GetGPJYValue=function(jobItem)
+    this.GetProFinance=function(jobItem)
     {
-        var aryArgs=this.JobArgumentsToArray(jobItem, 3);
+        var jobID=jobItem.ID;
+        var finder=null;
+        for(var i=0;i<JS_ARRAY_PROFESSIONAL_FINANCE.length;++i)
+        {
+            var item=JS_ARRAY_PROFESSIONAL_FINANCE[i];
+            if (item.JobID==jobID)
+            {
+                finder=item;
+                break;
+            }
+        }
+
+        if (!finder) return this.Execute.RunNextJob();
+
+        var aryArgs=this.JobArgumentsToArray(jobItem, finder.ArgCount);
         var key=this.GetStockDataKey(jobItem,aryArgs);
         if (this.StockData.has(key)) return this.Execute.RunNextJob();
 
         var self=this;
-        //TYPE:为1表示做平滑处理,没有数据的周期返回上一周期的值;为0表示不做平滑处理
-        var dataType=aryArgs[2]==1?0:2;
+        var dataType=0;
+        if ([JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_GPJYVALUE,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SCJYVALUE,JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_BKJYVALUE].includes(jobID))
+        {
+            dataType=aryArgs[2]==1?0:2; //TYPE:为1表示做平滑处理,没有数据的周期返回上一周期的值;为0表示不做平滑处理
+        }
+
         if (this.NetworkFilter)
         {
             var dateRange=this.Data.GetDateRange();
             var obj=
             {
-                Name:'JSSymbolData::GetGPJYValue', //类名::
-                Explain:'股票交易类数据GPJYVALUE(ID,N,TYPE)',
-                JobID:jobItem.ID,
+                Name:finder.FuncName, //类名::
+                Explain:finder.Explain,
+                JobID:jobID,
                 Request:{ Url:self.StockHistoryDayApiUrl, Type:'POST', Data:{ Args:aryArgs, symbol: this.Symbol, daterange:dateRange } },
                 Self:this,
                 PreventDefault:false
@@ -14463,76 +14478,7 @@ function JSSymbolData(ast,option,jsExecute)
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        var apiDownload=new DownloadGPJYValue( 
-            {
-                Job:jobItem, 
-                Symbol:this.Symbol, 
-                Url:this.StockHistoryDayApiUrl,
-                Args:aryArgs,
-                DataKey:key,
-                Callback:function(recvData, jobItem, key) 
-                { 
-                    self.RecvStockValue(recvData, jobItem, key,dataType);
-                    self.Execute.RunNextJob();
-                },
-                ErrorCallback:function(strError)
-                {
-                    self.AddStockValueError(key,strError);
-                }
-            });
-
-        apiDownload.Download();
-    }
-
-    this.GetSCJYValue=function(jobItem)
-    {
-        var aryArgs=this.JobArgumentsToArray(jobItem, 3);
-        var key=this.GetStockDataKey(jobItem,aryArgs);
-        if (this.StockData.has(key)) return this.Execute.RunNextJob();
-
-        var self=this;
-        //TYPE:为1表示做平滑处理,没有数据的周期返回上一周期的值;为0表示不做平滑处理
-        var dataType=aryArgs[2]==1?0:2;
-        if (this.NetworkFilter)
-        {
-            var dateRange=this.Data.GetDateRange();
-            var obj=
-            {
-                Name:'JSSymbolData::GetSCJYValue', //类名::
-                Explain:'股票交易类数据SCJYVALUE(ID,N,TYPE)',
-                JobID:jobItem.ID,
-                Request:{ Url:self.StockHistoryDayApiUrl, Type:'POST', Data:{ Args:aryArgs, symbol: this.Symbol, daterange:dateRange } },
-                Self:this,
-                PreventDefault:false
-            };
-            this.NetworkFilter(obj, function(recvData) 
-            { 
-                self.RecvStockValue(recvData,jobItem,key,dataType);
-                self.Execute.RunNextJob();
-            });
-
-            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
-        }
-
-        var apiDownload=new DownloadSCJYValue( 
-            {
-                Job:jobItem, 
-                Symbol:this.Symbol, 
-                Url:this.StockHistoryDayApiUrl,
-                Args:aryArgs,
-                DataKey:key,
-                Callback:function(recvData, jobItem, key) 
-                { 
-                    self.RecvStockValue(recvData, jobItem, key,dataType);
-                    self.Execute.RunNextJob();
-                },
-                ErrorCallback:function(strError)
-                {
-                    self.AddStockValueError(key,strError);
-                }
-            });
-
-        apiDownload.Download();
+        JSConsole.Chart.Warn(`[JSSymbolData::GetProFinance] ${finder.FuncName} Not implemented.`);
     }
 
     this.GetVariantData=function(jobItem)
@@ -16532,6 +16478,11 @@ var JS_EXECUTE_JOB_ID=
     JOB_DOWNLOAD_GPJYVALUE:304,                 //引用股票交易类数据 GPJYVALUE(ID,N,TYPE),ID为数据编号,N表示第几个数据,TYPE:为1表示做平滑处理,没有数据的周期返回上一周期的值;为0表示不做平滑处理
     JOB_DOWNLOAD_VARIANT:305,                   //CAPITAL , TOTALCAPITAL, EXCHANGE
     JOB_DOWNLOAD_SCJYVALUE:306,                 //引用市场总的交易类数据.SCJYVALUE(ID,N,TYPE),ID为数据编号,N表示第几个数据,TYPE:为1表示做平滑处理,没有数据的周期返回上一周期的值;为0表示不做平滑处理
+    JOB_DOWNLOAD_GPJYONE:307,                   //GPJYONE(ID,N,Y,MMDD),ID为数据编号,N表示第几个数据(取1或2),Y和MMDD表示年和月日. 如果Y为0,MMDD为0,表示最新数据,MMDD为1,2,3...,表示倒数第2,3,4...个数据
+    JOB_DOWNLOAD_SCJYONE:308,                   //SCJYONE(ID,N,Y,MMDD),ID为数据编号,N表示第几个数据(取1或2),Y和MMDD表示年和月日.如果Y为0,MMDD为0,表示最新数据,MMDD为1,2,3...,表示倒数第2,3,4...个数据
+    JOB_DOWNLOAD_BKJYVALUE:309,                 //BKJYVALUE(ID,N,TYPE),ID为数据编号,N表示第几个数据(取1或2),TYPE:为1表示做平滑处理,没有数据的周期返回上一周期的值;为0表示不做平滑处理;2表示没有数据则为0.
+    JOB_DOWNLOAD_BKJYONE:310,                   //BKJYONE(ID,N,Y,MMDD),ID为数据编号,N表示第几个数据(取1或2),Y和MMDD表示年和月日.如果Y为0,MMDD为0,表示最新数据,MMDD为1,2,3...,表示倒数第2,3,4...个数据
+
     
     
    
@@ -16727,6 +16678,36 @@ var JS_EXECUTE_JOB_ID=
     }
 
 };
+
+
+//专业财务数据
+var JS_ARRAY_PROFESSIONAL_FINANCE=
+[
+    { 
+        Name:"GPJYVALUE", JobID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_GPJYVALUE, 
+        Explain:"股票交易类数据GPJYVALUE(ID,N,TYPE)", FuncName:"JSSymbolData::GetGPJYValue", ArgCount:3  
+    },
+    { 
+        Name:"GPJYONE", JobID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_GPJYONE,
+        Explain:"股票交易类数据GPJYONE(ID,N,Y,MMDD)", FuncName:"JSSymbolData::GetGPJYOne", ArgCount:4
+    },
+    { 
+        Name:"SCJYVALUE", JobID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SCJYVALUE,
+        Explain:"市场交易类数据SCJYVALUE(ID,N,TYPE)", FuncName:"JSSymbolData::GetSCJYValue",ArgCount:3 
+    },
+    { 
+        Name:"SCJYONE", JobID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SCJYONE,
+        Explain:"市场交易类数据SCJYONE(ID,N,Y,MMDD)", FuncName:"JSSymbolData::GetSCJYOne",ArgCount:4 
+    },
+    { 
+        Name:"BKJYVALUE", JobID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_BKJYVALUE,
+        Explain:"板块交易类数据BKJYVALUE(ID,N,TYPE)", FuncName:"JSSymbolData::GetBKJYValue",ArgCount:3 
+    },
+    { 
+        Name:"BKJYONE", JobID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_BKJYONE,
+        Explain:"板块交易类数据BKJYONE(ID,N,Y,MMDD)", FuncName:"JSSymbolData::GetBKJYOne",ArgCount:4 
+    },
+];
 
 function JSExecute(ast,option)
 {
@@ -16940,10 +16921,15 @@ function JSExecute(ast,option)
                 return this.SymbolData.GetFinValue(jobItem);
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_FINANCE:
                 return this.SymbolData.GetFinance(jobItem);
+
+            //专业财务数据
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_GPJYVALUE:
-                return this.SymbolData.GetGPJYValue(jobItem);
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_GPJYONE:
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SCJYVALUE:
-                return this.SymbolData.GetSCJYValue(jobItem);
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SCJYONE:
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_BKJYVALUE:
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_BKJYONE:
+                return this.SymbolData.GetProFinance(jobItem);
 
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_VARIANT:    //CAPITAL, TOTALCAPITAL 
                 return this.SymbolData.GetVariantData(jobItem);
@@ -18303,10 +18289,14 @@ function JSExecute(ast,option)
                 node.Out=this.SymbolData.GetStockCacheData( {FunctionName:funcName, Args:args, ArgCount:3, Node:node } );
                 break;
             case "GPJYVALUE":
+            case "SCJYVALUE":
+            case "BKJYVALUE":
                 node.Out=this.SymbolData.GetStockCacheData( {FunctionName:funcName, Args:args, ArgCount:3, Node:node } );
                 break;
-            case "SCJYVALUE":
-                node.Out=this.SymbolData.GetStockCacheData( {FunctionName:funcName, Args:args, ArgCount:3, Node:node } );
+            case "GPJYONE":
+            case "SCJYONE":
+            case "BKJYONE":
+                node.Out=this.SymbolData.GetStockCacheData( {FunctionName:funcName, Args:args, ArgCount:4, Node:node } );
                 break;
             case "MARGIN":
                 node.Out=this.SymbolData.GetMarginCacheData(args[0],node);
@@ -25927,285 +25917,6 @@ function DownloadFinanceData(obj)
                 if (!item.capital) return null;
                 return { Date:date, Value:item.capital.a };
                
-            default:
-                return null;
-        }
-    }
-}
-
-function DownloadGPJYValue(obj)
-{
-    this.Url=obj.Url;
-    this.RealtimeUrl=obj.RealtimeUrl;
-    this.Job=obj.Job;
-    this.Symbol=obj.Symbol;
-    this.Args=obj.Args;
-    this.DataKey=obj.DataKey;
-    this.RecvCallback=obj.Callback;
-    this.ErrorCallback=obj.ErrorCallback;
-
-    this.Download=function()
-    {
-        var self=this;
-        var fieldList=this.GetFieldList();
-        if (!fieldList)
-        {
-            message=`${this.Job.FunctionName}(${this.Args[0]}, ${this.Args[1]}, ${this.Args[2]}) can't support.`;
-            this.ErrorCallback(message);
-            self.RecvCallback(null, self.Job, self.DataKey, true);
-            return;
-        }
-
-        //请求数据
-        JSNetwork.HttpRequest({
-            url: this.Url,
-            data:
-            {
-                "field": fieldList,
-                "symbol": [this.Symbol],
-                "orderfield":"date",             
-                "order":-1,   
-                "start":0,
-                "end":5
-            },
-            type:"post",
-            dataType: "json",
-            async:true,
-            success: function (recvData)
-            {
-                var data=self.ToHQChartData(recvData);
-                if (data && data.length>0) 
-                {
-                    data.sort(function (a, b) { return (a.Date-b.Date) });
-                }
-                self.RecvCallback(data, self.Job, self.DataKey);
-            }
-        });
-    }
-
-    this.GetFieldList=function()
-    {
-        var id=this.Args[0];
-        switch(id)
-        {
-            case 1: //1--股东人数 股东户数(户)           
-                return ["shareholder", "date", "symbol"];
-            case 2: //2--龙虎榜   买入总计(万元) 卖出总计(万元)
-                return ["tradedetail.buy","tradedetail.sell", "date", "symbol"];
-            case 3: //3--融资融券1 融资余额(万元) 融券余量(股)
-                return ["margin","date", "symbol"];
-            case 4: //4--大宗交易 成交均价(元) 成交额(万元)
-                return ["blocktrading.amount","blocktrading.price","date", "symbol"]
-            default:
-                return null;
-        }
-    }
-
-    this.ToHQChartData=function(recvData)
-    {
-        if (!recvData.stock || recvData.stock.length!=1) return null;
-
-        var aryData=[];
-        var setDate=new Set();  //有重复数据 去掉
-        var stock=recvData.stock[0];
-        var id=this.Args[0];
-        var subID=this.Args[1];
-        for(var i in stock.stockday)
-        {
-            var item=stock.stockday[i];
-
-            var hqchartItem=this.ToHQChartItemData(item,id,subID);
-            if (hqchartItem && !setDate.has(hqchartItem.Date)) 
-            {
-                aryData.push(hqchartItem);
-                setDate.add(hqchartItem.Date);
-            }
-        }
-
-        return aryData;
-    }
-
-    this.ToHQChartItemData=function(item, id, subID)
-    {
-        if (!item) return null;
-        var date=item.date;
-        switch(id)
-        {
-            case 1:
-                if (!item.shareholder) return null;
-                return { Date:date, Value:item.shareholder.count };
-            case 2:
-                if (!item.tradedetail && item.tradedetail[0]) return null;
-                if (subID==0)
-                    return { Date:date, Value:item.tradedetail[0].buy };
-                else 
-                    return { Date:date, Value:item.tradedetail[0].sell };
-            case 3:
-                if (!item.margin) return null;
-                if (subID==0)
-                {
-                    if (item.margin.buy)
-                        return { Date:date, Value:item.margin.buy.balance };
-                }
-                else
-                {
-                    if (item.margin.sell)
-                        return { Date:date, Value:item.margin.sell.balance };
-                }
-                return null;
-            case 4:
-                if (!item.blocktrading) return null;
-                if (subID==0)
-                    return { Date:date, Value:item.blocktrading.price };
-                else
-                    return { Date:date, Value:item.blocktrading.amount };
-            default:
-                return null;
-        }
-    }
-}
-
-
-
-/*
-引用市场总的交易类数据.如果指标支持云数据函数,则不需要[专业财务数据]下载.
-SCJYVALUE(ID,N,TYPE),ID为数据编号,N表示第几个数据,TYPE:为1表示做平滑处理,没有数据的周期返回上一周期的值;为0表示不做平滑处理
-
-市场交易类数据函数，数据编号如下:
-1--融资融券       沪深融资余额(万元) 沪深融券余额(万元)
-2--陆股通资金流入 沪股通流入金额(亿元) 深股通流入金额(亿元)
-3--沪深涨停股个数 涨停股个数  曾涨停股个数 [注：该指标展示20160926日之后的数据]
-4--沪深跌停股个数 跌停股个数  曾跌停股个数
-5--上证50股指期货  净持仓(手)[注：该指标展示20171009日之后的数据]
-6--沪深300股指期货 净持仓(手) [注：该指标展示20171009日之后的数据]
-7--中证500股指期货 净持仓(手) [注：该指标展示20171009日之后的数据]
-8--ETF基金规模数据 ETF基金规模(亿) ETF净申赎(亿)
-9--每周新增投资者 新增投资者(万户)
-10--增减持统计    增持额(万元)  减持额(万元)[注：部分公司公告滞后,造成每天查看的数据可能会不一样] 
-11--大宗交易      溢价的大宗交易额(万元) 折价的大宗交易额(万元)
-12--限售解禁      限售解禁计划额(亿元)  限售解禁股份实际上市金额(亿元)[注：该指标展示201802月之后的数据;部分股票的解禁日期延后，造成不同日期提取的某天的计划额可能不同]
-13--分红          市场总分红额(亿元)[注：除权派息日的A股市场总分红额] 
-14--募资          市场总募资额(亿元)[注：发行日期/除权日期的首发、配股和增发的总募资额] 
-15--打板资金    封板成功资金(亿元) 封板失败资金(亿元) [注：该指标展示20160926日之后的数据]
-*/
-function DownloadSCJYValue(obj)
-{
-    this.Url=obj.Url;
-    //this.RealtimeUrl=obj.RealtimeUrl;
-    this.Job=obj.Job;
-    this.Symbol=obj.Symbol;
-    this.Args=obj.Args;
-    this.DataKey=obj.DataKey;
-    this.RecvCallback=obj.Callback;
-    this.ErrorCallback=obj.ErrorCallback;
-    
-    this.Download=function()
-    {
-        var self=this;
-        var query=this.GetQueryCondtion();
-        if (!query)
-        {
-            message=`${this.Job.FunctionName}(${this.Args[0]}, ${this.Args[1]}, ${this.Args[2]}) can't support.`;
-            this.ErrorCallback(message);
-            self.RecvCallback(null, self.Job, self.DataKey, true);
-            return;
-        }
-
-        //请求数据
-        JSNetwork.HttpRequest({
-            url: this.Url,
-            data:
-            {
-                "field": query.Field,
-                "symbol": query.Symbol,
-                "condition":query.Cond ,
-                "start": 0,
-                "end": 2000
-            },
-            type:"post",
-            dataType: "json",
-            async:true,
-            success: function (recvData)
-            {
-                var data=self.ToHQChartData(recvData);
-                if (data) //排序
-                    data.sort(function (a, b) { return (a.Date - b.Date) });
-
-                self.RecvCallback(data, self.Job, self.DataKey);
-            }
-        });
-
-    }
-
-    this.GetQueryCondtion=function()
-    {
-        var day=new Date();
-        var endDate=day.getFullYear()*10000+(day.getMonth()+1)*100+day.getDate();
-        day.setDate(day.getDate()-100); //取最近1000条数据
-        var startDate=day.getFullYear()*10000+(day.getMonth()+1)*100+day.getDate()
-        var id=this.Args[0];
-        switch(id)
-        {
-            case 1:
-                var data=
-                {
-                    Symbol:["CNA.ci"],
-                    Field:["margin"], 
-                    Cond:
-                    [
-                        {"item":["date","int32","gte",startDate.toString(),"lte",endDate.toString()]}, 
-                        {"item":["margin","doc","exists","true"]}
-                    ]
-                }
-                return data;
-        }
-    }
-
-    this.ToHQChartData=function(recvData)
-    {
-        if (!recvData.stock || recvData.stock.length!=1) return null;
-
-        var aryData=[];
-        var setDate=new Set();  //有重复数据 去掉
-        var stock=recvData.stock[0];
-        var id=this.Args[0];
-        var subID=this.Args[1];
-        for(var i in stock.stockday)
-        {
-            var item=stock.stockday[i];
-
-            var hqchartItem=this.ToHQChartItemData(item,id,subID);
-            if (hqchartItem && !setDate.has(hqchartItem.Date)) 
-            {
-                aryData.push(hqchartItem);
-                setDate.add(hqchartItem.Date);
-            }
-        }
-
-        return aryData;
-    }
-
-    this.ToHQChartItemData=function(item, id, subID)
-    {
-        if (!item) return null;
-        var date=item.date;
-        var subItem=null;
-        switch(id)
-        {
-            case 1:
-                if (!item.margin) return null;
-                subItem=item.margin;
-                if (subID==1)
-                {
-                    if (!subItem.buy || !IFrameSplitOperator.IsNumber(subItem.buy.balance)) return null;
-                    return { Date:date, Value:subItem.buy.balance }
-                }
-                else
-                {
-                    if (!IFrameSplitOperator.IsNumber(subItem.sell.balance)) return null;
-                    return { Date:date, Value:subItem.sell.balance }
-                }
-                
             default:
                 return null;
         }

@@ -7076,6 +7076,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         if (!paint) return;
 
         var data=this.ChartPaint[0].Data;
+        var count=data.Data.length;
+        if (end>=count) end=count-1;
         var startItem=data.Data[start];
         var endItem=data.Data[end];
 
@@ -79665,6 +79667,8 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         if (end>=count) end=count-1;
         var endItem=data.Data[end];
 
+        if (!startItem || !endItem) return;
+
         JSConsole.Chart.Log('[MinuteChartContainer::UpdateSelectRect]',startItem,endItem);
         paint.SetPoint(startItem, { Index:0 });
         paint.SetPoint(endItem, { Index:1 });
@@ -89757,8 +89761,10 @@ function MinuteSelectRectDialog(divElement)
             if(showData.Low>item.Low) showData.Low=item.Low;
         }
 
+        if (showData.Count<=0) return false;
+
         if (showData.Vol>0) showData.AvPrice=showData.Amount/showData.Vol;  //均价
-        if (item.Open>0)
+        if (showData.Open>0)
         {
             showData.Increase = (showData.Close - showData.Open) / showData.Open *100;   //区间涨幅
             showData.Amplitude = (showData.High - showData.Low) / showData.Open * 100;   //区间振幅
@@ -89801,6 +89807,8 @@ function MinuteSelectRectDialog(divElement)
 
         $(".parameter-content").html(div);
         this.BindEvent();
+
+        return true;
     }
 
     this.BindEvent = function () 
@@ -89844,7 +89852,7 @@ function MinuteSelectRectDialog(divElement)
         this.RectSelectPaint=event.data.RectSelectPaint;
         this.HQChart=chart;
         this.HQChart.HideSelectRect();
-        this.BindData();
+        if (!this.BindData()) return;
 
         this.Show();      //通过CSS居中显示
     }
