@@ -274,6 +274,11 @@ function JSReportChart(divElement)
         if (this.JSChartContainer) this.JSChartContainer.SetColumn(aryColumn,option);
     }
 
+    this.SetSelectedRow=function(option)
+    {
+        if (this.JSChartContainer) this.JSChartContainer.SetSelectedRow(option);
+    }
+
     this.EnableFilter=function(bEnable, option) //启动|关闭筛选
     {
         if (this.JSChartContainer) this.JSChartContainer.EnableFilter(bEnable, option);
@@ -793,6 +798,16 @@ function JSReportChartContainer(uielement)
     {
         this.SortInfo.Field=-1;
         this.SortInfo.Sort=0;
+    }
+
+    this.SetSelectedRow=function(option)
+    {
+        var reportChart=this.GetReportChart();
+        if (!reportChart) return false;
+
+        if (!reportChart.SetSelectedRow(option)) return false;
+
+        this.Draw();
     }
 
     //设置股票列表
@@ -7482,6 +7497,54 @@ function ChartReport()
         } 
 
         return null;
+    }
+
+    //设置选中行 data={ Symbol:, AutoYScroll:true/false Y滚动条自定定位 }
+    this.SetSelectedRow=function(option)
+    {
+        if (!option) return false;
+        if (this.SelectedModel===0) return false;
+
+        if (option.Symbol)
+        {
+            var symbol=option.Symbol;
+            var bFinder=false;
+            for(var i=0;i<this.Data.Data.length;++i)
+            {
+                var item=this.Data.Data[i];
+                if (symbol==item)
+                {
+                    this.SelectedRow=i;
+                    bFinder=true;
+                    break;
+                }
+            }
+
+            if (!bFinder) return false;
+
+            if (option.AutoYScroll===true)
+            {
+               this.UpdatePageYOffset({ SelectedRow:this.SelectedRow });
+            }
+
+            return bFinder;
+        }
+
+
+        return false;
+    }
+
+    this.UpdatePageYOffset=function(option)
+    {
+        if (!option) return;
+        var selectedRow=option.SelectedRow;
+        if (selectedRow<0) return;
+
+        var pageStatus=this.GetCurrentPageStatus();
+        if (pageStatus.IsSinglePage) return;
+        if (selectedRow>=pageStatus.Start && selectedRow<=pageStatus.End) return;
+
+        this.Data.YOffset=selectedRow; //选中行不在当前屏 设置为第1行
     }
 }
 

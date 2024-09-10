@@ -488,7 +488,7 @@ function JSChartResource()
                     if (subItem.Color) this.Minute.NightDay.Night.Color=subItem.Color;
                     if (subItem.BGColor) this.Minute.NightDay.Night.BGColor=subItem.BGColor;
                     if (subItem.BorderColor) this.Minute.NightDay.Night.BorderColor=subItem.BorderColor;
-                    CopyMargJSChartResource.CopyMargininConfig(this.Minute.NightDay.Night.Margin,subItem.Margin);
+                    JSChartResource.CopyMargin(this.Minute.NightDay.Night.Margin,subItem.Margin);
                 }
             }
         }
