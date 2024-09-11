@@ -44016,6 +44016,17 @@ function RectSelectPaint()
     this.AreaColor=g_JSChartResource.RectSelect.AreaColor;          //面积
     this.SubAreaColor=g_JSChartResource.RectSelect.SubAreaColor;
 
+    //标记图标
+    this.MarkConfig=
+    {  
+        Family:g_JSChartResource.RectSelect.Mark.Family, 
+        Text:g_JSChartResource.RectSelect.Mark.Text, 
+        Color:g_JSChartResource.RectSelect.Mark.Color, 
+        Size:g_JSChartResource.RectSelect.Mark.Size, 
+        IsShow:false, 
+        Position: { Index:g_JSChartResource.RectSelect.Mark.Position.Index, Top:g_JSChartResource.RectSelect.Mark.Position.Top } 
+    }
+
     this.FirstPoint;
     this.SecondPoint;
     this.CenterPoint;
@@ -44062,6 +44073,17 @@ function RectSelectPaint()
                 if (IFrameSplitOperator.IsBool(item.Enable)) this.ShowRangeText.Enable=item.Enable;
                 if (IFrameSplitOperator.IsNumber(item.Position)) this.ShowRangeText.Position=item.Position;
                 if (IFrameSplitOperator.IsNumber(item.SubPosition)) this.ShowRangeText.SubPosition=item.SubPosition;
+            }
+
+            if (option.Mark)
+            {
+                var item=option.Mark;
+                if (IFrameSplitOperator.IsBool(item.IsShow)) this.MarkConfig.IsShow=item.IsShow;
+                if (item.Position)
+                {
+                    if (IFrameSplitOperator.IsNumber(item.Position.Index)) this.MarkConfig.Position.Index=item.Position.Index;
+                    if (item.Position.Top) this.MarkConfig.Position.Top=item.Position.Top;
+                }
             }
         }
     }
@@ -44535,6 +44557,7 @@ function RectSelectPaint()
 
         this.DrawLines(aryLines);
         this.DrawArea(startPoint, endPoint, startDate, startEnd, this.AreaColor);
+        this.DrawMark(startPoint, endPoint);
 
         if (this.SubClient && this.SubClient.Start && this.SubClient.End)
         {
@@ -44767,6 +44790,45 @@ function RectSelectPaint()
 
             if (IFrameSplitOperator.IsNumber(type)) this.DragRect.push( {Rect:rtArea, Type:type} );
         }
+    }
+
+    this.DrawMark=function(startPoint,endPoint)
+    {
+        if (!startPoint ||!endPoint) return;
+
+        if (!this.ChartFrame || !this.ChartFrame.SubFrame) return;
+        var subFrame=this.ChartFrame.SubFrame[0].Frame;
+        if (!subFrame) return;
+
+        if (!this.MarkConfig) return;
+        var config=this.MarkConfig;
+        if (!config.IsShow) return;
+
+        var font=`${config.Size}px ${config.Family}`;
+        this.Canvas.font=font;
+        var top=null;
+        switch(config.Position.Top)
+        {
+            case "TopEx":
+                top=subFrame.ChartBorder.GetTopEx();
+                break;
+            case "Top":
+                top=subFrame.ChartBorder.GetTop();
+                break;
+            case "TopTitle":
+                top=subFrame.ChartBorder.GetTopTitle();
+                break;
+            default:
+                return;
+        }
+       
+        var xText=startPoint.X;
+        var yText=top;
+
+        this.Canvas.textAlign="center";
+        this.Canvas.textBaseline="bottom";
+        this.Canvas.fillStyle=config.Color;
+        this.Canvas.fillText(config.Text,xText,yText);
     }
 }
 
@@ -68896,6 +68958,8 @@ function JSChartResource()
         RangeTextSubColor:"rgb(255,255,255)",
         RangeTextSubFont:12*GetDevicePixelRatio() +"px 微软雅黑",
         RangeTextSubBGColor:'rgb(54,54,54)',
+
+        Mark:{ Family:'iconfont', Text:'\ue695' , Color:'rgb(250,0,0)', Size:15*GetDevicePixelRatio(), Position:{ Index:0, Top:"TopEx" } }
     }
 
     //选中图形
@@ -69752,6 +69816,20 @@ function JSChartResource()
             if (item.RangeTextSubColor) this.RectSelect.RangeTextSubColor=item.RangeTextSubColor;
             if (item.RangeTextSubFont) this.RectSelect.RangeTextSubFont=item.RangeTextSubFont;
             if (item.RangeTextSubBGColor) this.RectSelect.RangeTextSubBGColor=item.RangeTextSubBGColor;
+
+            if (item.Mark)
+            {
+                var subItem=item.Mark;
+                if (subItem.Family) this.RectSelect.Mark.Family=subItem.Family;
+                if (subItem.Text) this.RectSelect.Mark.Text=subItem.Text;
+                if (subItem.Color) this.RectSelect.Mark.Color=subItem.Color;
+                if (IFrameSplitOperator.IsNumber(subItem.Size)) this.RectSelect.Mark.Size=subItem.Size;
+                if (subItem.Position)
+                {
+                    if (subItem.Position.Top) this.RectSelect.Mark.Position.Top=subItem.Position.Top;
+                    if (IFrameSplitOperator.IsNumber(subItem.Position.Index)) this.RectSelect.Mark.Position.Index=subItem.Position.Index;
+                }
+            }
         }
 
         if (style.RectDrag)
@@ -72327,6 +72405,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         if (!this.PopMinuteChart) return;
         if (!data.Tooltip || !data.Chart) return;
 
+        var pixelRatio=GetDevicePixelRatio();
         var rtClient=this.UIElement.getBoundingClientRect();
         var rtScroll=GetScrollPosition();
 
@@ -72336,7 +72415,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         var date=data.Tooltip.Data.Date;
         var symbol=data.Chart.Symbol;
 
-        this.PopMinuteChart.Show({ Date:date, Symbol:symbol, Data:data.Tooltip.Data }, x,y);
+        this.PopMinuteChart.Show({ Date:date, Symbol:symbol, Data:data.Tooltip.Data }, x/pixelRatio,y/pixelRatio);
     }
 
    

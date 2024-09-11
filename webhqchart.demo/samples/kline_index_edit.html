@@ -264,6 +264,7 @@
                     
                     //Info:["互动易","大宗交易",'龙虎榜',"调研","业绩预告","公告"],       //信息地雷
                     //Info:["公告"], 
+                    //InfoPosition:0,
                     IsShowTooltip:true,                 //是否显示K线提示信息
                     DrawType:0,      //K线类型 0=实心K线柱子 1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积图
                     //FirstShowDate:20161201,
@@ -290,6 +291,11 @@
                 EnableIndexChartDrag:true,
 
                 GlobalOption:{ SelectedBorder:{ Mode:1} },
+
+                SelectRect:
+                {
+                    Mark:{ IsShow:true, Position:{ Top:"TopEx" } }
+                },
     
                 KLineTitle: //标题设置
                 {
@@ -408,6 +414,7 @@
                 resource.DownBarColor='rgb(84,255,255)';
                 resource.Frame.XBottomOffset=4;
                 resource.IndexTitleMerginLeft=3*GetDevicePixelRatio();
+                resource.DOTLINE.LineDash=[10,10];
                 //resource.IndexTitle.ArrowType=1;
                 resource.IndexTitle.EnableIndexArrow=false;
 
@@ -564,7 +571,7 @@
                 var hqchart=data.HQChart;
                 var kData=hqchart.ChartPaint[0].Data;
 
-                var closeLine={ name:'价', type:0, data:kData.GetClose() };
+                var closeLine={ name:'价', type:0, data:kData.GetClose(), color:"rgb(255, 52, 179)" };
 
                 var apiData=
                 {
@@ -742,6 +749,29 @@
                     info.AreaData={  Value:[9.0, 10.0], BGColor:"rgba(125, 212, 251,0.5)", Position:[0, 1 ] }
                     data.Frame.CustomHorizontalInfo.push(info);
                     
+                }
+                else if (data.ID==1)
+                {
+                    /*
+                    var info=new CoordinateInfo();
+                    info.Type=10;
+                    info.Value="TopEx";
+                    info.LineColor="rgb(255,0,0)";
+                    info.LineType=-1;
+                    info.ExtendLine=[null,{Width:20}]
+                    info.Message=[null, "顶部刻度 888"]
+                    
+                    data.Frame.CustomHorizontalInfo.push(info);
+
+                    var info=new CoordinateInfo();
+                    info.Type=10;
+                    info.Value="BottomEx";
+                    info.LineColor="rgb(0,255,0)";
+                    info.TextColor="rgb(0,0,0)";
+                    info.Message=[null, "底部刻度 666"]
+                    
+                    data.Frame.CustomHorizontalInfo.push(info);
+                    */
                 }
             }
 
@@ -1264,12 +1294,22 @@
                 else
                 {
                     var menuItem=this.Chart.JSChartContainer.GetShowIndexMenuData(data.Info.FrameID);
+                    var frame=this.Chart.JSChartContainer.Frame.SubFrame[data.Info.FrameID].Frame;
+
                     var menuData=
                     { 
                         Menu:
                         [ 
                             menuItem,
-                            { Name:"设置2", ID:"INDEX_DRAPDOWN_MENU_2", Data:{ WindowIndex:data.Info.FrameID } },  
+                            { 
+                                Name:"Y轴分割方式", 
+                                SubMenu:
+                                [
+                                    { Name:"自动", Data:{ ID:"CHANGE_Y_SPLIT_TYPE", Args:[data.Info.FrameID, 0] }, Checked:frame.YSplitOperator.SplitType===0 },
+                                    { Name:"数值最大最小", Data:{ ID:"CHANGE_Y_SPLIT_TYPE", Args:[data.Info.FrameID, 1] },Checked:frame.YSplitOperator.SplitType===1  },
+                                ]
+                            },
+                            { Name:"设置2",  Data:{ ID:"INDEX_DRAPDOWN_MENU_2", WindowIndex:data.Info.FrameID } },  
                         ],
 
                         Position:JSPopMenu.POSITION_ID.TAB_MENU_ID,
@@ -1278,7 +1318,6 @@
                     };
                 }
                
-
                 this.Chart.PopupMenuByDrapdown(menuData, rtButton);
 
                 if(e.preventDefault) e.preventDefault();
@@ -1293,11 +1332,19 @@
                 {
                     this.Chart.JSChartContainer.ExecuteMenuCommand(menuData.Data.ID, menuData.Data.Args);
                 }
+                else if (menuData.Data.ID=="CHANGE_Y_SPLIT_TYPE")
+                {
+                    var frameID=menuData.Data.Args[0];
+                    var frame=this.Chart.JSChartContainer.Frame.SubFrame[frameID].Frame;
+                    frame.YSplitOperator.SplitType=menuData.Data.Args[1];
+                    this.Chart.JSChartContainer.ResetFrameXYSplit();
+                    this.Chart.JSChartContainer.Draw();
+                }
                 else
                 {
                     console.log("[KLineChart::OnClickIndexDrapdownMenu] menuData=", menuData);
 
-                    var text=`指标下拉菜单\r\n窗口:${menuData.Data.WindowIndex}\r\n菜单ID:${menuData.ID}`;
+                    var text=`指标下拉菜单\r\n窗口:${menuData.Data.WindowIndex}\r\n菜单ID:${menuData.Data.ID}`;
                     alert(text);
                 }
                 

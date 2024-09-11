@@ -110,6 +110,7 @@
 
     <script src="../jscommon/umychart.testdata/60000.sh.day.minute.js"></script>
     <script src="../jscommon/umychart.testdata/60000.sh.5day.minute.js"></script>
+    <script src="../jscommon/umychart.testdata/60000.sh.1day.kline.js"></script>
 
     <script src="../jscommon/umychart.testdata.js"></script>
    
@@ -140,7 +141,7 @@
 
                 Windows: //窗口指标
                 [
-                    { Index:"MACD" }
+                    { Index:"RSI" }
                 ], 
 
                 OverlayIndex:
@@ -176,9 +177,17 @@
 
                 SelectRect:
                 {
-                    ShowRangeText:{ Enable:true, Position:1 }
+                    ShowRangeText:{ Enable:true, Position:1 },
+                    //Mark:{ IsShow:true }
                 },
                 
+                /*
+                DragSelectRect:
+                {
+                    Enable:true
+                },
+                */
+
                 MinuteLine:
                 {
                     IsDrawAreaPrice:true,      //是否画价格面积图
@@ -210,11 +219,12 @@
                 EnableIndexChartDrag:true,
 
                 EnableSelectRect:true,
+                EnableNightDayBG:true,
     
                 Border: //边框
                 {
-                    Left:50,    //左边间距
-                    Right:20,     //右边间距
+                    Left:80,    //左边间距
+                    Right:1,     //右边间距
                     Top:25,
                     Bottom:25,
 
@@ -224,7 +234,10 @@
                 
                 Frame:  //子框架设置
                 [
-                    { SplitCount:5,  IsShowLeftText:true ,RightTextFormat:0,YTextBaseline:1, IsShowYLine:true,
+                    { 
+                        SplitCount:5,  IsShowLeftText:true ,RightTextFormat:0,YTextBaseline:1, IsShowYLine:true,
+                        //HorizontalReserved:{ Top:4, Bottom:20},
+                        //BottomSpace:40,
                         Custom:
                         [
                             
@@ -233,7 +246,7 @@
                             }
                         ]
                     },
-                    { SplitCount:5 },
+                    { SplitCount:5,},
                     { SplitCount:5 },
                     { SplitCount:11, IsShowXLine:false },
                 ],
@@ -283,6 +296,14 @@
                         event:JSCHART_EVENT_ID.ON_MENU_COMMAND,
                         callback:(event, data, obj)=>{ this.OnMenuCommand(event, data, obj); }
                     },
+                    {
+                        event:JSCHART_EVENT_ID.ON_CUSTOM_MINUTE_NIGHT_DAY_X_INDEX,
+                        callback:(event, data, obj)=>{ this.OnCustomNightDayXIndex(event, data, obj); }
+                    },
+                    {
+                        event:JSCHART_EVENT_ID.ON_CUSTOM_MINUTE_BG,
+                        callback:(event, data, obj)=>{ this.OnCustomMinuteBG(event, data, obj); }
+                    }
                 ];
 
                 this.Chart.SetOption(this.Option);  //设置K线配置
@@ -402,6 +423,29 @@
             this.OnMenuCommand=function(event, data, obj)
             {
                 console.log("[KLineChart::OnMenuCommand] data=", data);
+            }
+
+            this.OnCustomNightDayXIndex=function(event, data, obj)
+            {
+                //data.XIndex=120;
+            }
+
+            this.OnCustomMinuteBG=function(event, data, obj)
+            {
+                return;
+                
+                if (data.DayCount==1) 
+                {
+                    data.AryDay[0].BGColor="rgb(100,100,0)";    //设置背景
+                }
+                else if (data.DayCount>1)
+                {
+                    for(var i=0;i<data.AryDay.length;++i)
+                    {
+                        var item=data.AryDay[i];
+                        if (i>=2) item.BGColor="rgb(219,112,147)";  //设置背景
+                    }
+                }
             }
 
             this.OnSize=function(option)  //自适应大小调整
@@ -692,6 +736,10 @@
 
         $(function () 
         {
+            var a=4664.7300000000004, b=4664.73;
+            var test=NumberCompare.LT(a,b);
+            var test2=NumberCompare.GT(a,b);
+
             const font = new FontFace("iconfont",`url('../jscommon/umychart.resource/font/iconfont.woff?t=1690947130935') format('woff')`);
             document.fonts.add(font);    //把字体添加到 document.font（FontFaceSet）中
             font.load();    // 加载字体
