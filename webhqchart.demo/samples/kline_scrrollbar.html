@@ -14,16 +14,11 @@
     <div id="kscrollbar"></div>
 
     <div>
-        <span id='button_1' class="btn-style">切换股票</span>
-        <span id='button_3' class="btn-style">窗口个数</span>
-        <span id='button_4' class="btn-style">叠加指标</span>
-        <span id='button_5' class="btn-style">切换指标</span>
-        <span id='button_6' class="btn-style">切换自定义指标</span>
-        <span id='button_7' class="btn-style">RSI</span>
-        <span id='button_8' class="btn-style">移动指标[下]</span>
-        <span id='button_9' class="btn-style" >移动指标[上]</span>
-        <span id='button_10' class="btn-style">移动指标[新窗口]</span>
-        <span id='button_11' class="btn-style">多语言</span>
+        <span id='button_1' class="btn-style">600000.SH</span>
+        <span id='button_5' class="btn-style">000001.SH</span>
+        <span id='button_2' class="btn-style">日K</span>
+        <span id='button_3' class="btn-style">1M</span>
+        <span id='button_4' class="btn-style">5M</span>
     </div>
 
     <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
@@ -35,6 +30,8 @@
     <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
     <script src="../jscommon/umychart.scrollbar.js"></script>   <!-- 滚动条 -->
 
+    <script src="../jscommon/umychart.testdata/DayKLine/000001.sh.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/000001.sh.minute.kline.js"></script>
     <script src="../jscommon/umychart.NetworkFilterTest.js"></script>
     
     <script>
@@ -58,10 +55,10 @@
                 
                 Windows: //窗口指标
                 [
-                    {Index:"MA" , OverlayIndexType:{ Position:1, LineSpace:3 }, Overlay:true , Export:true, IndexParamSpace:15, IndexTitleSpace:15},
+                    {Index:"MA"},
                     //{Index:"OX", Args:[ { Name:'Reversal', Value:3 } ] }, 
-                    {Index:"MACD",OverlayIndexType:{ Position:1, LineSpace:3 }},
-                    {Index:"VOL", OverlayIndexType:{ Position:1, LineSpace:3 }},
+                    {Index:"MACD"},
+                    {Index:"VOL"},
                     
                 ], 
 
@@ -110,7 +107,7 @@
                 {
                     DragMode:1,                 //拖拽模式 0=禁止拖拽 1=数据拖拽 2=区间选择
                     Right:0,                    //复权 0 不复权 1 前复权 2 后复权
-                    Period:0,                   //周期 0 日线 1 周线 2 月线 3 年线 
+                    Period:4,                   //周期 0 日线 1 周线 2 月线 3 年线 
                     MaxRequestDataCount:2000,   //数据个数
                     MaxRequestMinuteDayCount:5, //分钟数据获取几天数据  默认取5天数据
                     PageSize:30,               //一屏显示多少数据
@@ -181,12 +178,6 @@
                                 Position:'right',LineType:-1, //CountDown:true 
                                 //PositionEx:1,
                             },
-
-                            { 
-                                Type:1,
-                                Position:'right',LineType:1, 
-                                Data:[{ Value:7.22, Color:"rgb(50,100,100)", TextColor:"rgb(100,0,0)", Text:[{Text:"第1行"}, {Text:"第2行"}]}]
-                            },
                         ]
                     },
 
@@ -234,7 +225,7 @@
                     Left:50,         //左边间距
                     Right:50,       //右边间距
                     Bottom:25,      //底部间距
-                    Top:1,         //顶部间距
+                    Top:10,         //顶部间距
 
                     AutoLeft:true,
                     AutoRight:true
@@ -281,7 +272,7 @@
 
             this.OnSize=function(option)  //自适应大小调整
             {
-                var height= $(window).height()-150;
+                var height= $(window).height()-160;
                 var width = $(window).width();
                 //width=50000;
                 this.DivKLine.style.top='0px';
@@ -291,7 +282,7 @@
                 this.Chart.OnSize(option);
 
                 this.DivScrollBar.style.width=width+'px';
-                this.DivScrollBar.style.height='100px';
+                this.DivScrollBar.style.height='120px';
                 this.Scrollbar.OnSize(option);
             }
 
@@ -316,7 +307,11 @@
             var klineControl=new KLineChart(document.getElementById('kline'),document.getElementById('kscrollbar'));
             klineControl.Create();
 
-            $("#button_1").click(function() { klineControl.ChangeSymbol("000001.sz"); } );
+            $("#button_1").click(function() { klineControl.ChangeSymbol("600000.sh"); } );
+            $("#button_5").click(function() { klineControl.ChangeSymbol("000001.sh"); } );
+            $("#button_2").click(function() { klineControl.Chart.ChangePeriod(0); } );
+            $("#button_3").click(function() { klineControl.Chart.ChangePeriod(4); } );
+            $("#button_4").click(function() { klineControl.Chart.ChangePeriod(5); } );
         })
 
     </script>  
@@ -342,6 +337,7 @@
     border-radius: 5px;
     background-color: #f5f5f5;
     cursor: pointer;
+    line-height: 30px;
 }
 
     
