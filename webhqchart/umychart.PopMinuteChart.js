@@ -114,7 +114,7 @@ function JSPopMinuteChart()
     this.Show=function(data, x,y)
     {
         if (!this.DivDialog) this.Create();
-        if (!data.Symbol || !IFrameSplitOperator.IsPlusNumber(data.Date));
+        if (!data.Symbol || !IFrameSplitOperator.IsPlusNumber(data.Date)) return;
 
         this.Date=data.Date;
         var name=data.Symbol;

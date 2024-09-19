@@ -342,7 +342,7 @@ function GetWhiteStyle()
 
         KLine:
         {
-            MaxMin: { Font: '12px 微软雅黑', Color: 'rgb(111,111,111)' },   //K线最大最小值显示
+            MaxMin: { Font: '12px 微软雅黑', Color: 'rgb(111,111,111)', RightArrow:"→", LeftArrow:"←", HighYOffset:0, LowYOffset:0 },   //K线最大最小值显示
             Info:  //信息地雷
             {
                 Color: 'rgb(205,149,12)',

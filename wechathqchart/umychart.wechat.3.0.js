@@ -7979,10 +7979,31 @@ function KLineChartContainer(uielement)
 
     this.RequestDragMinuteData = function () 
     {
+        var option=
+        {
+            FuncName:'KLineChartContainer::RequestDragMinuteData',
+            FuncExplain:"拖拽分钟|秒K线数据下载",
+            RecvFuncName:"RecvDragMinuteData",
+            Download:this.DragDownload.Minute,
+            Url:this.DragMinuteKLineApiUrl,
+            Count:this.MaxRequestMinuteDayCount,
+            XShowCount:this.Frame.GetXShowCount(),
+        };
+
+        this.RequestPreviousMinuteData(option);
+    }
+
+    this.RequestPreviousMinuteData=function(option)
+    {
+        var funcName=option.FuncName;
+        var funcExplain=option.FuncExplain;
+        var download=option.Download;
+        var url=option.Url;
+        var count=option.Count; //请求数据个数
+
         var self = this;
-        this.AutoUpdateEvent(false, 'KLineChartContainer::RequestDragMinuteData');   //停止自动更新
+        this.AutoUpdateEvent(false, funcName);   //停止自动更新
         this.CancelAutoUpdate();
-        var download = this.DragDownload.Minute;
         download.Status = 1;
         var firstItem=null;
         if (IFrameSplitOperator.IsNonEmptyArray(this.SourceData.Data))
@@ -7996,63 +8017,100 @@ function KLineChartContainer(uielement)
             "symbol": self.Symbol,
             "enddate": firstItem.Date,
             "endtime": firstItem.Time,
-            "count": self.MaxRequestMinuteDayCount,
+            "count": count,
             "first": { date: firstItem.Date, time: firstItem.Time },
         };
 
-        if (this.NetworkFilter) {
+        if (IFrameSplitOperator.IsNonEmptyArray(this.OverlayChartPaint))
+        {
+            postData.overlay=[];
+            for(var i=0;i<this.OverlayChartPaint.length;++i)
+            {
+                var item=this.OverlayChartPaint[i];
+                postData.overlay.push({ symbol:item.Symbol });
+            }
+        }
+
+        if (this.NetworkFilter) 
+        {
             var obj =
             {
-                Name: 'KLineChartContainer::RequestDragMinuteData', //类名::函数
-                Explain: '拖拽分钟|秒K线数据下载',
-                Request: { Url: this.DragMinuteKLineApiUrl, Type: 'POST', Data: postData, Period:this.Period, Right:this.Right },
+                Name: funcName, //类名::函数
+                Explain: funcExplain,
+                Request: { Url: url, Type: 'POST', Data: postData, Period:this.Period, Right:this.Right },
                 DragDownload: download,
+                Option:option,
                 Self: this,
+                ZoomData:option.ZoomData,
                 PreventDefault: false
             };
-            this.NetworkFilter(obj, function (data) {
-                self.RecvDragMinuteData(data);
+
+            this.NetworkFilter(obj, function (data) 
+            {
+                self.RecvPreviousMinuteData(data, option);
                 download.Status = 0;
-                self.AutoUpdateEvent(true, 'KLineChartContainer::RequestDragMinuteData');   //自动更新
+                self.AutoUpdateEvent(true, funcName);   //自动更新
                 self.AutoUpdate();
             });
 
             if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
         }
-
-        JSNetwork.HttpRequest({
-            url: this.DragMinuteKLineApiUrl,
-            data: postData,
-            method: 'POST',
-            dataType: "json",
-            async: true,
-            success: function (data) {
-                self.RecvDragMinuteData(data);
-                download.Status = 0;
-                self.AutoUpdateEvent(true, 'KLineChartContainer::RequestDragMinuteData');   //自动更新
-                self.AutoUpdate();
-            }
-        });
     }
 
-    this.RecvDragMinuteData = function (recvdata) 
+    //分钟K线拖动 !!没有做叠加分钟K线
+    this.RecvPreviousMinuteData=function(recvdata, option)
     {
+        var download=option.Download;
         var data=recvdata.data;
         var aryDayData = KLineChartContainer.JsonDataToMinuteHistoryData(data);
-        var lastDataCount = this.GetHistoryDataCount();   //保存下上一次的数据个数
-
-        for (var i=0; i<aryDayData.length; ++i)    //数据往前插
+        if (!aryDayData || aryDayData.length<=0)
         {
-            var item = aryDayData[i];
-            this.SourceData.Data.splice(i, 0, item);
+            download.IsEnd=true; 
+            JSConsole.Chart.Log(`[KLineChartContainer.RecvPreviousMinuteData] ${this.Symbol} data end. FuncName=${option.FuncName}`);
+            this.Draw();
+            return;
         }
 
-        var bindData = new ChartData();
-        bindData.Data = this.SourceData.Data;
-        bindData.Period = this.Period;
-        bindData.Right = this.Right;
-        bindData.DataType = this.SourceData.DataType;
-        bindData.Symbol = this.Symbol;
+        var lastDataCount = this.GetHistoryDataCount();   //保存下上一次的数据个数
+        var endIndex=null;
+        if (IFrameSplitOperator.IsNonEmptyArray(this.SourceData.Data))
+        {
+            var firstData=this.SourceData.Data[0];
+            for(var i=aryDayData.length-1;i>=0;--i)
+            {
+                var item=aryDayData[i];
+                if (firstData.Date>item.Date || (firstData.Date==item.Date && firstData.Time>item.Time)) 
+                {
+                    endIndex=i;
+                    break;
+                }
+                else if (firstData.Date==item.Date && firstData.Time==item.Time)
+                {
+                    firstData.YClose=item.YClose;
+                    endIndex=i-1;
+                    break;
+                }
+            }
+        }
+        else
+        {
+            endIndex=aryDayData.length-1;
+        }
+        
+        if (endIndex==null && endIndex<0) return;
+
+        for(var i=0;i<aryDayData.length && i<=endIndex;++i)    //数据往前插
+        {
+            var item=aryDayData[i];
+            this.SourceData.Data.splice(i,0,item);
+        }
+
+        var bindData=new ChartData();
+        bindData.Data=this.SourceData.Data;
+        bindData.Period=this.Period;
+        bindData.Right=this.Right;
+        bindData.DataType=this.SourceData.DataType;
+        bindData.Symbol=this.Symbol;
 
         if (!this.IsApiPeriod)
         {
@@ -8085,8 +8143,31 @@ function KLineChartContainer(uielement)
 
     this.RequestDragDayData = function () 
     {
+        var option=
+        {
+            FuncName:'KLineChartContainer::RequestDragDayData',
+            FuncExplain:"拖拽日K数据下载",
+            RecvFuncName:"RecvDragDayData",
+            Download:this.DragDownload.Day,
+            Url:this.DragKLineApiUrl,
+            Count:this.MaxRequestDataCount,
+            XShowCount:this.Frame.GetXShowCount(),
+        };
+
+        this.RequestPreviousDayData(option);
+    }
+
+    //请求拖动或缩放的日线历史数据
+    this.RequestPreviousDayData=function(option)
+    {
+        var funcName=option.FuncName;
+        var funcExplain=option.FuncExplain;
+        var download=option.Download;
+        var url=option.Url;
+        var count=option.Count; //请求数据个数
+
         var self = this;
-        this.AutoUpdateEvent(false, 'KLineChartContainer::RequestDragDayData');   //停止自动更新
+        this.AutoUpdateEvent(false, funcName);   //停止自动更新
         this.CancelAutoUpdate();
         var download = this.DragDownload.Day;
         download.Status = 1;
@@ -8101,7 +8182,7 @@ function KLineChartContainer(uielement)
             "field": ["name", "symbol", "yclose", "open", "price", "high", "low", "vol"],
             "symbol": self.Symbol,
             "enddate": firstItem.Date,
-            "count": self.MaxRequestDataCount,
+            "count": count,
             "first": { date: firstItem.Date }
         };
 
@@ -8115,62 +8196,75 @@ function KLineChartContainer(uielement)
             }
         }
 
-        if (this.NetworkFilter) {
+        if (this.NetworkFilter) 
+        {
             var obj =
             {
-                Name: 'KLineChartContainer::RequestDragDayData', //类名::函数
-                Explain: '拖拽日K数据下载',
-                Request: { Url: this.DragKLineApiUrl, Type: 'POST', Data: postData , Period:this.Period, Right:this.Right },
+                Name: funcName, //类名::函数
+                Explain: funcExplain,
+                Request: { Url: url, Type: 'POST', Data: postData , Period:this.Period, Right:this.Right },
                 DragDownload: download,
+                Option:option,
                 Self: this,
+                ZoomData:option.ZoomData,
                 PreventDefault: false
             };
-            this.NetworkFilter(obj, function (data) {
-                self.RecvDragDayData(data);
+            this.NetworkFilter(obj, function (data) 
+            {
+                self.RecvPreviousDayData(data, option);
                 download.Status = 0;
-                self.AutoUpdateEvent(true, 'KLineChartContainer::RequestDragDayData');   //自动更新
+                self.AutoUpdateEvent(true, funcName);   //自动更新
                 self.AutoUpdate();
             });
 
             if (obj.PreventDefault == true) return;   //已被上层替换,不调用默认的网络请求
         }
-
-        JSNetwork.HttpRequest({
-            url: this.DragKLineApiUrl,
-            data: postData,
-            method: 'POST',
-            dataType: "json",
-            async: true,
-            success: function (data) {
-                self.RecvDragDayData(data);
-                download.Status = 0;
-                self.AutoUpdateEvent(true, 'KLineChartContainer::RequestDragDayData');   //自动更新
-                self.AutoUpdate();
-            }
-        });
     }
 
-    this.RecvDragDayData = function (recvdata) 
+    this.RecvPreviousDayData = function (recvdata, option) 
     {
+        var download=option.Download;
         var data = recvdata.data;
         var aryDayData = KLineChartContainer.JsonDataToHistoryData(data);
         if (!aryDayData || aryDayData.length<=0)
         {
-            this.DragDownload.Day.IsEnd=true;   //下完了
+            download.IsEnd=true;   //下完了
+            JSConsole.Chart.Log(`[KLineChartContainer.RecvPreviousDayData] ${this.Symbol} data end. FuncName=${option.FuncName}`);
             return;
         }
         
         var lastDataCount = this.GetHistoryDataCount();   //保存下上一次的数据个数
-        var firstData=null;
+        var endIndex=null;
         if (IFrameSplitOperator.IsNonEmptyArray(this.SourceData.Data))
-            firstData=this.SourceData.Data[0];
+        { 
+            var firstData=this.SourceData.Data[0];
+            for(var i=aryDayData.length-1;i>=0;--i)
+            {
+                var item=aryDayData[i];
+                if (firstData.Date>item.Date) 
+                {
+                    endIndex=i;
+                    break;
+                }
+                else if (firstData.Date==item.Date)
+                {
+                    firstData.YClose=item.YClose;
+                    endIndex=i-1;
+                    break;
+                }
+            }
+        }
         else
-            firstData={Date:null};
-
-        for (var i=0; i<aryDayData.length; ++i)    //数据往前插
         {
-            var item = aryDayData[i];
-            this.SourceData.Data.splice(i, 0, item);
+            var firstData={ Date:null };
+            endIndex=aryDayData.length-1;
+        }
+        if (endIndex==null && endIndex<0) return;
+
+        for(var i=0; i<aryDayData.length && i<=endIndex;++i)    //数据往前插
+        {
+            var item=aryDayData[i];
+            this.SourceData.Data.splice(i,0,item);
         }
 
         var bindData = new ChartData();
@@ -8207,10 +8301,83 @@ function KLineChartContainer(uielement)
         this.Draw();
 
         //更新信息地雷
-        this.ReqeustKLineInfoData( { FunctionName:"RecvDragDayData", StartDate:firstData.Date } );
+        this.ReqeustKLineInfoData( { FunctionName:option.RecvFuncName, StartDate:firstData.Date } );
 
          //叠加指标计算
          this.BindAllOverlayIndexData(bindData);
+    }
+
+    this.MergeOverlaySymbolDayData=function(item, aryOverlayData)
+    {
+        if (!item.Symbol) return false;
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryOverlayData)) return false;
+
+        var findData=null;
+        for(var i=0;i<aryRecvOverlayData.length;++i)    //查找对应的叠加股票数据
+        {
+            var overlayItem=aryRecvOverlayData[i];
+            if (overlayItem.symbol==item.Symbol)
+            {
+                findData=overlayItem;
+                break;
+            }
+        }
+
+        if (!findData) false;
+
+        var aryDayData=KLineChartContainer.JsonDataToHistoryData(findData);
+        var sourceData=item.SourceData; //叠加股票的所有数据
+
+        var firstData=sourceData.Data[0];
+        var endIndex=null;
+        for(var i=aryDayData.length-1;i>=0;--i)
+        {
+            var itemData=aryDayData[i];
+            if (firstData.Date>itemData.Date) 
+            {
+                endIndex=i;
+                break;
+            }
+            else if (firstData.Date==itemData.Date)
+            {
+                firstData.YClose=itemData.YClose;
+                endIndex=i-1;
+                break;
+            }
+        }
+
+        if (endIndex==null && endIndex<0) return false;
+
+        for(var i=0; i<aryDayData.length && i<=endIndex;++i)    //数据往前插
+        {
+            var itemData=aryDayData[i];
+            sourceData.Data.splice(i,0,itemData);
+        }
+
+        var bindData=new ChartData();
+        bindData.Data=sourceData.Data;
+        bindData.Period=this.Period;
+        bindData.Right=this.Right;
+        bindData.DataType=0;
+
+        if (bindData.Right>0 && MARKET_SUFFIX_NAME.IsSHSZStockA(findData.symbol) && !this.IsApiPeriod)    //复权数据 ,A股才有有复权
+        {
+            var rightData=bindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula });
+            bindData.Data=rightData;
+        }
+
+        var aryOverlayData=this.SourceData.GetOverlayData(bindData.Data, this.IsApiPeriod);      //和主图数据拟合以后的数据
+        bindData.Data=aryOverlayData;
+
+        if (ChartData.IsDayPeriod(bindData.Period,false) && !this.IsApiPeriod)   //周期数据
+        {
+            var periodData=bindData.GetPeriodData(bindData.Period);
+            bindData.Data=periodData;
+        }
+
+        item.Data=bindData;
+
+        return true;
     }
 
     //更新叠加数据
@@ -8218,80 +8385,27 @@ function KLineChartContainer(uielement)
     {
         if (!IFrameSplitOperator.IsNonEmptyArray(this.OverlayChartPaint)) return;
         var aryRecvOverlayData=data.overlay;
-        if (!IFrameSplitOperator.IsNonEmptyArray(aryRecvOverlayData)) return;
-
+       
         for(var i=0;i<this.OverlayChartPaint.length; ++i)
         {
             var item=this.OverlayChartPaint[i];
             if (!item.Symbol) continue;
 
-            if (!item.MainData) continue;   //等待主图股票数据未下载完
-            if (item.Status!=OVERLAY_STATUS_ID.STATUS_FINISHED_ID) continue;
-
-            var findData=null;
-            for(var j=0;j<aryRecvOverlayData.length;++j)    //查找对应的叠加股票数据
+            var bUpdate=false;
+            if (item.MainData && item.Status==OVERLAY_STATUS_ID.STATUS_FINISHED_ID)    //等待主图股票数据未下载完
             {
-                var overlayItem=aryRecvOverlayData[j];
-                if (overlayItem.symbol==item.Symbol)
+                bUpdate=this.MergeOverlaySymbolDayData(item, aryRecvOverlayData);
+            }
+
+            if (!bUpdate)   //没有更新数据 手动跟主图数据对齐
+            {
+                if (item.Data && IFrameSplitOperator.IsNonEmptyArray(item.Data.Data))
                 {
-                    findData=overlayItem;
-                    break;
+                    var bindData=item.Data;
+                    var aryOverlayData=this.SourceData.GetOverlayData(bindData.Data, this.IsApiPeriod);      //和主图数据拟合以后的数据
+                    bindData.Data=aryOverlayData;
                 }
             }
-
-            if (!findData) continue;
-
-            var aryDayData=KLineChartContainer.JsonDataToHistoryData(findData);
-            var sourceData=item.SourceData; //叠加股票的所有数据
-
-            var firstData=sourceData.Data[0];
-            var endIndex=null;
-            for(var j=aryDayData.length-1;j>=0;--j)
-            {
-                var itemData=aryDayData[j];
-                if (firstData.Date>itemData.Date) 
-                {
-                    endIndex=j;
-                    break;
-                }
-                else if (firstData.Date==itemData.Date)
-                {
-                    firstData.YClose=itemData.YClose;
-                    endIndex=j-1;
-                    break;
-                }
-            }
-
-            if (endIndex==null && endIndex<0) continue;
-            
-            for(var j=0; j<aryDayData.length && j<=endIndex;++j)    //数据往前插
-            {
-                var itemData=aryDayData[j];
-                sourceData.Data.splice(j,0,itemData);
-            }
-
-            var bindData=new ChartData();
-            bindData.Data=sourceData.Data;
-            bindData.Period=this.Period;
-            bindData.Right=this.Right;
-            bindData.DataType=0;
-
-            if (bindData.Right>0 && MARKET_SUFFIX_NAME.IsSHSZStockA(findData.symbol) && !this.IsApiPeriod)    //复权数据 ,A股才有有复权
-            {
-                var rightData=bindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula });
-                bindData.Data=rightData;
-            }
-
-            var aryOverlayData=this.SourceData.GetOverlayData(bindData.Data, this.IsApiPeriod);      //和主图数据拟合以后的数据
-            bindData.Data=aryOverlayData;
-
-            if (ChartData.IsDayPeriod(bindData.Period,false) && !this.IsApiPeriod)   //周期数据
-            {
-                var periodData=bindData.GetPeriodData(bindData.Period);
-                bindData.Data=periodData;
-            }
-
-            item.Data=bindData;
         }
     }
 

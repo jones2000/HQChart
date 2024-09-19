@@ -27,7 +27,20 @@
     <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
     <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
 
+    <script src="../jscommon/umychart.testdata/60000.sh.1day.kline.js"></script>
     <script src="../jscommon/umychart.testdata/60000.sh.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/60000.sh.capital.kline.js"></script>
+
+    <script src="../jscommon/umychart.testdata/000001.sh.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/399001.sz.day.kline.js"></script>
+
+    <script src="../jscommon/umychart.testdata/60000.sh.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/60000.sh.1minute.kline.js"></script>
+
+    <script src="../jscommon/umychart.testdata/000151.sz.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/000001.sz.minute.kline.js"></script>
+
+    <script src="../jscommon/umychart.testdata.js"></script>
 
     <script>
 
@@ -55,7 +68,7 @@
                 OverlayIndex:
                 [
                     {Index:'RSI', Windows:1, ShowRightText:true, IsSync:true },
-                    {Index:'VOL', Windows:2, ShowRightText:true, IsSync:false },
+                    {Index:'VOL', Windows:2, ShowRightText:true, IsSync:true },
                     
                 ],  //叠加指标
                 
@@ -135,7 +148,7 @@
 
                 Overlay:
                 [
-                   
+                    { Symbol:"000151.sz"}
                 ],
             };
                  
@@ -186,6 +199,11 @@
                     case "KLineChartContainer::RequestZoomDayData":
                         this.RequestZoomDayData(data, callback);
                         break;
+
+                    default:
+                        HQData.NetworkFilter(data, callback);
+                        break;
+                    
                 }
             }
 
@@ -200,7 +218,8 @@
                 { 
                     var hqchartData={ name:symbol, symbol:symbol, code:0, ver:2, data:[] };
 
-                    var dataCount=500;
+                    var dataCount=100;
+                    //dataCount=0;
                     var startIndex=KLINE_DAY_DATA.data.length-dataCount;
                     for(var i=startIndex; i<KLINE_DAY_DATA.data.length; ++i)
                     {
@@ -261,8 +280,9 @@
             {
                 data.PreventDefault=true;
                 var dataCount=data.Option.XShowCount;
-                var symbol=data.Request.Data.symbol; //请求的股票代码
+                var symbol=data.Request.Data.symbol;        //请求的股票代码
                 var firstDateTime=data.Request.Data.first;
+                var aryOverlay=data.Request.Data.overlay;   //叠加股票
 
                 console.log(`[KLineChart::RequestDragDayData] Symbol=${symbol} date=${firstDateTime.date} time=${firstDateTime.time}`);
 
@@ -275,16 +295,24 @@
                 {
                     var findIndex=-1;
                     var date=firstDateTime.date;
-                    for(var i=0;i<KLINE_DAY_DATA.data.length;++i)
+                    if (date==null) 
                     {
-                        var kItem=KLINE_DAY_DATA.data[i];
-                        var value=kItem[0];
-                        if (value>=date)
+                        findIndex=KLINE_DAY_DATA.data.length-1;
+                    }
+                    else
+                    {
+                        for(var i=0;i<KLINE_DAY_DATA.data.length;++i)
                         {
-                            findIndex=i;
-                            break;
+                            var kItem=KLINE_DAY_DATA.data[i];
+                            var value=kItem[0];
+                            if (value>=date)
+                            {
+                                findIndex=i;
+                                break;
+                            }
                         }
                     }
+                    
 
                     if (findIndex<=0)   //数据到头了
                     {
@@ -309,9 +337,41 @@
 
                     console.log('[KLineChart::RequestDragDayData] ', hqchartData);
 
+                    if (IFrameSplitOperator.IsNonEmptyArray(aryOverlay))
+                    {
+                        hqchartData.overlay=[];
+
+                        var startDate=hqchartData.data[0][0];
+                        var endDate=hqchartData.data[hqchartData.data.length-1][0];
+                        for(var i=0;i<aryOverlay.length;++i)
+                        {
+                            var item=aryOverlay[i];
+                            if (item.symbol=="000151.sz")
+                            {
+                                var aryData=this.GetKLineDataByDate(KLINE_DAY_DATA2.data, startDate, endDate);
+                                hqchartData.overlay.push({ symbol:item.symbol, name:item.symbol, data:aryData});
+                            }
+                        }
+                    }
+
                     callback(hqchartData);
 
                 },1000);
+            }
+
+
+            this.GetKLineDataByDate=function(aryFullData, startDate, endDate)
+            {
+                var aryData=[];
+                for(var i=0;i<aryFullData.length;++i)
+                {
+                    var kItem=aryFullData[i];
+                    var date=kItem[0];
+                    if (date>=startDate && date<=endDate)
+                        aryData.push(kItem);
+                }
+
+                return aryData;
             }
 
             this.RequestZoomDayData=function(data, callback)

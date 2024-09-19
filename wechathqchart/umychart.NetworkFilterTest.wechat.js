@@ -57515,6 +57515,12 @@ HQData.NetworkFilter=function(data, callback)
         case "JSSymbolData::GetBKJYOne":
             HQData.BKJYOne_RequestData(data,callback);
             break;
+        case "JSSymbolData::GetFinValue":
+            HQData.FinValue_RequestData(data,callback);
+            break;
+        case "JSSymbolData::GetFinOne":
+            HQData.FinOne_RequestData(data,callback);
+            break;
     }
 }
 
@@ -57833,6 +57839,39 @@ HQData.BKJYOne_RequestData=function(data,callback)
     var day=data.Request.Data.Args[3];
 
     var value=HQData.GetRandomTestData(900,2000);
+    callback({ Date:20230509, Value:value});
+}
+
+HQData.FinValue_RequestData=function(data,callback)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Data.symbol;
+    var id=data.Request.Data.Args[0];
+
+    var aryData=[];
+    var kData=data.Self.Data;
+    for(var i=0;i<kData.Data.length;++i)
+    {
+        var kItem=kData.Data[i];
+        if (i%60==21)
+        {
+            var value=HQData.GetRandomTestData(10,20)
+            aryData.push({ Date:kItem.Date, Time:kItem.Time, Value:value });
+        }
+    }
+    
+    callback(aryData);
+}
+
+HQData.FinOne_RequestData=function(data,callback)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Data.symbol;
+    var id=data.Request.Data.Args[0];
+    var year=data.Request.Data.Args[1];
+    var day=data.Request.Data.Args[2];
+
+    var value=HQData.GetRandomTestData(80,90);
     callback({ Date:20230509, Value:value});
 }
 

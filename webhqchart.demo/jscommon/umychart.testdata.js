@@ -93,9 +93,6 @@ HQData.NetworkFilter=function(data, callback)
             HQData.RequestOverlayHistoryMinuteData(data, callback);
             break;
 
-       
-
-
         case "PforecastInfo::RequestData":
             HQData.PforecastInfo_RequestData(data,callback);
             break;
@@ -138,6 +135,12 @@ HQData.NetworkFilter=function(data, callback)
             break;
         case "JSSymbolData::GetBKJYOne":
             HQData.BKJYOne_RequestData(data,callback);
+            break;
+        case "JSSymbolData::GetFinValue":
+            HQData.FinValue_RequestData(data,callback);
+            break;
+        case "JSSymbolData::GetFinOne":
+            HQData.FinOne_RequestData(data,callback);
             break;
 
         //////////////////////////////////////////////////////
@@ -306,12 +309,20 @@ HQData.RequestHistoryData=function(data,callback)
 {
     data.PreventDefault=true;
     var symbol=data.Request.Data.symbol; //请求的股票代码
-  
+    var count=data.Request.Data.count
     console.log(`[HQData::RequestMinuteDaysData] Symbol=${symbol}`);
+
+    var fullData=HQData.GetDayKLineDataBySymbol(symbol);
+    var aryData=[];
+    if (IFrameSplitOperator.IsNonEmptyArray(fullData))
+    {
+        var dataCount=fullData.length;
+        var start=dataCount-count;
+        if (start<0) start=0;
+        aryData=fullData.slice(start);
+    }
     
-    var hqchartData=KLINE_DAY_DATA;
-    hqchartData.symbol=symbol;
-    hqchartData.name=symbol;
+    var hqchartData={ name:symbol, symbol:symbol, data:aryData, ver:2.0 };
    
     callback(hqchartData);
 }
@@ -331,66 +342,69 @@ HQData.RequestRealtimeData=function(data, callback)
 {
     data.PreventDefault=true;
     var symbol=data.Request.Data.symbol[0]; //请求的股票代码
+    var end=data.Request.Data.dateRange.End;
+    var endDate=end.Date;
+    var aryStock=[];
 
-    if (data.Request.Data.symbol.length>1)  //叠加股票
+    for(var i=0;i<data.Request.Data.symbol.length;++i)
     {
-        var hqchartData={ stock:[], code:0 };
-        var arySymbol=data.Request.Data.symbol;
-        for(var i=0;i<arySymbol.length;++i)
-        {
-            var symbol=arySymbol[i];
-            if (i==0)
-            {
-                var stock=KLINE_1DAY_DATA.stock[0];
-                stock.name=symbol;
-                stock.symbol=symbol;
-                hqchartData.stock.push(stock);
-            }
-            else
-            {
-                if (symbol=="399001.sz") 
-                {
-                    var stock=KLINE_1DAY_OVERLAY_DATA2.stock[0];
-                    stock.name=symbol;
-                    stock.symbol=symbol;
-                    hqchartData.stock.push(stock);
-                }
-                else
-                {
-                    var stock=KLINE_1DAY_OVERLAY_DATA.stock[0];
-                    stock.name=symbol;
-                    stock.symbol=symbol;
-                    hqchartData.stock.push(stock);
-                }
-                    
-            } 
-        }
+        var item=data.Request.Data.symbol[i];
+        var fullData=HQData.GetDayKLineDataBySymbol(item);
+        if (!IFrameSplitOperator.IsNonEmptyArray(fullData)) continue;
 
-        callback(hqchartData);
+        var aryData=HQData.GetKLineDataByDate(fullData, endDate, 20999999);
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryData)) continue;
+
+        var kItem=aryData[0];
+        var price=kItem[5];
+        var value=Math.ceil(Math.random()*10)/1000*price;
+        var bUp=Math.ceil(Math.random()*10)>=5;
+        if (bUp) price+=value;
+        else price-=value;
+
+        var stockItem={ symbol:item, name:item };
+        stockItem.date=kItem[0];
+        stockItem.yclose=kItem[1];
+        stockItem.open=kItem[2];
+        stockItem.high=Math.max(kItem[3],price);
+        stockItem.low=Math.min(kItem[4],price);
+        stockItem.price=price;
+        stockItem.vol=kItem[6];
+        stockItem.amount=kItem[7];
+
+        aryStock.push(stockItem);
     }
-    else
-    {
-        console.log(`[HQData::RequestRealtimeData] Symbol=${symbol}`);
-        var hqchartData=KLINE_1DAY_DATA;
-        hqchartData.stock[0].name=symbol;
-        hqchartData.stock[0].symbol=symbol;
-        callback(hqchartData);
-    }
+
+    var hqchartData={ code:0, stock:aryStock };
+
+   
+    callback(hqchartData);
+    
 }
+
+
 
 
 HQData.RequestHistoryMinuteData=function(data, callback)
 {
     data.PreventDefault=true;
-    var symbol=data.Request.Data.symbol; //请求的股票代码
-
+    var symbol=data.Request.Data.symbol;    //请求的股票代码
+    var count=data.Request.Data.count*200;  //请求的数据长度
     console.log(`[HQData::RequestHistoryMinuteData] Symbol=${symbol}`);
 
-    var hqchartData=KLINE_MINUTE_DATA;
-    hqchartData.name=symbol;
-    hqchartData.symbol=symbol;
-    callback(hqchartData);
+    var fullData=HQData.GetM1KLineDataBySymbol(symbol);
+    var aryData=[];
+    if (IFrameSplitOperator.IsNonEmptyArray(fullData))
+    {
+        var dataCount=fullData.length;
+        var start=dataCount-count;
+        if (start<0) start=0;
+        aryData=fullData.slice(start);
+    }
 
+    
+    var hqchartData={ name:symbol, symbol:symbol, data:aryData, ver:2.0 };
+    callback(hqchartData);
 }
 
 
@@ -398,60 +412,26 @@ HQData.RequestMinuteRealtimeData=function(data,callback)
 {
     data.PreventDefault=true;
     var symbol=data.Request.Data.symbol[0]; //请求的股票代码
+    var end=data.Request.Data.dateRange.End;
+    var endDate=end.Date;
+    var endTime=end.Time;
 
-    if (data.Request.Data.symbol.length>1)  //叠加股票
+    var aryOverlay=[ ];     //叠加
+    var aryMainData=[];     //主图
+    for(var i=0;i<data.Request.Data.symbol.length;++i)
     {
-        var hqchartData=JSON.parse(JSON.stringify(KLINE_1MINUTE_DATA));
-        hqchartData.overlay=[]; //叠加数据
-        var arySymbol=data.Request.Data.symbol;
-        for(var i=0;i<arySymbol.length;++i)
-        {
-            var symbol=arySymbol[i];
-            if (i==0)
-            {
-                var kItem=hqchartData.data[0];
-                var price=kItem[5];
-                var value=Math.ceil(Math.random()*10)/1000*price;
-                var bUp=Math.ceil(Math.random()*10)>=5;
-                
-                if (bUp) price+=value;
-                else price-=value;
-                kItem[5]=price;
-                kItem[3]=Math.max(price, kItem[3]);
-                kItem[4]=Math.min(price, kItem[4]);
+        var symbol=data.Request.Data.symbol[i];
+        var fullData=HQData.GetM1KLineDataBySymbol(symbol);
+        if (!IFrameSplitOperator.IsNonEmptyArray(fullData)) continue;
 
-                hqchartData.name=symbol;
-                hqchartData.symbol=symbol;
-            }
-            else
-            {
-                var testData=JSON.parse(JSON.stringify(KLINE_1MINUTE_DATA2));
-                var kItem=testData.data[0];
-                var price=kItem[5];
-                var value=Math.ceil(Math.random()*10)/1000*price;
-                var bUp=Math.ceil(Math.random()*10)>=5;
-                
-                if (bUp) price+=value;
-                else price-=value;
-                kItem[5]=price;
-                kItem[3]=Math.max(price, kItem[3]);
-                kItem[4]=Math.min(price, kItem[4]);
-                var stock={ data:testData.data, symbol:symbol, name:symbol };
-                hqchartData.overlay.push(stock);
-            }
-        }
+        var aryData=HQData.GetKLineDataByDateTime(fullData, endDate, endTime, 20999999, 9999);
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryData)) continue;
 
-        callback(hqchartData);
-    }
-    else
-    {
-        console.log(`[HQData::RequestMinuteRealtimeData] Symbol=${symbol}`);
+        var kItem=JSON.parse(JSON.stringify(aryData[0]));
 
-        var hqchartData=JSON.parse(JSON.stringify(KLINE_1MINUTE_DATA));
-    
-        var kItem=hqchartData.data[0];
+        //生成随机测试数据
         var price=kItem[5];
-        var value=Math.ceil(Math.random()*10)/1000*price;
+        var value=Math.ceil(Math.random()*10)/10000*price;
         var bUp=Math.ceil(Math.random()*10)>=5;
         
         if (bUp) price+=value;
@@ -459,11 +439,22 @@ HQData.RequestMinuteRealtimeData=function(data,callback)
         kItem[5]=price;
         kItem[3]=Math.max(price, kItem[3]);
         kItem[4]=Math.min(price, kItem[4]);
-        
-        hqchartData.name=symbol;
-        hqchartData.symbol=symbol;
-        callback(hqchartData);
+
+        if (i==0)
+        {
+            aryMainData.push(kItem);
+        }
+        else
+        {
+            var stock={ data:[kItem], symbol:symbol, name:symbol };
+            aryOverlay.push(stock);
+        }
     }
+
+    var hqchartData={ name:symbol, symbol:symbol, ver:2.0, data:aryMainData };
+    if (IFrameSplitOperator.IsNonEmptyArray(aryOverlay)) hqchartData.overlay=aryOverlay;
+   
+    callback(hqchartData);
 }
 
 
@@ -747,12 +738,17 @@ HQData.RequestOverlayHistoryData=function(data, callback)
 {
     data.PreventDefault=true;
     var symbol=data.Request.Data.symbol;
-    var hqchartData={  symbol: symbol,name: symbol };
-    if (symbol=="399001.sz") 
-        hqchartData.data=KLINE_DAY_OVERLAY_DATA2.data
-    else 
-        hqchartData.data=KLINE_DAY_OVERLAY_DATA.data
-        
+    var first=data.Request.Data.first;
+    var fullData=HQData.GetDayKLineDataBySymbol(symbol);
+    var aryData=[];
+
+    if (IFrameSplitOperator.IsNonEmptyArray(fullData))
+    {
+        aryData=HQData.GetKLineDataByDate(fullData, first.date, 20999999)
+    }
+
+    var hqchartData={  code:0, symbol: symbol,name: symbol, ver:2.0, data:aryData };
+
     callback(hqchartData);
 }
 
@@ -760,10 +756,37 @@ HQData.RequestOverlayHistoryMinuteData=function(data, callback)
 {
     data.PreventDefault=true;
     var symbol=data.Request.Data.symbol;
-    var hqchartData={  symbol: symbol,name: symbol };
-    hqchartData.data=KLINE_MINUTE_DATA2.data;
+    var first=data.Request.Data.first;
+    var aryData=[];
+   
+    var fullData=HQData.GetM1KLineDataBySymbol(symbol);
+    if (fullData)
+    {
+        aryData=HQData.GetKLineDataByDateTime(fullData, first.date, first.time, 20999999, 9999)
+    }
+
+    var hqchartData={  symbol: symbol,name: symbol, ver:2.0, data:aryData };
 
     callback(hqchartData);
+}
+
+HQData.GetKLineDataByDateTime=function(fullData, startDate, startTime, endDate, endTime)
+{
+    var start=startDate*10000+startTime;
+    var end=endDate*10000+endTime;
+
+    var aryData=[];
+    for(var i=0;i<fullData.length;++i)
+    {
+        var kItem=fullData[i];
+        var date=kItem[0];
+        var time=kItem[8];
+        var dateTime=date*10000+time;
+        if (dateTime>=start && dateTime<=end)
+            aryData.push(kItem);
+    }
+
+    return aryData;
 }
 
 
@@ -892,6 +915,39 @@ HQData.BKJYOne_RequestData=function(data,callback)
     var day=data.Request.Data.Args[3];
 
     var value=HQData.GetRandomTestData(900,2000);
+    callback({ Date:20230509, Value:value});
+}
+
+HQData.FinValue_RequestData=function(data,callback)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Data.symbol;
+    var id=data.Request.Data.Args[0];
+
+    var aryData=[];
+    var kData=data.Self.Data;
+    for(var i=0;i<kData.Data.length;++i)
+    {
+        var kItem=kData.Data[i];
+        if (i%60==21)
+        {
+            var value=HQData.GetRandomTestData(10,20)
+            aryData.push({ Date:kItem.Date, Time:kItem.Time, Value:value });
+        }
+    }
+    
+    callback(aryData);
+}
+
+HQData.FinOne_RequestData=function(data,callback)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Data.symbol;
+    var id=data.Request.Data.Args[0];
+    var year=data.Request.Data.Args[1];
+    var day=data.Request.Data.Args[2];
+
+    var value=HQData.GetRandomTestData(80,90);
     callback({ Date:20230509, Value:value});
 }
 
@@ -1236,6 +1292,119 @@ HQData.GetRandomTestData=function(min, max)   //测试数据
     min = Math.ceil(min);
     max = Math.floor(max);
     return Math.floor(Math.random() * (max - min + 1)) + min; //含最大值，含最小值 
+}
+
+
+HQData.GetM1KLineDataBySymbol=function(symbol)
+{
+    var data=null;
+    switch(symbol)
+    {
+        case "000001.sh":
+            data=SH_000001_M1_KLINE;
+            break;
+        case "000300.sh":
+            data=SH_000300_M1_KLINE;
+            break;
+        case "399001.sz":
+            data=SZ_399001_M1_KLINE;
+            break;
+        case "000001.sz":
+            data=SZ_000001_M1_KLINE;
+            break;
+        case "600000.sh":
+            data=SH_600000_M1_KLINE;
+            break;
+        case "000151.sz":
+            data=SZ_000151_M1_KLINE;
+            break;
+        case "399005.sz":
+            data=SZ_399005_M1_KLINE;
+            break;
+        case "399006.sz":
+            data=SZ_399006_M1_KLINE;
+            break;
+        default:
+            data=SZ_000001_M1_KLINE;
+            break;
+    }
+    
+    if (!data) return null;
+
+    return data.data;
+}
+
+HQData.GetDayKLineDataBySymbol=function(symbol)
+{
+    var data=null;
+    switch(symbol)
+    {
+        case "000001.sh":
+            data=SH_000001_DAY_KLINE;
+            break;
+        case "000300.sh":
+            data=SH_000300_DAY_KLINE;
+            break;
+
+        case "399001.sz":
+            data=SZ_399001_DAY_KLINE;
+            break;
+        case "000001.sz":
+            data=SZ_000001_DAY_KLINE;
+            break;
+        case "600000.sh":
+            data=SH_600000_DAY_KLINE;
+            break;
+        case "000151.sz":
+            data=SZ_000151_DAY_KLINE;
+            break;
+        case "399005.sz":
+            data=SZ_399005_DAY_KLINE;
+            break;
+        case "399006.sz":
+            data=SZ_399006_DAY_KLINE;
+            break;
+        default:
+            data=SZ_000001_DAY_KLINE;
+            break;
+    }
+   
+    if (!data) return null;
+
+    return data.data;
+}
+
+HQData.GetKLineDataByDateTime=function(fullData, startDate, startTime, endDate, endTime)
+{
+    var start=startDate*10000+startTime;
+    var end=endDate*10000+endTime;
+
+    var aryData=[];
+    for(var i=0;i<fullData.length;++i)
+    {
+        var kItem=fullData[i];
+        var date=kItem[0];
+        var time=kItem[8];
+        var dateTime=date*10000+time;
+        if (dateTime>=start && dateTime<=end)
+            aryData.push(kItem);
+    }
+
+    return aryData;
+}
+
+HQData.GetKLineDataByDate=function(fullData, startDate, endDate)
+{
+    var aryData=[];
+    for(var i=0;i<fullData.length;++i)
+    {
+        var kItem=fullData[i];
+        var date=kItem[0];
+        if (date>=startDate && date<=endDate)
+            aryData.push(kItem);
+    }
+
+    return aryData;
 }
 
 

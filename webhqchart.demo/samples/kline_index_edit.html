@@ -125,29 +125,36 @@
     <script src="../jscommon/umychart.resource/js/codemirror/codemirror.js"></script>
     <script src="../jscommon/umychart.resource/js/codemirror/javascript.js"></script>
    
-    <script src="../jscommon/umychart.testdata/60000.sh.1day.kline.js"></script>
-    <script src="../jscommon/umychart.testdata/60000.sh.day.kline.js"></script>
+  
     <script src="../jscommon/umychart.testdata/60000.sh.capital.kline.js"></script>
-
-    <script src="../jscommon/umychart.testdata/000001.sh.day.kline.js"></script>
-    <script src="../jscommon/umychart.testdata/399001.sz.day.kline.js"></script>
-
-    <script src="../jscommon/umychart.testdata/60000.sh.minute.kline.js"></script>
-    <script src="../jscommon/umychart.testdata/60000.sh.1minute.kline.js"></script>
-
-    <script src="../jscommon/umychart.testdata/000151.sz.day.kline.js"></script>
-    <script src="../jscommon/umychart.testdata/000001.sz.minute.kline.js"></script>
-    
-
     <script src="../jscommon/umychart.testdata/60000.sh.NewsInteract.js"></script>
     <script src="../jscommon/umychart.testdata/60000.sh.BlockTrading.js"></script>
     <script src="../jscommon/umychart.testdata/60000.sh.TradeDetal.js"></script>
-
-    <script src="../jscommon/umychart.testdata/60000.sh.day.minute.js"></script>
-
     <script src="../jscommon/umychart.testdata/60000.sh.finance_7.js"></script>
 
     <script src="../jscommon/umychart.testdata/symbollist_shsz.js"></script>
+
+
+    <script src="../jscommon/umychart.testdata/M1KLine/600000.sh.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/000001.sh.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/000300.sh.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/399001.sz.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/000001.sz.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/399006.sz.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/399005.sz.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/000151.sz.minute.kline.js"></script>
+
+    <script src="../jscommon/umychart.testdata/DayKLine/600000.sh.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/000001.sh.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/000300.sh.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/399001.sz.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/000001.sz.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/399006.sz.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/399005.sz.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/000151.sz.day.kline.js"></script>
+
+    <script src="../jscommon/umychart.testdata/60000.sh.day.minute.js"></script>
+
 
     <script src="../jscommon/umychart.testdata.js"></script>
 
@@ -259,8 +266,8 @@
                     DragMode:1,                 //拖拽模式 0=禁止拖拽 1=数据拖拽 2=区间选择
                     Right:1,                    //复权 0 不复权 1 前复权 2 后复权
                     Period:0,                   //周期 0 日线 1 周线 2 月线 3 年线 
-                    MaxRequestDataCount:3000,   //数据个数
-                    MaxRequestMinuteDayCount:5, //分钟数据获取几天数据  默认取5天数据
+                    MaxRequestDataCount:8000,   //数据个数
+                    MaxRequestMinuteDayCount:100, //分钟数据获取几天数据  默认取5天数据
                     
                     //Info:["互动易","大宗交易",'龙虎榜',"调研","业绩预告","公告"],       //信息地雷
                     //Info:["公告"], 
@@ -303,6 +310,8 @@
                     IsShowSettingInfo:true, //不显示周期/复权
                     IsTitleShowLatestData:true,
                 },
+
+                //DragDownload: { Day:{ Enable:true } },   //拖拽下载
 
                 
                 DragSelectRect:
@@ -393,7 +402,7 @@
 
                 Overlay:
                 [
-                    //{Symbol:'399300.sz', DrawType:1, Color:'rgb(0,0,255)'},
+                    //{ Symbol:'399300.sz', DrawType:1, Color:'rgb(0,0,255)'},
                     //{ Symbol:'600999.sh' }
                 ],
             };
@@ -525,6 +534,9 @@
                         break;
                     case "APIScriptIndex::ExecuteScript":
                         this.GetAPIIndexData(data, callback);
+                        break;
+
+                    case "KLineChartContainer::RequestDragDayData":
                         break;
                    
                     default:

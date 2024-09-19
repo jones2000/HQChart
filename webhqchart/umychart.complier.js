@@ -14264,54 +14264,6 @@ function JSSymbolData(ast,option,jsExecute)
         return financeData.get(id);
     }
 
-    this.GetFinOne=function(jobItem)
-    {
-        var aryArgs=this.JobArgumentsToArray(jobItem, 3);
-        var key=this.GetStockDataKey(jobItem,aryArgs);
-        if (this.StockData.has(key)) return this.Execute.RunNextJob();
-        var self=this;
-        if (this.NetworkFilter)
-        {
-            var dateRange=this.Data.GetDateRange();
-            var obj=
-            {
-                Name:'JSSymbolData::GetFinOne', //类名::
-                Explain:'财务数据FINONE(ID,Y,MMDD)',
-                JobID:jobItem.ID,
-                Request:{ Url:self.StockHistoryDayApiUrl, Type:'POST', Data:{ Args:aryArgs, symbol: this.Symbol, daterange:dateRange } },
-                Self:this,
-                PreventDefault:false
-            };
-            this.NetworkFilter(obj, function(recvData) 
-            { 
-                self.RecvStockValue(recvData,jobItem,key,1);
-                self.Execute.RunNextJob();
-            });
-
-            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
-        }
-
-        var apiDownload=new DownloadFinOneData( 
-            {
-                Job:jobItem, 
-                Symbol:this.Symbol, 
-                Url:this.StockHistoryDayApiUrl, 
-                Args:aryArgs,
-                DataKey:key,
-                Callback:function(recvData, jobItem, key) 
-                { 
-                    self.RecvStockValue(recvData, jobItem, key,1);
-                    self.Execute.RunNextJob();
-                },
-                ErrorCallback:function(strError)
-                {
-                    self.AddStockValueError(key,strError);
-                }
-            });
-
-        apiDownload.Download();
-    }
-
     this.GetStockDataKey=function(jobItem, aryArgs)
     {
         var key=jobItem.FunctionName;
@@ -14327,55 +14279,6 @@ function JSSymbolData(ast,option,jsExecute)
         }
 
         return key;
-    }
-
-    this.GetFinValue=function(jobItem)
-    {
-        var aryArgs=this.JobArgumentsToArray(jobItem, 1);
-        var lID=aryArgs[0];
-        var key=this.GetStockDataKey(jobItem,aryArgs);
-        if (this.StockData.has(key)) return this.Execute.RunNextJob();
-        var self=this;
-        if (this.NetworkFilter)
-        {
-            var dateRange=this.Data.GetDateRange();
-            var obj=
-            {
-                Name:'JSSymbolData::GetFinValue', //类名::
-                Explain:'财务数据FINVALUE(ID)',
-                JobID:jobItem.ID,
-                Request:{ Url:self.StockHistoryDayApiUrl, Type:'POST', Data:{ id:lID, symbol: this.Symbol, daterange:dateRange } },
-                Self:this,
-                PreventDefault:false
-            };
-            this.NetworkFilter(obj, function(recvData) 
-            { 
-                self.RecvStockValue(recvData,jobItem,key,0);
-                self.Execute.RunNextJob();
-            });
-
-            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
-        }
-
-        var apiDownload=new DownloadFinValueData( 
-            {
-                Job:jobItem, 
-                Symbol:this.Symbol, 
-                Url:this.StockHistoryDayApiUrl, 
-                Args:aryArgs,
-                DataKey:key,
-                Callback:function(recvData, jobItem, key) 
-                { 
-                    self.RecvStockValue(recvData, jobItem, key,0);
-                    self.Execute.RunNextJob();
-                },
-                ErrorCallback:function(strError)
-                {
-                    self.AddStockValueError(key,strError);
-                }
-            });
-
-        apiDownload.Download();
     }
 
     this.GetFinance=function(jobItem)
@@ -16707,6 +16610,16 @@ var JS_ARRAY_PROFESSIONAL_FINANCE=
         Name:"BKJYONE", JobID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_BKJYONE,
         Explain:"板块交易类数据BKJYONE(ID,N,Y,MMDD)", FuncName:"JSSymbolData::GetBKJYOne",ArgCount:4 
     },
+    {
+        Name:"FINVALUE", JobID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_FINVALUE,
+        Explain:"财务数据FINVALUE(ID)", FuncName:"JSSymbolData::GetFinValue",ArgCount:1
+    },
+    {
+        Name:"FINONE", JobID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_FINONE,
+        Explain:"财务数据FINONE(ID,Y,MMDD)", FuncName:"JSSymbolData::GetFinOne",ArgCount:3
+    }
+
+    
 ];
 
 function JSExecute(ast,option)
@@ -16915,14 +16828,12 @@ function JSExecute(ast,option)
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SECTION_SF:
                 return this.SymbolData.GetSectionFinanceData(jobItem);   //财务截面报告数据
 
-            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_FINONE:
-                return this.SymbolData.GetFinOne(jobItem);
-            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_FINVALUE:
-                return this.SymbolData.GetFinValue(jobItem);
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_FINANCE:
                 return this.SymbolData.GetFinance(jobItem);
 
             //专业财务数据
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_FINONE:
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_FINVALUE:
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_GPJYVALUE:
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_GPJYONE:
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SCJYVALUE:
@@ -25291,349 +25202,6 @@ ScriptIndexConsole.SetDomain = function (domain, cacheDomain)   //修改API地�
 {
     JSComplier.SetDomain(domain,cacheDomain);
 }
-
-//////////////////////////////////////////////////////////////////////////////////////////////
-//内置财务数据下载
-//
-function DownloadFinValueData(obj)
-{
-    this.Url=obj.Url;
-    this.Job=obj.Job;
-    this.Symbol=obj.Symbol;
-    this.Args=obj.Args;
-    this.DataKey=obj.DataKey;
-    this.RecvCallback=obj.Callback;
-    this.ErrorCallback=obj.ErrorCallback;
-
-    this.Download=function()
-    {
-        var self=this;
-        var fieldList=this.GetFieldList();
-        if (!fieldList)
-        {
-            message=`${this.Job.FunctionName}(${this.Args[0]}) can't support.`;
-            this.ErrorCallback(message);
-            self.RecvCallback(null, self.Job, self.DataKey);
-            return;
-        }
-
-        //请求数据
-        JSNetwork.HttpRequest({
-            url: this.Url,
-            data:
-            {
-                "field": fieldList,
-                "symbol": [this.Symbol],
-                "condition":[ {"item":["finance","doc","exists","true"]}] ,
-                "start": 0,
-                "end": 200
-            },
-            type:"post",
-            dataType: "json",
-            async:true,
-            success: function (recvData)
-            {
-                var data=self.ToHQChartData(recvData);
-                if (data) //排序
-                    data.sort(function (a, b) { return (a.Date - b.Date) });
-
-                self.RecvCallback(data, self.Job, self.DataKey);
-            }
-        });
-    }
-
-    this.ToHQChartData=function(recvData)
-    {
-        if (!recvData.stock || recvData.stock.length!=1) return null;
-
-        var aryData=[];
-        var setDate=new Set();  //有重复数据 去掉
-        var stock=recvData.stock[0];
-        for(var i in stock.stockday)
-        {
-            var item=stock.stockday[i];
-            if (item.announcement1)
-            {
-                var hqchartItem=this.ToHQChartItemData(item.announcement1, item.finance1, item);
-                if (hqchartItem && !setDate.has(hqchartItem.Date)) 
-                {
-                    aryData.push(hqchartItem);
-                    setDate.add(hqchartItem.Date);
-                }
-            }
-
-            if (item.announcement2)
-            {
-                var hqchartItem=this.ToHQChartItemData(item.announcement2, item.finance2, item);
-                if (hqchartItem && !setDate.has(hqchartItem.Date)) 
-                {
-                    aryData.push(hqchartItem);
-                    setDate.add(hqchartItem.Date);
-                }
-            }
-
-            if (item.announcement3)
-            {
-                var hqchartItem=this.ToHQChartItemData(item.announcement3, item.finance3, item);
-                if (hqchartItem && !setDate.has(hqchartItem.Date)) 
-                {
-                    aryData.push(hqchartItem);
-                    setDate.add(hqchartItem.Date);
-                }
-            }
-
-            if (item.announcement4)
-            {
-                var hqchartItem=this.ToHQChartItemData(item.announcement4, item.finance4, item);
-                if (hqchartItem && !setDate.has(hqchartItem.Date)) 
-                {
-                    aryData.push(hqchartItem);
-                    setDate.add(hqchartItem.Date);
-                }
-            }
-        }
-
-        return aryData;
-    }
-
-    //{ Date：日期 , Value:数值 }
-    this.ToHQChartItemData=function(announcement, finance, sourceItem)
-    {
-        var id=this.Args[0];
-        var date=announcement.year*10000;
-        var quarter=announcement.quarter;
-        switch(quarter)
-        {
-            case 1:
-                date+=331;
-                break;
-            case 2:
-                date+=630;
-                break;
-            case 3:
-                date+=930;
-                break;
-            case 4:
-                date+=1231;
-                break;
-            default:
-                return null;
-        }
-
-        var result={ Date:date, Value:0 };
-        switch(id)
-        {
-            case 0:
-                result.Value=date%1000000;  //0--返回报告期(YYMMDD格式),150930表示为2015年第三季
-                break;
-            case 1:
-                result.Value=finance.persearning;
-                break;
-            case 3:
-                result.Value=finance.peruprofit;
-                break;
-            case 4:
-                result.Value=finance.pernetasset;
-                break;
-            case 5:
-                result.Value=finance.percreserve;
-                break;
-            case 6:
-                result.Value=finance.woewa;
-                break;
-            case 7:
-                result.Value=finance.perccfo;
-                break;
-            case 8:
-                result.Value=finance.monetaryfunds;
-                break;
-            case 11:
-                result.Value=finance.areceivable;
-                break;
-        }
-
-        return result;
-    }
-
-    this.GetFieldList=function()
-    {
-        var id=this.Args[0];
-        switch(id)
-        {
-            case 0:
-                return ["finance.date"];
-            case 1: //persearning	每股收益
-                return ["finance.persearning"];
-            case 3: //peruprofit	每股未分配利润
-                return ["finance.peruprofit"];
-            case 4: //pernetasset	每股净资产
-                return ["finance.pernetasset"];
-            case 5: //percreserve	每股资本公积金
-                return ["finance.percreserve"];
-            case 6: //woewa	加权平均净资产收益
-                return ["finance.woewa"];
-            case 7: //perccfo	每股经营性现金流
-                return ["finance.perccfo"];
-            case 8: //monetaryfunds	货币资金
-                return ["finance.monetaryfunds"];
-            case 11: //areceivable	应收账款
-                return ["finance.areceivable"];
-            default:
-                return null;
-        }
-    }
-}
-
-/////////////////////////////////////////////////////////
-// 内置财务数据下载 某一期的数据
-//
-function DownloadFinOneData(obj)
-{
-    this.newMethod=DownloadFinValueData;   //派生
-    this.newMethod(obj);
-    delete this.newMethod;
-
-    this.Download=function()
-    {
-        var self=this;
-        var fieldList=this.GetFieldList();
-        if (!fieldList)
-        {
-            message=`${this.Job.FunctionName}(${this.Args[0]}, ${this.Args[1]}, ${this.Args[2]}) can't support.`;
-            this.ErrorCallback(message);
-            self.RecvCallback(null, self.Job, self.DataKey);
-            return;
-        }
-
-        var aryCondition=[ {"item":["finance","doc","exists","true"] } ];
-
-        var year=this.Args[1];
-        var month=this.Args[2];
-        var dataIndex=0;
-        var dataEnd=3;
-        var preYear=null;
-        if (year==0 && month==0)    //如果Y和MMDD都为0,表示最新的财报;
-        {
-
-        }
-        else if (year==0 && month<300)  //如果Y为0,MMDD为小于300的数字,表示最近一期向前推MMDD期的数据,如果是331,630,930,1231这些,表示最近一期的对应季报的数据;
-        {
-            dataIndex=month;
-            dataEnd=200;
-        }
-        else if (month==0 && year<1000) //如果Y为0,MMDD为小于300的数字,表示最近一期向前推MMDD期的数据,如果是331,630,930,1231这些,表示最近一期的对应季报的数据;
-        {
-            preYear=year;
-        }
-        else if (year>1909)
-        {
-            if (month==331) 
-            {
-                aryCondition=
-                [
-                    {"item":["announcement1.year","int32","eq",year]},
-                    {"item":["finance1","doc","exists","true"]}
-                ];
-
-                fieldList.push("announcement1.year");
-                fieldList.push("announcement1.quarter");
-            }
-            else if (month==630)
-            {
-                aryCondition=
-                [
-                    {"item":["announcement2.year","int32","eq",year]},
-                    {"item":["finance2","doc","exists","true"]}
-                ];
-
-                fieldList.push("announcement2.year");
-                fieldList.push("announcement2.quarter");
-            }
-            else if (month==930)
-            {
-                aryCondition=
-                [
-                    {"item":["announcement3.year","int32","eq",year]},
-                    {"item":["finance3","doc","exists","true"]}
-                ];
-
-                fieldList.push("announcement4.year");
-                fieldList.push("announcement4.quarter");
-            }
-            else
-            {
-                aryCondition=
-                [
-                    {"item":["announcement4.year","int32","eq",year]},
-                    {"item":["finance4","doc","exists","true"]}
-                ];
-
-                fieldList.push("announcement4.year");
-                fieldList.push("announcement4.quarter");
-            }
-        }
-
-        //请求数据
-        JSNetwork.HttpRequest({
-            url: this.Url,
-            data:
-            {
-                "field": fieldList,
-                "symbol": [this.Symbol],
-                "condition":aryCondition,
-                "start": 0,
-                "end": dataEnd
-            },
-            type:"post",
-            dataType: "json",
-            async:true,
-            success: function (recvData)
-            {
-                var data=self.ToHQChartData(recvData);
-                var result=null;
-                if (data && data.length>0) 
-                {
-                    data.sort(function (a, b) { return (b.Date-a.Date) });
-                    if (preYear==null)
-                        result=data[dataIndex];   //返回一个数据
-                    else 
-                        result=self.GetPreYearData(data, preYear);
-                }
-                self.RecvCallback(result, self.Job, self.DataKey);
-            }
-        });
-    }
-
-    this.GetPreYearData=function(data, preYear)
-    {
-        //331,630,930,1231这些,表示最近一期的对应季报的数据;
-        if (preYear==331 || preYear==630|| preYear==930 || preYear==1231)
-        {
-            for(var i in data)
-            {
-                var item=data[i];
-                if (item.Date%10000==preYear) return item;
-            }
-        }
-        else
-        {   
-            //如果MMDD为0,Y为一数字,表示最近一期向前推Y年的同期数据;
-            var month=data[0].Date%1000;
-            for(var i=1, j=0; i<data.length ;++i)
-            {
-                var item=data[i];
-                if (item.Date%10000==month)
-                {
-                    ++j;
-                    if (j==preYear) return item;
-                }
-            }
-
-            return null;
-        }
-    }
-}
-
 
 function DownloadFinanceData(obj)
 {
