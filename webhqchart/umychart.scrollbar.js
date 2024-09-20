@@ -1316,6 +1316,10 @@ function SliderChart()
             var time=parseInt(data.Data.Time/1000);
             text=IFrameSplitOperator.FormatTimeString(time,"HH:MM:SS");
         }
+        else if (ChartData.IsSecondPeriod(this.Data.Period))
+        {
+            text=IFrameSplitOperator.FormatTimeString(time,"HH:MM:SS");
+        }
         else if (ChartData.IsMinutePeriod(this.Data.Period, true)) 
         {
             timeText=IFrameSplitOperator.FormatTimeString(data.Data.Time,"HH:MM");

@@ -591,11 +591,24 @@ HQData.RequestOtherSymbolData=function(data, callback)
     var symbol=data.Request.Data.symbol;
     var period=data.Request.Data.period;
     var right=data.Request.Data.right;
-    var hqchartData=null;
-    if (ChartData.IsDayPeriod(period,true)) hqchartData=KLINE_DAY_DATA2;
-    else if (ChartData.IsMinutePeriod(period,true)) hqchartData=KLINE_MINUTE_DATA2;
-    hqchartData.name=symbol;
-    hqchartData.symbol=symbol;
+    var start=data.Request.Data.dateRange.Start;
+    var end=data.Request.Data.dateRange.End;
+
+    var aryData=[];
+    if (ChartData.IsDayPeriod(period,true)) 
+    {
+        var fullData=HQData.GetDayKLineDataBySymbol(symbol);
+        if (IFrameSplitOperator.IsNonEmptyArray(fullData))
+            aryData=HQData.GetKLineDataByDate(fullData, start.Date, end.Date);
+    }
+    else if (ChartData.IsMinutePeriod(period,true)) 
+    {
+        var fullData=this.GetM1KLineDataBySymbol(symbol);
+        if (IFrameSplitOperator.IsNonEmptyArray(fullData))
+            aryData=HQData.GetKLineDataByDateTime(fullData, start.Date, start.Time, end.Date, end.Time);
+    }
+
+    var hqchartData={ name:symbol, name:symbol, data:aryData };
     callback(hqchartData);
 }
 
