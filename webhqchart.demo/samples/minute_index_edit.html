@@ -261,8 +261,8 @@
                 Overlay:    //叠加股票
                 [
                     //{Symbol:'603190.sh', OverlayType:1, IsCalcuateMaxMin:true, Color:"rgb(250,0,0)" },
-                    {Symbol:'000001.sz'},
-                    {Symbol:'000151.sz'}
+                    //{Symbol:'000001.sz'},
+                    //{Symbol:'000151.sz'}
                 ],
 
                 ExtendChart:    //扩展图形
@@ -423,8 +423,56 @@
                 {
                     var newItem={ Name:`主图${indexInfo.API.Name}示例`, Data:{ ID: JSCHART_MENU_ID.CMD_ADD_OVERLAY_INDEX_ID, Args:[0, indexInfo]}, Checked:false};
                 }
-                
+
                 data.MenuData.Menu.push(newItem);
+
+                //测试叠加
+                var aryOverlaySymbol=[];                    //叠加的股票列表
+                for(var i=0; i<obj.OverlayChartPaint.length; ++i)
+                {
+                    var item=obj.OverlayChartPaint[i];
+                    if (item && item.Symbol) aryOverlaySymbol.push(item.Symbol)
+                }
+
+                var overlay=
+                { 
+                    Name:"叠加品种", 
+                    SubMenu:
+                    [
+                        { Name:"000001.sz", Data:{ ID: JSCHART_MENU_ID.CMD_OVERLAY_SYMBOL_ID, Args:["000001.sz", !aryOverlaySymbol.includes("000001.sz")]}, Checked:aryOverlaySymbol.includes("000001.sz") },
+                        { Name:"000151.sz", Data:{ ID: JSCHART_MENU_ID.CMD_OVERLAY_SYMBOL_ID, Args:["000151.sz", !aryOverlaySymbol.includes("000151.sz")]}, Checked:aryOverlaySymbol.includes("000151.sz") },
+                        { Name:"600000.sh", Data:{ ID: JSCHART_MENU_ID.CMD_OVERLAY_SYMBOL_ID, Args:["600000.sh", !aryOverlaySymbol.includes("600000.sh")]}, Checked:aryOverlaySymbol.includes("600000.sh") },
+                    ]
+                };
+
+                var aryMenu=data.MenuData.Menu;
+                for(var i=0;i<aryMenu.length;++i)
+                {
+                    var item=aryMenu[i];
+                    if (item.Name=="叠加品种")
+                    {
+                        aryMenu[i]=overlay;
+                        break;
+                    }
+                }
+
+                //删除叠加菜单
+                for(var i=0;i<aryMenu.length;++i)
+                {
+                    var item=aryMenu[i];
+                    if (item.Name=="叠加品种")
+                    {
+                        for(var j=0;j<item.SubMenu.length;++j)
+                        {
+                            if (item.SubMenu[j].Checked)
+                            {
+                                item.SubMenu.push({ Name:JSPopMenu.SEPARATOR_LINE_NAME });
+                                item.SubMenu.push({ Name:"取消叠加", Data:{ ID: JSCHART_MENU_ID.CMD_DELETE_ALL_OVERLAY_SYMBOL_ID} });
+                                break;
+                            }
+                        }
+                    }
+                }
             }
 
             this.OnMenuCommand=function(event, data, obj)
