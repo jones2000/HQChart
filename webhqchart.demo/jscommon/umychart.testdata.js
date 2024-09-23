@@ -18,17 +18,25 @@ HQData.NetworkFilter=function(data, callback)
         //HQChart使用教程29-走势图如何对接第3方数据1
         case 'MinuteChartContainer::RequestMinuteData':                 //分时图数据对接
             //HQChart使用教程29-走势图如何对接第3方数据2-最新分时数据
-            HQData.RequestMinuteData(data, callback);
+            HQData.Minute_RequestMinuteData(data, callback);
             break;
         
         case "MinuteChartContainer::RequestHistoryMinuteData":          //多日分时图
             //HQChart使用教程29-走势图如何对接第3方数据3-多日分时数据
-            HQData.RequestMinuteDaysData(data, callback);
+            HQData.Minute_RequestHistoryMinuteData(data, callback);
+            break;
+        
+        case "MinuteChartContainer::RequestOverlayMinuteData":          //单日叠加
+            HQData.Minute_RequestOverlayMinuteData(data, callback);
+            break;
+
+        case "MinuteChartContainer::RequestOverlayHistoryMinuteData":       //叠加多日
+            HQData.Minute_RequestOverlayHistoryMinuteData(data, callback);  
             break;
 
         case "MinuteChartContainer::RequestPopMinuteData":          //弹出分时图数据
             //HQChart使用教程29-走势图如何对接第3方数据2-最新分时数据  格式跟这个一样
-            HQData.RequestPopMinuteData(data, callback);
+            HQData.Minute_RequestPopMinuteData(data, callback);
             break;
 
         //HQChart使用教程30-K线图如何对接第3方数据1
@@ -165,7 +173,7 @@ HQData.NetworkFilter=function(data, callback)
     }
 }
 
-HQData.RequestMinuteData=function(data, callback)
+HQData.Minute_RequestMinuteData=function(data, callback)
 {
     data.PreventDefault=true;
     var symbol=data.Request.Data.symbol[0];             //请求的股票代码
@@ -173,7 +181,8 @@ HQData.RequestMinuteData=function(data, callback)
     console.log(`[HQData::RequestMinuteData] Symbol=${symbol}`);
 
     setTimeout(()=>{
-        var srcStock=MINUTE_1DAY_DATA.stock[0];
+        var fullData=HQData.GetDayMinuteDataBySymbol(symbol);
+        var srcStock=fullData[0];
         var stockItem={ date:srcStock.date, minute:srcStock.minute, yclose:srcStock.yclose, symbol:srcStock.symbol, name:srcStock.name };
         if (callcation.Before)
         {
@@ -206,7 +215,7 @@ HQData.RequestMinuteData=function(data, callback)
     }, 50);
 }
 
-HQData.RequestPopMinuteData=function(data, callback)
+HQData.Minute_RequestPopMinuteData=function(data, callback)
 {
     data.PreventDefault=true;
     var symbol=data.Request.Data.symbol[0];             //请求的股票代码
@@ -215,7 +224,8 @@ HQData.RequestPopMinuteData=function(data, callback)
     console.log(`[HQData::RequestPopMinuteData] Symbol=${symbol} Date=${date}`);
 
     setTimeout(()=>{
-        var srcStock=MINUTE_1DAY_DATA.stock[0];
+        var fullData=HQData.GetDayMinuteDataBySymbol(symbol);
+        var srcStock=fullData[0];
         var stockItem={ date:date, minute:[], yclose:srcStock.yclose, symbol:srcStock.symbol, name:srcStock.symbol, IsHistoryMinute:true };
         if (callcation.Before)
         {
@@ -258,23 +268,24 @@ HQData.RequestPopMinuteData=function(data, callback)
 }
 
 
-HQData.RequestMinuteDaysData=function(data, callback)
+HQData.Minute_RequestHistoryMinuteData=function(data, callback)
 {
     data.PreventDefault=true;
-    var symbol=data.Request.Data.symbol; //请求的股票代码
+    var symbol=data.Request.Data.symbol;                //请求的股票代码
     var dayCount=data.Request.Data.daycount;
     var callcation=data.Request.Data.callcation;        //集合竞价
   
-    console.log(`[HQData::RequestMinuteDaysData] Symbol=${symbol}`);
-    
-    var hqchartData={code:0, data:[] };
-    hqchartData.symbol=MINUTE_5DAY_DATA.symbol;
-    hqchartData.name=MINUTE_5DAY_DATA.symbol;
+    console.log(`[HQData::Minute_RequestHistoryMinuteData] Symbol=${symbol}`);
 
-    for(var i=0;i<dayCount && i<MINUTE_5DAY_DATA.data.length;++i)
+    var fullData=HQData.GetMulitDayMinuteDataBySymbol(symbol);
+    
+    var aryDay=[];
+    if (dayCount>fullData.length) dayCount=fullData.length;
+    aryDay=fullData.slice(0,dayCount);
+    for(var i=0; i<aryDay.length; ++i)
     {
-        var item=MINUTE_5DAY_DATA.data[i];
-        var dayItem={minute:item.minute, yclose:item.yclose, date:item.date };
+        var item=aryDay[i];
+       
         if (callcation.Before)
         {
             var before=
@@ -295,13 +306,39 @@ HQData.RequestMinuteDaysData=function(data, callback)
 
             var beforeinfo={ totalcount:11, ver:1.0 };
 
-            dayItem.before=before;
-            dayItem.beforeinfo=beforeinfo;
+            item.before=before;
+            item.beforeinfo=beforeinfo;
         }
-
-        hqchartData.data.push(dayItem);
     }
    
+    var hqchartData={code:0, data:aryDay, name:symbol, symbol: symbol};
+
+    callback(hqchartData);
+}
+
+
+HQData.Minute_RequestOverlayMinuteData=function(data, callback)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Data.symbol;
+    var date=data.Request.Data.days[0];
+    
+    var fullData=HQData.GetMulitDayMinuteDataBySymbol(symbol);
+    var aryDay=HQData.GetMulitDayMinuteDataByDate(fullData, [date]);
+
+    var hqchartData={ code:0, data:aryDay, name:symbol, symbol:symbol  };
+    callback(hqchartData);
+}
+
+HQData.Minute_RequestOverlayHistoryMinuteData=function(data, callback)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Data.symbol;
+    var aryDate=data.Request.Data.days;
+    var fullData=HQData.GetMulitDayMinuteDataBySymbol(symbol);
+    var aryDay=HQData.GetMulitDayMinuteDataByDate(fullData, aryDate);
+
+    var hqchartData={ code:0, data:aryDay, name:symbol, symbol:symbol  };
     callback(hqchartData);
 }
 
@@ -451,6 +488,7 @@ HQData.RequestMinuteRealtimeData=function(data,callback)
         }
     }
 
+    var symbol=data.Request.Data.symbol[0]; //请求的股票代码
     var hqchartData={ name:symbol, symbol:symbol, ver:2.0, data:aryMainData };
     if (IFrameSplitOperator.IsNonEmptyArray(aryOverlay)) hqchartData.overlay=aryOverlay;
    
@@ -1415,6 +1453,113 @@ HQData.GetKLineDataByDate=function(fullData, startDate, endDate)
         var date=kItem[0];
         if (date>=startDate && date<=endDate)
             aryData.push(kItem);
+    }
+
+    return aryData;
+}
+
+HQData.GetDayMinuteDataBySymbol=function(symbol)
+{
+    var data=null;
+    switch(symbol)
+    {
+        case "000001.sz":
+            data=SZ_000001_1DAY_MINUTE;
+            break;
+        case "600000.sh":
+            data=SH_600000_1DAY_MINUTE;
+            break;
+        case "000151.sz":
+            data=SZ_000151_1DAY_MINUTE;
+            break;
+        default:
+            data=SZ_000151_1DAY_MINUTE;
+            break;
+    }
+
+    if (!data) return null;
+
+    /*
+    var aryMinute=[];
+    for(var i=0;i<data.stock[0].minute.length;++i)
+    {
+        var item=data.stock[0].minute[i];
+        var newItem=
+        { 
+            price:item.price,
+            open:item.open,
+            low:item.low,
+            high:item.high,
+            vol:item.vol,
+            amount:item.amount,
+            time:item.time,
+        }
+
+        aryMinute.push(newItem);
+    }
+
+    data.stock[0].minute=aryMinute;
+    */
+
+    return data.stock;
+}
+
+HQData.GetMulitDayMinuteDataBySymbol=function(symbol)
+{
+    var data=null;
+    switch(symbol)
+    {
+        case "000001.sz":
+            data=SZ_000001_5DAY_MINUTE;
+            break;
+        case "600000.sh":
+            data=SH_600000_5DAY_MINUTE;
+            break;
+        case "000151.sz":
+            data=SZ_000151_5DAY_MINUTE;
+            break;
+        default:
+            data=SZ_000151_5DAY_MINUTE;
+            break;
+    }
+
+    if (!data) return null;
+
+    /*
+    var aryDay=[];
+    for(var i=0;i<data.data.length;++i)
+    {
+        var dayItem=data.data[i];
+        
+        var newDayItem={ minute:[],  date:dayItem.date, close:dayItem.close, yclose:dayItem.yclose };
+        for(var j=0;j<dayItem.minute.length;++j)
+        {
+            var item=dayItem.minute[j];
+            newDayItem.minute[j]=item.slice(0,7);
+        }
+
+
+        aryDay.push(newDayItem);
+    }
+    data.data=aryDay;
+    */
+
+
+    return data.data;
+}
+
+HQData.GetMulitDayMinuteDataByDate=function(aryDay, aryDate)
+{
+    var aryData=[];
+    if (!IFrameSplitOperator.IsNonEmptyArray(aryDay)) return aryData;
+    
+    for(var i=0;i<aryDay.length;++i)
+    {
+        var item=aryDay[i];
+        if (aryDate.includes(item.date))
+        {
+            aryData.push(item);
+        }
     }
 
     return aryData;

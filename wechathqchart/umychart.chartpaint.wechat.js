@@ -8245,12 +8245,13 @@ function ChartOverlayMinutePriceLine()
   
     this.Color = "rgb(65,105,225)";
     this.MainData;                  //主图数据
-    this.MainYClose;                //主图股票的前收盘价
   
     this.Name = "ChartOverlayMinutePriceLine";
     this.Title;
     this.Symbol;                    //叠加的股票代码
     this.YClose;                    //叠加的股票前收盘
+    this.Status=OVERLAY_STATUS_ID.STATUS_NONE_ID;
+    this.OverlayType=0; //叠加方式 0=百分比叠加  1=绝对叠加
   
     this.Draw = function () 
     {
@@ -8268,38 +8269,53 @@ function ChartOverlayMinutePriceLine()
         var xPointCount = this.ChartFrame.XPointCount;
         var minuteCount = this.ChartFrame.MinuteCount;
   
+        var yClose=null, mainYClose=null;
         var bFirstPoint = true;
-        var drawCount = 0;
+        var drawCount = 0, showValue=0, pointCount=0;
         for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
         {
-            var value = this.Data.Data[i].Close;
-            if (value == null) continue;
-            var showValue = value / this.YClose * this.MainYClose;
+            var item=this.Data.Data[i];
+            if (item && IFrameSplitOperator.IsNumber(item.Close))
+            {
+                if (bFirstPoint)    //百分比使用每天的昨收计算
+                {
+                    yClose=item.YClose;
+                    var minItem=this.MainData.Data[i];
+                    mainYClose=minItem.YClose;
+                }
+
+                var value=item.Close;
+                showValue=value;           //绝对叠加
+                if (this.OverlayType==0) showValue=value/yClose*mainYClose;   //百分比
+
+                var x = this.ChartFrame.GetXFromIndex(j);
+                var y = this.ChartFrame.GetYFromData(showValue, false);
+            
+                if (bFirstPoint) 
+                {
+                    this.Canvas.strokeStyle = this.Color;
+                    this.Canvas.beginPath();
+                    if (isHScreen) this.Canvas.moveTo(y, x);
+                    else this.Canvas.moveTo(x, y);
+                    bFirstPoint = false;
+                }
+                else 
+                {
+                    if (isHScreen) this.Canvas.lineTo(y, x);
+                    else this.Canvas.lineTo(x, y);
+                }
     
-            var x = this.ChartFrame.GetXFromIndex(j);
-            var y = this.ChartFrame.GetYFromData(showValue);
-  
-            if (bFirstPoint) 
-            {
-                this.Canvas.strokeStyle = this.Color;
-                this.Canvas.beginPath();
-                if (isHScreen) this.Canvas.moveTo(y, x);
-                else this.Canvas.moveTo(x, y);
-                bFirstPoint = false;
-            }
-            else 
-            {
-                if (isHScreen) this.Canvas.lineTo(y, x);
-                else this.Canvas.lineTo(x, y);
+                ++drawCount;
             }
   
-            ++drawCount;
-  
-            if (drawCount >= minuteCount) //上一天的数据和这天地数据线段要断开
+            ++pointCount;
+
+            if (pointCount>=minuteCount) //上一天的数据和这天地数据线段要断开
             {
-            bFirstPoint = true;
-            this.Canvas.stroke();
-            drawCount = 0;
+                bFirstPoint=true;
+                pointCount=0;
+                if (drawCount>0) this.Canvas.stroke();
+                drawCount=0;
             }
         }
   
@@ -8309,33 +8325,46 @@ function ChartOverlayMinutePriceLine()
     this.GetMaxMin = function () 
     {
         var xPointCount = this.ChartFrame.XPointCount;
-        var range = {};
-        if (this.YClose == null) return range;
-    
-        range.Min = this.MainYClose;
-        range.Max = this.MainYClose;
-        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
+        var range={ Min:null, Max:null };
+        
+        var minuteCount=this.ChartFrame.MinuteCount;
+        var yClose=null, mainYClose=null;
+        var bFirstPoint=true;
+        var pointCount=0;
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
-            var value = this.Data.Data[i].Close;
-            if (value == null) continue;
-            var value = value / this.YClose * this.MainYClose;
-            if (range.Max == null) range.Max = value;
-            if (range.Min == null) range.Min = value;
-    
-            if (range.Max < value) range.Max = value;
-            if (range.Min > value) range.Min = value;
+            var item=this.Data.Data[i];
+            if (!item || !IFrameSplitOperator.IsNumber(item.Close)) 
+            {
+                ++pointCount;
+                continue;
+            }
+
+            if (bFirstPoint)
+            {
+                yClose=item.YClose;
+                var minItem=this.MainData.Data[i];
+                mainYClose=minItem.YClose;
+                bFirstPoint=false;
+            }
+
+            var value=item.Close;
+            if (this.OverlayType==0) value=value/yClose*mainYClose;
+
+            if (range.Max==null) range.Max=value;
+            if (range.Min==null) range.Min=value;
+
+            if (range.Max<value) range.Max=value;
+            if (range.Min>value) range.Min=value;
+
+            ++pointCount;
+
+            if (pointCount>=minuteCount)
+            {
+                bFirstPoint=true;
+                pointCount=0;
+            }
         }
-    
-        if (range.Max == this.MainYClose && range.Min == this.MainYClose) 
-        {
-            range.Max = this.MainYClose + this.MainYClose * 0.1;
-            range.Min = this.MainYClose - this.MainYClose * 0.1;
-            return range;
-        }
-  
-        var distance = Math.max(Math.abs(this.MainYClose - range.Max), Math.abs(this.MainYClose - range.Min));
-        range.Max = this.MainYClose + distance;
-        range.Min = this.MainYClose - distance;
   
         return range;
     }

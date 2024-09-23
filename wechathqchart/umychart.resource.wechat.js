@@ -234,6 +234,15 @@ function JSChartResource()
             "rgb(24,71,178)",
         ];
 
+    this.OverlaySymbol={ Random:0 };    //Random 颜色的随机数
+    this.OverlaySymbol.Color=   //叠加股票颜色
+    [
+        "rgb(38,198,218)",
+        "rgb(103,58,183)",
+        "rgb(0,191,165)",
+        "rgb(130,177,255)",
+    ];
+
     //历史数据api
     this.Index.StockHistoryDayApiUrl = "https://opensource.zealink.com/API/StockHistoryDay";
     //市场多空

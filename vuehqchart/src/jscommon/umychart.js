@@ -9976,6 +9976,15 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             if (data.PreventDefault) return;
         }
     }
+
+    this.ResetOverlaySymbolStatus=function()
+    {
+        for(var i=0; i<this.OverlayChartPaint.length; ++i)
+        {
+            var item=this.OverlayChartPaint[i];
+            item.Status=OVERLAY_STATUS_ID.STATUS_NONE_ID;
+        }
+    }
 }
 
 function GetDevicePixelRatio()
@@ -76782,15 +76791,6 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         this.Draw();
     }
 
-    this.ResetOverlaySymbolStatus=function()
-    {
-        for(var i in this.OverlayChartPaint)
-        {
-            var item=this.OverlayChartPaint[i];
-            item.Status=OVERLAY_STATUS_ID.STATUS_NONE_ID;
-        }
-    }
-
     //取消叠加股票
     this.ClearOverlaySymbol=function()
     {
@@ -82340,7 +82340,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             if (!bFind) aryNewSymbol.push(strSymbol);
         }
 
-        if (!IFrameSplitOperator.IsNonEmptyArray(arySymbol)) return true;
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryNewSymbol)) return true;
 
         for(var i=0;i<aryNewSymbol.length;++i)
         {
@@ -82367,15 +82367,6 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         else this.RequestOverlayHistoryMinuteData();
         
         return true;
-    }
-
-    this.ResetOverlaySymbolStatus=function()
-    {
-        for(var i in this.OverlayChartPaint)
-        {
-            var item=this.OverlayChartPaint[i];
-            item.Status=OVERLAY_STATUS_ID.STATUS_NONE_ID;
-        }
     }
 
     //删除一个叠加股票

@@ -103,18 +103,24 @@
     <script src="../jscommon/umychart.popMenu.js"></script>
     <script src="../jscommon/umychart.DialogDrawTool.js"></script>
 
-     <!-- 公式编辑器 -->
+    <!-- 公式编辑器 -->
     <script src="../jscommon/umychart.resource/js/codemirror/codemirror.js"></script>
     <script src="../jscommon/umychart.resource/js/codemirror/javascript.js"></script>
    
 
-    <script src="../jscommon/umychart.testdata/60000.sh.day.minute.js"></script>
-    <script src="../jscommon/umychart.testdata/60000.sh.5day.minute.js"></script>
-    <script src="../jscommon/umychart.testdata/60000.sh.1day.kline.js"></script>
+    <!-- 单日分时数据 -->
+    <script src="../jscommon/umychart.testdata/DayMinute/000151.sz.1day.minute.js"></script>
+    <script src="../jscommon/umychart.testdata/DayMinute/000001.sz.1day.minute.js"></script>
+    <script src="../jscommon/umychart.testdata/DayMinute/600000.sh.1day.minute.js"></script>
+
+
+    <!-- 多日分时数据 -->
+    <script src="../jscommon/umychart.testdata/Day5Minute/600000.sh.5day.minute.js"></script>
+    <script src="../jscommon/umychart.testdata/Day5Minute/000001.sz.5day.minute.js"></script>
+    <script src="../jscommon/umychart.testdata/Day5Minute/000151.sz.5day.minute.js"></script>
 
     <script src="../jscommon/umychart.testdata.js"></script>
    
-
     <script>
 
         MARKET_SUFFIX_NAME.GetMarketStatus = function (symbol)  { return 2; }
@@ -255,7 +261,8 @@
                 Overlay:    //叠加股票
                 [
                     //{Symbol:'603190.sh', OverlayType:1, IsCalcuateMaxMin:true, Color:"rgb(250,0,0)" },
-                    //{Symbol:'000001.sz'}
+                    {Symbol:'000001.sz'},
+                    {Symbol:'000151.sz'}
                 ],
 
                 ExtendChart:    //扩展图形

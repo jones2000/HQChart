@@ -1047,6 +1047,65 @@ function ChartData()
         return result;
     }
 
+    this.GetOverlayMinuteData=function(overlayData, bApiPeriod)
+    {
+        var result=[];
+
+        for(var i=0,j=0;i<this.Data.length;)
+        {
+            var date=this.Data[i].Date;
+            var time=this.Data[i].Time;
+
+            if (j>=overlayData.length)
+            {
+                result[i]=new HistoryData();
+                result[i].Date=date;
+                result[i].Time=time;
+                ++i;
+                continue;;
+            }
+
+            var overlayDate=overlayData[j].Date;
+            var overlayTime=overlayData[j].Time;
+
+            if (overlayDate==date && overlayTime==time)
+            {
+                result[i]=new HistoryData();
+                result[i].Date=overlayData[j].Date;
+                result[i].Time=overlayData[j].Time;
+                result[i].YClose=overlayData[j].YClose;
+                result[i].Open=overlayData[j].Open;
+                result[i].High=overlayData[j].High;
+                result[i].Low=overlayData[j].Low;
+                result[i].Close=overlayData[j].Close;
+                result[i].Vol=overlayData[j].Vol;
+                result[i].Amount=overlayData[j].Amount;
+
+                //涨跌家数数据
+                result[i].Stop=overlayData[j].Stop;
+                result[i].Up=overlayData[j].Up;
+                result[i].Down=overlayData[j].Down;
+                result[i].Unchanged=overlayData[j].Unchanged;
+
+                ++j;
+                ++i;
+            }
+            else if (overlayDate<date || (overlayDate==date && overlayTime<time))
+            {
+                ++j;
+            }
+            else
+            {
+                result[i]=new HistoryData();
+                result[i].Date=date;
+                result[i].Time=time;
+                ++i;
+            }
+        }
+
+        return result;
+    }
+
 
     /*
         技术指标数据方法
