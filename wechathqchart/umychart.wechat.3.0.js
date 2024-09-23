@@ -10866,6 +10866,7 @@ function MinuteChartContainer(uielement)
 
         paint.SourceData=overlayDayData;
         var allMinuteData = this.HistoryMinuteDataToArray(overlayDayData);
+        var yClose=overlayDayData[0].YClose;    //取最近一个交易日前收盘最为中轴线
 
         //原始数据
         var sourceData = new ChartData();

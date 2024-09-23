@@ -1460,11 +1460,12 @@ function FrameSplitMinutePriceY()
             }
         }
 
-        if (this.OverlayChartPaint && this.OverlayChartPaint.length > 0 && this.OverlayChartPaint[0] && this.OverlayChartPaint[0].Symbol) 
+        for(var i=0; i<this.OverlayChartPaint.length; ++i)
         {
-            var range = this.OverlayChartPaint[0].GetMaxMin();
-            if (range.Max && range.Max > max) max = range.Max;
-            if (range.Min && range.Min < min) min = range.Min;
+            var item=this.OverlayChartPaint[i];
+            var range=item.GetMaxMin();
+            if (range.Max && range.Max>max) max=range.Max;
+            if (range.Min && range.Min<min) min=range.Min;
         }
 
         if (this.SplitType==1 && this.LimitPrice)
