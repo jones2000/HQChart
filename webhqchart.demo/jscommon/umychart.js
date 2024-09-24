@@ -76579,6 +76579,31 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         return true;
     }
 
+    this.RequestSingleOverlayHistoryData=function(symbol, dataCount, firstDate, item)
+    {
+        var self = this;
+        item.Status=OVERLAY_STATUS_ID.STATUS_REQUESTDATA_ID;
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'KLineChartContainer::RequestOverlayHistoryData', //类名::
+                Explain:'叠加股票日K线数据',
+                Request:{ Url:self.KLineApiUrl, Data: { symbol: symbol, count: dataCount.MaxRequestDataCount,"first":{ date: firstDate },
+                    field:["name","symbol","yclose","open","price","high",'vol','amount'] }, Type:'POST' }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                item.Status=OVERLAY_STATUS_ID.STATUS_RECVDATA_ID;
+                self.RecvOverlayHistoryData(data,item);
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+    }
+
     this.RequestOverlayHistoryData=function()
     {
         if (!this.OverlayChartPaint.length) return;
@@ -76595,47 +76620,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             let symbol=item.Symbol;
             if (!symbol) continue;
 
-            item.Status=OVERLAY_STATUS_ID.STATUS_REQUESTDATA_ID;
-
-            if (this.NetworkFilter)
-            {
-                var obj=
-                {
-                    Name:'KLineChartContainer::RequestOverlayHistoryData', //类名::
-                    Explain:'叠加股票日K线数据',
-                    Request:{ Url:self.KLineApiUrl, Data: { symbol: symbol, count: dataCount.MaxRequestDataCount,"first":{ date: firstDate },
-                        field:["name","symbol","yclose","open","price","high",'vol','amount'] }, Type:'POST' }, 
-                    Self:this,
-                    PreventDefault:false
-                };
-                this.NetworkFilter(obj, function(data) 
-                { 
-                    item.Status=OVERLAY_STATUS_ID.STATUS_RECVDATA_ID;
-                    self.RecvOverlayHistoryData(data,item);
-                });
-
-                if (obj.PreventDefault==true) continue;   //已被上层替换,不调用默认的网络请求
-            }
-
-            //请求数据
-            JSNetwork.HttpRequest({
-                url: this.KLineApiUrl,
-                data:
-                {
-                    "field": ["name","symbol","yclose","open","price","high"],
-                    "symbol": symbol,
-                    "start": -1,
-                    "count": dataCount.MaxRequestDataCount
-                },
-                type:"post",
-                dataType: "json",
-                async:true,
-                success: function (data)
-                {
-                    item.Status=OVERLAY_STATUS_ID.STATUS_RECVDATA_ID;
-                    self.RecvOverlayHistoryData(data,item);
-                }
-            });
+            this.RequestSingleOverlayHistoryData(symbol, dataCount, firstDate, item);
         }
     }
 
@@ -76686,6 +76671,32 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
     }
 
+    this.RequestSingleHistoryMinuteData=function(symbol, dataCount, firstDate,firstTime, item)
+    {
+        var self=this;
+        item.Status=OVERLAY_STATUS_ID.STATUS_REQUESTDATA_ID;
+
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'KLineChartContainer::RequestOverlayHistoryMinuteData', //类名::
+                Explain:'叠加股票分钟K线数据',
+                Request:{ Url:self.MinuteKLineApiUrl, Data: { symbol: symbol, count: dataCount.MaxRequestMinuteDayCount,"first":{ date: firstDate, time:firstTime },
+                    field:["name","symbol","yclose","open","price","high",'vol','amount'] }, Type:'POST' }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                item.Status=OVERLAY_STATUS_ID.STATUS_RECVDATA_ID;
+                self.RecvOveralyHistoryMinuteData(data,item);
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+    }
+
     this.RequestOverlayHistoryMinuteData=function()
     {
         if (!this.OverlayChartPaint.length) return;
@@ -76703,47 +76714,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             let symbol=item.Symbol;
             if (!symbol) continue;
 
-            item.Status=OVERLAY_STATUS_ID.STATUS_REQUESTDATA_ID;
-
-            if (this.NetworkFilter)
-            {
-                var obj=
-                {
-                    Name:'KLineChartContainer::RequestOverlayHistoryMinuteData', //类名::
-                    Explain:'叠加股票分钟K线数据',
-                    Request:{ Url:self.MinuteKLineApiUrl, Data: { symbol: symbol, count: dataCount.MaxRequestMinuteDayCount,"first":{ date: firstDate, time:firstTime },
-                        field:["name","symbol","yclose","open","price","high",'vol','amount'] }, Type:'POST' }, 
-                    Self:this,
-                    PreventDefault:false
-                };
-                this.NetworkFilter(obj, function(data) 
-                { 
-                    item.Status=OVERLAY_STATUS_ID.STATUS_RECVDATA_ID;
-                    self.RecvOveralyHistoryMinuteData(data,item);
-                });
-
-                if (obj.PreventDefault==true) continue;   //已被上层替换,不调用默认的网络请求
-            }
-
-            //请求数据
-            JSNetwork.HttpRequest({
-                url: this.MinuteKLineApiUrl,
-                data:
-                {
-                    "field": ["name","symbol","yclose","open","price","high",'vol','amount'],
-                    "symbol": symbol,
-                    "start": -1,
-                    "count": dataCount.MaxRequestMinuteDayCount
-                },
-                type:"post",
-                dataType: "json",
-                async:true,
-                success: function (data)
-                {
-                    item.Status=OVERLAY_STATUS_ID.STATUS_RECVDATA_ID;
-                    self.RecvOveralyHistoryMinuteData(data,item);
-                }
-            });
+            this.RequestSingleHistoryMinuteData(symbol,dataCount,firstDate,firstTime, item );
         }
     }
 

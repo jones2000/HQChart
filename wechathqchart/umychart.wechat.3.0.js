@@ -7802,12 +7802,36 @@ function KLineChartContainer(uielement)
         return result;
     }
 
+    this.RequestSingleOverlayHistoryData=function(symbol, dataCount, firstDate, item)
+    {
+        var self = this;
+        item.Status=OVERLAY_STATUS_ID.STATUS_REQUESTDATA_ID;
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'KLineChartContainer::RequestOverlayHistoryData', //类名::
+                Explain:'叠加股票日K线数据',
+                Request:{ Url:self.KLineApiUrl, Data: { symbol: symbol, count: dataCount.MaxRequestDataCount,"first":{ date: firstDate },
+                    field:["name","symbol","yclose","open","price","high",'vol','amount'] }, Type:'POST' }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                item.Status=OVERLAY_STATUS_ID.STATUS_RECVDATA_ID;
+                self.RecvOverlayHistoryData(data,item);
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+    }
+
     this.RequestOverlayHistoryData = function () 
     {
         if (!this.OverlayChartPaint.length) return;
         if (!this.SourceData || !this.SourceData.Data) return;  //主图数据还没有到完
 
-        var self = this;
         var dataCount=this.GetRequestDataCount();
         var firstDate=this.SourceData.Data[0].Date;
         for(var i=0;i<this.OverlayChartPaint.length;++i)
@@ -7818,27 +7842,7 @@ function KLineChartContainer(uielement)
             var symbol=item.Symbol;
             if (!symbol) continue;
 
-            item.Status=OVERLAY_STATUS_ID.STATUS_REQUESTDATA_ID;
-
-            if (this.NetworkFilter)
-            {
-                var obj=
-                {
-                    Name:'KLineChartContainer::RequestOverlayHistoryData', //类名::
-                    Explain:'叠加股票日K线数据',
-                    Request:{ Url:self.KLineApiUrl, Data: { symbol: symbol, count: dataCount.MaxRequestDataCount,"first":{ date: firstDate },
-                        field:["name","symbol","yclose","open","price","high",'vol','amount'] }, Type:'POST' }, 
-                    Self:this,
-                    PreventDefault:false
-                };
-                this.NetworkFilter(obj, function(data) 
-                { 
-                    item.Status=OVERLAY_STATUS_ID.STATUS_RECVDATA_ID;
-                    self.RecvOverlayHistoryData(data,item);
-                });
-
-                if (obj.PreventDefault==true) continue;   //已被上层替换,不调用默认的网络请求
-            }
+            this.RequestSingleOverlayHistoryData(symbol, dataCount, firstDate, item);
         }
     }
 
@@ -7886,12 +7890,38 @@ function KLineChartContainer(uielement)
         this.Draw();
     }
 
+
+    this.RequestSingleHistoryMinuteData=function(symbol, dataCount, firstDate,firstTime, item)
+    {
+        var self=this;
+        item.Status=OVERLAY_STATUS_ID.STATUS_REQUESTDATA_ID;
+
+        if (this.NetworkFilter)
+        {
+            var obj=
+            {
+                Name:'KLineChartContainer::RequestOverlayHistoryMinuteData', //类名::
+                Explain:'叠加股票分钟K线数据',
+                Request:{ Url:self.MinuteKLineApiUrl, Data: { symbol: symbol, count: dataCount.MaxRequestMinuteDayCount,"first":{ date: firstDate, time:firstTime },
+                    field:["name","symbol","yclose","open","price","high",'vol','amount'] }, Type:'POST' }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                item.Status=OVERLAY_STATUS_ID.STATUS_RECVDATA_ID;
+                self.RecvOveralyHistoryMinuteData(data,item);
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+    }
+
     this.RequestOverlayHistoryMinuteData=function()
     {
         if (!this.OverlayChartPaint.length) return;
         if (!this.SourceData || !this.SourceData.Data) return;  //主图数据还没有到完
 
-        var self = this;
         var dataCount=this.GetRequestDataCount();
         var firstDate=this.SourceData.Data[0].Date;
         var firstTime=this.SourceData.Data[0].Time;
@@ -7903,27 +7933,7 @@ function KLineChartContainer(uielement)
             var symbol=item.Symbol;
             if (!symbol) continue;
 
-            item.Status=OVERLAY_STATUS_ID.STATUS_REQUESTDATA_ID;
-
-            if (this.NetworkFilter)
-            {
-                var obj=
-                {
-                    Name:'KLineChartContainer::RequestOverlayHistoryMinuteData', //类名::
-                    Explain:'叠加股票分钟K线数据',
-                    Request:{ Url:self.MinuteKLineApiUrl, Data: { symbol: symbol, count: dataCount.MaxRequestMinuteDayCount,"first":{ date: firstDate, time:firstTime },
-                        field:["name","symbol","yclose","open","price","high",'vol','amount'] }, Type:'POST' }, 
-                    Self:this,
-                    PreventDefault:false
-                };
-                this.NetworkFilter(obj, function(data) 
-                { 
-                    item.Status=OVERLAY_STATUS_ID.STATUS_RECVDATA_ID;
-                    self.RecvOveralyHistoryMinuteData(data,item);
-                });
-
-                if (obj.PreventDefault==true) continue;   //已被上层替换,不调用默认的网络请求
-            }
+            this.RequestSingleHistoryMinuteData(symbol,dataCount,firstDate,firstTime, item );
         }
     }
 

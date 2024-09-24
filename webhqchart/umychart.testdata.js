@@ -758,27 +758,33 @@ HQData.RequestLatestData=function(data,callback)
     var symbol=data.Request.Data.symbol[0];
     var id=data.Args[0];
     var value=1;
-    switch(id)
+    var fullData=HQData.GetDayKLineDataBySymbol(symbol);
+    if (IFrameSplitOperator.IsNonEmptyArray(fullData))
     {
-        case 3:
-            value=KLINE_1DAY_DATA.stock[0].yclose;
-            break;
-        case 4:
-            value=KLINE_1DAY_DATA.stock[0].open;
-            break;
-        case 5:
-            value=KLINE_1DAY_DATA.stock[0].high;
-            break;
-        case 6:
-            value=KLINE_1DAY_DATA.stock[0].low;
-            break;
-        case 7:
-            value=KLINE_1DAY_DATA.stock[0].price;
-            break;
-        case 8:
-            value=KLINE_1DAY_DATA.stock[0].vol;
-            break;
+        var item=fullData[fullData.length-1];   //取最后一条数据
+        switch(id)
+        {
+            case 3:
+                value=item[1];
+                break;
+            case 4:
+                value=item[2];
+                break;
+            case 5:
+                value=item[3];
+                break;
+            case 6:
+                value=item[4];
+                break;
+            case 7:
+                value=item[5];
+                break;
+            case 8:
+                value=item[6];
+                break;
+        }
     }
+    
 
     var hqchartData={ symbol:symbol, ver:2.0, data:[ {id:id, value:value }]};
 
