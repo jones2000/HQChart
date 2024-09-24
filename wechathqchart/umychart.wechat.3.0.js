@@ -6456,7 +6456,7 @@ function KLineChartContainer(uielement)
                 latestData.Vol=realtimeData.Vol;
                 latestData.Amount=realtimeData.Amount;
             }
-            else if (item.Date<realtimeData.Date)   //新增加数据
+            else if (latestData.Date<realtimeData.Date)   //新增加数据
             {
                 JSConsole.Chart.Log('[KLineChartContainer::UpdateOverlayRealtimeData] insert kline by minute data',realtimeData);
 
