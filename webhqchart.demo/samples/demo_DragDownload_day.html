@@ -27,18 +27,27 @@
     <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
     <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
 
-    <script src="../jscommon/umychart.testdata/60000.sh.1day.kline.js"></script>
-    <script src="../jscommon/umychart.testdata/60000.sh.day.kline.js"></script>
     <script src="../jscommon/umychart.testdata/60000.sh.capital.kline.js"></script>
 
-    <script src="../jscommon/umychart.testdata/000001.sh.day.kline.js"></script>
-    <script src="../jscommon/umychart.testdata/399001.sz.day.kline.js"></script>
+    <!-- 分钟K线 -->
+    <script src="../jscommon/umychart.testdata/M1KLine/600000.sh.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/000001.sh.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/000300.sh.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/399001.sz.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/000001.sz.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/399006.sz.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/399005.sz.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/000151.sz.minute.kline.js"></script>
 
-    <script src="../jscommon/umychart.testdata/60000.sh.minute.kline.js"></script>
-    <script src="../jscommon/umychart.testdata/60000.sh.1minute.kline.js"></script>
-
-    <script src="../jscommon/umychart.testdata/000151.sz.day.kline.js"></script>
-    <script src="../jscommon/umychart.testdata/000001.sz.minute.kline.js"></script>
+    <!--日K -->
+    <script src="../jscommon/umychart.testdata/DayKLine/600000.sh.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/000001.sh.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/000300.sh.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/399001.sz.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/000001.sz.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/399006.sz.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/399005.sz.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/000151.sz.day.kline.js"></script>
 
     <script src="../jscommon/umychart.testdata.js"></script>
 
@@ -148,7 +157,7 @@
 
                 Overlay:
                 [
-                    { Symbol:"000151.sz"}
+                    //{ Symbol:"000151.sz"}
                 ],
             };
                  
@@ -183,15 +192,15 @@
                 console.log(`[KLine::NetworkFilter] Name=${data.Name}`);
                 switch(data.Name) 
                 {
-                    case 'KLineChartContainer::RequestHistoryData':                 //日线全量数据下载
-                        this.RequestHistoryData(data,callback);
-                        break;
-                    case 'KLineChartContainer::RequestRealtimeData':                //日线实时数据更新
-                        this.RequestRealtimeData(data,callback);
-                        break;
-                    case 'KLineChartContainer::RequestFlowCapitalData':             //流通股本
-                        this.RequestFlowCapitalData(data,callback);
-                        break;
+                    //case 'KLineChartContainer::RequestHistoryData':                 //日线全量数据下载
+                    //    this.RequestHistoryData(data,callback);
+                    //    break;
+                    //case 'KLineChartContainer::RequestRealtimeData':                //日线实时数据更新
+                    //    this.RequestRealtimeData(data,callback);
+                    //    break;
+                    //case 'KLineChartContainer::RequestFlowCapitalData':             //流通股本
+                    //    this.RequestFlowCapitalData(data,callback);
+                    //   break;
 
                     case "KLineChartContainer::RequestDragDayData":              //拖动下载
                         this.RequestDragDayData(data, callback);
@@ -295,15 +304,16 @@
                 {
                     var findIndex=-1;
                     var date=firstDateTime.date;
+                    var fullData=HQData.GetDayKLineDataBySymbol(symbol);
                     if (date==null) 
                     {
-                        findIndex=KLINE_DAY_DATA.data.length-1;
+                        findIndex=fullData.length-1;
                     }
                     else
                     {
-                        for(var i=0;i<KLINE_DAY_DATA.data.length;++i)
+                        for(var i=0;i<fullData.length;++i)
                         {
-                            var kItem=KLINE_DAY_DATA.data[i];
+                            var kItem=fullData[i];
                             var value=kItem[0];
                             if (value>=date)
                             {
@@ -328,7 +338,7 @@
                     var hqchartData={ name:symbol, symbol:symbol, code:0, ver:2, data:[] };
                     for(var i=startIndex; i<findIndex; ++i)
                     {
-                        hqchartData.data.push(KLINE_DAY_DATA.data[i]);
+                        hqchartData.data.push(fullData[i]);
                     }
 
                     option.DataOffset=-parseInt(dataCount/2); //当前屏数据往前移动
@@ -346,11 +356,9 @@
                         for(var i=0;i<aryOverlay.length;++i)
                         {
                             var item=aryOverlay[i];
-                            if (item.symbol=="000151.sz")
-                            {
-                                var aryData=this.GetKLineDataByDate(KLINE_DAY_DATA2.data, startDate, endDate);
-                                hqchartData.overlay.push({ symbol:item.symbol, name:item.symbol, data:aryData});
-                            }
+                            var overlayFullData=HQData.GetDayKLineDataBySymbol(item.symbol);
+                            var aryData=HQData.GetKLineDataByDate(overlayFullData, startDate, endDate);
+                            hqchartData.overlay.push({ symbol:item.symbol, name:item.symbol, data:aryData});
                         }
                     }
 
@@ -380,6 +388,7 @@
                 var dataCount=data.Option.XShowCount;
                 var symbol=data.Request.Data.symbol; //请求的股票代码
                 var firstDateTime=data.Request.Data.first;
+                var aryOverlay=data.Request.Data.overlay;   //叠加股票
 
                 console.log(`[KLineChart::RequestZoomDayData] Symbol=${symbol} date=${firstDateTime.date}`);
 
@@ -392,9 +401,10 @@
                 {
                     var findIndex=-1;
                     var date=firstDateTime.date;
-                    for(var i=0;i<KLINE_DAY_DATA.data.length;++i)
+                    var fullData=HQData.GetDayKLineDataBySymbol(symbol);
+                    for(var i=0;i<fullData.length;++i)
                     {
-                        var kItem=KLINE_DAY_DATA.data[i];
+                        var kItem=fullData[i];
                         var value=kItem[0]
                         if (value>=date)
                         {
@@ -417,7 +427,7 @@
                     var hqchartData={ name:symbol, symbol:symbol, code:0, ver:2, data:[] };
                     for(var i=startIndex; i<findIndex; ++i)
                     {
-                        hqchartData.data.push(KLINE_DAY_DATA.data[i]);
+                        hqchartData.data.push(fullData[i]);
                     }
 
                     option.DataOffset=-parseInt(dataCount/2); //当前屏数据往前移动
@@ -425,6 +435,22 @@
                     self.ChartSplashPaint.EnableSplash(false);
 
                     console.log('[KLineChart::RequestZoomDayData] ', hqchartData);
+
+
+                    if (IFrameSplitOperator.IsNonEmptyArray(aryOverlay))
+                    {
+                        hqchartData.overlay=[];
+
+                        var startDate=hqchartData.data[0][0];
+                        var endDate=hqchartData.data[hqchartData.data.length-1][0];
+                        for(var i=0;i<aryOverlay.length;++i)
+                        {
+                            var item=aryOverlay[i];
+                            var overlayFullData=HQData.GetDayKLineDataBySymbol(item.symbol);
+                            var aryData=HQData.GetKLineDataByDate(overlayFullData, startDate, endDate);
+                            hqchartData.overlay.push({ symbol:item.symbol, name:item.symbol, data:aryData});
+                        }
+                    }
 
                     callback(hqchartData);
 
