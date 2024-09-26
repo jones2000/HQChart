@@ -36,6 +36,8 @@
 
             <button class="toolsButton" id="daycount_5">5日分时</button>
             <button class="toolsButton" id="daycount_1">1日分时</button>
+            <button class="toolsButton" id="style_black">黑色风格</button>
+            <button class="toolsButton" id="style_white">白色风格</button>
 
         </div>
         <div class="table" id="tools_table">
@@ -230,7 +232,7 @@
                 Border: //边框
                 {
                     Left:80,    //左边间距
-                    Right:1,     //右边间距
+                    Right:80,     //右边间距
                     Top:25,
                     Bottom:25,
 
@@ -310,6 +312,10 @@
                     {
                         event:JSCHART_EVENT_ID.ON_CUSTOM_MINUTE_BG,
                         callback:(event, data, obj)=>{ this.OnCustomMinuteBG(event, data, obj); }
+                    },
+                    {
+                        event:JSCHART_EVENT_ID.ON_SPLIT_YCOORDINATE, 
+                        callback:(event, data, obj)=>{ this.OnSplitYCoordinate(event, data, obj); }
                     }
                 ];
 
@@ -503,6 +509,23 @@
                 }
             }
 
+            this.OnSplitYCoordinate=function(event, data, obj)
+            {
+                /*if (data.ID==0) 
+                {
+                    var frame=data.Frame;
+
+                    for(var i=0;i<frame.HorizontalInfo.length;++i)
+                    {
+                        var item=frame.HorizontalInfo[i];
+                        if (i==0)
+                            item.YOffset=[ { Offset:5 }, { Offset:5 }];
+                    }
+
+                }
+                */
+            }
+
             this.OnSize=function(option)  //自适应大小调整
             {
                 var height= $(window).height()-300;
@@ -546,6 +569,33 @@
                 alert(log);
                 console.log('[ComplierError]', error);
             }
+
+
+            this.ChangeStyle=function(styleName)
+            {
+                var buttonColor=[null,null];
+                if (styleName=='black') 
+                {
+                    var style=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID); //读取风格配置
+                }
+                else if (styleName=='white') 
+                {
+                    var style=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.WHITE_ID); //读取风格配置
+                    style.BGColor='rgb(255,255,255)';
+                }
+                else 
+                {
+                    return;
+                }
+
+                style.ToolbarButtonStyle=1;
+                JSChart.SetStyle(style);
+                this.DivKLine.style.backgroundColor=style.BGColor;   //修改div背景色
+                
+                this.Chart.ReloadResource({ Resource:null, Draw:true , Update:true });  //动态更新颜色配置  
+
+            }
+
 
             this.GetIndexInfo=function()
             {
@@ -828,7 +878,9 @@
             $("#daycount_5").click(function(){ klineControl.Chart.ChangeDayCount(5); });
             $("#daycount_1").click(function(){ klineControl.Chart.ChangeDayCount(1); });
 
-            
+            $("#style_black").click(function(){ klineControl.ChangeStyle('black') })
+            $("#style_white").click(function(){ klineControl.ChangeStyle('white'); })
+
             
 
             DeleteLocalIndex=(e, name)=>{ klineControl.DeleteLocalIndex(e, name); }

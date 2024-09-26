@@ -10229,8 +10229,10 @@ function CoordinateInfo()
                                                                 //自定义刻度 { Custom:{ Position: 1=强制内部 }}
     this.AreaData;  //区域: { Start:, End:, BGColor:, Position:[0=左, 1=右] }
 
-    //不在当前屏范围
+    //不在当前屏范围 （可定义刻度使用)
     //this.OutRange={ BGColor:"", TextColor:, BorderColor: TopYOffset:, BottomYOffset: }
+    //Y轴文字偏移
+    //this.YOffset=[{ Offset:5}, { Offset:10}] //目前只对框子外的刻度文字生效
 }
 
 
@@ -11462,6 +11464,14 @@ function AverageWidthFrame()
 
             if (item.Message[0]!=null && isDrawLeft)
             {
+                var yOffset=0;
+                if (IFrameSplitOperator.IsNonEmptyArray(item.YOffset))  //文字Y轴偏移
+                {
+                    var offsetItem=item.YOffset[0];
+                    if (offsetItem && IFrameSplitOperator.IsNumber(offsetItem.Offset))
+                        yOffset=offsetItem.Offset;
+                }
+
                 if (Array.isArray(item.Message[0]))
                 {
                     if (this.MultiTextFormat==3)
@@ -11494,12 +11504,12 @@ function AverageWidthFrame()
                         if (leftExtendText && leftExtendText.Align===1)
                         {
                             this.Canvas.textAlign="left";
-                            this.Canvas.fillText(item.Message[0],this.YTextPadding[0],yText);
+                            this.Canvas.fillText(item.Message[0],this.YTextPadding[0],yText+yOffset);
                         }
                         else
                         {
                             this.Canvas.textAlign="right";
-                            this.Canvas.fillText(item.Message[0],xText-this.YTextPadding[0],yText);
+                            this.Canvas.fillText(item.Message[0],xText-this.YTextPadding[0],yText+yOffset);
                             rtPreLeft=rtLeft;
                         }
                     }
@@ -11509,6 +11519,15 @@ function AverageWidthFrame()
             //右边 坐标信息  间距小于10 不画坐标
             if (item.Message[1]!=null && isDrawRight)
             {
+                var yOffset=0;
+                if (IFrameSplitOperator.IsNonEmptyArray(item.YOffset))  //文字Y轴偏移
+                {
+                    var offsetItem=item.YOffset[1];
+                    if (offsetItem && IFrameSplitOperator.IsNumber(offsetItem.Offset))
+                        yOffset=offsetItem.Offset;
+                }
+
+
                 if (item.Font!=null) this.Canvas.font=item.Font;
 
                 var xText=right;
@@ -11601,11 +11620,11 @@ function AverageWidthFrame()
                         {
                             this.Canvas.textAlign="right";
                             var xRight=this.YRightTextInfo.MainTextWidth+right-this.YTextPadding[1];
-                            this.Canvas.fillText(item.Message[1],xRight,yText);
+                            this.Canvas.fillText(item.Message[1],xRight,yText+yOffset);
                         }
                         else
                         {
-                            this.Canvas.fillText(item.Message[1],xText+this.YTextPadding[1],yText);
+                            this.Canvas.fillText(item.Message[1],xText+this.YTextPadding[1],yText+yOffset);
                         }
                         
                         rtPreRight=rtRight;
@@ -13475,6 +13494,20 @@ function MinuteFrame()
     this.AfterCloseVerticalInfo=[];      //收盘集合竞价X轴
 
     this.NightDayConfig=CloneData(g_JSChartResource.Minute.NightDay);
+
+
+    this.MinuteFrame_ReloadResource=this.ReloadResource;
+
+
+    this.ReloadResource=function(resource)
+    {
+        this.MinuteFrame_ReloadResource(resource);
+
+        //集合竞价配色修改
+        this.BeforeBGColor=g_JSChartResource.Minute.Before.BGColor;  
+        this.AfterBGColor=g_JSChartResource.Minute.After.BGColor;
+        this.MultiDayBorderPen=g_JSChartResource.MultiDayBorderPen;
+    }
 
     this.DrawFrame=function()
     {
@@ -42962,6 +42995,22 @@ function MinuteLeftTooltipPaint()
         if (option.BGColor) this.BGColor=option.BGColor;
         if (option.LanguageID>0) this.LanguageID=option.LanguageID;
         if (IFrameSplitOperator.IsNumber(option.FixedWidth)) this.FixedWidth=option.FixedWidth;
+    }
+
+    this.ReloadResource=function(resource)
+    {
+        this.BorderColor=g_JSChartResource.PCTooltipPaint.BorderColor;    //边框颜色
+        this.BGColor=g_JSChartResource.PCTooltipPaint.BGColor;            //背景色
+        this.TitleColor=g_JSChartResource.PCTooltipPaint.TitleColor;      //标题颜色
+        this.DateTimeColor=g_JSChartResource.PCTooltipPaint.DateTimeColor;      //日期时间颜色
+        this.VolColor=g_JSChartResource.PCTooltipPaint.VolColor;          //标题成交量
+        this.AmountColor=g_JSChartResource.PCTooltipPaint.AmountColor;    //成交金额
+
+        this.UpColor=g_JSChartResource.UpTextColor;
+        this.DownColor=g_JSChartResource.DownTextColor;
+        this.UnchagneColor=g_JSChartResource.UnchagneTextColor;
+        
+        this.Font=g_JSChartResource.PCTooltipPaint.TitleFont;
     }
 
     this.IsEnableDraw=function()
