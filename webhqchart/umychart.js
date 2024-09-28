@@ -495,6 +495,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
 
             if (IFrameSplitOperator.IsNumber(item.PriceFormatType)) chart.ChartCorssCursor.StringFormatY.PriceFormatType=item.PriceFormatType;
             if (IFrameSplitOperator.IsNumber(item.DataFormatType)) chart.ChartCorssCursor.StringFormatY.DataFormatType=item.DataFormatType;
+            if (IFrameSplitOperator.IsBool(item.EnableKeyboard)) chart.ChartCorssCursor.EnableKeyboard=item.EnableKeyboard;
            
         }
 
@@ -1717,6 +1718,9 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         //画图工具
         if (option.EnableDrawToolDialogV2===true) chart.InitalDrawToolDialog();
         if (option.EnableModifyDrawDialogV2===true) chart.InitalModifyDrawDialog();
+
+        //K线tooltip
+        if (option.EnableTooltipDialog===true) chart.InitalTooltipDialog();
 
         //注册事件
         if (option.EventCallback)
@@ -3019,6 +3023,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     this.DialogDrawTool;    //画图工具
     this.DialogModifyDraw;  //画图修改
 
+    this.DialogTooltip;     //tooltip信息 
+
 
     this.ClearStockCache=function()
     {
@@ -3040,6 +3046,15 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         this.DialogDrawTool=new JSDialogDrawTool();
         this.DialogDrawTool.Inital(this);
         this.DialogDrawTool.Create();
+    }
+
+    this.InitalTooltipDialog=function()
+    {
+        if (this.DialogTooltip) return;
+
+        this.DialogTooltip=new JSDialogTooltip();
+        this.DialogTooltip.Inital(this);
+        this.DialogTooltip.Create();
     }
 
     this.InitalModifyDrawDialog=function()
@@ -3097,6 +3112,22 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
         this.DialogModifyDraw.Close();
     }
+
+    this.IsShowTooltipDialog=function()
+    {
+        if (!this.DialogTooltip) return false;
+
+        return  this.DialogTooltip.IsShow();
+    }
+
+    this.CloseTooltipDialog=function()
+    {
+        if (!this.DialogTooltip) return;
+
+        this.DialogTooltip.Close();
+    }
+
+
 
     //obj={ Element:, Canvas: }
     this.SetCorssCursorElement=function(obj)
@@ -5467,6 +5498,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 {
                     this.ChartCorssCursor.Canvas=this.Canvas;
                 }
+
+                this.DrawTooltipDialog();
             }
 
             ptPosition=this.Frame.PtInFrame(this.LastPoint.X, this.LastPoint.Y);
@@ -5916,6 +5949,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             {
                 this.ChartCorssCursor.Canvas=this.Canvas;
             }
+
+            this.DrawTooltipDialog();
         }
 
         var ptPosition=null;    //鼠标位置 null 无效 -1 在外面 >=0 对应的指标窗口中ID
@@ -6438,6 +6473,15 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         }
         
         var keyID = e.keyCode ? e.keyCode :e.which;
+
+        var draw=false;
+        if (this.ChartCorssCursor && this.ChartCorssCursor.OnKeyDown)   //十字光标 隐藏显示
+        {
+            var sendData={ e:e, KeyID:keyID, Draw:false, PreventDefault:false };
+            this.ChartCorssCursor.OnKeyDown(sendData);
+            draw=sendData.Draw;
+        }
+
         switch(keyID)
         {
             case 37: //left
@@ -6579,6 +6623,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             default:
                 return;
         }
+
+        if (draw) this.DrawDynamicInfo();
 
         //不让滚动条滚动
         if(e.preventDefault) e.preventDefault();
@@ -6885,6 +6931,11 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         var pixelTatio = GetDevicePixelRatio();
         if (pixelTatio===0) pixelTatio=1;   //div 缩放还是使用原始坐标
         this.ShowTooltip(this.LastPoint.X/pixelTatio,this.LastPoint.Y/pixelTatio,toolTip);
+    }
+
+    this.DrawTooltipDialog=function()
+    {
+        
     }
 
     this.ShowTooltip=function(x,y,toolTip)
@@ -7996,6 +8047,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         else if (option.Draw==true) this.Draw(); //是否立即重绘
 
         if (this.PopMinuteChart) this.PopMinuteChart.ReloadResource(option);
+        if (this.DialogTooltip) this.DialogTooltip.ReloadResource(option);
     }
 
     this.ReloadBorder=function(option)  //根据页面缩放调整对应边框的尺长
@@ -9983,6 +10035,19 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         {
             var item=this.OverlayChartPaint[i];
             item.Status=OVERLAY_STATUS_ID.STATUS_NONE_ID;
+        }
+    }
+
+    //十字光标状态变动
+    this.OnChangeCorssCursorStatus=function(data, obj)
+    {
+        if (data.Type==1)
+        {
+            if (!data.IsShowCorss)  //十字光标隐藏
+            {
+                this.HideTooltip();
+                this.CloseTooltipDialog();
+            }
         }
     }
 }
@@ -50669,6 +50734,9 @@ function ChartCorssCursor()
     this.IsShowClose=false;     //Y轴始终显示收盘价
     this.ClientPos=-1;
     this.CallAcutionXOperator;
+
+    this.EnableKeyboard=false;   //是否支持键盘隐藏显示
+    this.OnChangeStatusCallback;    //状态切换以后回调
     
 
     this.RightButton=
@@ -51847,6 +51915,29 @@ function ChartCorssCursor()
 
         this.Status=1;
     }
+
+    //data={ e:e, PreventDefault:false, KeyID, Draw:是否需要重绘 }
+    this.OnKeyDown=function(data)
+    {
+        if (!this.EnableKeyboard) return;
+
+        var keyID=data.KeyID;
+        if (keyID==27)  //ESC  隐藏十字线
+        {
+            if (!this.IsShowCorss) return;
+            this.IsShowCorss=false;
+            data.Draw=true;
+            if (this.OnChangeStatusCallback) this.OnChangeStatusCallback({ Type:1, IsShowCorss:this.IsShowCorss }, this);
+        }
+        else if (keyID==37 || keyID==39)    //left, right 显示十字线
+        {
+            if (this.IsShowCorss) return;
+            this.IsShowCorss=true;
+            data.Draw=true;
+            if (this.OnChangeStatusCallback) this.OnChangeStatusCallback({ Type:1, IsShowCorss:this.IsShowCorss }, this);
+        }
+    }
+
 }
 
 
@@ -68897,6 +68988,18 @@ function JSChartResource()
         LineHeight:25   //单行高度
     };
 
+    this.DialogTooltip=
+    {
+        BGColor:'rgb(250,250,250)',            //背景色
+        BorderColor:'rgb(20,20,20)',     //边框颜色
+        TitleColor:'rgb(0,0,0)',       //标题颜色
+        VolColor:"rgb(255, 185, 15)",       //标题成交量
+        AmountColor:"rgb(79, 79, 79)",      //成交金额
+        DateTimeColor:'rgb(60,60,60)',
+        TurnoverRateColor:'rgb(43,54,69)',       //换手率
+        PositionColor:"rgb(43,54,69)"            //持仓
+    }
+
     //弹幕
     this.Barrage= {
         Font:16*GetDevicePixelRatio() +'px 微软雅黑',   //字体
@@ -69879,6 +69982,21 @@ function JSChartResource()
             if (item.AmountColor) this.PCTooltipPaint.AmountColor=item.AmountColor;
         }
 
+        if (style.DialogTooltip)
+        {
+            var item=style.DialogTooltip;
+            if (item.BGColor) this.DialogTooltip.BGColor=item.BGColor;
+            if (item.BorderColor) this.DialogTooltip.BorderColor=item.BorderColor;
+            if (item.TitleColor) this.DialogTooltip.TitleColor=item.TitleColor;
+            if (item.DateTimeColor) this.DialogTooltip.DateTimeColor=item.DateTimeColor;
+
+            if (item.VolColor) this.DialogTooltip.VolColor=item.VolColor;
+            if (item.AmountColor) this.DialogTooltip.AmountColor=item.AmountColor;
+            if (item.TurnoverRateColor) this.DialogTooltip.TurnoverRateColor=item.TurnoverRateColor;
+            if (item.PositionColor) this.DialogTooltip.PositionColor=item.PositionColor;
+
+        }
+
         if (style.MinuteInfo)
         {
             var item=style.MinuteInfo;
@@ -70821,6 +70939,20 @@ function JSChartLocalization()
         ['DivTooltip-Exchange', {CN:'换手:', EN:'Exchange:', TC:'換手'}],
         ['DivTooltip-Position', {CN:'持仓:', EN:'Position:', TC:'持倉'}],
         ['DivTooltip-Price', {CN:'价格:', EN:'Open:', TC:'價格'}],
+
+        ['DialogTooltip-Date', {CN:'日期', EN:'Date', TC:'日期'}],
+        ['DialogTooltip-Time', {CN:'时间', EN:'Time', TC:'時間'}],
+        ['DialogTooltip-Open', {CN:'开盘价', EN:'Open', TC:'開盤價'}],
+        ['DialogTooltip-High', {CN:'最高价', EN:'High', TC:'最高價'}],
+        ['DialogTooltip-Low', {CN:'最低价', EN:'Low', TC:'最低價'}],
+        ['DialogTooltip-Close', {CN:'收盘价', EN:'Close', TC:'收盤價'}],
+        ['DialogTooltip-Increase', {CN:'涨幅', EN:'Increase', TC:'漲幅'}],
+        ['DialogTooltip-Vol', {CN:'成交量', EN:'Volume', TC:'數量'}],
+        ['DialogTooltip-Amount', {CN:'成交额', EN:'Amount', TC:'金額'}],
+        ['DialogTooltip-Exchange', {CN:'换手率', EN:'Exchange', TC:'換手'}],
+        ['DialogTooltip-Position', {CN:'持仓量', EN:'Position', TC:'持倉'}],
+        ['DialogTooltip-Price', {CN:'价格', EN:'Open', TC:'價格'}],
+        ['DialogTooltip-Amplitude', {CN:'振幅', EN:'amplitude', TC:'價格'}],
 
         //走势图PC tooltip
         ['PCTooltip-Date', {CN:'日期', EN:'Date', TC:"日期"}],
@@ -72572,6 +72704,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         this.ChartCorssCursor.StringFormatY.LanguageID=this.LanguageID;
         this.ChartCorssCursor.StringFormatY.ExtendChartPaint=this.ExtendChartPaint;
         this.ChartCorssCursor.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+        this.ChartCorssCursor.OnChangeStatusCallback=(data, obj)=>{ this.OnChangeCorssCursorStatus(data,obj); }
 
         //创建等待提示
         this.ChartSplashPaint = new ChartSplashPaint();
@@ -79106,6 +79239,42 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
         this.Draw();
     }
+
+    this.DrawTooltipDialog=function()
+    {
+        if (!this.DialogTooltip) return;
+
+        this.UpdateTooltipDialog();
+    }
+
+    this.UpdateTooltipDialog=function()
+    {
+        if (!this.DialogTooltip) return false;
+        if (!this.ChartCorssCursor) return false;
+
+        var kItem=null;
+        if (this.ChartCorssCursor.ClientPos>=0)
+        {
+            var hisData=this.ChartOperator_Temp_GetHistroyData();;
+            if (!hisData) return false;  //数据还没有到达
+    
+            var dataIndex=hisData.DataOffset+this.ChartCorssCursor.CursorIndex;
+            var kItem=hisData.Data[dataIndex];
+        }
+
+        var sendData=
+        { 
+            ClientPos:this.ChartCorssCursor.ClientPos,  //位置
+            IsShowCorss:this.ChartCorssCursor.IsShowCorss,  //是否显示十字线
+            KItem:kItem, 
+            Symbol:this.Symbol, Name:this.Name,
+        };
+
+
+        this.DialogTooltip.Update(sendData);
+
+        return true;
+    }
 }
 
 //API 返回数据 转化为array[]
@@ -80786,6 +80955,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         }
 
         var keyID = e.keyCode ? e.keyCode :e.which;
+
         switch(keyID)
         {
             case 37: //left
