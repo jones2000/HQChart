@@ -1672,12 +1672,12 @@ input[type="color"] {
 
 .UMyChart_Tooltip_Title_Td
 {
-    width: 40px;
+    min-width: 40px;
 }
 
 .UMyChart_Tooltip_Text_Td
 {
-    width:100px;
+    min-width:100px;
 }
 
 .UMyChart_Tooltip_Title_Span

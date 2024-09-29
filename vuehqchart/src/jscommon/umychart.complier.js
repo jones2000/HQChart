@@ -20889,6 +20889,7 @@ function ScriptIndex(name,script,args,option)
         if (varItem.UpColor) chart.UpColor=varItem.UpColor;
         if (varItem.DownColor) chart.DownColor=varItem.DownColor;
         if (IFrameSplitOperator.IsNumber(varItem.StickType)) chart.BarType=varItem.StickType;
+        if (IFrameSplitOperator.IsNumber(varItem.BarColorType)) chart.BarColorType=varItem.BarColorType;
         if (varItem.LineWidth) 
         {
             let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
@@ -20900,9 +20901,21 @@ function ScriptIndex(name,script,args,option)
         chart.HistoryData=hisData;
         this.ReloadChartResource(hqChart,windowIndex,chart);
 
-        var titleData=new DynamicTitleData(chart.Data,varItem.Name,chart.Color);
-        hqChart.TitlePaint[titleIndex].Data[id]=titleData;
-        this.SetTitleData(titleData,chart);
+        if (varItem.IsShowTitle===false)    //NOTEXT 不绘制标题
+        {
+
+        }
+        else if (IFrameSplitOperator.IsString(varItem.Name) && varItem.Name.indexOf("NOTEXT")==0) //标题中包含NOTEXT不绘制标题
+        {
+
+        }
+        else
+        {
+            var titleData=new DynamicTitleData(chart.Data,varItem.Name,chart.Color);
+            hqChart.TitlePaint[titleIndex].Data[id]=titleData;
+            this.SetTitleData(titleData,chart);
+        }
+        
         this.SetChartIndexName(chart);
         hqChart.ChartPaint.push(chart);
     }
@@ -22848,6 +22861,7 @@ function OverlayScriptIndex(name,script,args,option)
         if (varItem.UpColor) chart.UpColor=varItem.UpColor;
         if (varItem.DownColor) chart.DownColor=varItem.DownColor;
         if (IFrameSplitOperator.IsNumber(varItem.StickType)) chart.BarType=varItem.StickType;
+        if (IFrameSplitOperator.IsNumber(varItem.BarColorType)) chart.BarColorType=varItem.BarColorType;
         if (varItem.LineWidth) 
         {
             let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
@@ -24276,6 +24290,8 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                 if (IFrameSplitOperator.IsBool(item.isDotLine)) outVarItem.IsDotLine = item.isDotLine;
                 if (IFrameSplitOperator.IsNonEmptyArray(item.lineDash)) outVarItem.LineDash=item.lineDash;
                 if (IFrameSplitOperator.IsBool(item.isSingleLine))  outVarItem.IsSingleLine=item.isSingleLine;
+                if (IFrameSplitOperator.IsNumber(item.StickType)) outVarItem.StickType=item.StickType;
+                if (IFrameSplitOperator.IsNumber(item.BarColorType)) outVarItem.BarColorType=item.BarColorType;
 
                 result.push(outVarItem);
             }

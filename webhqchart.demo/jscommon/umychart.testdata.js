@@ -468,7 +468,7 @@ HQData.RequestMinuteRealtimeData=function(data,callback)
 
         //生成随机测试数据
         var price=kItem[5];
-        var value=Math.ceil(Math.random()*10)/10000*price;
+        var value=Math.ceil(Math.random()*10)/5000*price;
         var bUp=Math.ceil(Math.random()*10)>=5;
         
         if (bUp) price+=value;
