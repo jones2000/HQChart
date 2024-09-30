@@ -1659,7 +1659,7 @@
             document.addEventListener('keydown', (event) =>
             {
                 var div=document.getElementById('kline'); 
-                if (div.contains(event.target)) //在K线上才出来键盘精灵
+                if (div.contains(event.target) && event.target.tagName!="INPUT") //在K线上才出来键盘精灵
                 {
                     hqKeyboard.OnGlobalKeydown(event) 
                 }
