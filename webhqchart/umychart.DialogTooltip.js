@@ -34,7 +34,7 @@ function JSDialogTooltip()
     this.PositionColor=g_JSChartResource.DialogTooltip.PositionColor;
     this.DateTimeColor=g_JSChartResource.DialogTooltip.DateTimeColor;
     this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
-    this.MaxRowCount=10;
+    this.MaxRowCount=18;
 
     this.AryData=[];
     this.AryText=[];
@@ -299,7 +299,7 @@ function JSDialogTooltip()
     this.GetFormatKlineTooltipText=function(data)
     {
         var defaultfloatPrecision=GetfloatPrecision(this.HQChart.Symbol);//价格小数位数
-
+        var upperSymbol=this.HQChart.Symbol.toUpperCase();
         //日期
         var dateItem=this.ForamtDate(data.Date,"YYYY/MM/DD/W",'DialogTooltip-Date' );
 
@@ -307,20 +307,34 @@ function JSDialogTooltip()
         var timeItem=null;
         if (IFrameSplitOperator.IsNumber(data.Time)) timeItem=this.FormatTime(data.Time, this.HQChart.Period, null, 'DialogTooltip-Time');
         
+        var yClose=data.YClose; //昨收价|昨结算价
         var aryText=
         [
-            this.ForamtPrice(data.Open,data.YClose, defaultfloatPrecision,'DialogTooltip-Open'),
-            this.ForamtPrice(data.High,data.YClose, defaultfloatPrecision,'DialogTooltip-High'),
-            this.ForamtPrice(data.Low,data.YClose, defaultfloatPrecision,'DialogTooltip-Low'),
-            this.ForamtPrice(data.Close,data.YClose, defaultfloatPrecision,'DialogTooltip-Close'),
+            this.ForamtPrice(data.Open,yClose, defaultfloatPrecision,'DialogTooltip-Open'),
+            this.ForamtPrice(data.High,yClose, defaultfloatPrecision,'DialogTooltip-High'),
+            this.ForamtPrice(data.Low,yClose, defaultfloatPrecision,'DialogTooltip-Low'),
+            this.ForamtPrice(data.Close,yClose, defaultfloatPrecision,'DialogTooltip-Close'),
             this.FormatVol(data.Vol,'DialogTooltip-Vol' ),
             this.FormatAmount(data.Amount,'DialogTooltip-Amount' ),
-            this.FormatIncrease(data.Close,data.YClose,'DialogTooltip-Increase'),
-            this.FormatAmplitude(data.High,data.Low,data.YClose,'DialogTooltip-Amplitude'),
+            this.FormatIncrease(data.Close,yClose,'DialogTooltip-Increase'),
+            this.FormatAmplitude(data.High,data.Low,yClose,'DialogTooltip-Amplitude'),
         ];
 
         if (timeItem) aryText.unshift(timeItem);
         aryText.unshift(dateItem);
+
+        //换手率
+        if (MARKET_SUFFIX_NAME.IsSHSZStockA(upperSymbol) && data.FlowCapital>0)
+        {
+            aryText.push(this.FormatExchange(data.Vol,data.FlowCapital,'DialogTooltip-Exchange' ));
+        }
+
+        //持仓量
+        if (MARKET_SUFFIX_NAME.IsFutures(upperSymbol))
+        {
+            aryText.push(this.FormatPosition(data.Position,'DialogTooltip-Position'));
+            aryText.push(this.ForamtYClose(data.YClose, defaultfloatPrecision, 'DialogTooltip-YClose'));
+        }
 
         return aryText;
     },
@@ -567,5 +581,61 @@ function JSDialogTooltip()
 
         return item;
     }
+
+    //换手率 成交量/流通股本
+    this.FormatExchange=function(vol, flowCapital, TitleID)
+    {
+        //换手率
+        var item=
+        { 
+            Title:g_JSChartLocalization.GetText(TitleID,this.LanguageID), 
+            Text:'--.--',
+            Color:this.DateTimeColor
+        };
+
+        if (!IFrameSplitOperator.IsNumber(vol) || !IFrameSplitOperator.IsNumber(flowCapital) || flowCapital==0) return item;
+
+        var value=vol/flowCapital*100;
+        item.Text=value.toFixed(2)+'%';
+
+        return item;
+    }
+
+
+    //持仓
+    this.FormatPosition=function(position, TitleID)
+    {
+        //持仓
+        var item=
+        { 
+            Title:g_JSChartLocalization.GetText(TitleID,this.LanguageID), 
+            Text:'--.--',
+            Color:this.PositionColor
+        };
+
+        if (!IFrameSplitOperator.IsNumber(position)) return item;
+
+        item.Text=position.toFixed(0);
+
+        return item;
+    }
+
+    //结算价
+    this.ForamtYClose=function(value, defaultfloatPrecision, TitleID)
+    {
+        var item=
+        { 
+            Title:g_JSChartLocalization.GetText(TitleID,this.LanguageID), 
+            Text:'--.--',
+            Color:this.DateTimeColor
+        };
+
+        if (!IFrameSplitOperator.IsNumber(value)) return item;
+
+        item.Text=value.toFixed(defaultfloatPrecision);
+
+        return item;
+    }
+
 
 }

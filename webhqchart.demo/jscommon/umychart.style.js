@@ -402,7 +402,7 @@ function GetBlackStyle()
             AmountColor:"rgb(210,210,210)",      //成交金额
             DateTimeColor:'rgb(210,210,210)',
             TurnoverRateColor:'rgb(43,54,69)',       //换手率
-            PositionColor:"rgb(43,54,69)"            //持仓
+            PositionColor:"rgb(255,0,255)"            //持仓
         },
         
         //走势图 信息地雷

@@ -69013,7 +69013,7 @@ function JSChartResource()
         AmountColor:"rgb(79, 79, 79)",      //成交金额
         DateTimeColor:'rgb(60,60,60)',
         TurnoverRateColor:'rgb(43,54,69)',       //换手率
-        PositionColor:"rgb(43,54,69)"            //持仓
+        PositionColor:"rgb(255,0,255)"            //持仓
     }
 
     //弹幕
@@ -70969,6 +70969,7 @@ function JSChartLocalization()
         ['DialogTooltip-Exchange', {CN:'换手率', EN:'Exchange', TC:'換手'}],
         ['DialogTooltip-Position', {CN:'持仓量', EN:'Position', TC:'持倉'}],
         ['DialogTooltip-Price', {CN:'价格', EN:'Price', TC:'價格'}],
+        ['DialogTooltip-YClose', {CN:"结算价", EN:'Settlement', TC:'結算價'}],
         ['DialogTooltip-Amplitude', {CN:'振幅', EN:'amplitude', TC:'價格'}],
         ['DialogTooltip-AC-Price', {CN:'匹配价', EN:'Price', TC:'匹配價'}],
         ['DialogTooltip-AC-AvPrice', {CN:'匹配均价', EN:'AVPrice', TC:'匹配均價'}],

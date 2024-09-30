@@ -1331,6 +1331,8 @@ HQData.Keyboard_RequestSymbolList=function(data, callback)
         arySymbol.push(symbolItem);
     }
 
+    arySymbol.push( { Symbol:"ICL8.cfe", Name:"中证主连", ShortSymbol:"ICL8", Spell:"ICL8", Type:"期货", TypeName:"期货", Data:{ Symbol:"ICL8.cfe", Type:0 }  } );
+
     arySymbol.push( { Symbol:"01", Name:"分时成交明细", TypeName:"功能键", Priority:1, Color:"rgb(220,20,60)" , Data:{ PageName:"分时成交明细", Type:2 }} );
     arySymbol.push( { Symbol:"02", Name:"分价表", TypeName:"功能键", Priority:1, Color:"rgb(220,20,60)" ,Data:{ PageName:"分价表", Type:2 }} );
     arySymbol.push( { Symbol:"06", Name:"自选股", TypeName:"功能键", Priority:1 , Color:"rgb(220,20,60)", Data:{ PageName:"自选股", Type:2 }} );
@@ -1339,6 +1341,13 @@ HQData.Keyboard_RequestSymbolList=function(data, callback)
     arySymbol.push( { Symbol:"RSI", Name:"相对强弱指标", TypeName:"指标", Priority:2, Color:"rgb(0,0,255)",Data:{ Index:"RSI", Type:1 }}  );
     arySymbol.push( { Symbol:"MA", Name:"均线", TypeName:"指标", Priority:2, Color:"rgb(0,0,255)" ,Data:{ Index:"MA", Type:1 } } );
     arySymbol.push( { Symbol:"BOLL", Name:"布林线", TypeName:"指标", Priority:2, Color:"rgb(0,0,255)" ,Data:{ Index:"BOLL", Type:1 } } );
+    arySymbol.push( { Symbol:"KDJ", Name:"随机指标", TypeName:"指标", Priority:2, Color:"rgb(0,0,255)" ,Data:{ Index:"KDJ", Type:1 } } );
+    arySymbol.push( { Symbol:"SKDJ", Name:"慢速随机指标", TypeName:"指标", Priority:2, Color:"rgb(0,0,255)" ,Data:{ Index:"SKDJ", Type:1 } } );
+    arySymbol.push( { Symbol:"KD", Name:"随机指标KD", TypeName:"指标", Priority:2, Color:"rgb(0,0,255)" ,Data:{ Index:"KD", Type:1 } } );
+    arySymbol.push( { Symbol:"MARSI", Name:"相对强弱平均线", TypeName:"指标", Priority:2, Color:"rgb(0,0,255)" ,Data:{ Index:"MARSI", Type:1 } } );
+    arySymbol.push( { Symbol:"VMACD", Name:"量平滑异同平均", TypeName:"指标", Priority:2, Color:"rgb(0,0,255)" ,Data:{ Index:"VMACD", Type:1 } } );
+    arySymbol.push( { Symbol:"AMO", Name:"成交金额", TypeName:"指标", Priority:2, Color:"rgb(0,0,255)" ,Data:{ Index:"AMO", Type:1 } } );
+    arySymbol.push( { Symbol:"SQJZ", Name:"神奇九转", TypeName:"指标", Priority:2, Color:"rgb(0,0,255)" ,Data:{ Index:"SQJZ", Type:1 } } );
     
     callback(arySymbol);
 }
@@ -1420,6 +1429,9 @@ HQData.GetDayKLineDataBySymbol=function(symbol)
             break;
         case "399006.sz":
             data=SZ_399006_DAY_KLINE;
+            break;
+        case "ICL8.cfe":
+            data=CFE_ICL8_DAY_KLINE;
             break;
         default:
             data=SZ_000001_DAY_KLINE;
