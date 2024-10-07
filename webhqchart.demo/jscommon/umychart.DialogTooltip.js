@@ -16,6 +16,7 @@ function JSDialogTooltip()
     this.DivDialog=null;
     this.DragTitle=null;
     this.TitleBox=null; //{ DivTitle, DivName, DivName }
+    this.Style=0;       //0=一行一个， 1=2行一个
 
     this.HQChart=null;
 
@@ -34,7 +35,7 @@ function JSDialogTooltip()
     this.PositionColor=g_JSChartResource.DialogTooltip.PositionColor;
     this.DateTimeColor=g_JSChartResource.DialogTooltip.DateTimeColor;
     this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
-    this.MaxRowCount=18;
+    this.MaxRowCount=25;
 
     this.AryData=[];
     this.AryText=[];
@@ -42,9 +43,13 @@ function JSDialogTooltip()
     this.KItemCache=null;
     this.KItemCacheID=null;
 
-    this.Inital=function(hqchart)
+    this.Inital=function(hqchart, option)
     {
-       this.HQChart=hqchart;
+        this.HQChart=hqchart;
+        if (option)
+        {
+            if (IFrameSplitOperator.IsNumber(option.Style)) this.Style=option.Style;
+        }
     }
 
     this.Destroy=function()
@@ -107,36 +112,78 @@ function JSDialogTooltip()
         table.appendChild(tbody);
 
         this.AryData=[];
-        for(var i=0;i<this.MaxRowCount;++i)
+        if (this.Style==1)
         {
-            var rowItem={ Tr:null, TitleSpan:null, TextSpan:null };
+            for(var i=0;i<this.MaxRowCount;++i)
+            {
+                var rowItem={ Tr:null, TitleSpan:null, TextSpan:null, Tr2:null };
 
-            var trDom=document.createElement("tr");
-            trDom.className='UMyChart_Tooltip_Group_Tr';
-            tbody.appendChild(trDom);
-            rowItem.Tr=trDom;
+                var trDom=document.createElement("tr");
+                trDom.className='UMyChart_Tooltip_Group_Tr';
+                tbody.appendChild(trDom);
+                rowItem.Tr=trDom;
 
-            var tdDom=document.createElement("td");
-            tdDom.className="UMyChart_Tooltip_Title_Td";   //标题
-            trDom.appendChild(tdDom);
+                var tdDom=document.createElement("td");
+                tdDom.className="UMyChart_Tooltip_Text_Sinlge_Td";   //标题
+                trDom.appendChild(tdDom);
 
-            var spanDom=document.createElement("span");
-            spanDom.className='UMyChart_Tooltip_Title_Span';
-            spanDom.innerText='标题';
-            tdDom.appendChild(spanDom);
-            rowItem.TitleSpan=spanDom;
+                var spanDom=document.createElement("span");
+                spanDom.className='UMyChart_Tooltip_Title_Left_Span';
+                spanDom.innerText='标题';
+                tdDom.appendChild(spanDom);
+                rowItem.TitleSpan=spanDom;
 
-            var tdDom=document.createElement("td");
-            tdDom.className="UMyChart_Tooltip_Text_Td";    //数值
-            trDom.appendChild(tdDom);
+                var trDom=document.createElement("tr");
+                trDom.className='UMyChart_Tooltip_Group_Tr';
+                tbody.appendChild(trDom);
+                rowItem.Tr2=trDom;
 
-            var spanDom=document.createElement("span");
-            spanDom.className='UMyChart_Tooltip_Text_Span';
-            spanDom.innerText='数值';
-            tdDom.appendChild(spanDom);
-            rowItem.TextSpan=spanDom;
+                var tdDom=document.createElement("td");
+                tdDom.className="UMyChart_Tooltip_Text_Sinlge_Td";    //数值
+                trDom.appendChild(tdDom);
 
-            this.AryData.push(rowItem);
+                var spanDom=document.createElement("span");
+                spanDom.className='UMyChart_Tooltip_Text_Span';
+                spanDom.innerText='数值';
+                tdDom.appendChild(spanDom);
+                rowItem.TextSpan=spanDom;
+
+                this.AryData.push(rowItem);
+            }
+        }
+        else
+        {
+            for(var i=0;i<this.MaxRowCount;++i)
+            {
+                var rowItem={ Tr:null, TitleSpan:null, TextSpan:null };
+
+                var trDom=document.createElement("tr");
+                trDom.className='UMyChart_Tooltip_Group_Tr';
+                tbody.appendChild(trDom);
+                rowItem.Tr=trDom;
+
+                var tdDom=document.createElement("td");
+                tdDom.className="UMyChart_Tooltip_Title_Td";   //标题
+                trDom.appendChild(tdDom);
+
+                var spanDom=document.createElement("span");
+                spanDom.className='UMyChart_Tooltip_Title_Span';
+                spanDom.innerText='标题';
+                tdDom.appendChild(spanDom);
+                rowItem.TitleSpan=spanDom;
+
+                var tdDom=document.createElement("td");
+                tdDom.className="UMyChart_Tooltip_Text_Td";    //数值
+                trDom.appendChild(tdDom);
+
+                var spanDom=document.createElement("span");
+                spanDom.className='UMyChart_Tooltip_Text_Span';
+                spanDom.innerText='数值';
+                tdDom.appendChild(spanDom);
+                rowItem.TextSpan=spanDom;
+
+                this.AryData.push(rowItem);
+            }
         }
         
 
@@ -196,7 +243,7 @@ function JSDialogTooltip()
         if (!this.KItemCache) return;
 
         if (this.HQChart.ClassName=='KLineChartContainer')
-            this.AryText=this.GetFormatKlineTooltipText(this.KItemCache);
+            this.AryText=this.GetFormatKLineTooltipText(this.KItemCache);
         else if (this.HQChart.ClassName=='MinuteChartContainer')
             this.AryText=this.GetFormatMinuteTooltipText(this.KItemCache);
         else
@@ -213,12 +260,14 @@ function JSDialogTooltip()
             item.TextSpan.innerText=outItem.Text;
             item.TextSpan.style.color=outItem.Color;
             item.Tr.style.display="";
+            if (item.Tr2) item.Tr2.style.display="";
         }
 
         for( ; index<this.MaxRowCount; ++index)
         {
             var item=this.AryData[index];
             item.Tr.style.display="none";
+            if (item.Tr2) item.Tr2.style.display="none";
         }
     }
 
@@ -296,10 +345,13 @@ function JSDialogTooltip()
     }
 
 
-    this.GetFormatKlineTooltipText=function(data)
+    this.GetFormatKLineTooltipText=function(data)
     {
         var defaultfloatPrecision=GetfloatPrecision(this.HQChart.Symbol);//价格小数位数
         var upperSymbol=this.HQChart.Symbol.toUpperCase();
+        var priceFormat=0;
+        if (this.Style==1) priceFormat=1;
+
         //日期
         var dateItem=this.ForamtDate(data.Date,"YYYY/MM/DD/W",'DialogTooltip-Date' );
 
@@ -310,18 +362,29 @@ function JSDialogTooltip()
         var yClose=data.YClose; //昨收价|昨结算价
         var aryText=
         [
-            this.ForamtPrice(data.Open,yClose, defaultfloatPrecision,'DialogTooltip-Open'),
-            this.ForamtPrice(data.High,yClose, defaultfloatPrecision,'DialogTooltip-High'),
-            this.ForamtPrice(data.Low,yClose, defaultfloatPrecision,'DialogTooltip-Low'),
-            this.ForamtPrice(data.Close,yClose, defaultfloatPrecision,'DialogTooltip-Close'),
+            this.ForamtPrice(data.Open,yClose, defaultfloatPrecision,'DialogTooltip-Open',priceFormat),
+            this.ForamtPrice(data.High,yClose, defaultfloatPrecision,'DialogTooltip-High',priceFormat),
+            this.ForamtPrice(data.Low,yClose, defaultfloatPrecision,'DialogTooltip-Low',priceFormat),
+            this.ForamtPrice(data.Close,yClose, defaultfloatPrecision,'DialogTooltip-Close',priceFormat),
             this.FormatVol(data.Vol,'DialogTooltip-Vol' ),
             this.FormatAmount(data.Amount,'DialogTooltip-Amount' ),
-            this.FormatIncrease(data.Close,yClose,'DialogTooltip-Increase'),
-            this.FormatAmplitude(data.High,data.Low,yClose,'DialogTooltip-Amplitude'),
+            this.FormatIncrease(data.Close,yClose,defaultfloatPrecision,'DialogTooltip-Increase',priceFormat),
+            this.FormatAmplitude(data.High,data.Low,yClose,defaultfloatPrecision,'DialogTooltip-Amplitude',priceFormat),
         ];
 
-        if (timeItem) aryText.unshift(timeItem);
-        aryText.unshift(dateItem);
+        if (this.Style==1)
+        {
+            if (timeItem) aryText.unshift(timeItem);
+            var dateItem=this.ForamtDate(data.Date,"YYYY/MM/DD",'DialogTooltip-Date' );
+            aryText.unshift(dateItem);
+        }
+        else
+        {
+            if (timeItem) aryText.unshift(timeItem);
+            aryText.unshift(dateItem);
+        }
+
+        
 
         //换手率
         if (MARKET_SUFFIX_NAME.IsSHSZStockA(upperSymbol) && data.FlowCapital>0)
@@ -329,11 +392,18 @@ function JSDialogTooltip()
             aryText.push(this.FormatExchange(data.Vol,data.FlowCapital,'DialogTooltip-Exchange' ));
         }
 
-        //持仓量
+        //持仓量 结算价
         if (MARKET_SUFFIX_NAME.IsFutures(upperSymbol))
         {
             aryText.push(this.FormatPosition(data.Position,'DialogTooltip-Position'));
-            aryText.push(this.ForamtYClose(data.YClose, defaultfloatPrecision, 'DialogTooltip-YClose'));
+            aryText.push(this.ForamtFClose(data.FClose, defaultfloatPrecision, 'DialogTooltip-FClose'));
+        }
+
+        var event=this.HQChart.GetEventCallback(JSCHART_EVENT_ID.ON_FORMAT_DIALOG_TOOLTIP_TEXT);
+        if (event && event.Callback)
+        {
+            var sendData={ AryText:aryText, Data:data, Symbol:this.HQChart.Symbol, HQChart:this.HQChart, IsKLine:true };
+            event.Callback(event, sendData, this);
         }
 
         return aryText;
@@ -342,24 +412,22 @@ function JSDialogTooltip()
     this.GetFormatMinuteTooltipText=function(data)
     {
         var defaultfloatPrecision=GetfloatPrecision(this.HQChart.Symbol);//价格小数位数
-
+        var aryText=[];
         if (data.Type==0) //连续交易
         {
             var item=data.Data;
             if (!item) item={ };
 
-            var aryText=
+            aryText=
             [
-                this.ForamtDate(item.Date,"YYYY/MM/DD/W",'DialogTooltip-Date' ),
+                this.ForamtDate(item.Date,this.Style==1?"YYYY/MM/DD":"YYYY/MM/DD/W",'DialogTooltip-Date' ),
                 this.FormatTime(item.Time, null, "HH:MM", 'DialogTooltip-Time'),
-                this.ForamtPrice(item.Close,item.YClose, defaultfloatPrecision,'DialogTooltip-Price'),
+                this.ForamtPrice(item.Close,item.YClose, defaultfloatPrecision,'DialogTooltip-Price', 1),
                 this.FormatRisefall(item.Close,item.YClose, defaultfloatPrecision,'DialogTooltip-Risefall'),
-                this.FormatIncrease(item.Close,item.YClose,'DialogTooltip-Increase'),
+                this.FormatIncrease(item.Close,item.YClose,defaultfloatPrecision,'DialogTooltip-Increase', 1),
                 this.FormatVol(item.Vol,'DialogTooltip-Vol' ),
                 this.FormatAmount(item.Amount,'DialogTooltip-Amount' ),
             ];
-
-            return aryText;
         }
         else if (data.Type==1)  //集合竞价
         {
@@ -368,19 +436,28 @@ function JSDialogTooltip()
 
             var timeForamt="HH:MM:SS";
             if (item.Ver===1) timeForamt="HH:MM"
-            var aryText=
+            aryText=
             [
-                this.ForamtDate(item.Date,"YYYY/MM/DD/W",'DialogTooltip-Date' ),
+                this.ForamtDate(item.Date,this.Style==1?"YYYY/MM/DD":"YYYY/MM/DD/W",'DialogTooltip-Date' ),
                 this.FormatTime(item.Time, null, timeForamt, 'DialogTooltip-Time'),
-                this.ForamtPrice(item.Price,item.YClose, defaultfloatPrecision,'DialogTooltip-AC-Price'),
-                this.FormatIncrease(item.Price,item.YClose,'DialogTooltip-AC-Increase'),
+                this.ForamtPrice(item.Price,item.YClose, defaultfloatPrecision,'DialogTooltip-AC-Price',1),
+                this.FormatIncrease(item.Price,item.YClose,defaultfloatPrecision,'DialogTooltip-AC-Increase',1),
                 this.FormatVol(item.Vol[0],'DialogTooltip-AC-Vol' ),
             ];
+        }
+        else
+        {
 
-            return aryText;
         }
 
-        return [];
+        var event=this.HQChart.GetEventCallback(JSCHART_EVENT_ID.ON_FORMAT_DIALOG_TOOLTIP_TEXT);
+        if (event && event.Callback)
+        {
+            var sendData={ AryText:aryText, Data:data, Symbol:this.HQChart.Symbol, HQChart:this.HQChart, IsMinute:true };
+            event.Callback(event, sendData, this);
+        }
+
+        return aryText
     }
 
     this.GetColor=function(price,yClose)
@@ -434,7 +511,7 @@ function JSDialogTooltip()
 
     /////////////////////////////////////////////////////////////////////////////////////////////
     //数据格式化
-    this.ForamtPrice=function(price, yClose, defaultfloatPrecision, TitleID)
+    this.ForamtPrice=function(price, yClose, defaultfloatPrecision, TitleID, format)
     {
         var item=
         { 
@@ -445,7 +522,17 @@ function JSDialogTooltip()
 
         if (!IFrameSplitOperator.IsNumber(price)) return item;
 
-        item.Text=price.toFixed(defaultfloatPrecision);
+        if (IFrameSplitOperator.IsNumber(yClose) && format!=1)
+        {
+            var value=(price-yClose)/yClose*100;
+            item.Text=`${price.toFixed(defaultfloatPrecision)}(${value.toFixed(2)}%)`;
+        }
+        else
+        {
+            item.Text=price.toFixed(defaultfloatPrecision);
+        }
+
+        
         item.Color=this.GetColor(price, yClose);
 
         return item;
@@ -462,7 +549,7 @@ function JSDialogTooltip()
 
         if (!IFrameSplitOperator.IsNumber(vol)) return item;
 
-        item.Text=IFrameSplitOperator.FormatValueString(vol,2,this.LanguageID);
+        item.Text=IFrameSplitOperator.FormatValueStringV2(vol,0,2,this.LanguageID);
         
         return item;
     }
@@ -483,7 +570,7 @@ function JSDialogTooltip()
         return item;
     }
 
-    this.FormatIncrease=function(price, yClose, TitleID)
+    this.FormatIncrease=function(price, yClose, defaultfloatPrecision, TitleID, fromat)
     {
         //涨幅
         var item=
@@ -495,8 +582,19 @@ function JSDialogTooltip()
 
         if (!IFrameSplitOperator.IsNumber(price) || !IFrameSplitOperator.IsNumber(yClose)) return item;
 
+      
+
+        var diffValue=price-yClose;
         var value=(price-yClose)/yClose;
-        item.Text=`${(value*100).toFixed(2)}%`;
+        if (fromat==1)
+        {
+            item.Text=`${(value*100).toFixed(2)}%`;
+        }
+        else
+        {
+            item.Text=`${diffValue.toFixed(defaultfloatPrecision)}(${(value*100).toFixed(2)}%)`;
+        }
+       
         item.Color=this.GetColor(value,0);
 
         return item;
@@ -521,9 +619,9 @@ function JSDialogTooltip()
         return item;
     }
 
-    this.FormatAmplitude=function(high, low, yClose, TitleID)
+    this.FormatAmplitude=function(high, low, yClose, defaultfloatPrecision, TitleID, fromat)
     {
-        //涨幅
+        //振幅
         var item=
         {
             Title:g_JSChartLocalization.GetText(TitleID,this.LanguageID), 
@@ -534,8 +632,10 @@ function JSDialogTooltip()
 
         if (!IFrameSplitOperator.IsNumber(high) || !IFrameSplitOperator.IsNumber(low) || !IFrameSplitOperator.IsNumber(yClose)) return item;
 
+        var diffValue=high-low;
         var value=(high-low)/yClose;
-        item.Text=`${(value*100).toFixed(2)}%`;
+        if (fromat==1) item.Text=`${(value*100).toFixed(2)}%`;
+        else item.Text=`${diffValue.toFixed(defaultfloatPrecision)}(${(value*100).toFixed(2)}%)`;
         item.Color=this.GetColor(value,0);
         
         return item;
@@ -621,7 +721,7 @@ function JSDialogTooltip()
     }
 
     //结算价
-    this.ForamtYClose=function(value, defaultfloatPrecision, TitleID)
+    this.ForamtFClose=function(value, defaultfloatPrecision, TitleID)
     {
         var item=
         { 

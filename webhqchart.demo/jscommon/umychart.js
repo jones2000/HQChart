@@ -1721,7 +1721,8 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         if (option.EnableModifyDrawDialogV2===true) chart.InitalModifyDrawDialog();
 
         //K线tooltip
-        if (option.EnableTooltipDialog===true) chart.InitalTooltipDialog();
+        if (option.TooltipDialog && option.TooltipDialog.Enable)
+            chart.InitalTooltipDialog(option.TooltipDialog);
 
         //注册事件
         if (option.EventCallback)
@@ -2627,6 +2628,8 @@ var JSCHART_EVENT_ID=
     ON_CUSTOM_MINUTE_NIGHT_DAY_X_INDEX:156,   //日盘夜盘的分界线
     ON_CUSTOM_MINUTE_BG:157,                    //自定义分时图背景颜色
     ON_CLICK_HORIZONTAL_LABEL:158,              //点击Y轴刻度标签
+
+    ON_FORMAT_DIALOG_TOOLTIP_TEXT:159,          //格式化Tooltip对话框显示文字
 }
 
 var JSCHART_OPERATOR_ID=
@@ -2801,6 +2804,8 @@ var JSCHART_MENU_ID=
     CMD_REPORT_COLUMN_DEL_ID:62,        //报价列表 删除列
     CMD_REPORT_COLUMN_MOVE_ID:63,       //报价列表 列移动
     CMD_REPORT_COLUMN_FILTER_ID:64,     //报价列表 筛选
+
+    CMD_DIALOG_TOOLTIP_ATTRIBUTE:65,    //修改K线信息框属性 Ary:[{ Enable:, Style:}, ]
 }
 
 
@@ -3049,12 +3054,12 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         this.DialogDrawTool.Create();
     }
 
-    this.InitalTooltipDialog=function()
+    this.InitalTooltipDialog=function(option)
     {
         if (this.DialogTooltip) return;
 
         this.DialogTooltip=new JSDialogTooltip();
-        this.DialogTooltip.Inital(this);
+        this.DialogTooltip.Inital(this, option);
         this.DialogTooltip.Create();
     }
 
@@ -3128,6 +3133,14 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         this.DialogTooltip.Close();
     }
 
+    this.DestroyTooltipDialog=function()
+    {
+        if (!this.DialogTooltip) return;
+
+        this.DialogTooltip.Destroy();
+        this.DialogTooltip=null;
+    }
+
 
 
     //obj={ Element:, Canvas: }
@@ -3179,6 +3192,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     {
         this.IsDestroy=true;
         this.StopAutoUpdate();
+        this.DestroyTooltipDialog();
     }
 
     this.ChartDestory=this.ChartDestroy;    //老版本写错了,需要兼容下
@@ -9755,6 +9769,20 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 klineChart.InfoPosition=param;
                 this.Draw();
                 break;
+            case JSCHART_MENU_ID.CMD_DIALOG_TOOLTIP_ATTRIBUTE:
+                if (!aryArgs[0]) return false;
+                var option=aryArgs[0];
+                if (!IFrameSplitOperator.IsBool(option.Enable)) return false;
+                if (option.Enable===false)
+                {
+                    this.DestroyTooltipDialog();
+                }
+                else
+                {
+                    this.DestroyTooltipDialog();
+                    this.InitalTooltipDialog(option);
+                }
+                break;
         }
     }
 
@@ -10056,6 +10084,71 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 this.CloseTooltipDialog();
             }
         }
+    }
+
+    this.UpdateWindowIndexV2=function(aryIndex)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryIndex)) return false;
+
+        var aryID=[];
+        for(var i=0;i<this.WindowIndex.length;++i)
+        {
+            var item=this.WindowIndex[i];
+            if (!item) continue;
+            if (!item.ID) continue;
+
+            if (aryIndex.find((element)=>{ return element.ID==item.ID;} ))
+            {
+                aryID.push(i);
+            }
+        }
+
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryID)) return false;
+
+        if (this.IsKLineContainer())    //K线
+        {
+            var bindData=new ChartData();
+            bindData.Data=this.SourceData.Data;
+            bindData.Period=this.Period;
+            bindData.Right=this.Right;
+
+            if (this.IsApiPeriod)
+            {
+    
+            }
+            else
+            {
+                if (bindData.Right>0)    //复权
+                {
+                    var rightData=bindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula });
+                    bindData.Data=rightData;
+                }
+    
+                if (ChartData.IsDayPeriod(bindData.Period,false) || ChartData.IsMinutePeriod(bindData.Period,false))   //周期数据
+                {
+                    var periodData=bindData.GetPeriodData(bindData.Period);
+                    bindData.Data=periodData;
+                }
+            }
+        }
+        else if (this.IsMinuteContainer()) //分时图
+        {
+            var bindData=this.SourceData;
+        }
+        else
+        {
+            return;
+        }
+
+       
+        for(var i=0;i<aryID.length;++i)
+        {
+            this.BindIndexData(aryID[i],bindData)
+        }
+
+        this.UpdataDataoffset();           //更新数据偏移
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Draw();
     }
 }
 
@@ -69441,7 +69534,8 @@ function JSChartResource()
             Font:{ Size:15, Name:"微软雅黑"},
             BarMergin:{ Top:2, Left:3, Right:3, Bottom:2 },//单元格字体
             NameFont:{ Size:14, Name:"微软雅黑" },
-            SymbolFont:{ Size:12, Name:"微软雅黑" }
+            SymbolFont:{ Size:12, Name:"微软雅黑" },
+
         },
 
         //固定行
@@ -69454,6 +69548,13 @@ function JSChartResource()
         {
             Color:"rgb(180,180,180)",
             Mergin:{ Top:1, Bottom:1,Left:0, Right:0 },
+        },
+
+
+        NameSymbolV2:
+        {
+            Name:{ Size:14, Name:"微软雅黑", Color: "rgb(60,60,60)"},
+            Symbol:{ Size:10, Name:"微软雅黑", Color: "rgb(105 105 105)"},
         },
 
         //涨停 跌停背景色
@@ -70612,6 +70713,26 @@ function JSChartResource()
             }
         }
 
+        if (item.NameSymbolV2)
+        {
+            var nameSymbol=item.NameSymbolV2;
+            if (nameSymbol.Name)
+            {
+                var subItem=nameSymbol.Name;
+                if (IFrameSplitOperator.IsNumber(subItem.Size)) this.Report.NameSymbolV2.Name.Size=subItem.Size;
+                if (subItem.Name) this.Report.NameSymbolV2.Name.Name=subItem.Name;
+                if (subItem.Color) this.Report.NameSymbolV2.Name.Color=subItem.Color;
+            }
+
+            if (nameSymbol.Symbol)
+            {
+                var subItem=nameSymbol.Symbol;
+                if (IFrameSplitOperator.IsNumber(subItem.Size)) this.Report.NameSymbolV2.Symbol.Size=subItem.Size;
+                if (subItem.Name) this.Report.NameSymbolV2.Symbol.Name=subItem.Name;
+                if (subItem.Color) this.Report.NameSymbolV2.Symbol.Color=subItem.Color;
+            }
+        }
+
         if (item.Tab)
         {
             var tab=item.Tab;
@@ -70969,7 +71090,7 @@ function JSChartLocalization()
         ['DialogTooltip-Exchange', {CN:'换手率', EN:'Exchange', TC:'換手'}],
         ['DialogTooltip-Position', {CN:'持仓量', EN:'Position', TC:'持倉'}],
         ['DialogTooltip-Price', {CN:'价格', EN:'Price', TC:'價格'}],
-        ['DialogTooltip-YClose', {CN:"结算价", EN:'Settlement', TC:'結算價'}],
+        ['DialogTooltip-FClose', {CN:"结算价", EN:'Settlement', TC:'結算價'}],
         ['DialogTooltip-Amplitude', {CN:'振幅', EN:'amplitude', TC:'價格'}],
         ['DialogTooltip-AC-Price', {CN:'匹配价', EN:'Price', TC:'匹配價'}],
         ['DialogTooltip-AC-AvPrice', {CN:'匹配均价', EN:'AVPrice', TC:'匹配均價'}],
@@ -77635,6 +77756,15 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                             { Name:"样式2", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_DRAG_RECT_SHOW_MODE_ID, Args:[1]}, Checked:1==this.ChartDragSelectRect.ShowMode },
                             { Name:"样式3", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_DRAG_RECT_SHOW_MODE_ID, Args:[2]}, Checked:2==this.ChartDragSelectRect.ShowMode },
                         ]
+                    },
+                    {
+                        Name:"K线浮动框",
+                        SubMenu:
+                        [
+                            { Name:"禁用", Data:{ ID:JSCHART_MENU_ID.CMD_DIALOG_TOOLTIP_ATTRIBUTE, Args:[{Enable:false}]}, Checked:!this.DialogTooltip },
+                            { Name:"样式1", Data:{ ID:JSCHART_MENU_ID.CMD_DIALOG_TOOLTIP_ATTRIBUTE, Args:[{Enable:true, Style:0}]}, Checked:(this.DialogTooltip && this.DialogTooltip.Style===0) },
+                            { Name:"样式2", Data:{ ID:JSCHART_MENU_ID.CMD_DIALOG_TOOLTIP_ATTRIBUTE, Args:[{Enable:true, Style:1}]}, Checked:(this.DialogTooltip && this.DialogTooltip.Style===1) },
+                        ]
                     }
                 ]
             }
@@ -81307,6 +81437,15 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                         ]
                     },
 
+                    {
+                        Name:"K线浮动框",
+                        SubMenu:
+                        [
+                            { Name:"禁用", Data:{ ID:JSCHART_MENU_ID.CMD_DIALOG_TOOLTIP_ATTRIBUTE, Args:[{Enable:false}]}, Checked:!this.DialogTooltip },
+                            { Name:"样式1", Data:{ ID:JSCHART_MENU_ID.CMD_DIALOG_TOOLTIP_ATTRIBUTE, Args:[{Enable:true, Style:0}]}, Checked:(this.DialogTooltip && this.DialogTooltip.Style===0) },
+                            { Name:"样式2", Data:{ ID:JSCHART_MENU_ID.CMD_DIALOG_TOOLTIP_ATTRIBUTE, Args:[{Enable:true, Style:1}]}, Checked:(this.DialogTooltip && this.DialogTooltip.Style===1) },
+                        ]
+                    }
                     
                 ]
             }

@@ -589,6 +589,12 @@ function GetBlackStyle()
                 Text:"rgb(245,245,245)",    //默认文本
             },
 
+            NameSymbolV2:
+            {
+                Name:{ Size:14, Name:"微软雅黑", Color: "rgb(250,250,250)"},
+                Symbol:{ Size:12, Name:"微软雅黑", Color: "rgb(190, 190, 190)"},
+            },
+
             CloseLine:
             {
                 CloseColor:"rgb(30,144,255)",

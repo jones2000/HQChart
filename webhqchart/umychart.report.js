@@ -3968,7 +3968,8 @@ var REPORT_COLUMN_ID=
     RISING_SPEED_10M_ID:63,
     RISING_SPEED_15M_ID:64,
 
-    SYMBOL_NAME_ID:99,
+    SYMBOL_NAME_V2_ID:98,   //单行
+    SYMBOL_NAME_ID:99,      //两行
 
     CUSTOM_STRING_TEXT_ID:100,      //自定义字符串文本
     CUSTOM_NUMBER_TEXT_ID:101,      //自定义数值型
@@ -4169,6 +4170,9 @@ function ChartReport()
     this.ItemSymbolFontConfig={Size:g_JSChartResource.Report.Item.SymbolFont.Size, Name:g_JSChartResource.Report.Item.SymbolFont.Name};
     this.ItemNameFontConfg={Size:g_JSChartResource.Report.Item.NameFont.Size, Name:g_JSChartResource.Report.Item.NameFont.Name};
 
+    //名称+代码
+    this.NameSymbolV2Config=CloneData(g_JSChartResource.Report.NameSymbolV2);
+
     //缓存
     this.HeaderFont=12*GetDevicePixelRatio() +"px 微软雅黑";
     this.SortFont=null,
@@ -4177,6 +4181,7 @@ function ChartReport()
     this.ItemSymbolFont=12*GetDevicePixelRatio() +"px 微软雅黑";
     this.ItemNameFont=15*GetDevicePixelRatio() +"px 微软雅黑";
     this.ItemNameHeight=0;
+    this.NameSymbolFont={ Symbol:null, Name:null };
     this.RowCount=0;            //一屏显示行数
     this.HeaderHeight=0;        //表头高度
     this.FixedRowHeight=0;      //固定行高度
@@ -4321,6 +4326,8 @@ function ChartReport()
             if (item.TextColor) colItem.TextColor=item.TextColor;
             if (item.HeaderColor) colItem.HeaderColor=item.HeaderColor;
             if (item.MaxText) colItem.MaxText=item.MaxText;
+            if (item.MaxText2) colItem.MaxText=item.MaxText2;
+            if (IFrameSplitOperator.IsNumber(item.Space)) colItem.Space=item.Space;
             if (item.ID) colItem.ID=item.ID;
             if (item.FullColBGColor) colItem.FullColBGColor=item.FullColBGColor;    //整列背景色
             if (item.HeaderBGColor) colItem.HeaderBGColor=item.HeaderBGColor;       //表头背景色
@@ -4481,6 +4488,7 @@ function ChartReport()
             { Type:REPORT_COLUMN_ID.NAME_ID, Title:"名称", TextAlign:"left", Width:null, TextColor:g_JSChartResource.Report.FieldColor.Name, MaxText:"擎擎擎擎0" },
             { Type:REPORT_COLUMN_ID.NAME_EX_ID, Title:"名称", TextAlign:"left", Width:null, TextColor:g_JSChartResource.Report.FieldColor.Name, MaxText:"擎擎擎擎擎擎" },
             { Type:REPORT_COLUMN_ID.SYMBOL_NAME_ID, Title:"股票名称", TextAlign:"left", Width:null, TextColor:g_JSChartResource.Report.FieldColor.Name, MaxText:"擎擎擎擎0"},
+            { Type:REPORT_COLUMN_ID.SYMBOL_NAME_V2_ID, Title:"名称/代码", TextAlign:"left", Width:null, TextColor:g_JSChartResource.Report.NameSymbolV2.Name.Color, MaxText:"擎擎擎擎*", MaxText2:"999999", Space:5, TextColor2:g_JSChartResource.Report.NameSymbolV2.Symbol.Color },
 
             { Type:REPORT_COLUMN_ID.INCREASE_ID, Title:"涨幅%", TextAlign:"right", Width:null, MaxText:"-888.88" },
             { Type:REPORT_COLUMN_ID.PRICE_ID, Title:"现价", TextAlign:"right", Width:null, MaxText:"88888.88" },
@@ -4674,6 +4682,9 @@ function ChartReport()
         this.ItemSymbolFont=`${this.ItemSymbolFontConfig.Size*pixelRatio}px ${ this.ItemSymbolFontConfig.Name}`;
         this.ItemNameFont=`${this.ItemNameFontConfg.Size*pixelRatio}px ${ this.ItemNameFontConfg.Name}`;
 
+        this.NameSymbolFont.Symbol=`${this.NameSymbolV2Config.Symbol.Size*pixelRatio}px ${this.NameSymbolV2Config.Symbol.Name}`;
+        this.NameSymbolFont.Name=`${this.ItemSymbolFontConfig.Name.Size*pixelRatio}px ${this.NameSymbolV2Config.Name.Name}`;
+
         this.RowHeight=this.GetFontHeight(this.ItemFont,"擎")+ this.ItemMergin.Top+ this.ItemMergin.Bottom;
         this.FixedRowHeight=this.GetFontHeight(this.ItemFixedFont,"擎")+ this.ItemMergin.Top+ this.ItemMergin.Bottom;
         this.SortFont=`${this.SortConfig.Size*pixelRatio}px ${ this.SortConfig.Family}`;
@@ -4702,6 +4713,25 @@ function ChartReport()
                 var rowHeight=nameHeight+symboHeight+this.ItemMergin.Top+ this.ItemMergin.Bottom;
                 if (rowHeight>this.RowHeight) this.RowHeight=rowHeight;
                 if (rowHeight>this.FixedRowHeight) this.FixedRowHeight=rowHeight;
+            }
+            else if (item.Type==REPORT_COLUMN_ID.SYMBOL_NAME_V2_ID) //单行显示
+            {
+                this.Canvas.font==this.NameSymbolFont.Name;
+                var nameWidth=this.Canvas.measureText(item.MaxText).width;
+                var nameHeight=this.GetFontHeight(this.ItemNameFont,"擎");
+                
+
+                this.Canvas.font==this.NameSymbolFont.Symbol;
+                var symbolWidth=this.Canvas.measureText(item.MaxText2).width;
+                var symboHeight=this.GetFontHeight(this.ItemSymbolFont,"擎");
+
+                this.ItemNameHeight=Math.abs(nameHeight,symboHeight);
+
+                var space=2;
+                if (IFrameSplitOperator.IsNumber(item.Space)) space=item.Space;
+                itemWidth=nameWidth+symbolWidth+space;
+                
+                item.Width=itemWidth+4+this.ItemMergin.Left+this.ItemMergin.Right;
             }
             else
             {
@@ -5297,6 +5327,11 @@ function ChartReport()
 
             this.FormatDrawInfo(column, stock, drawInfo, data);
         }
+        else if (column.Type==REPORT_COLUMN_ID.SYMBOL_NAME_V2_ID)
+        {
+            this.DrawSymbolNameV2(data, column, left, top, rowType);
+            this.FormatDrawInfo(column, stock, drawInfo, data);
+        }
         else if (column.Type==REPORT_COLUMN_ID.NAME_ID)
         {
             if (stock && stock.Name) 
@@ -5740,6 +5775,72 @@ function ChartReport()
         {
             this.Canvas.textBaseline="top";
             this.Canvas.font=this.ItemSymbolFont;
+            this.Canvas.fillStyle=textColor;
+            this.Canvas.fillText(text,x,y);
+        }
+        
+        this.Canvas.font=this.ItemFont; //还原字体
+    }
+
+    this.DrawSymbolNameV2=function(data, column, left, top, rowType)
+    {
+        var stock=data.Stock;
+        var symbol=data.Symbol;
+        var name;
+        if (stock)
+        {
+            symbol=stock.Symbol;
+            name=stock.Name;
+        }
+
+        if (!symbol && !name) return;
+
+        var y=top+this.ItemMergin.Top+this.ItemNameHeight;
+        var textLeft=left+this.ItemMergin.Left;
+        var x=textLeft;
+        var width=column.Width-this.ItemMergin.Left-this.ItemMergin.Right;
+        var textAlign=column.TextAlign;
+        if (textAlign=='center')
+        {
+            x=textLeft+width/2;
+            this.Canvas.textAlign="center";
+        }
+        else if (textAlign=='right')
+        {
+            x=textLeft+width-2;
+            this.Canvas.textAlign="right";
+        }
+        else
+        {
+            x+=2;
+            this.Canvas.textAlign="left";
+        }
+
+        this.Canvas.textBaseline="bottom";
+
+        var textColor=column.TextColor;
+        var text=name;
+        if (text)
+        {
+            this.Canvas.fillStyle=textColor;
+            this.Canvas.font=this.NameSymbolFont.Name;
+            text=this.TextEllipsis(text, width, column.MaxText);
+            if (text) 
+            {
+                this.Canvas.fillText(text,x,y);
+                var textWidth=this.Canvas.measureText(text).width;
+                var space=2;
+                if (IFrameSplitOperator.IsNumber(column.Space)) space=column.Space;
+                x+=(textWidth+space);
+            }
+           
+        }
+       
+        var textColor=column.TextColor2;
+        text=symbol;
+        if (text)
+        {
+            this.Canvas.font=this.NameSymbolFont.Symbol;
             this.Canvas.fillStyle=textColor;
             this.Canvas.fillText(text,x,y);
         }

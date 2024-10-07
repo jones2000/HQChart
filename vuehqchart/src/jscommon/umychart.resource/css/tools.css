@@ -1685,8 +1685,18 @@ input[type="color"] {
     float: right;
 }
 
+.UMyChart_Tooltip_Text_Sinlge_Td
+{
+    min-width:80px;
+}
+
+.UMyChart_Tooltip_Title_Left_Span
+{
+
+}
+
 .UMyChart_Tooltip_Text_Span
 {
     float: right;
-    margin-right: 5px;
+    margin-right: 1px;
 }

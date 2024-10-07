@@ -1332,6 +1332,8 @@ HQData.Keyboard_RequestSymbolList=function(data, callback)
     }
 
     arySymbol.push( { Symbol:"ICL8.cfe", Name:"中证主连", ShortSymbol:"ICL8", Spell:"ICL8", Type:"期货", TypeName:"期货", Data:{ Symbol:"ICL8.cfe", Type:0 }  } );
+    arySymbol.push( { Symbol:"IML8.cfe", Name:"中千主连", ShortSymbol:"IML8", Spell:"IML8", Type:"期货", TypeName:"期货", Data:{ Symbol:"IML8.cfe", Type:0 }  } );
+    arySymbol.push( { Symbol:"IFL8.cfe", Name:"沪深主连", ShortSymbol:"IFL8", Spell:"IFL8", Type:"期货", TypeName:"期货", Data:{ Symbol:"IFL8.cfe", Type:0 }  } );
 
     arySymbol.push( { Symbol:"01", Name:"分时成交明细", TypeName:"功能键", Priority:1, Color:"rgb(220,20,60)" , Data:{ PageName:"分时成交明细", Type:2 }} );
     arySymbol.push( { Symbol:"02", Name:"分价表", TypeName:"功能键", Priority:1, Color:"rgb(220,20,60)" ,Data:{ PageName:"分价表", Type:2 }} );
@@ -1390,6 +1392,15 @@ HQData.GetM1KLineDataBySymbol=function(symbol)
         case "399006.sz":
             data=SZ_399006_M1_KLINE;
             break;
+        case "ICL8.cfe":
+            data=CFE_ICL8_M1_KLINE;
+            break;
+        case "IML8.cfe":
+            data=CFE_IML8_M1_KLINE;
+            break;
+        case "IFL8.cfe":
+            data=CFE_IFL8_M1_KLINE;
+            break;
         default:
             data=SZ_000001_M1_KLINE;
             break;
@@ -1432,6 +1443,12 @@ HQData.GetDayKLineDataBySymbol=function(symbol)
             break;
         case "ICL8.cfe":
             data=CFE_ICL8_DAY_KLINE;
+            break;
+        case "IML8.cfe":
+            data=CFE_IML8_DAY_KLINE;
+            break;
+        case "IFL8.cfe":
+            data=CFE_IFL8_DAY_KLINE;
             break;
         default:
             data=SZ_000001_DAY_KLINE;

@@ -104,6 +104,8 @@
     <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
     <script src="../jscommon/umychart.popMenu.js"></script>
     <script src="../jscommon/umychart.DialogDrawTool.js"></script>
+    <script src="../jscommon/umychart.DialogTooltip.js"></script>
+    <script src="../jscommon/umychart.version.js"></script>
 
     <!-- 公式编辑器 -->
     <script src="../jscommon/umychart.resource/js/codemirror/codemirror.js"></script>
@@ -173,13 +175,16 @@
                 EnablePopMenuV2:true,
                 EnableDrawToolDialogV2:true,
                 EnableNewIndex:true,
+                TooltipDialog:{ Enable:true, Style:1 },
                 
                 CorssCursorInfo:
                 {  
+                    HPenType:1,VPenType:1,
                     Left:1, Right:1, Bottom:1, 
                     IsFixXLastTime:true, 
                     RightButton:{ Enable:true }, 
                     //IsOnlyDrawMinute:true 
+                    EnableKeyboard:true
                 },
     
 
