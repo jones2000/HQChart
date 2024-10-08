@@ -73,7 +73,7 @@ function JSIndexScript()
 {
     this.DataMap = new Map(
         [
-            ['MA', this.MA], ['均线', this.MA], ['BOLL', this.BOLL], ['BBI', this.BBI],
+            ['MA', this.MA], ['均线', this.MA], ['BOLL', this.BOLL], ['BBI', this.BBI],['BOLL副图', this.BOLL2],
             ["MA4", this.MA4], ["MA5", this.MA5], ["MA6", this.MA6], ["MA7", this.MA7], ["MA8", this.MA8],
             ['DKX', this.DKX], ['MIKE', this.MIKE], ['PBX', this.PBX],
             ['ENE', this.ENE], ['MACD', this.MACD], ['KDJ', this.KDJ],["MACD2", this.MACD2],
@@ -433,7 +433,23 @@ JSIndexScript.prototype.BOLL=function()
 {
     let data=
     {
-        Name: 'BOLL', Description: '布林线', IsMainIndex: true, KLineType: 2,
+        Name: 'BOLL', Description: '布林线', IsMainIndex: true,
+        Args:[ { Name:'M', Value:20} ],
+        Script: //脚本
+'BOLL:MA(CLOSE,M);\n\
+UB:BOLL+2*STD(CLOSE,M);\n\
+LB:BOLL-2*STD(CLOSE,M);'
+
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.BOLL2=function()
+{
+    let data=
+    {
+        Name: 'BOLL副图', Description: '布林线', IsMainIndex: false, KLineType: 2,
         Args:[ { Name:'M', Value:20} ],
         Script: //脚本
 'BOLL:MA(CLOSE,M);\n\
@@ -3225,7 +3241,12 @@ JSIndexScript.prototype.TEST = function ()
             
             Script: //脚本
                 //"T2:KDJ.J;"+
-                "收盘价:C;成交量:VOL, SINGLELINE, RGB(100,100,100);"
+                //"收盘价:C;成交量:VOL, SINGLELINE, RGB(100,100,100);"
+                `DRAWTEXTREL(120,30,STRFORMAT("当前屏K线最小值: {0}",SYSPARAM(5))), RGB(250,0,0);
+                DRAWTEXTREL(120,100,STRFORMAT("当前屏K线最大值: {0}",SYSPARAM(4))), RGB(0,250,0);
+                
+                DRAWTEXTREL(120,170,STRFORMAT("主图可见K线最初位置: {0}",SYSPARAM(2))), RGB(0,0,0);
+                DRAWTEXTREL(120,260,STRFORMAT("主图可见K线最后位置: {0}",SYSPARAM(3))), RGB(0,0,0);`
                 //"T2:IF(KDJ.J>-10,KDJ.J#WEEK,0);"
                 
 

@@ -42,6 +42,8 @@ function JSDialogTooltip()
 
     this.KItemCache=null;
     this.KItemCacheID=null;
+    this.LastValueCache=null;    //最后的鼠标位置对应的数值
+    this.LastValueCacheID=null;
 
     this.Inital=function(hqchart, option)
     {
@@ -206,10 +208,23 @@ function JSDialogTooltip()
         if (this.HQChart.ClassName=='KLineChartContainer')
         {
             var strKItem=JSON.stringify(data.KItem);
+            var strLastValue=JSON.stringify(data.LastValue);
+            var bUpdata=false;
             if (this.KItemCacheID!=strKItem)    //数据变动的才更新
             {
                 this.KItemCache= JSON.parse(strKItem);
                 this.KItemCacheID=strKItem;
+                bUpdata=true;
+            }
+            if (data.LastValue && data.LastValue.Y && IFrameSplitOperator.IsNumber(data.LastValue.Y.Value) && this.LastValueCacheID!=strLastValue)
+            {
+                this.LastValueCache=JSON.parse(strLastValue);
+                this.LastValueCacheID=strLastValue;
+                bUpdata=true;
+            }
+            
+            if (bUpdata) 
+            {
                 this.UpdateTableDOM();
             }
             else
@@ -220,10 +235,23 @@ function JSDialogTooltip()
         else if (this.HQChart.ClassName=='MinuteChartContainer')
         {
             var strKItem=JSON.stringify(data.MinItem);
+            var strLastValue=JSON.stringify(data.LastValue);
+            var bUpdata=false;
             if (this.KItemCacheID!=strKItem)    //数据变动的才更新
             {
                 this.KItemCache= JSON.parse(strKItem);
                 this.KItemCacheID=strKItem;
+                bUpdata=true;
+            }
+            if (data.LastValue && data.LastValue.Y && IFrameSplitOperator.IsNumber(data.LastValue.Y.Value) && this.LastValueCacheID!=strLastValue)
+            {
+                this.LastValueCache=JSON.parse(strLastValue);
+                this.LastValueCacheID=strLastValue;
+                bUpdata=true;
+            }
+
+            if (bUpdata)
+            {
                 this.UpdateTableDOM();
             }
         }
@@ -372,6 +400,22 @@ function JSDialogTooltip()
             this.FormatAmplitude(data.High,data.Low,yClose,defaultfloatPrecision,'DialogTooltip-Amplitude',priceFormat),
         ];
 
+        if (this.LastValueCache && this.LastValueCache.Y)
+        {
+            var item=this.LastValueCache.Y;
+            var rowItem=null;
+            if (item.Extend.FrameID==0)
+            {
+                rowItem=this.ForamtPrice(item.Value,null, defaultfloatPrecision,'DialogTooltip-Value',2);
+            }
+            else
+            {
+                rowItem=this.ForamtValue(item.Value, 2,'DialogTooltip-Value');
+            }
+
+            if (rowItem) aryText.unshift(rowItem);
+        }
+
         if (this.Style==1)
         {
             if (timeItem) aryText.unshift(timeItem);
@@ -420,14 +464,31 @@ function JSDialogTooltip()
 
             aryText=
             [
-                this.ForamtDate(item.Date,this.Style==1?"YYYY/MM/DD":"YYYY/MM/DD/W",'DialogTooltip-Date' ),
+                this.ForamtDate(item.Date,this.Style==1?"MM/DD/W":"YYYY/MM/DD/W",'DialogTooltip-Date' ),
                 this.FormatTime(item.Time, null, "HH:MM", 'DialogTooltip-Time'),
                 this.ForamtPrice(item.Close,item.YClose, defaultfloatPrecision,'DialogTooltip-Price', 1),
+                this.ForamtPrice(item.AvPrice,item.YClose, defaultfloatPrecision,'DialogTooltip-AvPrice', 1),
                 this.FormatRisefall(item.Close,item.YClose, defaultfloatPrecision,'DialogTooltip-Risefall'),
                 this.FormatIncrease(item.Close,item.YClose,defaultfloatPrecision,'DialogTooltip-Increase', 1),
                 this.FormatVol(item.Vol,'DialogTooltip-Vol' ),
                 this.FormatAmount(item.Amount,'DialogTooltip-Amount' ),
             ];
+
+            if (this.LastValueCache && this.LastValueCache.Y)
+            {
+                var item=this.LastValueCache.Y;
+                var rowItem=null;
+                if (item.Extend.FrameID==0)
+                {
+                    rowItem=this.ForamtPrice(item.Value,null, defaultfloatPrecision,'DialogTooltip-Value',2);
+                }
+                else
+                {
+                    rowItem=this.ForamtValue(item.Value, 2,'DialogTooltip-Value');
+                }
+    
+                if (rowItem) aryText.splice(2,0,rowItem);
+            }
         }
         else if (data.Type==1)  //集合竞价
         {
@@ -438,7 +499,7 @@ function JSDialogTooltip()
             if (item.Ver===1) timeForamt="HH:MM"
             aryText=
             [
-                this.ForamtDate(item.Date,this.Style==1?"YYYY/MM/DD":"YYYY/MM/DD/W",'DialogTooltip-Date' ),
+                this.ForamtDate(item.Date,this.Style==1?"MM/DD/W":"YYYY/MM/DD/W",'DialogTooltip-Date' ),
                 this.FormatTime(item.Time, null, timeForamt, 'DialogTooltip-Time'),
                 this.ForamtPrice(item.Price,item.YClose, defaultfloatPrecision,'DialogTooltip-AC-Price',1),
                 this.FormatIncrease(item.Price,item.YClose,defaultfloatPrecision,'DialogTooltip-AC-Increase',1),
@@ -510,7 +571,7 @@ function JSDialogTooltip()
 
 
     /////////////////////////////////////////////////////////////////////////////////////////////
-    //数据格式化
+    //数据格式化 format=0  点差+涨幅 1=涨幅
     this.ForamtPrice=function(price, yClose, defaultfloatPrecision, TitleID, format)
     {
         var item=
@@ -521,6 +582,13 @@ function JSDialogTooltip()
         };
 
         if (!IFrameSplitOperator.IsNumber(price)) return item;
+
+        if (format==2)
+        {
+            item.Text=price.toFixed(defaultfloatPrecision);
+            item.Color=this.TitleColor;
+            return item;
+        }
 
         if (IFrameSplitOperator.IsNumber(yClose) && format!=1)
         {
@@ -535,6 +603,21 @@ function JSDialogTooltip()
         
         item.Color=this.GetColor(price, yClose);
 
+        return item;
+    }
+
+    this.ForamtValue=function(value, defaultfloatPrecision, TitleID)
+    {
+        var item=
+        {
+            Title:g_JSChartLocalization.GetText(TitleID,this.LanguageID),
+            Text:'--',
+            Color:this.TitleColor
+        };
+
+        if (!IFrameSplitOperator.IsNumber(value)) return item;
+
+        item.Text=IFrameSplitOperator.FormatValueStringV2(value,defaultfloatPrecision,2,this.LanguageID);
         return item;
     }
 

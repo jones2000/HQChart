@@ -50821,6 +50821,7 @@ function ChartCorssCursor()
     this.XRangeBGColor=g_JSChartResource.CorssCursorXRangeBGColor;
     this.TextHeight=20;                                         //文本字体高度
     this.LastPoint;
+    this.LastValue; //{ Y:{ Value:, Extend: } }
     this.CursorIndex;
     this.IsOnlyDrawKLine=false;                                 //是否只能画在K线上 (手机端)
     this.IsOnlyDrawMinute=false;                                //是否只能画在走势图价格线上
@@ -51052,6 +51053,7 @@ function ChartCorssCursor()
     {
         this.Status=0;
         this.RightButton.Rect=null;
+        this.LastValue=null;
 
         if (!this.LastPoint) return;
 
@@ -51203,6 +51205,8 @@ function ChartCorssCursor()
         var yValueExtend={};
         var yValue=this.Frame.GetYData(y,yValueExtend);
         if ( (this.IsOnlyDrawMinute || this.IsShowClose) && this.Close != null) yValue=this.Close;
+
+        this.LastValue={ Y:{ Value:yValue, Extend:yValueExtend }};  //缓存十字光标对应的数值
 
         //this.StringFormatX.Value=xValue;
         this.StringFormatX.Value=this.CursorIndex;
@@ -71090,12 +71094,14 @@ function JSChartLocalization()
         ['DialogTooltip-Exchange', {CN:'换手率', EN:'Exchange', TC:'換手'}],
         ['DialogTooltip-Position', {CN:'持仓量', EN:'Position', TC:'持倉'}],
         ['DialogTooltip-Price', {CN:'价格', EN:'Price', TC:'價格'}],
+        ['DialogTooltip-AvPrice', {CN:'均价', EN:'AVPrice:', TC:'均價'}],
         ['DialogTooltip-FClose', {CN:"结算价", EN:'Settlement', TC:'結算價'}],
         ['DialogTooltip-Amplitude', {CN:'振幅', EN:'amplitude', TC:'價格'}],
         ['DialogTooltip-AC-Price', {CN:'匹配价', EN:'Price', TC:'匹配價'}],
         ['DialogTooltip-AC-AvPrice', {CN:'匹配均价', EN:'AVPrice', TC:'匹配均價'}],
         ['DialogTooltip-AC-Increase', {CN:'竞价涨幅', EN:'Increase', TC:'競價漲幅'}],
         ['DialogTooltip-AC-Vol', {CN:'匹配量', EN:'Vol', TC:'匹配量'}],
+        ['DialogTooltip-Value', {CN:'数值', EN:'Value', TC:'数值'}],
 
         //走势图PC tooltip
         ['PCTooltip-Date', {CN:'日期', EN:'Date', TC:"日期"}],
@@ -79420,6 +79426,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             IsShowCorss:this.ChartCorssCursor.IsShowCorss,  //是否显示十字线
             KItem:kItem, 
             Symbol:this.Symbol, Name:this.Name,
+            LastValue:this.ChartCorssCursor.LastValue,
         };
 
 
@@ -80886,11 +80893,38 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                 this.MouseDrag=drag;
                 this.PhoneTouchInfo={ Start:{X:touches[0].clientX, Y:touches[0].clientY }, End:{ X:touches[0].clientX, Y:touches[0].clientY } };
                 this.SelectChartDrawPicture=null;
+
+                var bStartTimer=true;   //长按计时开始
+                if (this.EnableClickModel)
+                {
+                    if (this.ClickModel.IsShowCorssCursor==true) bStartTimer=false;
+                    else bStartTimer= true;
+                } 
+
+                if (bStartTimer)
+                {
+                    this.StopDragTimer();
+                    this.DragTimer = setTimeout(()=>{
+                        this.IsPress=true;
+                        if (drag.Click.X == drag.LastMove.X && drag.Click.Y == drag.LastMove.Y)     //手指没有移动，出现十字光标
+                        {
+                            this.MouseDrag = null;
+                            //移动十字光标
+                            var x = drag.Click.X;
+                            var y = drag.Click.Y;
+                            if (this.EnableClickModel===true) this.ClickModel.IsShowCorssCursor=true;
+                            self.MoveCorssCursor(drag.Click,e);//移动十字光标
+                        }
     
-                if (this.EnableScrollUpDown==false)
-                    T_ShowCorssCursor();    //移动十字光标
-                else if (this.IsClickShowCorssCursor)
-                    T_ShowCorssCursor(); 
+                    }, this.PressTime);
+                }
+                else if (!this.EnableClickModel)
+                {
+                    if (this.EnableScrollUpDown==false)
+                        T_ShowCorssCursor();    //移动十字光标
+                    else if (this.IsClickShowCorssCursor)
+                        T_ShowCorssCursor(); 
+                }
             }
 
             if (this.EnableZoomIndexWindow)
@@ -84604,6 +84638,15 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
     this.OnTouchFinished=function()
     {
+        if (this.EnableClickModel===true)
+        {
+            if (this.ClickModel.IsShowCorssCursor==true && this.TouchDrawCount>0) return;
+
+            this.ClickModel.IsShowCorssCursor=false;
+            this.DrawDynamicInfo();
+            return;
+        }
+
         if (this.CorssCursorTouchEnd===true)    //手势离开十字光标消失
         {
             this.DrawDynamicInfo();
@@ -85232,6 +85275,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             IsShowCorss:this.ChartCorssCursor.IsShowCorss,  //是否显示十字线
             MinItem:minuteItem, 
             Symbol:this.Symbol, Name:this.Name,
+            LastValue:this.ChartCorssCursor.LastValue,
         };
 
 

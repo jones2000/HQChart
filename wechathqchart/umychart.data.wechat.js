@@ -2399,7 +2399,7 @@ export
     PhoneDBClick,
     HQ_DATA_TYPE,
     OVERLAY_STATUS_ID,
-    CloneData
+    CloneData,
 };
 
 /*

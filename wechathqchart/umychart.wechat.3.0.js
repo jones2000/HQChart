@@ -1549,7 +1549,7 @@ function JSChartContainer(uielement)
     this.Canvas = uielement.GetContext("2d");         //画布
     this.UIElement = uielement;
     this.MouseDrag;
-    this.DragMode = 1;                                //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
+    this.DragMode = 1;                                //拖拽模式 0 禁止拖拽 1 数据拖拽
     this.PhoneTouchInfo;                              //手机手势信息 {Start:起始点, End:结束点}
     this.EnableScrollUpDown=false;                    //是否可以上下滚动图形(手机端才有)
 
@@ -9247,6 +9247,7 @@ function MinuteChartContainer(uielement)
 
         this.IsPress=false;
         this.IsOnTouch = true;
+        this.TouchDrawCount=0;
         var jsChart = this;
         if (jsChart.DragMode == 0) return;
 
@@ -9352,11 +9353,39 @@ function MinuteChartContainer(uielement)
                 }, this.PressTime);
             }
 
+            var bStartTimer=true;   //长按计时开始
+            if (this.EnableClickModel)
+            {
+                if (this.ClickModel.IsShowCorssCursor==true) bStartTimer=false;
+                else bStartTimer= true;
+            } 
+
+            if (bStartTimer)
+            {
+                this.ClearTouchTimer();
+                this.TouchTimer = setTimeout(()=>{
+                    jsChart.IsPress=true;
+                    if (drag.Click.X == drag.LastMove.X && drag.Click.Y == drag.LastMove.Y)     //手指没有移动，出现十字光标
+                    {
+                        jsChart.MouseDrag = null;
+                        //移动十字光标
+                        var x = drag.Click.X;
+                        var y = drag.Click.Y;
+                        if (jsChart.EnableClickModel===true) jsChart.ClickModel.IsShowCorssCursor=true;
+                        jsChart.OnMouseMove(x, y, e);
+                    }
+
+                }, jsChart.PressTime);
+            }
+            else if (!this.EnableClickModel)
+            {
+                if (this.EnableScrollUpDown==false)
+                    T_ShowCorssCursor();
+                else if (this.IsClickShowCorssCursor)
+                    T_ShowCorssCursor();
+            }
            
-            if (this.EnableScrollUpDown==false)
-                T_ShowCorssCursor();
-            else if (this.IsClickShowCorssCursor)
-                T_ShowCorssCursor();
+           
 
             this.TouchEvent({ EventID:JSCHART_EVENT_ID.ON_PHONE_TOUCH, FunctionName:"OnTouchStart"}, e);
         }
