@@ -81006,6 +81006,10 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                     drag.LastMove.X=touches[0].clientX;
                     drag.LastMove.Y=touches[0].clientY;
                 }
+                else if (this.EnableClickModel && this.ClickModel.IsShowCorssCursor===false)
+                {
+                    //点击模式 十字光标隐藏 不做任何操作
+                }
                 else
                 {
                     //上下滚动
