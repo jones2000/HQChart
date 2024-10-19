@@ -15,6 +15,7 @@ function JSTReportChart(divElement)
 {
     this.DivElement=divElement;
     this.JSChartContainer;              //表格控件
+    this.ResizeListener;                //大小变动监听
 
      //h5 canvas
      this.CanvasElement=document.createElement("canvas");
@@ -31,10 +32,19 @@ function JSTReportChart(divElement)
 
     this.OnSize=function()
     {
-        //画布大小通过div获取
-        var height=parseInt(this.DivElement.style.height.replace("px",""));
+        //画布大小通过div获取 如果有style里的大小 使用style里的
+        var height=this.DivElement.offsetHeight;
+        var width=this.DivElement.offsetWidth;
+        if (this.DivElement.style.height && this.DivElement.style.width)
+        {
+            if (this.DivElement.style.height.includes("px"))
+                height=parseInt(this.DivElement.style.height.replace("px",""));
+            if (this.DivElement.style.width.includes("px"))
+                width=parseInt(this.DivElement.style.width.replace("px",""));
+        }
+
         this.CanvasElement.height=height;
-        this.CanvasElement.width=parseInt(this.DivElement.style.width.replace("px",""));
+        this.CanvasElement.width=width;
         this.CanvasElement.style.width=this.CanvasElement.width+'px';
         this.CanvasElement.style.height=this.CanvasElement.height+'px';
 
@@ -60,6 +70,8 @@ function JSTReportChart(divElement)
 
         this.JSChartContainer=chart;
         this.DivElement.JSChart=this;   //div中保存一份
+
+        if (option.EnableResize==true) this.CreateResizeListener();
 
         if (option.Symbol)
         {
@@ -127,6 +139,20 @@ function JSTReportChart(divElement)
         chart.Frame.ChartBorder.Top*=pixelTatio;
         chart.Frame.ChartBorder.Bottom*=pixelTatio;
     }
+
+    this.CreateResizeListener=function()
+    {
+        this.ResizeListener = new ResizeObserver((entries)=>{ this.OnDivResize(entries); });
+        this.ResizeListener.observe(this.DivElement);
+    }
+
+    this.OnDivResize=function(entries)
+    {
+        JSConsole.Chart.Log("[JSTReportChart::OnDivResize] entries=", entries);
+
+        this.OnSize();
+    }
+
 
     /////////////////////////////////////////////////////////////////////////////
     //对外接口
@@ -447,6 +473,8 @@ function JSTReportChartContainer(uielement)
         this.SourceData.Data=[];
         this.Data.Data=[];
         this.Data.Price=null;
+        this.Data.XOffset=0;    //清空偏移
+        this.Data.YOffset=0;
         this.MapStockData=null;
         this.MapExePriceData=null;
         this.BorderData.MapData=null;
@@ -571,10 +599,11 @@ function JSTReportChartContainer(uielement)
 
     this.RecvStockListData=function(data)
     {
+        this.MapExePriceData=new Map();
+        this.MapStockData=new Map();
+
         if (IFrameSplitOperator.IsNonEmptyArray(data.data))
         {
-            this.MapExePriceData=new Map();
-            this.MapStockData=new Map();
             //0=行权价格 1=左边期权代码 2=右侧期权代码 3=左侧期权名称 4=右侧期权名称
             for(var i=0;i<data.data.length;++i)
             {
@@ -738,7 +767,7 @@ function JSTReportChartContainer(uielement)
 
             if (rightData && IFrameSplitOperator.IsNumber(rightData.Position))
             {
-                if (leftMaxPosition.Max==null || leftMaxPosition.Max<rightData.Position) 
+                if (rightMaxPosition.Max==null || rightMaxPosition.Max<rightData.Position) 
                 {
                     rightMaxPosition.Max=rightData.Position;
                     rightMaxPosition.ExePrice=mapItem[0];
@@ -759,6 +788,7 @@ function JSTReportChartContainer(uielement)
         //0=证券代码 1=股票名称 2=昨收 3=开 4=高 5=低 6=收 7=成交量 8=成交金额, 9=买价 10=买量 11=卖价 12=卖量 13=均价 14=持仓 16=涨停价 17=跌停价
         //21=涨幅% 22=涨跌 24=振幅% 
         //30=全局扩展数据  31=当前板块扩展数据
+        // 101-110 数值
 
         if (IFrameSplitOperator.IsString(item[1])) stock.Name=item[1];
         if (IFrameSplitOperator.IsNumber(item[2])) stock.YClose=item[2];
@@ -772,7 +802,7 @@ function JSTReportChartContainer(uielement)
         if (IFrameSplitOperator.IsNumber(item[10])) stock.BuyVol=item[10];
         if (IFrameSplitOperator.IsNumber(item[11])) stock.SellPrice=item[11];
         if (IFrameSplitOperator.IsNumber(item[12])) stock.SellVol=item[12];
-        if (IFrameSplitOperator.IsNumber(item[13])) stock.AvPrice=item[13];          //均价
+        if (IFrameSplitOperator.IsNumber(item[13])) stock.AvPrice=item[13];           //均价
         if (IFrameSplitOperator.IsNumber(item[14])) stock.Position=item[14];          //持仓
        
         if (IFrameSplitOperator.IsNumber(item[16])) stock.LimitHigh=item[16];        //涨停价
@@ -809,6 +839,18 @@ function JSTReportChartContainer(uielement)
 
         if (item[32]) stock.CloseLine=item[32];                     //32=收盘价线
         if (item[33]) stock.KLine=item[33];                         //33=K线
+
+        //10个数值型 101-110
+        if (IFrameSplitOperator.IsNumber(item[101])) stock.ReserveNumber1=item[101];
+        if (IFrameSplitOperator.IsNumber(item[102])) stock.ReserveNumber2=item[102];
+        if (IFrameSplitOperator.IsNumber(item[103])) stock.ReserveNumber3=item[103];
+        if (IFrameSplitOperator.IsNumber(item[104])) stock.ReserveNumber4=item[104];
+        if (IFrameSplitOperator.IsNumber(item[105])) stock.ReserveNumber5=item[105];
+        if (IFrameSplitOperator.IsNumber(item[106])) stock.ReserveNumber6=item[106];
+        if (IFrameSplitOperator.IsNumber(item[107])) stock.ReserveNumber7=item[107];
+        if (IFrameSplitOperator.IsNumber(item[108])) stock.ReserveNumber8=item[108];
+        if (IFrameSplitOperator.IsNumber(item[109])) stock.ReserveNumber9=item[109];
+        if (IFrameSplitOperator.IsNumber(item[110])) stock.ReserveNumber10=item[110];
     }
 
     
@@ -1440,6 +1482,18 @@ var TREPORT_COLUMN_ID=
     CUSTOM_NUMBER_TEXT_ID:101,      //自定义数值型
     CUSTOM_DATETIME_TEXT_ID:102,    //自定义日期类型
     CUSTOM_ICON_ID:103,             //自定义图标
+
+    //预留数值类型 10个
+    RESERVE_NUMBER1_ID:200,         //ReserveNumber1:
+    RESERVE_NUMBER2_ID:201,
+    RESERVE_NUMBER3_ID:203,
+    RESERVE_NUMBER4_ID:204,
+    RESERVE_NUMBER5_ID:205,
+    RESERVE_NUMBER6_ID:206,
+    RESERVE_NUMBER7_ID:207,
+    RESERVE_NUMBER8_ID:208,
+    RESERVE_NUMBER9_ID:209,
+    RESERVE_NUMBER10_ID:210,
 }
 
 var MAP_TREPORT_COLUMN_FIELD=new Map(
@@ -1461,6 +1515,18 @@ var MAP_TREPORT_COLUMN_FIELD=new Map(
     [TREPORT_COLUMN_ID.LOW_ID, "Low"],
     [TREPORT_COLUMN_ID.AVERAGE_PRICE_ID,"AvPrice"],
     [TREPORT_COLUMN_ID.POSITION_ID,"Position"],
+    [TREPORT_COLUMN_ID.AMPLITUDE_ID,"Amplitude"],
+
+    [TREPORT_COLUMN_ID.RESERVE_NUMBER1_ID,"ReserveNumber1"],
+    [TREPORT_COLUMN_ID.RESERVE_NUMBER2_ID,"ReserveNumber2"],
+    [TREPORT_COLUMN_ID.RESERVE_NUMBER3_ID,"ReserveNumber3"],
+    [TREPORT_COLUMN_ID.RESERVE_NUMBER4_ID,"ReserveNumber4"],
+    [TREPORT_COLUMN_ID.RESERVE_NUMBER5_ID,"ReserveNumber5"],
+    [TREPORT_COLUMN_ID.RESERVE_NUMBER6_ID,"ReserveNumber6"],
+    [TREPORT_COLUMN_ID.RESERVE_NUMBER7_ID,"ReserveNumber7"],
+    [TREPORT_COLUMN_ID.RESERVE_NUMBER8_ID,"ReserveNumber8"],
+    [TREPORT_COLUMN_ID.RESERVE_NUMBER9_ID,"ReserveNumber9"],
+    [TREPORT_COLUMN_ID.RESERVE_NUMBER10_ID,"ReserveNumber10"],
 ]);
 
 
@@ -1595,6 +1661,7 @@ function ChartTReport()
             if (IFrameSplitOperator.IsNumber(item.Sort)) colItem.Sort=item.Sort;
             if (IFrameSplitOperator.IsBool(item.EnableTooltip)) colItem.EnableTooltip=item.EnableTooltip;
             if (IFrameSplitOperator.IsNumber(item.FixedWidth)) colItem.FixedWidth=item.FixedWidth;
+            if (IFrameSplitOperator.IsNumber(item.FloatPrecision)) colItem.FloatPrecision=item.FloatPrecision;    //小数位数
             
             if (item.Sort==1)   //1本地排序 2=远程排序
             {
@@ -1633,6 +1700,17 @@ function ChartTReport()
           
             { Type:TREPORT_COLUMN_ID.BUY_VOL_ID, Title:"买量", TextAlign:"right", TextColor:g_JSChartResource.TReport.FieldColor.Vol, Width:null, MaxText:"88888", Sort:1, SortType:[1,2,0] },
             { Type:TREPORT_COLUMN_ID.SELL_VOL_ID, Title:"卖量", TextAlign:"right", TextColor:g_JSChartResource.TReport.FieldColor.Vol, Width:null, MaxText:"88888", Sort:1, SortType:[1,2,0] },
+
+            { Type:TREPORT_COLUMN_ID.RESERVE_NUMBER1_ID, Title:"数值1", TextAlign:"right", TextColor:g_JSChartResource.TReport.FieldColor.Text, MaxText:"9999.99", FloatPrecision:2 },
+            { Type:TREPORT_COLUMN_ID.RESERVE_NUMBER2_ID, Title:"数值2", TextAlign:"right", TextColor:g_JSChartResource.TReport.FieldColor.Text, MaxText:"9999.99", FloatPrecision:2 },
+            { Type:TREPORT_COLUMN_ID.RESERVE_NUMBER3_ID, Title:"数值3", TextAlign:"right", TextColor:g_JSChartResource.TReport.FieldColor.Text, MaxText:"9999.99", FloatPrecision:2 },
+            { Type:TREPORT_COLUMN_ID.RESERVE_NUMBER4_ID, Title:"数值4", TextAlign:"right", TextColor:g_JSChartResource.TReport.FieldColor.Text, MaxText:"9999.99", FloatPrecision:2 },
+            { Type:TREPORT_COLUMN_ID.RESERVE_NUMBER5_ID, Title:"数值5", TextAlign:"right", TextColor:g_JSChartResource.TReport.FieldColor.Text, MaxText:"9999.99", FloatPrecision:2 },
+            { Type:TREPORT_COLUMN_ID.RESERVE_NUMBER6_ID, Title:"数值6", TextAlign:"right", TextColor:g_JSChartResource.TReport.FieldColor.Text, MaxText:"9999.99", FloatPrecision:2 },
+            { Type:TREPORT_COLUMN_ID.RESERVE_NUMBER7_ID, Title:"数值7", TextAlign:"right", TextColor:g_JSChartResource.TReport.FieldColor.Text, MaxText:"9999.99", FloatPrecision:2 },
+            { Type:TREPORT_COLUMN_ID.RESERVE_NUMBER8_ID, Title:"数值8", TextAlign:"right", TextColor:g_JSChartResource.TReport.FieldColor.Text, MaxText:"9999.99", FloatPrecision:2 },
+            { Type:TREPORT_COLUMN_ID.RESERVE_NUMBER9_ID, Title:"数值9", TextAlign:"right", TextColor:g_JSChartResource.TReport.FieldColor.Text, MaxText:"9999.99", FloatPrecision:2 },
+            { Type:TREPORT_COLUMN_ID.RESERVE_NUMBER10_ID, Title:"数值10", TextAlign:"right", TextColor:g_JSChartResource.TReport.FieldColor.Text, MaxText:"9999.99", FloatPrecision:2 },
         ];
 
         for(var i=0;i<DEFAULT_COLUMN.length;++i)
@@ -2075,6 +2153,18 @@ function ChartTReport()
                         }
                     }
                     break;
+                case TREPORT_COLUMN_ID.RESERVE_NUMBER1_ID:
+                case TREPORT_COLUMN_ID.RESERVE_NUMBER2_ID:
+                case TREPORT_COLUMN_ID.RESERVE_NUMBER3_ID:
+                case TREPORT_COLUMN_ID.RESERVE_NUMBER4_ID:
+                case TREPORT_COLUMN_ID.RESERVE_NUMBER5_ID:
+                case TREPORT_COLUMN_ID.RESERVE_NUMBER6_ID:
+                case TREPORT_COLUMN_ID.RESERVE_NUMBER7_ID:
+                case TREPORT_COLUMN_ID.RESERVE_NUMBER8_ID:
+                case TREPORT_COLUMN_ID.RESERVE_NUMBER9_ID:
+                case TREPORT_COLUMN_ID.RESERVE_NUMBER10_ID:
+                    this.FormatReserveNumber(column, data, drawInfo);
+                    break;
 
                 default:
                     drawInfo.Text=`-----`;
@@ -2085,6 +2175,18 @@ function ChartTReport()
         }
 
         this.DrawCell(drawInfo, exePriceData, column.Type, cellType);
+    }
+
+    this.FormatReserveNumber=function(column, data, drawInfo)
+    {
+        var fieldName=MAP_TREPORT_COLUMN_FIELD.get(column.Type);
+        if (!fieldName) return;
+
+        var value=data[fieldName];
+        if (!IFrameSplitOperator.IsNumber(value)) return;
+
+        //TODO: 不同类型的 格式化输出 
+        drawInfo.Text=value.toFixed(column.FloatPrecision);
     }
 
     this.GetFlashBGData=function(drawInfo, exePriceData, columnType, cellType)

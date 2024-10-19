@@ -203,6 +203,12 @@ function JSReportChart(divElement)
             if (IFrameSplitOperator.IsNumber(item.Sort)) chart.SortInfo.Sort=item.Sort;
         }
 
+        if (option.VirtualTable)
+        {
+            var item=option.VirtualTable;
+            if (IFrameSplitOperator.IsBool(item.Enable)) chart.Data.Virtual.Enable=item.Enable;
+        }
+
         var reportChart=chart.GetReportChart();
         if (reportChart)
         {
@@ -417,7 +423,7 @@ function JSReportChartContainer(uielement)
     this.Symbol;    //板块代码
     this.Name;      //板块名称
     this.NetworkFilter;                                 //数据回调接口
-    this.Data={ XOffset:0, YOffset:0, Data:[] };        //股票列表
+    this.Data={ XOffset:0, YOffset:0, Data:[], Virtual:{ Enable:false, Count:0 } };        //股票列表  (Virtual 虚拟表)
     this.SourceData={ Data:[] } ;                       //原始股票顺序(排序还原用)
     this.BlockData=new Map();                           //当前板块数据
     this.MapStockData=new Map();                        //原始股票数据
@@ -786,6 +792,7 @@ function JSReportChartContainer(uielement)
     {
         this.SourceData.Data=[];
         this.Data.Data=[];
+        this.Data.Virtual.Count=0;
         this.BlockData=new Map(); 
     }
 
@@ -1042,6 +1049,12 @@ function JSReportChartContainer(uielement)
             }
         }
 
+        if (recvData.Virtual)   //虚拟表设置
+        {
+            var item=recvData.Virtual;
+            if (IFrameSplitOperator.IsNumber(item.Count)) this.Data.Virtual.Count=item.Count;
+        }
+
         this.Draw();
         this.UpdateStockData();
     }
@@ -1267,6 +1280,12 @@ function JSReportChartContainer(uielement)
         var chart=this.ChartPaint[0];
         if (!chart) return;
 
+        if (this.Data.Virtual && this.Data.Virtual.Enable)
+        {
+            this.RequestVirtualStockData(); //虚拟表格 全部取后台
+            return;
+        }
+
         if (this.SortInfo && this.SortInfo.Field>=0 && this.SortInfo.Sort>0)
         {
             var column=chart.Column[this.SortInfo.Field];
@@ -1342,15 +1361,37 @@ function JSReportChartContainer(uielement)
         var chart=this.ChartPaint[0];
         if (!chart) return;
 
-        //更新的股票在当前页面,需要重绘
         var bUpdate=false;
-        var aryStock=chart.ShowSymbol;
-        for(var i=0;i<aryStock.length;++i)
+        //实时本地数据排序
+        var chart=this.ChartPaint[0];
+        if (chart && this.SortInfo.Sort==1 && IFrameSplitOperator.IsNumber(this.SortInfo.Field) && this.SortInfo.Field>=0)
         {
-            if (setUpdateSymbol.has(aryStock[i].Symbol))
+            var column=chart.Column[this.SortInfo.Field];
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_REPORT_LOCAL_SORT);
+            if (event && event.Callback)
             {
-                bUpdate=true;
-                break;
+                var sendData={ Column:column, SortInfo:this.SortInfo, SymbolList:this.Data.Data, Result:null };
+                event.Callback (event, sendData, this);
+                if (Array.isArray(sendData.Result)) this.Data.Data=sendData.Result;
+            }
+            else
+            {
+                this.Data.Data.sort((left, right)=> { return this.LocalSort(left, right, column, this.SortInfo.Sort); });
+            }
+
+            bUpdate=true;   //排序暂时每次都刷新
+        }
+        else
+        {
+            //更新的股票在当前页面,需要重绘
+            var aryStock=chart.ShowSymbol;
+            for(var i=0;i<aryStock.length;++i)
+            {
+                if (setUpdateSymbol.has(aryStock[i].Symbol))
+                {
+                    bUpdate=true;
+                    break;
+                }
             }
         }
 
@@ -2600,8 +2641,9 @@ function JSReportChartContainer(uielement)
         if (!chart) return false;
 
         var pageSize=chart.GetPageSize();
-        if (pageSize>this.Data.Data.length) return false;
-        if (this.Data.YOffset+pageSize>=this.Data.Data.length) 
+        var dataCount=chart.GetAllRowCount();
+        if (pageSize>dataCount) return false;
+        if (this.Data.YOffset+pageSize>=dataCount) 
         {
             if (bCycle===true)
             {
@@ -2615,7 +2657,7 @@ function JSReportChartContainer(uielement)
         }
 
         this.Data.YOffset+=pageSize;
-        var showDataCount=this.Data.Data.length-this.Data.YOffset;
+        var showDataCount=dataCount-this.Data.YOffset;
 
         if (chart.SelectedModel==0)
         {
@@ -2631,13 +2673,14 @@ function JSReportChartContainer(uielement)
         var chart=this.ChartPaint[0];
         if (!chart) return false;
         var pageSize=chart.GetPageSize();
-        if (pageSize>this.Data.Data.length) return false;
+        var dataCount=chart.GetAllRowCount();
+        if (pageSize>dataCount) return false;
 
         if (this.Data.YOffset<=0) 
         {
             if (bCycle===true)
             {
-                this.Data.YOffset=this.Data.Data.length-pageSize;   //循环到最后一页
+                this.Data.YOffset=dataCount-pageSize;   //循环到最后一页
                 return true;
             }
             else
@@ -3075,7 +3118,16 @@ function JSReportChartContainer(uielement)
         if (column.Sort!=1 && column.Sort!=2) return false;
 
         var sortInfo={ Field:index, Sort:sortType };
-        if (sortInfo.Sort==0)   //不排序还原
+        if (this.Data.Virtual && this.Data.Virtual.Enable)
+        {
+            this.SortInfo.Field=sortInfo.Field;
+            this.SortInfo.Sort=sortInfo.Sort;
+            this.Data.YOffset=0;
+            this.ResetReportSelectStatus();
+            this.RequestVirtualStockData();   //虚拟表格
+            return true;
+        }
+        else if (sortInfo.Sort==0)   //不排序还原
         {
             this.Data.Data=[];
             if (IFrameSplitOperator.IsNonEmptyArray(this.SourceData.Data))
@@ -3486,6 +3538,13 @@ function JSReportChartContainer(uielement)
             case REPORT_COLUMN_ID.LIMIT_HIGH_ID:
             case REPORT_COLUMN_ID.LIMIT_LOW_ID:
 
+            //期货字段
+            case REPORT_COLUMN_ID.FUTURES_POSITION_ID:
+            case REPORT_COLUMN_ID.FUTURES_CLOSE_ID:
+            case REPORT_COLUMN_ID.FUTURES_YCLOSE_ID:
+            case REPORT_COLUMN_ID.FUTURES_OPEN_POSITION_ID:
+            case REPORT_COLUMN_ID.FUTURES_CLOSE_POSITION_ID:
+
             case REPORT_COLUMN_ID.VOL_IN_ID:
             case REPORT_COLUMN_ID.VOL_OUT_ID:
             case REPORT_COLUMN_ID.DATE_ID:
@@ -3786,12 +3845,82 @@ function JSReportChartContainer(uielement)
             }
         }
 
+        if (data.Virtual)
+        {
+            var item=data.Virtual;
+            if (IFrameSplitOperator.IsNumber(item.Count)) this.Data.Virtual.Count=item.Count;
+        }
+
         var chart=this.ChartPaint[0];
         if (!chart) return;
 
         //更新的股票在当前页面,需要重绘
         var bUpdate=true;
         if (bUpdate) this.Draw();
+    }
+
+    //虚拟表格 请求序号 所有数据后台返回
+    this.RequestVirtualStockData=function()
+    {
+        var chart=this.ChartPaint[0];
+        if (!chart) return;
+
+        var self=this;
+        var startIndex=this.Data.YOffset;
+        var pageSize=chart.GetPageSize();
+        var endIndex=startIndex+pageSize;
+        var dataCount=chart.GetAllRowCount();
+        if (endIndex>=dataCount) endIndex=dataCount-1;
+
+        if (!this.NetworkFilter) return;
+
+        var requestData=
+        {
+            range:{ start:startIndex, end:endIndex, count:chart.GetAllRowCount() }, 
+            column:null, 
+            sort:0, symbol:this.Symbol, name:this.Name,
+            pageSize:pageSize
+        }
+
+        if (this.SortInfo && this.SortInfo.Field>=0 && this.SortInfo.Sort>0) //排序
+        {
+            var column=chart.Column[this.SortInfo.Field];
+            requestData.column={ name: column.Title, type: column.Type, index:this.SortInfo.Field, ID:column.ID };
+            requestData.sort=this.SortInfo.Sort;
+        }
+
+        var obj=
+        {
+            Name:'JSDealChartContainer::RequestVirtualStockData', //类名::函数名
+            Explain:'报价列表股票数据(虚拟表格)',
+            Request:
+            { 
+                Data: requestData
+            }, 
+            Self:this,
+            PreventDefault:false
+        };
+
+        if (chart.FixedRowCount>0 && chart.FixedRowData.Type==1)
+        {
+            var arySymbol=[];
+            for(var i=0;i<chart.FixedRowData.Symbol.length;++i)
+            {
+                var item=chart.FixedRowData.Symbol[i];
+                if (item) arySymbol.push(item);
+            }
+
+            obj.Request.FixedSymbol=arySymbol;
+        }
+
+        this.NetworkFilter(obj, function(data) 
+        { 
+            self.RecvStockSortData(data);
+            self.AutoUpdate();
+        });
+
+        if (obj.PreventDefault==true) return;  
+        
     }
 
     //底部标签
@@ -4473,8 +4602,9 @@ function ChartReport()
     this.GetYScrollRange=function()
     {
         if (!IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return 0;
+        var dataCount=this.GetAllRowCount();
 
-        var maxOffset=this.Data.Data.length-this.RowCount;
+        var maxOffset=dataCount-this.RowCount;
 
         return maxOffset;
     }
@@ -4504,7 +4634,7 @@ function ChartReport()
 
             { Type:REPORT_COLUMN_ID.VOL_ID, Title:"总量", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Vol, Width:null, MaxText:"8888.8擎" },
             { Type:REPORT_COLUMN_ID.AMOUNT_ID, Title:"总金额", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Amount, Width:null, MaxText:"8888.8擎" },
-            { Type:REPORT_COLUMN_ID.EXCHANGE_RATE_ID, Title:"换手%", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, Width:null, MaxText:"88.88" },
+            { Type:REPORT_COLUMN_ID.EXCHANGE_RATE_ID, Title:"换手%", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, Width:null, MaxText:"88.88擎" },
 
             { Type:REPORT_COLUMN_ID.OUTSTANDING_SHARES_ID, Title:"流通股本", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, Width:null, MaxText:"8888.8擎" },
             { Type:REPORT_COLUMN_ID.TOTAL_SHARES_ID, Title:"总股本", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, Width:null, MaxText:"8888.8擎" },
@@ -5050,10 +5180,18 @@ function ChartReport()
         this.Canvas.stroke();
     }
 
+    //获取一共多少行
+    this.GetAllRowCount=function()
+    {
+        var count=this.Data.Data.length;
+        if (this.Data.Virtual && this.Data.Virtual.Enable) count=this.Data.Virtual.Count;
+        return count;
+    }
+
     this.DrawBody=function()
     {
         if (!this.Data) return;
-        if (!IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.Data.Data) && !this.Data.Virtual.Enable) return;
 
         this.Canvas.font=this.ItemFont;
         var top=this.RectClient.Top+this.HeaderHeight;
@@ -5089,7 +5227,8 @@ function ChartReport()
         var setSelected;
         if (this.MultiSelectModel==1) setSelected=new Set(this.MultiSelectedRow);
 
-        for(var i=this.Data.YOffset, j=0; i<this.Data.Data.length && j<this.RowCount ;++i, ++j)
+        var dataCount=this.GetAllRowCount();
+        for(var i=this.Data.YOffset, j=0; i<dataCount && j<this.RowCount ;++i, ++j)
         {
             var symbol=this.Data.Data[i];
 

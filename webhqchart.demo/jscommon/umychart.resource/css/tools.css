@@ -1700,3 +1700,122 @@ input[type="color"] {
     float: right;
     margin-right: 1px;
 }
+
+
+
+/*
+    Copyright (c) 2018 jones
+ 
+    http://www.apache.org/licenses/LICENSE-2.0
+
+   开源项目 https://github.com/jones2000/HQChart
+ 
+   jones_2000@163.com
+
+   内置区间统计对话框
+*/
+
+
+.UMyChart_SelectRect_Dialog_Div
+{
+    font-family: "微软雅黑";
+    /*display: flex;*/
+    border: 1px solid; 
+    width:fit-content;
+    border-color: rgb(204,204,204);
+    visibility:hidden;
+    position: absolute;
+    background-color: rgba(230,230,230,1);
+    left:1px;
+    top:1px; 
+}
+
+.UMyChart_SelectRect_Title_Div
+{
+    padding-left: 2px;
+    height:20px;
+    border-bottom: 1px solid;
+    
+    display: flex;
+    cursor: default;
+    user-select: none;
+    background-color:rgb(200, 66, 69)
+}
+
+.UMyChart_SelectRect_Name_Div
+{
+    margin-left: 5px;
+    color:rgb(250,250,250)
+}
+
+
+.UMyChart_SelectRect_Close_Div
+{
+    margin-left: auto;
+    padding-right: 4px;
+    cursor:pointer;
+    color:rgb(180,180,180)
+}
+
+.UMyChart_SelectRect_DateTime_Div
+{
+    padding-top: 4px;
+    padding-left: 10px;
+    padding-right: 10px;
+    display: flex;
+}
+
+.UMyChart_SelectRect_ArrowButton_Span
+{
+    width: 18px;
+    cursor: pointer;
+    display: inline-block;
+    text-align: center;
+    background: rgb(225, 225, 225);
+    border: 1px solid rgb(173, 173, 173);
+    margin-left: 5px;
+}
+
+.UMyChart_SelectRect_DateTitle_Span
+{
+    padding-right: 4px;
+    padding-left: 4px;
+}
+
+.UMyChart_SelectRect_DateValue_Span
+{
+    padding-right: 4px;
+    padding-left: 4px;
+}
+
+.UMyChart_SelectRect_Table
+{
+    border-collapse: collapse;
+    margin-top: 5px;
+    user-select: none;
+    font-size:12px;
+    width: 100%;
+    border: 1px solid rgb(173, 173, 173);
+}
+
+.UMyChart_SelectRect_Td
+{
+    min-width: 120px;
+    border: 1px solid rgb(173, 173, 173);
+    padding-bottom: 5px;
+    padding-top: 5px;
+}
+
+.UMyChart_SelectRect_Item_Left_Span
+{
+    padding-right: 4px;
+    padding-left: 4px;
+}
+
+.UMyChart_SelectRect_Item_Right_Span
+{
+    padding-right: 4px;
+    padding-left: 4px;
+}
+
+

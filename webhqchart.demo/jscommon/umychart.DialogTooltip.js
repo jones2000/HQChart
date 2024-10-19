@@ -345,22 +345,23 @@ function JSDialogTooltip()
         this.onmouseup = null;
     }
 
-    this.Show=function()
+    this.Show=function(x, y)
     {
+        if (this.IsShow()) return;
+
         if (!this.DivDialog) return;
         if (!this.HQChart) return;
 
-        if (!this.DivDialog.style.top || !this.DivDialog.style.left)    //上一次显示的位置
-        {
-            var top=this.HQChart.Frame.ChartBorder.GetTop();
-            var left=this.HQChart.Frame.ChartBorder.GetLeft();
-            var rtClient=this.HQChart.UIElement.getBoundingClientRect();
-    
-            var x=left+rtClient.left+5;
-            var y=top+rtClient.top+10;
-            this.DivDialog.style.top = y + "px";
-            this.DivDialog.style.left = x + "px";
-        }
+       
+        var top=this.HQChart.Frame.ChartBorder.GetTop();
+        var left=this.HQChart.Frame.ChartBorder.GetLeft();
+        var rtClient=this.HQChart.UIElement.getBoundingClientRect();
+
+        var x=left+rtClient.left+5;
+        var y=top+rtClient.top+10;
+        this.DivDialog.style.top = y + "px";
+        this.DivDialog.style.left = x + "px";
+        
 
         this.DivDialog.style.visibility='visible';
     }

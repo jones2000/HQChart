@@ -18,6 +18,7 @@ function JSPopKeyboard()
     this.Title="HQChart 键盘精灵"
     this.ID=Guid();
     this.ActiveDOM=null;    //启动键盘精灵是的控件
+    this.InputStatus=0;     //0=空闲  1=输入中 
 
     this.Keyboard=
     {
@@ -74,6 +75,10 @@ function JSPopKeyboard()
         input.addEventListener("keydown", (event)=>{ this.OnKeydown(event); });
         input.addEventListener("keyup", (event)=>{ this.OnKeyup(event); });
 
+        input.addEventListener("compositionstart", (event)=>{ this.OnCompositionStart(event); });
+        input.addEventListener("compositionupdate", (event)=>{ this.OnCompositionUpdate(event);} );
+        input.addEventListener("compositionend", (event)=>{ this.OnCompositionEnd(event);} );
+
         divInput.appendChild(input);
        
         var divChart=document.createElement("div");
@@ -104,8 +109,26 @@ function JSPopKeyboard()
 
     }
 
+
+    this.OnCompositionStart=function(event)
+    {
+        this.InputStatus=1;
+    }
+
+    this.OnCompositionUpdate=function(event)
+    {
+
+    }
+
+    this.OnCompositionEnd=function(event)
+    {
+        this.InputStatus=0;
+    }
+
     this.OnKeydown=function(event)
     {
+        if (this.InputStatus!=0) return;
+
         var aryKey=new Set([
             40, 
             38, 
@@ -127,19 +150,25 @@ function JSPopKeyboard()
 
     this.OnKeyup=function(event)
     {
+        if (this.InputStatus!=0) return;
+        
         var code=event.keyCode;
+
+        if (code==8)   //删除
+        {
+            var strText=this.InputDOM.value;
+            if (strText.length==0)  
+            {
+                this.Hide();    //只有按了删除 才能隐藏
+                return;
+            }
+        }
+    
         if ((code>=48 && code<=57) || (code>=65 && code<=90) || (code>=97 && code<=122) || code==8)
         {
             var strText=this.InputDOM.value;
             strText=strText.toUpperCase();
-            if (strText.length==0)
-            {
-                this.Hide();
-            }
-            else
-            {
-                this.Keyboard.JSChart.Search(strText);
-            }
+            this.Keyboard.JSChart.Search(strText);
         }
     }
 

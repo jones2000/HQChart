@@ -350,7 +350,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 41. [HQChart使用教程48-如何自定义X轴刻度](https://blog.csdn.net/jones2000/article/details/102741428) <br>
 42. [HQChart使用教程49-指标配置项说明](https://blog.csdn.net/jones2000/article/details/102928907) <br>
 43. [HQChart使用教程50-Y轴自定义刻度设置说明](https://blog.csdn.net/jones2000/article/details/103174483) <br>
-44. [HQChart使用教程51-指标切换按钮事件说明-h5版本](https://blog.csdn.net/jones2000/article/details/103187576) <br>
+44. [HQChart使用教程51-指标切换按钮事件说明](https://blog.csdn.net/jones2000/article/details/103187576) <br>
 45. [HQChart使用教程52-自定义手机端K线图Tooltip](https://blog.csdn.net/jones2000/article/details/103820718) <br>
 46. [HQChart使用教程53-log日志输出控制](https://blog.csdn.net/jones2000/article/details/104122774) <br>
 47. [HQChart使用教程54-K线缩放控制按钮接口说明](https://blog.csdn.net/jones2000/article/details/104346016) <br>
@@ -668,5 +668,5 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 |单次技术支持| 500  |   |
 |基础技术支持| 2000 |回答插件相关问题，如有对应的教程，提供对应的教程地址 |  
 |高级技术支持| 5000 |回答插件相关问题，如有对应的教程，提供对应的教程地址, 对复杂的问题，可以提供demo示例. 如需自己定制图形，提供外挂图形接口.(定制图形由客户自己开发) |  
-|图形定制开发| 5000起 |具体费用看具体的需求, 定制的部分提供源码，和开源的代码是分开的，以HQChart扩展插件的方式挂接进去。 |  
+|图形定制开发| 5000起 |费用看具体的需求,评估开发工时后算总费用(工时费大概450/小时), 定制的部分提供源码，和开源的代码是分开的，以HQChart扩展插件的方式挂接进去。 |  
 

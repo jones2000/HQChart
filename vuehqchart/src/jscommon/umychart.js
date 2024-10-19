@@ -329,6 +329,13 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (IFrameSplitOperator.IsNumber(item.WheelYMove)) chart.EnableYDrag.WheelYMove=item.WheelYMove;
         }
 
+        if (option.KLineTooltip)
+        {
+            var item=option.KLineTooltip;
+            if (IFrameSplitOperator.IsBool(item.Enable)) chart.KLineTooltipConfig.Enable=item.Enable;
+            if (IFrameSplitOperator.IsBool(item.EnableKeyDown)) chart.KLineTooltipConfig.EnableKeyDown=item.EnableKeyDown;
+        }
+
         if (option.KLine)   //k线图的属性设置
         {
             var item=option.KLine;
@@ -339,7 +346,6 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (option.KLine.MaxRequestDataCount>0) chart.MaxRequestDataCount=option.KLine.MaxRequestDataCount;
             if (option.KLine.Info && option.KLine.Info.length>0) chart.SetKLineInfo(option.KLine.Info,false);
             if (IFrameSplitOperator.IsBool(item.IsShowTooltip)) chart.IsShowTooltip=item.IsShowTooltip;
-            if (IFrameSplitOperator.IsBool(item.IsShowKLineDivTooltip)) chart.IsShowKLineDivTooltip=item.IsShowKLineDivTooltip;
             if (option.KLine.MaxRequestMinuteDayCount>0) chart.MaxRequestMinuteDayCount=option.KLine.MaxRequestMinuteDayCount;
             if (option.KLine.DrawType) chart.KLineDrawType=option.KLine.DrawType;
             if (option.KLine.FirstShowDate>19910101) chart.CustomShow={ Date:option.KLine.FirstShowDate, PageSize:option.KLine.PageSize };  //!!已弃用 新的格式"CustomShow"
@@ -880,10 +886,6 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (IFrameSplitOperator.IsNumber(item.DelayTime)) chart.DrawDynamicInfoOption.DelayTime=item.DelayTime;
         }
         
-
-        chart.SelectRectDialog=new MinuteSelectRectDialog(this.DivElement);
-        
-
         if (option.Minute)   //分钟走势图属性设置
         {
             if (option.Minute.IsShowTooltip==false) chart.IsShowTooltip=false;
@@ -1723,6 +1725,11 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         //K线tooltip
         if (option.TooltipDialog && option.TooltipDialog.Enable)
             chart.InitalTooltipDialog(option.TooltipDialog);
+
+        if (option.SelectRectDialog && option.SelectRectDialog.Enable)
+        {
+            chart.InitalSelectRectDialog(option.SelectRectDialog);
+        }
 
         //注册事件
         if (option.EventCallback)
@@ -2806,6 +2813,7 @@ var JSCHART_MENU_ID=
     CMD_REPORT_COLUMN_FILTER_ID:64,     //报价列表 筛选
 
     CMD_DIALOG_TOOLTIP_ATTRIBUTE:65,    //修改K线信息框属性 Ary:[{ Enable:, Style:}, ]
+    CMD_KLINE_TOOLTIP_ATTRIBUTE:66,     //修改K线提示框属性 Ary:[{ Enable:true/false, EnableKeyDown:true/false}]
 }
 
 
@@ -2961,6 +2969,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     this.Tooltip.id=Guid();
     uielement.parentNode.appendChild(this.Tooltip);
     this.IsShowTooltip=true;    //是否显示K线tooltip
+    this.KLineTooltipConfig={ EnableKeyDown:true, Enable:true }; //K线鼠标移动上去提示信息配置
     this.TooltipCache={ Type:null, IsShow:false, X:null, Y:null, Data:null, InnerHTML:null };  //缓存tooltip数据
 
     //坐标轴风格方法 double-更加数值型分割  price-更加股票价格分割
@@ -3030,6 +3039,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     this.DialogModifyDraw;  //画图修改
 
     this.DialogTooltip;     //tooltip信息 
+    this.DialogSelectRect;  //区间统计
 
 
     this.ClearStockCache=function()
@@ -3070,6 +3080,27 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         this.DialogModifyDraw=new JSDialogModifyDraw();
         this.DialogModifyDraw.Inital(this);
         this.DialogModifyDraw.Create();
+    }
+
+    this.InitalSelectRectDialog=function(option)
+    {
+        if (this.DialogSelectRect) return;
+
+        this.DialogSelectRect=new JSDialogSelectRect();
+        this.DialogSelectRect.Inital(this, option);
+        this.DialogSelectRect.Create();
+    }
+
+    this.DrawSelectRectDialog=function()
+    {
+        
+    }
+
+    this.IsShowSelectRectDialog=function()
+    {
+        if (!this.DialogSelectRect) return false;
+
+        return this.DialogSelectRect.IsShow();
     }
 
     this.ShowDrawToolDialog=function(x,y)
@@ -3593,8 +3624,11 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 }
             }
         }
-        
-        if (!this.RectSelectDrag && this.ClearRectSelect(false)) this.Draw();
+
+        if (!this.IsShowSelectRectDialog()) //区间统计框存在，不清空区间背景色
+        {
+            if (!this.RectSelectDrag && this.ClearRectSelect(false)) this.Draw();
+        }
 
         if (this.EnableBorderDrag && this.Frame)
         {
@@ -6940,6 +6974,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
     this.ShowTooltipByKeyDown=function()
     {
+        if (!this.KLineTooltipConfig.Enable || !this.KLineTooltipConfig.EnableKeyDown) return;
+
         var index=Math.abs(this.CursorIndex-0.5);
         index=parseInt(index.toFixed(0));
         if (this.ClassName=='KLineChartContainer' || this.ClassName=='KLineTrainChartContainer') index=this.CursorIndex;
@@ -6973,7 +7009,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
         if (toolTip.Type===0) //K线信息
         {
-            if (!this.IsShowKLineDivTooltip) return;
+            if (!this.KLineTooltipConfig.Enable) return;
 
             var scrollPos=GetScrollPosition();
             var left = x;
@@ -8069,6 +8105,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
         if (this.PopMinuteChart) this.PopMinuteChart.ReloadResource(option);
         if (this.DialogTooltip) this.DialogTooltip.ReloadResource(option);
+        if (this.DialogSelectRect) this.DialogSelectRect.ReloadResource(option);
     }
 
     this.ReloadBorder=function(option)  //根据页面缩放调整对应边框的尺长
@@ -8817,6 +8854,20 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             var selectData=paint.GetSelectRectData();
             var data={ X:obj.X, Y:obj.Y, SelectData:selectData, RectSelectPaint:paint };
             event.Callback(event,data,this);
+        }
+
+        if (this.IsShowSelectRectDialog())  //区间统计
+        {
+            var selectData=paint.GetSelectRectData();
+            
+            var data=
+            {
+                Chart:this, X:obj.X, Y:obj.Y,
+                SelectData:selectData,          //区间选择的数据
+                RectSelectPaint:paint           //区间选择背景
+            };
+            var e={ data:data }
+            this.DrawSelectRectDialog(e);
         }
 
         return true;
@@ -9644,10 +9695,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 if (this.ShowSelectData && srcParam) this.ShowSelectData(srcParam);
                 break;
             case JSCHART_MENU_ID.CMD_SELECTED_SUMMARY_ID:
-                var dlg=new KLineSelectRectDialog(this.DivElement);
-                dlg.DoModal(srcParam);
+                if (this.DialogSelectRect && srcParam) this.DrawSelectRectDialog(srcParam);
                 break;
-
             case JSCHART_MENU_ID.CMD_SHOW_INDEX_ID:        //显示隐藏指标   [0]=windowIndex [1]=0=自动 1=隐藏 2=显示
                 if (param==null || !IFrameSplitOperator.IsNumber(aryArgs[1])) return false;
                 var windowIndex=param, showType=aryArgs[1];
@@ -9782,6 +9831,12 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                     this.DestroyTooltipDialog();
                     this.InitalTooltipDialog(option);
                 }
+                break;
+            case JSCHART_MENU_ID.CMD_KLINE_TOOLTIP_ATTRIBUTE:
+                if (!aryArgs[0]) return false;
+                var option=aryArgs[0];
+                if (IFrameSplitOperator.IsBool(option.Enable)) this.KLineTooltipConfig.Enable=option.Enable;
+                if (IFrameSplitOperator.IsBool(option.EnableKeyDown)) this.KLineTooltipConfig.EnableKeyDown=option.EnableKeyDown;
                 break;
         }
     }
@@ -43146,6 +43201,7 @@ function MinuteLeftTooltipPaint()
     this.DateTimeColor=g_JSChartResource.PCTooltipPaint.DateTimeColor;      //日期时间颜色
     this.VolColor=g_JSChartResource.PCTooltipPaint.VolColor;          //标题成交量
     this.AmountColor=g_JSChartResource.PCTooltipPaint.AmountColor;    //成交金额
+    this.PositionColor=g_JSChartResource.PCTooltipPaint.PositionColor;  //持仓
     this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
     this.TitlePaint;
 
@@ -43319,6 +43375,12 @@ function MinuteLeftTooltipPaint()
 
                 aryText.push(titleItem);
             }
+
+            if (isFutures && IFrameSplitOperator.IsNumber(item.Position))   //持仓
+            {
+                var titleItem=this.FormatPosition(item.Position,'PCTooltip-Position');
+                if (titleItem) aryText.push(titleItem);
+            }
         }
         else if (drawData.Type==1)  //集合竞价
         {
@@ -43440,6 +43502,21 @@ function MinuteLeftTooltipPaint()
             TitleColor:this.TitleColor,
             Text:IFrameSplitOperator.FromatIntegerString(vol,2,this.LanguageID),
             TextColor:this.VolColor
+        };
+        
+        return titleItem;
+    }
+
+    this.FormatPosition=function(value, TitleID)
+    {
+        if (!IFrameSplitOperator.IsNumber(value)) return null;
+        
+        var titleItem=
+        { 
+            Title:g_JSChartLocalization.GetText(TitleID,this.LanguageID),
+            TitleColor:this.TitleColor,
+            Text:value.toFixed(0),
+            TextColor:this.PositionColor
         };
         
         return titleItem;
@@ -44590,8 +44667,36 @@ function RectSelectPaint()
         return null;
     }
 
+    this.GetSelectRectDataByOnePoint=function()
+    {
+        if (!this.FirstPoint) return null;
+
+        var data=this.GetKData();
+        if (!data) return null;
+        var isMinuteChart=this.IsMinuteChart();
+        var firstDate=this.DateToNumber(this.FirstPoint,isMinuteChart);
+        var selectData={ Start:null, End:null, Data:data };
+        for(var i=0;i<data.Data.length;++i)
+        {
+            var item=data.Data[i];
+            if (!item) continue;
+            var value=this.DateToNumber(item,isMinuteChart);
+
+            if (firstDate==value) 
+            {
+                selectData.Start=i;
+                selectData.End=i;
+                return selectData;
+            }
+        }
+
+        return null;
+    }
+
     this.GetSelectRectData=function()
     {
+        if (this.IsOnlyOnePoint) return this.GetSelectRectDataByOnePoint();
+
         if (!this.FirstPoint || !this.SecondPoint) return null;
         
         var data=this.GetKData();
@@ -69095,6 +69200,7 @@ function JSChartResource()
         DateTimeColor:'rgb(60,60,60)',
         VolColor:"rgb(60,60,60)",       //标题成交量
         AmountColor:"rgb(60,60,60)",    //成交金额
+        PositionColor:"rgb(60,60,60)",  //持仓量
     };
 
     this.PCTooltip= {
@@ -69111,6 +69217,21 @@ function JSChartResource()
         DateTimeColor:'rgb(60,60,60)',
         TurnoverRateColor:'rgb(43,54,69)',       //换手率
         PositionColor:"rgb(255,0,255)"            //持仓
+    },
+
+    //区间统计
+    this.DialogSelectRect=
+    {
+        BGColor:'rgb(250,250,250)',         //背景色
+        BorderColor:'rgb(20,20,20)',        //边框颜色
+        TitleColor:'rgb(0,0,0)',            //对话框标题颜色
+
+        TextColor:"rgb(0,0,0)",             //数值名称
+        ValueColor:"rgb(0,0,0)",            //数值
+        VolColor:"rgb(255, 185, 15)",       //标题成交量
+        AmountColor:"rgb(79, 79, 79)",      //成交金额
+        TurnoverRateColor:'rgb(43,54,69)',  //换手率
+        PositionColor:"rgb(255,0,255)"      //持仓
     }
 
     //弹幕
@@ -70101,6 +70222,8 @@ function JSChartResource()
             if (item.DateTimeColor) this.PCTooltipPaint.DateTimeColor=item.DateTimeColor;
             if (item.VolColor) this.PCTooltipPaint.VolColor=item.VolColor;
             if (item.AmountColor) this.PCTooltipPaint.AmountColor=item.AmountColor;
+            if (item.PositionColor) this.PCTooltipPaint.PositionColor=item.PositionColor;
+            
         }
 
         if (style.DialogTooltip)
@@ -70115,6 +70238,22 @@ function JSChartResource()
             if (item.AmountColor) this.DialogTooltip.AmountColor=item.AmountColor;
             if (item.TurnoverRateColor) this.DialogTooltip.TurnoverRateColor=item.TurnoverRateColor;
             if (item.PositionColor) this.DialogTooltip.PositionColor=item.PositionColor;
+
+        }
+
+        if (style.DialogSelectRect)
+        {
+            var item=style.DialogSelectRect;
+            if (item.BGColor) this.DialogSelectRect.BGColor=item.BGColor;
+            if (item.BorderColor) this.DialogSelectRect.BorderColor=item.BorderColor;
+            if (item.TitleColor) this.DialogSelectRect.TitleColor=item.TitleColor;
+
+            if (item.TextColor) this.DialogSelectRect.TextColor=item.TextColor;
+            if (item.ValueColor) this.DialogSelectRect.ValueColor=item.ValueColor;
+            if (item.VolColor) this.DialogSelectRect.VolColor=item.VolColor;
+            if (item.AmountColor) this.DialogSelectRect.AmountColor=item.AmountColor;
+            if (item.TurnoverRateColor) this.DialogSelectRect.TurnoverRateColor=item.TurnoverRateColor;
+            if (item.PositionColor) this.DialogSelectRect.PositionColor=item.PositionColor;
 
         }
 
@@ -71096,12 +71235,27 @@ function JSChartLocalization()
         ['DialogTooltip-Price', {CN:'价格', EN:'Price', TC:'價格'}],
         ['DialogTooltip-AvPrice', {CN:'均价', EN:'AVPrice:', TC:'均價'}],
         ['DialogTooltip-FClose', {CN:"结算价", EN:'Settlement', TC:'結算價'}],
-        ['DialogTooltip-Amplitude', {CN:'振幅', EN:'amplitude', TC:'價格'}],
+        ['DialogTooltip-Amplitude', {CN:'振幅', EN:'amplitude', TC:'振幅'}],
         ['DialogTooltip-AC-Price', {CN:'匹配价', EN:'Price', TC:'匹配價'}],
         ['DialogTooltip-AC-AvPrice', {CN:'匹配均价', EN:'AVPrice', TC:'匹配均價'}],
         ['DialogTooltip-AC-Increase', {CN:'竞价涨幅', EN:'Increase', TC:'競價漲幅'}],
         ['DialogTooltip-AC-Vol', {CN:'匹配量', EN:'Vol', TC:'匹配量'}],
         ['DialogTooltip-Value', {CN:'数值', EN:'Value', TC:'数值'}],
+
+
+        ['DialogSelectRect-StartPrice', {CN:'起始价:', EN:'Start Price:', TC:'起始價'}],
+        ['DialogSelectRect-EndPrice', {CN:'最终价:', EN:"End Price:", TC:'最终價'}],
+        ['DialogSelectRect-High', {CN:'最高价:', EN:'High:', TC:'最高價'}],
+        ['DialogSelectRect-Low', {CN:'最低价:', EN:"Low:", TC:'最低價'}],
+        ['DialogSelectRect-Increase', {CN:'区间涨幅:', EN:'Increase', TC:'漲幅'}],
+        ['DialogSelectRect-Amplitude', {CN:'区间振幅:', EN:'amplitude', TC:'振幅'}],
+        ['DialogSelectRect-Vol', {CN:'成交量:', EN:'Volume', TC:'數量'}],
+        ['DialogSelectRect-Amount', {CN:'成交额:', EN:'Amount', TC:'金額'}],
+        ['DialogSelectRect-Up', {CN:'阳线:', EN:'Up', TC:'阳线'}],
+        ['DialogSelectRect-Down', {CN:'阴线:', EN:'Down', TC:'阴线'}],
+        ['DialogSelectRect-Unchanged', {CN:'平线:', EN:'Unchanged', TC:'平线'}],
+        ['DialogSelectRect-DataCount', {CN:'数据个数:', EN:'Data Count:', TC:'数据个数'}],
+        
 
         //走势图PC tooltip
         ['PCTooltip-Date', {CN:'日期', EN:'Date', TC:"日期"}],
@@ -71111,6 +71265,7 @@ function JSChartLocalization()
         ['PCTooltip-Increase', {CN:'涨幅', EN:'Increase:', TC:'漲幅'}],
         ['PCTooltip-Vol', {CN:'成交量', EN:'Volume:', TC:'成交量'}],
         ['PCTooltip-Amount', {CN:'成交额', EN:'Amount:', TC:'成交額'}],
+        ["PCTooltip-Position",{CN:'持仓量', EN:'Position:', TC:'持倉'}],
         ['PCTooltip-AC-Price', {CN:'匹配价:', EN:'Price:', TC:'匹配價'}],
         ['PCTooltip-AC-Increase', {CN:'竞价涨幅:', EN:'Increase:', TC:'競價漲幅'}],
         ['PCTooltip-AC-Vol', {CN:'匹配量:', EN:'V:', TC:'匹配量'}],
@@ -71943,7 +72098,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
     this.SourceDataLimit=new Map();     //每个周期缓存数据最大个数 key=周期 value=最大个数 
     this.CtrlMoveStep=5;                //Ctrl+(Left/Right) 移动数据个数  
 
-    this.CustomShow=null;               //首先显示的K线的起始日期 { Date:日期, Time:时间, PageSize:}
+    this.CustomShow=null;               //首先显示的K线的起始日期 { Date:日期, Time:时间, PageSize:, Callback:}
     this.ZoomType=0;                    //缩放模式 0=最右边固定缩放, 1=十字光标两边缩放
     this.IsZoomLockRight=false;         
     this.KLineSize=null;                //{ DataWidth:, }
@@ -71994,7 +72149,6 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
     this.ScrollBar=null;            //横向滚动条
     this.IsAutoSyncDataOffset=true; //增量更新时,是否移动当前屏数据
-    this.IsShowKLineDivTooltip=true;    //是否显示K线tooltip
 
     this.GetKLineCalulate=function()
     {
@@ -73395,6 +73549,12 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
     this.SetCustomShow=function(customShow,hisData)
     {
+        if (customShow.Callback)    //预留给外部回调，可以定制移动
+        {
+            customShow.Callback(chart, hisData)
+            return;
+        }
+
         var index=this.ChartOperator_GetIndex_ByDateTime(hisData,customShow, this.Period, 0);
         if (index===null) 
         {
@@ -73444,8 +73604,20 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             event.Callback(event,data,this);
             isShowMenu=data.IsShowMenu;
         }
-       
-        if (isShowMenu)
+
+        if (this.IsShowSelectRectDialog())  //区间统计
+        {
+            var data=
+            {
+                Chart:this,X:x,Y:y,
+                SelectData:selectData,          //区间选择的数据
+                RectSelectPaint:paint           //区间选择背景
+            };
+            e.data=data;
+
+            this.DrawSelectRectDialog(e);
+        }
+        else if (isShowMenu)
         {
             var data=
             {
@@ -77771,6 +77943,14 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                             { Name:"样式1", Data:{ ID:JSCHART_MENU_ID.CMD_DIALOG_TOOLTIP_ATTRIBUTE, Args:[{Enable:true, Style:0}]}, Checked:(this.DialogTooltip && this.DialogTooltip.Style===0) },
                             { Name:"样式2", Data:{ ID:JSCHART_MENU_ID.CMD_DIALOG_TOOLTIP_ATTRIBUTE, Args:[{Enable:true, Style:1}]}, Checked:(this.DialogTooltip && this.DialogTooltip.Style===1) },
                         ]
+                    },
+                    {
+                        Name:"K线提示框",
+                        SubMenu:
+                        [
+                            { Name:"启用", Data:{ ID:JSCHART_MENU_ID.CMD_KLINE_TOOLTIP_ATTRIBUTE, Args:[{Enable:!this.KLineTooltipConfig.Enable}]}, Checked:this.KLineTooltipConfig.Enable },
+                            { Name:"键盘左右显示", Data:{ ID:JSCHART_MENU_ID.CMD_KLINE_TOOLTIP_ATTRIBUTE, Args:[{EnableKeyDown:!this.KLineTooltipConfig.EnableKeyDown}]}, Checked:this.KLineTooltipConfig.EnableKeyDown },
+                        ]
                     }
                 ]
             }
@@ -79434,6 +79614,42 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
         return true;
     }
+
+    this.DrawSelectRectDialog=function(e)
+    {
+        if (!this.DialogSelectRect) return;
+
+        this.UpdateSelectRectDialog(e);
+    }
+
+    this.UpdateSelectRectDialog=function(e)
+    {
+        if (!this.DialogSelectRect) return false;
+
+        var data=e.data;        //区间统计数据
+        var x,y;
+        if (data && IFrameSplitOperator.IsNumber(data.X) && IFrameSplitOperator.IsNumber(data.Y))  
+        {
+            var pixelRatio=GetDevicePixelRatio();
+            var rtClient=this.UIElement.getBoundingClientRect();
+            var rtScroll=GetScrollPosition();
+
+            x=data.X
+            y=data.Y;
+            x+=(rtClient.left+rtScroll.Left);
+            y+=(rtClient.top+rtScroll.Top);
+        }
+
+        var sendData=
+        {
+            Symbol:this.Symbol, Name:this.Name,
+            SelectData:data.SelectData,
+            X:x, Y:y,
+            e:e
+        }
+
+        this.DialogSelectRect.Update(sendData);
+    }
 }
 
 //API 返回数据 转化为array[]
@@ -79861,7 +80077,6 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
     this.ColorLineData;    //主图价格线颜色自定义配置
     this.EnableSelectRect=false;    //是否可以区间选择
-    this.SelectRectDialog=null;     //区间选择对话框
 
     this.CorssCursorIndex={ DayIndex:-1, DataIndex:-1, Point:{X:-1, Y:-1} ,Type:-1 };
     this.EnableNewIndex=false  //是否使用新的索引版本
@@ -80264,7 +80479,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                 isShowDialog=false; //外部调用了区间选择事件，不弹框
             }
 
-            if (isShowDialog && this.SelectRectDialog)
+            if (isShowDialog && this.DialogSelectRect)
             {
                 e.data=
                 {
@@ -80275,7 +80490,9 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                     RectSelectPaint:paint           //区间选择背景
                 };
 
-                this.SelectRectDialog.DoModal(e);
+                this.HideSelectRect();
+                this.UpdateSelectRect(selectData.Start,selectData.End);
+                this.DrawSelectRectDialog(e);
             }
             else
             {
@@ -80319,9 +80536,9 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             isShowDialog=data.IsShowDialog;
         }
 
-        if (isShowDialog && this.SelectRectDialog)
+        if (isShowDialog)
         {
-            e.data=
+            var data =
             {
                 Chart:this,
                 X:x,
@@ -80329,10 +80546,10 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                 SelectData:selectData,          //区间选择的数据
                 RectSelectPaint:paint           //区间选择背景
             };
+            e.data=data;
 
-            this.SelectRectDialog.DoModal(e);
+            this.UpdateSelectRectDialog(e);
         }
-            
     }
 
     this.UpdateSelectRect=function(start,end)
@@ -80387,6 +80604,14 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             var selectData=paint.GetSelectRectData();
             var data={ X:obj.X, Y:obj.Y, SelectData:selectData, RectSelectPaint:paint };
             event.Callback(event,data,this);
+        }
+
+        if (this.IsShowSelectRectDialog()) //区间统计
+        {
+            var selectData=paint.GetSelectRectData();
+            var data={ X:obj.X, Y:obj.Y, SelectData:selectData, RectSelectPaint:paint };
+            var e={ data:data };
+            this.DrawSelectRectDialog(e);
         }
 
         return true;
@@ -81337,7 +81562,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                 event.Callback(event,data,this);
             }
 
-            if (this.SelectRectDialog)
+            if (this.DialogSelectRect)
             {
                 e.data=
                 {
@@ -81347,7 +81572,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                     SelectData:selectData,          //区间选择的数据
                     RectSelectPaint:paint           //区间选择背景
                 };
-                this.SelectRectDialog.DoModal(e);
+                this.DrawSelectRectDialog(e);
             }
         }
         
@@ -85286,6 +85511,42 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         this.DialogTooltip.Update(sendData);
 
         return true;
+    }
+
+    this.DrawSelectRectDialog=function(e)
+    {
+        if (!this.DialogSelectRect) return;
+
+        this.UpdateSelectRectDialog(e);
+    }
+
+    this.UpdateSelectRectDialog=function(e)
+    {
+        if (!this.DialogSelectRect) return false;
+
+        var data=e.data;        //区间统计数据
+        var x,y;
+        if (data && IFrameSplitOperator.IsNumber(data.X) && IFrameSplitOperator.IsNumber(data.Y))  
+        {
+            var pixelRatio=GetDevicePixelRatio();
+            var rtClient=this.UIElement.getBoundingClientRect();
+            var rtScroll=GetScrollPosition();
+
+            x=data.X
+            y=data.Y;
+            x+=(rtClient.left+rtScroll.Left);
+            y+=(rtClient.top+rtScroll.Top);
+        }
+
+        var sendData=
+        {
+            Symbol:this.Symbol, Name:this.Name,
+            SelectData:data.SelectData,
+            X:x, Y:y,
+            e:e
+        }
+
+        this.DialogSelectRect.Update(sendData);
     }
 }
 
@@ -90452,441 +90713,6 @@ function ChangeIndexDialog(divElement)
     }
 }
 
-function MinuteSelectRectDialog(divElement)
-{
-    this.newMethod=IDivDialog;   //派生
-    this.newMethod(divElement);
-    delete this.newMethod;
-
-    this.SelectData;
-    this.Dialog;
-    this.HQChart;
-    this.RectSelectPaint;
-
-    //隐藏窗口
-    this.Close=function()
-    {
-        if (this.Dialog) 
-        {
-            this.DivElement.removeChild(this.Dialog);
-            this.Dialog=null;
-            this.ID=null;
-        }
-
-        if (this.RectSelectPaint) this.RectSelectPaint.PreventClose=false;
-    }
-
-    //创建
-    this.Create=function()
-    {
-        this.ID=Guid();
-        var div=document.createElement('div');
-        div.className='jchart-select-statistics-box';
-        div.id=this.ID;
-        div.innerHTML=
-        "<div class='parameter jchart-select-section'>\
-            <div class='parameter-header'>\
-                <span>分时图区间统计</span>\
-                <strong id='close' class='icon iconfont icon-close'></strong>\
-            </div>\
-            <div class='parameter-content'>统计数据</div>\
-        <div class='parameter-footer'>\
-            <button id='close' class='submit' >确定</button>\
-        </div>\
-        </div>";
-
-        this.DivElement.appendChild(div);
-        this.Dialog=div;
-
-        //关闭按钮
-        $("#"+this.ID+" #close").click(
-            {
-                divBox:this,
-            },
-            function(event)
-            {
-                event.data.divBox.Close();
-            });
-    }
-
-    this.BindData=function()
-    {
-        var hqData=this.SelectData.Data;
-        var start=this.SelectData.Start;
-        var end=this.SelectData.End;
-        this.HQChart.UpdateSelectRect(start,end);
-        if (this.RectSelectPaint) this.RectSelectPaint.PreventClose=true;
-
-        var showData=
-        { 
-            Open:0,Close:0,High:0,Low:0,  //起始价格, 结束价格, 最高, 最低
-            Vol:0, Amount:0, 
-            Date:
-            { 
-                Start:{Time:null, Date:null },
-                End:{ Time:null, Date:null }
-            }, 
-            Count:0,
-        }
-
-        for(var i=start; i<=end && i<hqData.Data.length; ++i)
-        {
-            var item=hqData.Data[i];
-            if (i==start) 
-            {
-                showData.Date.Start.Date=item.Date;
-                showData.Date.Start.Time=item.Time;
-                showData.Open=item.Close;
-                showData.High=item.High;
-                showData.Low=item.Low;
-            }
-
-            showData.Date.End.Date=item.Date;
-            showData.Date.End.Time=item.Time;
-            showData.Close=item.Close;
-            showData.Vol+=item.Vol;
-            showData.Amount+=item.Amount;
-            ++showData.Count;
-            if (showData.High<item.High) showData.High=item.High;
-            if(showData.Low>item.Low) showData.Low=item.Low;
-        }
-
-        if (showData.Count<=0) return false;
-
-        if (showData.Vol>0) showData.AvPrice=showData.Amount/showData.Vol;  //均价
-        if (showData.Open>0)
-        {
-            showData.Increase = (showData.Close - showData.Open) / showData.Open *100;   //区间涨幅
-            showData.Amplitude = (showData.High - showData.Low) / showData.Open * 100;   //区间振幅
-        }
-
-        // JSConsole.Chart.Log('[KLineSelectRectDialog::BindData]', showData);
-        var defaultfloatPrecision=GetfloatPrecision(this.SelectData.Symbol);
-        var startDate=IFrameSplitOperator.FormatDateString(showData.Date.Start.Date);
-        var endDate=IFrameSplitOperator.FormatDateString(showData.Date.End.Date);
-        startDate+=' '+IFrameSplitOperator.FormatTimeString(showData.Date.Start.Time,"HH:MM");
-        endDate+=" "+IFrameSplitOperator.FormatTimeString(showData.Date.End.Time,"HH:MM");
-       
-        var startLeftClass="",startRightClass="",endLeftClass="",endRightClass="";
-        if(start<=0) startLeftClass = "BtnBackground";
-        if(start >= end) {
-            startRightClass = "BtnBackground";
-            endLeftClass = "BtnBackground";
-        }
-        if(end >= hqData.Data.length - 1) endRightClass = "BtnBackground";
-
-        var div=document.createElement('div');
-        div.className='jchart-select-table-right';
-        div.innerHTML=
-            '<div class="jchart-select-date">\n' +
-            '            <span>开始: '+ startDate +'<i class="start-date-left '+ startLeftClass +'"><</i><i class="start-date-right '+ startRightClass +'">></i></span>\n' +
-            '            <span>结束: '+ endDate +'<i class="end-date-left '+ endLeftClass +'"><</i><i class="end-date-right '+ endRightClass +'">></i></span>\n' +
-            '            <span>总个数: '+ showData.Count +'</span>\n' +
-            '        </div>\n' +
-            '        <table>\n' +
-            '            <tr><td><strong>起始价: </strong><span>'+ showData.Open.toFixed(defaultfloatPrecision) +'</span></td>' +
-            '               <td><strong>终止价: </strong><span>'+ showData.Close.toFixed(defaultfloatPrecision) +'</span></td>' +
-            '               <td><strong>均价: </strong><span>'+ (IFrameSplitOperator.IsNumber(showData.AvPrice) ? showData.AvPrice.toFixed(defaultfloatPrecision):"--.--") +'</span></td></tr>\n' +
-            '            <tr><td><strong>最低价: </strong><span>'+ showData.Low.toFixed(defaultfloatPrecision) +'</span></td>' +
-            '               <td><strong>最高价: </strong><span>'+ showData.High.toFixed(defaultfloatPrecision) +'</span></td>' +
-            '               <td><strong>涨跌幅: </strong><span class="'+ IFrameSplitOperator.FormatValueColor(showData.Increase) +'">'+ showData.Increase.toFixed(2) +'%</span></td></tr>\n' +
-            '            <tr><td><strong>振幅: </strong><span>'+ showData.Amplitude.toFixed(2) +'%</span></td>' +
-            '               <td><strong>成交量: </strong><span>'+ IFrameSplitOperator.FormatValueString(showData.Vol,2) +'股</span></td>' +
-            '               <td><strong>金额: </strong><span>'+ IFrameSplitOperator.FormatValueString(showData.Amount,2) +'元</span></td></tr>\n' +
-            '        </table>';
-
-        $(".parameter-content").html(div);
-        this.BindEvent();
-
-        return true;
-    }
-
-    this.BindEvent = function () 
-    {
-        var _self = this;
-        if(_self.SelectData.Start > 0){
-            $(".jchart-select-date .start-date-left").click(function () {
-                _self.SelectData.Start--;
-                _self.BindData();
-                _self.HQChart.UpdateSelectRect(_self.SelectData.Start,_self.SelectData.End);
-            })
-        }
-        if(_self.SelectData.Start < _self.SelectData.End){
-            $(".jchart-select-date .start-date-right").click(function () {
-                _self.SelectData.Start++;
-                _self.BindData();
-                _self.HQChart.UpdateSelectRect(_self.SelectData.Start,_self.SelectData.End);
-            })
-            $(".jchart-select-date .end-date-left").click(function () {
-                _self.SelectData.End--;
-                _self.BindData();
-                _self.HQChart.UpdateSelectRect(_self.SelectData.Start,_self.SelectData.End);
-            })
-        }
-        if(_self.SelectData.End < _self.SelectData.Data.Data.length - 1){
-            $(".jchart-select-date .end-date-right").click(function () {
-                _self.SelectData.End++;
-                _self.BindData();
-                _self.HQChart.UpdateSelectRect(_self.SelectData.Start,_self.SelectData.End);
-            })
-        }
-    }
-
-
-    //显示
-    this.DoModal=function(event)
-    {
-        var chart=event.data.Chart;
-        if (this.ID==null) this.Create();   //第1次 需要创建div
-        this.SelectData=event.data.SelectData;
-        this.RectSelectPaint=event.data.RectSelectPaint;
-        this.HQChart=chart;
-        this.HQChart.HideSelectRect();
-        if (!this.BindData()) return;
-
-        this.Show();      //通过CSS居中显示
-    }
-
-
-}
-
-//区间统计
-function KLineSelectRectDialog(divElement)
-{
-    this.newMethod=IDivDialog;   //派生
-    this.newMethod(divElement);
-    delete this.newMethod;
-
-    this.SelectData;
-    this.Dialog;
-    this.HQChart;
-    this.RectSelectPaint;
-
-    //隐藏窗口
-    this.Close=function()
-    {
-        if (this.Dialog) 
-        {
-            this.DivElement.removeChild(this.Dialog);
-            this.Dialog=null;
-        }
-
-        if (this.RectSelectPaint) this.RectSelectPaint.PreventClose=false;
-    }
-
-    //创建
-    this.Create=function()
-    {
-        this.ID=Guid();
-        var div=document.createElement('div');
-        div.className='jchart-select-statistics-box';
-        div.id=this.ID;
-        div.innerHTML=
-        "<div class='parameter jchart-select-section'>\
-            <div class='parameter-header'>\
-                <span>区间统计</span>\
-                <strong id='close' class='icon iconfont icon-close'></strong>\
-            </div>\
-            <div class='parameter-content'>统计数据</div>\
-        <div class='parameter-footer'>\
-            <button id='close' class='submit' >确定</button>\
-            <button id='match' class='submit' >形态匹配</button>\
-        </div>\
-        </div>";
-
-        this.DivElement.appendChild(div);
-        this.Dialog=div;
-
-        //关闭按钮
-        $("#"+this.ID+" #close").click(
-            {
-                divBox:this,
-            },
-            function(event)
-            {
-                event.data.divBox.Close();
-            });
-        
-        //形态匹配
-        $("#"+this.ID+" #match").click(
-            {
-                divBox:this,
-            },
-            function(event)
-            {
-                event.data.divBox.KLineMatch();
-            });   
-    }
-
-    this.BindData=function()
-    {
-        var hqData=this.SelectData.Data;
-        var start=this.SelectData.Start;
-        var end=this.SelectData.End;
-        this.HQChart.UpdateSelectRect(start,end);
-        if (this.RectSelectPaint) this.RectSelectPaint.PreventClose=true;
-
-        var showData=
-        { 
-            Open:0,Close:0,High:0,Low:0, YClose:0,
-            Vol:0, Amount:0, 
-            Date:
-            { 
-                Start:{Time:null, Date:null },
-                End:{ Time:null, Date:null }
-            }, 
-            Count:0,
-            KLine:{ Up:0,Down:0,Unchanged:0 }    //阳线|阴线|平线
-        }
-
-        for(var i=start; i<=end && i<hqData.Data.length; ++i)
-        {
-            var item=hqData.Data[i];
-            if (i==start) 
-            {
-                showData.Date.Start.Date=item.Date;
-                showData.Date.Start.Time=item.Time;
-                showData.Open=item.Open;
-                showData.High=item.High;
-                showData.Low=item.Low;
-                showData.YClose=item.YClose;
-            }
-
-            showData.Date.End.Date=item.Date;
-            showData.Date.End.Time=item.Time;
-            showData.Close=item.Close;
-            showData.Vol+=item.Vol;
-            showData.Amount+=item.Amount;
-            ++showData.Count;
-            if (showData.High<item.High) showData.High=item.High;
-            if(showData.Low>item.Low) showData.Low=item.Low;
-            if (item.Close>item.Open) ++showData.KLine.Up;
-            else if (item.Close<item.Open) ++showData.KLine.Down;
-            else ++showData.KLine.Unchanged;
-        }
-
-        if (showData.Vol>0) showData.AvPrice=showData.Amount/showData.Vol;  //均价
-        if (item.YClose>0)
-        {
-            showData.Increase = (showData.Close - showData.YClose) / showData.YClose *100;   //涨幅
-            showData.Amplitude = (showData.High - showData.Low) / showData.YClose * 100;     //振幅
-        }
-
-        // JSConsole.Chart.Log('[KLineSelectRectDialog::BindData]', showData);
-        var defaultfloatPrecision=GetfloatPrecision(this.SelectData.Symbol);
-        var startDate=IFrameSplitOperator.FormatDateString(showData.Date.Start.Date);
-        var endDate=IFrameSplitOperator.FormatDateString(showData.Date.End.Date);
-        if (ChartData.IsMinutePeriod(this.HQChart.Period))
-        {
-            startDate+=' '+IFrameSplitOperator.FormatTimeString(showData.Date.Start.Time,"HH:MM");
-            endDate+=" "+IFrameSplitOperator.FormatTimeString(showData.Date.End.Time,"HH:MM");
-        }
-        else if (ChartData.IsSecondPeriod(this.HQChart.Period) || ChartData.IsTickPeriod(this.HQChart.Period))
-        {
-            startDate+=' '+IFrameSplitOperator.FormatTimeString(showData.Date.Start.Time,"HH:MM:SS");
-            endDate+=" "+IFrameSplitOperator.FormatTimeString(showData.Date.End.Time,"HH:MM:SS");
-        }
-       
-        var startLeftClass="",startRightClass="",endLeftClass="",endRightClass="";
-        if(start<=0) startLeftClass = "BtnBackground";
-        if(start >= end) {
-            startRightClass = "BtnBackground";
-            endLeftClass = "BtnBackground";
-        }
-        if(end >= hqData.Data.length - 1) endRightClass = "BtnBackground";
-
-        var div=document.createElement('div');
-        div.className='jchart-select-table-right';
-        div.innerHTML=
-            '<div class="jchart-select-date">\n' +
-            '            <span>开始: '+ startDate +'<i class="start-date-left '+ startLeftClass +'"><</i><i class="start-date-right '+ startRightClass +'">></i></span>\n' +
-            '            <span>结束: '+ endDate +'<i class="end-date-left '+ endLeftClass +'"><</i><i class="end-date-right '+ endRightClass +'">></i></span>\n' +
-            '            <span>总个数: '+ showData.Count +'</span>\n' +
-            '        </div>\n' +
-            '        <table>\n' +
-            '            <tr><td><strong>起始价: </strong><span>'+ showData.YClose.toFixed(defaultfloatPrecision) +'</span></td>' +
-            '               <td><strong>最终价: </strong><span>'+ showData.Close.toFixed(defaultfloatPrecision) +'</span></td>' +
-            '               <td><strong>均价: </strong><span>'+ (IFrameSplitOperator.IsNumber(showData.AvPrice) ? showData.AvPrice.toFixed(defaultfloatPrecision):"--.--") +'</span></td></tr>\n' +
-            '            <tr><td><strong>最低价: </strong><span>'+ showData.Low.toFixed(defaultfloatPrecision) +'</span></td>' +
-            '               <td><strong>最高价: </strong><span>'+ showData.High.toFixed(defaultfloatPrecision) +'</span></td>' +
-            '               <td><strong>涨跌幅: </strong><span class="'+ IFrameSplitOperator.FormatValueColor(showData.Increase) +'">'+ showData.Increase.toFixed(2) +'%</span></td></tr>\n' +
-            '            <tr><td><strong>振幅: </strong><span>'+ showData.Amplitude.toFixed(2) +'%</span></td>' +
-            '               <td><strong>成交量: </strong><span>'+ IFrameSplitOperator.FormatValueString(showData.Vol,2) +'股</span></td>' +
-            '               <td><strong>金额: </strong><span>'+ IFrameSplitOperator.FormatValueString(showData.Amount,2) +'元</span></td></tr>\n' +
-            '            <tr><td><strong>阴线: </strong><span>'+ showData.KLine.Up +'</span></td>' +
-            '               <td><strong>阳线: </strong><span>'+ showData.KLine.Down +'</span></td>' +
-            '               <td><strong>平线: </strong><span>'+ showData.KLine.Unchanged +'</span></td></tr>\n' +
-            '        </table>';
-
-        $(".parameter-content").html(div);
-        this.BindEvent();
-    }
-
-    this.BindEvent = function () {
-        var _self = this;
-        if(_self.SelectData.Start > 0){
-            $(".jchart-select-date .start-date-left").click(function () {
-                _self.SelectData.Start--;
-                _self.BindData();
-                _self.HQChart.UpdateSelectRect(_self.SelectData.Start,_self.SelectData.End);
-            })
-        }
-        if(_self.SelectData.Start < _self.SelectData.End){
-            $(".jchart-select-date .start-date-right").click(function () {
-                _self.SelectData.Start++;
-                _self.BindData();
-                _self.HQChart.UpdateSelectRect(_self.SelectData.Start,_self.SelectData.End);
-            })
-            $(".jchart-select-date .end-date-left").click(function () {
-                _self.SelectData.End--;
-                _self.BindData();
-                _self.HQChart.UpdateSelectRect(_self.SelectData.Start,_self.SelectData.End);
-            })
-        }
-        if(_self.SelectData.End < _self.SelectData.Data.Data.length - 1){
-            $(".jchart-select-date .end-date-right").click(function () {
-                _self.SelectData.End++;
-                _self.BindData();
-                _self.HQChart.UpdateSelectRect(_self.SelectData.Start,_self.SelectData.End);
-            })
-        }
-    }
-
-    //显示
-    this.DoModal=function(event)
-    {
-        var chart=event.data.Chart;
-        if (this.ID==null) this.Create();   //第1次 需要创建div
-        this.SelectData=event.data.SelectData;
-        this.RectSelectPaint=event.data.RectSelectPaint;
-        this.HQChart=chart;
-        this.HQChart.HideSelectRect();
-        this.BindData();
-
-        this.Show();      //通过CSS居中显示
-    }
-
-    //形态匹配
-    this.KLineMatch=function(data)
-    {
-        var waitDialog=new WaitDialog(this.DivElement);
-        waitDialog.DoModal(
-            {
-                data:
-                { 
-                    Title:'计算中......', 
-                    Chart:this.HQChart
-                } 
-            });
-
-        this.Close();   //关闭窗口
-
-        var hqChart=this.HQChart;
-        var param= { Scope: { Plate:["CNA.ci"],Minsimilar:0.90 }, WaitDialog:waitDialog }  //沪深A股, 相似度>=90%
-        hqChart.RequestKLineMatch(this.SelectData, param);
-    }
-}
-
 //形态选股
 function KLineMatchDialog(divElement)
 {
@@ -91638,6 +91464,7 @@ var MARKET_SUFFIX_NAME=
     SHFE2:'.SHFE',       //上期所 (Shanghai Futures Exchange) | 上期所-能源
     CFFEX: '.CFE',       //中期所 (China Financial Futures Exchange)
     CFFEX2:'.CFFEX',     //中期所 (China Financial Futures Exchange)
+    CFFEX3:'.CF',        //中期所 (China Financial Futures Exchange)
     DCE: '.DCE',         //大连商品交易所(Dalian Commodity Exchange)
     CZCE: '.CZC',        //郑州期货交易所
     GZFE:".GZFE",        //广州期货交易所
@@ -91850,6 +91677,9 @@ var MARKET_SUFFIX_NAME=
         if (!upperSymbol) return false;
         if (upperSymbol.indexOf(this.CFFEX) > 0) return true;
         if (upperSymbol.indexOf(this.CFFEX2) > 0) return true;
+
+        var index=upperSymbol.indexOf(this.CFFEX3); //必须已.CF结尾
+        if (index > 0 && index+this.CFFEX3.length==upperSymbol.length) return true;
         
         return false;
     },

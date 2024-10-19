@@ -170,6 +170,10 @@ HQData.NetworkFilter=function(data, callback)
             //HQChart使用教程95-报价列表对接第3方数据4-股票排序数据
             HQData.Report_RequestStockSortData(data, callback);
             break;
+        case "JSDealChartContainer::RequestVirtualStockData":
+            HQData.Report_RequestVirtualStockData(data, callback);         //股票数据 虚拟表格
+            break;
+
     }
 }
 
@@ -804,6 +808,8 @@ HQData.RequestOverlayHistoryData=function(data, callback)
         aryData=HQData.GetKLineDataByDate(fullData, first.date, 20999999)
     }
 
+    //aryData=aryData.slice(aryData.length-20);
+
     var hqchartData={  code:0, symbol: symbol,name: symbol, ver:2.0, data:aryData };
 
     callback(hqchartData);
@@ -1038,6 +1044,30 @@ HQData.Report_RequestStockListData=function(data, callback)
     console.log("[HQData.Report_RequestStockListData] hqchartData",hqchartData);
     callback(hqchartData);
 
+}
+
+//空码表
+HQData.Report_RequestStockListData_Empty=function(data, callback)          
+{
+    data.PreventDefault=true;
+    var hqchartData={ data:[] };
+    console.log("[HQData.Report_RequestStockListData_EMPTY] hqchartData",hqchartData);
+    callback(hqchartData);
+}
+
+HQData.Report_RequestMemberVirtualListData=function(data, callback, option)
+{
+    var symbol=data.Request.Data.symbol;    //板块代码
+    data.PreventDefault=true;
+
+    var hqchartData= { symbol:symbol , name:symbol, data:[] , code:0, Virtual:{ Count:option.Virtual.Count } };
+
+    for(var i=0; i<SHSZ_STOCK_LIST_TEST_DATA.symbol.length && i<50; ++i )
+    {
+        hqchartData.data.push(SHSZ_STOCK_LIST_TEST_DATA.symbol[i]);
+    }
+
+    callback(hqchartData);
 }
 
 //板块|行业等成分列表
@@ -1301,6 +1331,119 @@ HQData.Report_RequestStockSortData=function(data, callback)
         hqchartData.index.push(item.Index);
     }
     
+    callback(hqchartData);
+}
+
+
+HQData.Report_RequestVirtualStockData=function(data, callback)
+{
+    var blockID=data.Request.Data.symbol;       //板块代码
+    var range=data.Request.Data.range;          //排序范围
+    var column=data.Request.Data.column;        //排序列信息
+    var sortType=data.Request.Data.sort;        //排序方向
+    var pageSize=data.Request.Data.pageSize;
+    data.PreventDefault=true;
+
+    var start=range.start;
+    var end=range.end;
+    if (start>0) start-=pageSize;
+    if (start<0) start=0;
+    end+=pageSize;
+
+    var count=end-start+1;
+    
+    var aryData=[];
+    var aryIndex=[];
+
+    if (IFrameSplitOperator.IsNonEmptyArray(SHSZ_STOCK_LIST_TEST_DATA.symbol))
+    {
+        var randomStart = Math.floor(Math.random()*(SHSZ_STOCK_LIST_TEST_DATA.symbol.length-1));
+        var symbolCount=SHSZ_STOCK_LIST_TEST_DATA.symbol.length;
+        for(var i=0;i<count;++i)
+        {
+            var dataIndex=(randomStart+i)%symbolCount;
+            var symbol=SHSZ_STOCK_LIST_TEST_DATA.symbol[dataIndex];
+            var name=SHSZ_STOCK_LIST_TEST_DATA.name[dataIndex];
+            var price=SHSZ_STOCK_LIST_TEST_DATA.close[dataIndex];
+            var vol=SHSZ_STOCK_LIST_TEST_DATA.vol[dataIndex];
+            var newItem=
+            [
+                symbol, 
+                name, 
+                SHSZ_STOCK_LIST_TEST_DATA.yclose[dataIndex],
+                SHSZ_STOCK_LIST_TEST_DATA.open[dataIndex],
+                SHSZ_STOCK_LIST_TEST_DATA.high[dataIndex],
+                SHSZ_STOCK_LIST_TEST_DATA.low[dataIndex],
+                price,
+                vol,
+                SHSZ_STOCK_LIST_TEST_DATA.amount[dataIndex],
+            ];
+
+            //买价 量
+            newItem[9]=price+0.05;
+            newItem[10]=10;
+
+            //卖价 量
+            newItem[11]=price-0.06;
+            newItem[12]=5;
+
+            //均价
+            newItem[13]=price-0.03;   
+            
+            //内盘
+            newItem[18]=vol/4;  
+            //外盘 
+            newItem[19]=vol/5;  
+
+            newItem[14]=vol*1.5;   //流通股本
+            newItem[15]=vol*1.8;  //总股本
+
+            //换手率
+            newItem[23]=(Math.round(Math.random()*60))/100;
+
+            //名字字段
+            var symbolEx={ Text:name };
+            if (i%20==5)
+                symbolEx.Symbol={ Family:'iconfont', Size:16,  Data:[ { Text:'\ue629', Color:'rgb(255,165,0)'}, { Text:'\ue627', Color:'#1c65db'} ] };
+            else if (i%20==9)
+                symbolEx.Symbol={ Family:'iconfont', Size:16,  Data:[ { Text:'\ue629', Color:'rgb(255,165,0)'}] } ;
+            else if (i%20==18)
+                symbolEx.Symbol={ Family:'iconfont', Size:16,  Data:[ { Text:'\ue627', Color:'#1c65db'}] } ;
+
+            newItem[27]=symbolEx;
+
+
+            //扩展数据 (定制数据)
+            var extendData=[];
+            newItem[30]=extendData;
+
+            //行业
+            extendData[0]="行业X";
+            //地区
+            extendData[1]="地区X";
+            
+            //PE|PB
+            extendData[2]=(Math.round(Math.random()*60))/100;
+            extendData[3]=(Math.round(Math.random()*60))/100;
+            extendData[4]=(Math.round(Math.random()*60))/100;
+            extendData[5]=(Math.round(Math.random()*60))/100;
+
+            
+            //周涨幅
+            extendData[6]=(Math.round(Math.random()*60))/100;
+            extendData[7]=(Math.round(Math.random()*60))/100;
+            extendData[8]=(Math.round(Math.random()*60))/100;
+
+
+            aryData.push(newItem);
+            aryIndex.push(start+i);
+        }
+    }
+
+    var hqchartData={ data:aryData, index:aryIndex, filedindex:-1, sort:sortType, symbol:blockID };
+
+    if (column)  hqchartData.filedindex=column.index;
+
     callback(hqchartData);
 }
 

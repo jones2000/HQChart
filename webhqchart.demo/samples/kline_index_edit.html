@@ -42,13 +42,16 @@
             <button class="toolsButton" id="overlayindex_run">执行(叠加指标)</button>
             
             
-            <a href="https://jones2000.blog.csdn.net/article/details/129125330" target="_blank">函数帮助</a>
+            
             
             <button class="toolsButton" id="style_black">黑色风格</button>
             <button class="toolsButton" id="style_white">白色风格</button>
             <button class="toolsButton" id="showAllKLine">显示全部K线</button>
 
             <span>K线支持键盘精灵</span>
+
+            <a href="https://jones2000.blog.csdn.net/article/details/129125330" target="_blank">函数帮助</a>
+            <a href="https://github.com/jones2000/HQChart" target="_blank">HQChart插件地址</a>
 
         </div>
         <div class="table" id="tools_table">
@@ -120,6 +123,7 @@
     <script src="../jscommon/umychart.keyboard.js"></script>
     <script src="../jscommon/umychart.PopKeyboard.js"></script>
     <script src="../jscommon/umychart.DialogTooltip.js"></script>
+    <script src="../jscommon/umychart.DialogSelectRect.js"></script>
     <script src="../jscommon/umychart.version.js"></script>
     
     <!-- 公式编辑器 -->
@@ -266,6 +270,8 @@
                 EnableTooltipDialog:true,
 
                 TooltipDialog:{ Enable:true, Style:1 },
+                SelectRectDialog:{ Enable:true },
+                KLineTooltip:{ Enable:true, EnableKeyDown:false },
 
                 //EnableVerifyRecvData:true,
 
@@ -537,6 +543,13 @@
                         }
                     ];
                 }
+
+                var chart=chart.GetRectSelectPaint();
+                if (chart)
+                {
+                    //chart.IsOnlyOnePoint=true;
+                }
+
             }
 
             this.NetworkFilter=function(data, callback)
@@ -1633,6 +1646,7 @@
 
             
             var hqKeyboard=new JSPopKeyboard();
+            
             hqKeyboard.Keyboard.Option.EventCallback=
             [
                 {
@@ -1653,7 +1667,13 @@
                         else if (selItem.Data.Type===1)
                         {
                             klineControl.Chart.Focus();
-                            klineControl.Chart.ChangeIndex(0,selItem.Data.Index);
+                            var windowIndex=0;
+                            if (klineControl.Chart.JSChartContainer.GlobalOption.SelectedBorder)
+                            {
+                                var item=klineControl.Chart.JSChartContainer.GlobalOption.SelectedBorder;
+                                if (item.Mode==1 && item.SelFrame>=0) windowIndex=item.SelFrame;
+                            }
+                            klineControl.Chart.ChangeIndex(windowIndex,selItem.Data.Index);
                         }
                         else if (selItem.Data.Type===2)
                         {
