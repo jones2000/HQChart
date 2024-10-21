@@ -1311,7 +1311,7 @@ function JSReportChartContainer(uielement)
             {
                 Name:'JSDealChartContainer::RequestStockData', //类名::函数名
                 Explain:'报价列表股票数据',
-                Request:{ Data: { stocks: arySymbol } }, 
+                Request:{ Data: { stocks: arySymbol } , symbol:this.Symbol, name:this.Name }, 
                 Self:this,
                 PreventDefault:false
             };

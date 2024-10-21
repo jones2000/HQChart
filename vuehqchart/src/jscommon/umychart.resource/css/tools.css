@@ -1774,18 +1774,39 @@ input[type="color"] {
     background: rgb(225, 225, 225);
     border: 1px solid rgb(173, 173, 173);
     margin-left: 5px;
+
+    -moz-user-select:none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    -khtml-user-selece:none;
+
+    user-select: none;
 }
 
 .UMyChart_SelectRect_DateTitle_Span
 {
     padding-right: 4px;
     padding-left: 4px;
+
+    -moz-user-select:none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    -khtml-user-selece:none;
+    
+    user-select: none;
 }
 
 .UMyChart_SelectRect_DateValue_Span
 {
     padding-right: 4px;
     padding-left: 4px;
+
+    -moz-user-select:none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    -khtml-user-selece:none;
+    
+    user-select: none;
 }
 
 .UMyChart_SelectRect_Table

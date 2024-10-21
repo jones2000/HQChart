@@ -2449,7 +2449,7 @@ JSChart.GetScrollPosition=function()
 
 var JSCHART_EVENT_ID=
 {
-    RECV_KLINE_MATCH:1, //接收到形态匹配
+    //RECV_KLINE_MATCH:1, //接收到形态匹配
     RECV_INDEX_DATA:2,  //接收指标数据
     RECV_HISTROY_DATA:3,//接收到历史数据
     RECV_TRAIN_MOVE_STEP:4, //接收K线训练,移动一次K线
@@ -69210,13 +69210,19 @@ function JSChartResource()
     this.DialogTooltip=
     {
         BGColor:'rgb(250,250,250)',            //背景色
-        BorderColor:'rgb(20,20,20)',     //边框颜色
-        TitleColor:'rgb(0,0,0)',       //标题颜色
+        BorderColor:'rgb(20,20,20)',        //边框颜色
+        TitleColor:'rgb(250,250,250)',       //标题颜色
+        TitleBGColor:"rgb(200, 66, 69)",    //标题背景颜色
         VolColor:"rgb(255, 185, 15)",       //标题成交量
         AmountColor:"rgb(79, 79, 79)",      //成交金额
         DateTimeColor:'rgb(60,60,60)',
         TurnoverRateColor:'rgb(43,54,69)',       //换手率
-        PositionColor:"rgb(255,0,255)"            //持仓
+        PositionColor:"rgb(255,0,255)",            //持仓
+
+        TextColor:"rgb(0,0,0)",             //数值名称
+        ValueColor:"rgb(0,0,0)",            //数值
+
+       
     },
 
     //区间统计
@@ -70232,6 +70238,7 @@ function JSChartResource()
             if (item.BGColor) this.DialogTooltip.BGColor=item.BGColor;
             if (item.BorderColor) this.DialogTooltip.BorderColor=item.BorderColor;
             if (item.TitleColor) this.DialogTooltip.TitleColor=item.TitleColor;
+            if (item.TitleBGColor) this.DialogTooltip.TitleBGColor=item.TitleBGColor;
             if (item.DateTimeColor) this.DialogTooltip.DateTimeColor=item.DateTimeColor;
 
             if (item.VolColor) this.DialogTooltip.VolColor=item.VolColor;
@@ -70239,6 +70246,8 @@ function JSChartResource()
             if (item.TurnoverRateColor) this.DialogTooltip.TurnoverRateColor=item.TurnoverRateColor;
             if (item.PositionColor) this.DialogTooltip.PositionColor=item.PositionColor;
 
+            if (item.TextColor) this.DialogTooltip.TextColor=item.TextColor;
+            if (item.ValueColor) this.DialogTooltip.ValueColor=item.ValueColor;
         }
 
         if (style.DialogSelectRect)
@@ -78088,101 +78097,6 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         }
 
         this.ChartDrawStorageCache=null;    //清空缓存
-    }
-
-    //形态匹配
-    // scope.Plate 板块范围 scope.Symbol 股票范围
-    // sample 样本数据
-    this.RequestKLineMatch=function(sample,param)
-    {
-        var self =this;
-        var scope=param.Scope;
-        var waitDailog=param.WaitDialog;
-        JSConsole.Chart.Log('[KLineChartContainer::RequestKLineMatch',sample,scope)
-
-        var aryDate=new Array();
-        var aryValue=new Array();
-
-        for(var i=sample.Start;i<sample.End && i<sample.Data.Data.length;++i)
-        {
-            var item=sample.Data.Data[i];
-            aryDate.push(item.Date);
-            aryValue.push(item.Close);
-        }
-
-        var sampleData=
-        {
-            Stock:sample.Stock,
-            Index:{Start:sample.Start, End:sample.End}, //数据索引
-            Date:{Start:aryDate[0], End:aryDate[aryDate.length-1]}, //起始 结束日期
-            Minsimilar:scope.Minsimilar,    //相似度
-            Plate:scope.Plate,
-            DayRegion:300
-        };
-
-        //请求数据
-        $.ajax({
-            url: this.KLineMatchUrl,
-            data:
-            {
-                "userid": "guest",
-                "plate": scope.Plate,
-                "period": this.Period,
-                "right": this.Right,
-                "dayregion": sampleData.DayRegion,
-                "minsimilar": scope.Minsimilar,
-                "sampledate":aryDate,
-                "samplevalue":aryValue
-            },
-            type:"post",
-            dataType: "json",
-            async:true,
-            success: function (data)
-            {
-                if (waitDailog) waitDailog.Close();
-                self.RecvKLineMatchData(data,sampleData);
-            },
-            error:function(jqXHR, textStatus, errorThrown)
-            {
-                console.warn('[KLineChartContainer::RequestKLineMatch] failed',jqXHR,textStatus, errorThrown);
-                if (waitDailog) waitDailog.Close();
-            }
-        });
-    }
-
-    //接收形态选股结果
-    this.RecvKLineMatchData=function(data,sample)
-    {
-        JSConsole.Chart.Log('[KLineChartContainer::RecvKLineMatchData] recv',data,sample);
-        var filterData=[]; //结果数据
-        for(var i in data.match)
-        {
-            var item=data.match[i];
-            if (item.symbol==sample.Stock.Symbol) continue;
-
-            for(var j in item.data)
-            {
-                var dataItem=item.data[j];
-                var newItem={Symbol:item.symbol, Name:item.name,Similar:dataItem.similar, Start:dataItem.start, End:dataItem.end};
-                filterData.push(newItem);
-            }
-        }
-        filterData.sort(function(a,b){return b.Similar-a.Similar;});    //排序
-        JSConsole.Chart.Log('[KLineChartContainer::RecvKLineMatchData] filterData',filterData);
-
-        if (this.mapEvent.has(JSCHART_EVENT_ID.RECV_KLINE_MATCH))
-        {
-            var item=this.mapEvent.get(JSCHART_EVENT_ID.RECV_KLINE_MATCH);
-            var data={Sample:sample, Match:filterData, Source:data}
-            item.Callback(item,data,this);
-        }
-        else
-        {
-            var dlg=new KLineMatchDialog(this.Frame.ChartBorder.UIElement.parentNode);
-
-            var event={ data:{ Chart:this, MatchData:filterData, Sample:sample, Source:data} };
-            dlg.DoModal(event);
-        } 
     }
 
     //更新信息地雷
@@ -90710,235 +90624,6 @@ function ChangeIndexDialog(divElement)
         //关闭弹窗
         dialog.BindClose(chart);
         dialog.Show();
-    }
-}
-
-//形态选股
-function KLineMatchDialog(divElement)
-{
-    this.newMethod=IDivDialog;   //派生
-    this.newMethod(divElement);
-    delete this.newMethod;
-
-    this.MatchData;     //匹配的股票数据
-    this.Sample;        //样本数据
-    this.Dialog;
-    this.HQChart;
-
-    this.PageData; //分页数据
-
-    //隐藏窗口
-    this.Close=function()
-    {
-        this.DivElement.removeChild(this.Dialog);
-    }
-
-    //创建
-    this.Create=function()
-    {
-        this.ID=Guid();
-        var div=document.createElement('div');
-        div.className='jchart-kline-match-box';
-        div.id=this.ID;
-        div.innerHTML=
-        `<div class='parameter jchart-kline-match-box'>
-            <div class='parameter-header'>
-                <span>形态匹配</span>
-                <strong id='close' class='icon iconfont icon-close'></strong>
-            </div>
-            <div class='parameter-content'>
-                <p class='dataCount'></p>
-                <table class='matchTable'>
-                    <thead>
-                        <tr>
-                            <td>股票名称</td>
-                            <td>匹配度</td>
-                            <td>时间段</td>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    </tbody>
-                </table>
-                <div class='pagination' data-current='1'></div>
-            </div>
-            <div class='parameter-footer'>
-                <button id='close' class='submit' >确定</button>
-            </div>
-        </div>`.trim();
-
-        this.DivElement.appendChild(div);
-        this.Dialog=div;
-
-        //关闭按钮
-        $("#"+this.ID+" #close").click(
-            {
-                divBox:this,
-            },
-            function(event)
-            {
-                event.data.divBox.Close();
-            });
-    }
-
-    this.BindData=function()
-    {
-        JSConsole.Chart.Log(`[KLineMatchDialog::BindData] 形态源: ${this.Sample.Stock.Name} 区间:${this.Sample.Date.Start} - ${this.Sample.Date.End}`);
-        var count = this.MatchData.length + 1;
-        var pageData = {NewData:{},MetaData:[],PageCount:0,Count:count};
-        var pageCount = 0;
-        var paginationHtml = '';
-
-        $('#'+this.ID+' .dataCount').html('个数：'+count);
-        
-        for(let i = 0; i < count ; i++){
-            var dataObj = {};
-            if(i == 0){
-                dataObj = {
-                    Symbol:this.Sample.Stock.Symbol,
-                    Name:this.Sample.Stock.Name,
-                    Rate:'形态源',
-                    Color:'red',
-                    Date:`${this.Sample.Date.Start}-${this.Sample.Date.End}`
-                };
-            }else{
-                let dataItem = this.MatchData[i - 1];
-                dataObj = {
-                    Symbol:dataItem.Symbol,
-                    Name:dataItem.Name,
-                    Rate:Number(dataItem.Similar * 100).toFixed(2),
-                    Color:'',
-                    Date:`${dataItem.Start}-${dataItem.End}`
-                };
-            }
-            pageData.MetaData.push(dataObj);
-        }
-
-        if(pageData.Count % 10 == 0){
-            pageCount = pageData.Count / 10;
-        }else{
-            pageCount = Math.floor(pageData.Count / 10) + 1;
-        }
-        pageData.PageCount = pageCount;
-
-        this.PaginationMetaData(pageData);
-        this.PageData = pageData;
-        JSConsole.Chart.Log('[KLineMatchDialog::DoModal pageData]',pageData);
-
-        this.RenderDom(1);
-
-        this.PaginationInit('#'+this.ID,pageData.PageCount,this.paginationCallback);
-        // $('#' + this.ID + ' .pagination').html(paginationHtml);
-
-        
-    }
-    this.RenderDom = function(page){
-        let currentPageData = this.PageData.NewData[page];
-        JSConsole.Chart.Log('[KLineMatchDialog::RenderDom currentPageData]',currentPageData);
-        let bodyHtml = '';
-        for(let i = 0; i < currentPageData.length; i++){
-            bodyHtml += `<tr>
-                        <td class=${currentPageData[i].Color}>${currentPageData[i].Name}</td>
-                        <td class=${currentPageData[i].Color}>${currentPageData[i].Rate}</td>
-                        <td class=${currentPageData[i].Color}>${currentPageData[i].Date}</td>
-                    </tr>`.trim();
-        }
-        
-        $('#'+this.ID + ' .matchTable tbody').html(bodyHtml)
-    }
-    var _this = this;
-    this.paginationCallback = function(page) {
-        _this.RenderDom(page);
-        _this.PaginationInit('#'+_this.ID,_this.PageData.PageCount,_this.paginationCallback); //更新UI
-    }
-    this.PaginationInit = function(id, maxPageNum, callback) {  //初始化分页
-        var spanStr = "";
-        var currentPageNum = $(id + " .pagination").data("current");
-        var lastPageNum = 0;
-        var showCountPage = 5; //只显示5个数字项
-    
-        if (currentPageNum < showCountPage) {  //当前页小于预显示页数
-            if (maxPageNum >= showCountPage) {
-                for (var j = 0; j < showCountPage; j++) {  //上 1 2 3 4 5 下
-                    spanStr += (j + 1) != currentPageNum ? "<span>" + (j + 1) + "</span>" : "<span class='active'>" + (j + 1) + "</span>";
-                }
-            } else {
-                for (var j = 0; j < maxPageNum; j++) {  //上 1 2 3 4 5 下
-                    spanStr += (j + 1) != currentPageNum ? "<span>" + (j + 1) + "</span>" : "<span class='active'>" + (j + 1) + "</span>";
-                }
-            }
-        } else { //大于5时，最终页数是当前页数加1
-            lastPageNum = (currentPageNum + 1) > maxPageNum ? currentPageNum : (currentPageNum + 1);
-
-            for (var i = currentPageNum - 3; i <= lastPageNum; i++) { //含最终项之前的五项
-                spanStr += i != currentPageNum ? "<span>" + i + "</span>" : "<span class='active'>" + i + "</span>";
-            }
-        }
-    
-        spanStr = "<span class='beforePage'>上一页</span>" + spanStr + "<span class='nextPage'>下一页</span>";
-        $(id + " .pagination").html(spanStr);
-        $(id + " .pagination span").bind('click', { "maxpage": maxPageNum, "Callback": callback }, this.PaginationCurrentIndex);
-        // return spanStr;
-    }
-    
-    this.PaginationCurrentIndex = function(event) {  //分页切换
-        var text = $(this).text();
-        JSConsole.Chart.Log('[::PaginationCurrentIndex text]',text);
-        var currentPageNum = Number($(this).parent().data("current"));
-        var maxPageNum = event.data.maxpage;
-        var callback = event.data.Callback;
-        var flag = 1;
-        if (text === "上一页") {
-            flag = currentPageNum === 1 ? currentPageNum : currentPageNum - 1;
-        } else if (text === "下一页") {
-            flag = currentPageNum === maxPageNum ? currentPageNum : currentPageNum + 1;
-        } else {
-            flag = Number(text);
-        }
-        $(this).parent().data("current", flag);  //将当前页存到dom上
-        callback(flag);
-    }
-    
-    this.PaginationMetaData = function(data){ //假分页数据,每页10条数据
-        // data = {NewData:{},MetaData:[],PageCount:0,Callback:null};
-        var newData = {};
-        var metaData = data.MetaData;
-        var pageCount = data.PageCount;
-        
-        for(let i = 0; i < pageCount; i++){
-            var itemArr = [];
-            for(let j = 0; j < 10; j++){
-                var itemIndex = 10*i + j;
-                if(itemIndex <= metaData.length - 1){
-                    var item = metaData[itemIndex];
-                    itemArr.push(item);
-                }else {
-                    break;
-                }
-            }
-            newData[i+1] = itemArr;
-        }
-        data.NewData = newData;
-    }
-
-    //显示
-    this.DoModal=function(event)
-    {
-        var chart=event.data.Chart;
-        if (this.ID==null) this.Create();   //第1次 需要创建div
-        this.MatchData=event.data.MatchData;
-        this.Sample=event.data.Sample;
-        this.HQChart=chart;
-
-        this.BindData();
-        
-
-        //居中显示
-        var border=chart.Frame.ChartBorder;
-        var scrollPos=GetScrollPosition();
-        var left=border.GetWidth()/2;
-        var top=border.GetHeight()/2;
-
-        this.Show(left,top,200,200);      //显示
     }
 }
 

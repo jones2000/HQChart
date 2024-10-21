@@ -7562,26 +7562,43 @@ function KLineChartContainer(uielement)
         }
 
         //叠加数据周期调整
-        if (this.OverlayChartPaint[0].SourceData) 
+        for(var i=0; i<this.OverlayChartPaint.length; ++i)
         {
+            var item=this.OverlayChartPaint[i];
+            if (!item.SourceData) continue;
+
             if (ChartData.IsMinutePeriod(this.Period, true))  //分钟不支持 清空掉
             {
-                this.OverlayChartPaint[0].Data = null;
+                var bindData=new ChartData();
+                bindData.Data=item.SourceData.Data;
+                bindData.Period=this.Period;
+                bindData.Right=this.Right;
+
+                var aryOverlayData=this.SourceData.GetOverlayMinuteData(bindData.Data, this.IsApiPeriod);      //和主图数据拟合以后的数据
+                bindData.Data=aryOverlayData;
+
+                if (ChartData.IsMinutePeriod(bindData.Period,false) && !this.IsApiPeriod)   //周期数据
+                {
+                    var periodData=bindData.GetPeriodData(bindData.Period);
+                    bindData.Data=periodData;
+                }
+
+                item.Data=bindData;
             }
             else 
             {
                 var bindData = new ChartData();
-                bindData.Data = this.OverlayChartPaint[0].SourceData.Data;
+                bindData.Data = item.SourceData.Data;
                 bindData.Period = this.Period;
                 bindData.Right = this.Right;
 
-                if (bindData.Right > 0 && !IsIndexSymbol(this.OverlayChartPaint[0].Symbol))       //复权数据
+                if (bindData.Right > 0 && MARKET_SUFFIX_NAME.IsSHSZStockA(item.Symbol))       //复权数据
                 {
                     var rightData = bindData.GetRightData(bindData.Right, { AlgorithmType: this.RightFormula });
                     bindData.Data = rightData;
                 }
 
-                var aryOverlayData = this.SourceData.GetOverlayData(bindData.Data);      //和主图数据拟合以后的数据
+                var aryOverlayData = this.SourceData.GetOverlayData(bindData.Data, this.IsApiPeriod);      //和主图数据拟合以后的数据
                 bindData.Data = aryOverlayData;
 
                 if (ChartData.IsDayPeriod(bindData.Period, false))   //周期数据
@@ -7590,7 +7607,7 @@ function KLineChartContainer(uielement)
                     bindData.Data = periodData;
                 }
 
-                this.OverlayChartPaint[0].Data = bindData;
+                item.Data=bindData;
             }
         }
 

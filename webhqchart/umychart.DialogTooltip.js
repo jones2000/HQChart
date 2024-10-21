@@ -29,6 +29,9 @@ function JSDialogTooltip()
     this.BGColor=g_JSChartResource.DialogTooltip.BGColor;
     this.BorderColor=g_JSChartResource.DialogTooltip.BorderColor;
 
+    this.TextColor=g_JSChartResource.DialogTooltip.TextColor;
+    this.ValueColor=g_JSChartResource.DialogTooltip.ValueColor;
+
     this.VolColor=g_JSChartResource.DialogTooltip.VolColor;
     this.AmountColor=g_JSChartResource.DialogTooltip.AmountColor;
     this.TurnoverRateColor=g_JSChartResource.DialogTooltip.TurnoverRateColor;
@@ -284,7 +287,7 @@ function JSDialogTooltip()
             var item=this.AryData[index];
 
             item.TitleSpan.innerText=outItem.Title;
-            item.TitleSpan.style.color=this.TitleColor;
+            item.TitleSpan.style.color=this.TextColor;
             item.TextSpan.innerText=outItem.Text;
             item.TextSpan.style.color=outItem.Color;
             item.Tr.style.display="";
@@ -553,6 +556,9 @@ function JSDialogTooltip()
         this.PositionColor=g_JSChartResource.DialogTooltip.PositionColor;
         this.DateTimeColor=g_JSChartResource.DialogTooltip.DateTimeColor;
 
+        this.TextColor=g_JSChartResource.DialogTooltip.TextColor;
+        this.ValueColor=g_JSChartResource.DialogTooltip.ValueColor;
+
         if (!this.DivDialog) return;
 
         this.UpdateStyle();
@@ -566,6 +572,7 @@ function JSDialogTooltip()
         if (this.BorderColor) this.DivDialog.style['border-color']=this.BorderColor;
 
         if (this.TitleBGColor) this.TitleBox.DivTitle.style['background-color']=this.TitleBGColor;
+        if (this.TitleColor) this.TitleBox.DivName.style['color']=this.TitleColor;
 
         this.UpdateTableDOM();
     },
@@ -579,7 +586,7 @@ function JSDialogTooltip()
         { 
             Title:g_JSChartLocalization.GetText(TitleID, this.LanguageID),
             Text:"--.--",
-            Color:this.TitleColor
+            Color:this.ValueColor
         };
 
         if (!IFrameSplitOperator.IsNumber(price)) return item;
@@ -587,7 +594,7 @@ function JSDialogTooltip()
         if (format==2)
         {
             item.Text=price.toFixed(defaultfloatPrecision);
-            item.Color=this.TitleColor;
+            item.Color=this.ValueColor;
             return item;
         }
 
@@ -613,7 +620,7 @@ function JSDialogTooltip()
         {
             Title:g_JSChartLocalization.GetText(TitleID,this.LanguageID),
             Text:'--',
-            Color:this.TitleColor
+            Color:this.ValueColor
         };
 
         if (!IFrameSplitOperator.IsNumber(value)) return item;
@@ -661,7 +668,7 @@ function JSDialogTooltip()
         {
             Title:g_JSChartLocalization.GetText(TitleID,this.LanguageID), 
             Text:"--.--",
-            Color:this.TitleColor
+            Color:this.ValueColor
         };
 
         if (!IFrameSplitOperator.IsNumber(price) || !IFrameSplitOperator.IsNumber(yClose)) return item;
@@ -691,7 +698,7 @@ function JSDialogTooltip()
         {
             Title:g_JSChartLocalization.GetText(TitleID,this.LanguageID), 
             Text:"--.--",
-            Color:this.TitleColor
+            Color:this.ValueColor
         };
 
         if (!IFrameSplitOperator.IsNumber(price) || !IFrameSplitOperator.IsNumber(yClose)) return item;
@@ -710,7 +717,7 @@ function JSDialogTooltip()
         {
             Title:g_JSChartLocalization.GetText(TitleID,this.LanguageID), 
             Text:"--.--",
-            Color:this.TitleColor
+            Color:this.ValueColor
         };
 
 
