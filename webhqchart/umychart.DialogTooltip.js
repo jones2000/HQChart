@@ -763,9 +763,9 @@ function JSDialogTooltip()
         if (!format)
         {
             format="HH:MM";
-            if (ChartData.IsMinutePeriod(period,true)) timeFormat='HH:MM'; // 分钟周期
-            else if (ChartData.IsSecondPeriod(period)) timeFormat='HH:MM:SS';
-            else if (ChartData.IsMilliSecondPeriod(period)) timeFormat='HH:MM:SS.fff';
+            if (ChartData.IsMinutePeriod(period,true)) format='HH:MM'; // 分钟周期
+            else if (ChartData.IsSecondPeriod(period)) format='HH:MM:SS';
+            else if (ChartData.IsMilliSecondPeriod(period)) format='HH:MM:SS.fff';
         }
 
         item.Text=IFrameSplitOperator.FormatTimeString(time,format);

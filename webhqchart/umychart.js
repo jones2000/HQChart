@@ -12660,6 +12660,8 @@ function AverageWidthFrame()
                     if (value>width) width=value;
                     var outItem={ Text:text[i].Text, Width:value+2*pixelTatio };
                     if (item.TextColor) outItem.TextColor=item.TextColor;
+                    if (item.BGColor) outItem.BGColor=item.BGColor;
+                    if (IFrameSplitOperator.IsBool(item.EnableBGColor)) outItem.EnableBGColor=item.EnableBGColor;   //是否启用背景色
                     aryText.push(outItem);
                 }
             }
@@ -12868,7 +12870,7 @@ function AverageWidthFrame()
         }
 
         var pixelTatio = GetDevicePixelRatio();
-        var defaultTextHeight=18*pixelTatio;
+        var defaultTextHeight=5*pixelTatio;
         var textHeight=defaultTextHeight;
         var y;
 
@@ -13018,9 +13020,11 @@ function AverageWidthFrame()
                             {
                                 var lineType=item.LineType;
                                 if (IFrameSplitOperator.IsNumber(exLine.Type)) lineType=exLine.Type;    //外部设置延长线样式
-                                if (i==0) this.DrawLine(left,left-exLine.Width,y,item.LineColor,lineType,item);
+                                var exLineColor=item.LineColor;
+                                if (exLine.LineColor) exLineColor=exLine.LineColor; //设置线段颜色
+                                if (i==0) this.DrawLine(left,left-exLine.Width,y,exLineColor,lineType,item);
                                 textLeft-=exLine.Width;
-                                rectLeft-=exLine.Width
+                                rectLeft-=exLine.Width;
                             }
                         }
 
@@ -13035,8 +13039,14 @@ function AverageWidthFrame()
                         }
                         else
                         {
-                            this.Canvas.fillStyle=item.LineColor;
-                            this.Canvas.fillRect(rectLeft,bgTop,itemText.Width,textHeight);
+                            if (!(itemText.EnableBGColor===false))
+                            {
+                                var textBGColor=item.LineColor;
+                                if (itemText.BGColor) textBGColor=itemText.BGColor;
+                                this.Canvas.fillStyle=textBGColor;
+                                this.Canvas.fillRect(rectLeft,bgTop,itemText.Width,textHeight);
+                            }
+                            
                             this.Canvas.fillStyle = item.TextColor;
                             this.Canvas.fillText(itemText.Text, textLeft - 1*pixelTatio, yText);
                         }
@@ -13297,7 +13307,7 @@ function AverageWidthFrame()
         if (!item.AreaData) return;
         if (this.IsHScreen) return; //暂时不支持横屏
 
-        //item.AreaData;  //区域: { Value[], BGColor:, Position:[0=左, 1=右] }
+        //item.AreaData;  //区域: { Value[], BGColor:, Position:[0=左, 1=右], Width:[左, 右] }
         if (!IFrameSplitOperator.IsNonEmptyArray(item.AreaData.Value) || item.AreaData.Value.length!=2) return;
 
         var max=Math.max(item.AreaData.Value[0],item.AreaData.Value[1]);
@@ -13322,6 +13332,18 @@ function AverageWidthFrame()
             var rtBG={ Left:0, Right:left-1, Top:yTop, Bottom:yBottom };
             rtBG.Height=rtBG.Bottom-rtBG.Top;
             rtBG.Width=rtBG.Right-rtBG.Left;
+            if (IFrameSplitOperator.IsNonEmptyArray(item.AreaData.Width))   //指定宽度
+            {
+                var bgWidth=item.AreaData.Width[0];
+                if (IFrameSplitOperator.IsNumber(bgWidth))
+                {
+                    if (rtBG.Width>bgWidth)
+                    {
+                        rtBG.Width=bgWidth;
+                        rtBG.Left=rtBG.Right-rtBG.Width;
+                    }
+                }
+            }
             this.Canvas.fillStyle=item.AreaData.BGColor;
             this.Canvas.fillRect(rtBG.Left,rtBG.Top,rtBG.Width,rtBG.Height);
             this.DrawCustomAreaText(rtBG, item, 0);
@@ -13340,6 +13362,19 @@ function AverageWidthFrame()
             {
                 rtBG.Right=border.ChartWidth;
                 rtBG.Width=rtBG.Right-rtBG.Left;
+            }
+
+            if (IFrameSplitOperator.IsNonEmptyArray(item.AreaData.Width))   //指定宽度
+            {
+                var bgWidth=item.AreaData.Width[1];
+                if (IFrameSplitOperator.IsNumber(bgWidth))
+                {
+                    if (rtBG.Width>bgWidth)
+                    {
+                        rtBG.Width=bgWidth;
+                        rtBG.Right=rtBG.Left+rtBG.Width;
+                    }
+                }
             }
 
             this.Canvas.fillStyle=item.AreaData.BGColor;
@@ -13603,7 +13638,7 @@ function AverageWidthFrame()
                     }
                     else if (this.MultiTextFormat==3)
                     {
-                        textWidth=this.GetMulitTextMaxWidth(item.Message[0]);
+                        textWidth=this.GetMulitTextMaxWidth(item.Message[1]);
                     }
                     else    //显示第1行
                     {
@@ -13742,8 +13777,10 @@ function MinuteFrame()
 
             this.DrawNightDayBG();  //绘制夜盘 日盘背景
             this.DrawCustomBG();    //绘制自定义背景色
-
+           
             this.DrawTitleBG();
+            this.DrawCustomHorizontalArea();    //Y轴背景区域 在刻度前面绘制
+
             this.DrawHorizontal();
             this.DrawVertical();
         }
@@ -13752,6 +13789,20 @@ function MinuteFrame()
         {
             this.DrawToolbar();  //大小变动才画工具条
             this.ReDrawToolbar=false;
+        }
+    }
+
+    //Y轴面积背景
+    this.DrawCustomHorizontalArea=function()
+    {
+        if (this.IsMinSize) return;
+        if (this.ChartBorder.IsShowTitleOnly) return;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.CustomHorizontalInfo)) return;
+
+        for(var i=0;i<this.CustomHorizontalInfo.length;++i)
+        {
+            var item=this.CustomHorizontalInfo[i];
+            if (item.Type==5) this.DrawCustomAreaItem(item);
         }
     }
 
@@ -69837,6 +69888,12 @@ function JSChartResource()
             SymbolFont:{ Size:12, Name:"微软雅黑" }
         },
 
+        //固定行
+        FixedItem:
+        {
+            Font:{ Size:15, Name:"微软雅黑"},
+        },
+
         CenterItem:
         {
             TextColor:"rgb(60,60,83)",
@@ -71123,6 +71180,17 @@ function JSChartResource()
         {
             var subIem=item.MarkBorder;
             if (subIem.MaxPositionColor) dest.MarkBorder.MaxPositionColor=subIem.MaxPositionColor;
+        }
+
+        if (item.FixedItem)
+        {
+            var subIem=item.FixedItem;
+            if (subIem.Font)
+            {
+                var font=subIem.Font;
+                if (font.Name) dest.FixedItem.Font.Name=font.Name;
+                if (IFrameSplitOperator.IsNumber(font.Size)) dest.FixedItem.Font.Size=font.Size;
+            }
         }
             
     }
@@ -91315,7 +91383,12 @@ var MARKET_SUFFIX_NAME=
     },
 
     IsSHO: function(upperSymbol)
-    {
+    {   
+        if (this.IsSH(upperSymbol)) //10007211.sh
+        {
+            if (upperSymbol.length==11 && upperSymbol[0]=='1') return true;
+        }
+
         var pos = upperSymbol.length - this.SHO.length;
         var find = upperSymbol.indexOf(this.SHO);
         return find == pos;
@@ -91323,6 +91396,11 @@ var MARKET_SUFFIX_NAME=
 
     IsSZO: function(upperSymbol)
     {
+        if (this.IsSZ(upperSymbol)) //90004047.sz
+        {
+            if (upperSymbol.length==11 && upperSymbol[0]=='9') return true;
+        }
+
         var pos = upperSymbol.length - this.SZO.length;
         var find = upperSymbol.indexOf(this.SZO);
         return find == pos;

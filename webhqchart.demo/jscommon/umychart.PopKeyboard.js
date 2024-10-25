@@ -260,10 +260,17 @@ function JSPopKeyboard()
         if (!this.DivDialog) return;
 
         var code=event.keyCode;
+        if (code==116) return;  //F5不处理
+
         if (!this.IsShow() && (code>=48 && code<=57) || (code>=65 && code<=90) || (code>=97 && code<=122))
         {
             this.Show();
             this.InputDOM.focus();
+            if (this.InputDOM.value=="") 
+            {
+                this.InputDOM.value=event.key;
+                event.preventDefault();
+            }
             if (event.target) this.ActiveDOM=event.target;
         }
         else if (code==27 && this.IsShow())

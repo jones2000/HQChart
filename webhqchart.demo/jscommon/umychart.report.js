@@ -1501,6 +1501,30 @@ function JSReportChartContainer(uielement)
         if (IFrameSplitOperator.IsNumber(item[45])) stock.RSpeed5M=item[45]; 
         if (IFrameSplitOperator.IsNumber(item[46])) stock.RSpeed10M=item[46]; 
         if (IFrameSplitOperator.IsNumber(item[47])) stock.RSpeed15M=item[47]; 
+
+        //10个数值型 101-199
+        if (IFrameSplitOperator.IsNumber(item[101])) stock.ReserveNumber1=item[101];
+        if (IFrameSplitOperator.IsNumber(item[102])) stock.ReserveNumber2=item[102];
+        if (IFrameSplitOperator.IsNumber(item[103])) stock.ReserveNumber3=item[103];
+        if (IFrameSplitOperator.IsNumber(item[104])) stock.ReserveNumber4=item[104];
+        if (IFrameSplitOperator.IsNumber(item[105])) stock.ReserveNumber5=item[105];
+        if (IFrameSplitOperator.IsNumber(item[106])) stock.ReserveNumber6=item[106];
+        if (IFrameSplitOperator.IsNumber(item[107])) stock.ReserveNumber7=item[107];
+        if (IFrameSplitOperator.IsNumber(item[108])) stock.ReserveNumber8=item[108];
+        if (IFrameSplitOperator.IsNumber(item[109])) stock.ReserveNumber9=item[109];
+        if (IFrameSplitOperator.IsNumber(item[110])) stock.ReserveNumber10=item[110];
+
+        //10个字符型 201-299
+        if (IFrameSplitOperator.IsString(item[201])) stock.ReserveString1=item[201];
+        if (IFrameSplitOperator.IsString(item[202])) stock.ReserveString2=item[202];
+        if (IFrameSplitOperator.IsString(item[203])) stock.ReserveString3=item[203];
+        if (IFrameSplitOperator.IsString(item[204])) stock.ReserveString4=item[204];
+        if (IFrameSplitOperator.IsString(item[205])) stock.ReserveString5=item[205];
+        if (IFrameSplitOperator.IsString(item[206])) stock.ReserveString6=item[206];
+        if (IFrameSplitOperator.IsString(item[207])) stock.ReserveString7=item[207];
+        if (IFrameSplitOperator.IsString(item[208])) stock.ReserveString8=item[208];
+        if (IFrameSplitOperator.IsString(item[209])) stock.ReserveString9=item[209];
+        if (IFrameSplitOperator.IsString(item[210])) stock.ReserveString10=item[210];
     }
 
 
@@ -3548,6 +3572,17 @@ function JSReportChartContainer(uielement)
             case REPORT_COLUMN_ID.VOL_IN_ID:
             case REPORT_COLUMN_ID.VOL_OUT_ID:
             case REPORT_COLUMN_ID.DATE_ID:
+
+            case TREPORT_COLUMN_ID.RESERVE_NUMBER1_ID:
+            case TREPORT_COLUMN_ID.RESERVE_NUMBER2_ID:
+            case TREPORT_COLUMN_ID.RESERVE_NUMBER3_ID:
+            case TREPORT_COLUMN_ID.RESERVE_NUMBER4_ID:
+            case TREPORT_COLUMN_ID.RESERVE_NUMBER5_ID:
+            case TREPORT_COLUMN_ID.RESERVE_NUMBER6_ID:
+            case TREPORT_COLUMN_ID.RESERVE_NUMBER7_ID:
+            case TREPORT_COLUMN_ID.RESERVE_NUMBER8_ID:
+            case TREPORT_COLUMN_ID.RESERVE_NUMBER9_ID:
+            case TREPORT_COLUMN_ID.RESERVE_NUMBER10_ID:
             
                 return this.LocalNumberSort(left, right, column, sortType);
             case REPORT_COLUMN_ID.CUSTOM_NUMBER_TEXT_ID:    //自定义数值字段
@@ -4108,6 +4143,32 @@ var REPORT_COLUMN_ID=
     CUSTOM_BUTTON_ID:105,           //自定义按钮
     CUSTOM_PROGRESS_ID:106,         //进度条
     CUSTOM_LINK_ID:107,              //链接
+
+
+    //预留数值类型 10个
+    RESERVE_NUMBER1_ID:201,         //ReserveNumber1:
+    RESERVE_NUMBER2_ID:202,
+    RESERVE_NUMBER3_ID:203,
+    RESERVE_NUMBER4_ID:204,
+    RESERVE_NUMBER5_ID:205,
+    RESERVE_NUMBER6_ID:206,
+    RESERVE_NUMBER7_ID:207,
+    RESERVE_NUMBER8_ID:208,
+    RESERVE_NUMBER9_ID:209,
+    RESERVE_NUMBER10_ID:210,
+
+
+    //预留字符串类型 10个  301-399
+    RESERVE_STRING1_ID:301,         //ReserveString1:
+    RESERVE_STRING2_ID:302,
+    RESERVE_STRING3_ID:303,
+    RESERVE_STRING4_ID:304,
+    RESERVE_STRING5_ID:305,
+    RESERVE_STRING6_ID:306,
+    RESERVE_STRING7_ID:307,
+    RESERVE_STRING8_ID:308,
+    RESERVE_STRING9_ID:309,
+    RESERVE_STRING10_ID:310,
 }
 
 //数据对应字段名对照表
@@ -4158,6 +4219,28 @@ var MAP_COLUMN_FIELD=new Map([
     [REPORT_COLUMN_ID.RISING_SPEED_5M_ID, "RSpeed5M"],
     [REPORT_COLUMN_ID.RISING_SPEED_10M_ID, "RSpeed10M"],
     [REPORT_COLUMN_ID.RISING_SPEED_15M_ID, "RSpeed15M"],
+
+    [REPORT_COLUMN_ID.RESERVE_NUMBER1_ID,"ReserveNumber1"],
+    [REPORT_COLUMN_ID.RESERVE_NUMBER2_ID,"ReserveNumber2"],
+    [REPORT_COLUMN_ID.RESERVE_NUMBER3_ID,"ReserveNumber3"],
+    [REPORT_COLUMN_ID.RESERVE_NUMBER4_ID,"ReserveNumber4"],
+    [REPORT_COLUMN_ID.RESERVE_NUMBER5_ID,"ReserveNumber5"],
+    [REPORT_COLUMN_ID.RESERVE_NUMBER6_ID,"ReserveNumber6"],
+    [REPORT_COLUMN_ID.RESERVE_NUMBER7_ID,"ReserveNumber7"],
+    [REPORT_COLUMN_ID.RESERVE_NUMBER8_ID,"ReserveNumber8"],
+    [REPORT_COLUMN_ID.RESERVE_NUMBER9_ID,"ReserveNumber9"],
+    [REPORT_COLUMN_ID.RESERVE_NUMBER10_ID,"ReserveNumber10"],
+
+    [REPORT_COLUMN_ID.RESERVE_STRING1_ID,"ReserveString1"],
+    [REPORT_COLUMN_ID.RESERVE_STRING2_ID,"ReserveString2"],
+    [REPORT_COLUMN_ID.RESERVE_STRING3_ID,"ReserveString3"],
+    [REPORT_COLUMN_ID.RESERVE_STRING4_ID,"ReserveString4"],
+    [REPORT_COLUMN_ID.RESERVE_STRING5_ID,"ReserveString5"],
+    [REPORT_COLUMN_ID.RESERVE_STRING6_ID,"ReserveString6"],
+    [REPORT_COLUMN_ID.RESERVE_STRING7_ID,"ReserveString7"],
+    [REPORT_COLUMN_ID.RESERVE_STRING8_ID,"ReserveString8"],
+    [REPORT_COLUMN_ID.RESERVE_STRING9_ID,"ReserveString9"],
+    [REPORT_COLUMN_ID.RESERVE_STRING10_ID,"ReserveString10"],
 ]);
 
 function ChartReport()
@@ -4464,6 +4547,8 @@ function ChartReport()
             if (IFrameSplitOperator.IsNumber(item.FixedWidth)) colItem.FixedWidth=item.FixedWidth;
             if (IFrameSplitOperator.IsBool(item.EnableDragWidth)) colItem.EnableDragWidth=item.EnableDragWidth;
             if (IFrameSplitOperator.IsBool(item.IsDrawCallback)) colItem.IsDrawCallback=item.IsDrawCallback;
+            if (IFrameSplitOperator.IsNumber(item.FloatPrecision)) colItem.FloatPrecision=item.FloatPrecision;    //小数位数
+            if (IFrameSplitOperator.IsNumber(item.ColorType))  colItem.ColorType=item.ColorType;        //0=默认 1=(>0, =0, <0) 2=(>=0, <0)
             else colItem.IsDrawCallback=false;
             if (item.Icon) colItem.Icon=item.Icon;
 
@@ -4682,6 +4767,28 @@ function ChartReport()
             { Type:REPORT_COLUMN_ID.RISING_SPEED_5M_ID, Title:"5分涨速%", TextAlign:"right", Width:null, MaxText:"-888.88" },
             { Type:REPORT_COLUMN_ID.RISING_SPEED_10M_ID, Title:"10分涨速%", TextAlign:"right", Width:null, MaxText:"-888.88" },
             { Type:REPORT_COLUMN_ID.RISING_SPEED_15M_ID, Title:"15分涨速%", TextAlign:"right", Width:null, MaxText:"-888.88" },
+
+            { Type:REPORT_COLUMN_ID.RESERVE_NUMBER1_ID, Title:"数值1", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"9999.99", FloatPrecision:2 },
+            { Type:REPORT_COLUMN_ID.RESERVE_NUMBER2_ID, Title:"数值2", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"9999.99", FloatPrecision:2 },
+            { Type:REPORT_COLUMN_ID.RESERVE_NUMBER3_ID, Title:"数值3", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"9999.99", FloatPrecision:2 },
+            { Type:REPORT_COLUMN_ID.RESERVE_NUMBER4_ID, Title:"数值4", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"9999.99", FloatPrecision:2 },
+            { Type:REPORT_COLUMN_ID.RESERVE_NUMBER5_ID, Title:"数值5", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"9999.99", FloatPrecision:2 },
+            { Type:REPORT_COLUMN_ID.RESERVE_NUMBER6_ID, Title:"数值6", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"9999.99", FloatPrecision:2 },
+            { Type:REPORT_COLUMN_ID.RESERVE_NUMBER7_ID, Title:"数值7", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"9999.99", FloatPrecision:2 },
+            { Type:REPORT_COLUMN_ID.RESERVE_NUMBER8_ID, Title:"数值8", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"9999.99", FloatPrecision:2 },
+            { Type:REPORT_COLUMN_ID.RESERVE_NUMBER9_ID, Title:"数值9", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"9999.99", FloatPrecision:2 },
+            { Type:REPORT_COLUMN_ID.RESERVE_NUMBER10_ID, Title:"数值10", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"9999.99", FloatPrecision:2 },
+
+            { Type:REPORT_COLUMN_ID.RESERVE_STRING1_ID, Title:"文字1", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"擎擎擎擎擎擎" },
+            { Type:REPORT_COLUMN_ID.RESERVE_STRING2_ID, Title:"文字2", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"擎擎擎擎擎擎" },
+            { Type:REPORT_COLUMN_ID.RESERVE_STRING3_ID, Title:"文字3", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"擎擎擎擎擎擎" },
+            { Type:REPORT_COLUMN_ID.RESERVE_STRING4_ID, Title:"文字4", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"擎擎擎擎擎擎" },
+            { Type:REPORT_COLUMN_ID.RESERVE_STRING5_ID, Title:"文字5", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"擎擎擎擎擎擎" },
+            { Type:REPORT_COLUMN_ID.RESERVE_STRING6_ID, Title:"文字6", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"擎擎擎擎擎擎" },
+            { Type:REPORT_COLUMN_ID.RESERVE_STRING7_ID, Title:"文字7", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"擎擎擎擎擎擎" },
+            { Type:REPORT_COLUMN_ID.RESERVE_STRING8_ID, Title:"文字8", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"擎擎擎擎擎擎" },
+            { Type:REPORT_COLUMN_ID.RESERVE_STRING9_ID, Title:"文字9", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"擎擎擎擎擎擎" },
+            { Type:REPORT_COLUMN_ID.RESERVE_STRING10_ID, Title:"文字10", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"擎擎擎擎擎擎" },
         ];
 
         for(var i=0;i<DEFAULT_COLUMN.length;++i)
@@ -5734,6 +5841,18 @@ function ChartReport()
         {
             this.GetCustomLinkDrawInfo(data, column, drawInfo);
         }
+        else if ([REPORT_COLUMN_ID.RESERVE_NUMBER1_ID,REPORT_COLUMN_ID.RESERVE_NUMBER2_ID,REPORT_COLUMN_ID.RESERVE_NUMBER3_ID,
+                REPORT_COLUMN_ID.RESERVE_NUMBER4_ID,REPORT_COLUMN_ID.RESERVE_NUMBER5_ID,REPORT_COLUMN_ID.RESERVE_NUMBER6_ID,REPORT_COLUMN_ID.RESERVE_NUMBER7_ID,
+                REPORT_COLUMN_ID.RESERVE_NUMBER8_ID,REPORT_COLUMN_ID.RESERVE_NUMBER9_ID,REPORT_COLUMN_ID.RESERVE_NUMBER10_ID].includes(column.Type))
+        {
+            this.FormatReserveNumber(column, stock, drawInfo);
+        }
+        else if ([REPORT_COLUMN_ID.RESERVE_STRING1_ID,REPORT_COLUMN_ID.RESERVE_STRING2_ID,REPORT_COLUMN_ID.RESERVE_STRING3_ID,REPORT_COLUMN_ID.RESERVE_STRING4_ID,
+            REPORT_COLUMN_ID.RESERVE_STRING5_ID,REPORT_COLUMN_ID.RESERVE_STRING6_ID,REPORT_COLUMN_ID.RESERVE_STRING7_ID,REPORT_COLUMN_ID.RESERVE_STRING8_ID,
+            REPORT_COLUMN_ID.RESERVE_STRING9_ID,REPORT_COLUMN_ID.RESERVE_STRING10_ID].includes(column.Type))
+        {
+            this.FormatReserveString(column, stock, drawInfo);
+        }
         
 
         //拖拽行颜色
@@ -6175,6 +6294,46 @@ function ChartReport()
         if (linkData.TextColor) drawInfo.TextColor=linkData.TextColor;
     }
 
+    
+    this.FormatReserveNumber=function(column, data, drawInfo)
+    {
+        if (column.DefaultText) drawInfo.Text=column.DefaultText;
+
+        var fieldName=MAP_COLUMN_FIELD.get(column.Type);
+        if (!fieldName) return;
+
+        var value=data[fieldName];
+        if (!IFrameSplitOperator.IsNumber(value)) return;
+
+        if (IFrameSplitOperator.IsNumber(column.ColorType))
+        {
+            if (column.ColorType==1)
+            {
+               drawInfo.TextColor=this.GetUpDownColor(value,0);
+            }
+            else if (column.ColorType==2)
+            {
+                drawInfo.TextColor=this.GetUpDownColorV2(value,0);
+            }
+        }
+
+        //TODO: 不同类型的 格式化输出 
+        drawInfo.Text=value.toFixed(column.FloatPrecision);
+    }
+
+    this.FormatReserveString=function(column, data, drawInfo)
+    {
+        if (column.DefaultText) drawInfo.Text=column.DefaultText;
+
+        var fieldName=MAP_COLUMN_FIELD.get(column.Type);
+        if (!fieldName) return;
+
+        var text=data[fieldName];
+        if (!IFrameSplitOperator.IsString(text)) return;
+
+        drawInfo.Text=text;
+    }
+
     this.FormaTimeDrawInfo=function(column, stock, drawInfo, data)
     {
         if (!IFrameSplitOperator.IsNumber(stock.Time)) return;
@@ -6283,6 +6442,13 @@ function ChartReport()
         if (price>price2) return this.UpColor;
         else if (price<price2) return this.DownColor;
         else return this.UnchagneColor;
+    }
+
+    
+    this.GetUpDownColorV2=function(price, price2)
+    {
+        if (price>=price2) return this.UpColor;
+        else return this.DownColor;
     }
 
     //单独处理成交量显示
