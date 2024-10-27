@@ -423,6 +423,19 @@ function GetBlackStyle()
             TurnoverRateColor:'rgb(43,54,69)',       //换手率
             PositionColor:"rgb(255,0,255)"            //持仓
         },
+
+        DialogPopKeyboard:
+        {
+            BGColor:'rgb(20,20,20)',            //背景色
+            BorderColor:'rgb(170,170,170)',     //边框颜色
+            TitleColor:'rgb(240,240,240)',       //标题颜色
+
+            Input:
+            {
+                BGColor:"rgb(20,20,20)",
+                TextColor:"rgb(250,250,250)",
+            }
+        },
         
         //走势图 信息地雷
         MinuteInfo:
@@ -755,6 +768,33 @@ function GetBlackStyle()
             MarkBorder:
             {
                 MaxPositionColor:"rgb(192,192,0)"
+            },
+        },
+
+        //键盘精灵
+        Keyboard:
+        {
+            BorderColor:'rgb(38,38,41)',    //边框线
+            SelectedColor:"rgb(49,48,56)",  //选中行
+            TextColor:"rgb(245,245,245)",
+
+            Item:
+            {
+                Mergin:{ Top:2, Bottom:0,Left:1, Right:1 }, //单元格四周间距
+                Font:{ Size:15, Name:"微软雅黑"},
+                BarMergin:{ Top:2, Left:0, Right:0, Bottom:2 },//单元格字体
+                NameFont:{ Size:14, Name:"微软雅黑" },
+                SymbolFont:{ Size:12, Name:"微软雅黑" }
+            },
+
+            VScrollbar:
+            {
+                ScrollBarHeight:50,
+                ButtonColor:"rgba(13,12,15,0.8)",
+                BarColor:"rgba(48,48,48,0.9)",
+                BorderColor:'rgba(48,48,48,0.9)',
+                BGColor:"rgba(211,211,211,0.5)",
+                BarWidth:{ Size:8 }
             },
         },
 

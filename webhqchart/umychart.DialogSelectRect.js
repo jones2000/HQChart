@@ -26,6 +26,7 @@ function JSDialogSelectRect()
     this.TitleColor=g_JSChartResource.DialogSelectRect.TitleColor;
     this.TitleBGColor=g_JSChartResource.DialogSelectRect.TitleBGColor;
     this.BGColor=g_JSChartResource.DialogSelectRect.BGColor;
+    this.BorderColor=g_JSChartResource.DialogSelectRect.BorderColor;
 
     this.TextColor=g_JSChartResource.DialogSelectRect.TextColor;
     this.ValueColor=g_JSChartResource.DialogSelectRect.ValueColor;

@@ -194,6 +194,8 @@
 
             this.MapIndex=new Map();    //本地指标
 
+            this.JSPopMenu=null;
+
             this.JSPopMenu=new JSPopMenu();
             this.JSPopMenu.Inital();
           
@@ -434,21 +436,11 @@
                 var self=this;
                 $(window).resize(function() { self.OnSize(); });    //绑定窗口大小变化事件
                 //$(window).resize(function() { self.OnSize(  ); });    //绑定窗口大小变化事件
-
-                var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID); //读取黑色风格配置
-                JSChart.SetStyle(blackStyle);
-                this.DivKLine.style.backgroundColor=blackStyle.BGColor; //设置最外面的div背景
+                
                 var resource=JSChart.GetResource();
-                resource.ToolbarButtonStyle=1;
-                resource.FrameYLineDash=[2,2];
-                resource.UpBarColor='rgb(248,41,71)';
-                resource.DownBarColor='rgb(84,255,255)';
-                resource.Frame.XBottomOffset=4;
-                resource.IndexTitleMerginLeft=3*GetDevicePixelRatio();
-                resource.DOTLINE.LineDash=[10,10];
-                //resource.IndexTitle.ArrowType=1;
-                resource.IndexTitle.EnableIndexArrow=false;
+                this.DivKLine.style.backgroundColor=resource.BGColor; //设置最外面的div背景
 
+                
                 this.Option.EventCallback=
                 [
                     {
@@ -1584,6 +1576,25 @@
             }
         }
 
+
+        KLineChart.InitalStyle=function()
+        {
+            var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID); //读取黑色风格配置
+            JSChart.SetStyle(blackStyle);
+            var resource=JSChart.GetResource();
+
+            resource.BGColor=blackStyle.BGColor;
+            resource.ToolbarButtonStyle=1;
+            resource.FrameYLineDash=[2,2];
+            resource.UpBarColor='rgb(248,41,71)';
+            resource.DownBarColor='rgb(84,255,255)';
+            resource.Frame.XBottomOffset=4;
+            resource.IndexTitleMerginLeft=3*GetDevicePixelRatio();
+            resource.DOTLINE.LineDash=[10,10];
+            //resource.IndexTitle.ArrowType=1;
+            resource.IndexTitle.EnableIndexArrow=false;
+        }
+
         function DeleteLocalIndex(e, name)
         {
             alert(`[DeleteLocalIndex]${name}`);
@@ -1600,6 +1611,8 @@
             const font = new FontFace("iconfont",`url('../jscommon/umychart.resource/font/iconfont.woff?t=1690947130935') format('woff')`);
             document.fonts.add(font);    //把字体添加到 document.font（FontFaceSet）中
             font.load();    // 加载字体
+
+            KLineChart.InitalStyle();
 
             var klineControl=new KLineChart(document.getElementById('kline'));
              // 等待到所有的字体都加载完毕
@@ -1622,6 +1635,9 @@
 
             klineControl.IndexEdit=jsEditor;
 
+
+            var hqKeyboard=new JSPopKeyboard();
+
             //执行指标
             $("#index_run").click(function() { klineControl.ExecuteIndexScript(); } );
             $("#add_index_window").click(function() { klineControl.AddScriptIndexWindow(); } );
@@ -1632,8 +1648,8 @@
             $("#SplashScreen").click(function(){ klineControl.SplashScreen(true); })
             $("#SplashScreen2").click(function(){ klineControl.SplashScreen(false); })
 
-            $("#style_black").click(function(){ klineControl.ChangeStyle('black') })
-            $("#style_white").click(function(){ klineControl.ChangeStyle('white'); })
+            $("#style_black").click(function(){ klineControl.ChangeStyle('black'); hqKeyboard.ReloadResource(); })
+            $("#style_white").click(function(){ klineControl.ChangeStyle('white'); hqKeyboard.ReloadResource(); })
 
             $("#showAllKLine").click(function(){ klineControl.ShowAllKLine(); })
 
@@ -1644,8 +1660,6 @@
             JSComplier.AddFunction({ Name:'FUNC_DEMO',   Description:'自定义函数1', IsDownload:false } );
             JSComplier.AddVariant({ Name:'VAR_DEMO',   Description:'自定义变量1' } );
 
-            
-            var hqKeyboard=new JSPopKeyboard();
             
             hqKeyboard.Keyboard.Option.EventCallback=
             [

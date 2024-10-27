@@ -2637,6 +2637,8 @@ var JSCHART_EVENT_ID=
     ON_CLICK_HORIZONTAL_LABEL:158,              //点击Y轴刻度标签
 
     ON_FORMAT_DIALOG_TOOLTIP_TEXT:159,          //格式化Tooltip对话框显示文字
+
+    ON_CHANGE_KLINE_RIGHT:160,          //切换复权
 }
 
 var JSCHART_OPERATOR_ID=
@@ -69274,7 +69276,7 @@ function JSChartResource()
         ValueColor:"rgb(0,0,0)",            //数值
 
        
-    },
+    };
 
     //区间统计
     this.DialogSelectRect=
@@ -69289,7 +69291,22 @@ function JSChartResource()
         AmountColor:"rgb(79, 79, 79)",      //成交金额
         TurnoverRateColor:'rgb(43,54,69)',  //换手率
         PositionColor:"rgb(255,0,255)"      //持仓
-    }
+    };
+
+    //键盘精灵
+    this.DialogPopKeyboard=
+    {
+        BGColor:'rgb(250,250,250)',         //背景色
+        BorderColor:'rgb(20,20,20)',        //边框颜色
+        TitleColor:'rgb(0,0,0)',            //对话框标题颜色
+        TitleBGColor:"rgb(200, 66, 69)",    //标题背景颜色
+
+        Input:
+        {
+            BGColor:"rgb(250,250,250)",
+            TextColor:"rgb(0,0,0)",
+        }
+    };
 
     //弹幕
     this.Barrage= {
@@ -70323,6 +70340,23 @@ function JSChartResource()
 
         }
 
+        if (style.DialogPopKeyboard)
+        {
+            var item=style.DialogPopKeyboard;
+
+            if (item.BGColor) this.DialogPopKeyboard.BGColor=item.BGColor;
+            if (item.BorderColor) this.DialogPopKeyboard.BorderColor=item.BorderColor;
+            if (item.TitleColor) this.DialogPopKeyboard.TitleColor=item.TitleColor;
+            if (item.TitleBGColor) this.DialogTooltip.TitleBGColor=item.TitleBGColor;
+
+            if (item.Input)
+            {
+                var subItem=item.Input;
+                if (subItem.BGColor) this.DialogPopKeyboard.Input.BGColor=subItem.BGColor;
+                if (subItem.TextColor) this.DialogPopKeyboard.Input.TextColor=subItem.TextColor;
+            }
+        }
+
         if (style.MinuteInfo)
         {
             var item=style.MinuteInfo;
@@ -70775,6 +70809,79 @@ function JSChartResource()
 
         if (style.FrameButtomToolbar)
             this.SetFrameButtomToolbar(style.FrameButtomToolbar);
+
+
+        if (style.Keyboard) this.SetKeyboardStyle(style.Keyboard);
+    }
+
+
+    this.SetKeyboardStyle=function(style)
+    {
+        var item=style;
+        var dest=this.Keyboard;
+
+        if (item.BorderColor) dest.BorderColor=item.BorderColor;
+        if (item.SelectedColor) dest.SelectedColor=item.SelectedColor;
+        if (item.TextColor) dest.TextColor=item.TextColor;
+
+        if (item.Item)
+        {
+            var row=item.Item;
+            if (row.Mergin)
+            {
+                var mergin=row.Mergin;
+                if (IFrameSplitOperator.IsNumber(mergin.Left)) dest.Item.Mergin.Left=mergin.Left;
+                if (IFrameSplitOperator.IsNumber(mergin.Right)) dest.Item.Mergin.Right=mergin.Right;
+                if (IFrameSplitOperator.IsNumber(mergin.Top)) dest.Item.Mergin.Top=mergin.Top;
+                if (IFrameSplitOperator.IsNumber(mergin.Bottom)) dest.Item.Mergin.Bottom=mergin.Bottom;
+            }
+
+            if (row.Font)
+            {
+                var font=row.Font;
+                if (font.Name) dest.Item.Font.Name=font.Name;
+                if (IFrameSplitOperator.IsNumber(font.Size)) dest.Item.Font.Size=font.Size;
+            }
+
+            if (row.BarMergin)
+            {
+                var mergin=row.BarMergin;
+                if (IFrameSplitOperator.IsNumber(mergin.Left)) dest.Item.BarMergin.Left=mergin.Left;
+                if (IFrameSplitOperator.IsNumber(mergin.Top)) dest.Item.BarMergin.Top=mergin.Top;
+                if (IFrameSplitOperator.IsNumber(mergin.Right)) dest.Item.BarMergin.Right=mergin.Right;
+                if (IFrameSplitOperator.IsNumber(mergin.Bottom)) dest.Item.BarMergin.Bottom=mergin.Bottom;
+            }
+
+            if (row.NameFont)
+            {
+                var font=row.NameFont;
+                if (font.Name) dest.Item.NameFont.Name=font.Name;
+                if (IFrameSplitOperator.IsNumber(font.Size)) dest.Item.NameFont.Size=font.Size;
+            }
+
+            if (row.SymbolFont)
+            {
+                var font=row.SymbolFont;
+                if (font.Name) dest.Item.SymbolFont.Name=font.Name;
+                if (IFrameSplitOperator.IsNumber(font.Size)) dest.Item.SymbolFont.Size=font.Size;
+            }
+
+        }
+
+        if (item.VScrollbar)
+        {
+            var scroll=item.VScrollbar;
+            if (IFrameSplitOperator.IsNumber(scroll.ScrollBarHeight)) dest.VScrollbar.ScrollBarHeight=scroll.ScrollBarHeight;
+            if (scroll.ButtonColor)  dest.VScrollbar.ButtonColor=scroll.ButtonColor;
+            if (scroll.BarColor)  dest.VScrollbar.BarColor=scroll.BarColor;
+            if (scroll.BorderColor)  dest.VScrollbar.BorderColor=scroll.BorderColor;
+            if (scroll.BGColor)  dest.VScrollbar.BGColor=scroll.BGColor;
+            if (scroll.BarWidth)
+            {
+                var subItem=scroll.BarWidth;
+                if (IFrameSplitOperator.IsNumber(subItem.Size)) dest.VScrollbar.BarWidth.Size=subItem.Size;
+            }
+        }
     }
 
     this.SetReportStyle=function(style)
@@ -75459,7 +75566,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
     //周期切换
     this.ChangePeriod=function(period,option)
     {
-        var oldData={ Period:this.Period, Right:this.Right, KLineDrawType:this.KLineDrawType };
+        var oldData={ Period:this.Period, Right:this.Right, KLineDrawType:this.KLineDrawType, Symbol:this.Symbol};
 
         var isChangeKLineDrawType=false;
         var isReload=false; //是否重新请求数据
@@ -75548,7 +75655,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             { 
                 IsApiPeriod:this.IsApiPeriod, 
                 Old:oldData, 
-                Now:{ Period:this.Period, Right:this.Right, KLineDrawType:this.KLineDrawType }, 
+                Now:{ Period:this.Period, Right:this.Right, KLineDrawType:this.KLineDrawType, Symbol:this.Symbol }, 
                 IsDataTypeChange:isDataTypeChange,  //数据类型是否改变  true 重新请求数据
             }
             event.Callback(event, sendData, this);
@@ -75609,7 +75716,22 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
         if (this.Right==right) return;
 
+        var oldData={ Period:this.Period, Right:this.Right, KLineDrawType:this.KLineDrawType, Symbol:this.Symbol };
+
+
         this.Right=right;
+
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CHANGE_KLINE_RIGHT);
+        if (event && event.Callback)
+        {
+            var sendData=
+            { 
+                IsApiPeriod:this.IsApiPeriod, 
+                Old:oldData, 
+                Now:{ Period:this.Period, Right:this.Right, KLineDrawType:this.KLineDrawType, Symbol:this.Symbol }, 
+            }
+            event.Callback(event, sendData, this);
+        }
 
         if (!this.IsApiPeriod)
         {
@@ -92220,9 +92342,9 @@ function MinuteTimeStringData()
         if (!symbol) return this.SHSZ;
 
         var upperSymbol = symbol.toLocaleUpperCase(); //转成大写
+        if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol) || MARKET_SUFFIX_NAME.IsSZO(upperSymbol)) return this.GetSHO();
         if (MARKET_SUFFIX_NAME.IsSH(upperSymbol) || MARKET_SUFFIX_NAME.IsSZ(upperSymbol)) return this.GetSHSZ(upperSymbol);
         if (MARKET_SUFFIX_NAME.IsBJ(upperSymbol)) return this.GetBJ(upperSymbol);
-        if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol) || MARKET_SUFFIX_NAME.IsSZO(upperSymbol)) return this.GetSHO();
         if (MARKET_SUFFIX_NAME.IsHK(upperSymbol)) return this.GetHK(upperSymbol);
         if (MARKET_SUFFIX_NAME.IsTW(upperSymbol)) return this.GetTW(upperSymbol);
         if (MARKET_SUFFIX_NAME.IsJP(upperSymbol)) return this.GetJP(upperSymbol);

@@ -14,11 +14,21 @@ function JSPopKeyboard()
 {
     this.DivDialog=null;
     this.DragTitle=null;
+    this.TitleBox=null; //{ DivTitle, DivName, }
     this.InputDOM=null;
     this.Title="HQChart 键盘精灵"
     this.ID=Guid();
     this.ActiveDOM=null;    //启动键盘精灵是的控件
     this.InputStatus=0;     //0=空闲  1=输入中 
+
+
+    this.BGColor=g_JSChartResource.DialogPopKeyboard.BGColor;
+    this.TitleColor=g_JSChartResource.DialogPopKeyboard.TitleColor;
+    this.TitleBGColor=g_JSChartResource.DialogPopKeyboard.TitleBGColor;
+    this.BorderColor=g_JSChartResource.DialogPopKeyboard.BorderColor;
+
+    this.InputBGColor=g_JSChartResource.DialogPopKeyboard.Input.BGColor;
+    this.InputTextColor=g_JSChartResource.DialogPopKeyboard.Input.TextColor;
 
     this.Keyboard=
     {
@@ -66,6 +76,8 @@ function JSPopKeyboard()
         divClose.onmousedown=(e)=>{ this.Hide(); }
         divTitle.appendChild(divClose);
 
+        this.TitleBox={ DivTitle:divTitle, DivName:divInfoText, DivClose:divClose };
+
         var divInput=document.createElement("div");
         divInput.className='jschart_keyboard_Input_Div';
         divDom.appendChild(divInput);
@@ -100,6 +112,9 @@ function JSPopKeyboard()
                 callback:(event, data, chart)=>{ this.OnChartMouseUp(event, data, chart);}
             }
         )
+
+
+        this.UpdateStyle();
 
         document.body.appendChild(divDom);
     }
@@ -294,6 +309,47 @@ function JSPopKeyboard()
     this.OnChartMouseUp=function(event, data, chart)
     {
         this.InputDOM.focus();
+    }
+
+
+    this.UpdateStyle=function()
+    {
+        if (!this.DivDialog) return;
+
+        if (this.BGColor) this.DivDialog.style['background-color']=this.BGColor;
+        if (this.BorderColor) this.DivDialog.style['border-color']=this.BorderColor;
+
+        if (this.InputBGColor) this.InputDOM.style['background-color']=this.InputBGColor;
+        if (this.InputTextColor) this.InputDOM.style['color']=this.InputTextColor;
+
+
+        if (this.TitleBGColor) this.TitleBox.DivTitle.style['background-color']=this.TitleBGColor;
+        if (this.TitleColor) 
+        {
+            this.TitleBox.DivName.style['color']=this.TitleColor;
+            this.TitleBox.DivClose.style['color']=this.TitleColor;
+        }
+        
+    }
+
+    this.ReloadResource=function(option)
+    {
+        this.BGColor=g_JSChartResource.DialogPopKeyboard.BGColor;
+        this.TitleColor=g_JSChartResource.DialogPopKeyboard.TitleColor;
+        this.TitleBGColor=g_JSChartResource.DialogPopKeyboard.TitleBGColor;
+        this.BorderColor=g_JSChartResource.DialogPopKeyboard.BorderColor;
+    
+        this.InputBGColor=g_JSChartResource.DialogPopKeyboard.Input.BGColor;
+        this.InputTextColor=g_JSChartResource.DialogPopKeyboard.Input.TextColor;
+
+        if (this.Keyboard.JSChart) 
+        {
+            this.Keyboard.JSChart.ReloadResource();
+            this.Keyboard.JSChart.Draw();
+        }
+
+        if (!this.DivDialog) return;
+        this.UpdateStyle();
     }
 }
 
