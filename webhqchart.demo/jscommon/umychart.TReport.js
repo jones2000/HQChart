@@ -892,16 +892,16 @@ function JSTReportChartContainer(uielement)
 
 
         //10个字符型 201-299
-        if (IFrameSplitOperator.IsString(item[201])) stock.ReserveString1=item[201];
-        if (IFrameSplitOperator.IsString(item[202])) stock.ReserveString2=item[202];
-        if (IFrameSplitOperator.IsString(item[203])) stock.ReserveString3=item[203];
-        if (IFrameSplitOperator.IsString(item[204])) stock.ReserveString4=item[204];
-        if (IFrameSplitOperator.IsString(item[205])) stock.ReserveString5=item[205];
-        if (IFrameSplitOperator.IsString(item[206])) stock.ReserveString6=item[206];
-        if (IFrameSplitOperator.IsString(item[207])) stock.ReserveString7=item[207];
-        if (IFrameSplitOperator.IsString(item[208])) stock.ReserveString8=item[208];
-        if (IFrameSplitOperator.IsString(item[209])) stock.ReserveString9=item[209];
-        if (IFrameSplitOperator.IsString(item[210])) stock.ReserveString10=item[210];
+        if (IFrameSplitOperator.IsString(item[201]) || IFrameSplitOperator.IsObject(item[201])) stock.ReserveString1=item[201];
+        if (IFrameSplitOperator.IsString(item[202]) || IFrameSplitOperator.IsObject(item[202])) stock.ReserveString2=item[202];
+        if (IFrameSplitOperator.IsString(item[203]) || IFrameSplitOperator.IsObject(item[203])) stock.ReserveString3=item[203];
+        if (IFrameSplitOperator.IsString(item[204]) || IFrameSplitOperator.IsObject(item[204])) stock.ReserveString4=item[204];
+        if (IFrameSplitOperator.IsString(item[205]) || IFrameSplitOperator.IsObject(item[205])) stock.ReserveString5=item[205];
+        if (IFrameSplitOperator.IsString(item[206]) || IFrameSplitOperator.IsObject(item[206])) stock.ReserveString6=item[206];
+        if (IFrameSplitOperator.IsString(item[207]) || IFrameSplitOperator.IsObject(item[207])) stock.ReserveString7=item[207];
+        if (IFrameSplitOperator.IsString(item[208]) || IFrameSplitOperator.IsObject(item[208])) stock.ReserveString8=item[208];
+        if (IFrameSplitOperator.IsString(item[209]) || IFrameSplitOperator.IsObject(item[209])) stock.ReserveString9=item[209];
+        if (IFrameSplitOperator.IsString(item[210]) || IFrameSplitOperator.IsObject(item[210])) stock.ReserveString10=item[210];
     }
 
     
@@ -1268,6 +1268,43 @@ function JSTReportChartContainer(uielement)
         else e.returnValue = false;
     }
 
+    this.MoveSelectedRowEvent=function(oldData, nowData)
+    {
+        var chart=this.ChartPaint[0];
+        if (!chart) return null;
+
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_MOVE_SELECTED_TREPORT_ROW);
+        if (!event || !event.Callback) return;
+
+        if (oldData && nowData)
+        {
+            if (oldData.ExePrice==nowData.ExePrice && oldData.CellType==nowData.CellType) return;
+        }
+
+        if (oldData)
+        {
+            if (chart.GetExePriceDataCallback) oldData.TData=chart.GetExePriceDataCallback(oldData.ExePrice);
+            if (oldData.TData)
+            {
+                if (oldData.CellType==1) oldData.Item=oldData.TData.LeftData;
+                else if (oldData.CellType==2) oldData.Item=oldData.TData.RightData;
+            }
+        }
+
+        if (nowData)
+        {
+            if (chart.GetExePriceDataCallback) nowData.TData=chart.GetExePriceDataCallback(nowData.ExePrice);
+            if (nowData.TData)
+            {
+                if (nowData.CellType==1) nowData.Item=nowData.TData.LeftData;
+                else if (nowData.CellType==2) nowData.Item=nowData.TData.RightData;
+            }
+        }
+
+        var endData={ Old:oldData, Now:nowData, Symbol:this.Symbol };
+        event.Callback(event, endData, this);
+    }
+
     //是否循环翻页 { EnablePageCycle: true/false }
     this.MoveSelectedRow=function(step, option)
     {
@@ -1299,13 +1336,19 @@ function JSTReportChartContainer(uielement)
                 }
             }
         }
-        
+
+        var oldData=null, nowData=null;
+        if (chart.SelectedRow) oldData=CloneData(chart.SelectedRow);    //上一个数据保存下
+
         if (step>0)
         {
             if (selectedIndex<0 || selectedIndex<pageStatus.Start || selectedIndex>pageStatus.End)
             {
                 chart.SelectedRow={ ExePrice:this.Data.Data[pageStatus.Start], CellType:cellType };
                 result.Redraw=true;
+
+                nowData=CloneData(chart.SelectedRow);
+                this.MoveSelectedRowEvent(oldData,nowData);
                 return result;
             }
 
@@ -1331,6 +1374,8 @@ function JSTReportChartContainer(uielement)
             chart.SelectedRow={ ExePrice:this.Data.Data[selectedIndex], CellType:cellType };
             this.Data.YOffset=offset;
 
+            nowData=CloneData(chart.SelectedRow);
+            this.MoveSelectedRowEvent(oldData,nowData);
             return result;
         }
         else if (step<0)
@@ -1339,6 +1384,9 @@ function JSTReportChartContainer(uielement)
             {
                 chart.SelectedRow={ ExePrice:this.Data.Data[pageStatus.End], CellType:cellType };
                 result.Redraw=true;
+
+                nowData=CloneData(chart.SelectedRow);
+                this.MoveSelectedRowEvent(oldData,nowData);
                 return result;
             }
 
@@ -1366,6 +1414,8 @@ function JSTReportChartContainer(uielement)
             chart.SelectedRow={ ExePrice:this.Data.Data[selectedIndex], CellType:cellType };
             this.Data.YOffset=offset;
 
+            nowData=CloneData(chart.SelectedRow);
+            this.MoveSelectedRowEvent(oldData,nowData);
             return result;
         }
 
@@ -2419,10 +2469,17 @@ function ChartTReport()
         var fieldName=MAP_TREPORT_COLUMN_FIELD.get(column.Type);
         if (!fieldName) return;
 
-        var text=data[fieldName];
-        if (!IFrameSplitOperator.IsString(text)) return;
-
-        drawInfo.Text=text;
+        var item=data[fieldName];
+        if (IFrameSplitOperator.IsObject(item))
+        {
+            if (item.Text) drawInfo.Text=item.Text;
+            if (item.TextColor) drawInfo.TextColor=item.TextColor;
+            if (item.BGColor) drawInfo.BGColor=item.BGColor;
+        }
+        else if (IFrameSplitOperator.IsString(item))
+        {
+            drawInfo.Text=item;
+        }
     }
 
     this.GetFlashBGData=function(drawInfo, exePriceData, columnType, cellType)

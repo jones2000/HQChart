@@ -2615,6 +2615,7 @@ var JSCHART_EVENT_ID=
     ON_RCLICK_TREPORT_HEADER:125,             //右键点击T型报价表头
     ON_TREPORT_LOCAL_SORT:126,                //T型报价列表本地排序
     ON_CLICK_TREPORT_ROW:127,                 //左键点击点击T型报价列表
+    ON_MOVE_SELECTED_TREPORT_ROW:128,      //选中行变动
 
     ON_DRAW_REPORT_ROW_BG:140,              //报价列表整行背景
     ON_CLICK_REPORT_CHECKBOX:141,           //报价列表checkbox
@@ -48324,6 +48325,11 @@ IFrameSplitOperator.IsVaild=function(value)
 IFrameSplitOperator.IsUndefined=function(value)
 {
     return value===undefined;
+}
+
+IFrameSplitOperator.IsObject=function(value)
+{
+    return value instanceof Object;
 }
 
 IFrameSplitOperator.RemoveZero=function(strValue)
