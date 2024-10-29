@@ -3098,7 +3098,7 @@ function JSReportChartContainer(uielement)
         var scrollbar=chart.VScrollbar;
         if (!scrollbar) return;
 
-        if (IFrameSplitOperator.IsBool(option.Enable)) scrollbar.Enable=option.Enable;
+        scrollbar.SetOption(option);
     }
 
     this.SetSelectedTab=function(index, opiton)
@@ -6328,10 +6328,17 @@ function ChartReport()
         var fieldName=MAP_COLUMN_FIELD.get(column.Type);
         if (!fieldName) return;
 
-        var text=data[fieldName];
-        if (!IFrameSplitOperator.IsString(text)) return;
-
-        drawInfo.Text=text;
+        var item=data[fieldName];
+        if (IFrameSplitOperator.IsObject(item))
+        {
+            if (item.Text) drawInfo.Text=item.Text;
+            if (item.TextColor) drawInfo.TextColor=item.TextColor;
+            if (item.BGColor) drawInfo.BGColor=item.BGColor;
+        }
+        else if (IFrameSplitOperator.IsString(item))
+        {
+            drawInfo.Text=item;
+        }
     }
 
     this.FormaTimeDrawInfo=function(column, stock, drawInfo, data)
@@ -8349,15 +8356,37 @@ function ChartVScrollbar()
     this.LastStatus={ Draw:false, };    
     this.GlobalOption; 
 
+    this.Style=0;   //0=滚动条+按钮  1=滚动条
+
     this.ScrollBarHeight=g_JSChartResource.Report.VScrollbar.ScrollBarHeight;
     this.ButtonColor=g_JSChartResource.Report.VScrollbar.ButtonColor;
     this.BarColor=g_JSChartResource.Report.VScrollbar.BarColor;
     this.BorderColor=g_JSChartResource.Report.VScrollbar.BorderColor;
     this.BGColor=g_JSChartResource.Report.VScrollbar.BGColor;
-    this.Mergin={ Left:2, Right:2, Top:2, Bottom:2 };
+    this.Margin={ Left:2, Right:2, Top:2, Bottom:2 };
     this.BarWithConfig={ Size:g_JSChartResource.Report.VScrollbar.BarWidth.Size };
 
     this.RectScroll={ Top:null, Bottom:null, Bar:null, Client:null };   //滚动条区域  
+
+    //this.BarWithConfig.Size=2;
+    //this.Mergin={ Left:1, Right:1, Top:1, Bottom:1 };
+
+    this.SetOption=function(option)
+    {
+        if (!option) return;
+
+        if (IFrameSplitOperator.IsBool(option.Enable)) this.Enable=option.Enable;
+        if (IFrameSplitOperator.IsNumber(option.Style)) this.Style=option.Style;
+        if (IFrameSplitOperator.IsNumber(option.BarWidth)) this.BarWithConfig.Size=option.BarWidth;
+        if (option.Margin)
+        {
+            var item=option.Margin;
+            if (IFrameSplitOperator.IsNumber(item.Top)) this.Margin.Top=item.Top;
+            if (IFrameSplitOperator.IsNumber(item.Bottom)) this.Margin.Bottom=item.Bottom;
+            if (IFrameSplitOperator.IsNumber(item.Left)) this.Margin.Left=item.Left;
+            if (IFrameSplitOperator.IsNumber(item.Right)) this.Margin.Right=item.Right;
+        }
+    }
     
     this.ReloadResource=function(resource)
     {
@@ -8373,11 +8402,12 @@ function ChartVScrollbar()
     {
         var pixelRatio=GetDevicePixelRatio();
 
-        var width=this.BarWithConfig.Size*pixelRatio+this.Mergin.Left+this.Mergin.Right;
+        var width=this.BarWithConfig.Size*pixelRatio+this.Margin.Left+this.Margin.Right;
         this.ButtonSize=Math.min(25, width);
     }
 
-    this.DrawScrollbar=function(left, top, right, bottom)
+    //不带上下按钮的滚动条样式
+    this.DrawScrollbarStyle2=function(left, top, right, bottom)
     {
         this.LastStatus.Draw=false;
         this.RectScroll={ Left:null, Right:null, Bar:null, Client:null };
@@ -8396,11 +8426,61 @@ function ChartVScrollbar()
         this.MaxPos=dataCount;
         this.CurrentPos=xOffset;
 
-        var rtTop={ Right:right-this.Mergin.Right, Top:top+this.Mergin.Top, Width:buttonSize, Height:buttonSize };
+        var scrollTop=top+this.Margin.Top+2;
+        var scrollBottom=bottom-this.Margin.Bottom-2;
+        var centerHeight=scrollBottom-scrollTop;
+        var value = centerHeight - this.ScrollBarHeight;
+	    var yOffset = (value * this.CurrentPos) / this.MaxPos;
+	    var y = scrollTop + 2 + yOffset;
+
+        var rtBar = {Right:right-this.Margin.Right, Top:y, Width:buttonSize, Height: this.ScrollBarHeight };
+        rtBar.Left=rtBar.Right-buttonSize;
+        rtBar.Bottom=rtBar.Top+rtBar.Height;
+        if (rtBar.Bottom>scrollBottom-2) 
+        {
+            rtBar.Bottom=scrollBottom-2;
+            rtBar.Top=rtBar.Bottom-rtBar.Height;
+        }
+
+        this.RectScroll.Bar=rtBar;
+        this.RectScroll.Client={ Left:rtBar.Left, Right: rtBar.Right, Top:scrollTop, Bottom:scrollBottom };
+
+        var rtBG={ Right:right, Top:top, Bottom:bottom, Width:buttonSize+this.Margin.Right+this.Margin.Left };
+        rtBG.Left=rtBG.Right-rtBG.Width;
+        rtBG.Height=rtBG.Bottom-rtBG.Top;
+        this.Canvas.fillStyle=this.BGColor;
+        this.Canvas.fillRect(rtBG.Left,rtBG.Top,rtBG.Width,rtBG.Height);   
+
+        this.Canvas.fillStyle=this.BarColor;
+        this.Canvas.fillRect(rtBar.Left,rtBar.Top,rtBar.Width,rtBar.Height);
+
+        this.LastStatus.Draw=true;
+    }
+
+    this.DrawScrollbarStyle=function(left, top, right, bottom)
+    {
+        this.LastStatus.Draw=false;
+        this.RectScroll={ Left:null, Right:null, Bar:null, Client:null };
+        if (!this.Enable) return;
+
+        var isShow=this.IsShowCallback();
+        if (!isShow) return;
+        
+        var pageInfo=this.Report.GetCurrentPageStatus();
+        if (pageInfo.IsSinglePage) return;
+
+        var xOffset=pageInfo.Start;
+        var dataCount=pageInfo.DataCount-pageInfo.PageSize;
+        var buttonSize=this.ButtonSize;
+
+        this.MaxPos=dataCount;
+        this.CurrentPos=xOffset;
+
+        var rtTop={ Right:right-this.Margin.Right, Top:top+this.Margin.Top, Width:buttonSize, Height:buttonSize };
         rtTop.Left=rtTop.Right-buttonSize;
         rtTop.Bottom=rtTop.Top+buttonSize;
 
-        var rtBottom={ Right:right-this.Mergin.Right, Bottom:bottom-this.Mergin.Bottom, Width:buttonSize, Height:buttonSize };
+        var rtBottom={ Right:right-this.Margin.Right, Bottom:bottom-this.Margin.Bottom, Width:buttonSize, Height:buttonSize };
         rtBottom.Left=rtBottom.Right-buttonSize;
         rtBottom.Top=rtBottom.Bottom-buttonSize;
 
@@ -8409,7 +8489,7 @@ function ChartVScrollbar()
 	    var yOffset = (value * this.CurrentPos) / this.MaxPos;
 	    var y = rtTop.Bottom + 2 + yOffset;
 
-        var rtBar = {Right:right-this.Mergin.Right, Top:y, Width:buttonSize, Height: this.ScrollBarHeight };
+        var rtBar = {Right:right-this.Margin.Right, Top:y, Width:buttonSize, Height: this.ScrollBarHeight };
         rtBar.Left=rtBar.Right-buttonSize;
         rtBar.Bottom=rtBar.Top+rtBar.Height;
         if (rtBar.Bottom>rtBottom.Top-2) 
@@ -8423,7 +8503,7 @@ function ChartVScrollbar()
         this.RectScroll.Bar=rtBar;
         this.RectScroll.Client={ Left:rtTop.Left, Right: rtTop.Right, Top:rtTop.Bottom, Bottom:rtBottom.Top };
 
-        var rtBG={ Right:right, Top:top, Bottom:bottom, Width:buttonSize+this.Mergin.Right+this.Mergin.Left };
+        var rtBG={ Right:right, Top:top, Bottom:bottom, Width:buttonSize+this.Margin.Right+this.Margin.Left };
         rtBG.Left=rtBG.Right-rtBG.Width;
         rtBG.Height=rtBG.Bottom-rtBG.Top;
         this.Canvas.fillStyle=this.BGColor;
@@ -8441,6 +8521,14 @@ function ChartVScrollbar()
         this.Canvas.fillRect(rtBar.Left,rtBar.Top,rtBar.Width,rtBar.Height);
 
         this.LastStatus.Draw=true;
+    }
+
+    this.DrawScrollbar=function(left, top, right, bottom)
+    {
+        if (this.Style==1) 
+            this.DrawScrollbarStyle2(left, top, right, bottom);
+        else
+            this.DrawScrollbarStyle(left, top, right, bottom);
     }
 
     this.OnMouseDown=function(x,y, e)

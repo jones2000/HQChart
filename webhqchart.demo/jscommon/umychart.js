@@ -1136,13 +1136,9 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
                     {
                         let indexInfo = scriptData.Get(item.Index);
                         if (!indexInfo) continue;
+                        JSIndexScript.ModifyAttribute(indexInfo, item);
                         indexInfo.ID=item.Index;
-                        var args=indexInfo.Args;
-                        if (item.Args) args=item.Args;
-                        if (item.IsShortTitle) indexInfo.IsShortTitle=item.IsShortTitle;
-                        if (item.TitleFont) indexInfo.TitleFont=item.TitleFont;
-                        if (IFrameSplitOperator.IsBool(item.IsSync)) indexInfo.IsSync=item.IsSync;
-                        chart.WindowIndex[index] = new ScriptIndex(indexInfo.Name, indexInfo.Script, args,indexInfo);    //脚本执行
+                        chart.WindowIndex[index] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args,indexInfo);    //脚本执行
                         if (item.StringFormat>0) chart.WindowIndex[index].StringFormat=item.StringFormat;
                         if (item.FloatPrecision>=0) chart.WindowIndex[index].FloatPrecision=item.FloatPrecision;
                     }

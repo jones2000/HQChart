@@ -773,12 +773,9 @@ function JSChart(element)
                 {
                     let indexInfo = scriptData.Get(item.Index);
                     if (!indexInfo) continue;
-                    var args = indexInfo.Args;
-                    if (item.Args) args = item.Args;
-                    if (item.Lock) indexInfo.Lock = item.Lock;
-                    if (item.TitleFont) indexInfo.TitleFont=item.TitleFont;
-                    if (IFrameSplitOperator.IsNumber(item.IsShortTitle)) indexInfo.IsShortTitle=item.IsShortTitle;
-                    chart.WindowIndex[2+i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, args, indexInfo);    //脚本执行
+                    JSIndexScript.ModifyAttribute(indexInfo, item);
+                    indexInfo.ID=item.Index;
+                    chart.WindowIndex[2+i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args, indexInfo);    //脚本执行
                     if (item.StringFormat > 0) chart.WindowIndex[index].StringFormat = item.StringFormat;
                     if (item.FloatPrecision >= 0) chart.WindowIndex[index].FloatPrecision = item.FloatPrecision;
                 }
