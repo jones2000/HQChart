@@ -212,6 +212,14 @@ HQData.Minute_RequestMinuteData=function(data, callback)
             stockItem.beforeinfo=beforeinfo;
         }
 
+        /* 测试用 这里可以修改数据
+        for(var i=0;i<srcStock.minute.length;++i)
+        {
+            var item=srcStock.minute[i];
+            if (item.amount<1000000) item.amount*=100000;
+        }
+        */
+
         var hqchartData={code:0, stock:[stockItem] };
     
 
@@ -1192,6 +1200,10 @@ HQData.Report_RequestStockData=function(data, callback)
             extendData[6]=(Math.round(Math.random()*60))/100;
             extendData[7]=(Math.round(Math.random()*60))/100;
             extendData[8]=(Math.round(Math.random()*60))/100;
+
+
+            newItem[101]=105.0;
+            newItem[201]=`A-[${HQData.GetRandomTestData(-90,90)}]-B`
              
 
             item.Data=newItem;
@@ -1482,17 +1494,17 @@ HQData.Keyboard_RequestSymbolList=function(data, callback)
     arySymbol.push( { Symbol:"02", Name:"分价表", TypeName:"功能键", Priority:1, Color:"rgb(220,20,60)" ,Data:{ PageName:"分价表", Type:2 }} );
     arySymbol.push( { Symbol:"06", Name:"自选股", TypeName:"功能键", Priority:1 , Color:"rgb(220,20,60)", Data:{ PageName:"自选股", Type:2 }} );
 
-    arySymbol.push( { Symbol:"MACD", Name:"平滑异同平均线", TypeName:"指标", Priority:2 , Color:"rgb(0,0,255)", Data:{ Index:"MACD", Type:1 }} );
-    arySymbol.push( { Symbol:"RSI", Name:"相对强弱指标", TypeName:"指标", Priority:2, Color:"rgb(0,0,255)",Data:{ Index:"RSI", Type:1 }}  );
-    arySymbol.push( { Symbol:"MA", Name:"均线", TypeName:"指标", Priority:2, Color:"rgb(0,0,255)" ,Data:{ Index:"MA", Type:1 } } );
-    arySymbol.push( { Symbol:"BOLL", Name:"布林线", TypeName:"指标", Priority:2, Color:"rgb(0,0,255)" ,Data:{ Index:"BOLL", Type:1 } } );
-    arySymbol.push( { Symbol:"KDJ", Name:"随机指标", TypeName:"指标", Priority:2, Color:"rgb(0,0,255)" ,Data:{ Index:"KDJ", Type:1 } } );
-    arySymbol.push( { Symbol:"SKDJ", Name:"慢速随机指标", TypeName:"指标", Priority:2, Color:"rgb(0,0,255)" ,Data:{ Index:"SKDJ", Type:1 } } );
-    arySymbol.push( { Symbol:"KD", Name:"随机指标KD", TypeName:"指标", Priority:2, Color:"rgb(0,0,255)" ,Data:{ Index:"KD", Type:1 } } );
-    arySymbol.push( { Symbol:"MARSI", Name:"相对强弱平均线", TypeName:"指标", Priority:2, Color:"rgb(0,0,255)" ,Data:{ Index:"MARSI", Type:1 } } );
-    arySymbol.push( { Symbol:"VMACD", Name:"量平滑异同平均", TypeName:"指标", Priority:2, Color:"rgb(0,0,255)" ,Data:{ Index:"VMACD", Type:1 } } );
-    arySymbol.push( { Symbol:"AMO", Name:"成交金额", TypeName:"指标", Priority:2, Color:"rgb(0,0,255)" ,Data:{ Index:"AMO", Type:1 } } );
-    arySymbol.push( { Symbol:"SQJZ", Name:"神奇九转", TypeName:"指标", Priority:2, Color:"rgb(0,0,255)" ,Data:{ Index:"SQJZ", Type:1 } } );
+    arySymbol.push( { Symbol:"MACD", Name:"平滑异同平均线", TypeName:"指标", Priority:2 , Color:"rgb(0,144,255)", Data:{ Index:"MACD", Type:1 }} );
+    arySymbol.push( { Symbol:"RSI", Name:"相对强弱指标", TypeName:"指标", Priority:2, Color:"rgb(0,144,255)",Data:{ Index:"RSI", Type:1 }}  );
+    arySymbol.push( { Symbol:"MA", Name:"均线", TypeName:"指标", Priority:2, Color:"rgb(0,144,255)" ,Data:{ Index:"MA", Type:1 } } );
+    arySymbol.push( { Symbol:"BOLL", Name:"布林线", TypeName:"指标", Priority:2, Color:"rgb(0,144,255)" ,Data:{ Index:"BOLL", Type:1 } } );
+    arySymbol.push( { Symbol:"KDJ", Name:"随机指标", TypeName:"指标", Priority:2, Color:"rgb(0,144,255)" ,Data:{ Index:"KDJ", Type:1 } } );
+    arySymbol.push( { Symbol:"SKDJ", Name:"慢速随机指标", TypeName:"指标", Priority:2, Color:"rgb(0,144,255)" ,Data:{ Index:"SKDJ", Type:1 } } );
+    arySymbol.push( { Symbol:"KD", Name:"随机指标KD", TypeName:"指标", Priority:2, Color:"rgb(0,144,255)" ,Data:{ Index:"KD", Type:1 } } );
+    arySymbol.push( { Symbol:"MARSI", Name:"相对强弱平均线", TypeName:"指标", Priority:2, Color:"rgb(0,144,255)" ,Data:{ Index:"MARSI", Type:1 } } );
+    arySymbol.push( { Symbol:"VMACD", Name:"量平滑异同平均", TypeName:"指标", Priority:2, Color:"rgb(0,144,255)" ,Data:{ Index:"VMACD", Type:1 } } );
+    arySymbol.push( { Symbol:"AMO", Name:"成交金额", TypeName:"指标", Priority:2, Color:"rgb(0,144,255)" ,Data:{ Index:"AMO", Type:1 } } );
+    arySymbol.push( { Symbol:"SQJZ", Name:"神奇九转", TypeName:"指标", Priority:2, Color:"rgb(0,144,255)" ,Data:{ Index:"SQJZ", Type:1 } } );
     
     callback(arySymbol);
 }

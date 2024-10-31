@@ -411,6 +411,21 @@ function GetBlackStyle()
             TitleBGColor:"rgb(200, 66, 69)",
         },
 
+        FloatTooltip:
+        {
+            BGColor:'rgb(20,20,20)',            //背景色
+            BorderColor:'rgb(170,170,170)',     //边框颜色
+            
+            VolColor:"rgb(255, 185, 15)",       //标题成交量
+            AmountColor:"rgb(210,210,210)",      //成交金额
+            DateTimeColor:'rgb(210,210,210)',
+            TurnoverRateColor:'rgb(43,54,69)',       //换手率
+            PositionColor:"rgb(255,0,255)",            //持仓
+
+            TextColor:"rgb(210,210,210)",             //数值名称
+            ValueColor:"rgb(210,210,210)",            //数值
+        },
+
         DialogSelectRect:
         {
             BGColor:'rgb(20,20,20)',            //背景色
