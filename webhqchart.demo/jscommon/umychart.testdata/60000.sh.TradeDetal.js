@@ -48,6 +48,10 @@ var TEST_TRADE_DETAL_DATA={
                         {
                             "type": 6,
                             "typeexplain": "单只标的证券的当日融资买入数量达到当日该证券总交易量的50％以上"
+                        },
+                        {
+                            "type": 3,
+                            "typeexplain": "跌幅偏离值达7%的证券"
                         }
                     ],
                     "fweek": {

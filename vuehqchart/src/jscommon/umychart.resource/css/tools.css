@@ -1873,7 +1873,7 @@ input[type="color"] {
 
 .UMyChart_Tooltip_Float_Table
 {
-    border-spacing: 2px;
+    border-spacing: 3px;
     user-select: none;
     font-size:12px;
 }
@@ -1891,6 +1891,11 @@ input[type="color"] {
 .UMyChart_Tooltip_Float_Text_Td
 {
     min-width:80px;
+    max-width: 500px;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .UMyChart_Tooltip_Float_Title_Span
@@ -1907,8 +1912,15 @@ input[type="color"] {
 
 .UMyChart_Tooltip_Float_Text2_Span
 {
-    color: rgb(230,230,230);
+    margin-left: 1px;
 }
+
+.UMyChart_Tooltip_Float_Text3_Span
+{
+    margin-left: 5px;
+    
+}
+
 
 
 

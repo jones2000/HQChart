@@ -945,7 +945,7 @@ function JSFloatTooltip()
     this.Style=0;       //0=一行一个， 1=2行一个
 
     this.HQChart=null;
-    this.MaxRowCount=20;
+    this.MaxRowCount=25;
 
     this.UpColor=g_JSChartResource.UpTextColor;
     this.DownColor=g_JSChartResource.DownTextColor;
@@ -964,6 +964,13 @@ function JSFloatTooltip()
     this.DateTimeColor=g_JSChartResource.FloatTooltip.DateTimeColor;
     this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
 
+    this.ValueAlign=
+    {
+        Left:"UMyChart_Tooltip_Float_Text2_Span",       //左对齐
+        MarginLeft:'UMyChart_Tooltip_Float_Text3_Span',
+        Right:"UMyChart_Tooltip_Float_Text_Span",
+    }
+
     this.AryData=[];    //输出文字信息
     this.AryText=[];    //表格tr
 
@@ -976,6 +983,7 @@ function JSFloatTooltip()
         if (option)
         {
             if (IFrameSplitOperator.IsNumber(option.Style)) this.Style=option.Style;
+            if (IFrameSplitOperator.IsNumber(option.MaxRowCount)) this.MaxRowCount=option.MaxRowCount;
         }
     }
 
@@ -1125,9 +1133,41 @@ function JSFloatTooltip()
             var tooltipData=data.Tooltip;
             if (!tooltipData) return;
     
-            if (tooltipData.Type==0)
+            if (tooltipData.Type==0)    //K线信息
             {
                 this.UpdateKLineToolitp(data);
+            }
+            else if (tooltipData.Type==1)   //信息地雷
+            {
+                this.UpdateKLineInfoTooltip(data);
+            }
+            else if (tooltipData.Type==2)   //交易指标
+            {
+                this.UpdateTradeIndexTooltip(data);
+            }
+            else if (tooltipData.Type==3)   //分时图异动信息
+            {
+                this.UpdateMinuteInfoTooltip(data);
+            }
+            else if (tooltipData.Type==4)   //ChartMultiSVGIconV2 图标信息
+            {
+                this.UpdatMultiSVGIconV2Tooltip(data);
+            }
+            else if (tooltipData.Type==5)   //ChartOX 信息
+            {
+                this.UpdatChartOXTooltip(data);
+            }
+            else if (tooltipData.Type==6)   //散点图
+            {
+                this.UpdatChartScatterPlotTooltip(data);
+            }
+            else if (tooltipData.Type==7)   //ChartDrawSVG 老版本 单行
+            {
+                this.UpdateChartDrawSVGTooltip(data);
+            }
+            else if (tooltipData.Type==8)   //ChartDrawSVG 新版本
+            {
+                this.UpdateChartDrawSVGV2Tooltip(data);
             }
         }
         else if (data.DataType==2)  //更新实时行情数据
@@ -1148,6 +1188,7 @@ function JSFloatTooltip()
         {
             this.KItemCache= kItem;
             this.KItemCacheID=strKItem;
+            this.AryText=this.GetFormatKLineTooltipText(this.KItemCache);
             bUpdata=true;
         }
 
@@ -1157,6 +1198,7 @@ function JSFloatTooltip()
         }
     }
 
+    //K线提示信息
     this.UpdateKLineToolitp=function(data)
     {
         var tooltipData=data.Tooltip;
@@ -1177,6 +1219,7 @@ function JSFloatTooltip()
         {
             this.KItemCache= kItem;
             this.KItemCacheID=strKItem;
+            this.AryText=this.GetFormatKLineTooltipText(this.KItemCache);
             bUpdata=true;
         }
         
@@ -1193,25 +1236,209 @@ function JSFloatTooltip()
         }
     }
 
+    //ChartDrawSVG 老版本 单行
+    this.UpdateChartDrawSVGTooltip=function(data)
+    {
+        var tooltipData=data.Tooltip;
+        if (!tooltipData.Data || !tooltipData.Data.Item || !tooltipData.Data.Item.Tooltip) return;
+        var item=tooltipData.Data.Item.Tooltip;
+
+        var aryText=[]
+        var rowItem={ Text:"", HTMLTitle:item.Text, Color:this.ValueColor, IsMergeCell:true };
+        aryText.push(rowItem);
+
+        this.AryText=aryText;
+        this.UpdateTableDOM();
+
+        if (data.Point)
+        {
+            var x=data.Point.X;
+            var y=data.Point.Y+data.Point.YMove;
+            this.Show(x, y);
+        }
+    }
+
+    //ChartDrawSVG 新版本
+    this.UpdateChartDrawSVGV2Tooltip=function(data)
+    {
+        var tooltipData=data.Tooltip;
+        if (!tooltipData.Data || !tooltipData.Data.Item || !tooltipData.Data.Item.Tooltip) return;
+        var aryData=tooltipData.Data.Item.Tooltip.AryText;
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryData)) return;
+        var aryText=[];
+        for(var i=0;i<aryData.length;++i)
+        {
+            var item=aryData[i];
+            var rowItem={ Title:"", Text:"", Color:this.ValueColor, ClassName:this.ValueAlign.MarginLeft };
+            if (item.TextColor) rowItem.Color=item.TextColor;
+            if (item.Title) rowItem.Title=item.Title;
+            if (item.Text) rowItem.Text=item.Text;
+
+            aryText.push(rowItem);
+        }
+
+        this.AryText=aryText;
+
+        this.UpdateTableDOM();
+
+        if (data.Point)
+        {
+            var x=data.Point.X;
+            var y=data.Point.Y+data.Point.YMove;
+            this.Show(x, y);
+        }
+    }
+
+    //交易指标
+    this.UpdateTradeIndexTooltip=function(data)
+    {
+        var tooltipData=data.Tooltip;
+        if (!tooltipData.Data || !tooltipData.Data.Data) return;
+
+        var item=tooltipData.Data.Data;
+        var kItem=item.KData;
+        var aryText=[];
+
+        var rowItem={ Title:"日期",Text:IFrameSplitOperator.FormatDateString(kItem.Date,"YYYY-MM-DD"), Color:this.ValueColor };
+        aryText.push(rowItem);
+
+        if (IFrameSplitOperator.IsNumber(kItem.Time))
+        {
+            var format="HH:MM";
+            var rowItem={ Title:"时间",Text:IFrameSplitOperator.FormatTimeString(kItem.Time,format), Color:this.ValueColor };
+            aryText.push(rowItem);
+        }
+
+        var rowItem={ Title:"指标名称:", Text:`${item.Name}${item.Param}`, Color:this.ValueColor };
+        aryText.push(rowItem);
+
+        var rowItem={ Title:"买卖方向:", Text:`${item.Type==1?"买入":"卖出"}`, Color:item.Type==1?this.UpColor:this.DownColor };
+        aryText.push(rowItem);
+
+        var rowItem={  };
+        
+        this.AryText=aryText;
+
+        this.UpdateTableDOM();
+
+        if (data.Point)
+        {
+            var x=data.Point.X;
+            var y=data.Point.Y+data.Point.YMove;
+            this.Show(x, y);
+        }
+    }
+
+    //分时图异动信息
+    this.UpdateMinuteInfoTooltip=function(data)
+    {
+        var tooltipData=data.Tooltip;
+        if (!tooltipData.Data || !tooltipData.Data.Data || !tooltipData.Data.Data.Item) return;
+        var item=tooltipData.Data.Data.Item;
+
+        var aryText=[];
+        var rowItem={ Title:"日期",Text:IFrameSplitOperator.FormatDateString(item.Date,"YYYY-MM-DD"), Color:this.ValueColor };
+        aryText.push(rowItem);
+
+        var format="HH:MM";
+        var rowItem={ Title:"时间",Text:IFrameSplitOperator.FormatTimeString(item.Time,format), Color:this.ValueColor };
+        aryText.push(rowItem);
+
+        var rowItem={ Title:"异动", Text:item.Title, Color:this.ValueColor };
+        aryText.push(rowItem);
+        
+        this.AryText=aryText;
+        this.UpdateTableDOM();
+
+        if (data.Point)
+        {
+            var x=data.Point.X;
+            var y=data.Point.Y+data.Point.YMove;
+            this.Show(x, y);
+        }
+    }
+
+    //ChartMultiSVGIconV2 图标信息
+    this.UpdatMultiSVGIconV2Tooltip=function(data)
+    {
+        var tooltipData=data.Tooltip;
+        if (!tooltipData.Data || !tooltipData.Data.Item) return;
+
+        var item=tooltipData.Data.Item;
+        var aryText=[];
+
+        var rowItem={ Text:"", HTMLTitle:item.Text, Color:this.ValueColor, IsMergeCell:true };
+        aryText.push(rowItem);
+
+        this.AryText=aryText;
+        this.UpdateTableDOM();
+
+        if (data.Point)
+        {
+            var x=data.Point.X;
+            var y=data.Point.Y+data.Point.YMove;
+            this.Show(x, y);
+        }
+    }
+
+    //ChartOX 信息
+    this.UpdatChartOXTooltip=function(data)
+    {
+        var tooltipData=data.Tooltip;
+        if (!tooltipData.Data || !tooltipData.Data.Data) return;
+
+        var item=tooltipData.Data.Data;
+        var period=this.HQChart.Period;
+        var aryText=[];
+        if (ChartData.IsDayPeriod(period, true))
+        {
+            var strStartDate=IFrameSplitOperator.FormatDateString(item.Start.Date,"YYYY-MM-DD");
+            var strEndDate=IFrameSplitOperator.FormatDateString(item.End.Date,"YYYY-MM-DD");
+           
+            aryText.push({ Title:"起始时间",Text:strStartDate, Color:this.ValueColor });
+            aryText.push({ Title:"结束时间",Text:strEndDate, Color:this.ValueColor });
+        }
+        else if (ChartData.IsMinutePeriod(period, true))
+        {
+            var strStartDate=IFrameSplitOperator.FormatDateString(item.Start.Date);
+            var strStartTime=IFrameSplitOperator.FormatTimeString(item.Start.Time,"HH:MM");
+
+            var strEndDate=IFrameSplitOperator.FormatDateString(item.End.Date);
+            var strEndTime=IFrameSplitOperator.FormatTimeString(item.End.Time,"HH:MM");
+
+            aryText.push({ Title:"起始时间",Text:`${strStartDate} ${strStartTime}`, Color:this.ValueColor });
+            aryText.push({ Title:"结束时间",Text:`${strEndDate} ${strEndTime}`, Color:this.ValueColor });
+        }
+
+        this.AryText=aryText;
+        this.UpdateTableDOM();
+
+        if (data.Point)
+        {
+            var x=data.Point.X;
+            var y=data.Point.Y+data.Point.YMove;
+            this.Show(x, y);
+        }
+    }
+ 
     this.UpdateTableDOM=function()
     {
-        if (!this.KItemCache) return;
-
-        if (this.HQChart.ClassName=='KLineChartContainer')
-            this.AryText=this.GetFormatKLineTooltipText(this.KItemCache);
-        else
-            return;
-
         var index=0;
         for(index=0;index<this.AryText.length && index<this.MaxRowCount;++index)
         {
             var outItem=this.AryText[index];
             var item=this.AryData[index];
 
-            item.TitleSpan.innerText=outItem.Title;
+            if (outItem.HTMLTitle) item.TitleSpan.innerHTML=outItem.HTMLTitle
+            else item.TitleSpan.innerText=outItem.Title;
+
             item.TitleSpan.style.color=this.TextColor;
-            item.TextSpan.innerText=outItem.Text;
+
+            if (outItem.HTMLText) item.TextSpan.innerHTML=outItem.HTMLText
+            else item.TextSpan.innerText=outItem.Text;
+
             item.TextSpan.style.color=outItem.Color;
+            item.TextTd.style.color=outItem.Color;
 
             if (outItem.ClassName) 
             {
@@ -1219,11 +1446,23 @@ function JSFloatTooltip()
             }
             else
             {
-                if (item.TextSpan.className!="UMyChart_Tooltip_Float_Text_Span") item.TextSpan.className="UMyChart_Tooltip_Float_Text_Span"
+                if (item.TextSpan.className!=this.ValueAlign.Right) item.TextSpan.className=this.ValueAlign.Right;
+            }
+
+            if (outItem.IsMergeCell)    //合并单元格
+            {
+                item.TitleTd.colspan=2;
+                item.TextTd.style.display="none";
+            }
+            else
+            {
+                if (item.TitleTd.colspan!=1) item.TitleTd.colspan=1;
+                item.TextTd.style.display="";
             }
            
             item.Tr.style.display="";
-            if (item.Tr2) item.Tr2.style.display="";
+            if (item.Tr2) item.Tr2.style.display="none";
+
         }
 
         for( ; index<this.MaxRowCount; ++index)
@@ -1234,6 +1473,7 @@ function JSFloatTooltip()
         }
     }
 
+    
     this.GetFormatKLineTooltipText=function(kItem)
     {
         var data=kItem.Item;
@@ -1250,7 +1490,7 @@ function JSFloatTooltip()
 
         var overlayItem=null;
         if (kItem.IsOverlay)
-            overlayItem={ Title:"", Text:kItem.Name, Color:this.TextColor, ClassName:"UMyChart_Tooltip_Float_Text2_Span" };
+            overlayItem={ Title:"", Text:kItem.Name, Color:this.TextColor, ClassName:this.ValueAlign.Left };
         
         
         var yClose=data.YClose; //昨收价|昨结算价
@@ -1297,6 +1537,245 @@ function JSFloatTooltip()
     }
 
 
+    //信息地雷
+    this.UpdateKLineInfoTooltip=function(data)
+    {
+        var tooltipData=data.Tooltip;
+        var symbol=data.Symbol;
+        var defaultfloatPrecision=GetfloatPrecision(symbol);//价格小数位数
+
+        var aryData=tooltipData.Data.Data;
+        var aryText=[]; //输出内容
+        for(var i=0;i<aryData.length;++i)
+        {
+            var item=aryData[i];
+            var infoType=item.InfoType;
+            switch(infoType)
+            {
+                case KLINE_INFO_TYPE.BLOCKTRADING:
+                    this.FormatBlockTradingText(item, defaultfloatPrecision, aryText);
+                    break;
+                case KLINE_INFO_TYPE.TRADEDETAIL:
+                    this.FormatTradeDetailText(item,defaultfloatPrecision,aryText);
+                    break;
+                case KLINE_INFO_TYPE.RESEARCH:
+                    this.FormatResearchText(item, aryText);
+                    break;
+                case KLINE_INFO_TYPE.PFORECAST:
+                    this.FormatPerformanceForecastText(item,aryText);
+                    break;
+                default:
+                    this.FormatDefaultKLineInfoText(item, aryText);
+                    break;
+            }
+        }
+
+        var event=this.HQChart.GetEventCallback(JSCHART_EVENT_ID.ON_FORMAT_KLINE_INFO_FLOAT_TOOLTIP);
+        if (event && event.Callback)
+        {
+            var sendData={ AryText:aryText, Data:data, HQChart:this.HQChart };
+            event.Callback(event, sendData, this);
+        }
+
+        this.AryText=aryText;
+
+        this.UpdateTableDOM();
+
+        if (data.Point)
+        {
+            var x=data.Point.X;
+            var y=data.Point.Y+data.Point.YMove;
+            this.Show(x, y);
+        }
+    }
+
+    this.UpdatChartScatterPlotTooltip=function(data)
+    {
+        var tooltipData=data.Tooltip;
+        if (!tooltipData.Data || !tooltipData.Data.Data || !tooltipData.Data.Data.Tooltip) return;
+        var aryData=tooltipData.Data.Data.Tooltip;
+        var aryText=[]; //输出内容
+
+        for(var i=0;i<aryData.length;++i)
+        {
+            var item=aryData[i];
+            if (!item.Text && !item.Title) continue;
+            var rowItem={ Title:"", Text:"", Color:this.ValueColor };
+            if (item.Title) rowItem.Title=item.Title;
+            if (item.Text) rowItem.Text=item.Text;
+            if (item.TextColor) rowItem.Color=item.TextColor;
+
+            aryText.push(rowItem);
+        }
+
+        this.AryText=aryText;
+        this.UpdateTableDOM();
+
+        if (data.Point)
+        {
+            var x=data.Point.X;
+            var y=data.Point.Y+data.Point.YMove;
+            this.Show(x, y);
+        }
+    }
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////////
+    // 公告数据格式化
+
+    this.FormatDefaultKLineInfoText=function(item, aryOut)
+    {
+        var title;
+        var strDate=IFrameSplitOperator.FormatDateString(item.Date,"YYYY-MM-DD");
+        if (IFrameSplitOperator.IsNumber(item.Time)) 
+        {
+            var strTime=IFrameSplitOperator.FormatTimeString(item.Time);
+            title=`${strDate} ${strTime}`;
+        }
+        else
+        {
+            title=strDate;
+        }
+
+        var item=
+        { 
+            Title:title,        //日期
+            Text:item.Title,    //标题
+            Color:this.ValueColor,
+            ClassName:this.ValueAlign.MarginLeft
+        };
+
+        aryOut.push(item);
+    }
+
+    //大宗交易
+    this.FormatBlockTradingText=function(data, floatPrecision, aryOut)
+    {
+        var item={ Title:"", Text:"大宗交易", Color:this.TextColor, ClassName:this.ValueAlign.Left };
+        aryOut.push(item);
+
+        var item={ Title:"日期",Text:IFrameSplitOperator.FormatDateString(data.Date,"YYYY-MM-DD"), Color:this.ValueColor };
+        aryOut.push(item);
+
+        var extendata = data.ExtendData;
+        var item={ Title:"成交价:", Text:extendata.Price.toFixed(floatPrecision), Color:this.ValueColor };
+        aryOut.push(item);
+
+        var item={ Title:"收盘价:", Text:extendata.ClosePrice.toFixed(floatPrecision), Color:this.ValueColor };
+        aryOut.push(item);
+
+        var item={ Title:"溢折价率:", Text:extendata.Premium.toFixed(2), Color:this.GetColor(extendata.Premium,0) };
+        aryOut.push(item);
+
+        var item={ Title:"成交量:", Text:IFrameSplitOperator.FormatValueStringV2(extendata.Vol,0,2,this.LanguageID), Color:this.VolColor };
+        aryOut.push(item);
+    }
+
+    //龙虎榜
+    this.FormatTradeDetailText=function(data, floatPrecision, aryOut)
+    {
+        if (!data.ExtendData) return;
+        var extendata = data.ExtendData;
+        if (!IFrameSplitOperator.IsNonEmptyArray(extendata.Detail)) return;
+
+        var item={ Title:"日期",Text:IFrameSplitOperator.FormatDateString(data.Date,"YYYY-MM-DD"), Color:this.ValueColor, ClassName:this.ValueAlign.MarginLeft };
+        aryOut.push(item);
+
+        for(var i=0;i<extendata.Detail.length;++i)
+        {
+            var resItem=extendata.Detail[i];
+            if (i==0)
+                var item={ Title:"上榜原因:",Text:resItem.TypeExplain, Color:this.ValueColor, ClassName:this.ValueAlign.MarginLeft };
+            else
+                var item={ Title:"",Text:resItem.TypeExplain, Color:this.ValueColor, ClassName:this.ValueAlign.MarginLeft };
+
+            aryOut.push(item);
+        }
+
+        if (extendata.FWeek)
+        {
+            var value=extendata.FWeek.Week1;
+            if (IFrameSplitOperator.IsNumber(value))
+            {
+                var item={ Title:"一周后涨幅:",Text:`${value.toFixed(2)}%`, Color:this.GetColor(value,0), ClassName:this.ValueAlign.MarginLeft };
+                aryOut.push(item);
+            }
+
+            var value=extendata.FWeek.Week4;
+            if (IFrameSplitOperator.IsNumber(value))
+            {
+                var item={ Title:"四周后涨幅:",Text:`${value.toFixed(2)}%`, Color:this.GetColor(value,0), ClassName:this.ValueAlign.MarginLeft };
+                aryOut.push(item);
+            }
+        }
+    }
+
+    //调研
+    this.FormatResearchText=function(data,aryOut)
+    {
+        if (!data.ExtendData) return;
+        var extendata = data.ExtendData;
+
+        var item={ Title:"日期",Text:IFrameSplitOperator.FormatDateString(data.Date,"YYYY-MM-DD"), Color:this.ValueColor, ClassName:this.ValueAlign.MarginLeft };
+        aryOut.push(item);
+
+        if (IFrameSplitOperator.IsNonEmptyArray(extendata.Level))
+        {
+            var strLevel="";
+            for(var i=0;i<extendata.Level.length;++i)
+            {
+                var value=extendata.Level[i];
+                if (strLevel.length>0) strLevel+=",";
+                if(value==0) strLevel+="证券代表";
+                else if(value==1) strLevel+="董秘";
+                else if(value==2) strLevel+="总经理";
+                else if(value==3) strLevel+="董事长";
+            }
+
+            var item={ Title:"接待人员:",Text:strLevel, Color:this.ValueColor, ClassName:this.ValueAlign.MarginLeft };
+            aryOut.push(item);
+        }
+        else
+        {
+            var item={ Title:"接待人员",Text:"----", Color:this.ValueColor, ClassName:this.ValueAlign.MarginLeft };
+            aryOut.push(item);
+        }
+
+        if (extendata.Type)
+        {
+            var item={ Title:"", Text:extendata.Type, Color:this.ValueColor, ClassName:this.ValueAlign.MarginLeft };
+            aryOut.push(item);
+        }
+        
+    }
+
+    //业绩预告
+    this.FormatPerformanceForecastText=function(data,aryOut)
+    {
+        if (!data.ExtendData) return;
+        var extendata = data.ExtendData;
+        var reportDate=extendata.ReportDate;
+        if (!reportDate) return;
+
+        var year=parseInt(reportDate/10000);  //年份
+        var day=reportDate%10000;             //日期
+        var reportType="----";
+        if(day == 1231) reportType = '年报';
+        else if(day == 331) reportType ='一季度报';
+        else if(day == 630) reportType = "半年度报";
+        else if(day == 930) reportType = "三季度报";
+
+        var item={ Title:"业绩预告:",Text:data.Title, Color:this.ValueColor, ClassName:this.ValueAlign.MarginLeft };
+        aryOut.push(item);
+
+        var item={ Title:"年份:",Text:`${year}`, Color:this.ValueColor, ClassName:this.ValueAlign.MarginLeft };
+        aryOut.push(item);
+
+        var item={ Title:"类型:",Text:reportType, Color:this.ValueColor, ClassName:this.ValueAlign.MarginLeft };
+        aryOut.push(item);
+    }
+
+    
     /////////////////////////////////////////////////////////////////////////////////////////////
     //数据格式化
     this.ForamtPrice=function(price, yClose, defaultfloatPrecision, TitleID)
