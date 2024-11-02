@@ -152,7 +152,8 @@
 
                 Windows: //窗口指标
                 [
-                    { Index:"RSI" }
+                    //{ Index:"AMO", YAxis:{StringFormat:1} }
+                    { Index:"MACD" }
                 ], 
 
                 OverlayIndex:
@@ -233,6 +234,8 @@
 
                 SelectedChart:{ EnableSelected: true, EnableMoveOn:true },
                 EnableIndexChartDrag:true,
+
+                FloatTooltip:{ Enable:true, },
 
                 EnableSelectRect:true,
                 EnableNightDayBG:true,
