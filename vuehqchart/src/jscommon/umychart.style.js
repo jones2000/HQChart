@@ -439,6 +439,17 @@ function GetBlackStyle()
             PositionColor:"rgb(255,0,255)"            //持仓
         },
 
+        DialogSearchIndex:
+        {
+            BGColor:'rgb(20,20,20)',            //背景色
+            BorderColor:'rgb(170,170,170)',     //边框颜色
+            TitleColor:'rgb(230,230,230)',       //标题颜色
+
+            IndexNameColor:"rgb(210,210,210)",       
+            GroupNameColor:"rgb(210,210,210)",      
+            InputTextColor:"rgb(210,210,210)", 
+        },
+
         DialogPopKeyboard:
         {
             BGColor:'rgb(20,20,20)',            //背景色

@@ -124,6 +124,7 @@
     <script src="../jscommon/umychart.PopKeyboard.js"></script>
     <script src="../jscommon/umychart.DialogTooltip.js"></script>
     <script src="../jscommon/umychart.DialogSelectRect.js"></script>
+    <script src="../jscommon/umychart.DialogSearchIndex.js"></script>
     <script src="../jscommon/umychart.version.js"></script>
     
     <!-- 公式编辑器 -->
@@ -214,10 +215,8 @@
                         //TitleArrowType:1,
                         //HorizontalReserved:{ Top:50, Bottom:50 }
                     },
-                    {
-                        Index:"MACD", Overlay:true, 
-                        //HorizontalReserved:{ Top:25, Bottom:50 }
-                    },
+                    //{ Index:"OX", Overlay:true, },
+                    {Index:"MACD", },
                     {Index:"VOL", Overlay:true, YAxis: { FloatPrecision:0, StringFormat:2 } },
                 ], 
 
@@ -275,6 +274,7 @@
                 SelectRectDialog:{ Enable:true },
                 KLineTooltip:{ Enable:true, EnableKeyDown:false },
                 FloatTooltip:{ Enable:true, },
+                SearchIndexDialog:{ Enable:true },
 
                 //EnableVerifyRecvData:true,
 

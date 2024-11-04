@@ -682,7 +682,7 @@ function JSDialogTooltip()
         if (this.TitleColor) this.TitleBox.DivName.style['color']=this.TitleColor;
 
         this.UpdateTableDOM();
-    },
+    }
 
 
     /////////////////////////////////////////////////////////////////////////////////////////////

@@ -1922,6 +1922,133 @@ input[type="color"] {
 }
 
 
+/*
+    Copyright (c) 2018 jones
+ 
+    http://www.apache.org/licenses/LICENSE-2.0
+
+   开源项目 https://github.com/jones2000/HQChart
+ 
+   jones_2000@163.com
+
+   内置搜索指标对话框
+*/
+
+
+.UMyChart_SearchIndex_Dialog_Div
+{
+    font-family: "微软雅黑";
+    /*display: flex;*/
+    border: 1px solid; 
+    width:fit-content;
+    border-color: rgb(204,204,204);
+    visibility:hidden;
+    position: absolute;
+    background-color: rgba(20,20,20,1);
+    left:1px;
+    top:1px;
+}
+
+.UMyChart_SearchIndex_Title_Div
+{
+    padding-left: 2px;
+    height:20px;
+    border-bottom: 1px solid;
+    
+    display: flex;
+    cursor: default;
+    user-select: none;
+    background-color:rgb(200, 66, 69)
+}
+
+.UMyChart_SearchIndex_Name_Div
+{
+    margin-left: 5px;
+    color:rgb(250,250,250)
+}
+
+.UMyChart_SearchIndex_Close_Div
+{
+    margin-left: auto;
+    padding-right: 4px;
+    cursor:pointer;
+    color:rgb(180,180,180)
+}
+
+.UMyChart_SearchIndex_Table_Div
+{
+    height:300px;
+    width:500px;
+    overflow-y:scroll;
+}
+
+.UMyChart_SearchIndex_Table
+{
+    border-spacing: 4px;
+    user-select: none;
+    font-size:13px;
+    max-height: 300px;
+}
+
+.UMyChart_SearchIndex_Group_Tr
+{
+    height: 25px;
+}
+
+.UMyChart_SearchIndex_Text_Td
+{
+    width: 200px;
+}
+
+
+.UMyChart_SearchIndex_Text_Span
+{
+    margin-left: 2px;
+    margin-right: 10px;
+    cursor: pointer;
+}
+
+.UMyChart_SearchIndex_Input
+{
+    border: none;
+    line-height: 28px;
+    background-color: transparent;
+    width: 99%;
+    margin-left: 10px;
+}
+
+.UMyChart_SearchIndex_Container_Div
+{
+    display: flex;
+    border-top: 1px solid #ccc;
+}
+
+.UMyChart_SearchIndex_GroupList_Div
+{
+    height: 300px;
+    width: 120px;
+    border-right: 1px solid #ccc;
+    font-size: 14px;
+}
+
+.UMyChart_SearchIndex_Group_Div
+{
+    margin: 5px;
+}
+
+.UMyChart_SearchIndex_Group_Span
+{
+   
+    margin-left: 5px;
+    cursor: pointer;
+}
+
+
+
+
+
+
+
 
 
 

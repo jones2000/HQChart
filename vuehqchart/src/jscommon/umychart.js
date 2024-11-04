@@ -55,7 +55,6 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
 
     //改参数div
     this.ModifyIndexDialog=new ModifyIndexDialog(divElement);
-    this.ChangeIndexDialog=new ChangeIndexDialog(divElement);
 
     //额外的画布
     this.MapExtraCanvasElement=new Map();   //key=画布名字, value={ Element:, Canvas:}
@@ -291,7 +290,6 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
 
         //创建改参数div
         chart.ModifyIndexDialog=this.ModifyIndexDialog;
-        chart.ChangeIndexDialog=this.ChangeIndexDialog;
 
         var pixelRatio=GetDevicePixelRatio();
         
@@ -744,7 +742,6 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
 
         //创建改参数div
         chart.ModifyIndexDialog=this.ModifyIndexDialog;
-        chart.ChangeIndexDialog=this.ChangeIndexDialog;
         
         //右键菜单
         if (IFrameSplitOperator.IsBool(option.IsShowRightMenu)) chart.IsShowRightMenu=option.IsShowRightMenu;
@@ -847,7 +844,6 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         if (option.NetworkFilter) chart.NetworkFilter=option.NetworkFilter;
 
         chart.ModifyIndexDialog=this.ModifyIndexDialog;
-        chart.ChangeIndexDialog=this.ChangeIndexDialog;
 
         var pixelRatio=GetDevicePixelRatio();
 
@@ -1429,7 +1425,6 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
 
         //创建改参数div
         chart.ModifyIndexDialog=this.ModifyIndexDialog;
-        chart.ChangeIndexDialog=this.ChangeIndexDialog;
 
         if (option.ScriptError) chart.ScriptErrorCallback=option.ScriptError;
 
@@ -1726,9 +1721,10 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             chart.InitalFloatTooltip(option.FloatTooltip);
 
         if (option.SelectRectDialog && option.SelectRectDialog.Enable)
-        {
             chart.InitalSelectRectDialog(option.SelectRectDialog);
-        }
+
+        if (option.SearchIndexDialog && option.SearchIndexDialog.Enable)
+            chart.InitalSearchIndexDialog(option.SearchIndexDialog);
 
         //注册事件
         if (option.EventCallback)
@@ -2443,6 +2439,12 @@ JSChart.GetScrollPosition=function()
     return GetScrollPosition();
 }
 
+//品种小数位数
+JSChart.GetfloatPrecision=function(symbol)
+{
+    return GetfloatPrecision(symbol);
+}
+
 
 
 
@@ -3046,6 +3048,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     this.DialogTooltip;     //tooltip信息 
     this.DialogSelectRect;  //区间统计
     this.FloatTooltip;      //浮动tooltip信息
+    this.DialogSearchIndex; //指标搜索
 
 
     this.ClearStockCache=function()
@@ -3106,6 +3109,34 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         this.DialogSelectRect.Create();
     }
 
+    this.InitalSearchIndexDialog=function(option)
+    {
+        if (this.DialogSearchIndex) return;
+
+        this.DialogSearchIndex=new JSDialogSearchIndex();
+        this.DialogSearchIndex.Inital(this, option);
+        this.DialogSearchIndex.Create();
+    }
+
+    this.ShowChangeIndexDialog=function(data)
+    {
+        if (!data) return;
+        if (!this.DialogSearchIndex) return;
+
+        data.Title=`切换指标 [窗口${data.WindowIndex+1}]`;
+        this.DialogSearchIndex.SetOpData(data);
+        this.DialogSearchIndex.Show();
+    }
+
+    this.ShowAddOverlayIndexDialog=function(data)
+    {
+        if (!data) return;
+        if (!this.DialogSearchIndex) return;
+
+        data.Title=`添加叠加指标 [窗口${data.WindowIndex+1}]`;
+        this.DialogSearchIndex.SetOpData(data);
+        this.DialogSearchIndex.Show();
+    }
     
 
     this.DrawSelectRectDialog=function()
@@ -3204,6 +3235,14 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         this.FloatTooltip=null;
     }
 
+    this.DestroySearchIndexDialog=function()
+    {
+        if (!this.DialogSearchIndex) return;
+
+        this.DialogSearchIndex.Destroy();
+        this.DialogSearchIndex=null;
+    }
+
 
 
     //obj={ Element:, Canvas: }
@@ -3257,6 +3296,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         this.StopAutoUpdate();
         this.DestroyTooltipDialog();
         this.DestroyFloatTooltip();
+        this.DestroySearchIndexDialog();
     }
 
     this.ChartDestory=this.ChartDestroy;    //老版本写错了,需要兼容下
@@ -8239,6 +8279,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         if (this.DialogTooltip) this.DialogTooltip.ReloadResource(option);
         if (this.FloatTooltip) this.FloatTooltip.ReloadResource(option);
         if (this.DialogSelectRect) this.DialogSelectRect.ReloadResource(option);
+        if (this.DialogSearchIndex) this.DialogSearchIndex.ReloadResource(option);
     }
 
     this.ReloadBorder=function(option)  //根据页面缩放调整对应边框的尺长
@@ -13872,7 +13913,6 @@ function MinuteFrame()
     this.OverlayIndex=g_JSChartResource.MinuteToolbar.OverlayIndex;    //是否显示叠加指标
 
     this.ModifyIndexEvent;   //改参数 点击事件
-    this.ChangeIndexEvent;   //换指标 点击事件
     this.ToolbarRect=null;   //保存工具条的位置
     this.IsShowPositionTitle=false; //是否显示持仓标题
 
@@ -16302,7 +16342,6 @@ function KLineFrame()
     this.SelBorderColor=g_JSChartResource.SelFrameBorderColor;
 
     this.ModifyIndexEvent;   //改参数 点击事件
-    this.ChangeIndexEvent;   //换指标 点击事件
     this.ToolbarRect=null;   //保存工具条的位置
     this.ReDrawToolbar=false;
 
@@ -69263,6 +69302,19 @@ function JSChartResource()
         }
     };
 
+    //指标搜索
+    this.DialogSearchIndex=
+    {
+        BGColor:'rgb(250,250,250)',         //背景色
+        BorderColor:'rgb(20,20,20)',        //边框颜色
+        TitleColor:'rgb(250,250,250)',       //标题颜色
+        TitleBGColor:"rgb(200, 66, 69)",    //标题背景颜色
+
+        IndexNameColor:"rgb(0,0,0)",             //数值名称
+        GroupNameColor:"rgb(0,0,0)",
+        InputTextColor:"rgb(0,0,0)"
+    };
+
     //弹幕
     this.Barrage= {
         Font:16*GetDevicePixelRatio() +'px 微软雅黑',   //字体
@@ -70326,6 +70378,20 @@ function JSChartResource()
                 if (subItem.BGColor) this.DialogPopKeyboard.Input.BGColor=subItem.BGColor;
                 if (subItem.TextColor) this.DialogPopKeyboard.Input.TextColor=subItem.TextColor;
             }
+        }
+
+        if (style.DialogSearchIndex)
+        {
+            var item=style.DialogSearchIndex;
+
+            if (item.BGColor) this.DialogSearchIndex.BGColor=item.BGColor;
+            if (item.BorderColor) this.DialogSearchIndex.BorderColor=item.BorderColor;
+            if (item.TitleColor) this.DialogSearchIndex.TitleColor=item.TitleColor;
+            if (item.TitleBGColor) this.DialogSearchIndex.TitleBGColor=item.TitleBGColor;
+            
+            if (item.IndexNameColor) this.DialogSearchIndex.IndexNameColor=item.IndexNameColor;
+            if (item.GroupNameColor) this.DialogSearchIndex.GroupNameColor=item.GroupNameColor;
+            if (item.InputTextColor) this.DialogSearchIndex.InputTextColor=item.InputTextColor;
         }
 
         if (style.MinuteInfo)
@@ -73412,7 +73478,6 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             frame.GlobalOption=this.GlobalOption;
 
             if (this.ModifyIndexDialog) frame.ModifyIndexEvent=this.ModifyIndexDialog.DoModal;        //绑定菜单事件
-            if (this.ChangeIndexDialog) frame.ChangeIndexEvent=this.ChangeIndexDialog.DoModal;
 
             frame.HorizontalMax=20;
             frame.HorizontalMin=10;
@@ -73497,7 +73562,6 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         frame.GlobalOption=this.GlobalOption;
 
         if (this.ModifyIndexDialog) frame.ModifyIndexEvent=this.ModifyIndexDialog.DoModal;        //绑定菜单事件
-        if (this.ChangeIndexDialog) frame.ChangeIndexEvent=this.ChangeIndexDialog.DoModal;
 
         frame.HorizontalMax=20;
         frame.HorizontalMin=10;
@@ -79495,9 +79559,13 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         else if (button.ID==JSCHART_BUTTON_ID.CHANGE_INDEX)
         {
             var frame=button.Frame;
+            var sendData={ e:e, WindowIndex:frame.Identify, OpType:1 };
+            this.ShowChangeIndexDialog(sendData);
+            /*
             e.data={ Chart:this, Identify:frame.Identify, IsOverlay:false };
             if (frame.ChangeIndexEvent) 
                 frame.ChangeIndexEvent(e);
+            */
         }
         else if (button.ID==JSCHART_BUTTON_ID.MODIFY_INDEX_PARAM)
         {
@@ -79509,9 +79577,13 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         else if (button.ID==JSCHART_BUTTON_ID.OVERLAY_INDEX)
         {
             var frame=button.Frame;
+            var sendData={ e:e, WindowIndex:frame.Identify, OpType:2 };
+            this.ShowAddOverlayIndexDialog(sendData);
+            /*
             e.data={ Chart:this, Identify:frame.Identify, IsOverlay:true };
             if (frame.ChangeIndexEvent) 
                 frame.ChangeIndexEvent(e);
+            */
         }
         else if (button.ID==JSCHART_BUTTON_ID.MAX_MIN_WINDOW)
         {
@@ -80324,9 +80396,8 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         else if (button.ID==JSCHART_BUTTON_ID.CHANGE_INDEX)
         {
             var frame=button.Frame;
-            e.data={ Chart:this, Identify:frame.Identify, IsOverlay:false };
-            if (frame.ChangeIndexEvent) 
-                frame.ChangeIndexEvent(e);
+            var sendData={ e:e, WindowIndex:frame.Identify, OpType:1 };
+            this.ShowChangeIndexDialog(sendData);
         }
         else if (button.ID==JSCHART_BUTTON_ID.MODIFY_INDEX_PARAM)
         {
@@ -80338,9 +80409,8 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         else if (button.ID==JSCHART_BUTTON_ID.OVERLAY_INDEX)
         {
             var frame=button.Frame;
-            e.data={ Chart:this, Identify:frame.Identify, IsOverlay:true };
-            if (frame.ChangeIndexEvent) 
-                frame.ChangeIndexEvent(e);
+            var sendData={ e:e, WindowIndex:frame.Identify, OpType:2 };
+            this.ShowAddOverlayIndexDialog(sendData);
         }
         else if (button.ID==JSCHART_BUTTON_ID.MAX_MIN_WINDOW)
         {
@@ -82102,7 +82172,6 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             if (i>=2)
             {
                 if (this.ModifyIndexDialog) frame.ModifyIndexEvent=this.ModifyIndexDialog.DoModal;        //绑定菜单事件
-                if (this.ChangeIndexDialog) frame.ChangeIndexEvent=this.ChangeIndexDialog.DoModal;
             }
 
             var DEFAULT_HORIZONTAL=[9,8,7,6,5,4,3,2,1];
@@ -82194,7 +82263,6 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         if (id>=2)
         {
             if (this.ModifyIndexDialog) frame.ModifyIndexEvent=this.ModifyIndexDialog.DoModal;        //绑定菜单事件
-            if (this.ChangeIndexDialog) frame.ChangeIndexEvent=this.ChangeIndexDialog.DoModal;
         }
 
         var DEFAULT_HORIZONTAL=[9,8,7,6,5,4,3,2,1];
@@ -87769,7 +87837,6 @@ function KLineChartHScreenContainer(uielement)
             frame.RightSpaceCount=this.RightSpaceCount; //右边
 
             if (this.ModifyIndexDialog) frame.ModifyIndexEvent=this.ModifyIndexDialog.DoModal;        //绑定菜单事件
-            if (this.ChangeIndexDialog) frame.ChangeIndexEvent=this.ChangeIndexDialog.DoModal;
 
             frame.HorizontalMax=20;
             frame.HorizontalMin=10;
@@ -90596,266 +90663,6 @@ function ModifyIndexDialog(divElement)
         dialog.BindCancel();  //绑定取消和关闭事件
 
         dialog.Show();//显示, 在css里调整居中
-    }
-}
-
-//换指标
-function ChangeIndexDialog(divElement)
-{
-    this.newMethod=IDivDialog;   //派生
-    this.newMethod(divElement);
-    delete this.newMethod;
-
-    this.DivElement=divElement;   //父节点
-    //this.IndexTreeApiUrl="../commonindextree.json";               //数据下载地址
-    //this.OverlayIndexTreeApiUrl="../commonindextree.json";        //叠加指标列表数据下载地址
-    this.IsOverlayIndex=false;
-
-    this.Create=function()
-    {
-        var div=document.createElement('div');
-        div.className='jchart-changeindex-box';
-        div.id=this.ID=Guid();
-        div.innerHTML=
-        '<div class="target-panel">\n' +
-            '            <div class="target-header">\n' +
-            '                <span>换指标</span>\n' +
-            '                <strong class="close-tar icon iconfont icon-close"></strong>\n' +
-            '            </div>\n' +
-            '            <div class="target-content">\n' +
-            '                <div class="target-left">\n' +
-            '                    <input type="text">\n' +
-            '                    <ul></ul>\n' +
-            '                </div>\n' +
-            '                <div class="target-right">\n' +
-            '                    <ul></ul>\n' +
-            '                </div>\n' +
-            '            </div>\n' +
-            '        </div>';
-
-        this.DivElement.appendChild(div);
-    }
-
-    //指标菜单内容
-    this.GetMenuData=function()
-    {
-        var data={
-            "name":"页面通用版指标树",
-            "list":
-            [
-                { 
-                    "node":"超买超卖型",
-                    "list":
-                    [
-                        {"name":"ADTM 动态买卖气指标",      "id":"ADTM"},
-                        {"name":"BIAS 乖离率",              "id":"BIAS"},
-                        {"name":"BIAS36 三六乖离",          "id":"BIAS36"},
-                        {"name":"BIAS_QL 乖离率-传统版",    "id":"BIAS_QL"},
-                        {"name":"CCI 商品路径指标",         "id":"CCI"},
-                        {"name":"FSL 分水岭",               "id":"FSL"},
-                        {"name":"KDJ 随机指标",             "id":"KDJ"},
-                        {"name":"MTM 动量线",               "id":"MTM"},
-                        {"name":"OSC 变动速率线",            "id":"OSC"},
-                        {"name":"RSI 相对强弱指标",           "id":"RSI"},
-                        {"name":"ROC 变动率指标",             "id":"ROC"},
-                        {"name":"WR 威廉指标",                  "id":"WR"}
-                    ]
-                },
-                {
-                    "node":"趋势型",
-                    "list":
-                    [
-                        {"name":"CHO 济坚指数",         "id":"CHO"},
-                        {"name":"DMA 平均差",           "id":"DMA"},
-                        {"name":"DMI 趋向指标",         "id":"DMI"},
-                        {"name":"EMV 简易波动指标",     "id":"EMV"},
-                        {"name":"MACD 平滑异同平均",    "id":"MACD"},
-                        {"name":"TRIX 三重指数平均线",  "id":"TRIX"},
-                        {"name":"UOS 终极指标",         "id":"UOS"},
-                        {"name":"TRIX 三重指数平均线",  "id":"TRIX"}
-                    ]
-                },
-                { 
-                    "node":"成交量型",
-                    "list":
-                    [
-                        {"name":"HSL 换手率",           "id":"HSL"},
-                        {"name":"OBV 累积能量线",       "id":"OBV"},
-                        {"name":"NVI 负成交量",         "id":"NVI"},
-                        {"name":"PVI 正成交量",         "id":"PVI"},
-                        {"name":"VOL 成交量",           "id":"VOL"}
-                    ]
-                },
-                {
-                    "node":"均线型",
-                    "list":
-                    [
-                        {"name":"MA 均线", "id":"均线"},
-                        {"name":"BBI 多空线", "id":"BBI"}
-                    ]
-                },
-                {
-                    "node":"路径型",
-                    "list":
-                    [
-                        {"name":"BOLL 布林线",          "id":"BOLL"},
-                        {"name":"BOLL副图 布林线",      "id":"BOLL副图"},
-                        {"name":"MIKE 麦克支撑压力",    "id":"MIKE"},
-                        {"name":"ENE 轨道线",           "id":"ENE"}
-                    ]
-                },
-                {
-                    "node":"能量型",
-                    "list":
-                    [
-                        {"name":"BRAR 情绪指标",            "id":"BRAR"},
-                        {"name":"CYR 市场强弱",             "id":"CYR"},
-                        {"name":"MASS 梅斯线",              "id":"MASS"},
-                        {"name":"PSY 心理线",               "id":"PSY"},
-                        {"name":"CR 带状能量线",            "id":"CR"},
-                        {"name":"VR 成交量变异率",          "id":"VR"},
-                        {"name":"WAD 威廉多空力度线",        "id":"WAD"}
-                    ]
-                }
-        
-            ]
-        };
-
-        return data;
-    }
-
-    //下载数据 如果上次下载过可以 可以不用下载
-    this.ReqeustData=function()
-    {
-        if($("#" + this.ID + " .target-left ul li").length>0){
-            return false;
-        }
-
-        var res=this.GetMenuData();
-        var item = res.list;
-        changeIndexLeftList(item);   //处理左侧list列表
-        changeIndexRightList(item);  //处理右侧内容列表
-
-        /*
-        var url = this.IndexTreeApiUrl;
-        if (this.IsOverlayIndex==true) url=this.OverlayIndexTreeApiUrl;
-        JSNetwork.HttpRequest({
-            url: url,
-            type: 'get',
-            success: function (res) {
-                var item = res.list;
-                changeIndexLeftList(item);   //处理左侧list列表
-                changeIndexRightList(item);  //处理右侧内容列表
-            }
-        });
-        */
-
-        //处理左侧list列表
-        function changeIndexLeftList(item) {
-            $(".target-left ul").html('');
-            $.each(item,function(i,result){
-                var htmlList;
-                htmlList = '<li>' + result.node + '</li>';
-                $(".target-left ul").append(htmlList);
-            });
-            //默认选中第一项
-            $(".target-left ul li:first-child").addClass("active-list");
-        }
-        //处理右侧内容列表
-        function changeIndexRightList(listNum) {
-            var contentHtml;
-            var conData = [];
-            $.each(listNum,function(index,result){
-                conData.push(result.list);
-            })
-            //页面初始化时显示第一个列表分类下的内容
-            $.each(conData[0],function (i, res) {
-                contentHtml = '<li id='+res.id+'>'+ res.name +'</li>';
-                $(".target-right ul").append(contentHtml);
-            })
-            //切换list
-            $(".target-left ul").delegate("li","click",function () {
-                $(this).addClass("active-list").siblings().removeClass("active-list");
-                var item = $(this).index();
-                $(".target-right ul").html("");
-                $.each(conData[item],function (i, res) {
-                    contentHtml = '<li id='+res.id+'>'+ res.name +'</li>';
-                    $(".target-right ul").append(contentHtml);
-                })
-            })
-        }
-    }
-
-    this.BindClose=function(chart)
-    {
-        //关闭按钮
-        $("#"+this.ID+" .close-tar").click(
-            {
-                Chart:chart,
-            },
-            function(event)
-            {
-                var chart=event.data.Chart;
-                chart.ChangeIndexDialog.Hide();
-            }
-        );
-    }
-
-    //搜索事件
-    this.BindSearch=function(chart)
-    {
-        $(".target-left input").on('input',
-            {
-                Chart:chart
-            },
-            function(event)
-            {
-                let scriptData = new JSIndexScript();
-                let result=scriptData.Search(event.target.value);
-
-                $(".target-right ul").html("");
-                for(var i in result)
-                {
-                    var name=result[i];
-                    var contentHtml = '<li id='+name+'>'+ name +'</li>';
-                    $(".target-right ul").append(contentHtml);
-                }
-                
-            }
-        );
-    }
-
-    this.DoModal=function(event)
-    {
-        var chart=event.data.Chart;
-        var identify=event.data.Identify;
-        var dialog=chart.ChangeIndexDialog;
-        var isOverlay=event.data.IsOverlay; //是否叠加
-
-        if(!dialog) return;
-
-        if (dialog.ID==null) dialog.Create();   //第1次 需要创建div
-        dialog.IsOverlayIndex=isOverlay;
-        dialog.ReqeustData();   //下载数据
-
-        //切换窗口指标类型  每次委托事件执行之前，先用undelegate()解除之前的所有绑定
-        changeIndeWindow();
-        function changeIndeWindow() 
-        {
-            $(".target-right ul").undelegate().delegate("li","click",function () {
-                var idv = $(this).attr("id");
-                if (isOverlay)
-                    chart.AddOverlayIndex({WindowIndex:identify,IndexName:idv});
-                else
-                    chart.ChangeIndex(identify,idv);
-                $(this).addClass("active-list").siblings().removeClass("active-list");
-            });
-        }
-
-        dialog.BindSearch(chart);
-        //关闭弹窗
-        dialog.BindClose(chart);
-        dialog.Show();
     }
 }
 
