@@ -1525,6 +1525,18 @@ function JSReportChartContainer(uielement)
         if (IFrameSplitOperator.IsString(item[208])) stock.ReserveString8=item[208];
         if (IFrameSplitOperator.IsString(item[209])) stock.ReserveString9=item[209];
         if (IFrameSplitOperator.IsString(item[210])) stock.ReserveString10=item[210];
+
+        //10个进度条 301-350  { Value:, BGColor: }
+        if (IFrameSplitOperator.IsNumber(item[301]) || IFrameSplitOperator.IsObject(item[301])) stock.ReserveProgressBar1=item[301];
+        if (IFrameSplitOperator.IsNumber(item[302]) || IFrameSplitOperator.IsObject(item[302])) stock.ReserveProgressBar2=item[302];
+        if (IFrameSplitOperator.IsNumber(item[303]) || IFrameSplitOperator.IsObject(item[303])) stock.ReserveProgressBar3=item[303];
+        if (IFrameSplitOperator.IsNumber(item[304]) || IFrameSplitOperator.IsObject(item[304])) stock.ReserveProgressBar4=item[304];
+        if (IFrameSplitOperator.IsNumber(item[305]) || IFrameSplitOperator.IsObject(item[305])) stock.ReserveProgressBar5=item[305];
+        if (IFrameSplitOperator.IsNumber(item[306]) || IFrameSplitOperator.IsObject(item[306])) stock.ReserveProgressBar6=item[306];
+        if (IFrameSplitOperator.IsNumber(item[307]) || IFrameSplitOperator.IsObject(item[307])) stock.ReserveProgressBar7=item[307];
+        if (IFrameSplitOperator.IsNumber(item[308]) || IFrameSplitOperator.IsObject(item[308])) stock.ReserveProgressBar8=item[308];
+        if (IFrameSplitOperator.IsNumber(item[309]) || IFrameSplitOperator.IsObject(item[309])) stock.ReserveProgressBar9=item[309];
+        if (IFrameSplitOperator.IsNumber(item[310]) || IFrameSplitOperator.IsObject(item[310])) stock.ReserveProgressBar10=item[310];
     }
 
 
@@ -4169,7 +4181,21 @@ var REPORT_COLUMN_ID=
     RESERVE_STRING8_ID:308,
     RESERVE_STRING9_ID:309,
     RESERVE_STRING10_ID:310,
+
+    //预留进度条类型  10个  401-450
+    RESERVE_PROGRESS_BAR1_ID:401,    //ReserveProgressBar1:
+    RESERVE_PROGRESS_BAR2_ID:402,
+    RESERVE_PROGRESS_BAR3_ID:403,
+    RESERVE_PROGRESS_BAR4_ID:404,
+    RESERVE_PROGRESS_BAR5_ID:405,
+    RESERVE_PROGRESS_BAR6_ID:406,
+    RESERVE_PROGRESS_BAR7_ID:407,
+    RESERVE_PROGRESS_BAR8_ID:408,
+    RESERVE_PROGRESS_BAR9_ID:409,
+    RESERVE_PROGRESS_BAR10_ID:410,
+
 }
+
 
 //数据对应字段名对照表
 var MAP_COLUMN_FIELD=new Map([
@@ -4241,6 +4267,17 @@ var MAP_COLUMN_FIELD=new Map([
     [REPORT_COLUMN_ID.RESERVE_STRING8_ID,"ReserveString8"],
     [REPORT_COLUMN_ID.RESERVE_STRING9_ID,"ReserveString9"],
     [REPORT_COLUMN_ID.RESERVE_STRING10_ID,"ReserveString10"],
+
+    [REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR1_ID,"ReserveProgressBar1"],
+    [REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR2_ID,"ReserveProgressBar2"],
+    [REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR3_ID,"ReserveProgressBar3"],
+    [REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR4_ID,"ReserveProgressBar4"],
+    [REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR5_ID,"ReserveProgressBar5"],
+    [REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR6_ID,"ReserveProgressBar6"],
+    [REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR7_ID,"ReserveProgressBar7"],
+    [REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR8_ID,"ReserveProgressBar8"],
+    [REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR9_ID,"ReserveProgressBar9"],
+    [REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR10_ID,"ReserveProgressBar10"],
 ]);
 
 function ChartReport()
@@ -4325,14 +4362,14 @@ function ChartReport()
         Left:g_JSChartResource.Report.Item.Mergin.Left, 
         Right:g_JSChartResource.Report.Item.Mergin.Right, 
         Top:g_JSChartResource.Report.Item.Mergin.Top, 
-        Bottom:g_JSChartResource.Report.Item.Mergin.Bottom 
+        Bottom:g_JSChartResource.Report.Item.Mergin.Bottom,
     };
     this.BarMergin=
     { 
         Top:g_JSChartResource.Report.Item.BarMergin.Top, 
         Left:g_JSChartResource.Report.Item.BarMergin.Left, 
         Right:g_JSChartResource.Report.Item.BarMergin.Right,
-        Bottom:g_JSChartResource.Report.Item.BarMergin.Bottom
+        Bottom:g_JSChartResource.Report.Item.BarMergin.Bottom,
     };
 
     this.LimitDrawType=0;   //0=绘制边框  1=背景色
@@ -4389,15 +4426,21 @@ function ChartReport()
     this.HeaderFont=12*GetDevicePixelRatio() +"px 微软雅黑";
     this.SortFont=null,
     this.ItemFont=15*GetDevicePixelRatio() +"px 微软雅黑";
+    this.ItemFontHeight=0;
+
     this.ItemFixedFont=15*GetDevicePixelRatio() +"px 微软雅黑";
+    
     this.ItemSymbolFont=12*GetDevicePixelRatio() +"px 微软雅黑";
     this.ItemNameFont=15*GetDevicePixelRatio() +"px 微软雅黑";
     this.ItemNameHeight=0;
+    this.ItemSymbolHeight=0;
+
     this.NameSymbolFont={ Symbol:null, Name:null };
     this.RowCount=0;            //一屏显示行数
     this.HeaderHeight=0;        //表头高度
     this.FixedRowHeight=0;      //固定行高度
     this.RowHeight=0;           //行高度
+    this.ItemTextLines=1;           //单元格输出行数
     this.BottomToolbarHeight=0;  //底部工具条高度
     this.IsShowAllColumn=false;   //是否已显示所有列
     this.DevicePixelRatio=GetDevicePixelRatio();  //分辨率
@@ -4616,6 +4659,11 @@ function ChartReport()
                 if (item.ProgressBar) colItem.ProgressBar=CloneData(item.ProgressBar);
                 else colItem.ProgressBar=this.ProgressBarConfig;
             }
+            else if (this.IsReserveProgressBarColumn(item.Type))
+            {
+                if (item.ProgressBar) colItem.ProgressBar=CloneData(item.ProgressBar);
+                else colItem.ProgressBar=this.ProgressBarConfig;
+            }
             else if (item.Type==REPORT_COLUMN_ID.CUSTOM_LINK_ID)
             {
                 if (!IFrameSplitOperator.IsNumber(item.DataIndex) && !IFrameSplitOperator.IsNumber(item.BlockIndex)) continue;
@@ -4789,6 +4837,19 @@ function ChartReport()
             { Type:REPORT_COLUMN_ID.RESERVE_STRING8_ID, Title:"文字8", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"擎擎擎擎擎擎" },
             { Type:REPORT_COLUMN_ID.RESERVE_STRING9_ID, Title:"文字9", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"擎擎擎擎擎擎" },
             { Type:REPORT_COLUMN_ID.RESERVE_STRING10_ID, Title:"文字10", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"擎擎擎擎擎擎" },
+
+
+            { Type:REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR1_ID, Title:"进度条1", TextAlign:"center", FixedWidth:100*GetDevicePixelRatio()  },
+            { Type:REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR2_ID, Title:"进度条2", TextAlign:"center", FixedWidth:100*GetDevicePixelRatio()  },
+            { Type:REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR3_ID, Title:"进度条3", TextAlign:"center", FixedWidth:100*GetDevicePixelRatio()  },
+            { Type:REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR4_ID, Title:"进度条4", TextAlign:"center", FixedWidth:100*GetDevicePixelRatio()  },
+            { Type:REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR5_ID, Title:"进度条5", TextAlign:"center", FixedWidth:100*GetDevicePixelRatio()  },
+            { Type:REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR6_ID, Title:"进度条6", TextAlign:"center", FixedWidth:100*GetDevicePixelRatio()  },
+            { Type:REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR7_ID, Title:"进度条7", TextAlign:"center", FixedWidth:100*GetDevicePixelRatio()  },
+            { Type:REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR8_ID, Title:"进度条8", TextAlign:"center", FixedWidth:100*GetDevicePixelRatio()  },
+            { Type:REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR9_ID, Title:"进度条9", TextAlign:"center", FixedWidth:100*GetDevicePixelRatio()  },
+            { Type:REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR10_ID, Title:"进度条10", TextAlign:"center", FixedWidth:100*GetDevicePixelRatio()  },
+            
         ];
 
         for(var i=0;i<DEFAULT_COLUMN.length;++i)
@@ -4922,7 +4983,9 @@ function ChartReport()
         this.NameSymbolFont.Symbol=`${this.NameSymbolV2Config.Symbol.Size*pixelRatio}px ${this.NameSymbolV2Config.Symbol.Name}`;
         this.NameSymbolFont.Name=`${this.ItemSymbolFontConfig.Name.Size*pixelRatio}px ${this.NameSymbolV2Config.Name.Name}`;
 
-        this.RowHeight=this.GetFontHeight(this.ItemFont,"擎")+ this.ItemMergin.Top+ this.ItemMergin.Bottom;
+        this.ItemFontHeight=this.GetFontHeight(this.ItemFont,"擎");
+        this.RowHeight=this.ItemFontHeight+ this.ItemMergin.Top+ this.ItemMergin.Bottom;
+        this.ItemTextLines=1;
         this.FixedRowHeight=this.GetFontHeight(this.ItemFixedFont,"擎")+ this.ItemMergin.Top+ this.ItemMergin.Bottom;
         this.SortFont=`${this.SortConfig.Size*pixelRatio}px ${ this.SortConfig.Family}`;
 
@@ -4941,6 +5004,7 @@ function ChartReport()
                 this.Canvas.font=this.ItemSymbolFont;
                 var symbolWidth=this.Canvas.measureText(item.MaxText).width;
                 var symboHeight=this.GetFontHeight(this.ItemSymbolFont,"擎");
+                this.ItemSymbolHeight=symboHeight;
 
                 this.Canvas.font=this.ItemFont;
 
@@ -4948,6 +5012,7 @@ function ChartReport()
                 item.Width=itemWidth+4+this.ItemMergin.Left+this.ItemMergin.Right;
 
                 var rowHeight=nameHeight+symboHeight+this.ItemMergin.Top+ this.ItemMergin.Bottom;
+                this.ItemTextLines=2;
                 if (rowHeight>this.RowHeight) this.RowHeight=rowHeight;
                 if (rowHeight>this.FixedRowHeight) this.FixedRowHeight=rowHeight;
             }
@@ -5853,6 +5918,10 @@ function ChartReport()
         {
             this.FormatReserveString(column, stock, drawInfo);
         }
+        else if (this.IsReserveProgressBarColumn(column.Type))
+        {
+            this.FormatReserveProgressBar(column, stock, drawInfo);
+        }
         
 
         //拖拽行颜色
@@ -5875,7 +5944,7 @@ function ChartReport()
         {
             this.DrawButton(drawInfo, left, top, itemWidth);
         }
-        else if (column.Type==REPORT_COLUMN_ID.CUSTOM_PROGRESS_ID)
+        else if (column.Type==REPORT_COLUMN_ID.CUSTOM_PROGRESS_ID || this.IsReserveProgressBarColumn(column.Type))
         {
             this.DrawProgressBar(drawInfo, left, top, itemWidth);
         }
@@ -5919,6 +5988,18 @@ function ChartReport()
             var buttonData={ Stock:stock, Index:index, ColumnIndex:columnIndex, Column:column, Rect:drawInfo.Botton.Rect, Type:drawInfo.Botton.Type, Data:drawInfo.Data };
             this.ButtonRect.push(buttonData);
         }
+    }
+
+    this.IsReserveProgressBarColumn=function(value)
+    {
+        var ARARY_TYPE=
+        [
+            REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR1_ID, REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR2_ID,REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR3_ID,
+            REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR4_ID,REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR5_ID,REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR6_ID,REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR7_ID,
+            REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR8_ID,REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR9_ID,REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR10_ID
+        ];
+
+        return ARARY_TYPE.includes(value);
     }
 
     this.DrawCustomText=function(drawInfo, column, left, top, cellWidth)
@@ -6021,7 +6102,7 @@ function ChartReport()
         var text=name;
         if (text)
         {
-            this.Canvas.textBaseline="ideographic";
+            this.Canvas.textBaseline="bottom";
             this.Canvas.fillStyle=textColor;
             this.Canvas.font=this.ItemNameFont;
             text=this.TextEllipsis(text, width, column.MaxText);
@@ -6031,10 +6112,10 @@ function ChartReport()
         text=symbol;
         if (text)
         {
-            this.Canvas.textBaseline="top";
+            this.Canvas.textBaseline="bottom";
             this.Canvas.font=this.ItemSymbolFont;
             this.Canvas.fillStyle=textColor;
-            this.Canvas.fillText(text,x,y);
+            this.Canvas.fillText(text,x,y+this.ItemSymbolHeight);
         }
         
         this.Canvas.font=this.ItemFont; //还原字体
@@ -6300,7 +6381,7 @@ function ChartReport()
         if (column.DefaultText) drawInfo.Text=column.DefaultText;
 
         var fieldName=MAP_COLUMN_FIELD.get(column.Type);
-        if (!fieldName) return;
+        if (!data || !fieldName) return;
 
         var value=data[fieldName];
         if (!IFrameSplitOperator.IsNumber(value)) return;
@@ -6326,7 +6407,7 @@ function ChartReport()
         if (column.DefaultText) drawInfo.Text=column.DefaultText;
 
         var fieldName=MAP_COLUMN_FIELD.get(column.Type);
-        if (!fieldName) return;
+        if (!data || !fieldName) return;
 
         var item=data[fieldName];
         if (IFrameSplitOperator.IsObject(item))
@@ -6338,6 +6419,33 @@ function ChartReport()
         else if (IFrameSplitOperator.IsString(item))
         {
             drawInfo.Text=item;
+        }
+    }
+
+    this.FormatReserveProgressBar=function(column, data, drawInfo)
+    {
+        var fieldName=MAP_COLUMN_FIELD.get(column.Type);
+        if (!data || !fieldName) return;
+        var item=data[fieldName];
+
+        if (IFrameSplitOperator.IsNumber(item))
+        {
+            drawInfo.ProgressBar=column.ProgressBar;
+            drawInfo.Enable=true;
+            drawInfo.Value=item;   //占比
+            drawInfo.Data={ Value:item };
+        }
+        else if (IFrameSplitOperator.IsObject(item))
+        {
+            if (item.Title) drawInfo.Text=item.Title;
+            drawInfo.ProgressBar=column.ProgressBar;
+            drawInfo.Enable=true;
+            drawInfo.Value=item.Value;   //占比
+            drawInfo.Data=item;
+            if (IFrameSplitOperator.IsBool(item.Enable)) drawInfo.Enable=item.Enable;
+            if (item.TextColor) drawInfo.TextColor=item.TextColor;
+            if (item.BarColor) drawInfo.BarColor=item.BarColor;
+            if (item.BGColor) drawInfo.BGColor=item.BGColor;
         }
     }
 
@@ -6521,7 +6629,17 @@ function ChartReport()
 
         this.Canvas.textBaseline="bottom";
         this.Canvas.fillStyle=textColor;
-        this.Canvas.fillText(text,x,top+this.RowHeight-this.ItemMergin.Bottom);
+
+        if (this.ItemTextLines>1)   //多行模式要上下居中
+        {
+            var yOffset=(this.RowHeight-this.ItemMergin.Bottom-this.ItemMergin.Top-this.ItemFontHeight)/2;
+            var yBottom=top+this.RowHeight-this.ItemMergin.Bottom-yOffset;
+            this.Canvas.fillText(text,x,yBottom);
+        }
+        else
+        {
+            this.Canvas.fillText(text,x,top+this.RowHeight-this.ItemMergin.Bottom);
+        }
 
         if (bClip) this.Canvas.restore();
     }

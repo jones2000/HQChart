@@ -2441,7 +2441,7 @@ function ChartTReport()
         if (column.DefaultText) drawInfo.Text=column.DefaultText;
 
         var fieldName=MAP_TREPORT_COLUMN_FIELD.get(column.Type);
-        if (!fieldName) return;
+        if (!data || !fieldName) return;
 
         var value=data[fieldName];
         if (!IFrameSplitOperator.IsNumber(value)) return;
@@ -2467,7 +2467,7 @@ function ChartTReport()
         if (column.DefaultText) drawInfo.Text=column.DefaultText;
 
         var fieldName=MAP_TREPORT_COLUMN_FIELD.get(column.Type);
-        if (!fieldName) return;
+        if (!data || !fieldName) return;
 
         var item=data[fieldName];
         if (IFrameSplitOperator.IsObject(item))
