@@ -53,9 +53,6 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
     this.CacheCanvasElement=null;
     if (bCacheCanvas) this.CacheCanvasElement=document.createElement("canvas");
 
-    //改参数div
-    this.ModifyIndexDialog=new ModifyIndexDialog(divElement);
-
     //额外的画布
     this.MapExtraCanvasElement=new Map();   //key=画布名字, value={ Element:, Canvas:}
 
@@ -287,9 +284,6 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
 
         if (option.EventCallback) this.SetEventCallback(chart, option.EventCallback);
         if (option.NetworkFilter) chart.NetworkFilter=option.NetworkFilter;
-
-        //创建改参数div
-        chart.ModifyIndexDialog=this.ModifyIndexDialog;
 
         var pixelRatio=GetDevicePixelRatio();
         
@@ -740,9 +734,6 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
     {
         var chart=new CustomKLineChartContainer(this.CanvasElement);
 
-        //创建改参数div
-        chart.ModifyIndexDialog=this.ModifyIndexDialog;
-        
         //右键菜单
         if (IFrameSplitOperator.IsBool(option.IsShowRightMenu)) chart.IsShowRightMenu=option.IsShowRightMenu;
 
@@ -842,8 +833,6 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
 
         if (option.EventCallback) this.SetEventCallback(chart, option.EventCallback);
         if (option.NetworkFilter) chart.NetworkFilter=option.NetworkFilter;
-
-        chart.ModifyIndexDialog=this.ModifyIndexDialog;
 
         var pixelRatio=GetDevicePixelRatio();
 
@@ -1423,9 +1412,6 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         if (option.NetworkFilter) chart.NetworkFilter=option.NetworkFilter;
         if (option.IsApiPeriod==true) chart.IsApiPeriod=option.IsApiPeriod;
 
-        //创建改参数div
-        chart.ModifyIndexDialog=this.ModifyIndexDialog;
-
         if (option.ScriptError) chart.ScriptErrorCallback=option.ScriptError;
 
         if (option.KLine)   //k线图的属性设置
@@ -1722,6 +1708,9 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
 
         if (option.SelectRectDialog && option.SelectRectDialog.Enable)
             chart.InitalSelectRectDialog(option.SelectRectDialog);
+
+        if (option.ModifyIndexParamDialog && option.ModifyIndexParamDialog.Enable)
+            chart.InitalModifyIndexParamDialog(option.ModifyIndexParamDialog);
 
         if (option.SearchIndexDialog && option.SearchIndexDialog.Enable)
             chart.InitalSearchIndexDialog(option.SearchIndexDialog);
@@ -2821,6 +2810,9 @@ var JSCHART_MENU_ID=
 
     CMD_DIALOG_TOOLTIP_ATTRIBUTE:65,    //修改K线信息框属性 Ary:[{ Enable:, Style:}, ]
     CMD_KLINE_TOOLTIP_ATTRIBUTE:66,     //修改K线提示框属性 Ary:[{ Enable:true/false, EnableKeyDown:true/false}]
+
+    CMD_MODIFY_INDEX_PARAM:67,          //指标删除修改  [windowIndex, ]
+    CMD_MODIFY_OVERLAY_INDEX_PARAM:68,  //叠加指标修改  [windowIndex, ID ]
 }
 
 
@@ -3049,6 +3041,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     this.DialogSelectRect;  //区间统计
     this.FloatTooltip;      //浮动tooltip信息
     this.DialogSearchIndex; //指标搜索
+    this.DialogModifyIndexParam;    //指标参数修改
 
 
     this.ClearStockCache=function()
@@ -3118,6 +3111,15 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         this.DialogSearchIndex.Create();
     }
 
+    this.InitalModifyIndexParamDialog=function(option)
+    {
+        if (this.DialogModifyIndexParam) return;
+
+        this.DialogModifyIndexParam=new JSDialogModifyIndexParam();
+        this.DialogModifyIndexParam.Inital(this, option);
+        this.DialogModifyIndexParam.Create();
+    }
+
     this.ShowChangeIndexDialog=function(data)
     {
         if (!data) return;
@@ -3136,6 +3138,46 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         data.Title=`添加叠加指标 [窗口${data.WindowIndex+1}]`;
         this.DialogSearchIndex.SetOpData(data);
         this.DialogSearchIndex.Show();
+    }
+
+    //添加指标窗口
+    this.ShowAddIndexWindowDialog=function(option)
+    {
+        if (!this.DialogSearchIndex) return;
+        var data=option;
+        if (!data) data={ };
+
+        data.OpType=3;
+
+        data.Title=`增加指标窗口`;
+        this.DialogSearchIndex.SetOpData(data);
+        this.DialogSearchIndex.Show();
+    }
+
+    this.ShowModifyIndexParamDialog=function(data)
+    {
+        if (!this.DialogModifyIndexParam) return;
+
+        if (data.Type==1)
+        {
+            var indexScript=this.WindowIndex[data.WindowIndex];
+            if (!indexScript) return;
+
+            data.IndexScript=indexScript;
+            data.Title=`[${indexScript.Name}]参数修改 窗口[${data.WindowIndex+1}]`;
+        }
+        else if (data.Type==2)
+        {
+            var overlayIndex=this.GetOverlayIndexByIdentify(data.Identify);
+            if (!overlayIndex || !overlayIndex.OverlayItem.Script) return;
+            var indexScript=overlayIndex.OverlayItem.Script;
+
+            data.IndexScript=indexScript;
+            data.Title=`[${indexScript.Name}]参数修改 叠加窗口[${data.WindowIndex+1}]`;
+        }
+
+        this.DialogModifyIndexParam.SetIndexData(data);
+        this.DialogModifyIndexParam.Show();
     }
     
 
@@ -10012,6 +10054,17 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 if (IFrameSplitOperator.IsBool(option.Enable)) this.KLineTooltipConfig.Enable=option.Enable;
                 if (IFrameSplitOperator.IsBool(option.EnableKeyDown)) this.KLineTooltipConfig.EnableKeyDown=option.EnableKeyDown;
                 break;
+            case JSCHART_MENU_ID.CMD_MODIFY_INDEX_PARAM:
+                if (param==null) return false;
+                var sendData={ e:null, WindowIndex:param, Type:1 }
+                this.ShowModifyIndexParamDialog(sendData);
+                break;
+            case JSCHART_MENU_ID.CMD_MODIFY_OVERLAY_INDEX_PARAM:
+                if (param==null) return false;
+                if (!aryArgs[1]) return false;
+                var sendData={ e:null, WindowIndex:param, Type:2, Identify:aryArgs[1] };
+                this.ShowModifyIndexParamDialog(sendData);
+                break;
         }
     }
 
@@ -10025,6 +10078,12 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         return data;
     }
 
+    this.GetModifyIndexMenuData=function(windowIndex)
+    {
+        var data= { Name:"参数修改",  Data:{ ID: JSCHART_MENU_ID.CMD_MODIFY_INDEX_PARAM, Args:[windowIndex] } };
+        return data;
+    }
+
     this.GetShowOverlayIndexMenuData=function(indexGuid, showType)
     {
         var overlay=this.GetOverlayIndexByIdentify(indexGuid);
@@ -10033,6 +10092,15 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         var script=overlay.OverlayItem.Script;
         var data= { Name:script.IsShow?"隐藏指标":"显示指标",  Data:{ ID: JSCHART_MENU_ID.CMD_SHOW_OVERLAY_INDEX_ID, Args:[indexGuid, 0] } };  
 
+        return data;
+    }
+
+    this.GetModifyOverlayIndexMenuData=function(indexGuid)
+    {
+        var overlay=this.GetOverlayIndexByIdentify(indexGuid);
+        if (!overlay) return null;
+
+        var data= { Name:"参数修改",  Data:{ ID: JSCHART_MENU_ID.CMD_MODIFY_OVERLAY_INDEX_PARAM, Args:[overlay.WindowIndex,indexGuid] } };
         return data;
     }
 
@@ -13912,7 +13980,6 @@ function MinuteFrame()
     this.ExportData=g_JSChartResource.MinuteToolbar.ExportData;      //是否显示'导出数据'菜单
     this.OverlayIndex=g_JSChartResource.MinuteToolbar.OverlayIndex;    //是否显示叠加指标
 
-    this.ModifyIndexEvent;   //改参数 点击事件
     this.ToolbarRect=null;   //保存工具条的位置
     this.IsShowPositionTitle=false; //是否显示持仓标题
 
@@ -16341,7 +16408,6 @@ function KLineFrame()
 
     this.SelBorderColor=g_JSChartResource.SelFrameBorderColor;
 
-    this.ModifyIndexEvent;   //改参数 点击事件
     this.ToolbarRect=null;   //保存工具条的位置
     this.ReDrawToolbar=false;
 
@@ -34061,6 +34127,13 @@ function ChartStickLine()
         return (this.BarType==1 || this.BarType==-1);
     }
 
+    this.CalculateBarHeight=function(y,y2)
+    {
+        var barHeight=Math.abs(y-y2);
+        if (barHeight<=0) barHeight=1;
+        return barHeight;
+    }
+
     this.Draw=function()
     {
         if (!this.IsShow || this.ChartFrame.IsMinSize || !this.IsVisible) return;
@@ -34200,7 +34273,7 @@ function ChartStickLine()
                     }
                     else
                     {
-                        this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(Math.min(y,y2)),ToFixedRect(width),ToFixedRect(Math.abs(y-y2)));
+                        this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(Math.min(y,y2)),ToFixedRect(width),ToFixedRect(this.CalculateBarHeight(y,y2)));
                     }
                 }
             }
@@ -34227,9 +34300,14 @@ function ChartStickLine()
                 else
                 {
                     if (isHScreen) 
+                    {
                         this.Canvas.fillRect(ToFixedRect(Math.min(y,y2)),ToFixedRect(xOffset),ToFixedRect(Math.abs(y-y2)),ToFixedRect(dataWidth));
+                    }
                     else 
-                        this.Canvas.fillRect(ToFixedRect(xOffset),ToFixedRect(Math.min(y,y2)),ToFixedRect(dataWidth),ToFixedRect(Math.abs(y-y2)));
+                    {
+                        this.Canvas.fillRect(ToFixedRect(xOffset),ToFixedRect(Math.min(y,y2)),ToFixedRect(dataWidth),ToFixedRect(this.CalculateBarHeight(y,y2)));
+                    }
+                        
                 }
             }
             else
@@ -34245,8 +34323,9 @@ function ChartStickLine()
                 {
                     var xFix=parseInt(x.toString())+0.5;
                     this.Canvas.beginPath();
-                    this.Canvas.moveTo(xFix,y);  
-                    this.Canvas.lineTo(xFix,y2);
+                    this.Canvas.moveTo(xFix,y);
+                    if (Math.abs(y-y2)>0) this.Canvas.lineTo(xFix,y2);
+                    else this.Canvas.lineTo(xFix,y+1);  //太窄了，就画一个像素的宽度
                     this.Canvas.stroke();
                 }
             }
@@ -69315,6 +69394,17 @@ function JSChartResource()
         InputTextColor:"rgb(0,0,0)"
     };
 
+    this.DialogModifyIndexParam=
+    {
+        BGColor:'rgb(250,250,250)',         //背景色
+        BorderColor:'rgb(20,20,20)',        //边框颜色
+        TitleColor:'rgb(250,250,250)',       //标题颜色
+        TitleBGColor:"rgb(200, 66, 69)",    //标题背景颜色
+
+        ParamNameColor:"rgb(0,0,0)",             //数值名称
+        InputTextColor:"rgb(0,0,0)"
+    };
+
     //弹幕
     this.Barrage= {
         Font:16*GetDevicePixelRatio() +'px 微软雅黑',   //字体
@@ -73477,8 +73567,6 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             frame.GetEventCallback=(id)=> { return this.GetEventCallback(id); };
             frame.GlobalOption=this.GlobalOption;
 
-            if (this.ModifyIndexDialog) frame.ModifyIndexEvent=this.ModifyIndexDialog.DoModal;        //绑定菜单事件
-
             frame.HorizontalMax=20;
             frame.HorizontalMin=10;
 
@@ -73560,8 +73648,6 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         frame.Identify=id;                   //窗口序号
         frame.GetEventCallback=(id)=> { return this.GetEventCallback(id); };
         frame.GlobalOption=this.GlobalOption;
-
-        if (this.ModifyIndexDialog) frame.ModifyIndexEvent=this.ModifyIndexDialog.DoModal;        //绑定菜单事件
 
         frame.HorizontalMax=20;
         frame.HorizontalMin=10;
@@ -79547,9 +79633,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         {
             var id=button.IndexID;
             var frame=button.Frame;
-            e.data={ Chart:this, Identify:id, IsOverlay:true };
-            if (frame.ModifyIndexEvent) 
-                frame.ModifyIndexEvent(e);
+            var sendData={ e:e, WindowIndex:frame.Identify, Type:2, Identify:id };
+            this.ShowModifyIndexParamDialog(sendData);
         }
         else if (button.ID==JSCHART_BUTTON_ID.CLOSE_INDEX_WINDOW)
         {
@@ -79570,9 +79655,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         else if (button.ID==JSCHART_BUTTON_ID.MODIFY_INDEX_PARAM)
         {
             var frame=button.Frame;
-            e.data={ Chart:this, Identify:frame.Identify, IsOverlay:false };
-            if (frame.ModifyIndexEvent) 
-                frame.ModifyIndexEvent(e);
+            var sendData={ e:e, WindowIndex:frame.Identify, Type:1 }
+            this.ShowModifyIndexParamDialog(sendData);
         }
         else if (button.ID==JSCHART_BUTTON_ID.OVERLAY_INDEX)
         {
@@ -80384,9 +80468,9 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         {
             var id=button.IndexID;
             var frame=button.Frame;
-            e.data={ Chart:this, Identify:id, IsOverlay:true };
-            if (frame.ModifyIndexEvent) 
-                frame.ModifyIndexEvent(e);
+            var sendData={ e:e, WindowIndex:frame.Identify, Type:2, Identify:id };
+            this.ShowModifyIndexParamDialog(sendData);
+
         }
         else if (button.ID==JSCHART_BUTTON_ID.CLOSE_INDEX_WINDOW)
         {
@@ -80402,9 +80486,8 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         else if (button.ID==JSCHART_BUTTON_ID.MODIFY_INDEX_PARAM)
         {
             var frame=button.Frame;
-            e.data={ Chart:this, Identify:frame.Identify, IsOverlay:false };
-            if (frame.ModifyIndexEvent) 
-                frame.ModifyIndexEvent(e);
+            var sendData={ e:e, WindowIndex:frame.Identify, Type:1 }
+            this.ShowModifyIndexParamDialog(sendData);
         }
         else if (button.ID==JSCHART_BUTTON_ID.OVERLAY_INDEX)
         {
@@ -82171,7 +82254,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
             if (i>=2)
             {
-                if (this.ModifyIndexDialog) frame.ModifyIndexEvent=this.ModifyIndexDialog.DoModal;        //绑定菜单事件
+                
             }
 
             var DEFAULT_HORIZONTAL=[9,8,7,6,5,4,3,2,1];
@@ -82258,12 +82341,6 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         frame.GlobalOption=this.GlobalOption;
         frame.HQChart=this;
         frame.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
-        
-
-        if (id>=2)
-        {
-            if (this.ModifyIndexDialog) frame.ModifyIndexEvent=this.ModifyIndexDialog.DoModal;        //绑定菜单事件
-        }
 
         var DEFAULT_HORIZONTAL=[9,8,7,6,5,4,3,2,1];
         frame.HorizontalMax=DEFAULT_HORIZONTAL[0];
@@ -87836,8 +87913,6 @@ function KLineChartHScreenContainer(uielement)
             frame.Identify=i;                   //窗口序号
             frame.RightSpaceCount=this.RightSpaceCount; //右边
 
-            if (this.ModifyIndexDialog) frame.ModifyIndexEvent=this.ModifyIndexDialog.DoModal;        //绑定菜单事件
-
             frame.HorizontalMax=20;
             frame.HorizontalMin=10;
 
@@ -90439,230 +90514,6 @@ function IDivDialog(divElement)
         if (IFrameSplitOperator.IsNumber(height)) cssData.height=height+'px';
 
         $("#"+this.ID).css(cssData);
-    }
-}
-
-
-//修改指标
-function ModifyIndexDialog(divElement)
-{
-    this.newMethod=IDivDialog;   //派生
-    this.newMethod(divElement);
-    delete this.newMethod;
-
-    this.Title={ ID:Guid() };      //标题
-    this.ParamList={ID:Guid() };   //参数列表  class='parameter-content'
-    this.ParamData=[];              //{ ID:参数ID, Value:参数值}
-    this.Identify;
-    this.HQChart;
-    this.IsOverlay=false;           //是否是叠加指标
-
-    this.IndexScript;
-
-    //创建
-    this.Create=function()
-    {
-        this.ID=Guid();
-
-        var div=document.createElement('div');
-        div.className='jchart-modifyindex-box';
-        div.id=this.ID;
-        div.innerHTML=
-        "<div class='parameter'>\
-            <div class='parameter-header'>\
-                <span></span>\
-                <strong id='close' class='icon iconfont icon-close'></strong>\
-            </div>\
-            <div class='parameter-content'><input/>MA</div>\
-            <div class='parameter-footer'>\
-                <button class='submit' >确定</button>\
-                <button class='cancel' >取消</button>\
-            </div>\
-        </div>";
-
-        this.DivElement.appendChild(div);
-
-        //确定按钮
-        $("#"+this.ID+" .submit").click(
-            {
-                divBox:this,
-            },
-            function(event)
-            {
-                event.data.divBox.Hide();
-            });
-
-        //给一个id 后面查找方便
-        var titleElement=div.getElementsByTagName('span')[0];
-        titleElement.id=this.Title.ID;
-
-        var paramListElement=div.getElementsByClassName('parameter-content')[0];
-        paramListElement.id=this.ParamList.ID;
-    }
-
-    //设置标题
-    this.SetTitle=function(title)
-    {
-        $("#"+this.Title.ID).html(title);
-    }
-
-    //清空参数
-    this.ClearParamList=function()
-    {
-        $("#"+this.ParamList.ID).empty();
-        this.ParamData=[];
-    }
-
-    this.BindParam=function()
-    {
-        for(var i=0; i<this.IndexScript.Arguments.length; ++i)
-        {
-            var item=this.IndexScript.Arguments[i];
-            if (item.Name==null || isNaN(item.Value)) break;
-
-            var guid=Guid();
-            var param = '<input class="row-line" id="'+guid+'" value="'+item.Value+'" type="number" step="1"/>'+ item.Name +'<br>';
-            $("#"+this.ParamList.ID).append(param);
-
-            this.ParamData.push({ID:guid,Value:item.Value});
-        }
-
-        //绑定参数修改事件
-        var self=this;
-        for(var i=0; i<this.ParamData.length; ++i)
-        {
-            var item=this.ParamData[i];
-            $("#"+item.ID).mouseup(
-                {
-                    ParamIndex:i   //参数序号
-                },
-                function(event)
-                {
-                    var value = parseInt($(this).val());                            //获取当前操作的input属性值，转化为整型
-                    if (!IFrameSplitOperator.IsNumber(value)) 
-                    {
-                        alert("参数不能为空");
-                        return;
-                    }
-                    var chart=self.HQChart;
-                    var identify=self.Identify;
-                    var paramIndex=event.data.ParamIndex;
-                    var script=self.IndexScript;
-                    var isOverlay=self.IsOverlay;
-
-                    script.Arguments[paramIndex].Value = value;         //为参数属性重新赋值
-                    if (isOverlay) chart.UpdateOverlayIndex(identify);
-                    else chart.UpdateWindowIndex(identify);              //调用更新窗口指标函数，参数用来定位窗口
-                }
-            )
-
-            $("#"+item.ID).keyup(
-                {
-                    ParamIndex:i   //参数序号
-                },
-                function(event)
-                {
-                    var value = parseInt($(this).val());                            //获取当前操作的input属性值，转化为整型
-                    if (!IFrameSplitOperator.IsNumber(value)) 
-                    {
-                        alert("参数不能为空");
-                        return;
-                    }
-                    var chart=self.HQChart;
-                    var identify=self.Identify;
-                    var paramIndex=event.data.ParamIndex;
-                    var script=self.IndexScript;
-                    var isOverlay=self.IsOverlay;
-
-                    script.Arguments[paramIndex].Value = value;    //为参数属性重新赋值
-                    if (isOverlay) chart.UpdateOverlayIndex(identify);
-                    else chart.UpdateWindowIndex(identify);                              //调用更新窗口指标函数，参数用来定位窗口
-                }
-            )
-        }
-    }
-
-    //绑定取消事件
-    this.BindCancel=function()
-    {
-        //取消按钮事件
-        var self=this;
-        var test=$("#"+this.ID+" .cancel");
-        $("#"+this.ID+" .cancel").unbind("click").click(
-            function(event)
-            {
-                var chart=self.HQChart;
-                var identify=self.Identify;
-                self.RestoreParam();
-                var isOverlay=self.IsOverlay;
-                if (isOverlay) chart.UpdateOverlayIndex(identify);
-                else chart.UpdateWindowIndex(identify);
-                self.IndexScript=null;
-                self.Hide();
-            }
-        );
-
-        //关闭和取消是一样的
-        $("#"+this.ID+" #close").unbind("click").click(
-            function(event)
-            {
-                var chart=self.HQChart;
-                var identify=self.Identify;
-                var isOverlay=self.IsOverlay;
-                self.RestoreParam();
-                if (isOverlay) chart.UpdateOverlayIndex(identify);
-                else chart.UpdateWindowIndex(identify);
-                self.IndexScript=null;
-                self.Hide();
-            }
-        );
-    }
-
-    //还原参数
-    this.RestoreParam=function()
-    {
-        if (!this.IndexScript) return;
-
-        for(var i=0; i<this.ParamData.length; ++i)
-        {
-            var item=this.ParamData[i];
-            this.IndexScript.Arguments[i].Value=item.Value;
-        }
-    }
-
-    //显示
-    this.DoModal=function(event)
-    {
-        var chart=event.data.Chart;
-        var identify=event.data.Identify;
-        var dialog=chart.ModifyIndexDialog;
-        var isOverlay=event.data.IsOverlay===true;
-
-        if(!dialog) return;
-
-        if (dialog.ID==null) dialog.Create();   //第1次 需要创建div
-        dialog.Identify=identify;
-        dialog.HQChart=chart;
-        dialog.IsOverlay=isOverlay
-
-        if (isOverlay)
-        {
-            var overlayIndex=chart.GetOverlayIndexByIdentify(identify);
-            if (!overlayIndex || !overlayIndex.OverlayItem.Script) return;
-            dialog.IndexScript=overlayIndex.OverlayItem.Script;
-            dialog.SetTitle(dialog.IndexScript.Name+" 叠加指标参数设置");   //设置标题
-        }
-        else
-        {
-            dialog.IndexScript=chart.WindowIndex[identify];
-            dialog.SetTitle(dialog.IndexScript.Name+" 指标参数设置");      //设置标题
-        }
-
-        dialog.ClearParamList();            //清空参数
-        dialog.BindParam(chart,identify);   //绑定参数
-        dialog.BindCancel();  //绑定取消和关闭事件
-
-        dialog.Show();//显示, 在css里调整居中
     }
 }
 

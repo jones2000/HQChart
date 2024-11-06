@@ -275,6 +275,7 @@
                 KLineTooltip:{ Enable:true, EnableKeyDown:false },
                 FloatTooltip:{ Enable:true, },
                 SearchIndexDialog:{ Enable:true },
+                ModifyIndexParamDialog:{ Enable:true },
 
                 //EnableVerifyRecvData:true,
 
@@ -680,6 +681,8 @@
                             { Title:"VMACD", ID:"F_BTN_05",TooltipText:"VMACD:说明......", Data:{ IndexID:"VMACD"}},
                             { Title:"BRAR", ID:"F_BTN_06", TooltipText:"BRAR:说明......", Data:{ IndexID:"BRAR"}},
                             { Title:"更多指标", ID:"F_BTN_07", TooltipText:"更多更多......", SVGButton:{ Symbol:"\ue694", }, Data:{ } },
+
+                            { Title:"新增窗口", ID:"F_BTN_08", TooltipText:"新增加一个新的指标窗口", Data:{ }}, 
                             //{ SVGButton:{ Symbol:"\ue694", }, ID:"F_BTN_08", Data:{ } }
                         ];
                     
@@ -1182,14 +1185,14 @@
 
                 if (!data.Info) return;
 
-                if (this.OnClickIndexButton(data.Info, data.e)) 
+                if (this.OnClickIndexButton(data.Info, data.e, obj)) 
                 {
                     data.PreventDefault=true;
                 }
             }
 
 
-            this.OnClickIndexButton=function(btnInfo, e)
+            this.OnClickIndexButton=function(btnInfo, e, hqchart)
             {
                 if (btnInfo.Chart.ClassName!="FrameButtomToolbarPaint") return false;
 
@@ -1235,6 +1238,13 @@
 
                     if(e.preventDefault) e.preventDefault();
                     if(e.stopPropagation) e.stopPropagation();
+                }
+                else if (btnInfo.ID=="F_BTN_08")
+                {
+                    if(e.preventDefault) e.preventDefault();
+                    if(e.stopPropagation) e.stopPropagation();
+
+                    hqchart.ShowAddIndexWindowDialog({ });
                 }
                 
 
@@ -1313,6 +1323,7 @@
                     { 
                         Menu:
                         [ 
+                            this.Chart.JSChartContainer.GetModifyOverlayIndexMenuData(data.Info.Data.IndexGuid),
                             this.Chart.JSChartContainer.GetShowOverlayIndexMenuData(data.Info.Data.IndexGuid),
                             this.Chart.JSChartContainer.GetShowOverlayIndexYAxisMenuData(data.Info.Data.IndexGuid),
                             this.Chart.JSChartContainer.GetOverlayIndexShareYMenuData(data.Info.Data.IndexGuid),
@@ -1328,12 +1339,14 @@
                 else
                 {
                     var menuItem=this.Chart.JSChartContainer.GetShowIndexMenuData(data.Info.FrameID);
+                    var modifyMenu=this.Chart.JSChartContainer.GetModifyIndexMenuData(data.Info.FrameID);
                     var frame=this.Chart.JSChartContainer.Frame.SubFrame[data.Info.FrameID].Frame;
 
                     var menuData=
                     { 
                         Menu:
                         [ 
+                            modifyMenu,
                             menuItem,
                             { 
                                 Name:"Y轴分割方式", 
@@ -1362,7 +1375,8 @@
             {
                 if (menuData.Data.ID==JSCHART_MENU_ID.CMD_SHOW_INDEX_ID || menuData.Data.ID==JSCHART_MENU_ID.CMD_SHOW_OVERLAY_INDEX_ID || 
                     menuData.Data.ID==JSCHART_MENU_ID.CMD_DELETE_OVERLAY_INDEX_ID || menuData.Data.ID==JSCHART_MENU_ID.CMD_SHOW_OVERLAY_Y_AXIS_ID ||
-                    menuData.Data.ID==JSCHART_MENU_ID.CMD_ENABLE_OVERLAY_SHARE_Y_ID)
+                    menuData.Data.ID==JSCHART_MENU_ID.CMD_ENABLE_OVERLAY_SHARE_Y_ID ||
+                    menuData.Data.ID==JSCHART_MENU_ID.CMD_MODIFY_INDEX_PARAM || JSCHART_MENU_ID.CMD_MODIFY_OVERLAY_INDEX_PARAM )
                 {
                     this.Chart.JSChartContainer.ExecuteMenuCommand(menuData.Data.ID, menuData.Data.Args);
                 }

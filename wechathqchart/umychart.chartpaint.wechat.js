@@ -4384,6 +4384,13 @@ function ChartStickLine()
         return (this.BarType==1 || this.BarType==-1);
     }
 
+    this.CalculateBarHeight=function(y,y2)
+    {
+        var barHeight=Math.abs(y-y2);
+        if (barHeight<=0) barHeight=1;
+        return barHeight;
+    }
+
     this.Draw = function () 
     {
         if (this.ChartFrame.IsMinSize) return;
@@ -4522,7 +4529,7 @@ function ChartStickLine()
                     }
                     else
                     {
-                        this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(Math.min(y,y2)),ToFixedRect(width),ToFixedRect(Math.abs(y-y2)));
+                        this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(Math.min(y,y2)),ToFixedRect(width),ToFixedRect( this.CalculateBarHeight(y,y2)));
                     }
                 }
             }
@@ -4548,7 +4555,7 @@ function ChartStickLine()
                     if (isHScreen)
                         this.Canvas.fillRect(ToFixedRect(Math.min(y, y2)), ToFixedRect(xOffset), ToFixedRect(Math.abs(y - y2)), ToFixedRect(dataWidth));
                     else
-                        this.Canvas.fillRect(ToFixedRect(xOffset), ToFixedRect(Math.min(y, y2)), ToFixedRect(dataWidth), ToFixedRect(Math.abs(y - y2)));
+                        this.Canvas.fillRect(ToFixedRect(xOffset), ToFixedRect(Math.min(y, y2)), ToFixedRect(dataWidth), ToFixedRect( this.CalculateBarHeight(y, y2)));
                 }
             }
             else 
@@ -4565,7 +4572,8 @@ function ChartStickLine()
                     var xFix = parseInt(x.toString()) + 0.5;
                     this.Canvas.beginPath();
                     this.Canvas.moveTo(xFix, y);
-                    this.Canvas.lineTo(xFix, y2);
+                    if (Math.abs(y-y2)>0) this.Canvas.lineTo(xFix, y2);
+                    else this.Canvas.lineTo(xFix,y+1);  //太窄了，就画一个像素的宽度
                     this.Canvas.stroke();
                 }
             }

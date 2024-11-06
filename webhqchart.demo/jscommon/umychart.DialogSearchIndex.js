@@ -8,7 +8,7 @@
  
    jones_2000@163.com
 
-   内置指标搜索对话框
+   内置指标搜索对话框 修改指标参数对话框
 */
 
 
@@ -22,7 +22,7 @@ function JSDialogSearchIndex()
 
     this.HQChart=null;
 
-    //{ WindowIndex:窗口索引, OpType:1=切换主图指标 2=添加叠加指标,  Title: };  
+    //{ WindowIndex:窗口索引, OpType:1=切换主图指标 2=添加叠加指标 3=新增指标窗口,  Title: };  
     this.OpData=null;        
 
     this.TitleColor=g_JSChartResource.DialogSearchIndex.TitleColor;
@@ -48,6 +48,7 @@ function JSDialogSearchIndex()
         {
             if (IFrameSplitOperator.IsNumber(option.Style)) this.Style=option.Style;
             if (option.IndexData) this.IndexData=option.IndexData;
+            if (IFrameSplitOperator.IsNumber(option.MaxRowCount)) this.MaxRowCount=option.MaxRowCount;
         }
     }
 
@@ -57,7 +58,8 @@ function JSDialogSearchIndex()
         this.AryGroup=[];
         this.IndexData=null;
         this.InputDom=null;
-       
+        this.HQChart=null;
+
         if (this.DivDialog) 
         {
             document.body.removeChild(this.DivDialog);
@@ -322,6 +324,24 @@ function JSDialogSearchIndex()
             {
                 var obj={ WindowIndex:this.OpData.WindowIndex, API: { ID:indexItem.ID, Name:indexItem.Name, Args:indexItem.Args, Url:'local'} };
                 this.HQChart.AddOverlayIndex(obj);
+            }
+        }
+        else if (this.OpData.OpType==3) //新增加指标窗口
+        {
+            var indexItem=cellItem.IndexItem;
+            if (indexItem.Type==0)  //系统指标
+            {
+                this.HQChart.AddIndexWindow(indexItem.ID, this.OpData);
+            }
+            else if (indexItem.Type==1) //自定义脚本指标
+            {
+                var indexData={ ID:indexItem.ID, Name:indexItem.Name, Script:indexItem.Script, Args:indexItem.Args };
+                this.HQChart.AddScriptIndexWindow(indexData, this.OpData);
+            }
+            else if (indexItem.Type==2) //api指标
+            {
+                var indexData={ API: { ID:indexItem.ID, Name:indexItem.Name, Args:indexItem.Args, Url:'local'} };
+                this.HQChart.AddAPIIndexWindow(indexData, this.OpData);
             }
         }
         
@@ -596,7 +616,7 @@ JSDialogSearchIndex.GetDefaultIndexData=function()
                 ]
             },
 
-            /*
+            
             {
                 Group:{ ID:"自定义", Name:"自定义"} , 
                 AryIndex:
@@ -605,12 +625,416 @@ JSDialogSearchIndex.GetDefaultIndexData=function()
                     { Name:"高低均价(自定义脚本)", ID:"HIGH_LOW_AV", Type:1, Args:null , Script:"均价:(H+L)/2;高:H;低:L;", Args:[ { Name:'N', Value:20}, { Name:'M', Value:6}]},
                 ]
             }
-            */
+            
         ]
        
     }
 
     return data;
+}
+
+
+
+function JSDialogModifyIndexParam()
+{
+    this.DivDialog=null;
+    this.DragTitle=null;
+    this.TitleBox=null; //{ DivTitle, DivName, DivName }
+    this.Style=0;       //样式 预留
+
+    this.TitleColor=g_JSChartResource.DialogModifyIndexParam.TitleColor;
+    this.TitleBGColor=g_JSChartResource.DialogModifyIndexParam.TitleBGColor;
+    this.BGColor=g_JSChartResource.DialogModifyIndexParam.BGColor;
+    this.BorderColor=g_JSChartResource.DialogModifyIndexParam.BorderColor;
+    this.ParamNameColor=g_JSChartResource.DialogModifyIndexParam.ParamNameColor;
+    this.InputTextColor=g_JSChartResource.DialogModifyIndexParam.InputTextColor;
+
+    this.MaxRowCount=30;    //行
+
+    this.HQChart=null;
+
+    this.AryData=[];
+    this.IndexData=null;    //指标数据 { WindowsIndex:, Type:1=主图 2=叠加, Identify, IndexScript: }
+    this.Arguments=[];           //参数备份
+
+    this.Inital=function(hqchart, option)
+    {
+        this.HQChart=hqchart;
+        if (option)
+        {
+            if (IFrameSplitOperator.IsNumber(option.Style)) this.Style=option.Style;
+            if (IFrameSplitOperator.IsNumber(option.MaxRowCount)) this.MaxRowCount=option.MaxRowCount;
+        }
+    }
+
+
+    this.Destroy=function()
+    {
+        this.AryData=[];
+        this.HQChart=null;
+
+        if (this.DivDialog) 
+        {
+            document.body.removeChild(this.DivDialog);
+            this.DivDialog=null;
+        }
+    }
+
+    this.Show=function(x,y)
+    {
+        if (!this.DivDialog) return;
+        //if (!this.HQChart) return;
+
+        this.UpdateParam();
+
+        if (this.IndexData && this.IndexData.Title) this.TitleBox.DivName.innerText=this.IndexData.Title;
+
+        if (!IFrameSplitOperator.IsNumber(x) || !IFrameSplitOperator.IsNumber(y))   //默认居中显示
+        {
+            var rtClient=this.HQChart.UIElement.getBoundingClientRect();
+            x=rtClient.left+(rtClient.right-rtClient.left-this.DivDialog.offsetWidth)/2;
+            y=rtClient.top+(rtClient.bottom-rtClient.top-this.DivDialog.offsetHeight)/2;
+        }
+
+        this.DivDialog.style.visibility='visible';
+        this.DivDialog.style.top = y + "px";
+        this.DivDialog.style.left = x + "px";
+    }
+
+    this.OnClickColseButton=function(e)
+    {
+        this.RestoreParam();    //还原参数
+        this.Close(e);
+    }
+
+    this.OnClickRestoreButton=function(e)
+    {
+        var aryText=this.Arguments;
+        if (!aryText) aryText=[];
+        this.UpdateParamTable(aryText);
+        this.RestoreParam();
+    }
+
+    this.OnClickOkButton=function(e)
+    {
+        this.Close(e);
+    }
+
+    this.Close=function(e)
+    {
+        this.IndexData=null;
+        this.Arguments=[];
+        if (!this.DivDialog) return;
+
+        this.DivDialog.style.visibility='hidden';
+    }
+
+    this.SetIndexData=function(data)
+    {
+        this.IndexData=data;
+        this.BackupParam();
+    }
+
+    this.OnMouseDownTitle=function(e)
+    {
+        if (!this.DivDialog) return;
+
+        var dragData={ X:e.clientX, Y:e.clientY };
+        dragData.YOffset=e.clientX - this.DivDialog.offsetLeft;
+        dragData.XOffset=e.clientY - this.DivDialog.offsetTop;
+        this.DragTitle=dragData;
+
+        document.onmousemove=(e)=>{ this.DocOnMouseMoveTitle(e); }
+        document.onmouseup=(e)=>{ this.DocOnMouseUpTitle(e); }
+    }
+
+    this.DocOnMouseMoveTitle=function(e)
+    {
+        if (!this.DragTitle) return;
+
+        var left = e.clientX - this.DragTitle.YOffset;
+        var top = e.clientY - this.DragTitle.XOffset;
+
+        var right=left+this.DivDialog.offsetWidth;
+        var bottom=top+ this.DivDialog.offsetHeight;
+        
+        if ((right+5)>=window.innerWidth) left=window.innerWidth-this.DivDialog.offsetWidth-5;
+        if ((bottom+5)>=window.innerHeight) top=window.innerHeight-this.DivDialog.offsetHeight-5;
+
+        this.DivDialog.style.left = left + 'px';
+        this.DivDialog.style.top = top + 'px';
+
+        if(e.preventDefault) e.preventDefault();
+    }
+
+    this.DocOnMouseUpTitle=function(e)
+    {
+        this.DragTitle=null;
+        this.onmousemove = null;
+        this.onmouseup = null;
+    }
+
+    this.Create=function()
+    {
+        var divDom=document.createElement("div");
+        divDom.className='UMyChart_ModifyIndexParam_Dialog_Div';
+
+        //对话框标题栏
+        var divTitle=document.createElement("div");
+        divTitle.className='UMyChart_ModifyIndexParam_Title_Div';
+        divTitle.onmousedown=(e)=>{   this.OnMouseDownTitle(e);}
+        divDom.appendChild(divTitle);
+
+        var divName=document.createElement("div");
+        divName.className='UMyChart_ModifyIndexParam_Name_Div';
+        divName.innerText="指标参数修改";
+        divTitle.appendChild(divName);
+
+        var divClose=document.createElement("div");
+        divClose.className='UMyChart_ModifyIndexParam_Close_Div';
+        divClose.innerText="x";
+        divClose.onmousedown=(e)=>{ this.OnClickColseButton(e); }
+        divTitle.appendChild(divClose);
+        
+        //整个框子
+        var divFrame=document.createElement("div");
+        divFrame.className="UMyChart_ModifyIndexParam_Frome_Div";
+        divDom.appendChild(divFrame);
+
+        //表格
+        var divTable=document.createElement("div");
+        divTable.className='UMyChart_ModifyIndexParam_Table_Div';
+        divFrame.appendChild(divTable);
+        
+        var table=document.createElement("table");
+        table.className="UMyChart_ModifyIndexParam_Table";
+        divTable.appendChild(table);
+
+        /*
+        var thead=document.createElement("thead");
+        table.appendChild(thead);
+
+        var trDom=document.createElement("tr");
+        trDom.className='UMyChart_ModifyIndexParam_head_Tr';
+        thead.appendChild(trDom);
+
+        var thDom=document.createElement("th");
+        thDom.className="UMyChart_ModifyIndexParam_Th"; 
+        thDom.innerText="变量";
+        trDom.appendChild(thDom);
+
+        var thDom=document.createElement("th");
+        thDom.className="UMyChart_ModifyIndexParam_Th"; 
+        thDom.innerText="数值";
+        trDom.appendChild(thDom);
+
+        var thDom=document.createElement("th");
+        thDom.className="UMyChart_ModifyIndexParam_Th"; 
+        thDom.innerText="说明";
+        trDom.appendChild(thDom);
+        */
+
+
+        var tbody=document.createElement("tbody");
+        tbody.className="UMyChart_ModifyIndexParam_Tbody";
+        table.appendChild(tbody);
+
+        this.AryData=[];
+        for(var i=0;i<this.MaxRowCount;++i)
+        {
+            var rowItem=this.CreateRowDOM(i, tbody)
+
+            this.AryData.push(rowItem);
+        }
+
+        var divButton=document.createElement("div");
+        divButton.className='UMyChart_ModifyIndexParam_Button_Div';
+        divFrame.appendChild(divButton);
+
+        var btnRestore=document.createElement("button");
+        //btnRestore.className="UMyChart_ModifyIndexParam_button";
+        btnRestore.innerText="恢复默认";
+        btnRestore.addEventListener("mousedown", (e)=>{ this.OnClickRestoreButton(e); });
+        divButton.appendChild(btnRestore);
+
+        var btnOk=document.createElement("button");
+        //btnOk.className="UMyChart_ModifyIndexParam_button";
+        btnOk.innerText="确认";
+        btnOk.addEventListener("mousedown", (e)=>{ this.OnClickOkButton(e); })
+        divButton.appendChild(btnOk);
+        
+        document.body.appendChild(divDom);
+
+        this.DivName=divName;
+        this.DivDialog=divDom;
+        this.TitleBox={ DivTitle:divTitle, DivName:divName, DivColor:divClose };
+
+        this.UpdateStyle();
+    }
+
+    this.CreateRowDOM=function(index, tbody)
+    {
+        var rowItem={ Tr:null, TdName:null, SpanName:null, TdValue:null, Input:null, ParamItem:null };
+
+        var trDom=document.createElement("tr");
+        trDom.className='UMyChart_ModifyIndexParam_Tr';
+        tbody.appendChild(trDom);
+        rowItem.Tr=trDom;
+
+        var tdDom=document.createElement("td");
+        tdDom.className="UMyChart_ModifyIndexParam_Name_Td";   //指标名称
+        trDom.appendChild(tdDom);
+        rowItem.TdName=tdDom;
+
+        var spanDom=document.createElement("span");
+        spanDom.className='UMyChart_ModifyIndexParam_Name_Span';
+        spanDom.innerText='参数';
+        tdDom.appendChild(spanDom);
+        rowItem.SpanName=spanDom;
+
+        var tdDom=document.createElement("td");
+        tdDom.className="UMyChart_ModifyIndexParam_Value_Td";   //指标名称
+        trDom.appendChild(tdDom);
+        rowItem.TdValue=tdDom;
+
+        var input=document.createElement("input");
+        input.className='UMyChart_ModifyIndexParam_Input';
+        input.type="number";
+        input.step=1;
+        input.addEventListener("mouseup", (e)=>{ this.OnParamMouseUp(e)});
+        input.addEventListener("keyup", (e)=>{ this.OnParamKeyUp(e)})
+        tdDom.appendChild(input);
+        rowItem.Input=input;
+
+        return rowItem;
+    }
+
+    this.UpdateStyle=function()
+    {
+        if (!this.DivDialog) return;
+
+        if (this.BGColor) this.DivDialog.style['background-color']=this.BGColor;
+        if (this.BorderColor) this.DivDialog.style['border-color']=this.BorderColor;
+
+        if (this.TitleBGColor) this.TitleBox.DivTitle.style['background-color']=this.TitleBGColor;
+        if (this.TitleColor) this.TitleBox.DivName.style['color']=this.TitleColor;
+    };
+
+    this.UpdateParamTable=function(aryText)
+    {
+        var index=0;
+        for(index=0; index<aryText.length && index<this.AryData.length; ++index)
+        {
+            var item=aryText[index];
+            var row=this.AryData[index];
+            row.SpanName.innerText=`${item.Name}: `;
+            row.SpanName.style.color=this.ParamNameColor;
+
+            row.Input.value=item.Value;
+            row.Input.style.color=this.InputTextColor;
+            row.Input.dataset.paramid=item.Index;
+
+            if (row.Tr.style.display=="none") row.Tr.style.display="";
+        }
+
+        for(; index<this.AryData.length; ++index)
+        {
+            var row=this.AryData[index];
+            row.Tr.style.display="none";
+            row.Input.dataset.paramid=-1;
+        }
+    }
+
+    this.UpdateParam=function()
+    {
+        var aryText=[];
+        var indexScript=this.IndexData.IndexScript;
+        if (indexScript && IFrameSplitOperator.IsNonEmptyArray(indexScript.Arguments))
+        {
+            for(var i=0;i<indexScript.Arguments.length;++i)
+            {
+                var item=indexScript.Arguments[i];
+                aryText.push({ Name:item.Name, Value:item.Value, Index:i });
+            }
+        }
+
+        this.UpdateParamTable(aryText);
+    }
+
+    this.RestoreParam=function()
+    {
+        if (!this.IndexData || !this.IndexData.IndexScript) return;
+        var indexScript=this.IndexData.IndexScript;
+
+        if (!IFrameSplitOperator.IsNonEmptyArray(indexScript.Arguments)) return;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.Arguments)) return;
+
+        var bUpdate=false;
+        for(var i=0;i<this.Arguments.length;++i)
+        {
+            var oldItem=this.Arguments[i];
+            var item=indexScript.Arguments[i];
+            if (oldItem.Value!=item.Value)
+            {
+                item.Value=oldItem.Value;
+                bUpdate=true;
+            }
+        }
+
+        if (!bUpdate) return;
+
+        if (this.IndexData.Type==1) this.HQChart.UpdateWindowIndex(this.IndexData.WindowIndex);
+        else if (this.IndexData.Type==2) this.HQChart.UpdateOverlayIndex(this.IndexData.Identify);
+    }
+
+    this.BackupParam=function()
+    {
+        this.Arguments=[];
+
+        if (!this.IndexData || !this.IndexData.IndexScript) return;
+        var indexScript=this.IndexData.IndexScript;
+        if (IFrameSplitOperator.IsNonEmptyArray(indexScript.Arguments))
+        {
+            for(var i=0;i<indexScript.Arguments.length;++i)
+            {
+                var item=indexScript.Arguments[i];
+                this.Arguments.push({Name:item.Name, Value:item.Value, Index:i});
+            }
+        }
+    }
+
+    this.OnParamMouseUp=function(e)
+    {
+        var input=e.target;
+        var value=input.value;
+        var id=input.dataset.paramid;
+
+        this.ModifyParam(id, parseInt(value));
+    }
+
+    this.OnParamKeyUp=function(e)
+    {
+        var input=e.target;
+        var value=input.value;
+        var id=input.dataset.paramid;
+
+        this.ModifyParam(id, parseInt(value));
+    }
+
+    this.ModifyParam=function(id, value)
+    {   
+        if (!this.IndexData || !this.IndexData.IndexScript) return;
+
+        var indexScript=this.IndexData.IndexScript;
+        var item=indexScript.Arguments[id];
+        if (!item) return;
+        if (item.Value==value) return;
+
+        item.Value=value;
+
+        if (this.IndexData.Type==1) this.HQChart.UpdateWindowIndex(this.IndexData.WindowIndex);
+        else if (this.IndexData.Type==2) this.HQChart.UpdateOverlayIndex(this.IndexData.Identify);
+    }
 }
 
 
