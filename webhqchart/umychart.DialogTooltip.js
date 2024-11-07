@@ -1012,7 +1012,7 @@ function JSFloatTooltip()
         var bottom=top+this.DivDialog.offsetHeight;
         
         if ((right+5)>=window.innerWidth) left=left-this.DivDialog.offsetWidth;
-        if ((bottom+5)>=window.innerHeight) top=0;
+        if ((bottom+5)>=window.innerHeight) top=window.innerHeight-this.DivDialog.offsetHeight-5;
        
         this.DivDialog.style.top = top + "px";
         this.DivDialog.style.left = left + "px";
