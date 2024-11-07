@@ -8815,6 +8815,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             if (IFrameSplitOperator.IsNumber(windowItem.IndexParamSpace)) frame.IndexParamSpace=windowItem.IndexParamSpace;
             if (IFrameSplitOperator.IsNumber(windowItem.IndexTitleSpace)) frame.IndexTitleSpace=windowItem.IndexTitleSpace;
             if (!IFrameSplitOperator.IsUndefined(windowItem.HorizontalReserved)) frame.HorizontalReserved=windowItem.HorizontalReserved;    //Y轴上下预留
+            if (IFrameSplitOperator.IsBool(windowItem.IsShowNameArrow)) frame.IsShowNameArrow=windowItem.IsShowNameArrow;
         }
 
         if (frameItem)
@@ -48411,6 +48412,17 @@ IFrameSplitOperator.RemoveZero=function(strValue)
     return strValue;
 }
 
+//移除代码市场后缀
+IFrameSplitOperator.RemoveMarketSuffix=function(symbol)
+{
+    if (!symbol) return symbol;
+
+    var pos=symbol.lastIndexOf(".");
+    if (pos>0) return symbol.substring(0,pos);
+
+    return symbol;
+}
+
 function FrameSplitKLinePriceY()
 {
     this.newMethod=IFrameSplitOperator;   //派生
@@ -69819,7 +69831,7 @@ function JSChartResource()
         SortIcon:
         {
             Size:12, Family:"iconfont",
-            Arrow:[null, "\ue6b2", "\ue6b1"],
+            Arrow:[null, "\ue6b2", "\ue6b1"],           //[0]=默认排序的图标背景色
             Color:[null, "rgb(255,0,0)", "rgb(255,0,0)"],
             Margin:{ Left:0, Bottom:6 }
         },

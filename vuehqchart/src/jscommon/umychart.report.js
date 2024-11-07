@@ -5092,6 +5092,7 @@ function ChartReport()
         var top=this.RectClient.Top;
         var y=top+this.HeaderMergin.Top+(this.HeaderHeight-this.HeaderMergin.Top-this.HeaderMergin.Bottom)/2;
         var yBottom=top+this.HeaderHeight;
+        var bDrawSortBG=this.IsDrawSortBGIcon();
 
         this.Canvas.font=this.HeaderFont;
         
@@ -5132,6 +5133,10 @@ function ChartReport()
             if (this.SortInfo && this.SortInfo.Field==i && this.SortInfo.Sort>0)
             {
                 this.DrawSortHeader(item.Title,item.TextAlign,x,yBottom,textWidth,this.SortInfo.Sort, textSize);
+            }
+            else if (item.Sort>0 && bDrawSortBG)
+            {
+                this.DrawSortHeader(item.Title,item.TextAlign,x,yBottom,textWidth,0,textSize);
             }
             else
             {
@@ -5185,6 +5190,10 @@ function ChartReport()
             if (this.SortInfo && this.SortInfo.Field==i && this.SortInfo.Sort>0)
             {
                 this.DrawSortHeader(item.Title,item.TextAlign,x,yBottom,textWidth,this.SortInfo.Sort,textSize);
+            }
+            else if (item.Sort>0)
+            {
+                this.DrawSortHeader(item.Title,item.TextAlign,x,yBottom,textWidth,0, textSize);
             }
             else
             {
@@ -5248,10 +5257,24 @@ function ChartReport()
         }
     }
 
+    //是否绘制排序背景图标
+    this.IsDrawSortBGIcon=function()
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.SortConfig.Arrow)) return false;
+        if (!this.SortConfig.Arrow[0]) return false;
+
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.SortConfig.Color)) return false;
+        if (!this.SortConfig.Color[0]) return false;
+
+        return true;
+    }
+
     this.DrawSortHeader=function(text, textAlign, x, yBottom, width, sortType,textSize)
     {
         var pixelRatio=GetDevicePixelRatio();
         var sortText=this.SortConfig.Arrow[sortType];
+        var sortBGText=this.SortConfig.Arrow[0];
+        var sortBGColor=this.SortConfig.Color[0];
         this.Canvas.font=this.HeaderFont;
         var textWidth=this.Canvas.measureText(text).width;
         var sortTextWidth=this.SortConfig.Size*pixelRatio+this.SortConfig.Margin.Left;
@@ -5275,8 +5298,17 @@ function ChartReport()
 
         xText+=(textWidth+this.SortConfig.Margin.Left);
         this.Canvas.font=this.SortFont;
-        this.Canvas.fillStyle=this.SortConfig.Color[sortType];
-        this.Canvas.fillText(sortText,xText,yBottom-this.SortConfig.Margin.Bottom);
+        if (sortBGText && sortBGColor)
+        {
+            this.Canvas.fillStyle=sortBGColor;
+            this.Canvas.fillText(sortBGText,xText,yBottom-this.SortConfig.Margin.Bottom);
+        }
+
+        if (sortType>0)
+        {
+            this.Canvas.fillStyle=this.SortConfig.Color[sortType];
+            this.Canvas.fillText(sortText,xText,yBottom-this.SortConfig.Margin.Bottom);
+        }
 
         this.Canvas.font=this.HeaderFont;
         this.Canvas.fillStyle=this.HeaderColor;
@@ -5287,7 +5319,6 @@ function ChartReport()
             textSize.Width=textWidth+sortTextWidth;
         }
     }
-
 
     this.DrawBorder=function()
     {
@@ -6067,7 +6098,7 @@ function ChartReport()
     this.DrawSymbolName=function(data, column, left, top, rowType)
     {
         var stock=data.Stock;
-        var symbol=data.Symbol;
+        var symbol=IFrameSplitOperator.RemoveMarketSuffix(data.Symbol);
         var name;
         if (stock)
         {
@@ -6124,7 +6155,7 @@ function ChartReport()
     this.DrawSymbolNameV2=function(data, column, left, top, rowType)
     {
         var stock=data.Stock;
-        var symbol=data.Symbol;
+        var symbol=IFrameSplitOperator.RemoveMarketSuffix(data.Symbol);
         var name;
         if (stock)
         {
