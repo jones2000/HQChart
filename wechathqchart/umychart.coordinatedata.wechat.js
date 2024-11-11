@@ -205,6 +205,11 @@ var MARKET_SUFFIX_NAME=
 
     IsSHO: function (upperSymbol) 
     {
+        if (this.IsSH(upperSymbol)) //10007211.sh
+        {
+            if (upperSymbol.length==11 && upperSymbol[0]=='1') return true;
+        }
+
         var pos = upperSymbol.length - this.SHO.length;
         var find = upperSymbol.indexOf(this.SHO);
         return find == pos;
@@ -212,6 +217,11 @@ var MARKET_SUFFIX_NAME=
 
     IsSZO: function(upperSymbol)
     {
+        if (this.IsSZ(upperSymbol)) //90004047.sz
+        {
+            if (upperSymbol.length==11 && upperSymbol[0]=='9') return true;
+        }
+
         var pos = upperSymbol.length - this.SZO.length;
         var find = upperSymbol.indexOf(this.SZO);
         return find == pos;
@@ -657,6 +667,9 @@ var MARKET_SUFFIX_NAME=
 function MinuteTimeStringData() 
 {
     this.SHSZ = null;       //上海深证交易所时间
+    this.BJ=null;           //北交所
+    this.SHO=null;          //上海期权交易时间
+    this.SZO=null;          //深证期权交易时间
     this.HK = null;         //香港交易所时间
     this.Futures=new Map(); //期货交易时间 key=时间名称 Value=数据
     this.USA = null;        //美股交易时间
@@ -689,10 +702,22 @@ function MinuteTimeStringData()
         return this.BJ;
     }
 
+    this.GetBJ=function(upperSymbol)
+    {
+        if (!this.BJ) this.BJ=this.CreateBJData();
+        return this.BJ;
+    }
+
     this.GetSHO = function () 
     {
         if (!this.SHO) this.SHO = this.CreateSHOData();
         return this.SHO;
+    }
+
+    this.GetSZO=function(upperSymbol)
+    {
+        if (!this.SZO) this.SZO=this.CreateSZOData();
+        return this.SZO;
     }
 
     this.GetHK=function(upperSymbol)
@@ -784,6 +809,18 @@ function MinuteTimeStringData()
         return this.CreateTimeData(TIME_SPLIT);
     }
 
+    this.CreateBJData=function()
+    {
+        const TIME_SPLIT =
+            [
+                { Start: 925, End: 925 },
+                { Start: 930, End: 1130 },
+                { Start: 1300, End: 1500 }
+            ];
+
+        return this.CreateTimeData(TIME_SPLIT);
+    }
+
     this.CreateSHOData = function () 
     {
         const TIME_SPLIT =
@@ -791,6 +828,17 @@ function MinuteTimeStringData()
                 { Start: 930, End: 1129 },
                 { Start: 1300, End: 1500 }
             ];
+
+        return this.CreateTimeData(TIME_SPLIT);
+    }
+
+    this.CreateSZOData=function()
+    {
+        const TIME_SPLIT =
+        [
+            { Start: 930, End: 1129 },
+            { Start: 1300, End: 1500 }
+        ];
 
         return this.CreateTimeData(TIME_SPLIT);
     }
@@ -937,9 +985,10 @@ function MinuteTimeStringData()
         if (!symbol) return this.SHSZ;
 
         var upperSymbol = symbol.toLocaleUpperCase(); //转成大写
+        if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol)) return this.GetSHO();
+        if (MARKET_SUFFIX_NAME.IsSZO(upperSymbol)) return this.GetSZO();
         if (MARKET_SUFFIX_NAME.IsSH(upperSymbol) || MARKET_SUFFIX_NAME.IsSZ(upperSymbol) || MARKET_SUFFIX_NAME.IsSHSZIndex(upperSymbol)) return this.GetSHSZ(upperSymbol);
         if (MARKET_SUFFIX_NAME.IsBJ(upperSymbol)) return this.GetBJ(upperSymbol);
-        if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol) || MARKET_SUFFIX_NAME.IsSZO(upperSymbol)) return this.GetSHO();
         if (MARKET_SUFFIX_NAME.IsHK(upperSymbol)) return this.GetHK(upperSymbol);
         if (MARKET_SUFFIX_NAME.IsTW(upperSymbol)) return this.GetTW(upperSymbol);
         if (MARKET_SUFFIX_NAME.IsJP(upperSymbol)) return this.GetJP(upperSymbol);

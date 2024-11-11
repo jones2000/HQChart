@@ -1508,7 +1508,7 @@ input[type="color"] {
     height: 500px;
     width: 600px;
     z-index: 809;
-    visibility:'hidden';
+    visibility:hidden;
     background-color: rgba(255,255,255,0.95);
     border: solid 1px rgba(200, 210, 219, 0.92);
     display: flex;
@@ -1538,8 +1538,40 @@ input[type="color"] {
     margin-left: auto;
     padding-right: 4px;
     cursor:pointer;
+    color:rgb(180,180,180)
 }
 
+
+/*
+    Copyright (c) 2018 jones
+ 
+    http://www.apache.org/licenses/LICENSE-2.0
+
+   开源项目 https://github.com/jones2000/HQChart
+ 
+   jones_2000@163.com
+
+   内置分时图浮动框
+*/
+
+.UMyChart_Tooltip_Minute_Div
+{
+    position: absolute;
+    height: 300px;
+    width: 400px;
+    visibility:hidden;
+    background-color: rgba(255,255,255,0.95);
+    border: solid 1px rgba(200, 210, 219, 0.92);
+    display: flex;
+    flex-flow: column;  
+    z-index: 99;
+    pointer-events:none;
+}
+
+.UMyChart_Tooltip_Minute_Chart_Div
+{
+    flex: 1
+}
 
 
 /*

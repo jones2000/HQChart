@@ -2633,6 +2633,8 @@ var JSCHART_EVENT_ID=
 
     ON_FORMAT_KLINE_FLOAT_TOOLTIP:161,          //格式化k线浮动框显示文字
     ON_FORMAT_KLINE_INFO_FLOAT_TOOLTIP:162,     //格式化信息地雷显示文字
+
+    SEARCH_DIALOG_ON_CLICK_INDEX:163,           //切换指标-指标对话框
 }
 
 var JSCHART_OPERATOR_ID=
@@ -10020,7 +10022,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                     if (srcParam) 
                     {
                         this.DestroyPopMinuteChart();
-                        this.InitalPopMinuteChart( {KLine:{KLineDoubleClick:true}} );
+                        this.InitalPopMinuteChart( { PopMinuteChart:{ Enable:true }} );
                     }
                     else 
                     {
@@ -68747,6 +68749,9 @@ function JSChartResource()
     {
         BGColor:"rgba(250,250,250,0.95)",
         BorderColor:"rgb(0,0,0)",
+
+        TitleColor:'rgb(250,250,250)',       //标题颜色
+        TitleBGColor:"rgb(200, 66, 69)",    //标题背景颜色
     }
 
     this.SelectRectBGColor="rgba(1,130,212,0.06)"; //背景色
@@ -70248,6 +70253,8 @@ function JSChartResource()
             var item=style.PopMinuteChart;
             if (item.BGColor) this.PopMinuteChart.BGColor=item.BGColor;
             if (item.BorderColor) this.PopMinuteChart.BorderColor=item.BorderColor;
+            if (item.TitleColor) this.DialogSearchIndex.TitleColor=item.TitleColor;
+            if (item.TitleBGColor) this.DialogSearchIndex.TitleBGColor=item.TitleBGColor;
         }
 
         if (style.DefaultTextColor) this.DefaultTextColor = style.DefaultTextColor;
@@ -73419,9 +73426,16 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
     this.InitalPopMinuteChart=function(option)
     {
-        if (!option || !option.KLine) return false;
-        var item=option.KLine;
-        if (item.KLineDoubleClick===true)
+        if (!option) return false;
+
+        if (option.PopMinuteChart && option.PopMinuteChart.Enable)  //新的配置格式
+        {
+            var item=option.PopMinuteChart;
+            this.PopMinuteChart=new JSPopMinuteChart();
+            this.PopMinuteChart.Inital(this, item);
+            return true;
+        }
+        else if (option.KLine && option.KLine.KLineDoubleClick===true)  //旧的格式 不要使用了
         {
             this.PopMinuteChart=new JSPopMinuteChart();
             this.PopMinuteChart.Inital(this);

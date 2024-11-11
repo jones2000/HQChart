@@ -1001,7 +1001,7 @@ function JSFloatTooltip()
         }
     }
 
-    this.Show=function(x, y)
+    this.Show=function(x, y, option)
     {
         if (!this.DivDialog) return;
         if (!this.HQChart) return;
@@ -1012,7 +1012,11 @@ function JSFloatTooltip()
         var bottom=top+this.DivDialog.offsetHeight;
         
         if ((right+5)>=window.innerWidth) left=left-this.DivDialog.offsetWidth;
-        if ((bottom+5)>=window.innerHeight) top=window.innerHeight-this.DivDialog.offsetHeight-5;
+        if ((bottom+5)>=window.innerHeight) 
+        {
+            top=(y+rtClient.top)-this.DivDialog.offsetHeight;
+            if (option && IFrameSplitOperator.IsNumber(option.YMove)) top-=option.YMove;
+        }
        
         this.DivDialog.style.top = top + "px";
         this.DivDialog.style.left = left + "px";
@@ -1232,7 +1236,7 @@ function JSFloatTooltip()
         {
             var x=data.Point.X;
             var y=data.Point.Y+data.Point.YMove;
-            this.Show(x, y);
+            this.Show(x, y, { YMove:data.Point.YMove });
         }
     }
 

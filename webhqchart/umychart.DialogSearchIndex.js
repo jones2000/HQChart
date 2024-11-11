@@ -286,6 +286,15 @@ function JSDialogSearchIndex()
         if (!this.OpData) return;
         if (!cellItem || !cellItem.IndexItem) return;
 
+        var event=this.HQChart.GetEventCallback(JSCHART_EVENT_ID.SEARCH_DIALOG_ON_CLICK_INDEX);
+        if (event && event.Callback)
+        {
+            var sendData={ OpData:this.OpData, IndexData:cellItem.IndexItem, HQChart:this.HQChart, PreventDefault:false };
+            event.Callback(event, sendData, this);
+
+            if (sendData.PreventDefault==true) return;   //已被上层处理了
+        }
+        
         if (this.OpData.OpType==1)
         {
             if (!IFrameSplitOperator.IsNumber(this.OpData.WindowIndex)) return;

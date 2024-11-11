@@ -187,7 +187,7 @@ HQData.Minute_RequestMinuteData=function(data, callback)
     setTimeout(()=>{
         var fullData=HQData.GetDayMinuteDataBySymbol(symbol);
         var srcStock=fullData[0];
-        var stockItem={ date:srcStock.date, minute:srcStock.minute, yclose:srcStock.yclose, symbol:srcStock.symbol, name:srcStock.name };
+        var stockItem={ date:srcStock.date, minute:srcStock.minute, yclose:srcStock.yclose, symbol:symbol, name:symbol };
         if (callcation.Before)
         {
             var before=
@@ -212,7 +212,10 @@ HQData.Minute_RequestMinuteData=function(data, callback)
             stockItem.beforeinfo=beforeinfo;
         }
 
-        /* 测试用 这里可以修改数据
+        //测试用 这里可以修改数据
+        //var lastItem=srcStock.minute[srcStock.minute.length-1];
+        //lastItem.price+=Math.ceil(Math.random()*10)/1000*lastItem.price;
+        /*
         for(var i=0;i<srcStock.minute.length;++i)
         {
             var item=srcStock.minute[i];
@@ -1102,125 +1105,132 @@ HQData.Report_RequestStockData=function(data, callback)
     var stocks=data.Request.Data.stocks;    //股票列表
     data.PreventDefault=true;
 
-    var mapStock=new Map();
-    for(var i=0;i<stocks.length;++i)
+    setTimeout(()=>
     {
-        var item=stocks[i];
-        mapStock.set(item.Symbol,{ Symbol:item.Symbol, Data:null });
-    }
-
-    if (IFrameSplitOperator.IsNonEmptyArray(SHSZ_STOCK_LIST_TEST_DATA.symbol))
-    {
-        for(var i=0;i<SHSZ_STOCK_LIST_TEST_DATA.symbol.length;++i)
+        var mapStock=new Map();
+        for(var i=0;i<stocks.length;++i)
         {
-            var symbol=SHSZ_STOCK_LIST_TEST_DATA.symbol[i];
-            if (!mapStock.has(symbol)) continue;
-            var item=mapStock.get(symbol);
-            var name=SHSZ_STOCK_LIST_TEST_DATA.name[i];
-            var price=SHSZ_STOCK_LIST_TEST_DATA.close[i];
-            var vol=SHSZ_STOCK_LIST_TEST_DATA.vol[i];
-            var newItem=
-            [
-                symbol, 
-                name, 
-                SHSZ_STOCK_LIST_TEST_DATA.yclose[i],
-                SHSZ_STOCK_LIST_TEST_DATA.open[i],
-                SHSZ_STOCK_LIST_TEST_DATA.high[i],
-                SHSZ_STOCK_LIST_TEST_DATA.low[i],
-                price,
-                vol,
-                SHSZ_STOCK_LIST_TEST_DATA.amount[i],
-            ];
-
-            //买价 量
-            newItem[9]=price+0.05;
-            newItem[10]=10;
-
-            //卖价 量
-            newItem[11]=price-0.06;
-            newItem[12]=5;
-
-            //均价
-            newItem[13]=price-0.03;   
-            
-            //内盘
-            newItem[18]=vol/4;  
-            //外盘 
-            newItem[19]=vol/5;  
-
-            newItem[14]=vol*1.5;   //流通股本
-            newItem[15]=vol*1.8;  //总股本
-
-            //换手率
-            newItem[23]=(Math.round(Math.random()*60))/100;
-
-            //名字字段
-            var symbolEx={ Text:name };
-            if (i%20==5)
-                symbolEx.Symbol={ Family:'iconfont', Size:16,  Data:[ { Text:'\ue629', Color:'rgb(255,165,0)'}, { Text:'\ue627', Color:'#1c65db'} ] };
-            else if (i%20==9)
-                symbolEx.Symbol={ Family:'iconfont', Size:16,  Data:[ { Text:'\ue629', Color:'rgb(255,165,0)'}] } ;
-            else if (i%20==18)
-                symbolEx.Symbol={ Family:'iconfont', Size:16,  Data:[ { Text:'\ue627', Color:'#1c65db'}] } ;
-
-            newItem[27]=symbolEx;
-
-
-            newItem[38]=HQData.GetRandomTestData(10,20000);        //持仓量
-            newItem[39]=HQData.GetRandomTestData(10,100);        //结算价
-            newItem[40]=HQData.GetRandomTestData(10,100);        //昨结算价
-            newItem[41]=HQData.GetRandomTestData(10,20000);        //开仓量
-            newItem[42]=HQData.GetRandomTestData(10,20000);        //平仓量
-
-            //1,3,5,10,15 涨速%
-            newItem[43]=HQData.GetRandomTestData(-90,90); 
-            newItem[44]=HQData.GetRandomTestData(-90,90); 
-            newItem[45]=HQData.GetRandomTestData(-90,90); 
-            newItem[46]=HQData.GetRandomTestData(-90,90); 
-            newItem[47]=HQData.GetRandomTestData(-90,90); 
-
-
-            //扩展数据 (定制数据)
-            var extendData=[];
-            newItem[30]=extendData;
-
-            //行业
-            extendData[0]="行业X";
-            //地区
-            extendData[1]="地区X";
-            
-            //PE|PB
-            extendData[2]=(Math.round(Math.random()*60))/100;
-            extendData[3]=(Math.round(Math.random()*60))/100;
-            extendData[4]=(Math.round(Math.random()*60))/100;
-            extendData[5]=(Math.round(Math.random()*60))/100;
-
-           
-            //周涨幅
-            extendData[6]=(Math.round(Math.random()*60))/100;
-            extendData[7]=(Math.round(Math.random()*60))/100;
-            extendData[8]=(Math.round(Math.random()*60))/100;
-
-
-            newItem[101]=105.0;
-            newItem[201]=`A-[${HQData.GetRandomTestData(-90,90)}]-B`
-             
-
-            item.Data=newItem;
+            var item=stocks[i];
+            mapStock.set(item.Symbol,{ Symbol:item.Symbol, Data:null });
         }
-    }
 
-    var hqchartData={  data:[], code:0 };
+        if (IFrameSplitOperator.IsNonEmptyArray(SHSZ_STOCK_LIST_TEST_DATA.symbol))
+        {
+            for(var i=0;i<SHSZ_STOCK_LIST_TEST_DATA.symbol.length;++i)
+            {
+                var symbol=SHSZ_STOCK_LIST_TEST_DATA.symbol[i];
+                if (!mapStock.has(symbol)) continue;
+                var item=mapStock.get(symbol);
+                var name=SHSZ_STOCK_LIST_TEST_DATA.name[i];
+                var price=SHSZ_STOCK_LIST_TEST_DATA.close[i];
+                var vol=SHSZ_STOCK_LIST_TEST_DATA.vol[i];
+                var newItem=
+                [
+                    symbol, 
+                    name, 
+                    SHSZ_STOCK_LIST_TEST_DATA.yclose[i],
+                    SHSZ_STOCK_LIST_TEST_DATA.open[i],
+                    SHSZ_STOCK_LIST_TEST_DATA.high[i],
+                    SHSZ_STOCK_LIST_TEST_DATA.low[i],
+                    price,
+                    vol,
+                    SHSZ_STOCK_LIST_TEST_DATA.amount[i],
+                ];
 
-    for(var mapItem of mapStock)
-    {
-        var item=mapItem[1];
-        if (!item.Data) continue;
+                //买价 量
+                newItem[9]=price+0.05;
+                newItem[10]=10;
 
-        hqchartData.data.push(item.Data);
-    }
+                //卖价 量
+                newItem[11]=price-0.06;
+                newItem[12]=5;
 
-    callback(hqchartData);
+                //均价
+                newItem[13]=price-0.03;   
+                
+                //内盘
+                newItem[18]=vol/4;  
+                //外盘 
+                newItem[19]=vol/5;  
+
+                newItem[14]=vol*1.5;   //流通股本
+                newItem[15]=vol*1.8;  //总股本
+
+                //换手率
+                newItem[23]=(Math.round(Math.random()*60))/100;
+
+                //名字字段
+                var symbolEx={ Text:name };
+                if (i%20==5)
+                    symbolEx.Symbol={ Family:'iconfont', Size:16,  Data:[ { Text:'\ue629', Color:'rgb(255,165,0)'}, { Text:'\ue627', Color:'#1c65db'} ] };
+                else if (i%20==9)
+                    symbolEx.Symbol={ Family:'iconfont', Size:16,  Data:[ { Text:'\ue629', Color:'rgb(255,165,0)'}] } ;
+                else if (i%20==18)
+                    symbolEx.Symbol={ Family:'iconfont', Size:16,  Data:[ { Text:'\ue627', Color:'#1c65db'}] } ;
+
+                newItem[27]=symbolEx;
+
+
+                newItem[38]=HQData.GetRandomTestData(10,20000);        //持仓量
+                newItem[39]=HQData.GetRandomTestData(10,100);        //结算价
+                newItem[40]=HQData.GetRandomTestData(10,100);        //昨结算价
+                newItem[41]=HQData.GetRandomTestData(10,20000);        //开仓量
+                newItem[42]=HQData.GetRandomTestData(10,20000);        //平仓量
+
+                //1,3,5,10,15 涨速%
+                newItem[43]=HQData.GetRandomTestData(-90,90); 
+                newItem[44]=HQData.GetRandomTestData(-90,90); 
+                newItem[45]=HQData.GetRandomTestData(-90,90); 
+                newItem[46]=HQData.GetRandomTestData(-90,90); 
+                newItem[47]=HQData.GetRandomTestData(-90,90); 
+
+
+                //扩展数据 (定制数据)
+                var extendData=[];
+                newItem[30]=extendData;
+
+                //行业
+                extendData[0]="行业X";
+                //地区
+                extendData[1]="地区X";
+                
+                //PE|PB
+                extendData[2]=(Math.round(Math.random()*60))/100;
+                extendData[3]=(Math.round(Math.random()*60))/100;
+                extendData[4]=(Math.round(Math.random()*60))/100;
+                extendData[5]=(Math.round(Math.random()*60))/100;
+
+            
+                //周涨幅
+                extendData[6]=(Math.round(Math.random()*60))/100;
+                extendData[7]=(Math.round(Math.random()*60))/100;
+                extendData[8]=(Math.round(Math.random()*60))/100;
+
+
+                newItem[101]=105.0;
+                newItem[201]=`A-[${HQData.GetRandomTestData(-90,90)}]-B`;
+
+
+                newItem[301]=HQData.GetRandomTestData(0,100)/100;
+                newItem[302]=HQData.GetRandomTestData(0,100)/100;
+                
+
+                item.Data=newItem;
+            }
+        }
+
+        var hqchartData={  data:[], code:0 };
+
+        for(var mapItem of mapStock)
+        {
+            var item=mapItem[1];
+            if (!item.Data) continue;
+
+            hqchartData.data.push(item.Data);
+        }
+
+        callback(hqchartData);
+    }, 500);
 }
 
 HQData.Report_RequestStockSortData=function(data, callback)
@@ -1445,6 +1455,10 @@ HQData.Report_RequestVirtualStockData=function(data, callback)
             extendData[6]=(Math.round(Math.random()*60))/100;
             extendData[7]=(Math.round(Math.random()*60))/100;
             extendData[8]=(Math.round(Math.random()*60))/100;
+
+
+            newItem[351]={Title:"启动"};
+            newItem[352]={Title:"加入"};
 
 
             aryData.push(newItem);

@@ -93,7 +93,7 @@ function GetBlackStyle()
 
         PopMinuteChart:
         {
-            BGColor:"rgba(0,0,0,0.95)",
+            BGColor:"rgba(0,0,0,0.85)",
             BorderColor:"rgb(230,230,230)",
         },
     

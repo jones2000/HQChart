@@ -160,6 +160,11 @@ function JSReportChart(divElement)
             this.CreateExtraCanvasElement(JSReportChart.TooltipCursorCanvasKey, { ZIndex:99 });
         }
 
+        if (option.MinuteChartTooltip && option.MinuteChartTooltip.Enable)
+        {
+            chart.InitalMinuteChartTooltip(option.MinuteChartTooltip);
+        }
+
         if (option.Symbol) chart.Symbol=option.Symbol;
         if (option.Name) chart.Name=option.Name;
 
@@ -482,6 +487,9 @@ function JSReportChartContainer(uielement)
     this.JSPopMenu;             //内置菜单
     this.IsShowRightMenu=true;
 
+    //
+    this.TooltipMinuteChart;    //分时图
+
     //MouseOnStatus:{ RowIndex:行, ColumnIndex:列} 
     this.LastMouseStatus={ MoveStatus:null, TooltipStatus:null, MouseOnStatus:null };
    
@@ -489,6 +497,8 @@ function JSReportChartContainer(uielement)
     {
         this.IsDestroy=true;
         this.StopAutoUpdate();
+
+        this.DestroyMinuteChartTooltip();
     }
 
     this.StopAutoDragScrollTimer=function()
@@ -509,6 +519,48 @@ function JSReportChartContainer(uielement)
         this.JSPopMenu=new JSPopMenu();     //内置菜单
         this.JSPopMenu.Inital();
     }
+
+    this.InitalMinuteChartTooltip=function(option)
+    {
+        if (this.TooltipMinuteChart) return;
+
+        this.TooltipMinuteChart=new JSTooltipMinuteChart();
+        this.TooltipMinuteChart.Inital(this, option);
+        this.TooltipMinuteChart.Create();
+    }
+
+    this.DestroyMinuteChartTooltip=function()
+    {
+        if (!this.TooltipMinuteChart) return;
+
+        this.TooltipMinuteChart.Destroy();
+        this.TooltipMinuteChart=null;
+    }
+
+    //data={ Symbol }
+    this.ShowMinuteChartTooltip=function(x,y, data)
+    {
+        if (!this.TooltipMinuteChart) return;
+
+        var rtClient=this.UIElement.getBoundingClientRect();
+        var rtScroll=GetScrollPosition();
+
+        var offsetLeft=rtClient.left+rtScroll.Left;
+        var offsetTop=rtClient.top+rtScroll.Top;
+
+        data.Offset={ Left:offsetLeft, Top:offsetTop };
+
+        this.TooltipMinuteChart.Show(data, x,y);
+    }
+
+    this.HideMinuteChartTooltip=function()
+    {
+        if (!this.TooltipMinuteChart) return;
+
+        this.TooltipMinuteChart.Hide();
+    }
+
+
 
     this.AutoScrollPage=function(step)
     {
@@ -1537,6 +1589,19 @@ function JSReportChartContainer(uielement)
         if (IFrameSplitOperator.IsNumber(item[308]) || IFrameSplitOperator.IsObject(item[308])) stock.ReserveProgressBar8=item[308];
         if (IFrameSplitOperator.IsNumber(item[309]) || IFrameSplitOperator.IsObject(item[309])) stock.ReserveProgressBar9=item[309];
         if (IFrameSplitOperator.IsNumber(item[310]) || IFrameSplitOperator.IsObject(item[310])) stock.ReserveProgressBar10=item[310];
+
+        //10个按钮 351-400 { Title, Enable:, BGColor, TextColor: }
+        if (IFrameSplitOperator.IsObject(item[351])) stock.ReserveButton1=item[351];
+        if (IFrameSplitOperator.IsObject(item[352])) stock.ReserveButton2=item[352];
+        if (IFrameSplitOperator.IsObject(item[353])) stock.ReserveButton3=item[353];
+        if (IFrameSplitOperator.IsObject(item[354])) stock.ReserveButton4=item[354];
+        if (IFrameSplitOperator.IsObject(item[355])) stock.ReserveButton5=item[355];
+        if (IFrameSplitOperator.IsObject(item[356])) stock.ReserveButton6=item[356];
+        if (IFrameSplitOperator.IsObject(item[357])) stock.ReserveButton7=item[357];
+        if (IFrameSplitOperator.IsObject(item[358])) stock.ReserveButton8=item[358];
+        if (IFrameSplitOperator.IsObject(item[359])) stock.ReserveButton9=item[359];
+        if (IFrameSplitOperator.IsObject(item[360])) stock.ReserveButton10=item[360];
+        
     }
 
 
@@ -1932,6 +1997,9 @@ function JSReportChartContainer(uielement)
         var bDrawTooltip=false;
         if (this.LastMouseStatus.TooltipStatus) bDrawTooltip=true;
         this.LastMouseStatus.TooltipStatus=null;
+
+        var bShowChartTooltip=false;
+        var chartTooltipData=null;
         
         if (this.DragRow) return;
         if (this.DrawHeader) return;
@@ -2002,8 +2070,19 @@ function JSReportChartContainer(uielement)
                 var tooltipData=report.GetTooltipData(x,y);  //单元格提示信息
                 if (tooltipData)
                 {
-                    this.LastMouseStatus.TooltipStatus={ X:e.clientX, Y:e.clientY, Data:tooltipData };
-                    bDrawTooltip=true;
+                    if (tooltipData.Type==20)
+                    {
+                        if (tooltipData.Stock && tooltipData.Stock.Symbol)
+                        {
+                            bShowChartTooltip=true;
+                            chartTooltipData={ Symbol:tooltipData.Stock.OriginalSymbol, Rect:tooltipData.Rect };
+                        }
+                    }
+                    else
+                    {
+                        this.LastMouseStatus.TooltipStatus={ X:x, Y:y, Data:tooltipData, ClientX:e.clientX, ClientY:e.clientY };
+                        bDrawTooltip=true;
+                    }
                 }
             }
 
@@ -2034,6 +2113,15 @@ function JSReportChartContainer(uielement)
 
         if (bDraw || bDrawTab) this.Draw();
         else if (bDrawTooltip) this.DrawTooltip(this.LastMouseStatus.TooltipStatus);
+
+        if (bShowChartTooltip)
+        {
+            this.ShowMinuteChartTooltip(null, null, chartTooltipData);
+        }
+        else
+        {
+            this.HideMinuteChartTooltip();
+        }
     }
 
     this.UIOnMounseOut=function(e)
@@ -4194,6 +4282,18 @@ var REPORT_COLUMN_ID=
     RESERVE_PROGRESS_BAR9_ID:409,
     RESERVE_PROGRESS_BAR10_ID:410,
 
+    //留按钮类型  10个  451-500     
+    RESERVE_BUTTON1_ID:451,    //ReserveButton1:
+    RESERVE_BUTTON2_ID:452,    //ReserveButton2:
+    RESERVE_BUTTON3_ID:453,    //ReserveButton3:
+    RESERVE_BUTTON4_ID:454,    //ReserveButton4:
+    RESERVE_BUTTON5_ID:455,    //ReserveButton5:
+    RESERVE_BUTTON6_ID:456,    //ReserveButton6:
+    RESERVE_BUTTON7_ID:457,    //ReserveButton7:
+    RESERVE_BUTTON8_ID:458,    //ReserveButton8:
+    RESERVE_BUTTON9_ID:459,    //ReserveButton9:
+    RESERVE_BUTTON10_ID:460,   //ReserveButton10:
+
 }
 
 
@@ -4278,6 +4378,18 @@ var MAP_COLUMN_FIELD=new Map([
     [REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR8_ID,"ReserveProgressBar8"],
     [REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR9_ID,"ReserveProgressBar9"],
     [REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR10_ID,"ReserveProgressBar10"],
+
+    
+    [REPORT_COLUMN_ID.RESERVE_BUTTON1_ID,"ReserveButton1"],
+    [REPORT_COLUMN_ID.RESERVE_BUTTON2_ID,"ReserveButton2"],
+    [REPORT_COLUMN_ID.RESERVE_BUTTON3_ID,"ReserveButton3"],
+    [REPORT_COLUMN_ID.RESERVE_BUTTON4_ID,"ReserveButton4"],
+    [REPORT_COLUMN_ID.RESERVE_BUTTON5_ID,"ReserveButton5"],
+    [REPORT_COLUMN_ID.RESERVE_BUTTON6_ID,"ReserveButton6"],
+    [REPORT_COLUMN_ID.RESERVE_BUTTON7_ID,"ReserveButton7"],
+    [REPORT_COLUMN_ID.RESERVE_BUTTON8_ID,"ReserveButton8"],
+    [REPORT_COLUMN_ID.RESERVE_BUTTON9_ID,"ReserveButton9"],
+    [REPORT_COLUMN_ID.RESERVE_BUTTON10_ID,"ReserveButton10"],
 ]);
 
 function ChartReport()
@@ -4460,7 +4572,7 @@ function ChartReport()
     this.RectClient={};
 
     //{ Rect:rtItem, Stock:stock, Index:index, Column:column, RowType:rowType, Type:drawInfo.Tooltip.Type, Data:{ AryText:[ {Text:xx} ]} };
-    //Type:1=数据截断
+    //Type:1=数据截断 2=表头提示信息  20=分时图
     // { Text, Color, Title:, TitleColor, Space, Margin:{ Left, Top, Right, Bottom }}
     this.TooltipRect=[];
 
@@ -4594,6 +4706,7 @@ function ChartReport()
             if (IFrameSplitOperator.IsNumber(item.ColorType))  colItem.ColorType=item.ColorType;        //0=默认 1=(>0, =0, <0) 2=(>=0, <0)
             else colItem.IsDrawCallback=false;
             if (item.Icon) colItem.Icon=item.Icon;
+            if (IFrameSplitOperator.IsBool(item.EnableChartTooltip)) colItem.EnableChartTooltip=item.EnableChartTooltip;
 
             //点击表头弹出菜单
             if (IFrameSplitOperator.IsBool(item.EnablePopupHeaderMenu)) colItem.EnablePopupHeaderMenu=item.EnablePopupHeaderMenu;
@@ -4648,6 +4761,11 @@ function ChartReport()
                 if (!IFrameSplitOperator.IsNumber(item.DataIndex) && !IFrameSplitOperator.IsNumber(item.BlockIndex)) continue;
                 if (IFrameSplitOperator.IsNumber(item.DataIndex)) colItem.DataIndex=item.DataIndex;                  //数据在扩展数据索引列
                 if (IFrameSplitOperator.IsNumber(item.BlockIndex)) colItem.BlockIndex=item.BlockIndex;
+                if (item.Button) colItem.Button=CloneData(item.Button);
+                else colItem.Button=this.ButtonConfig;
+            }
+            else if (this.IsReserveButtonColumn(item.Type))
+            {
                 if (item.Button) colItem.Button=CloneData(item.Button);
                 else colItem.Button=this.ButtonConfig;
             }
@@ -4849,6 +4967,17 @@ function ChartReport()
             { Type:REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR8_ID, Title:"进度条8", TextAlign:"center", FixedWidth:100*GetDevicePixelRatio()  },
             { Type:REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR9_ID, Title:"进度条9", TextAlign:"center", FixedWidth:100*GetDevicePixelRatio()  },
             { Type:REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR10_ID, Title:"进度条10", TextAlign:"center", FixedWidth:100*GetDevicePixelRatio()  },
+
+            { Type:REPORT_COLUMN_ID.RESERVE_BUTTON1_ID, Title:"按钮1", TextAlign:"center", FixedWidth:50*GetDevicePixelRatio() },
+            { Type:REPORT_COLUMN_ID.RESERVE_BUTTON2_ID, Title:"按钮2", TextAlign:"center", FixedWidth:50*GetDevicePixelRatio() },
+            { Type:REPORT_COLUMN_ID.RESERVE_BUTTON3_ID, Title:"按钮3", TextAlign:"center", FixedWidth:50*GetDevicePixelRatio() },
+            { Type:REPORT_COLUMN_ID.RESERVE_BUTTON4_ID, Title:"按钮4", TextAlign:"center", FixedWidth:50*GetDevicePixelRatio() },
+            { Type:REPORT_COLUMN_ID.RESERVE_BUTTON5_ID, Title:"按钮5", TextAlign:"center", FixedWidth:50*GetDevicePixelRatio() },
+            { Type:REPORT_COLUMN_ID.RESERVE_BUTTON6_ID, Title:"按钮6", TextAlign:"center", FixedWidth:50*GetDevicePixelRatio() },
+            { Type:REPORT_COLUMN_ID.RESERVE_BUTTON7_ID, Title:"按钮7", TextAlign:"center", FixedWidth:50*GetDevicePixelRatio() },
+            { Type:REPORT_COLUMN_ID.RESERVE_BUTTON8_ID, Title:"按钮8", TextAlign:"center", FixedWidth:50*GetDevicePixelRatio() },
+            { Type:REPORT_COLUMN_ID.RESERVE_BUTTON9_ID, Title:"按钮9", TextAlign:"center", FixedWidth:50*GetDevicePixelRatio() },
+            { Type:REPORT_COLUMN_ID.RESERVE_BUTTON10_ID, Title:"按钮10", TextAlign:"center", FixedWidth:50*GetDevicePixelRatio() },
             
         ];
 
@@ -5953,6 +6082,10 @@ function ChartReport()
         {
             this.FormatReserveProgressBar(column, stock, drawInfo);
         }
+        else if (this.IsReserveButtonColumn(column.Type))
+        {
+            this.FormatReserveButton(column, stock, drawInfo);
+        }
         
 
         //拖拽行颜色
@@ -5971,7 +6104,7 @@ function ChartReport()
         {
             this.DrawCheckbox(drawInfo, left, top, itemWidth);
         }
-        else if (column.Type==REPORT_COLUMN_ID.CUSTOM_BUTTON_ID)
+        else if (column.Type==REPORT_COLUMN_ID.CUSTOM_BUTTON_ID || this.IsReserveButtonColumn(column.Type))
         {
             this.DrawButton(drawInfo, left, top, itemWidth);
         }
@@ -6013,12 +6146,19 @@ function ChartReport()
             var tooltipData={ Rect:rtItem, Stock:stock, Index:index, Column:column, RowType:rowType, Type:drawInfo.Tooltip.Type, Data:drawInfo.Tooltip.Data };
             this.TooltipRect.push(tooltipData);
         }
+        else if (column.EnableChartTooltip)
+        {
+            var tooltipData={ Rect:rtItem, Stock:stock, Index:index, Column:column, RowType:rowType, Type:20 };
+            this.TooltipRect.push(tooltipData);
+        }
 
         if (drawInfo.Botton)
         {
             var buttonData={ Stock:stock, Index:index, ColumnIndex:columnIndex, Column:column, Rect:drawInfo.Botton.Rect, Type:drawInfo.Botton.Type, Data:drawInfo.Data };
             this.ButtonRect.push(buttonData);
         }
+
+       
     }
 
     this.IsReserveProgressBarColumn=function(value)
@@ -6028,6 +6168,18 @@ function ChartReport()
             REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR1_ID, REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR2_ID,REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR3_ID,
             REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR4_ID,REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR5_ID,REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR6_ID,REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR7_ID,
             REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR8_ID,REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR9_ID,REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR10_ID
+        ];
+
+        return ARARY_TYPE.includes(value);
+    }
+
+    this.IsReserveButtonColumn=function(value)
+    {
+        var ARARY_TYPE=
+        [
+            REPORT_COLUMN_ID.RESERVE_BUTTON1_ID, REPORT_COLUMN_ID.RESERVE_BUTTON2_ID,REPORT_COLUMN_ID.RESERVE_BUTTON3_ID,
+            REPORT_COLUMN_ID.RESERVE_BUTTON4_ID,REPORT_COLUMN_ID.RESERVE_BUTTON5_ID,REPORT_COLUMN_ID.RESERVE_BUTTON6_ID,REPORT_COLUMN_ID.RESERVE_BUTTON7_ID,
+            REPORT_COLUMN_ID.RESERVE_BUTTON8_ID,REPORT_COLUMN_ID.RESERVE_BUTTON9_ID,REPORT_COLUMN_ID.RESERVE_BUTTON10_ID
         ];
 
         return ARARY_TYPE.includes(value);
@@ -6478,6 +6630,22 @@ function ChartReport()
             if (item.BarColor) drawInfo.BarColor=item.BarColor;
             if (item.BGColor) drawInfo.BGColor=item.BGColor;
         }
+    }
+
+    this.FormatReserveButton=function(column, data, drawInfo)
+    {
+        var fieldName=MAP_COLUMN_FIELD.get(column.Type);
+        if (!data || !fieldName) return;
+        var item=data[fieldName];
+        if (!item) return;
+
+        drawInfo.Text=item.Title;
+        drawInfo.Button=column.Button;
+        drawInfo.Font=column.Button.Font;
+        drawInfo.Enable=true;
+        drawInfo.Data=item;
+
+        if (IFrameSplitOperator.IsBool(item.Enable)) drawInfo.Enable=item.Enable;
     }
 
     this.FormaTimeDrawInfo=function(column, stock, drawInfo, data)
@@ -6931,8 +7099,9 @@ function ChartReport()
             rtBar.Width=fullBarWidth*value;
             rtBar.Height=rtBar.Bottom-rtBar.Top;
             if (rtBar.Width<1) rtBG.Width=1;
-    
-            this.Canvas.fillStyle=barColor;
+
+            if (Array.isArray(barColor)) this.Canvas.fillStyle=this.CreateLinearGradient(barColor, rtBG.Left, rtBG.Top, rtBG.Right, rtBG.Top);
+            else this.Canvas.fillStyle=barColor;
             this.Canvas.fillRect(rtBar.Left, rtBar.Top,rtBar.Width,rtBar.Height);
         }
 
@@ -6947,6 +7116,20 @@ function ChartReport()
             var yText=rtBar.Bottom-config.TextMargin.Bottom;
             this.Canvas.fillText(drawInfo.Text, xText, yText);
         }
+    }
+
+    //创建渐近色
+    this.CreateLinearGradient=function(aryColor, x0, y0, x1, y1)
+    {
+        var gradient = this.Canvas.createLinearGradient(x0, y0, x1, y1);
+        var offset=1/(aryColor.length-1);
+        for(var i=0; i<aryColor.length; ++i)
+        {
+            var value=i*offset;
+            gradient.addColorStop(value, aryColor[i]);
+        }
+
+        return gradient;
     }
 
     this.DrawLinkText=function(drawInfo, left, top, width)
