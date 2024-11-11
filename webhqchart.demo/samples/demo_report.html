@@ -45,9 +45,16 @@
     <script src="../jscommon/umychart.report.js"></script>    <!-- 麦语言解析执行器 -->
     <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
     <script src="../jscommon/umychart.popMenu.js"></script>
+    <script src="../jscommon/umychart.PopMinuteChart.js"></script>
+    <script src="../jscommon/umychart.version.js"></script>
 
     <script src="../jscommon/umychart.testdata//shsz_stock_data.js"></script>
     <script src="../jscommon/umychart.testdata.js"></script>
+
+    <!-- 单日分时图 -->
+    <script src="../jscommon/umychart.testdata/DayMinute/000001.sz.1day.minute.js"></script>
+    <script src="../jscommon/umychart.testdata/DayMinute/600000.sh.1day.minute.js"></script>
+    <script src="../jscommon/umychart.testdata/DayMinute/000151.sz.1day.minute.js"></script>
 
     <script>
 
@@ -72,7 +79,7 @@
                 Name:"沪深300",
 
                 IsAutoUpdate:true,          //是自动更新数据
-                AutoUpdateFrequency:10000,   //数据更新频率
+                AutoUpdateFrequency:1000,   //数据更新频率
 
                 EnableDragHeader:true,      //允许拖动表头调整顺序
                 
@@ -81,11 +88,13 @@
                 [
                     {Type:REPORT_COLUMN_ID.INDEX_ID },
                     {Type:REPORT_COLUMN_ID.SYMBOL_ID, Sort:1, SortType:[0] },
-                    {Type:REPORT_COLUMN_ID.NAME_EX_ID ,Sort:1 , MaxText:"擎擎擎擎擎擎擎"},
-                    {Type:REPORT_COLUMN_ID.INCREASE_ID,Sort:2 },
-                    {Type:REPORT_COLUMN_ID.EXCHANGE_RATE_ID,Sort:2 },
-                    {Type:REPORT_COLUMN_ID.PRICE_ID, Sort:2, ID:1 },
+                    {Type:REPORT_COLUMN_ID.NAME_EX_ID ,Sort:1 , MaxText:"擎擎擎擎擎擎擎", EnableChartTooltip:true},
+                    {Type:REPORT_COLUMN_ID.INCREASE_ID,Sort:1 ,SortType:[0,1,2]},
+                    {Type:REPORT_COLUMN_ID.EXCHANGE_RATE_ID,Sort:1 },
+                    { Type:REPORT_COLUMN_ID.PRICE_ID, Sort:2, ID:1 },
+                    { Type:REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR1_ID,},
                     {Type:REPORT_COLUMN_ID.UPDOWN_ID },
+                    { Type:REPORT_COLUMN_ID.RESERVE_PROGRESS_BAR2_ID,},
                     {Type:REPORT_COLUMN_ID.BUY_PRICE_ID, ID:2 },
                     {Type:REPORT_COLUMN_ID.SELL_PRICE_ID },
                     {Type:REPORT_COLUMN_ID.VOL_ID },
@@ -100,6 +109,21 @@
                     {Type:REPORT_COLUMN_ID.AMPLITUDE_ID },
                     {Type:REPORT_COLUMN_ID.VOL_IN_ID },
                     {Type:REPORT_COLUMN_ID.VOL_OUT_ID },
+
+                    {Type:REPORT_COLUMN_ID.RESERVE_NUMBER1_ID, Title:"自定义数据" },
+                    {Type:REPORT_COLUMN_ID.RESERVE_STRING1_ID, Title:"文本1" },
+
+                    {Type:REPORT_COLUMN_ID.FUTURES_POSITION_ID },
+                    {Type:REPORT_COLUMN_ID.FUTURES_CLOSE_ID },
+                    {Type:REPORT_COLUMN_ID.FUTURES_YCLOSE_ID },
+                    {Type:REPORT_COLUMN_ID.FUTURES_OPEN_POSITION_ID },
+                    {Type:REPORT_COLUMN_ID.FUTURES_CLOSE_POSITION_ID },
+
+                    {Type:REPORT_COLUMN_ID.RISING_SPEED_1M_ID },
+                    {Type:REPORT_COLUMN_ID.RISING_SPEED_3M_ID },
+                    {Type:REPORT_COLUMN_ID.RISING_SPEED_5M_ID },
+                    {Type:REPORT_COLUMN_ID.RISING_SPEED_10M_ID },
+                    {Type:REPORT_COLUMN_ID.RISING_SPEED_15M_ID },
 
                     {Type:REPORT_COLUMN_ID.CUSTOM_NUMBER_TEXT_ID , Title:"1周%" ,TextAlign:"right", DataIndex:6,  Decimal:2, ColorType:1, FormatType:1, MaxText:"-88.88" , ID: 7}, 
                     {Type:REPORT_COLUMN_ID.CUSTOM_NUMBER_TEXT_ID , Title:"4周%" ,TextAlign:"right", DataIndex:7,  Decimal:2, ColorType:1, FormatType:1, MaxText:"-88.88" , ID: 8}, 
@@ -126,6 +150,8 @@
                
                 EnablePopMenuV2:true,
 
+                MinuteChartTooltip:{ Enable:true },
+
                 Border: //边框
                 {
                     Left:20,        //左边间距
@@ -146,11 +172,11 @@
                         Title:"申万一级",  ID:"申万一级", IsMenu:true, 
                         ArySubMenu:
                         [
-                            {Title:"有色金属", ID:"S24", CommandID:JSCHART_MENU_ID.CMD_REPORT_CHANGE_BLOCK_ID},
-                            {Title:"综合", ID:"S51", CommandID:JSCHART_MENU_ID.CMD_REPORT_CHANGE_BLOCK_ID},
-                            {Title:"计算机", ID:"S73", CommandID:JSCHART_MENU_ID.CMD_REPORT_CHANGE_BLOCK_ID},
+                            {Title:"有色金属", ID:"S24", Text:"FD", CommandID:JSCHART_MENU_ID.CMD_REPORT_CHANGE_BLOCK_ID},
+                            {Title:"综合", ID:"S51", Text:"FA", CommandID:JSCHART_MENU_ID.CMD_REPORT_CHANGE_BLOCK_ID},
+                            {Title:"计算机", ID:"S73", Text:"FB", CommandID:JSCHART_MENU_ID.CMD_REPORT_CHANGE_BLOCK_ID},
                             {Title:"通信", ID:"S73", CommandID:JSCHART_MENU_ID.CMD_REPORT_CHANGE_BLOCK_ID},
-                            {Title:"传媒", ID:"S72", CommandID:JSCHART_MENU_ID.CMD_REPORT_CHANGE_BLOCK_ID},
+                            {Title:"传媒", ID:"S72", Text:"F", CommandID:JSCHART_MENU_ID.CMD_REPORT_CHANGE_BLOCK_ID},
                         ] 
                     },
 
@@ -158,6 +184,7 @@
                     //{ Title:"申万三级",  ID:"申万三级", IsMenu:true }
                 ],
                 
+                VScrollbar:{ Enable:true , Style:1, BarWidth:3 , Margin:{ Left:0, Right:0, Top:1, Bottom:1 }},
 
                 TabSelected:0,  //默认选中tab页  
             };
@@ -172,6 +199,13 @@
                 var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID); //读取黑色风格配置
                 JSChart.SetStyle(blackStyle);
                 this.DivDeal.style.backgroundColor=blackStyle.BGColor; //设置最外面的div背景
+
+                var resource=JSChart.GetResource();
+                resource.Report.ProgressBar.Margin.Top=4;
+                resource.Report.ProgressBar.Margin.Bottom=4;
+                resource.Report.ProgressBar.BarColor=["rgb(255,182,193)", "rgb(220,20,60)"]
+                //resource.Report.Item.Mergin.Top=5;
+                //resource.Report.Item.Mergin.Bottom=2;
 
                 this.Option.NetworkFilter=(data, callback)=>{ this.NetworkFilter(data, callback); };
 
