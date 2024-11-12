@@ -351,7 +351,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 42. [HQChart使用教程49-指标配置项说明](https://blog.csdn.net/jones2000/article/details/102928907) <br>
 43. [HQChart使用教程50-Y轴自定义刻度设置说明](https://blog.csdn.net/jones2000/article/details/103174483) <br>
 44. [HQChart使用教程51-指标切换按钮事件说明](https://blog.csdn.net/jones2000/article/details/103187576) <br>
-45. [HQChart使用教程52-自定义手机端K线图Tooltip](https://blog.csdn.net/jones2000/article/details/103820718) <br>
+45. ~~[HQChart使用教程52-自定义手机端K线图Tooltip](https://blog.csdn.net/jones2000/article/details/103820718)~~ <br>
 46. [HQChart使用教程53-log日志输出控制](https://blog.csdn.net/jones2000/article/details/104122774) <br>
 47. [HQChart使用教程54-K线缩放控制按钮接口说明](https://blog.csdn.net/jones2000/article/details/104346016) <br>
 48. [HQChart使用教程55-自定义PC端K线图Tooltip](https://blog.csdn.net/jones2000/article/details/104443471) <br>
@@ -398,7 +398,10 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 89. [HQChart使用教程99-K线窗口设置上下间距](https://jones2000.blog.csdn.net/article/details/139273770)   
 90. [HQChart使用教程100-自定义Y轴分段背景色](https://jones2000.blog.csdn.net/article/details/139498872)   
 91. [HQChart使用教程101-创建内置键盘精灵](https://jones2000.blog.csdn.net/article/details/141336689)   
-92. [HQChart使用教程102-内置对话框设置及说明](https://jones2000.blog.csdn.net/article/details/143610229)     
+
+## 插件内置对话框2.0设置
+1. [HQChart使用教程102-内置对话框设置及说明](https://jones2000.blog.csdn.net/article/details/143610229)   
+2. [HQChart使用教程103-内置对话框[2.0]设置1-K线tooltip显示自定义字段](https://jones2000.blog.csdn.net/article/details/143702480)     
 
 ##  微信小程序教程
 1. [HQChart小程序教程1-如何快速的创建一个K线图](https://developers.weixin.qq.com/community/develop/article/doc/0006c451ac81589915b89d1c55bc13)   

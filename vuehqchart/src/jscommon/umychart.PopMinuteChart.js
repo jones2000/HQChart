@@ -454,7 +454,7 @@ function JSTooltipMinuteChart()
 
             var xRight=window.innerWidth-5;
             var ybottom=window.innerHeight-5;
-            if (x+width>xRight) x=xRight-width;
+            if (x+width>xRight) x=(rtItem.Left+data.Offset.Left)-width;
             if (y+height>ybottom) y=(rtItem.Top+data.Offset.Top)-height;
 
             this.DivDialog.style.visibility='visible';
@@ -468,6 +468,19 @@ function JSTooltipMinuteChart()
         if (!this.DivDialog) return;
         if (this.DivDialog.style.visibility!='hidden')
             this.DivDialog.style.visibility='hidden';
+    }
+
+
+    this.ReloadResource=function(option)
+    {
+        this.BGColor=g_JSChartResource.PopMinuteChart.BGColor;
+        this.BorderColor=g_JSChartResource.PopMinuteChart.BorderColor;
+
+        if (!this.DivDialog) return;
+
+        this.UpdateStyle();
+
+        if (this.Minute.JSChart) this.Minute.JSChart.ReloadResource(option);
     }
 
 }

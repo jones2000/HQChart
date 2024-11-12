@@ -3227,6 +3227,8 @@ function JSReportChartContainer(uielement)
             this.SetSizeChange(true);
             this.Draw();
         }
+
+        if (this.MinuteChartTooltip) this.MinuteChartTooltip.ReloadResource(option);
     }
 
     //列排序

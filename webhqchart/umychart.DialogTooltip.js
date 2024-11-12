@@ -1007,7 +1007,10 @@ function JSFloatTooltip()
         if (!this.HQChart) return;
 
         var rtClient=this.HQChart.UIElement.getBoundingClientRect();
-        var left=x+rtClient.left,top=y+rtClient.top;
+        var yMove=0;
+        if (option && IFrameSplitOperator.IsNumber(option.YMove)) yMove=option.YMove;
+
+        var left=x+rtClient.left,top=y+rtClient.top+yMove;
         var right=left+this.DivDialog.offsetWidth;
         var bottom=top+this.DivDialog.offsetHeight;
         
@@ -1015,7 +1018,6 @@ function JSFloatTooltip()
         if ((bottom+5)>=window.innerHeight) 
         {
             top=(y+rtClient.top)-this.DivDialog.offsetHeight;
-            if (option && IFrameSplitOperator.IsNumber(option.YMove)) top-=option.YMove;
         }
        
         this.DivDialog.style.top = top + "px";
@@ -1202,6 +1204,15 @@ function JSFloatTooltip()
         }
     }
 
+    this.ShowTooltip=function(data)
+    {
+        if (!data.Point) return;
+
+        var x=data.Point.X;
+        var y=data.Point.Y;
+        this.Show(x, y, { YMove:data.Point.YMove });
+    }
+
     //K线提示信息
     this.UpdateKLineToolitp=function(data)
     {
@@ -1232,12 +1243,7 @@ function JSFloatTooltip()
             this.UpdateTableDOM();
         }
 
-        if (data.Point)
-        {
-            var x=data.Point.X;
-            var y=data.Point.Y+data.Point.YMove;
-            this.Show(x, y, { YMove:data.Point.YMove });
-        }
+        this.ShowTooltip(data);
     }
 
     //ChartDrawSVG 老版本 单行
@@ -1254,12 +1260,7 @@ function JSFloatTooltip()
         this.AryText=aryText;
         this.UpdateTableDOM();
 
-        if (data.Point)
-        {
-            var x=data.Point.X;
-            var y=data.Point.Y+data.Point.YMove;
-            this.Show(x, y);
-        }
+        this.ShowTooltip(data);
     }
 
     //ChartDrawSVG 新版本
@@ -1285,12 +1286,7 @@ function JSFloatTooltip()
 
         this.UpdateTableDOM();
 
-        if (data.Point)
-        {
-            var x=data.Point.X;
-            var y=data.Point.Y+data.Point.YMove;
-            this.Show(x, y);
-        }
+        this.ShowTooltip(data);
     }
 
     //交易指标
@@ -1325,12 +1321,7 @@ function JSFloatTooltip()
 
         this.UpdateTableDOM();
 
-        if (data.Point)
-        {
-            var x=data.Point.X;
-            var y=data.Point.Y+data.Point.YMove;
-            this.Show(x, y);
-        }
+        this.ShowTooltip(data);
     }
 
     //分时图异动信息
@@ -1354,12 +1345,7 @@ function JSFloatTooltip()
         this.AryText=aryText;
         this.UpdateTableDOM();
 
-        if (data.Point)
-        {
-            var x=data.Point.X;
-            var y=data.Point.Y+data.Point.YMove;
-            this.Show(x, y);
-        }
+        this.ShowTooltip(data);
     }
 
     //ChartMultiSVGIconV2 图标信息
@@ -1377,12 +1363,7 @@ function JSFloatTooltip()
         this.AryText=aryText;
         this.UpdateTableDOM();
 
-        if (data.Point)
-        {
-            var x=data.Point.X;
-            var y=data.Point.Y+data.Point.YMove;
-            this.Show(x, y);
-        }
+        this.ShowTooltip(data);
     }
 
     //ChartOX 信息
@@ -1417,12 +1398,7 @@ function JSFloatTooltip()
         this.AryText=aryText;
         this.UpdateTableDOM();
 
-        if (data.Point)
-        {
-            var x=data.Point.X;
-            var y=data.Point.Y+data.Point.YMove;
-            this.Show(x, y);
-        }
+        this.ShowTooltip(data);
     }
  
     this.UpdateTableDOM=function()
@@ -1585,12 +1561,7 @@ function JSFloatTooltip()
 
         this.UpdateTableDOM();
 
-        if (data.Point)
-        {
-            var x=data.Point.X;
-            var y=data.Point.Y+data.Point.YMove;
-            this.Show(x, y);
-        }
+        this.ShowTooltip(data);
     }
 
     this.UpdatChartScatterPlotTooltip=function(data)
@@ -1615,12 +1586,7 @@ function JSFloatTooltip()
         this.AryText=aryText;
         this.UpdateTableDOM();
 
-        if (data.Point)
-        {
-            var x=data.Point.X;
-            var y=data.Point.Y+data.Point.YMove;
-            this.Show(x, y);
-        }
+        this.ShowTooltip(data);
     }
 
 
