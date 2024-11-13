@@ -8890,6 +8890,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         if (IFrameSplitOperator.IsBool(option.IsShowXLine)) subFrame.Frame.IsShowXLine=option.IsShowXLine;
         if (IFrameSplitOperator.IsBool(option.IsShowYLine)) subFrame.Frame.IsShowYLine=option.IsShowYLine;
         if (IFrameSplitOperator.IsBool(option.IsShowIndexTitle)) subFrame.Frame.IsShowIndexTitle=option.IsShowIndexTitle;
+        if (IFrameSplitOperator.IsNumber(option.Height)) subFrame.Height=option.Height; //高度
         
 
         if (IFrameSplitOperator.IsBool(option.IsShowLeftText)) 
