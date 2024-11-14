@@ -11388,6 +11388,105 @@ function JSDraw(errorHandler,symbolData)
 
         return result;
     }
+
+
+    ///////////////////////////////////////////////////////////////////////////////////
+    //DRAWLASTBARICON ：在最后一根k线绘制图标。
+    //用法：DRAWLASTBARICON(PRICE,ICON);
+    //最后一根k线,在PRICE位置画图标ICON。
+    //
+    //注：
+    //1、该函数可以指定位置PRICE标注图标ICON
+    //2、ICON位置可以写成'ICON'的形式，也可以写为数字的形式，即DRAWLASTBARICON(PRICE,'ICO1');等价于DRAWLASTBARICON(PRICE,1);
+    //3、不支持将该函数定义为变量，即不支持下面的写法：
+    //A:DRAWLASTBARICON(PRICE,ICON);
+    //4、该函数可以用ALIGN，VALIGN设置图标的对齐方式。
+    //例1：
+    //DRAWLASTBARICON(LOW,'ICO1');//在最后一根k线最低价上画出图标ICON1。
+    //例2：
+    //MA5:=MA(C,5);
+    //DRAWLASTBARICON(MA5,2);//表示在最后一根k线对应的MA5数值位置上画出图标ICON2。
+
+    this.DRAWLASTBARICON=function(data, type)
+    {
+        if (IFrameSplitOperator.IsString(type)) //把ICO1=>1
+        {
+            var value=type.replace('ICO',"");
+            type=parseInt(value);
+        } 
+
+        var icon=g_JSComplierResource.GetDrawIcon(type);
+        if (!icon) g_JSComplierResource.GetDrawTextIcon(type);
+        if (!icon) icon={ Symbol:'🚩'};
+
+        var drawItem={ Value:null, Icon:icon, IconType:type };
+        if (IFrameSplitOperator.IsNonEmptyArray(data)) drawItem.Value=data[data.length-1];
+        else drawItem.Value=data;
+
+        var result={ DrawData:drawItem, DrawType:'DRAWLASTBARICON' };
+
+        return result;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //DRAWLASTBARTEXT：显在最后一根k线显示文字。
+    //用法：DRAWLASTBARTEXT(PRICE,TEXT);
+    //最后一根k线,在PRICE位置书写文字TEXT。
+    //注：
+    //1、显示的汉字用单引号标注
+    //2、可以设置文字显示的对齐方式，字体大小以及文字的颜色，即支持下面的写法：
+    //DRAWLASTBARTEXT(PRICE,TEXT),COLOR,ALIGN,VALIGN;
+    //例1：
+    //DRAWLASTBARTEXT(LOW,'注');// 
+    //最后一根k线，在最低价上写"注"字。
+    //例2：
+    //DRAWLASTBARTEXT(LOW,'低'),ALIGN0,FONTSIZE16,COLORRED;//在最后一根k线，在最低价写"低"字，文字左对齐，字体大小为16，文字颜色为红色。
+
+    this.DRAWLASTBARTEXT=function(data, text)
+    {
+        var drawItem={ Value:null, Text:text };
+        if (IFrameSplitOperator.IsNonEmptyArray(data)) drawItem.Value=data[data.length-1];
+        else drawItem.Value=data;
+
+        var result={ DrawData:drawItem, DrawType:'DRAWLASTBARTEXT' };
+
+        return result;
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+    //DRAWLASTBARNUMBER：在最后一根k线输出数值。
+    //用法：DRAWLASTBARNUMBER(DATA,NUMBER,PRECISION,COLOR); 
+    //最后一根k线在DATA位置写数字NUMBER。PRECISION为精度（小数点后有几位数字）。COLOR为颜色。
+    //注：
+    //该函数支持在函数后设置文字的大小和文字对齐方式。即支持下面的写法：
+    //DRAWLASTBARNUMBER(DATA,NUMBER,PRECISION,COLOR),ALIGN,VALIGN;
+    //例1：
+    //DRAWLASTBARNUMBER(HIGH,(CLOSE-OPEN)/OPEN*100,2,COLORRED);//最后一根k线在最高价位置红色显示涨幅数值(相对开盘价的百分比，精确2位小数)。
+    //例2：
+    //DRAWLASTBARNUMBER(L,REF(C,1),2,COLORRED),ALIGN0,VALIGN0;//表示最后一根k线的最低价处以红色显示昨收盘价数值(精确2位小数)，标注文字居左，居上对齐。
+
+    this.DRAWLASTBARNUMBER=function(data,value,dec,color)
+    {
+        var drawItem={ Value:null, Text:null, Color:color };
+        if (IFrameSplitOperator.IsNonEmptyArray(data)) drawItem.Value=data[data.length-1];
+        else drawItem.Value=data;
+
+        var precision=2;
+        if (IFrameSplitOperator.IsNumber(dec)) precision=parseInt(dec);
+        if (IFrameSplitOperator.IsNumber(value)) 
+        {
+            drawItem.Text=value.toFixed(precision);
+        }
+        else if (IFrameSplitOperator.IsNonEmptyArray(value))
+        {
+            var lastValue=value[value.length-1];
+            if (IFrameSplitOperator.IsNumber(lastValue)) drawItem.Text=lastValue.toFixed(precision);
+        }
+
+        var result={ DrawData:drawItem, DrawType:'DRAWLASTBARNUMBER' };
+
+        return result;
+    }
 }
 
 
@@ -11442,6 +11541,7 @@ JSDraw.prototype.IsDrawFunction=function(name)
         'DRAWOVERLAYLINE',"FILLRGN", "FILLRGN2","FILLTOPRGN", "FILLBOTTOMRGN", "FILLVERTICALRGN","FLOATRGN","DRAWSL", "DRAWGBK2","DRAWGBK_DIV",
         "VERTLINE","HORLINE","TIPICON",
         "BUY","SELL","SELLSHORT","BUYSHORT",
+        "DRAWLASTBARICON","DRAWLASTBARNUMBER", "DRAWLASTBARTEXT",
     ]);
     if (setFunctionName.has(name)) return true;
 
@@ -12381,9 +12481,7 @@ function JSSymbolData(ast,option,jsExecute)
                 return kData.GetClose();
             case 'VOL':
             case 'V':
-                if (MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol)) 
-                    return kData.GetVol(100);   //A股的 把股转成手
-                return kData.GetVol();
+                return kData.GetVol(MARKET_SUFFIX_NAME.GetVolUnit(upperSymbol));
             case 'OPEN':
             case 'O':
                 return kData.GetOpen();
@@ -13012,9 +13110,7 @@ function JSSymbolData(ast,option,jsExecute)
                 return this.Data.GetClose();
             case 'VOL':
             case 'V':
-                if (MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol) && this.DataType==HQ_DATA_TYPE.KLINE_ID) //!! A股K线量单位时股，分时图单位还是手
-                    return this.Data.GetVol(100);   //A股的 把股转成手
-                return this.Data.GetVol();
+                return this.Data.GetVol(MARKET_SUFFIX_NAME.GetVolUnit(upperSymbol));
             case 'OPEN':
             case 'O':
                 return this.Data.GetOpen();
@@ -13260,9 +13356,7 @@ function JSSymbolData(ast,option,jsExecute)
                 return result.GetAmount();
             case 'V':
             case "VOL":
-                if (MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol)) 
-                    return result.GetVol(100);
-                return result.GetVol();
+                return result.GetVol(MARKET_SUFFIX_NAME.GetVolUnit(upperSymbol));
             case "VOLINSTK":
                 return result.GetPosition();
             default:
@@ -16724,6 +16818,7 @@ function JSExecute(ast,option)
         ["OFFERCANCELVOL", null],   //累计总有效撤卖量,专业版等(资金流向功能)沪深京品种行情专用  累计总有效委卖量-累计总有效撤卖量=总卖+总成交量
         ["AVGOFFERPX", null],       //专业版等(资金流向功能)沪深京品种行情专用:最新委卖均价
         //["", null],
+
     ]);   
 
     this.SymbolData=new JSSymbolData(this.AST,option,this);
@@ -18180,6 +18275,20 @@ function JSExecute(ast,option)
                 node.Draw=this.Draw.HORLINE(args[0],args[1],args[2],args[3]);
                 node.Out=node.Draw.DrawData.Data;
                 break;
+
+            case "DRAWLASTBARICON":
+                node.Draw=this.Draw.DRAWLASTBARICON(args[0],args[1]);
+                node.Out=[];
+                break;
+            case "DRAWLASTBARNUMBER":
+                node.Draw=this.Draw.DRAWLASTBARNUMBER(args[0],args[1],args[2],args[3]);
+                node.Out=[];
+                break;
+            case "DRAWLASTBARTEXT":
+                node.Draw=this.Draw.DRAWLASTBARTEXT(args[0],args[1]);
+                node.Out=[];
+                break;
+
             case 'CODELIKE':
                 node.Out=this.SymbolData.CODELIKE(args[0]);
                 break;
@@ -18592,6 +18701,22 @@ function JSExplainer(ast,option)
         ["OFFERCANCELVOL", "累计总有效撤卖量"],   
         ["AVGOFFERPX", "最新委卖均价"],
 
+        ['COLORBLACK','黑色'],
+        ['COLORBLUE','蓝色'],
+        ['COLORGREEN','绿色'],
+        ['COLORCYAN','青色'],
+        ['COLORRED','红色'],
+        ['COLORMAGENTA','洋红色'],
+        ['COLORBROWN','棕色'],
+        ['COLORLIGRAY','淡灰色'],
+        ['COLORGRAY','深灰色'],
+        ['COLORLIBLUE','淡蓝色'],       
+        ['COLORLIGREEN','淡绿色'],
+        ['COLORLICYAN','淡青色'],
+        ['COLORLIRED','淡红色'],
+        ['COLORLIMAGENTA','淡洋红色'],
+        ['COLORWHITE','白色'],
+        ['COLORYELLOW','黄色']
     ]);   
 
     if (option)
@@ -19293,6 +19418,12 @@ function JSExplainer(ast,option)
             case "BUYSHORT":
                 return "买入平仓";
 
+            case "DRAWLASTBARNUMBER":
+                return "在最后一根k线输出数值";
+            case "DRAWLASTBARTEXT":
+                return "在最后一根k线显示文字";
+            case "DRAWLASTBARICON":
+                return "在最后一根k线绘制图标";
             case "YMOVE":
                 return;
             case "BACKGROUND":
@@ -21464,6 +21595,49 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateDrawLastBarText=function(hqChart,windowIndex,varItem,id)
+    {
+        var chart=new ChartDrawLastBarText();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        if (hqChart.ChartPaint[0].IsMinuteFrame())
+            chart.Data=hqChart.SourceData;
+        else
+            chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+
+        var lastItem=varItem.Draw.DrawData;
+        if (lastItem)
+        {
+            if (lastItem.Color) lastItem.Color=this.GetColor(lastItem.Color);
+            else lastItem.Color=this.GetDefaultColor(id);
+            if (varItem.Color) lastItem.Color=this.GetColor(varItem.Color);
+            
+            if (varItem.DrawVAlign>=0)
+            {
+                if (varItem.DrawVAlign==0) lastItem.TextBaseline='top';
+                else if (varItem.DrawVAlign==1) lastItem.TextBaseline='middle';
+                else if (varItem.DrawVAlign==2) lastItem.TextBaseline='bottom';
+            }
+    
+            if (varItem.DrawAlign>=0)
+            {
+                if (varItem.DrawAlign==0) lastItem.TextAlign="left";
+                else if (varItem.DrawAlign==1) lastItem.TextAlign="center";
+                else if (varItem.DrawAlign==2) lastItem.TextAlign='right';
+            }
+
+            if (IFrameSplitOperator.IsNumber(varItem.YOffset)) lastItem.YOffset=varItem.YOffset;
+            if (IFrameSplitOperator.IsNumber(varItem.XOffset)) lastItem.XOffset=varItem.XOffset;
+            if (varItem.DrawFontSize>0) lastItem.FontSize=varItem.DrawFontSize;
+        }
+
+        chart.LastBarItem=lastItem;
+        hqChart.ChartPaint.push(chart);
+    }
+
     //创建通道
     this.CreateChannel=function(hqChart,windowIndex,varItem,id)
     {
@@ -22058,6 +22232,12 @@ function ScriptIndex(name,script,args,option)
                     case "SELLSHORT":
                     case "BUYSHORT":
                         this.CreateTradeIcon(hqChart,windowIndex,item,i);
+                        break;
+
+                    case "DRAWLASTBARICON":
+                    case "DRAWLASTBARNUMBER":
+                    case "DRAWLASTBARTEXT":
+                        this.CreateDrawLastBarText(hqChart,windowIndex,item,i);
                         break;
 
                     case SCRIPT_CHART_NAME.OVERLAY_BARS:

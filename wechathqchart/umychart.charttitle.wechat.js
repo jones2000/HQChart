@@ -123,6 +123,15 @@ function DynamicKLineTitlePainting()
     this.IsShowSettingInfo = true;    //是否显示设置信息(周期 复权)
     this.HQChart;
 
+    this.GetVolUnit=function()
+    {
+        var upperSymbol;
+        if (this.Symbol) upperSymbol=this.Symbol.toUpperCase();
+        var unit=MARKET_SUFFIX_NAME.GetVolUnit(upperSymbol);
+
+        return unit;
+    }
+
     this.GetCurrentKLineData = function () //获取当天鼠标位置所在的K线数据
     {
         if (this.CursorIndex == null || !this.Data) return null;
@@ -428,7 +437,7 @@ function DynamicKLineTitlePainting()
     this.GetFormatTitle=function(data)
     {
         if (!data || !data.Data) return null;
-
+        var unit=this.GetVolUnit();
         var aryText=[];
         var item=data.Data;
         var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.Symbol);//价格小数位数
@@ -505,7 +514,7 @@ function DynamicKLineTitlePainting()
 
         if (IFrameSplitOperator.IsNumber(item.Vol))
         {
-            var text = g_JSChartLocalization.GetText('KTitle-Vol', this.LanguageID) + IFrameSplitOperator.FormatValueString(item.Vol, 2, this.LanguageID);
+            var text = g_JSChartLocalization.GetText('KTitle-Vol', this.LanguageID) + IFrameSplitOperator.FormatValueString(item.Vol/unit, 2, this.LanguageID);
             aryText.push({Text:text, Color:this.VolColor});
         }
 
@@ -943,6 +952,7 @@ function DynamicMinuteTitlePainting()
         var right = this.Frame.ChartBorder.GetRight();
         var width = this.Frame.ChartBorder.GetWidth();
         var height = this.Frame.ChartBorder.GetTop();
+        var unit=this.GetVolUnit();
 
         var defaultfloatPrecision = this.GetDecimal(this.Symbol);    //价格小数位数
         var itemHeight = (height - bottomSpace) / this.LineCount;
@@ -984,7 +994,7 @@ function DynamicMinuteTitlePainting()
         var left = this.Frame.ChartBorder.GetLeft() + leftSpace + timeWidth;
 
         this.Canvas.fillStyle = this.VolColor;
-        var text = g_JSChartLocalization.GetText('Tooltip-Vol', this.LanguageID) + IFrameSplitOperator.FormatValueString(item.Vol, 2, this.LanguageID);
+        var text = g_JSChartLocalization.GetText('Tooltip-Vol', this.LanguageID) + IFrameSplitOperator.FormatValueString(item.Vol/unit, 2, this.LanguageID);
         this.Canvas.fillText(text, left, bottom, itemWidth);
         left += itemWidth;
 
@@ -1002,6 +1012,7 @@ function DynamicMinuteTitlePainting()
         var defaultfloatPrecision = this.GetDecimal(this.Symbol);    //价格小数位数
         var upperSymbol=this.Symbol.toUpperCase();
         var isFutures=MARKET_SUFFIX_NAME.IsFutures(upperSymbol);    //期货
+        var unit=this.GetVolUnit();
         var aryText=[];
         var yClose=item.YClose;
         if (isFutures && IFrameSplitOperator.IsNumber(item.YClearing)) yClose=item.YClearing;
@@ -1033,7 +1044,7 @@ function DynamicMinuteTitlePainting()
 
         if (IFrameSplitOperator.IsNumber(item.Vol))
         {
-            var text = g_JSChartLocalization.GetText('MTitle-Vol', this.LanguageID) + IFrameSplitOperator.FormatValueString(item.Vol, 2, this.LanguageID);
+            var text = g_JSChartLocalization.GetText('MTitle-Vol', this.LanguageID) + IFrameSplitOperator.FormatValueString(item.Vol/unit, 2, this.LanguageID);
             aryText.push({ Text:text, Color:this.VolColor });
         }
 

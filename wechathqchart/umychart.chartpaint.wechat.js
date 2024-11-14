@@ -6444,7 +6444,15 @@ function ChartMinuteVolumBar()
 
     this.CustomColor=g_JSChartResource.Minute.VolBarColor;
     this.YClose;    //前收盘
-  
+    this.Symbol;
+
+    this.GetVolUnit=function()
+    {
+        var upperSymbol=this.Symbol?this.Symbol.toUpperCase():null;
+        var unit=MARKET_SUFFIX_NAME.GetVolUnit(upperSymbol);
+        return unit;
+    }
+
     this.Draw = function () 
     {
         var isHScreen = (this.ChartFrame.IsHScreen === true)
@@ -6453,14 +6461,14 @@ function ChartMinuteVolumBar()
         var xPointCount = this.ChartFrame.XPointCount;
         var yBottom = this.ChartFrame.GetYFromData(0);
         var yPrice = this.YClose; //上一分钟的价格
-
+        var unit=this.GetVolUnit();
         if (this.CustomColor) this.Canvas.strokeStyle=this.CustomColor;
         for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
         {
             var item = this.Data.Data[i];
             if (!item || !item.Vol) continue;
     
-            var y = this.ChartFrame.GetYFromData(item.Vol);
+            var y = this.ChartFrame.GetYFromData(item.Vol/unit);
             var x = this.ChartFrame.GetXFromIndex(i);
             if (x > chartright) break;
             //价格>=上一分钟价格 红色 否则绿色
@@ -6498,6 +6506,7 @@ function ChartMinuteVolumBar()
   
     this.GetMaxMin = function () 
     {
+        var unit=this.GetVolUnit();
         var xPointCount = this.ChartFrame.XPointCount;
         var range = {};
         range.Min = 0;
@@ -6506,8 +6515,8 @@ function ChartMinuteVolumBar()
         {
             var item = this.Data.Data[i];
             if (!item || !item.Vol) continue;
-            if (range.Max == null) range.Max = item.Vol;
-            if (range.Max < item.Vol) range.Max = item.Vol;
+            var value=item.Vol/unit;
+            if (range.Max == null || range.Max < value) range.Max = value;
         }
     
         return range;

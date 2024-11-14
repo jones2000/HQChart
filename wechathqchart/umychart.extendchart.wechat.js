@@ -99,6 +99,15 @@ function KLineTooltipPaint()
     this.IsHScreen = false;   //是否横屏
     this.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
 
+    this.GetVolUnit=function()
+    {
+        var upperSymbol;
+        if (this.HQChart.Symbol) upperSymbol=this.HQChart.Symbol.toUpperCase();
+        var unit=MARKET_SUFFIX_NAME.GetVolUnit(upperSymbol);
+
+        return unit;
+    }
+
     this.GetLeft = function () 
     {
         if (this.IsHScreen) 
@@ -174,6 +183,7 @@ function KLineTooltipPaint()
         var upperSymbol;
         if (this.HQChart.Symbol) upperSymbol = this.HQChart.Symbol.toUpperCase();
         var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.HQChart.Symbol);//价格小数位数
+        var unit=this.GetVolUnit();
         var aryText=[];
         var result={ AryText:aryText };
         var text, title, color;
@@ -244,7 +254,7 @@ function KLineTooltipPaint()
         if (IFrameSplitOperator.IsNumber(item.Vol))
         {
             title = g_JSChartLocalization.GetText('Tooltip-Vol', this.LanguageID);
-            text = this.HQChart.FormatValueString(item.Vol, 2, this.LanguageID);
+            text = this.HQChart.FormatValueString(item.Vol/unit, 2, this.LanguageID);
             aryText.push({Title:title, TitleColor:this.TitleColor, Text:text, Color:this.TitleColor });
         }
 
@@ -458,6 +468,7 @@ function MinuteTooltipPaint()
         if (this.HQChart.Symbol) upperSymbol=this.HQChart.Symbol.toUpperCase();
         var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.HQChart.Symbol);//价格小数位数
         var isFutures=MARKET_SUFFIX_NAME.IsFutures(upperSymbol);    //期货
+        var unit=this.GetVolUnit();
         this.YClose = this.KLineTitlePaint.YClose;
         this.YClose=item.YClose;
         if (isFutures && IFrameSplitOperator.IsNumber(item.YClearing)) this.YClose=item.YClearing;
@@ -511,7 +522,7 @@ function MinuteTooltipPaint()
         if (IFrameSplitOperator.IsNumber(item.Vol))
         {
             title = g_JSChartLocalization.GetText('Tooltip-Vol', this.LanguageID);
-            text = this.HQChart.FormatValueString(item.Vol, 2, this.LanguageID);
+            text = this.HQChart.FormatValueString(item.Vol/unit, 2, this.LanguageID);
             aryText.push({Title:title, TitleColor:this.TitleColor, Text:text, Color:this.TitleColor });
         }
         

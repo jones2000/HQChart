@@ -658,6 +658,16 @@ var MARKET_SUFFIX_NAME=
 
         //内置日线线支持复权,其他不支持复权
         return false;
+    },
+    
+    //获取成交量单位
+    GetVolUnit:function(upperSymbol)
+    {
+        if (!upperSymbol) return 1;
+        if (MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol)) return 100; //单位手=100股
+        if (MARKET_SUFFIX_NAME.IsBJ(upperSymbol)) return 100;   //单位手=100股
+
+        return 1;
     }
 
 }
