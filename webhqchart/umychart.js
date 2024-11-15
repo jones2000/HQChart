@@ -86013,7 +86013,7 @@ MinuteChartContainer.JsonDataToAfterCloseData=function(data)
     var date=stockData.date;                //日期
     if (!stockData.afterinfo) return null;
     var symbol=data.stock[0].symbol;
-    var upperSymbol=symbol.toLowerCase();
+    var upperSymbol=symbol.toUpperCase();
     var afterCloseData={ Data:[], TotalCount:3*60, Ver:2.0, Date:date };
     var item=stockData.afterinfo;
     if (IFrameSplitOperator.IsNumber(item.totalcount)) afterCloseData.TotalCount=item.totalcount;

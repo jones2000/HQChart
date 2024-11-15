@@ -398,6 +398,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 89. [HQChart使用教程99-K线窗口设置上下间距](https://jones2000.blog.csdn.net/article/details/139273770)   
 90. [HQChart使用教程100-自定义Y轴分段背景色](https://jones2000.blog.csdn.net/article/details/139498872)   
 91. [HQChart使用教程101-创建内置键盘精灵](https://jones2000.blog.csdn.net/article/details/141336689)   
+92. [HQChart使用教程104-成交量单位统一管理说明](https://jones2000.blog.csdn.net/article/details/143783456)    
 
 ## 插件内置对话框2.0设置
 1. [HQChart使用教程102-内置对话框设置及说明](https://jones2000.blog.csdn.net/article/details/143610229)   
