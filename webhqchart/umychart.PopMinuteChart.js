@@ -319,6 +319,7 @@ function JSTooltipMinuteChart()
 
     this.BGColor=g_JSChartResource.PopMinuteChart.BGColor;
     this.BorderColor=g_JSChartResource.PopMinuteChart.BorderColor;
+    this.OnCreateCallback;
 
     this.Minute=
     {
@@ -339,6 +340,7 @@ function JSTooltipMinuteChart()
                 var item=CloneData(option.Option);  //复制一份出来
                 this.Minute.Option=Object.assign(this.Minute.Option,item);
             }
+            if (option.OnCreateCallback) this.OnCreateCallback=option.OnCreateCallback;
         }
     }
 
@@ -396,7 +398,7 @@ function JSTooltipMinuteChart()
 
     this.OnCreateHQChart=function(chart)
     {
-
+        if (this.OnCreateCallback) this.OnCreateCallback(chart);
     }
 
     this.Destroy=function()
@@ -524,6 +526,8 @@ JSTooltipMinuteChart.GetMinuteOption=function()
             IsShowVolTitle:true,
             //IsAlwaysShowLastData:true,
             IsTitleShowLatestData:true,
+
+            ShowPostion:{ Type:1 , Margin:{ Left:5*GetDevicePixelRatio(), Right:5*GetDevicePixelRatio() } }
         },
 
         MinuteVol:

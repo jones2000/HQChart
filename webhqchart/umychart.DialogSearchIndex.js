@@ -313,6 +313,10 @@ function JSDialogSearchIndex()
                 var indedData={ API: { ID:indexItem.ID, Name:indexItem.Name, Args:indexItem.Args, Url:'local'} };
                 this.HQChart.ChangeAPIIndex(this.OpData.WindowIndex, indedData);
             }
+            else if (indexItem.Type==3) //指标模板
+            {
+                this.HQChart.ChangeIndexTemplate(indexItem.TemplateData)
+            }
         }
         else if (this.OpData.OpType==2)
         {
@@ -334,6 +338,10 @@ function JSDialogSearchIndex()
                 var obj={ WindowIndex:this.OpData.WindowIndex, API: { ID:indexItem.ID, Name:indexItem.Name, Args:indexItem.Args, Url:'local'} };
                 this.HQChart.AddOverlayIndex(obj);
             }
+            else if (indexItem.Type==3) //指标模板
+            {
+                this.HQChart.ChangeIndexTemplate(indexItem.TemplateData)
+            }
         }
         else if (this.OpData.OpType==3) //新增加指标窗口
         {
@@ -351,6 +359,10 @@ function JSDialogSearchIndex()
             {
                 var indexData={ API: { ID:indexItem.ID, Name:indexItem.Name, Args:indexItem.Args, Url:'local'} };
                 this.HQChart.AddAPIIndexWindow(indexData, this.OpData);
+            }
+            else if (indexItem.Type==3) //指标模板
+            {
+                this.HQChart.ChangeIndexTemplate(indexItem.TemplateData)
             }
         }
         
@@ -632,6 +644,52 @@ JSDialogSearchIndex.GetDefaultIndexData=function()
                 [
                     { Name:"收盘线(后台指标)", ID:"CLOSE_LINE", Type:2, Args:null },
                     { Name:"高低均价(自定义脚本)", ID:"HIGH_LOW_AV", Type:1, Args:null , Script:"均价:(H+L)/2;高:H;低:L;", Args:[ { Name:'N', Value:20}, { Name:'M', Value:6}]},
+                ]
+            },
+            {
+                Group:{ ID:"组合指标", Name:"组合指标" } , 
+                AryIndex:
+                [
+                    { 
+                        Name:"BOLL+ENE+KDJ", ID:"9E154D3C-A4D4-40DD-8D8F-2C499F35E31B", Type:3,
+                        TemplateData:
+                        {
+                            Windows:
+                            [
+                                { Index:"BOLL" },
+                                { Index:"ENE" },
+                                { Index:"KDJ"}
+                            ]
+                        }
+
+                    },
+
+                    { 
+                        Name:"MA_OSC+DPO_RSI", ID:"E828DD1C-D41B-4888-9CB5-4CA1D84F7B50", Type:3, 
+                        TemplateData:
+                        {
+                            Windows:
+                            [
+                                //{ API:{ Name:"后台指标ID", ID:"后台指标ID", Url:'local' } },
+                                { Index:'MA', },
+                                { Index:"DPO" },
+                            ],
+
+                            OverlayIndex: //叠加指标设置
+                            [
+                                {
+                                    Index:'OSC', Windows:0, 
+                                    //IsShareY:true,ShowRightText:false 
+                                },
+                                {
+                                    Index:'RSI', Windows:1, 
+                                    //ShowRightText:false 
+                                },
+                            ], 
+                            
+                            //KLine:{ Period:5, }
+                        }
+                    },
                 ]
             }
             

@@ -255,14 +255,14 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 * [分钟K线拖动下载历史数据页面](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_DragDownload.html)  
 * [日K线拖动下载历史数据页面](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_DragDownload_day.html)  
 * [指标模板示例](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_kline_template_index.html) 
-
+* [自定义K线指标标题栏](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_indextitle.html)  
 ### 后台指标示例 
 * [K线对接后台指标(DRAWBAND)示例](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_DRAWBAND.html)  
 * [K线对接后台指标(MULTI_LINE)示例](https://jones2000.github.io/HQChart/webhqchart.demo/samples/kline_MULTI_LINE_index.html)  
 * [K线对接后台指标(MULTI_SVGICON)示例](https://jones2000.github.io/HQChart/webhqchart.demo/samples/kline_MULTI_SVGICON.html)  
 * [K线对接后台指标(MULTI_TEXT)示例](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_MULTI_TEXT.html)  
 * [K线对接后台指标(MULTI_HTMLDOM)示例](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_MULTI_HTMLDOM.html)  
-* [自定义K线指标标题栏](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_indextitle.html)  
+
 
 ## 订单流
 * [订单流样式1](https://jones2000.github.io/HQChart/webhqchart.demo/samples/demo_orderflow.html)    

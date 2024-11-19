@@ -408,15 +408,31 @@ function JSChart(element)
         if (option.KLineTitle) 
         {
             var item=option.KLineTitle;
+            var chartTitle=chart.TitlePaint[0];
             if (option.KLineTitle.IsShowName == false) chart.TitlePaint[0].IsShowName = false;
             if (option.KLineTitle.IsShowSettingInfo == false) chart.TitlePaint[0].IsShowSettingInfo = false;
             if (option.KLineTitle.IsShow == false) chart.TitlePaint[0].IsShow = false;
             if (option.KLineTitle.UpdateUICallback) chart.TitlePaint[0].UpdateUICallback = option.KLineTitle.UpdateUICallback
-            if (option.KLineTitle.LineCount > 1) chart.TitlePaint[0].LineCount = option.KLineTitle.LineCount;
+            if (IFrameSplitOperator.IsPlusNumber(item.LineCount)) chartTitle.LineCount = item.LineCount;
+            if (IFrameSplitOperator.IsPlusNumber(item.ColumnCount)) chartTitle.ColumnCount = item.ColumnCount;
             if (IFrameSplitOperator.IsNumber(item.TextSpace)) chart.TitlePaint[0].TextSpace=item.TextSpace;
             if (IFrameSplitOperator.IsNumber(item.PeriodSpace)) chart.TitlePaint[0].PeriodSpace=item.PeriodSpace;
             if (IFrameSplitOperator.IsNumber(item.DateTimeSpace)) chart.TitlePaint[0].DateTimeSpace=item.DateTimeSpace;
             if (IFrameSplitOperator.IsNumber(item.NameSpace)) chart.TitlePaint[0].NameSpace=item.NameSpace;
+
+            if (item.ShowPostion)   //显示位置高级配置
+            {
+                var subItem=item.ShowPostion;
+                if (!chartTitle.ShowPositionConfig) chartTitle.ShowPositionConfig={ Margin:{ } };
+                if (IFrameSplitOperator.IsNumber(subItem.Type)) chartTitle.ShowPositionConfig.Type=subItem.Type;
+                if (subItem.Margin) 
+                {
+                    if (IFrameSplitOperator.IsNumber(subItem.Margin.Left)) chartTitle.ShowPositionConfig.Margin.Left=subItem.Margin.Left;
+                    if (IFrameSplitOperator.IsNumber(subItem.Margin.Right)) chartTitle.ShowPositionConfig.Margin.Right=subItem.Margin.Right;
+                    if (IFrameSplitOperator.IsNumber(subItem.Margin.Bottom)) chartTitle.ShowPositionConfig.Margin.Bottom=subItem.Margin.Bottom;
+                    if (IFrameSplitOperator.IsNumber(subItem.Margin.Top)) chartTitle.ShowPositionConfig.Margin.Top=subItem.Margin.Top;
+                }
+            }
         }
 
         //叠加股票 只支持叠加1个股票
@@ -696,11 +712,27 @@ function JSChart(element)
         if (option.MinuteTitle) 
         {
             var item=option.MinuteTitle;
+            var chartTitle= chart.TitlePaint[0];
             if (option.MinuteTitle.IsShowName == false) chart.TitlePaint[0].IsShowName = false;
             if (option.MinuteTitle.IsShow == false) chart.TitlePaint[0].IsShow = false;
             if (option.MinuteTitle.UpdateUICallback) chart.TitlePaint[0].UpdateUICallback = option.MinuteTitle.UpdateUICallback
-            if (option.MinuteTitle.LineCount > 1) chart.TitlePaint[0].LineCount = option.MinuteTitle.LineCount;
+            if (IFrameSplitOperator.IsPlusNumber(item.LineCount)) chartTitle.LineCount = item.LineCount;
+            if (IFrameSplitOperator.IsPlusNumber(item.ColumnCount)) chartTitle.ColumnCount =item.ColumnCount;
             if (IFrameSplitOperator.IsNumber(item.TextSpace)) chart.TitlePaint[0].TextSpace=item.TextSpace;
+
+            if (item.ShowPostion)   //显示位置高级配置
+            {
+                var subItem=item.ShowPostion;
+                if (!chartTitle.ShowPositionConfig) chartTitle.ShowPositionConfig={ Margin:{ } };
+                if (IFrameSplitOperator.IsNumber(subItem.Type)) chartTitle.ShowPositionConfig.Type=subItem.Type;
+                if (subItem.Margin) 
+                {
+                    if (IFrameSplitOperator.IsNumber(subItem.Margin.Left)) chartTitle.ShowPositionConfig.Margin.Left=subItem.Margin.Left;
+                    if (IFrameSplitOperator.IsNumber(subItem.Margin.Right)) chartTitle.ShowPositionConfig.Margin.Right=subItem.Margin.Right;
+                    if (IFrameSplitOperator.IsNumber(subItem.Margin.Bottom)) chartTitle.ShowPositionConfig.Margin.Bottom=subItem.Margin.Bottom;
+                    if (IFrameSplitOperator.IsNumber(subItem.Margin.Top)) chartTitle.ShowPositionConfig.Margin.Top=subItem.Margin.Top;
+                }
+            }
         }
 
         if (option.MinuteVol)
@@ -11665,7 +11697,9 @@ function KLineChartHScreenContainer(uielement)
 
             //长按2秒,十字光标
             if (this.TouchTimer != null) clearTimeout(this.TouchTimer);
-            
+            var bStartTimer=true;
+            if (this.EnableClickModel && this.ClickModel.IsShowCorssCursor==true) bStartTimer=false;
+
             var drag = { "Click": {}, "LastMove": {}, };//最后移动的位置
             var touches = this.GetToucheData(e);
 
@@ -11716,8 +11750,9 @@ function KLineChartHScreenContainer(uielement)
                 }
             }
             
-            if (this.ChartCorssCursor.IsShow == true) 
+            if (bStartTimer)    
             {
+                //长按2秒,十字光标
                 this.TouchTimer = setTimeout(function () {
                     jsChart.IsPress=true;
                     if (drag.Click.X == drag.LastMove.X && drag.Click.Y == drag.LastMove.Y) //手指没有移动，出现十字光标
@@ -11727,6 +11762,7 @@ function KLineChartHScreenContainer(uielement)
                         //移动十字光标
                         var x = drag.Click.X;
                         var y = drag.Click.Y;
+                        if (jsChart.EnableClickModel===true) jsChart.ClickModel.IsShowCorssCursor=true;
                         jsChart.OnMouseMove(x, y, e);
                     }
                 }, jsChart.PressTime);
@@ -11770,6 +11806,12 @@ function KLineChartHScreenContainer(uielement)
                 var moveSetp = Math.abs(drag.LastMove.Y - touches[0].clientY);
                 var moveUpDown=Math.abs(drag.LastMove.X-touches[0].clientX);
                 moveSetp = parseInt(moveSetp);
+                var isMoveCorssCursor=false; //是否移动十字光标
+                if (this.EnableClickModel)
+                {
+                    if (this.ClickModel.IsShowCorssCursor===true) isMoveCorssCursor=true;
+                    else isMoveCorssCursor=false;
+                }
 
                 if (this.CurrentChartDrawPicture)
                 {
@@ -11801,6 +11843,11 @@ function KLineChartHScreenContainer(uielement)
 
                     drag.LastMove.X=touches[0].clientX;
                     drag.LastMove.Y=touches[0].clientY;
+                }
+                else if (isMoveCorssCursor)
+                {
+                    jsChart.MouseDrag=null;
+                    jsChart.MoveCorssCursor(drag.Click,e); //移动十字光标
                 }
                 else if (jsChart.DragMode == 1)  //数据左右拖拽
                 {

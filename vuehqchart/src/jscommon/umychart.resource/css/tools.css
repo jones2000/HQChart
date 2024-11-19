@@ -1562,15 +1562,14 @@ input[type="color"] {
     visibility:hidden;
     background-color: rgba(255,255,255,0.95);
     border: solid 1px rgba(200, 210, 219, 0.92);
-    display: flex;
-    flex-flow: column;  
     z-index: 99;
     pointer-events:none;
 }
 
 .UMyChart_Tooltip_Minute_Chart_Div
 {
-    flex: 1
+    height: 100%;
+    width: 100%;
 }
 
 

@@ -19,6 +19,11 @@
         <span id='button_2' class="btn-style">(系统+自定义脚本)指标</span>
         <span id='button_3' class="btn-style">(系统+后台指标)指标</span>
         <span id='button_4' class="btn-style">(系统+后台指标+叠加指标)指标</span>
+        <span id='button_5' class="btn-style">叠加指标1</span>
+        <span id='button_6' class="btn-style">叠加指标2</span>
+
+        <span id='button_7' class="btn-style">切换窗口1指标</span>
+        <span id='button_8' class="btn-style">切换窗口2指标</span>
     </div>
 
     <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
@@ -28,6 +33,12 @@
     <script src="../jscommon/umychart.complier.js"></script>    <!-- 麦语言解析执行器 -->
     <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
     <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+    <script src="../jscommon/umychart.popMenu.js"></script>
+    <script src="../jscommon/umychart.PopKeyboard.js"></script>
+    <script src="../jscommon/umychart.DialogTooltip.js"></script>
+    <script src="../jscommon/umychart.DialogSelectRect.js"></script>
+    <script src="../jscommon/umychart.DialogSearchIndex.js"></script>
+    <script src="../jscommon/umychart.version.js"></script>
 
     <script src="../jscommon/umychart.NetworkFilterTest.js"></script>
    
@@ -50,7 +61,10 @@
                 
                 Windows: //窗口指标
                 [
-                    {Index:"MA" },
+                    {
+                        Index:"MA" , 
+                        //IsShowIndexTitle:false 
+                    },
                     {Index:"MACD"},
                     //{Index:"VOL"},
                 ], 
@@ -59,7 +73,7 @@
                 OverlayIndex:
                 [
                    //{ Index:'MA', Windows:0 , IsShareY:true, ShowRightText:false , IsShowIndexTitle:true, FloatPrecision:5 },
-                   //{Index:'RSI', Windows:0, ShowRightText:true, YAxis:{ FloatPrecision:4, StringFormat:2, EnableRemoveZero:false} },
+                    {Index:'RSI', Windows:0, ShowRightText:true, YAxis:{ FloatPrecision:4, StringFormat:2, EnableRemoveZero:false} },
                     { Index:'BOLL', Windows:0, ShowRightText:true,IsShareY:true, ShowToolbar:true },
                    // {Windows:0, IndexName:"指标ID", Name:"自定义指标", Script:"DRAWTEXT(CLOSE<OPEN,H,14),VALIGN2,ALIGN1,YMOVE(-10), XMOVE(5);", Identify:"guid_66990",ShowRightText:true,IsShareY:true }
                     //{Index:'MA5', Windows:1 ,ShowRightText:true}
@@ -139,6 +153,9 @@
 
                 SelectedChart:{ EnableSelected: true, EnableMoveOn:true },
                 EnableIndexChartDrag:true,
+
+                SearchIndexDialog:{ Enable:true },
+                ModifyIndexParamDialog:{ Enable:true },
     
                 KLineTitle: //标题设置
                 {
@@ -246,7 +263,9 @@
             {
                 var request=data.Request;
                 if (request.Data.indexname=='后台指标ID')
-                    this.Index_MULTI_LINE(data, callback)
+                    this.Index_MULTI_LINE(data, callback);
+                else 
+                    return HQData.NetworkFilter(data, callback); 
             }
 
             this.Index_MULTI_LINE=function(data, callback)
@@ -391,7 +410,7 @@
                     [
                         { API:{ Name:"后台指标", ID:"后台指标ID", Url:'local' } },
                         { Index:"KDJ" },
-                        { Index:"MACD"}
+                        { Index:"MACD", }
                     ],
 
                     OverlayIndex: //叠加指标设置
@@ -408,8 +427,94 @@
 
                 this.Chart.ChangeIndexTemplate(templateData);
             }
+
+            this.TestAddOverlayIndex=function()
+            {
+                var option=
+                {
+                    WindowIndex:0, IndexName:"指标ID", Name:"叠加指标测试1", 
+                    IsShareY:true,
+                    Args:[{Name:"M", Value:10} ],
+                    Script:"T:MA(O,M);"
+                };
+                //var option={WindowIndex:0, IndexName:"MACD", Identify:"guid_66990"};
+                this.Chart.AddOverlayIndex(option);
+            }
+
+            this.TestAddOverlayIndex2=function()
+            {
+                /*
+                var option=
+                {
+                    WindowIndex:0, IndexName:"MACD", 
+                };
+                //var option={WindowIndex:0, IndexName:"MACD", Identify:"guid_66990"};
+                this.Chart.AddOverlayIndex(option);
+
+                var test=this.Chart.GetIndexInfo();
+                console.log("[GetIndexInfo]",test)
+                */
+
+                var indexInfo={ Name:"Test-111" , Script:"T:MA(C,5);" };
+                var option=
+                {
+                    Window:	//窗口属性设置
+                    {
+                        Modify:false,	//修改指标参数按钮
+                        Change:false,	//切换指标按钮
+                        Close:false,     //关闭指标窗口按钮
+                        Overlay:false,  //叠加指标按钮
+                        Export:false,
+                        TitleWindow:false,
+                        MaxMin:false,
+                    },
+
+                }
+                this.Chart.AddScriptIndexWindow(indexInfo, option);
+            }
+
+
+            this.TestChangeIndexWindow=function(windowIndex)
+            {
+                var option=
+                {
+                    Window:{ Index:"BOLL"},
+
+                    
+                    /*
+                    OverlayIndex: //叠加指标设置
+                    [
+                        {Index:'MA', IsShareY:true,ShowRightText:false },
+                        {Index:'RSI', ShowRightText:false },
+                    ], 
+                    */
+
+                    Delete:{ Overlay:true }
+                    
+                }
+
+                this.Chart.ChangeIndexWindow(windowIndex, option);
+            }
+
+            this.TestChangeIndexWindow2=function(windowIndex)
+            {
+                var option=
+                {
+                    Window:{ Index:"RSI", Modify:false},
+
+                    OverlayIndex: //叠加指标设置
+                    [
+                        {Index:'KDJ', IsShareY:false,ShowRightText:false },
+                        {Index:'ENE',  IsShareY:false,ShowRightText:false },
+                    ], 
+                }
+
+                this.Chart.ChangeIndexWindow(windowIndex, option);
+            }
+
         }
 
+        
         $(function () 
         {
             var klineControl=new KLineChart(document.getElementById('kline'));
@@ -419,6 +524,12 @@
             $("#button_2").click(function() { klineControl.TestChangeIndexTemplate(); } );
             $("#button_3").click(function() { klineControl.TestChangeIndexTemplate3(); } );
             $("#button_4").click(function() { klineControl.TestChangeIndexTemplate4(); } );
+
+            $("#button_5").click(function() { klineControl.TestAddOverlayIndex(); } );
+            $("#button_6").click(function() { klineControl.TestAddOverlayIndex2(); } );
+
+            $("#button_7").click(function() { klineControl.TestChangeIndexWindow(0); } );
+            $("#button_8").click(function() { klineControl.TestChangeIndexWindow2(1); } );
 
         })
 
