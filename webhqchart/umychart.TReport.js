@@ -470,13 +470,12 @@ function JSTReportChartContainer(uielement)
         this.UIElement.ondblclick=(e)=>{ this.UIOnDblClick(e); }
         this.UIElement.onmousedown=(e)=> { this.UIOnMouseDown(e); }
         this.UIElement.onmousemove=(e)=>{ this.UIOnMouseMove(e);}
+        this.UIElement.onmouseout=(e)=>{ this.UIOnMounseOut(e); }
+        this.UIElement.onmouseleave=(e)=>{ this.UIOnMouseleave(e); }
 
         /*
         this.UIElement.onmouseup=(e)=>{ this.UIOnMounseUp(e); }
         this.UIElement.oncontextmenu=(e)=> { this.UIOnContextMenu(e); }
-        
-        this.UIElement.onmouseout=(e)=>{ this.UIOnMounseOut(e); }
-        this.UIElement.onmouseleave=(e)=>{ this.UIOnMouseleave(e); }
         
 
         //手机拖拽
@@ -1042,10 +1041,10 @@ function JSTReportChartContainer(uielement)
         //document.onmouseup=(e)=> { this.DocOnMouseUp(e); }
     }
 
-    this.GetReportChart=function()
+    this.GetTReportChart=function()
     {
         var chart=this.ChartPaint[0];
-        if (!chart)  return;
+        if (!chart)  return null;
 
         return chart;
     }
@@ -1068,7 +1067,7 @@ function JSTReportChartContainer(uielement)
         
         this.LastMouseStatus.OnMouseMove={ X:x, Y:y };
         var mouseStatus={ Cursor:"default", Name:"Default"};;   //鼠标状态
-        var report=this.GetReportChart();
+        var report=this.GetTReportChart();
         var bDraw=false;
         
         if (report)
@@ -1113,6 +1112,16 @@ function JSTReportChartContainer(uielement)
         {
             this.HideMinuteChartTooltip();
         }
+    }
+
+    this.UIOnMounseOut=function(e)
+    {
+        this.HideMinuteChartTooltip();
+    }
+
+    this.UIOnMouseleave=function(e)
+    {
+        this.HideMinuteChartTooltip();
     }
 
     //点表头
@@ -1291,12 +1300,6 @@ function JSTReportChartContainer(uielement)
         }
     }
 
-    this.GetTReportChart=function()
-    {
-        var chart=this.ChartPaint[0];
-        return chart;
-    }
-
     this.OnWheel=function(e)    //滚轴
     {
         JSConsole.Chart.Log('[JSTReportChartContainer::OnWheel]',e);
@@ -1322,6 +1325,7 @@ function JSTReportChartContainer(uielement)
         if (wheelValue<0)   //下
         {
             this.LastMouseStatus.TooltipStatus=null;
+            this.HideMinuteChartTooltip();
             var result=this.MoveSelectedRow(1,{ EnablePageCycle:this.EnablePageCycle })
             if (result)
             {
@@ -1332,6 +1336,7 @@ function JSTReportChartContainer(uielement)
         else if (wheelValue>0)  //上
         {
             this.LastMouseStatus.TooltipStatus=null;
+            this.HideMinuteChartTooltip();
             var result=this.MoveSelectedRow(-1,{ EnablePageCycle:this.EnablePageCycle} );
             if (result)
             {
@@ -1352,6 +1357,8 @@ function JSTReportChartContainer(uielement)
 
         var keyID = e.keyCode ? e.keyCode :e.which;
         if (keyID==116) return; //F15刷新不处理
+
+        this.HideMinuteChartTooltip();
 
         switch(keyID)
         {

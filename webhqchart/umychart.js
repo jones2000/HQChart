@@ -85047,6 +85047,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             frame.YSplitOperator.SplitCount=subFrame.Frame.YSplitOperator.SplitCount;
             frame.YSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); };
             frame.YSplitOperator.OverlayIdentify=overlayFrame.Identify;
+            frame.YSplitOperator.FloatPrecision=0;  //持仓量 整数
 
             var chart=new ChartMinutePositionLine();
             chart.Canvas=this.Canvas

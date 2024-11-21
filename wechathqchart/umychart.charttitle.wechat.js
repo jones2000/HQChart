@@ -1205,14 +1205,14 @@ function DynamicMinuteTitlePainting()
         {
             this.Canvas.save();
             if (this.LineCount > 1) this.DrawMulitLine(item);
-            else this.DrawSingleLine(item);
+            else this.DrawSingleLine(item, true);
             this.Canvas.restore();
             if (!item.Time && item.Date && this.InfoData) this.HSCreenKLineInfoDraw(item.Date);
         }
         else 
         {
             if (this.LineCount > 1) this.DrawMulitLine(item);
-            else this.DrawSingleLine(item);
+            else this.DrawSingleLine(item, true);
             if (!item.Time && item.Date && this.InfoData) this.KLineInfoDraw(item.Date);
         }
     }

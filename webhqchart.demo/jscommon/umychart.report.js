@@ -1737,6 +1737,7 @@ function JSReportChartContainer(uielement)
             if (wheelValue<0)   //下
             {
                 this.LastMouseStatus.TooltipStatus=null;
+                this.HideMinuteChartTooltip();
                 if (this.GotoNextItem(1))
                 {
                     this.Draw();
@@ -1746,6 +1747,7 @@ function JSReportChartContainer(uielement)
             else if (wheelValue>0)  //上
             {
                 this.LastMouseStatus.TooltipStatus=null;
+                this.HideMinuteChartTooltip();
                 if (this.GotoNextItem(-1))
                 {
                     this.Draw();
@@ -1758,6 +1760,7 @@ function JSReportChartContainer(uielement)
             if (wheelValue<0)   //下一页
             {
                 this.LastMouseStatus.TooltipStatus=null;
+                this.HideMinuteChartTooltip();
                 if (this.GotoNextPage(this.PageUpDownCycle)) 
                 {
                     this.Draw();
@@ -1767,6 +1770,7 @@ function JSReportChartContainer(uielement)
             else if (wheelValue>0)  //上一页
             {
                 this.LastMouseStatus.TooltipStatus=null;
+                this.HideMinuteChartTooltip();
                 if (this.GotoPreviousPage(this.PageUpDownCycle)) 
                 {
                     this.Draw();
@@ -1788,6 +1792,7 @@ function JSReportChartContainer(uielement)
         var keyID = e.keyCode ? e.keyCode :e.which;
         if (keyID==116) return; //F15刷新不处理
 
+        this.HideMinuteChartTooltip();
         switch(keyID)
         {
             case 33:    //page up

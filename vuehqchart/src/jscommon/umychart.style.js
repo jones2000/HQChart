@@ -64,7 +64,7 @@ function GetBlackStyle()
             PriceColor: "rgb(25,180,231)",
             AreaPriceColor:"rgba(63,158,255,.3)",
             AvPriceColor: "rgb(255,236,0)",
-            PositionColor:'rgb(218,165,32)', 
+            PositionColor:'rgb(201, 9, 224)', 
             VolTitleColor:"rgb(190,190,190)",
             Before:
             {
