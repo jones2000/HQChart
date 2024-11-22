@@ -1975,6 +1975,8 @@ function JSReportChartContainer(uielement)
     //去掉右键菜单
     this.UIOnContextMenu=function(e)
     {
+        e.preventDefault();
+        
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
 
         if (!this.IsShowRightMenu) return;
@@ -1987,7 +1989,7 @@ function JSReportChartContainer(uielement)
 
     this.OnRightMenu=function(x,y,e)
     {
-        e.preventDefault();
+       
     }
 
     this.UIOnMouseMove=function(e)

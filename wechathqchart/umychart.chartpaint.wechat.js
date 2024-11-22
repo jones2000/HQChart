@@ -7638,6 +7638,7 @@ function ChartVolStick()
                 var value = this.Data.Data[i];
                 var kItem = this.HistoryData.Data[i];
                 if (value == null || kItem == null) continue;
+                if (value===0) continue;
 
                 var left = xOffset;
                 var right = xOffset + dataWidth;
@@ -9498,11 +9499,11 @@ function ChartCorssCursor()
                 }
                 else if ((right - left) - x < textWidth) 
                 {            //右边位置不够用，顶着右边画
-                    this.Canvas.fillRect(x - textWidth, yText, textWidth, this.TextHeight);
+                    this.Canvas.fillRect(right - textWidth, yText, textWidth, this.TextHeight);
                     this.Canvas.textAlign = "right";
                     this.Canvas.textBaseline = "top";
                     this.Canvas.fillStyle = this.TextColor;
-                    this.Canvas.fillText(text, x - 1, yText, textWidth);
+                    this.Canvas.fillText(text, right - 1, yText, textWidth);
                 }
                 else 
                 {

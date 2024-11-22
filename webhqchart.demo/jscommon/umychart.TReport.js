@@ -472,10 +472,11 @@ function JSTReportChartContainer(uielement)
         this.UIElement.onmousemove=(e)=>{ this.UIOnMouseMove(e);}
         this.UIElement.onmouseout=(e)=>{ this.UIOnMounseOut(e); }
         this.UIElement.onmouseleave=(e)=>{ this.UIOnMouseleave(e); }
+        this.UIElement.oncontextmenu=(e)=> { this.UIOnContextMenu(e); }
 
         /*
         this.UIElement.onmouseup=(e)=>{ this.UIOnMounseUp(e); }
-        this.UIElement.oncontextmenu=(e)=> { this.UIOnContextMenu(e); }
+        
         
 
         //手机拖拽
@@ -1122,6 +1123,21 @@ function JSTReportChartContainer(uielement)
     this.UIOnMouseleave=function(e)
     {
         this.HideMinuteChartTooltip();
+    }
+
+    this.UIOnContextMenu=function(e)
+    {
+        e.preventDefault();
+        
+        var x = e.clientX-this.UIElement.getBoundingClientRect().left;
+        var y = e.clientY-this.UIElement.getBoundingClientRect().top;
+
+        this.OnRightMenu(x,y,e);   //右键菜单事件
+    }
+
+    this.OnRightMenu=function(x,y,e)
+    {
+        
     }
 
     //点表头
