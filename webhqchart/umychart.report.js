@@ -2133,6 +2133,8 @@ function JSReportChartContainer(uielement)
 
     this.UIOnMounseOut=function(e)
     {
+        this.HideMinuteChartTooltip();
+        
         var bDraw=false;
         var tabChart=this.GetTabChart();
         if (tabChart && tabChart.MoveOnTabIndex>=0)
@@ -2157,6 +2159,8 @@ function JSReportChartContainer(uielement)
 
     this.UIOnMouseleave=function(e)
     {
+        this.HideMinuteChartTooltip();
+
         var tabChart=this.GetTabChart();
         if (tabChart && tabChart.MoveOnTabIndex>=0)
         {

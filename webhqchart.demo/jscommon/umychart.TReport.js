@@ -928,6 +928,7 @@ function JSTReportChartContainer(uielement)
 
         if (item[32]) stock.CloseLine=item[32];                     //32=收盘价线
         if (item[33]) stock.KLine=item[33];                         //33=K线
+        if (item[34]) stock.ExePrice=item[34];                      //34=行权价设置 { BGColor:背景色, Text:, TextColor }
 
         //10个数值型 101-199
         if (IFrameSplitOperator.IsNumber(item[101])) stock.ReserveNumber1=item[101];
@@ -1752,6 +1753,8 @@ var TREPORT_COLUMN_ID=
     NAME_EX_ID:27,          //扩展名字
     CLOSE_LINE_ID:28,       //收盘价线
     KLINE_ID:29,            //K线
+
+    EXE_PRICE_EX_ID:30,       //行权价格 扩张设置
     
     //预留数值类型 10个  201-299
     RESERVE_NUMBER1_ID:201,         //ReserveNumber1:
@@ -1798,6 +1801,7 @@ var MAP_TREPORT_COLUMN_FIELD=new Map(
     [TREPORT_COLUMN_ID.AVERAGE_PRICE_ID,"AvPrice"],
     [TREPORT_COLUMN_ID.POSITION_ID,"Position"],
     [TREPORT_COLUMN_ID.AMPLITUDE_ID,"Amplitude"],
+    [TREPORT_COLUMN_ID.EXE_PRICE_EX_ID, "ExePrice"],
 
     [TREPORT_COLUMN_ID.RESERVE_NUMBER1_ID,"ReserveNumber1"],
     [TREPORT_COLUMN_ID.RESERVE_NUMBER2_ID,"ReserveNumber2"],
@@ -2480,6 +2484,55 @@ function ChartTReport()
         }
     }
 
+    this.FormatCenterItem=function(data,drawInfo)
+    {
+        if (!data || !data.TData) return;
+        var leftData=this.GetExePriceExtendData(data.TData.LeftData);
+        var rightData=this.GetExePriceExtendData(data.TData.RightData);
+
+        if (leftData)
+        {
+            if (leftData.BGColor) drawInfo.BGColor=leftData.BGColor;
+            if (leftData.TitleColor) drawInfo.TextColor=leftData.TitleColor;
+            if (leftData.Text && leftData.TextColor)
+            {
+                drawInfo.Left={ Text:leftData.Text, TextColor:leftData.TextColor};
+            }
+            else if (leftData.IconFont && leftData.TextColor)
+            {
+                drawInfo.Left={ IconFont:leftData.IconFont, TextColor:leftData.TextColor};
+            }
+           
+        }
+
+        if (rightData)
+        {
+            if (rightData.BGColor) drawInfo.BGColor=rightData.BGColor;
+            if (rightData.TitleColor) drawInfo.TextColor=rightData.TitleColor;
+
+            if (rightData.Text && rightData.TextColor)
+            {
+                drawInfo.Right={ Text:rightData.Text, TextColor:rightData.TextColor};
+            }
+            else if (rightData.IconFont && rightData.TextColor)
+            {
+                drawInfo.Right={ IconFont:rightData.IconFont, TextColor:rightData.TextColor};
+            }
+        }
+    }
+
+    //行权价列扩展信息
+    this.GetExePriceExtendData=function(data)
+    {
+        if (!data) return null;
+
+        var fieldName=MAP_TREPORT_COLUMN_FIELD.get(TREPORT_COLUMN_ID.EXE_PRICE_EX_ID);
+        if (!fieldName) return null;
+
+        var value=data[fieldName];
+        return value;
+    }
+
     this.DrawCenterItem=function(index, data, column, rtItem, cellType) //cellType 0=中间字段 1=左侧 2=右侧
     {
         //tooltip提示
@@ -2491,6 +2544,10 @@ function ChartTReport()
 
         var drawInfo={ Text:null, TextColor:this.CenterItemConfig.TextColor, BGColor:this.CenterItemConfig.BGColor, TextAlign:column.TextAlign, Rect:rtItem, RectText:rtText };
         drawInfo.Text=`${data.ExePrice.toFixed(data.Decimal)}`;
+
+        this.FormatCenterItem(data,drawInfo);
+
+       
 
         this.DrawCell(drawInfo);
     }
@@ -2733,7 +2790,7 @@ function ChartTReport()
     {
         var rtText=drawInfo.RectText;
         var yCenter=rtText.Top+(rtText.Height/2);
-
+        var fontBackup=null;    //字体备份
         if (drawInfo.BGColor)   //背景
         {
             var rtItem=drawInfo.Rect;
@@ -2760,6 +2817,44 @@ function ChartTReport()
             if(drawInfo.TextColor) this.Canvas.fillStyle=drawInfo.TextColor;
             this.DrawText(drawInfo.Text, drawInfo.TextAlign, rtText.Left, yCenter, rtText.Width);
         }
+
+        if (drawInfo.Left)
+        {
+            var item=drawInfo.Left;
+            this.Canvas.textAlign="left";
+            this.Canvas.textBaseline="middle";
+            this.Canvas.fillStyle=item.TextColor;
+            if (item.IconFont)
+            {
+                if (!fontBackup) fontBackup=this.Canvas.font;
+                this.Canvas.font=item.IconFont.Font;
+                this.Canvas.fillText(item.IconFont.Symbol,rtText.Left,yCenter);
+            }
+            else if (item.Text)
+            {
+                this.Canvas.fillText(item.Text,rtText.Left,yCenter);
+            }
+        }
+
+        if (drawInfo.Right)
+        {
+            var item=drawInfo.Right;
+            this.Canvas.textAlign="right";
+            this.Canvas.textBaseline="middle";
+            this.Canvas.fillStyle=item.TextColor;
+            if (item.IconFont)
+            {
+                if (!fontBackup) fontBackup=this.Canvas.font;
+                this.Canvas.font=item.IconFont.Font;
+                this.Canvas.fillText(item.IconFont.Symbol,rtText.Right,yCenter);
+            }
+            else if (item.Text)
+            {
+                this.Canvas.fillText(item.Text,rtText.Right,yCenter);
+            }
+        }
+
+        if (fontBackup) this.Canvas.font=fontBackup;
     }
 
     this.GetTooltipData=function(x,y)
