@@ -187,9 +187,9 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 * 小程序画图工具
 ![小程序画图工具](/小程序行情模块用例/image/wechat_drawtool.gif)  
 ![小程序画图工具](/小程序行情模块用例/image/drawtool_price_line.gif)  
-* 背景分割
+* 背景分割  
 ![背景分割](/小程序行情模块用例/image/kline_splitbg.png)  
-* 筹码图
+* 筹码图  
 ![筹码图](/小程序行情模块用例/image/phone_chip.gif)  
 ![筹码图](/小程序行情模块用例/image/phone_chip2.gif)   
 

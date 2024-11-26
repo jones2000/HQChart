@@ -24260,6 +24260,16 @@ function Rect(x,y,width,height)
     this.Y=y;
     this.Width=width;
     this.Height=height;
+
+    this.PtInRect=function(x,y)
+    {
+        var left=this.X, right=this.X+this.Width;
+        var top=this.Y, bottom=this.Y+this.Height;
+
+        if (x>=left && x<=right && y>=top && y<=bottom) return true;
+
+        return false;
+    }
 }
 
 //图形外部挂接
@@ -40580,7 +40590,11 @@ function ChartMultiSVGIconV2()
             }
             else
             {
-                if (IFrameSplitOperator.IsNumber(item.YMove)) y+=item.YMove;
+                if (IFrameSplitOperator.IsNumber(item.YMove)) 
+                {
+                    y+=item.YMove;
+                    rtIcon.Y+=item.YMove;
+                }
                 this.Canvas.fillText(item.Symbol, x, y);
                 if (item.Text) this.IconRect.push({ Rect:rtIcon , Item:item, KItem:kItem });
                 else if (IFrameSplitOperator.IsNonEmptyArray(item.AryText)) this.IconRect.push({ Rect:rtIcon , Item:item, KItem:kItem });
@@ -40634,9 +40648,7 @@ function ChartMultiSVGIconV2()
             var item=this.IconRect[i];
             if (!item.Rect) continue;
             var rect=item.Rect;
-            this.Canvas.beginPath();
-            this.Canvas.rect(rect.X,rect.Y,rect.Width,rect.Height);
-            if (this.Canvas.isPointInPath(x,y))
+            if (rect && rect.PtInRect(x,y))
             {
                 JSConsole.Chart.Log('[ChartMultiSVGIconV2::GetTooltipData] icon ', item);
                 tooltip.Data=item;
