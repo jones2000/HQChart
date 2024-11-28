@@ -20,6 +20,7 @@ import
     Guid,
     ToFixedPoint,
     ToFixedRect,
+    JSCHART_EVENT_ID,
 } from "./umychart.data.wechat.js";
 
 import 
@@ -1127,7 +1128,741 @@ function BarragePaint()
     }
 }
 
+//////////////////////////////////////////////////////////////////////////////////
+// 筹码图
+function StockChipPhone()
+{
+    this.newMethod=IExtendChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
 
+    this.Name='筹码分布手机版';
+    this.ClassName='StockChipPhone';
+
+    this.HQChart;
+    this.PenBorder=g_JSChartResource.FrameBorderPen;    //边框
+    this.ColorProfit='rgb(255,0,0)';                    //盈利的线段
+    this.ColorNoProfit='rgb(90,141,248)';               //非盈利
+    this.ColorAveragePrice='rgb(0,139,0)';              //平均价线
+    this.ColorBG='rgb(190,190,190)';                    //筹码背景线段颜色
+    this.Font=g_JSChartResource.StockChip.Font;
+    this.InfoColor=g_JSChartResource.StockChip.InfoColor;
+
+    this.ShowType=0;                                    //0=所有筹码
+    this.PixelRatio=1;
+    this.LineHeight=16;
+    this.Left=50;         //左边间距
+    this.Width=150;       //筹码图宽度
+    this.CalculateType=0;   //0=平均分布 1=三角分布
+    this.PriceZoom=100;     //价格放大倍数
+
+    this.DAY_COLOR=
+    [
+        ['rgb(255,0,0)','rgb(255,128,128)','rgb(255,0,128)','rgb(255,100,0)','rgb(192,128,0)','rgb(255,192,0)'],
+        ['rgb(120,80,225)','rgb(160,160,225)','rgb(80,80,255)','rgb(120,120,255)','rgb(32,64,192)','rgb(0,64,128)'],
+    ];
+
+    this.SetOption=function(option)
+    {
+        if (!option) return;
+        //if (IFrameSplitOperator.IsNumber(option.ShowType)) this.ShowType=option.ShowType;
+        if (option.Width>100) this.Width=option.Width;
+        if (option.CalculateType>0) this.CalculateType=option.CalculateType;
+        if (IFrameSplitOperator.IsNumber(option.PriceZoom)) this.PriceZoom=option.PriceZoom;
+    }
+
+    this.ReloadResource=function(resource)
+    {
+        this.PenBorder=g_JSChartResource.FrameBorderPen;
+        this.Font=g_JSChartResource.StockChip.Font;
+        this.InfoColor=g_JSChartResource.StockChip.InfoColor;
+       // this.DayInfoColor=g_JSChartResource.StockChip.DayInfoColor;
+    }
+
+    this.Draw=function()
+    {
+        this.IsHScreen=this.ChartFrame.IsHScreen==true;
+        if (this.IsHScreen)
+        {
+            var border=this.ChartBorder.GetHScreenBorder();
+            var left=ToFixedPoint(border.Left);
+            var right=ToFixedPoint(border.Right);
+            var top=ToFixedPoint(border.Bottom+this.Left);
+            var bottom=ToFixedPoint(border.ChartHeight-2*this.PixelRatio);
+            this.ClientRect={Left:left,Top:top, Right:right, Bottom:bottom};
+            this.ClientRect.Width=this.ClientRect.Right-this.ClientRect.Left;
+            this.ClientRect.Height=this.ClientRect.Bottom-this.ClientRect.Top;
+        }
+        else
+        {
+            var left=ToFixedPoint(this.ChartBorder.GetRight()+this.Left);
+            var top=ToFixedPoint(this.ChartBorder.GetTop());
+            var right=ToFixedPoint(left+this.Width-1*this.PixelRatio);
+            var bottom=ToFixedPoint(this.ChartBorder.GetBottom());
+            this.ClientRect={Left:left,Top:top,Right:right, Bottom:bottom};
+            this.ClientRect.Width=this.ClientRect.Right-this.ClientRect.Left;
+            this.ClientRect.Height=this.ClientRect.Bottom-this.ClientRect.Top;
+        }
+        
+        if (ChartData.IsTickPeriod(this.HQChart.Period))
+        {
+
+        }
+        else
+        {
+            if (this.CalculateChip())
+            {
+                this.DrawAllChip();
+                //if (this.ShowType==1|| this.ShowType==2) this.DrawDayChip();
+
+                this.CalculateCast();   //计算成本 
+                if (this.IsHScreen) this.DrawHScreenChipInfo(); 
+                else this.DrawChipInfo();      
+            }
+        }
+
+        this.DrawBorder();
+        this.SizeChange=false;
+    }
+
+    this.DrawBorder=function()
+    {
+        this.Canvas.strokeStyle=this.PenBorder;
+        this.Canvas.strokeRect(this.ClientRect.Left,this.ClientRect.Top,this.ClientRect.Width,this.ClientRect.Height);
+    }
+
+    this.DrawAllChip=function()
+    {
+        var KLineFrame=this.HQChart.Frame.SubFrame[0].Frame;
+        var selectPrice=this.Data.SelectData.Close;
+        var aryProfitPoint=[];
+        var aryNoProfitPoint=[];
+        var totalVol=0,totalAmount=0,totalProfitVol=0, totalYProfitVol=0;   //总的成交量, 总的成交金额, 总的盈利的成交量
+        var yPrice=this.Data.YPrice;
+
+        var maxPrice=KLineFrame.HorizontalMax;
+        var minPrice=KLineFrame.HorizontalMin;
+
+        var MaxVol=1;
+        for(var i=0;i<this.Data.AllChip.length;++i)
+        {
+            var vol=this.Data.AllChip[i];
+            if(!vol) continue;
+            var price=(i+this.Data.MinPrice)/this.PriceZoom;
+            totalVol+=vol;
+            totalAmount+=price*vol;
+
+            if (price<yPrice) totalYProfitVol+=vol;     //获利的成交量
+            if (price<selectPrice) totalProfitVol+=vol; //鼠标当前位置 获利的成交量
+
+            if (price<=maxPrice && price>=minPrice)
+            {
+                if (MaxVol<vol) MaxVol=vol;
+            }
+        }
+        this.Data.MaxVol=MaxVol;    //把成交量最大值替换成 当前屏成交量最大值
+        
+        for(var i=0;i<this.Data.AllChip.length;++i)
+        {
+            var vol=this.Data.AllChip[i];
+            if(!vol) continue;
+            var price=(i+this.Data.MinPrice)/this.PriceZoom;
+            if (price>maxPrice || price<minPrice) continue;
+
+            if (this.IsHScreen)
+            {
+                var y=KLineFrame.GetYFromData(price,false);
+                var x=(vol/this.Data.MaxVol)*this.ClientRect.Height+this.ClientRect.Top;
+            }
+            else
+            {
+                var y=KLineFrame.GetYFromData(price,false);
+                var x=(vol/this.Data.MaxVol)*this.ClientRect.Width+this.ClientRect.Left;
+            }
+
+            if (price<selectPrice) aryProfitPoint.push({X:x,Y:y});
+            else aryNoProfitPoint.push({X:x,Y:y});
+        }
+
+        this.Data.ChipInfo=
+        {
+            Vol:totalVol, AveragePrice:totalAmount/totalVol, ProfitVol:totalProfitVol, 
+            ProfitRate:totalVol>0?totalProfitVol/totalVol*100:0,
+            YProfitRate:totalVol>0?totalYProfitVol/totalVol*100:0
+        };
+
+        if (this.ShowType==0)
+        {
+            this.DrawLines(aryProfitPoint,this.ColorProfit);
+            this.DrawLines(aryNoProfitPoint,this.ColorNoProfit);
+            var averagePrice=this.Data.ChipInfo.AveragePrice;
+            if (averagePrice>0 && averagePrice<=maxPrice && averagePrice>=minPrice) 
+            {
+                averagePrice=averagePrice.toFixed(2);
+                this.DrawAveragePriceLine(aryProfitPoint,aryNoProfitPoint,KLineFrame.GetYFromData(averagePrice),this.ColorAveragePrice);
+            }
+        }
+        else    //在火焰山模式下, 筹码用一个颜色
+        {
+            this.DrawLines(aryProfitPoint,this.ColorBG);
+            this.DrawLines(aryNoProfitPoint,this.ColorBG);
+        }
+    }
+
+    this.DrawLines=function(aryPoint,color)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryPoint)) return;
+
+        this.Canvas.strokeStyle=color;
+        this.Canvas.beginPath();
+        for(var i =0; i<aryPoint.length; ++i)
+        {
+            var item=aryPoint[i];
+            if (this.IsHScreen)
+            {
+                this.Canvas.moveTo(item.Y,this.ClientRect.Top);
+                this.Canvas.lineTo(item.Y,item.X);
+            }
+            else
+            {
+                this.Canvas.moveTo(this.ClientRect.Left,item.Y);
+                this.Canvas.lineTo(item.X,item.Y);
+            }
+            
+        }
+        this.Canvas.stroke();
+    }
+    this.DrawAveragePriceLine=function(aryProfitPoint,aryNoProfitPoint,y,color)
+    {
+        for(var i=0; i<aryProfitPoint.length; ++i)
+        {
+            var item=aryProfitPoint[i];
+            if (item.Y==y)
+            {
+                this.Canvas.strokeStyle=color;
+                this.Canvas.beginPath();
+                if (this.IsHScreen)
+                {
+                    this.Canvas.moveTo(item.Y,this.ClientRect.Top);
+                    this.Canvas.lineTo(item.Y,item.X);
+                }
+                else
+                {
+                    this.Canvas.moveTo(this.ClientRect.Left,item.Y);
+                    this.Canvas.lineTo(item.X,item.Y);
+                }
+                
+                this.Canvas.stroke();
+                return;
+            }
+        }
+
+        for(var i=0; i<aryNoProfitPoint.length; ++i)
+        {
+            var item=aryNoProfitPoint[i];
+            if (item.Y==y)
+            {
+                this.Canvas.strokeStyle=color;
+                this.Canvas.beginPath();
+                if (this.IsHScreen)
+                {
+                    this.Canvas.moveTo(item.Y,this.ClientRect.Top);
+                    this.Canvas.lineTo(item.Y,item.X);
+                }
+                else
+                {
+                    this.Canvas.moveTo(this.ClientRect.Left,item.Y);
+                    this.Canvas.lineTo(item.X,item.Y);
+                }
+                this.Canvas.stroke();
+                return;
+            }
+        }
+    }
+
+    this.GetChipInfoTitle=function()
+    {
+        var aryText=[]; //从底部往上
+
+        if (ChartData.IsDayPeriod(this.HQChart.Period, true))
+        {
+            var item={ Title:"日期:", Text:IFrameSplitOperator.FormatDateString(this.Data.SelectData.Date) };
+            aryText.push(item);
+        }
+        else if (ChartData.IsMinutePeriod(this.HQChart.Period, true))
+        {
+            var item={ Title:`${IFrameSplitOperator.FormatDateString(this.Data.SelectData.Date)} ${IFrameSplitOperator.FormatTimeString(this.Data.SelectData.Time, "HH:MM")}` };
+            aryText.push(item);
+        }
+
+        var item={ Title:"集中度:", Text:"--.--%", };
+        if (IFrameSplitOperator.IsNonEmptyArray(this.Data.Cast)) item.Text=`${this.Data.Cast[0].Rate.toFixed(2)}%`;
+        aryText.push(item);
+
+        var item={ Title:"90%成本:", Text:"--.--", };
+        if (IFrameSplitOperator.IsNonEmptyArray(this.Data.Cast)) item.Text=`${this.Data.Cast[0].MinPrice.toFixed(2)}-${this.Data.Cast[0].MaxPrice.toFixed(2)}`;
+        aryText.push(item);
+
+
+        var item={ Title:"平均成本：:", Text:"--.--",  };
+        if (this.Data.ChipInfo && IFrameSplitOperator.IsNumber(this.Data.ChipInfo.AveragePrice)) item.Text=`${this.Data.ChipInfo.AveragePrice.toFixed(2)}`;
+
+        if (IFrameSplitOperator.IsNumber(this.Data.YPrice) && IFrameSplitOperator.IsNumber(this.Data.ChipInfo.YProfitRate))
+        {
+            var item={ Title:`${this.Data.YPrice.toFixed(2)}获利:`, Text:`${this.Data.ChipInfo.YProfitRate.toFixed(2)}%` };
+            aryText.push(item);
+        }
+
+        if (this.IsHScreen) //横屏直接就显示数值 画进度条太麻烦了
+        {
+            var item={ Title:"获利比例:", Text: `${this.Data.ChipInfo.ProfitRate.toFixed(2)}%`};
+            aryText.push(item);
+        }
+        else
+        {
+            var item={ Title:"获利比例:", Type:1 };
+            aryText.push(item);
+        }
+
+        return aryText;
+    }
+
+    this.DrawHScreenChipInfo=function()
+    {
+        var aryText=this.GetChipInfoTitle();
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryText)) return;
+
+        this.Canvas.font=this.Font;
+        this.Canvas.fillStyle=this.InfoColor;
+        this.Canvas.textBaseline='bottom';
+        this.Canvas.textAlign='left';
+
+        var top=this.ClientRect.Top+2*this.PixelRatio;
+        var left=this.ClientRect.Left+2*this.PixelRatio;
+        var bottom=this.ClientRect.Bottom;
+        var lineHeight=this.LineHeight;
+
+        this.Canvas.save();
+        this.Canvas.translate(left, top);
+        this.Canvas.rotate(90 * Math.PI / 180);
+
+        var yText=0, xText=0;
+        for(var i=0;i<aryText.length;++i)
+        {
+            var item=aryText[i];
+            yText=0;
+            var textColor=item.TitleColor;
+            if (item.TitleColor) textColor=item.TitleColor;
+            this.Canvas.fillStyle=textColor;
+            this.Canvas.fillText(item.Title,yText,xText);
+            var textWidth=this.Canvas.measureText(item.Title).width+4*this.PixelRatio;
+            var yText=textWidth;
+
+            if (item.Text)
+            {
+                var textColor=item.TitleColor;
+                if (item.TextColor) textColor=item.TextColor;
+                this.Canvas.fillStyle=textColor;
+                this.Canvas.fillText(item.Text,yText,xText);
+            }
+
+            xText-=lineHeight;
+        }
+
+
+        this.Canvas.restore();
+    }
+
+    this.DrawChipInfo=function()    
+    {
+        var aryText=this.GetChipInfoTitle();
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryText)) return;
+
+        var bottom=this.ClientRect.Top+this.ClientRect.Height-1;
+        var left=this.ClientRect.Left+2;
+        var right=this.ClientRect.Left+this.ClientRect.Width;
+
+        this.Canvas.font=this.Font;
+        this.Canvas.fillStyle=this.InfoColor;
+        this.Canvas.textBaseline='bottom';
+        this.Canvas.textAlign='left';
+
+        var lineHeight=this.LineHeight;
+        var yText=bottom;
+        for(var i=0;i<aryText.length;++i)
+        {
+            var item=aryText[i];
+
+            var textColor=item.TitleColor;
+            if (item.TitleColor) textColor=item.TitleColor;
+            this.Canvas.fillStyle=textColor;
+            this.Canvas.fillText(item.Title,left,yText);
+            var textWidth=this.Canvas.measureText(item.Title).width+4;
+            var xText=left+textWidth;
+
+            if (item.Text)
+            {
+                var textColor=item.TitleColor;
+                if (item.TextColor) textColor=item.TextColor;
+                this.Canvas.fillStyle=textColor;
+                this.Canvas.fillText(item.Text,xText,yText);
+            }
+
+            if (item.Type==1)
+            {
+                var barLeft=left+textWidth+2;
+                var barWidth=(right-5-barLeft);
+                this.Canvas.strokeStyle=this.ColorNoProfit;
+                this.Canvas.strokeRect(barLeft,yText-lineHeight,barWidth,lineHeight);
+                this.Canvas.strokeStyle=this.ColorProfit;
+                this.Canvas.strokeRect(barLeft,yText-lineHeight,barWidth*(this.Data.ChipInfo.ProfitRate/100),lineHeight);
+                var text=this.Data.ChipInfo.ProfitRate.toFixed(2)+'%';
+                this.Canvas.textAlign='center';
+                this.Canvas.fillText(text,barLeft+barWidth/2,yText);
+            }
+
+            yText-=lineHeight;
+        }
+    }
+
+    this.DrawDayChip=function()
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.Data.DayChip)) return;
+
+        var KLineFrame=this.HQChart.Frame.SubFrame[0].Frame;
+        for(var i=0;i<this.Data.DayChip.length;++i)
+        {
+            var aryPoint=[];
+            var chipData=this.Data.DayChip[i].Chip;
+            if (!chipData) continue;
+            var totalVol=0;
+            for(var j=0;j<chipData.length;++j)
+            {
+                var vol=chipData[j];
+                if(!vol) continue;
+                totalVol+=vol;
+                var price=(j+this.Data.MinPrice)/100;
+                if (this.IsHScreen)
+                {
+                    var y=KLineFrame.GetYFromData(price);
+                    var x=(vol/this.Data.MaxVol)*this.ClientRect.Height+this.ClientRect.Top;
+                }
+                else
+                {
+                    var y=KLineFrame.GetYFromData(price);
+                    var x=(vol/this.Data.MaxVol)*this.ClientRect.Width+this.ClientRect.Left;
+                }
+               
+                aryPoint.push({X:x,Y:y});
+            }
+            this.Data.DayChip[i].Vol=totalVol;
+            this.DrawArea(aryPoint,this.Data.DayChip[i].Color);
+        }
+    }
+
+    this.DrawArea=function(aryPoint,color)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryPoint)) return;
+
+        this.Canvas.fillStyle=color;
+        this.Canvas.beginPath();
+        if (this.IsHScreen)
+        {
+            this.Canvas.moveTo(aryPoint[0].Y,this.ClientRect.Top);
+            for(var i=0; i<aryPoint.length; ++i)
+            {
+                var item=aryPoint[i];
+                this.Canvas.lineTo(item.Y,item.X);
+            }
+            this.Canvas.lineTo(aryPoint[aryPoint.length-1].Y,this.ClientRect.Top);
+        }
+        else
+        {
+            this.Canvas.moveTo(this.ClientRect.Left,aryPoint[0].Y);
+            for(var i=0; i<aryPoint.length; ++i)
+            {
+                var item=aryPoint[i];
+                this.Canvas.lineTo(item.X,item.Y);
+            }
+            this.Canvas.lineTo(this.ClientRect.Left,aryPoint[aryPoint.length-1].Y);
+        }
+        
+        this.Canvas.fill();
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    //计算
+    this.CalculateChip=function()   //计算筹码
+    {
+        if (!this.HQChart) return false;
+        if (!this.HQChart.FlowCapitalReady) return false;
+        var symbol=this.HQChart.Symbol;
+        if (!symbol) return false;
+
+        var recvData=this.SendCalculateChipEvent();
+        if (recvData && recvData.PreventDefault)
+            return recvData.Result;
+
+        if (MARKET_SUFFIX_NAME.IsSHSZIndex(symbol)) return false;   //指数暂时不支持移动筹码
+
+        var bindData=this.HQChart.ChartPaint[0].Data;
+        //if (bindData.Period>=4) return false;   //分钟K线不支持, 没时间做,以后再做吧
+        var count=bindData.DataOffset+parseInt(this.HQChart.CursorIndex);
+        if (count>=bindData.Data.length) count=bindData.Data.length-1;
+        var selData=bindData.Data[count];
+        var yPrice=selData.Close;
+
+        var mouseY=this.HQChart.LastPoint.Y;
+        if (mouseY) yPrice=this.HQChart.Frame.SubFrame[0].Frame.GetYData(mouseY);
+        
+        //JSConsole.Chart.Log("[StockChip::CalculateChip]",count,this.HQChart.CursorIndex,selData);
+        const rate=1;
+        var aryVol=[];
+        var seed=1,vol,maxPrice,minPrice;
+        for(let i=count;i>=0;--i)
+        {
+            var item=bindData.Data[i];
+            var changeRate=1;   //换手率
+            if (item.FlowCapital>0) changeRate=item.Vol/item.FlowCapital;
+            if (i==count) vol=item.Vol*changeRate;
+            else vol=item.Vol*seed;
+            var dataItem={Vol:vol,High:item.High,Low:item.Low};
+            aryVol.push(dataItem);
+            seed*=(1-changeRate*rate);
+
+            if (!maxPrice || maxPrice<item.High) maxPrice=item.High;
+            if (!minPrice || minPrice>item.Low) minPrice=item.Low;
+        }
+
+        //JSConsole.Chart.Log("[StockChip::CalculateChip]",maxPrice,minPrice);
+        if (!maxPrice || !minPrice) return true;
+
+        var priceZoom=this.PriceZoom;
+
+        maxPrice=parseInt(maxPrice*priceZoom);
+        minPrice=parseInt(minPrice*priceZoom);
+
+        var dataCount=maxPrice-minPrice;
+        var aryChip=new Array()
+        for(let i=0;i<=dataCount;++i)
+        {
+            aryChip.push(0);
+        }
+
+        var dayChip=[];
+        var distributeData;
+        if (this.ShowType==2)
+        {
+            var dayChip=
+            [
+                {Day:100, Color:this.DAY_COLOR[1][5]}, {Day:60, Color:this.DAY_COLOR[1][4]}, {Day:30, Color:this.DAY_COLOR[1][3]},
+                {Day:20, Color:this.DAY_COLOR[1][2]}, {Day:10, Color:this.DAY_COLOR[1][1]}, {Day:5, Color:this.DAY_COLOR[1][0]}
+            ];
+            for(let i in aryVol)
+            {
+                var item=aryVol[i];
+                var high=parseInt(item.High*priceZoom);
+                var low=parseInt(item.Low*priceZoom);
+                var averageVol=item.Vol;
+                if (high-low>0) averageVol=item.Vol/(high-low);
+                if (averageVol<=0.000000001) continue;
+
+                for(var k=0;k<dayChip.length;++k)
+                {
+                    if (i==dayChip[k].Day) 
+                    {
+                        dayChip[k].Chip=aryChip.slice(0);
+                        break;
+                    }
+                }
+
+                distributeData={Low:low, High:high, Vol:item.Vol, MaxPrice:maxPrice, MinPrice:minPrice};
+                this.CalculateDistribute(aryChip, distributeData );
+            }
+        }
+        else if (this.ShowType==1)
+        {
+            var dayChip=
+            [
+                {Day:5, Color:this.DAY_COLOR[0][0]},{Day:10, Color:this.DAY_COLOR[0][1]},{Day:20, Color:this.DAY_COLOR[0][2]},
+                {Day:30, Color:this.DAY_COLOR[0][3]},{Day:60, Color:this.DAY_COLOR[0][4]},{Day:100, Color:this.DAY_COLOR[0][5]}
+            ];
+
+            for(let i=aryVol.length-1;i>=0;--i)
+            {
+                var item=aryVol[i];
+                var high=parseInt(item.High*priceZoom);
+                var low=parseInt(item.Low*priceZoom);
+                var averageVol=item.Vol;
+                if (high-low>0) averageVol=item.Vol/(high-low);
+                if (averageVol<=0.000000001) continue;
+
+                for(var k=0;k<dayChip.length;++k)
+                {
+                    if (i==dayChip[k].Day) 
+                    {
+                        dayChip[k].Chip=aryChip.slice(0);
+                        break;
+                    }
+                }
+                
+                distributeData={Low:low, High:high, Vol:item.Vol, MaxPrice:maxPrice, MinPrice:minPrice};
+                this.CalculateDistribute(aryChip, distributeData);
+            }
+        }
+        else
+        {
+            for(let i in aryVol)
+            {
+                var item=aryVol[i];
+                var high=parseInt(item.High*priceZoom);
+                var low=parseInt(item.Low*priceZoom);
+                var averageVol=item.Vol;
+                if (high-low>0) averageVol=item.Vol/(high-low);
+                if (averageVol<=0.000000001) continue;
+
+                distributeData={Low:low, High:high, Vol:item.Vol, MaxPrice:maxPrice, MinPrice:minPrice};
+                this.CalculateDistribute(aryChip, distributeData);
+            }
+        }
+
+        if (!distributeData) return false;
+
+        this.Data={AllChip:aryChip, MaxVol:distributeData.MaxVol, MaxPrice:maxPrice, MinPrice:minPrice,SelectData:selData, DayChip:dayChip, YPrice:yPrice};
+        return true;
+    }
+
+    this.SendCalculateChipEvent=function()
+    {
+        var event=this.HQChart.GetEventCallback(JSCHART_EVENT_ID.ON_CALCULATE_CHIP_DATA);
+        if (!event) return null;
+
+        var bindData=this.HQChart.ChartPaint[0].Data;
+        var curIndex=bindData.DataOffset+parseInt(this.HQChart.CursorIndex);
+        var sendData=
+        { 
+            Symbol:this.HQChart.Symbol, Period:this.HQChart.Period, KData:bindData, 
+            CurrentIndex:curIndex, Y:this.HQChart.LastPoint.Y, HQChart:this.HQChart,
+            ShowType:this.ShowType, CalculateType:this.CalculateType,
+            PreventDefault:false,
+            Result:null,    //true/false
+        };
+
+        event.Callback(event, sendData, this);
+
+        return sendData;
+    }
+
+    this.EvenlyDistribute=function(aryChip, data)    //平均分布 data={Low, High, Vol, MaxVol, MaxPrice, MinPrice }
+    {
+        var low=data.Low, high=data.High, maxPrice=data.MaxPrice, minPrice=data.MinPrice, maxVol=1;
+        if ( (high-low)== 0) return;
+        var averageVol=data.Vol/(high-low);
+
+        for(var j=low;j<=high && j<=maxPrice;++j)
+        {
+            var index=j-minPrice;
+            aryChip[index]+=averageVol;
+            if (maxVol<aryChip[index]) maxVol=aryChip[index];
+        }
+
+        data.MaxVol=maxVol;
+    }
+
+    this.TriangleDistribute=function(aryChip, data)  //三角分布
+    {
+        var low=data.Low, high=data.High, maxPrice=data.MaxPrice, minPrice=data.MinPrice, maxVol=1;
+        var ANGLE = 45, PI=3.1415926535;
+        var middlePrice = (high - low) / 2.0 + low;
+
+        var totalValue=0;
+        var aryVol=[];
+        for(var i=low+1, j=1 ;i<=middlePrice;++i,++j)
+        {
+            var y = Math.tan(ANGLE* PI / 180)*j;
+
+            totalValue+=y;
+            aryVol.push({Index:i-minPrice, Value:y});
+        }
+
+        for(var i=high-1, j=1 ;i>middlePrice;--i,++j)
+        {
+            var y = Math.tan(ANGLE* PI / 180)*j;
+
+            totalValue+=y
+            aryVol.push({Index:i-minPrice, Value:y});
+        }
+
+        if (totalValue>0)
+        {
+            for(var i=0;i<aryVol.length;++i)
+            {
+                var item=aryVol[i];
+                aryChip[item.Index]+=item.Value*data.Vol/totalValue;
+                if (maxVol<aryChip[item.Index]) maxVol=aryChip[item.Index];
+            }
+
+            data.MaxVol=maxVol;
+        }
+    }
+
+    this.CalculateDistribute=function(aryChip, data)
+    {
+        if (this.CalculateType==1) this.TriangleDistribute(aryChip, data);
+        else this.EvenlyDistribute(aryChip, data);
+    }
+
+    this.CalculateCast=function()   //计算 90% 70%的成本价
+    {
+        if (!this.Data.ChipInfo || !this.Data.ChipInfo.Vol) return;
+
+        var aryCast=
+        [
+            {Start:0.05,End:0.95, MaxPrice:0, MinPrice:0, Rate:0},
+            {Start:0.15,End:0.85, MaxPrice:0, MinPrice:0, Rate:0}
+        ];
+
+        var averagePrice=this.Data.ChipInfo.AveragePrice;
+        var totalProfitVol=this.Data.ChipInfo.ProfitVol;
+        var tempVol=0;
+        for(var i=0, castCount=0;i<this.Data.AllChip.length;++i)
+        {
+            if (castCount==4) break;
+            var vol=this.Data.AllChip[i];
+            if (vol<=0) continue;
+
+            var price=(i+this.Data.MinPrice)/this.PriceZoom;
+            tempVol+=vol;
+            var rate=tempVol/totalProfitVol;
+            
+            for(var j=0; j<aryCast.length; ++j)
+            {
+                var itemCast=aryCast[j];
+                if (itemCast.MinPrice<=0 && rate>itemCast.Start)
+                {
+                    itemCast.MinPrice=price;
+                    ++castCount;
+                }
+
+                if (itemCast.MaxPrice<=0 && rate>itemCast.End)
+                {
+                    itemCast.MaxPrice=price;
+                    ++castCount;
+                }
+            }
+        }
+
+        for(var i=0; i<aryCast.length; ++i)
+        {
+            var item=aryCast[i];
+            var addPrice=item.MaxPrice+item.MinPrice;
+            if (addPrice) item.Rate=Math.abs(item.MaxPrice-item.MinPrice)/addPrice*100;
+        }
+
+        this.Data.Cast=aryCast;
+    }
+
+}   
 
 /*
     扩展图形
@@ -1179,6 +1914,7 @@ export
     MinuteTooltipPaint,
     BackgroundPaint,
     g_ExtendChartPaintFactory,
+    StockChipPhone,
 }
 /*
 module.exports =

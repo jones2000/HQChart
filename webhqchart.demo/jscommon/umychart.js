@@ -2829,6 +2829,7 @@ var JSCHART_MENU_ID=
     CMD_ENABLE_POP_MINUTE_CHART_ID:40,  //双击弹分时图
 
     CMD_CHANGE_INFO_POSITION_ID:41,     //修改信息地雷位置
+    CMD_CHIP_CHART_SETTING_ID:42,       //筹码图设置
 
 
     CMD_REPORT_CHANGE_BLOCK_ID:60,      //报价列表 切换板块ID
@@ -9929,6 +9930,16 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 break;
             case JSCHART_MENU_ID.CMD_HIDE_STOCKCHIP_ID:
                 if (this.DeleteStockChipChart) this.DeleteStockChipChart();
+                break;
+            case JSCHART_MENU_ID.CMD_CHIP_CHART_SETTING_ID:
+                var stockChip=this.GetStockChipChart();
+                if (!stockChip) return;
+                if (param!=null) 
+                {
+                    stockChip.Chart.ShowType=param;
+                    this.SetSizeChange(true);
+                    this.Draw();
+                }
                 break;
             case JSCHART_MENU_ID.CMD_ENABLE_SELECT_RECT_ID:
                 if (IFrameSplitOperator.IsBool(srcParam))
@@ -43843,7 +43854,7 @@ function StockChip()
     this.ShowType=0;    //0=所有筹码  1=周期前  2=周期内
     this.IsDynamic=true;
     this.ClientRect={};
-    this.Font=g_JSChartResource.TitleFont;
+    this.Font=g_JSChartResource.StockChip.Font;
     this.InfoColor=g_JSChartResource.StockChip.InfoColor;
     this.DayInfoColor=g_JSChartResource.StockChip.DayInfoColor;
     this.LineHeight=16;
@@ -43882,7 +43893,7 @@ function StockChip()
     this.ReloadResource=function(resource)
     {
         this.PenBorder=g_JSChartResource.FrameBorderPen;
-        this.Font=g_JSChartResource.TitleFont;
+        this.Font=g_JSChartResource.StockChip.Font;
         this.InfoColor=g_JSChartResource.StockChip.InfoColor;
         this.DayInfoColor=g_JSChartResource.StockChip.DayInfoColor;
 
@@ -70317,6 +70328,7 @@ function JSChartResource()
     {
         InfoColor:'rgb(0,0,0)', //文字颜色
         DayInfoColor:'rgb(255,255,255)', //周期颜色内文字颜色
+        Font:`${12*GetDevicePixelRatio()}px 微软雅黑`,
 
         DefaultButton:
         {
@@ -71263,6 +71275,7 @@ function JSChartResource()
             var item=style.StockChip;
             if (item.InfoColor) this.StockChip.InfoColor=item.InfoColor;
             if (item.DayInfoColor) this.StockChip.DayInfoColor=item.DayInfoColor;
+            if (item.Font) this.StockChip.Font=item.Font;
 
             if (item.DefaultButton) T_SetButtonStyle(item.DefaultButton, this.StockChip.DefaultButton);
             if (item.LongButton) T_SetButtonStyle(item.LongButton, this.StockChip.LongButton);
@@ -80772,6 +80785,8 @@ KLineChartContainer.JsonDataToRealtimeData=function(data, symbol)
 
     if (IFrameSplitOperator.IsBool(stock.isvirtual)) item.IsVirtual=stock.isvirtual;  //虚拟数据
     if (IFrameSplitOperator.IsBool(stock.isnontrade)) item.IsNonTrade=stock.isnontrade;  //虚拟数据
+
+    if (IFrameSplitOperator.IsNumber(stock.flowCapital)) item.FlowCapital=stock.flowCapital;   //流通股本
 
     return item;
 }

@@ -2273,6 +2273,8 @@ var JSCHART_EVENT_ID =
     ON_FORMAT_KLINE_HIGH_LOW_TITLE:154,     //K线最高最低价格式化内容
     ON_CUSTOM_CORSSCURSOR_POSITION:155,     //自定义十字光标X轴的输出的位置
     ON_CUSTOM_MINUTE_NIGHT_DAY_X_INDEX:156,   //日盘夜盘的分界线
+
+    ON_CALCULATE_CHIP_DATA:164,                //计算筹码数据 (筹码图用)
 }
 
 var JSCHART_DATA_FIELD_ID=

@@ -124,6 +124,7 @@ import {
     BarragePaint,
     MinuteTooltipPaint,
     BackgroundPaint,
+    StockChipPhone,
     g_ExtendChartPaintFactory,
 } from "./umychart.extendchart.wechat.js";
 
@@ -1566,6 +1567,9 @@ function JSChartContainer(uielement)
     //十字光标长留(手势才有)
     this.ClickModel={ IsShowCorssCursor:false };
     this.EnableClickModel=false;
+
+    //全局配置
+    this.GlobalOption= { RightHorizontal: { Show:false, } }
 
     this.ChartDestory=function()    //销毁
     {
@@ -5376,6 +5380,8 @@ function KLineChartContainer(uielement)
     this.BeforeBindMainData = null;   //function(funcName)   在BindMainData() 调用前回调用
     this.AfterBindMainData = null;    //function(funcName)   在BindMainData() 调用前后调用
 
+    this.FlowCapitalReady=false;        //流通股本是否下载完成
+
     this.ResetDragDownload = function () 
     {
         this.DragDownload.Day.Status = 0;
@@ -5654,6 +5660,8 @@ function KLineChartContainer(uielement)
             frame.ChartBorder = border;
             frame.Identify = i;                   //窗口序号
             frame.RightSpaceCount = this.RightSpaceCount; //右边
+            frame.GetEventCallback=(id)=> { return this.GetEventCallback(id); };
+            frame.GlobalOption=this.GlobalOption;
 
             frame.HorizontalMax = 20;
             frame.HorizontalMin = 10;
@@ -5720,9 +5728,8 @@ function KLineChartContainer(uielement)
         frame.Canvas = this.Canvas;
         frame.ChartBorder = border;
         frame.Identify = id;                   //窗口序号
-
-        if (this.ModifyIndexDialog) frame.ModifyIndexEvent = this.ModifyIndexDialog.DoModal;        //绑定菜单事件
-        if (this.ChangeIndexDialog) frame.ChangeIndexEvent = this.ChangeIndexDialog.DoModal;
+        frame.GetEventCallback=(id)=> { return this.GetEventCallback(id); };
+        frame.GlobalOption=this.GlobalOption;
 
         frame.HorizontalMax = 20;
         frame.HorizontalMin = 10;
@@ -5971,6 +5978,7 @@ function KLineChartContainer(uielement)
         this.CancelAutoUpdate();
         this.ChartSplashPaint.SetTitle(this.LoadDataSplashTitle);
         this.ChartSplashPaint.EnableSplash(true);
+        this.FlowCapitalReady=false;
         this.ResetDragDownload();
         this.Draw();
 
@@ -6110,6 +6118,7 @@ function KLineChartContainer(uielement)
         this.CancelAutoUpdate();
         this.ChartSplashPaint.SetTitle(this.LoadDataSplashTitle);
         this.ChartSplashPaint.EnableSplash(true);
+        this.FlowCapitalReady=false;
         this.ResetDragDownload();
         this.Draw();
 
@@ -7379,6 +7388,48 @@ function KLineChartContainer(uielement)
         this.Draw();
     }
 
+    //获取筹码图  className=指定筹码类名 否则就查询所有
+    this.GetStockChipChart=function(className)
+    {
+        if (className) return this.GetExtendChartByClassName(className);
+
+        chart=this.GetExtendChartByClassName("StockChipPhone");
+        return chart;
+    }
+
+    this.CreateStockChipPhone=function(option)
+    {
+        var chart=new StockChipPhone();
+        chart.Canvas=this.Canvas;
+        chart.ChartBorder=this.Frame.ChartBorder;
+        chart.ChartFrame=this.Frame;
+        chart.HQChart=this;
+        chart.Left=this.Frame.ChartBorder.Right;    //左边间距使用当前框架间距
+        chart.SetOption(option);
+        this.ExtendChartPaint.push(chart);
+        this.Frame.ChartBorder.Right+=chart.Width;  //创建筹码需要增加右边的间距
+        this.GlobalOption.RightHorizontal.Show=false;
+
+        return chart;
+    }
+
+    this.DeleteStockChipChart=function()
+    {
+        var stockChip=this.GetStockChipChart();
+        if (!stockChip) return;
+        
+        var chipWidth=stockChip.Chart.Width;
+        this.DeleteExtendChart(stockChip); 
+        this.Frame.ChartBorder.Right-=chipWidth;
+        if (stockChip.Chart.ClassName=="StockChipPhone")  
+        {
+            this.GlobalOption.RightHorizontal.Show=true;
+            this.Frame.ResetXYSplit();
+        }
+        this.SetSizeChange(true);
+        this.Draw();
+    }
+
     this.CreateExtendChart = function (name, option)   //创建扩展图形
     {
         var chart;
@@ -7404,6 +7455,8 @@ function KLineChartContainer(uielement)
                 chart.SetOption(option);
                 this.ExtendChartPaint.push(chart);
                 return chart;
+            case "StockChipPhone":
+                return this.CreateStockChipPhone(option);
             default:
                 chart=g_ExtendChartPaintFactory.Create(name);
                 if (!chart) return null;
@@ -8967,6 +9020,7 @@ KLineChartContainer.JsonDataToHistoryData = function (data)
     var date = 0, yclose = 1, open = 2, high = 3, low = 4, close = 5, vol = 6, amount = 7, position = 8;
     var fclose=9, yfclose=10;   //结算价, 前结算价
     var bfactor=11, afactor=12; //前, 后复权因子
+    var flowCapital=15;         //流通股本
     var colorData=JSCHART_DATA_FIELD_ID.KLINE_COLOR_DATA;
     var extendDataIndex=JSCHART_DATA_FIELD_ID.KLINE_DAY_EXTENDDATA;     //k线扩展数据
     for (var i = 0; i < list.length; ++i) 
@@ -8989,6 +9043,9 @@ KLineChartContainer.JsonDataToHistoryData = function (data)
 
         if (IFrameSplitOperator.IsNumber(jsData[bfactor])) item.BFactor=jsData[bfactor];    //前复权因子
         if (IFrameSplitOperator.IsNumber(jsData[afactor])) item.AFactor=jsData[afactor];    //后复权因子
+
+        if (IFrameSplitOperator.IsNumber(jsData[flowCapital])) item.FlowCapital=jsData[flowCapital];   //流通股本
+
         if (!IFrameSplitOperator.IsNumber(item.Open)) continue; 
 
         if (jsData[colorData]) item.ColorData=jsData[colorData];
@@ -9033,6 +9090,8 @@ KLineChartContainer.JsonDataToRealtimeData = function (data, symbol)
     if (IFrameSplitOperator.IsNumber(stock.position)) item.Position = stock.position; //持仓量
     if (IFrameSplitOperator.IsNumber(stock.bfactor)) item.BFactor=stock.bfactor;    //前复权因子
     if (IFrameSplitOperator.IsNumber(stock.afactor)) item.AFactor=stock.afactor;    //后复权因子
+    if (IFrameSplitOperator.IsNumber(stock.flowCapital)) item.FlowCapital=stock.flowCapital;   //流通股本
+
     if (stock.colordata) item.ColorData=stock.colordata;    //自定义颜色
     if (stock.extendData) item.ExtendData=stock.extendData;
     return item;
@@ -9588,6 +9647,7 @@ function MinuteChartContainer(uielement)
             if (i < 2) frame.ChartBorder.TitleHeight = 0;
             frame.XPointCount = 243;
             frame.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+            frame.GlobalOption=this.GlobalOption;
             frame.HQChart=this;
 
             var DEFAULT_HORIZONTAL = [9, 8, 7, 6, 5, 4, 3, 2, 1];
@@ -9655,13 +9715,8 @@ function MinuteChartContainer(uielement)
         frame.Identify=id;                   //窗口序号
         frame.XPointCount=243;
         frame.GetEventCallback=(id)=> { return this.GetEventCallback(id); };
+        frame.GlobalOption=this.GlobalOption;
         frame.HQChart=this;
-
-        if (id>=2)
-        {
-            if (this.ModifyIndexDialog) frame.ModifyIndexEvent=this.ModifyIndexDialog.DoModal;        //绑定菜单事件
-            if (this.ChangeIndexDialog) frame.ChangeIndexEvent=this.ChangeIndexDialog.DoModal;
-        }
 
         var DEFAULT_HORIZONTAL=[9,8,7,6,5,4,3,2,1];
         frame.HorizontalMax=DEFAULT_HORIZONTAL[0];
@@ -12056,9 +12111,8 @@ function KLineChartHScreenContainer(uielement)
             frame.ChartBorder = border;
             frame.Identify = i;                   //窗口序号
             frame.RightSpaceCount = this.RightSpaceCount; //右边
-
-            if (this.ModifyIndexDialog) frame.ModifyIndexEvent = this.ModifyIndexDialog.DoModal;        //绑定菜单事件
-            if (this.ChangeIndexDialog) frame.ChangeIndexEvent = this.ChangeIndexDialog.DoModal;
+            frame.GetEventCallback=(id)=> { return this.GetEventCallback(id); };
+            frame.GlobalOption=this.GlobalOption;
 
             frame.HorizontalMax = 20;
             frame.HorizontalMin = 10;
@@ -12108,6 +12162,39 @@ function KLineChartHScreenContainer(uielement)
 
             this.Frame.SubFrame[i] = subFrame;
         }
+    }
+
+    this.CreateStockChipPhone=function(option)
+    {
+        var chart=new StockChipPhone();
+        chart.Canvas=this.Canvas;
+        chart.ChartBorder=this.Frame.ChartBorder;
+        chart.ChartFrame=this.Frame;
+        chart.HQChart=this;
+        chart.Left=this.Frame.ChartBorder.Bottom;    //左边间距使用当前框架间距
+        chart.SetOption(option);
+        this.ExtendChartPaint.push(chart);
+        this.Frame.ChartBorder.Bottom+=chart.Width;  //创建筹码需要增加右边的间距
+        this.GlobalOption.RightHorizontal.Show=false;
+
+        return chart;
+    }
+
+    this.DeleteStockChipChart=function()
+    {
+        var stockChip=this.GetStockChipChart();
+        if (!stockChip) return;
+        
+        var chipWidth=stockChip.Chart.Width;
+        this.DeleteExtendChart(stockChip); 
+        this.Frame.ChartBorder.Bottom-=chipWidth;
+        if (stockChip.Chart.ClassName=="StockChipPhone")  
+        {
+            this.GlobalOption.RightHorizontal.Show=true;
+            this.Frame.ResetXYSplit();
+        }
+        this.SetSizeChange(true);
+        this.Draw();
     }
 }
 
@@ -12190,6 +12277,7 @@ function MinuteChartHScreenContainer(uielement)
             frame.Identify=i;
             frame.HQChart=this;
             frame.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+            frame.GlobalOption=this.GlobalOption;
 
             var DEFAULT_HORIZONTAL = [9, 8, 7, 6, 5, 4, 3, 2, 1];
             frame.HorizontalMax = DEFAULT_HORIZONTAL[0];

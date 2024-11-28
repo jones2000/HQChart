@@ -603,6 +603,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 5. [HQChart报价列表高级应用教程5-自定义单元格文字颜色](https://jones2000.blog.csdn.net/article/details/129665704)  
 6. [HQChart报价列表高级应用教程6-自定义列数据对接](https://jones2000.blog.csdn.net/article/details/129678481)  
 7. [HQChart报价列表高级应用教程7-走势列数据对接](https://blog.csdn.net/jones2000/article/details/140163584)   
+8. [HQChart报价列表高级应用教程8-名称列样式说明](https://jones2000.blog.csdn.net/article/details/144105144)   
 
 
 ## 设计文档:

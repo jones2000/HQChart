@@ -14288,15 +14288,7 @@ JSComplier.ColorVarToRGB=function(colorName)
     option.Data=这个股票的ChartData
     option.Right=复权
     option.MaxRequestDataCount=请求数据的最大个数
-*/
-
-function timeout(ms) {
-    return new Promise((resolve) => {
-      setTimeout(resolve, ms);
-    });
-  }
-
-  
+*/  
 JSComplier.Execute=function(code,option,errorCallback)
 {
     //异步调用

@@ -373,6 +373,12 @@ function JSChartResource()
         LineDash:[3,5]
     }
 
+    this.StockChip=
+    {
+        InfoColor:'rgb(0,0,0)', //文字颜色
+        Font:'12px 微软雅黑',
+    }
+
     //深度图
     this.DepthChart=
     {
@@ -664,6 +670,13 @@ function JSChartResource()
         {
             var item=style.DRAWABOVE;
             if (this.IsNumber(item.YOffset)) this.DRAWABOVE.YOffset=item.YOffset;
+        }
+
+        if (style.StockChip)
+        {
+            var item=style.StockChip;
+            if (item.Font) this.StockChip.Font=item.Font;
+            if (item.InfoColor) this.StockChip.InfoColor=item.InfoColor;
         }
 
         if (style.DepthChart)

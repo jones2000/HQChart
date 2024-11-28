@@ -464,6 +464,9 @@ function AverageWidthFrame()
         var borderLeft = this.ChartBorder.Left;
         var titleHeight = this.ChartBorder.TitleHeight;
 
+        var isDrawLeft=borderLeft > 10 && this.IsShowYText[0] === true;
+        var isDrawRight=this.IsShowRightHorizontal();
+        
         this.Canvas.save();
         var yPrev = null; //上一个坐标y的值
         for (var i = this.HorizontalInfo.length - 1; i >= 0; --i)  //从上往下画分割线
@@ -529,7 +532,7 @@ function AverageWidthFrame()
             //坐标信息 左边 间距小于10 不画坐标
             this.Canvas.fillStyle = item.TextColor;
             this.Canvas.strokeStyle = item.TextColor;
-            if (item.Message[0] != null && borderLeft > 10 && this.IsShowYText[0] === true) 
+            if (item.Message[0] != null && isDrawLeft) 
             {
                 if (item.Font != null) this.Canvas.font = item.Font;
                 
@@ -538,7 +541,7 @@ function AverageWidthFrame()
             }
 
             //坐标信息 右边 间距小于10 不画坐标
-            if (item.Message[1] != null && borderRight > 10 && this.IsShowYText[1] === true) 
+            if (item.Message[1] != null && isDrawRight) 
             {
                 if (item.Font != null) this.Canvas.font = item.Font;
 
@@ -563,6 +566,22 @@ function AverageWidthFrame()
 
         this.Canvas.restore();
     }
+
+    this.IsShowRightHorizontal=function()
+    {
+        var borderRight=this.ChartBorder.Right;
+        if (borderRight<=10) return false;
+        if (this.IsShowYText[1]===false) return false;
+
+        if (this.GlobalOption && this.GlobalOption.RightHorizontal)
+        {
+            var item=this.GlobalOption.RightHorizontal;
+            if (item.Show===false) return false;
+        }
+
+        return true;
+    }
+
 
     this.GetXFromIndex = function (index) 
     {
@@ -1154,16 +1173,16 @@ function AverageWidthFrame()
             var borderTop = this.ChartBorder.Top;
             var borderBottom = this.ChartBorder.Bottom;
             var isDrawLeft=borderTop>10 && this.IsShowYText[0]===true;
-            var isDrawRight=borderBottom>10 && this.IsShowYText[1]===true;
+            //var isDrawRight=borderBottom>10 && this.IsShowYText[1]===true;
         }
         else
         {
             var borderRight=this.ChartBorder.Right;
             var borderLeft=this.ChartBorder.Left;
             var isDrawLeft=borderLeft>10 && this.IsShowYText[0]===true;
-            var isDrawRight=borderRight>10 && this.IsShowYText[1]===true;
+            //var isDrawRight=borderRight>10 && this.IsShowYText[1]===true;
         }
-        
+        var isDrawRight=this.IsShowRightHorizontal();
         var width={ Left:null, Right:null };
         if (!isDrawRight && !isDrawLeft) return width;
 
@@ -2525,6 +2544,21 @@ function KLineHScreenFrame()
                 yPrev = y;
             }
         }
+    }
+
+    this.IsShowRightHorizontal=function()
+    {
+        var borderBottom=this.ChartBorder.Bottom;
+        if (borderBottom<=10) return false;
+        if (this.IsShowYText[1]===false) return false;
+
+        if (this.GlobalOption && this.GlobalOption.RightHorizontal)
+        {
+            var item=this.GlobalOption.RightHorizontal;
+            if (item.Show===false) return false;
+        }
+
+        return true;
     }
 
     //画标题背景色

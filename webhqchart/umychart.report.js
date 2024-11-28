@@ -4715,9 +4715,10 @@ function ChartReport()
             if (IFrameSplitOperator.IsNumber(item.FixedWidth)) colItem.FixedWidth=item.FixedWidth;
             if (IFrameSplitOperator.IsBool(item.EnableDragWidth)) colItem.EnableDragWidth=item.EnableDragWidth;
             if (IFrameSplitOperator.IsBool(item.IsDrawCallback)) colItem.IsDrawCallback=item.IsDrawCallback;
+            else colItem.IsDrawCallback=false;
+
             if (IFrameSplitOperator.IsNumber(item.FloatPrecision)) colItem.FloatPrecision=item.FloatPrecision;    //小数位数
             if (IFrameSplitOperator.IsNumber(item.ColorType))  colItem.ColorType=item.ColorType;        //0=默认 1=(>0, =0, <0) 2=(>=0, <0)
-            else colItem.IsDrawCallback=false;
             if (item.Icon) colItem.Icon=item.Icon;
             if (IFrameSplitOperator.IsBool(item.EnableChartTooltip)) colItem.EnableChartTooltip=item.EnableChartTooltip;
 
