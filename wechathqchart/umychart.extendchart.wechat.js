@@ -34,6 +34,7 @@ import
     g_JSChartResource,
     JSCHART_LANGUAGE_ID,
     g_JSChartLocalization,
+    JSChartResource,
 } from './umychart.resource.wechat.js'
 
 import 
@@ -416,9 +417,13 @@ function KLineTooltipPaint()
     //设置参数接口
     this.SetOption = function (option) 
     {
+        if (!option) return;
         if (option.LineHeight > 0) this.LineHeight = option.LineHeight;
         if (option.BGColor) this.BGColor = option.BGColor;
         if (option.LanguageID > 0) this.LanguageID = option.LanguageID;
+        if (IFrameSplitOperator.IsNumber(option.LineSpace)) this.LineSpace=option.LineSpace;
+        if (IFrameSplitOperator.IsNumber(option.ExtendLineWidth)) this.ExtendLineWidth=option.ExtendLineWidth;
+        JSChartResource.CopyMargin(this.Mergin, option.Mergin);
     }
 }
 

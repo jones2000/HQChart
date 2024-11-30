@@ -14,7 +14,7 @@
        
     </div>
 
-    <div>
+    <div style="height: 25px;">
         <span id="button_1" class="btn-style">日</span>
         <span id="button_2" class="btn-style">周</span>
         <span id="button_3" class="btn-style">月</span>
@@ -23,7 +23,15 @@
         <span id="button_5" class="btn-style">5M</span>
         <span id="button_6" class="btn-style">15M</span>
 
-        <span id='button_7' class="btn-style">RSI</span>
+       <!-- <span id='button_7' class="btn-style">RSI</span>-->
+    </div>
+
+    <div style="height: 25px;">
+        <span id='button_8' class="btn-style">筹码图</span>
+        <span id='button_9' class="btn-style">关闭筹码图</span>
+        <span id='button_10' class="btn-style">样式1</span>
+        <span id='button_11' class="btn-style">样式2</span>
+        <span id='button_12' class="btn-style">样式3</span>
     </div>
 
     <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
@@ -56,9 +64,9 @@
                 
                 Windows: //窗口指标
                 [
-                    {Index:"MA" },
-                    {Index:"MACD"},
-                    {Index:"VOL"},
+                    {Index:"MA", Modify:false,Change:false },
+                    {Index:"MACD", Modify:false,Change:false, Close:false, MaxMin:false , TitleWindow:false },
+                    {Index:"VOL", Modify:false,Change:false, Close:false, MaxMin:false , TitleWindow:false },
                 ], 
 
                 
@@ -107,7 +115,13 @@
 
                 //EnableVerifyRecvData:true,
 
-                CorssCursorInfo: { Right:2, DateFormatType:3, HPenType:1, VPenType:1, IsShowClose:false, VLineType:0,RightButton:{ Enable:true }, IsShowCorss:true, PriceFormatType:0, DataFormatType:0 },
+                CorssCursorInfo: 
+                { 
+                    Right:2, DateFormatType:3, HPenType:1, VPenType:1, 
+                    IsShowClose:false, VLineType:0,RightButton:{ Enable:false }, 
+                    PriceFormatType:0, DataFormatType:0,
+                    //IsOnlyDrawKLine:true,
+                },
                 EnableZoomIndexWindow:true,
 
                 DrawTool:       //画图工具
@@ -154,6 +168,8 @@
                     IsShowName:true,       //不显示股票名称
                     IsShowSettingInfo:true, //不显示周期/复权
                     IsTitleShowLatestData:true,
+
+                    //ShowPostion:{ Type:1 , Margin:{ Left:5*GetDevicePixelRatio(), Right:5*GetDevicePixelRatio() } }
                 },
     
                 EnableYDrag:
@@ -164,13 +180,13 @@
                 
                 Border: //边框
                 {
-                    Left:0,         //左边间距
-                    Right:0,       //右边间距
+                    Left:1,         //左边间距
+                    Right:1,       //右边间距
                     Bottom:25,      //底部间距
                     Top:25,         //顶部间距
 
-                    //AutoLeft:{ Blank:10, MinWidth:60 },
-                    //AutoRight:{ Blank:5, MinWidth:60 },
+                    AutoLeft:{ Blank:10, MinWidth:60 },
+                    AutoRight:{ Blank:5, MinWidth:60 },
                 },
                 
                 Frame:  //子框架设置
@@ -183,10 +199,10 @@
                             
                             { 
                                 Type:0,
-                                Position:'right',LineType:1, 
-                                //PositionEx:1,
+                                Position:'right',LineType:1, PositionEx:1,
                             },
                             
+                            /*
                             { 
                                 Type:1, 
                                 Position:'right',IsShowLine:true, LineType:0,
@@ -204,7 +220,9 @@
                                     }
                                 ] 
                             },
+                            */
 
+                            /*
                             { 
                                 Type:1, 
                                 Position:'right',IsShowLine:true,LineType:1,PositionEx:1, LineWidth:2, LineDash:[4,4],
@@ -220,6 +238,7 @@
                                     }
                                 ] 
                             }
+                            */
                         ]
                         
                         
@@ -232,7 +251,11 @@
 
                 ExtendChart:    //扩展图形
                 [
-                    {Name:'KLineTooltip' },  //手机端tooltip
+                    { 
+                        Name:'KLineTooltip', 
+                        //LineSpace:10, Mergin:{Left:10, Bottom:20, Right:10, Top:20 }, ExtendLineWidth:50 
+                    },  //手机端tooltip
+                    { Name:"StockChipPhone", Width:120, ShowType:1 }
                 ],
 
 
@@ -256,8 +279,14 @@
 
                 this.OnSize();  //让K线全屏
                 this.Option.NetworkFilter=(data, callback)=>{ HQData.NetworkFilter(data, callback); }
+                this.Option.OnCreatedCallback=(chart)=>{ this.OnCreateHQChart(chart); }
                 this.Chart.SetOption(this.Option);  //设置K线配置
 
+            }
+
+            this.OnCreateHQChart=function(chart)
+            {
+                //chart.EnableClickModel=true;
             }
 
             this.OnSize=function(option)  //自适应大小调整
@@ -311,6 +340,56 @@
             {
                 this.Chart.AddIndexWindow(indexName);
             }
+
+            this.TestIndexTemplate=function()
+            {
+                this.Chart.ChangeIndexTemplate(
+                {
+                    Windows: 
+                    [
+                        {
+                        "Name": "BOLL",
+                        "Description": "布林线",
+                        "IsMainIndex": true,
+                        //"KLineType": 2,
+                        "Args": 
+                        [
+                            {
+                                "Name": "N",
+                                "Value": 26
+                            },
+                            {
+                                "Name": "M",
+                                "Value": 26
+                            },
+                            {
+                                "Name": "P",
+                                "Value": 2
+                            }
+                        ],
+                        "Script": "MID:MA(CLOSE,N);TMP2:=STD(CLOSE,M);TOP:MID+P*TMP2;BOTTOM:MID-P*TMP2;"
+                    }]
+                });
+            }
+
+            this.EnableStockChipChart=function(bEnable)
+            {
+                if (bEnable)
+                {
+                    var option={Name:'StockChipPhone', Width:150 };  //手机版筹码
+                    this.Chart.ExecuteMenuCommand(JSCHART_MENU_ID.CMD_SHOW_STOCKCHIP_ID, [option.Name, option]);
+                }
+                else
+                {
+                    this.Chart.ExecuteMenuCommand(JSCHART_MENU_ID.CMD_HIDE_STOCKCHIP_ID);
+                }
+                    
+            }
+
+            this.SetStockChipChart=function(type)
+            {
+                this.Chart.ExecuteMenuCommand(JSCHART_MENU_ID.CMD_CHIP_CHART_SETTING_ID, [type]);
+            }
         }
 
         $(function () 
@@ -320,7 +399,12 @@
             var klineControl=new KLineChart(document.getElementById('kline'));
             klineControl.Create();
 
-            $("#button_7").click(function() { klineControl.AddIndexWindow("RSI"); } );
+            $("#button_7").click(function() 
+            { 
+                klineControl.TestIndexTemplate();
+                //klineControl.AddIndexWindow("RSI"); 
+            } 
+            );
 
             $("#button_1").click(function() { klineControl.Chart.ChangePeriod(0); } );
             $("#button_2").click(function() { klineControl.Chart.ChangePeriod(1); } );
@@ -329,6 +413,15 @@
             $("#button_4").click(function() { klineControl.Chart.ChangePeriod(4); } );
             $("#button_5").click(function() { klineControl.Chart.ChangePeriod(5); } );
             $("#button_6").click(function() { klineControl.Chart.ChangePeriod(6); } );
+
+            $("#button_8").click(function() { klineControl.EnableStockChipChart(true); } );
+            $("#button_9").click(function() { klineControl.EnableStockChipChart(false); } );
+
+            $("#button_10").click(function() { klineControl.SetStockChipChart(0); } );
+            $("#button_11").click(function() { klineControl.SetStockChipChart(1); } );
+            $("#button_12").click(function() { klineControl.SetStockChipChart(2); } );
+
+            
 
         })
 
@@ -351,9 +444,8 @@
 
 .btn-style
 {
-    padding: 3px 8px;
+    padding:3px 8px;
     border: 1px solid #ececec;
-    border-radius: 5px;
     background-color: #f5f5f5;
     cursor: pointer;
 }
