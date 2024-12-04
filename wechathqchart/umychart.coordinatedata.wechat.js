@@ -1493,12 +1493,14 @@ function MinuteCoordinateData()
         else 
         {
             var upperSymbol = symbol.toLocaleUpperCase(); //转成大写
-            if (MARKET_SUFFIX_NAME.IsSH(upperSymbol) || MARKET_SUFFIX_NAME.IsSZ(upperSymbol))
+            if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol))
+                data=this.GetSHOData(upperSymbol,width);
+            else if (MARKET_SUFFIX_NAME.IsSZO(upperSymbol))
+                data=this.GetSZOData(upperSymbol,width);
+            else if (MARKET_SUFFIX_NAME.IsSH(upperSymbol) || MARKET_SUFFIX_NAME.IsSZ(upperSymbol) || MARKET_SUFFIX_NAME.IsSHSZIndex(upperSymbol) )
                 data = this.GetSHSZData(upperSymbol, width); 
             else if (MARKET_SUFFIX_NAME.IsBJ(upperSymbol))
                 data=this.GetBJData(upperSymbol,width);
-            else if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol) || MARKET_SUFFIX_NAME.IsSZO(upperSymbol))
-                data = this.GetSHOData(upperSymbol, width);
             else if (MARKET_SUFFIX_NAME.IsHK(upperSymbol))
                 data=this.GetHKData(upperSymbol,width);
             else if (MARKET_SUFFIX_NAME.IsTW(upperSymbol))
@@ -1687,6 +1689,12 @@ function MinuteCoordinateData()
     this.GetSHOData = function (upperSymbol, width) 
     {
         var result = SHO_MINUTE_X_COORDINATE;
+        return result;
+    }
+
+    this.GetSZOData=function(upperSymbol,width)
+    {
+        var result=SHO_MINUTE_X_COORDINATE;
         return result;
     }
 

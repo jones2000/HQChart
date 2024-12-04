@@ -211,7 +211,7 @@
                 [
                     //{Index:"EMPTY", TitleHeight:1},
                     {
-                        Index:"MA", Overlay:true,
+                        Index:"MA", Overlay:true, AddIndexWindow:true
                         //TitleArrowType:1,
                         //HorizontalReserved:{ Top:50, Bottom:50 }
                     },
@@ -277,6 +277,19 @@
                 SearchIndexDialog:{ Enable:true },
                 ModifyIndexParamDialog:{ Enable:true },
 
+                //双击K线图 弹分时图配置
+                PopMinuteChart:
+                { 
+                    Enable:true, 
+                    Option:
+                    { 
+                        Windows:
+                        [
+                            { Index:"RSI", Overlay:false,MaxMin:false }
+                        ]
+                    }
+                },
+
                 //EnableVerifyRecvData:true,
 
                 CorssCursorInfo: { Right:1, Bottom:1, DateFormatType:3, HPenType:1, VPenType:1, IsShowClose:false, VLineType:0,RightButton:{ Enable:true }, IsShowCorss:true, PriceFormatType:0, DataFormatType:0, EnableKeyboard:true },
@@ -301,7 +314,7 @@
                     IsShowTooltip:true,                 //是否显示K线提示信息
                     DrawType:0,      //K线类型 0=实心K线柱子 1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积图
                     //FirstShowDate:20161201,
-                    KLineDoubleClick:true, //禁止双击弹框
+                    //KLineDoubleClick:true, //禁止双击弹框 (废弃 使用(PopMinuteChart:{ }))
                     RightSpaceCount:2,
                     ZoomType:0,
                     //OneLimitBarType:1,
@@ -423,6 +436,7 @@
                     //{Name:'KLineTooltip' },  //手机端tooltip
                     //{Name:"FrameSplitPaint", LineColor:"rgb(200,0,0)" }
                     //{Name:"SessionBreaksPaint"}
+                    //{ Name:"StockChipPhone" }
                 ],
 
 
@@ -445,6 +459,10 @@
                 
                 this.Option.EventCallback=
                 [
+                    {
+                        event:JSCHART_EVENT_ID.ON_FORMAT_KLINE_FLOAT_TOOLTIP,
+                        callback:(event, data, obj)=>{ this.OnFormatKLineFloatTooltip(event, data, obj); }
+                    },
                     {
                         event:JSCHART_EVENT_ID.ON_CREATE_FRAME,
                         callback:(event, data, obj)=>{ this.OnCreateFrame(event, data, obj); }
@@ -510,6 +528,10 @@
                     {
                         event:JSCHART_EVENT_ID.ON_FORMAT_INDEX_OUT_TEXT,
                         callback:(event, data, obj)=>{ this.OnFormatIndexOutText(event, data, obj); }
+                    },
+                    {
+                        event:JSCHART_EVENT_ID.ON_CALCULATE_CHIP_DATA,
+                        callback:(event, data, obj)=>{ this.OnCalculateChipData(event, data, obj); }
                     }
 
                 ];
@@ -526,18 +548,6 @@
 
             this.OnCreateHQChart=function(chart)
             {
-                if (chart.PopMinuteChart)   //修改弹出分时图
-                {
-                    chart.PopMinuteChart.Minute.Option.Windows=
-                    [
-                        { 
-                            Index:"RSI", 
-                            Overlay:false,
-                            MaxMin:false,
-                        }
-                    ];
-                }
-
                 var chart=chart.GetRectSelectPaint();
                 if (chart)
                 {
@@ -691,8 +701,10 @@
 
 
                     //frame.HorizontalReserved={ Top:50, Bottom:30 };
-                    
+                
                 }
+
+                this.UpdateWindowsSelectDOM();
             }
 
             this.OnDeleteFrame=function(event, data, obj)
@@ -1547,6 +1559,8 @@
 
             this.UpdateWindowsSelectDOM=function()
             {
+                if (!this.Chart.JSChartContainer) return;
+                
                 var selectDom=document.getElementById('window_index');
                 selectDom.options.length=0;
 
@@ -1588,6 +1602,28 @@
             this.OnFormatIndexOutText=function(event, data, obj)
             {
                 console.log("[KLineChart::OnFormatIndexOutText] data=", data);
+            }
+
+            this.OnFormatKLineFloatTooltip=function(event, data, obj)
+            {
+                return;
+                
+                var aryText=data.AryText;   //显示的数据
+                var kItem=data.data;        //K线数据
+
+                var item=
+                { 
+                    Title:"字段1", 
+                    Text:'99999万',
+                    Color:'rgb(255,0,255)'
+                };
+                aryText.push(item)
+            }
+
+
+            this.OnCalculateChipData=function(event, data, obj)
+            {
+                console.log("[KLineChart::OnCalculateChipData] data=", data);
             }
         }
 

@@ -154,7 +154,7 @@
                 Windows: //窗口指标
                 [
                     //{ Index:"AMO", YAxis:{StringFormat:1} }
-                    { Index:"MACD" }
+                    { Index:"MACD", AddIndexWindow:true }
                 ], 
 
                 OverlayIndex:
@@ -211,6 +211,8 @@
                     IsDrawAreaPrice:true,      //是否画价格面积图
                     //IsShowAveragePrice:false,   //不显示均线
                     //SplitType:2,
+
+                    
                 },
 
                 MinuteTitle:
@@ -221,6 +223,8 @@
                     IsShowVolTitle:true,
                     //IsAlwaysShowLastData:true,
                     IsTitleShowLatestData:true,
+
+                    //ShowPostion:{ Type:0, Margin:{ Bottom:10 } }
                 },
 
                 MinuteVol:
@@ -238,6 +242,7 @@
 
                 FloatTooltip:{ Enable:true, },
                 SearchIndexDialog:{ Enable:true },
+                ModifyIndexParamDialog:{ Enable:true },
 
                 EnableSelectRect:true,
                 EnableNightDayBG:true,
@@ -329,7 +334,12 @@
                     {
                         event:JSCHART_EVENT_ID.ON_SPLIT_YCOORDINATE, 
                         callback:(event, data, obj)=>{ this.OnSplitYCoordinate(event, data, obj); }
-                    }
+                    },
+
+                    {
+                        event:JSCHART_EVENT_ID.SEARCH_DIALOG_ON_CLICK_INDEX,
+                        callback:(event, data, obj)=>{ this.OnClickIndex(event, data, obj); }
+                    },
                 ];
 
                 this.Chart.SetOption(this.Option);  //设置K线配置
@@ -837,6 +847,11 @@
                 }
 
                 document.getElementById('window_index').value=item.WindowIndex;
+            }
+
+            this.OnClickIndex=function(event, data, obj)
+            {
+                console.log("[KLineChart::OnClickIndex] data=", data);
             }
         
         }
