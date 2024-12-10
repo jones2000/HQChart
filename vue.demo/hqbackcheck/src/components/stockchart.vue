@@ -11,6 +11,7 @@ import HQChart from 'hqchart'
 var JSCommon=HQChart.Chart;
 import 'hqchart/src/jscommon/umychart.resource/css/tools.css'
 import 'hqchart/src/jscommon/umychart.resource/font/iconfont.css'
+import HQData from "hqchart/src/jscommon/umychart.vue.testdataV2/umychart.NetworkFilterTest.vue.js"
 // import JSCommon from '../umychart.vue/umychart.vue.js'
 // import '../../jscommon/umychart.resource/font/iconfont.css'
 // import '../../jscommon/umychart.resource/css/tools.css'
@@ -93,7 +94,7 @@ DefaultData.GetKLineOption=function()
         
         Windows: //窗口指标
         [
-            {Index:"MA",Modify: false, Change: false}, 
+            {Index:"MA", Modify: false, Change: false}, 
             {Index:"VOL",Modify: false, Change: false}, 
             //{Index:"MACD",Modify: false, Change: false},
         ], 
@@ -132,7 +133,13 @@ DefaultData.GetKLineOption=function()
             {SplitCount:2,StringFormat:0,IsShowLeftText: false},
             {SplitCount:2,StringFormat:0,IsShowLeftText: false},
             {SplitCount:2,StringFormat:0,IsShowLeftText: false}
-        ]
+        ],
+
+        EnablePopMenuV2:true,
+        FloatTooltip:{ Enable:true, },
+        SelectRectDialog:{ Enable:true },
+        SearchIndexDialog:{ Enable:true },
+        ModifyIndexParamDialog:{ Enable:true },
     };
 
     return option;
@@ -180,11 +187,6 @@ export default
         if (this.DefaultSymbol) this.Symbol=this.DefaultSymbol; //默认股票
         if(this.DefaultStyle) this.JSchartStyle = this.DefaultStyle;
         if (this.DefaultOption) this.SetOption(this.DefaultOption);
-        if (this.DefaultAPIDomain) 
-        {
-            JSCommon.JSChart.SetDomain(this.DefaultAPIDomain.Domain,this.DefaultAPIDomain.CacheDomain);
-            JSCommon.JSComplier.SetDomain(this.DefaultAPIDomain.Domain,this.DefaultAPIDomain.CacheDomain);
-        }
     },
 
     mounted:function()
@@ -192,6 +194,10 @@ export default
         console.log(`[StockChart::mounted]`);
         this.OnSize();              //子组件的mounted在父组件的mounted之前执行了
         console.log('[stockchart::mounted]IsCreateManual:',this.IsCreateManual);
+
+        var resource=HQChart.Chart.JSChart.GetResource();
+        resource.ToolbarButtonStyle=1;
+
         if(!this.IsCreateManual){
             this.CreateJSChart();
         }
@@ -283,6 +289,7 @@ export default
             if(this.JSchartStyle) JSCommon.JSChart.SetStyle(this.JSchartStyle);  //设置图形样式
             
             let chart=JSCommon.JSChart.Init(this.$refs.hqchart);
+            this.Option.NetworkFilter=(data, callback)=>{ this.NetworkFilter(data, callback); }
             chart.SetOption(this.Option);
             this.JSChart=chart;
         },
@@ -327,6 +334,11 @@ export default
         GetDefaultKLineOption:function()
         {
             return DefaultData.GetKLineOption();
+        },
+
+        NetworkFilter(data, callback)
+        {
+            HQData.HQData.NetworkFilter(data, callback);
         }
     }
 }

@@ -98,9 +98,7 @@
                     </div>
                 </div>
             </div>
-            <div class="brushTool" v-if="DrawTool.IsShow">
-                <Stockdrawtool @CurrentIcon = "CurrentIcon" @IsShowBrushTool="isShowBrushTool" :topheight="topheight" :totalheight="totalheight"></Stockdrawtool>
-            </div>   
+            
             <!-- 走势图 和 K线图  !-->
             <div :id='ID' ref='divchart' style="width:100%;height:100%">
                 <div class='minute' id="minute" ref="minute"  v-show="Minute.IsShow"></div>
@@ -197,10 +195,9 @@ import $ from 'jquery'
 import HQChart from 'hqchart'
 import 'hqchart/src/jscommon/umychart.resource/css/tools.css'
 import 'hqchart/src/jscommon/umychart.resource/font/iconfont.css'
-import HQData from "hqchart/lib/umychart.NetworkFilterTest.vue"
+import HQData from "hqchart/src/jscommon/umychart.vue.testdataV2/umychart.NetworkFilterTest.vue.js"
 
 import StringFormat from 'hqchart/src/jscommon/umychart.vue/stockstringformat.js'
-import Stockdrawtool from '../../../components/stockdrawtool.vue'
 
 function DefaultData()
 {
@@ -246,7 +243,16 @@ DefaultData.GetMinuteOption=function()
             { SplitCount: 5, StringFormat: 0 },
             { SplitCount: 3, StringFormat: 0 },
             { SplitCount: 3, StringFormat: 0 }
-        ]
+        ],
+
+        ExtendChart:    //扩展图形
+        [
+            {Name:'MinutePCTooltip' }, //PC端tooltip
+        ],
+
+        SelectRectDialog:{ Enable:true },
+        SearchIndexDialog:{ Enable:true },
+        ModifyIndexParamDialog:{ Enable:true },
     };
 
     return option;
@@ -295,7 +301,13 @@ DefaultData.GetKLineOption=function()
             { SplitCount: 3, StringFormat: 0, IsShowLeftText: false },
             { SplitCount: 3, StringFormat: 0, IsShowLeftText: false },
             { SplitCount: 3, StringFormat: 0, IsShowLeftText: false }
-        ]
+        ],
+
+        EnablePopMenuV2:true,
+        FloatTooltip:{ Enable:true, },
+        SelectRectDialog:{ Enable:true },
+        SearchIndexDialog:{ Enable:true },
+        ModifyIndexParamDialog:{ Enable:true },
     };
 
     return option;
@@ -603,7 +615,7 @@ export default
         "blackStyle"
         // 'TradeInfoTabWidth',
     ],
-    components:{Stockdrawtool},
+    
     data()
     {
         let data=
@@ -657,10 +669,7 @@ export default
                 ChangePeriodEvent:null, //周期改变事件 function(name)
             },
 
-            DrawTool:
-            {
-                IsShow:false,
-            },
+            
             isIndex: false,
             curveLineTypeMenu,
             compositeTab,
@@ -768,7 +777,9 @@ export default
 
     mounted:function()
     {
-        // console.log(`[StockKLine::mounted]`);
+        var resource=HQChart.Chart.JSChart.GetResource();
+        resource.ToolbarButtonStyle=1;
+
         this.OnSize();
 
         if (this.Minute.IsShow) {

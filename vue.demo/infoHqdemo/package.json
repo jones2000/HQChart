@@ -28,7 +28,7 @@
     "babel-preset-vue-app": "^1.2.0",
     "css-loader": "^0.27.0",
     "file-loader": "^0.10.1",
-    "hqchart": "^1.1.12396",
+    "hqchart": "^1.1.14219",
     "html-webpack-plugin": "^2.24.1",
     "less": "^3.9.0",
     "less-loader": "^5.0.0",
@@ -38,7 +38,7 @@
     "url-loader": "^0.5.8",
     "vue-loader": "^14.2.4",
     "vue-template-compiler": "^2.1.8",
-    "webpack": "^3.0.0",
+    "webpack": "^2.4.1",
     "webpack-dev-server": "^2.4.2"
   }
 }

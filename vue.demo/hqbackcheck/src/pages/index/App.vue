@@ -153,8 +153,8 @@
             Type: '历史K线图', 
             Windows: //窗口指标
             [
-                {Index:"Zealink-操盘BS点2",Modify: true, Change: true}, 
-                {Index:"VOL",Modify: true, Change: true}
+                { Index:"MA" }, 
+                { Index:"VOL",Modify: true, Change: true}
             ], 
             IsShowCorssCursorInfo:true,
             Border: //边框
@@ -169,8 +169,7 @@
                 FirstShowDate:20190101,
                 PageSize:70,
                 IsShowTooltip:true
-            },
-            
+            }, 
         };
         return data;
     }

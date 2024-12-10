@@ -2838,18 +2838,19 @@ var JSCHART_MENU_ID=
     CMD_CHANGE_INFO_POSITION_ID:41,     //修改信息地雷位置
     CMD_CHIP_CHART_SETTING_ID:42,       //筹码图设置
 
+    CMD_DIALOG_TOOLTIP_ATTRIBUTE:43,    //修改K线信息框属性 Ary:[{ Enable:, Style:}, ]
+    CMD_KLINE_TOOLTIP_ATTRIBUTE:44,     //修改K线提示框属性 Ary:[{ Enable:true/false, EnableKeyDown:true/false}]
 
-    CMD_REPORT_CHANGE_BLOCK_ID:60,      //报价列表 切换板块ID
-    CMD_REPORT_COLUMN_SORT_ID:61,       //报价列表 表头排序  Arg[列序号, 排序方向]
-    CMD_REPORT_COLUMN_DEL_ID:62,        //报价列表 删除列
-    CMD_REPORT_COLUMN_MOVE_ID:63,       //报价列表 列移动
-    CMD_REPORT_COLUMN_FILTER_ID:64,     //报价列表 筛选
+    CMD_MODIFY_INDEX_PARAM:45,          //指标删除修改  [windowIndex, ]
+    CMD_MODIFY_OVERLAY_INDEX_PARAM:46,  //叠加指标修改  [windowIndex, ID ]
 
-    CMD_DIALOG_TOOLTIP_ATTRIBUTE:65,    //修改K线信息框属性 Ary:[{ Enable:, Style:}, ]
-    CMD_KLINE_TOOLTIP_ATTRIBUTE:66,     //修改K线提示框属性 Ary:[{ Enable:true/false, EnableKeyDown:true/false}]
 
-    CMD_MODIFY_INDEX_PARAM:67,          //指标删除修改  [windowIndex, ]
-    CMD_MODIFY_OVERLAY_INDEX_PARAM:68,  //叠加指标修改  [windowIndex, ID ]
+    CMD_REPORT_CHANGE_BLOCK_ID:100,      //报价列表 切换板块ID
+    CMD_REPORT_COLUMN_SORT_ID:101,       //报价列表 表头排序  Arg[列序号, 排序方向]
+    CMD_REPORT_COLUMN_DEL_ID:102,        //报价列表 删除列
+    CMD_REPORT_COLUMN_MOVE_ID:103,       //报价列表 列移动
+    CMD_REPORT_COLUMN_FILTER_ID:104,     //报价列表 筛选
+    CMD_REPORT_CHANGE_COLUMN_ID:105,     //报价列表 切换列  Arg[Column, ]
 }
 
 
@@ -8853,6 +8854,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             if (IFrameSplitOperator.IsBool(windowItem.Change)) frame.ChangeIndex=windowItem.Change;
             if (IFrameSplitOperator.IsBool(windowItem.Close)) frame.CloseIndex=windowItem.Close;
             if (IFrameSplitOperator.IsBool(windowItem.Overlay)) frame.OverlayIndex=windowItem.Overlay;
+            if (IFrameSplitOperator.IsBool(windowItem.AddIndexWindow)) frame.AddIndexWindow=windowItem.AddIndexWindow;
+
             if (IFrameSplitOperator.IsBool(windowItem.IsDrawTitleBG))  frame.IsDrawTitleBG=windowItem.IsDrawTitleBG;
 
             if (IFrameSplitOperator.IsNumber(windowItem.TitleHeight)) frame.ChartBorder.TitleHeight=windowItem.TitleHeight;
@@ -8911,6 +8914,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             if (IFrameSplitOperator.IsBool(item.Export)) frame.ExportData=item.Export;
             if (IFrameSplitOperator.IsBool(item.MaxMin)) frame.MaxMinWindow=item.MaxMin;
             if (IFrameSplitOperator.IsBool(item.TitleWindow)) frame.TitleWindow=item.TitleWindow;
+            if (IFrameSplitOperator.IsBool(item.AddIndexWindow)) frame.AddIndexWindow=item.AddIndexWindow;
 
             if (IFrameSplitOperator.IsBool(item.IsDrawTitleBG))  frame.IsDrawTitleBG=item.IsDrawTitleBG;
             if (IFrameSplitOperator.IsBool(item.IsShowNameArrow)) frame.IsShowNameArrow=item.IsShowNameArrow;
@@ -47360,7 +47364,7 @@ function SessionBreaksPaint()
     this.Draw=function()
     {
         if (!this.HQChart) return;
-        var hisData=this.HQChart.ChartOperator_Temp_GetHistroyData();;
+        var hisData=this.HQChart.ChartOperator_Temp_GetHistoryData();;
         if (!hisData) return;  //数据还没有到达
         if (!IFrameSplitOperator.IsNonEmptyArray(hisData.Data)) return;
 
@@ -73346,7 +73350,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         }
         else if (id===JSCHART_OPERATOR_ID.OP_GOTO_HOME)
         {
-            var hisData=this.ChartOperator_Temp_GetHistroyData();;
+            var hisData=this.ChartOperator_Temp_GetHistoryData();;
             if (!hisData) return;  //数据还没有到达
 
             var showCount=this.Frame.SubFrame[0].Frame.XPointCount; //获取一屏显示的数据个数
@@ -73364,7 +73368,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         }
         else if (id===JSCHART_OPERATOR_ID.OP_GOTO_END)
         {
-            var hisData=this.ChartOperator_Temp_GetHistroyData();
+            var hisData=this.ChartOperator_Temp_GetHistoryData();
             if (!hisData) return;  //数据还没有到达
 
             hisData.DataOffset=0;
@@ -73379,7 +73383,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         }
         else if (id==JSCHART_OPERATOR_ID.OP_LEFT_ZOOM_IN || id==JSCHART_OPERATOR_ID.OP_LEFT_ZOOM_OUT)   //{ Step：增加/减少数量 } 左边增加/减少显示个数
         {
-            var hisData=this.ChartOperator_Temp_GetHistroyData();
+            var hisData=this.ChartOperator_Temp_GetHistoryData();
             if (!hisData) return;  //数据还没有到达
 
             var dataCount=hisData.Data.length;
@@ -73427,7 +73431,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         }
         else if (id==JSCHART_OPERATOR_ID.OP_RIGHT_ZOOM_IN || id==JSCHART_OPERATOR_ID.OP_RIGHT_ZOOM_OUT) //{ Step：增加/减少数量 , ShowCount:显示个数 } 右边增加/减少显示个数
         {
-            var hisData=this.ChartOperator_Temp_GetHistroyData();
+            var hisData=this.ChartOperator_Temp_GetHistoryData();
             if (!hisData) return;  //数据还没有到达
 
             var dataCount=hisData.Data.length;
@@ -73479,7 +73483,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         {
             if (!this.ChartPaint[0]) return false;
             if (!this.ChartPaint[0].Data) return false;
-            var hisData=this.ChartOperator_Temp_GetHistroyData();
+            var hisData=this.ChartOperator_Temp_GetHistoryData();
             if (!IFrameSplitOperator.IsNonEmptyArray(hisData.Data)) return false;
             var paint=this.GetRectSelectPaint();
             if (!paint) return false;
@@ -73565,7 +73569,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         {
             if (!this.ChartPaint[0]) return false;
             if (!this.ChartPaint[0].Data) return false;
-            var hisData=this.ChartOperator_Temp_GetHistroyData();
+            var hisData=this.ChartOperator_Temp_GetHistoryData();
             if (!IFrameSplitOperator.IsNonEmptyArray(hisData.Data)) return false;
             var paint=this.GetRectSelectPaint();
             if (!paint) return false;
@@ -73604,7 +73608,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         }
         else if (id==JSCHART_OPERATOR_ID.OP_SCROOLBAR_SLIDER_CHANGED)
         {
-            var hisData=this.ChartOperator_Temp_GetHistroyData();;
+            var hisData=this.ChartOperator_Temp_GetHistoryData();
             if (!hisData) return;  //数据还没有到达
 
             if (obj.Type==0)    //滑块移动
@@ -73640,7 +73644,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         {
             if (!IFrameSplitOperator.IsNumber(obj.Date)) return;
 
-            var hisData=this.ChartOperator_Temp_GetHistroyData();
+            var hisData=this.ChartOperator_Temp_GetHistoryData();
             if (!hisData) return;  //数据还没有到达
 
             var index=this.ChartOperator_GetIndex_ByDateTime(hisData, obj, this.Period, 0);
@@ -73674,7 +73678,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         else if (id==JSCHART_OPERATOR_ID.OP_GOTO_BY_DATAINDEX)  //{PageSize:可选, DataIndex:起始位置数据索引}
         {
             if (!IFrameSplitOperator.IsNumber(obj.DataIndex)) return;
-            var hisData=this.ChartOperator_Temp_GetHistroyData();
+            var hisData=this.ChartOperator_Temp_GetHistoryData();
             if (!hisData) return;  //数据还没有到达
             if (obj.DataIndex<0 || obj.DataIndex>=hisData.Data.length)
             {
@@ -73702,7 +73706,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             var pageInfo=this.GetChartStatus();
             if (!pageInfo) return;
 
-            var hisData=this.ChartOperator_Temp_GetHistroyData();
+            var hisData=this.ChartOperator_Temp_GetHistoryData();
             if (!hisData) return;  //数据还没有到达
             
             var start=hisData.DataOffset;
@@ -73766,7 +73770,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
     }
 
     //内部函数
-    this.ChartOperator_Temp_GetHistroyData=function()
+    this.ChartOperator_Temp_GetHistoryData=function()
     {
         var hisData=null;
         if (!this.Frame.Data) hisData=this.Frame.Data;
@@ -73775,6 +73779,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
         return hisData;
     }
+
+    this.ChartOperator_Temp_GetHistroyData=this.ChartOperator_Temp_GetHistoryData;  //兼容老版本
 
     this.ChartOperator_Temp_Update=function()
     {
@@ -75536,7 +75542,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         {
             var kLineDrawType=this.GetKLineDrawType();
             var dateRange=null;
-            var hisData=this.ChartOperator_Temp_GetHistroyData();
+            var hisData=this.ChartOperator_Temp_GetHistoryData();
             if (hisData) dateRange=hisData.GetDateRange();
             var obj=
             {
@@ -75785,7 +75791,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         {
             var kLineDrawType=this.GetKLineDrawType();
             var dateRange=null;
-            var hisData=this.ChartOperator_Temp_GetHistroyData();
+            var hisData=this.ChartOperator_Temp_GetHistoryData();
             if (hisData) dateRange=hisData.GetDateRange();
             var obj=
             {
@@ -80538,7 +80544,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         var kItem=null;
         if (this.ChartCorssCursor.ClientPos>=0)
         {
-            var hisData=this.ChartOperator_Temp_GetHistroyData();;
+            var hisData=this.ChartOperator_Temp_GetHistoryData();;
             if (!hisData) return false;  //数据还没有到达
             if (!IFrameSplitOperator.IsNonEmptyArray(hisData.Data)) return false;
     
@@ -80548,7 +80554,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         }
         else    //取最后一个数据
         {   
-            var hisData=this.ChartOperator_Temp_GetHistroyData();;
+            var hisData=this.ChartOperator_Temp_GetHistoryData();;
             if (!hisData) return false;  //数据还没有到达
             if (!IFrameSplitOperator.IsNonEmptyArray(hisData.Data)) return false;
             var kItem=hisData.Data[hisData.Data.length-1];
@@ -87693,7 +87699,7 @@ function KLineTrainSimpleChartContainer(uielement, bHScreen)
 
         if (funcName!="Update")
         {
-            var hisData=this.ChartOperator_Temp_GetHistroyData();
+            var hisData=this.ChartOperator_Temp_GetHistoryData();
             if (!hisData) return false;
 
             var count=hisData.Data.length;
@@ -87744,7 +87750,7 @@ function KLineTrainSimpleChartContainer(uielement, bHScreen)
     this.MoveNextKLineData=function(option) //{PageSize:, Step:}
     {
         if (this.TrainDataCount<=0) return false;
-        var hisData=this.ChartOperator_Temp_GetHistroyData();
+        var hisData=this.ChartOperator_Temp_GetHistoryData();
         if (!hisData) return false;
 
         var step=1;
@@ -87825,7 +87831,7 @@ function KLineTrainSimpleChartContainer(uielement, bHScreen)
         step=parseInt(step/oneStepWidth);  //除以4个像素
         if (step<=0) return false;
 
-        var data=this.ChartOperator_Temp_GetHistroyData();
+        var data=this.ChartOperator_Temp_GetHistoryData();
         if (!data) return false;
 
         var xPointcount=0;
@@ -87879,7 +87885,7 @@ function KLineTrainSimpleChartContainer(uielement, bHScreen)
 
     this.DataMoveRight=function()
     {
-        var data=this.ChartOperator_Temp_GetHistroyData();
+        var data=this.ChartOperator_Temp_GetHistoryData();
         if (!data) return false;
 
         var xPointcount=0;
@@ -90285,7 +90291,7 @@ function IKLineInfo()
 
         //K线数据范围
         var hisData=null;
-        if (hqChart.ChartOperator_Temp_GetHistroyData)  hisData=hqChart.ChartOperator_Temp_GetHistroyData();
+        if (hqChart.ChartOperator_Temp_GetHistoryData)  hisData=hqChart.ChartOperator_Temp_GetHistoryData();
         if (hisData)
             obj.DateRange=hisData.GetDateRange();
         

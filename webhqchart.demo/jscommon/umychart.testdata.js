@@ -151,6 +151,10 @@ HQData.NetworkFilter=function(data, callback)
             HQData.FinOne_RequestData(data,callback);
             break;
 
+        case "JSSymbolData::GetIndexData":
+            HQData.INDEX_RequestData(data,callback);
+            break;
+
         //////////////////////////////////////////////////////
         //报价列表数据
         case "JSReportChartContainer::RequestStockListData":
@@ -1026,6 +1030,30 @@ HQData.FinOne_RequestData=function(data,callback)
 }
 
 
+HQData.INDEX_RequestData=function(data,callback)
+{
+    data.PreventDefault=true;
+    var period=data.Period;
+    var symbol=data.Request.Data.symbol;
+    var indexSymbol="000001.sh";
+    var dateRange=data.Request.Data.dateRange;
+    var aryData=[];
+    if (ChartData.IsMinutePeriod(period, true))
+    {
+        var fullData=HQData.GetM1KLineDataBySymbol(symbol);
+        if (fullData) aryData=HQData.GetKLineDataByDateTime(fullData, dateRange.Start.Date, dateRange.Start.Time, dateRange.End.Date, dateRange.End.Time);
+    }
+    else if (ChartData.IsDayPeriod(period,true))
+    {
+        var fullData=HQData.GetDayKLineDataBySymbol(indexSymbol);
+        if (fullData) aryData=HQData.GetKLineDataByDate(fullData, dateRange.Start.Date, dateRange.End.Date);
+    }
+
+    var hqchartData={ name:indexSymbol, symbol:indexSymbol, data:aryData, ver:2.0 };
+
+    callback(hqchartData);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////
 // 报价列表
 //
@@ -1207,6 +1235,13 @@ HQData.Report_RequestStockData=function(data, callback)
                 extendData[8]=(Math.round(Math.random()*60))/100;
 
 
+                newItem[32]=HQData.Report_CreateMinuteData(newItem[2]);
+
+                //K线
+                var kData={ Data:[newItem[3], newItem[4], newItem[5], newItem[6]] };
+                newItem[33]=kData;
+
+
                 newItem[101]=105.0;
                 newItem[201]=`A-[${HQData.GetRandomTestData(-90,90)}]-B`;
 
@@ -1231,6 +1266,36 @@ HQData.Report_RequestStockData=function(data, callback)
 
         callback(hqchartData);
     }, 500);
+}
+
+HQData.Report_CreateMinuteData=function(yClose)
+{
+    var minuteData={ Data:[], Max:null, Min:null, Count:242, YClose:yClose };
+    var TEST_DATA=[0.01, -0.02, 0.03, -0.05, -0.01, 0.02, 0.05, 0.01, 0.04, -0.04];
+    var value=yClose;
+    for(var i=0;i<minuteData.Count;++i)
+    {
+        var index=Math.ceil(Math.random()*10);
+    
+        value+=(yClose*TEST_DATA[index%TEST_DATA.length]);	//生成模拟的数据
+        minuteData.Data[i]=value;
+    
+        if (minuteData.Max==null || minuteData.Max<value) minuteData.Max=value;
+        if (minuteData.Min==null || minuteData.Min>value) minuteData.Min=value;
+    }
+
+    if (value>yClose) 
+    {
+        minuteData.Color="rgb(255,0,0)";
+        minuteData.AreaColor="rgba(255,0,0,0.2)";
+    }
+    else if (value<yClose)
+    {
+        minuteData.Color="rgb(4,139,34)";
+        minuteData.AreaColor="rgba(4,139,34,0.2)";
+    }
+    
+    return minuteData;
 }
 
 HQData.Report_RequestStockSortData=function(data, callback)

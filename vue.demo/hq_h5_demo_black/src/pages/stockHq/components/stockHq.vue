@@ -108,7 +108,7 @@
     import HQChart from 'hqchart'
     import 'hqchart/src/jscommon/umychart.resource/css/tools.css'
     import 'hqchart/src/jscommon/umychart.resource/font/iconfont.css'
-    import HQData from "hqchart/lib/umychart.NetworkFilterTest.vue"
+    import HQData from "hqchart/src/jscommon/umychart.vue.testdataV2/umychart.NetworkFilterTest.vue.js"
     var JSCommon=HQChart.Chart;
    
 

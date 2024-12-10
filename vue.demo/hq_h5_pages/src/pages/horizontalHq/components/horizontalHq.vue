@@ -126,7 +126,7 @@
   import changeSymbol from "./changeSymbol.vue"
   import subIndex from './subIndex.vue'
   import HQChart from 'hqchart'
-  import HQData from "hqchart/lib/umychart.NetworkFilterTest.vue"
+ import HQData from "hqchart/src/jscommon/umychart.vue.testdataV2/umychart.NetworkFilterTest.vue.js"
   var JSCommon=HQChart.Chart;
   var JSCommonStock=HQChart.Stock;
 

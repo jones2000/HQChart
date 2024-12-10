@@ -139,7 +139,7 @@
 
     import 'hqchart/src/jscommon/umychart.resource/css/tools.css'
     import 'hqchart/src/jscommon/umychart.resource/font/iconfont.css'
-    import HQData from "hqchart/lib/umychart.NetworkFilterTest.vue"
+    import HQData from "hqchart/src/jscommon/umychart.vue.testdataV2/umychart.NetworkFilterTest.vue.js"
     
     /* import JSCommon from 'hqchart/src/jscommon/umychart.vue/umychart.vue.js'
     import JSCommonStock from 'hqchart/src/jscommon/umychart.vue/umychart.stock.vue.js' */
