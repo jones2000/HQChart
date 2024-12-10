@@ -7139,7 +7139,11 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
     this.ShowTooltipByKeyDown=function()
     {
-        if (!this.KLineTooltipConfig.Enable || !this.KLineTooltipConfig.EnableKeyDown) return;
+        if (!this.KLineTooltipConfig.Enable || !this.KLineTooltipConfig.EnableKeyDown) 
+        {
+            this.HideFloatTooltip();
+            return;
+        }
 
         var index=Math.abs(this.CursorIndex-0.5);
         index=parseInt(index.toFixed(0));

@@ -2012,7 +2012,8 @@ function JSReportChartContainer(uielement)
 
     this.PopupRightMenu=function(x,y, e)
     {
-        var data=this.PtInReportChart(x,y);
+        var pixelTatio = GetDevicePixelRatio();
+        var data=this.PtInReportChart(x*pixelTatio,y*pixelTatio);   //x,y 需要乘以放大倍速
         if (!data) return;
         if (!this.JSPopMenu) return;
 
