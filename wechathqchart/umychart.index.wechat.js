@@ -1118,13 +1118,25 @@ function ScriptIndex(name, script, args, option)
         else chartText.Color=this.GetDefaultColor(id);
         if (varItem.IsDrawAbove) chartText.Direction=1;
         else chartText.Direction=0;
+        if (varItem.DrawFontSize>0) chartText.TextFont=`${varItem.DrawFontSize}px 微软雅黑`;    //临时用下吧、
 
-        if (varItem.DrawFontSize>0) chartText.TextFont=`${varItem.DrawFontSize}px 微软雅黑`;    //临时用下吧
+        if (varItem.Font) chartText.TextFont=varItem.Font;
 
-        let titleIndex=windowIndex+1;
+        if (varItem.DrawVAlign>=0)
+        {
+            if (varItem.DrawVAlign==0) chartText.Direction=1;
+            else if (varItem.DrawVAlign==1) chartText.Direction=0;
+            else if (varItem.DrawVAlign==2) chartText.Direction=2;
+        }
+
+        if (varItem.DrawAlign>=0)
+        {
+            if (varItem.DrawAlign==0) chartText.TextAlign="left";
+            else if (varItem.DrawAlign==1) chartText.TextAlign="center";
+            else if (varItem.DrawAlign==2) chartText.TextAlign='right';
+        }
+
         chartText.DrawData=varItem.Draw.DrawData;
-        //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
-
         hqChart.ChartPaint.push(chartText);
     }
 
@@ -2735,6 +2747,8 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
             var outVarItem = { Name: item.name, Type: item.type };
             if (item.color) outVarItem.Color = item.color;
             if (IFrameSplitOperator.IsBool(item.IsShowTitle)) outVarItem.IsShowTitle = item.IsShowTitle;  //是否显示指标标题
+            if (IFrameSplitOperator.IsNumber(item.DrawVAlign)) outVarItem.DrawVAlign = item.DrawVAlign;
+            if (IFrameSplitOperator.IsNumber(item.DrawAlign)) outVarItem.DrawAlign = item.DrawAlign;
             if (item.data) 
             {
                 outVarItem.Data = this.FittingArray(item.data, date, time, hqChart);
@@ -2916,6 +2930,18 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
                     outVarItem.Draw=drawItem;
                     if (draw.Color) drawItem.Color=draw.Color;
                     if (IFrameSplitOperator.IsBool(draw.IsEmptyBar)) drawItem.IsEmptyBar=draw.IsEmptyBar;
+                    
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType=="DRAWTEXTREL" || draw.DrawType=="DRAWTEXTABS")
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=draw.DrawData;    //{ Point: { X: 5,Y: 5 }, Text: "注意(居中):前方高能！！！！！" }
+
+                    outVarItem.Draw=drawItem;
+                    if (draw.Font) outVarItem.Font=draw.Font;
                     
                     result.push(outVarItem);
                 }

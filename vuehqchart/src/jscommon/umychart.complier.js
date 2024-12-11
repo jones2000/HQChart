@@ -20508,6 +20508,7 @@ function ScriptIndex(name,script,args,option)
         line.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         line.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
         line.Identify=this.Guid;
+        line.HQChart=hqChart;
         if (varItem.Color) line.Color=this.GetColor(varItem.Color);
         else line.Color=this.GetDefaultColor(id);
 
@@ -20531,8 +20532,9 @@ function ScriptIndex(name,script,args,option)
 
         //虚线设置
         if (IFrameSplitOperator.IsNonEmptyArray(varItem.LineDash)) line.LineDash=varItem.LineDash;
+        if (IFrameSplitOperator.IsBool(varItem.IsShow)) line.IsShow=varItem.IsShow;
 
-        if (varItem.IsShow==false) line.IsShow=false;
+        if (IFrameSplitOperator.IsNonEmptyArray(varItem.AryBreakPoint)) line.AryBreakPoint=varItem.AryBreakPoint;
         
         let titleIndex=windowIndex+1;
         line.Data.Data=varItem.Data;
@@ -21468,6 +21470,21 @@ function ScriptIndex(name,script,args,option)
         else chartText.Direction=0;
 
         if (varItem.DrawFontSize>0) chartText.TextFont=`${varItem.DrawFontSize*GetDevicePixelRatio()}px 微软雅黑`;    //临时用下吧
+        if (varItem.Font) chartText.TextFont=varItem.Font;
+
+        if (varItem.DrawVAlign>=0)
+        {
+            if (varItem.DrawVAlign==0) chartText.Direction=1;
+            else if (varItem.DrawVAlign==1) chartText.Direction=0;
+            else if (varItem.DrawVAlign==2) chartText.Direction=2;
+        }
+
+        if (varItem.DrawAlign>=0)
+        {
+            if (varItem.DrawAlign==0) chartText.TextAlign="left";
+            else if (varItem.DrawAlign==1) chartText.TextAlign="center";
+            else if (varItem.DrawAlign==2) chartText.TextAlign='right';
+        }
 
         let titleIndex=windowIndex+1;
         chartText.DrawData=varItem.Draw.DrawData;
@@ -22714,6 +22731,7 @@ function OverlayScriptIndex(name,script,args,option)
         chart.ChartBorder=frame.Frame.ChartBorder;
         chart.ChartFrame=frame.Frame;
         chart.Identify=overlayIndex.Identify;
+        chart.HQChart=hqChart;
         if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
         else chart.Color=this.GetDefaultColor(id);
 
@@ -22728,6 +22746,8 @@ function OverlayScriptIndex(name,script,args,option)
             let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
             if (!isNaN(width) && width>0) chart.LineWidth=width;
         }
+
+        if (IFrameSplitOperator.IsNonEmptyArray(varItem.AryBreakPoint)) chart.AryBreakPoint=varItem.AryBreakPoint;
 
         if (varItem.IsShow==false) chart.IsShow=false;
         chart.Data.Data=varItem.Data;
@@ -24456,7 +24476,9 @@ function APIScriptIndex(name,script,args,option, isOverlay)
             var outVarItem={Name:item.name,Type:item.type};
             if (item.color) outVarItem.Color=item.color;
             if (IFrameSplitOperator.IsBool(item.IsShowTitle)) outVarItem.IsShowTitle = item.IsShowTitle;  //是否显示指标标题
-            if (item.data)
+            if (IFrameSplitOperator.IsNumber(item.DrawVAlign)) outVarItem.DrawVAlign = item.DrawVAlign;
+            if (IFrameSplitOperator.IsNumber(item.DrawAlign)) outVarItem.DrawAlign = item.DrawAlign;
+            if (item.data) 
             {
                 outVarItem.Data=this.FittingArray(item.data,date,time,hqChart);
 
@@ -24472,6 +24494,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                 if (IFrameSplitOperator.IsBool(item.isSingleLine))  outVarItem.IsSingleLine=item.isSingleLine;
                 if (IFrameSplitOperator.IsNumber(item.StickType)) outVarItem.StickType=item.StickType;
                 if (IFrameSplitOperator.IsNumber(item.BarColorType)) outVarItem.BarColorType=item.BarColorType;
+                if (IFrameSplitOperator.IsNonEmptyArray(item.AryBreakPoint)) outVarItem.AryBreakPoint=item.AryBreakPoint;
 
                 result.push(outVarItem);
             }
@@ -24743,6 +24766,18 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     
                     result.push(outVarItem);
                 }
+                else if (draw.DrawType=="DRAWTEXTREL" || draw.DrawType=="DRAWTEXTABS")
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=draw.DrawData;    //{ Point: { X: 5,Y: 5 }, Text: "注意(居中):前方高能！！！！！" }
+
+                    outVarItem.Draw=drawItem;
+                    if (draw.Font) outVarItem.Font=draw.Font;
+                    
+                    result.push(outVarItem);
+                }
                 else
                 {
                     var find=g_ScriptIndexChartFactory.Get(draw.DrawType);  //外部挂接
@@ -24960,6 +24995,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                 if (IFrameSplitOperator.IsBool(item.isDotLine)) outVarItem.IsDotLine = item.isDotLine;
                 if (IFrameSplitOperator.IsNonEmptyArray(item.lineDash)) outVarItem.LineDash=item.lineDash;
                 if (IFrameSplitOperator.IsBool(item.isSingleLine))  outVarItem.IsSingleLine=item.isSingleLine;
+                if (IFrameSplitOperator.IsNonEmptyArray(item.AryBreakPoint)) outVarItem.AryBreakPoint=item.AryBreakPoint;
 
                 result.push(outVarItem);
             }

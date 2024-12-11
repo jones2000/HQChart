@@ -10513,6 +10513,11 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Draw();
     }
+
+    this.GetKData=function()
+    {
+        return null;
+    }
 }
 
 function GetDevicePixelRatio()
@@ -24895,6 +24900,7 @@ function IChartPainting()
         var barWidth=null;
         var isMinuteVolBar=false;
         var isStackedBar=false;
+        var volUnit=1;  //成交量单位
         if (option)
         {
             if (option.BarWidth>0) barWidth=option.BarWidth;
@@ -24907,6 +24913,8 @@ function IChartPainting()
             {
                 isStackedBar=true;
             }
+
+            if (IFrameSplitOperator.IsNumber(option.VolUnit)) volUnit=option.VolUnit;
         }
 
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
@@ -24930,7 +24938,7 @@ function IChartPainting()
             if (isMinuteVolBar)
             {
                 if (!IFrameSplitOperator.IsNumber(value.Vol)) continue;
-                var yBar=this.ChartFrame.GetYFromData(value.Vol);
+                var yBar=this.ChartFrame.GetYFromData(value.Vol/volUnit);
                 var barTop=yBar, barBottom=yBottom;
             }
             else if (isStackedBar)
@@ -31498,7 +31506,7 @@ function ChartMinuteVolumBar()
 
     this.PtInChart=function(x,y)
     {
-        var option={ MinuteVolBar:true };
+        var option={ MinuteVolBar:true, VolUnit:this.GetVolUnit() };
         return this.PtInBar(x,y,option);
     }
 
@@ -31874,6 +31882,7 @@ function ChartLine()
     this.IsDotLine=false;           //虚线
     this.LineDash=g_JSChartResource.DOTLINE.LineDash;
     this.BreakPoint;                //断开的点索引 Set();
+    this.AryBreakPoint;
 
 
     this.DrawSelectedStatus=this.DrawLinePoint;
@@ -31881,6 +31890,29 @@ function ChartLine()
 
     this.ExportData=this.ExportArrayData;
     this.GetItemData=this.GetArrayItemData;
+
+    this.BuildBreakPoint=function()
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.AryBreakPoint)) return null;
+        
+        var mapBreakPoint=new Map();
+        for(var i=0;i<this.AryBreakPoint.length;++i)
+        {
+            var item=this.AryBreakPoint[i];
+            var key=this.BuildDateTimeKey(item);
+            if (key) mapBreakPoint.set(key, item);
+        }
+
+        return mapBreakPoint;
+    }
+
+    this.BuildDateTimeKey=function(item)
+    {
+        if (!item) return null;
+
+        if (!IFrameSplitOperator.IsNumber(item.Time)) return `${item.Date}`;
+        return `${item.Date}-${item.Time}`;
+    }
 
     this.Draw=function()
     {
@@ -31960,6 +31992,7 @@ function ChartLine()
         var dataWidth=this.ChartFrame.DataWidth;
         var distanceWidth=this.ChartFrame.DistanceWidth;
         var xPointCount=this.ChartFrame.XPointCount;
+        var mapBreakPoint=this.BuildBreakPoint();
 
         if (bHScreen)
         {
@@ -31990,8 +32023,9 @@ function ChartLine()
         var bFirstPoint=true;
         var ptFirst=null;;    //第1个点
         var drawCount=0;
+        var kData=null;
+        if (this.HQChart) kData=this.HQChart.GetKData();
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
-        //for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
             var value=this.Data.Data[i];
             if (value==null) 
@@ -32034,6 +32068,20 @@ function ChartLine()
             }
 
             ++drawCount;
+
+            //断开点
+            if (mapBreakPoint && kData && kData.Data)
+            {
+                var kItem=kData.Data[i];
+                var key=this.BuildDateTimeKey(kItem);
+                if (key && mapBreakPoint.has(key))
+                {
+                    if (drawCount>0) this.Canvas.stroke();
+
+                    bFirstPoint=true;
+                    drawCount=0;
+                }
+            }
         }
 
         if (drawCount>0) 
@@ -34715,7 +34763,7 @@ function ChartSingleText()
         if (this.Direction==1) this.Canvas.textBaseline='bottom';
         else if (this.Direction==2) this.Canvas.textBaseline='top';
         else this.Canvas.textBaseline='middle';
-        this.Canvas.textAlign='left';
+        this.Canvas.textAlign=this.TextAlign
         this.Canvas.font=this.TextFont;
         this.Canvas.fillStyle=this.Color;
         this.DrawText(this.DrawData.Text,x,y,isHScreen);
@@ -40423,7 +40471,7 @@ function ChartMultiSVGIconV2()
     delete this.newMethod;
 
     this.ClassName="ChartMultiSVGIconV2";
-    this.AryIcon;  //[ {Index:, Value:, Symbol:, Color:, Baseline:, Line:{ Color:, Dash:[虚线点], KData:"H/L", Offset:[5,10], Width:线粗细 } } ]
+    this.AryIcon;  //[ {Index:, Value:, Symbol:, Color:, Baseline:, Line:{ Color:, Dash:[虚线点], KData:"H/L", Offset:[5,10], Width:线粗细 }, Image:{ Data:Image图片, Width, Height } } ]
     this.IconSize=
     { 
         Max: g_JSChartResource.DRAWICON.Icon.MaxSize, Min:g_JSChartResource.DRAWICON.Icon.MinSize ,    //图标的最大最小值
@@ -40589,47 +40637,83 @@ function ChartMultiSVGIconV2()
 
             var y=this.ChartFrame.GetYFromData(item.Value,false);
 
-            if (item.Color)  this.Canvas.fillStyle = item.Color;
-            else this.Canvas.fillStyle = this.Color;
+            if (item.Image)
+            {
+                var imageHeight=item.Image.Height;
+                var imageWidth=item.Image.Width;
+                var rtIcon=new Rect(x-imageWidth/2,y-imageHeight/2,imageWidth,imageHeight);
+                if (item.Baseline==1) 
+                {
+                    this.Canvas.textBaseline='top';
+                    rtIcon.Y=y;
+                }
+                else if (item.Baseline==2) 
+                {
+                    this.Canvas.textBaseline='bottom';
+                    rtIcon.Y=y-imageHeight;
+                }
+                else 
+                {
+                    this.Canvas.textBaseline = 'middle';
+                    rtIcon.Y=y-imageHeight/2;
+                } 
 
-            var textWidth=this.Canvas.measureText(item.Symbol).width;
-            this.Canvas.textAlign='center';
-            var rtIcon=new Rect(x-fontSize/2,y-fontSize/2,fontSize,fontSize);
-             
-            if (item.Baseline==1) 
-            {
-                this.Canvas.textBaseline='top';
-                rtIcon.Y=y;
-            }
-            else if (item.Baseline==2) 
-            {
-                this.Canvas.textBaseline='bottom';
-                rtIcon.Y=y-fontSize;
-            }
-            else 
-            {
-                this.Canvas.textBaseline = 'middle';
-                rtIcon.Y=y-fontSize/2;
-            } 
-
-            if (this.IsHScreen)
-            {
-                this.Canvas.save(); 
-                this.Canvas.translate(y, x);
-                this.Canvas.rotate(90 * Math.PI / 180);
-                this.Canvas.fillText(item.Symbol,0,0);
-                this.Canvas.restore();
-            }
-            else
-            {
                 if (IFrameSplitOperator.IsNumber(item.YMove)) 
                 {
                     y+=item.YMove;
                     rtIcon.Y+=item.YMove;
                 }
-                this.Canvas.fillText(item.Symbol, x, y);
+
+                this.Canvas.drawImage(item.Image.Data, rtIcon.X, rtIcon.Y, item.Image.Width, item.Image.Height);
+
                 if (item.Text) this.IconRect.push({ Rect:rtIcon , Item:item, KItem:kItem });
                 else if (IFrameSplitOperator.IsNonEmptyArray(item.AryText)) this.IconRect.push({ Rect:rtIcon , Item:item, KItem:kItem });
+
+            }
+            else
+            {
+                if (item.Color)  this.Canvas.fillStyle = item.Color;
+                else this.Canvas.fillStyle = this.Color;
+    
+                //var textWidth=this.Canvas.measureText(item.Symbol).width;
+                this.Canvas.textAlign='center';
+                var rtIcon=new Rect(x-fontSize/2,y-fontSize/2,fontSize,fontSize);
+                 
+                if (item.Baseline==1) 
+                {
+                    this.Canvas.textBaseline='top';
+                    rtIcon.Y=y;
+                }
+                else if (item.Baseline==2) 
+                {
+                    this.Canvas.textBaseline='bottom';
+                    rtIcon.Y=y-fontSize;
+                }
+                else 
+                {
+                    this.Canvas.textBaseline = 'middle';
+                    rtIcon.Y=y-fontSize/2;
+                } 
+    
+                if (this.IsHScreen)
+                {
+                    this.Canvas.save(); 
+                    this.Canvas.translate(y, x);
+                    this.Canvas.rotate(90 * Math.PI / 180);
+                    this.Canvas.fillText(item.Symbol,0,0);
+                    this.Canvas.restore();
+                }
+                else
+                {
+                    if (IFrameSplitOperator.IsNumber(item.YMove)) 
+                    {
+                        y+=item.YMove;
+                        rtIcon.Y+=item.YMove;
+                    }
+                    this.Canvas.fillText(item.Symbol, x, y);
+                    if (item.Text) this.IconRect.push({ Rect:rtIcon , Item:item, KItem:kItem });
+                    else if (IFrameSplitOperator.IsNonEmptyArray(item.AryText)) this.IconRect.push({ Rect:rtIcon , Item:item, KItem:kItem });
+                }
             }
 
             if (item.Line)
@@ -51217,34 +51301,37 @@ function FrameSplitMinuteX()
                 this.Frame.VerticalInfo[i]=info;
             }
         }
-        else
+        else 
         {
-            var offset=0, showDayCount=this.DayData.length;
-            if (this.DayOffset)
+            if (IFrameSplitOperator.IsNonEmptyArray(this.DayData))
             {
-                if (IFrameSplitOperator.IsNumber(this.DayOffset.Offset)) offset=this.DayOffset.Offset;
-                if (IFrameSplitOperator.IsNumber(this.DayOffset.ShowDayCount)) showDayCount=this.DayOffset.ShowDayCount;
-            }
-            this.DayOffset.DataOffset=offset*minuteCount;
-            this.DayOffset.ShowDataCount=this.DayOffset.ShowDayCount*minuteCount;
-            this.DayOffset.PageInfo={ Day:[] };
-            for(var i=this.DayData.length-1-offset, j=0; i>=0 && j<showDayCount; --i,++j)
-            {
-                var info=new CoordinateInfo();
-                info.Value=j*minuteCount+minuteMiddleCount;
-                info.LineType=-1;    //线段不画
-                if (this.ShowText) 
+                var offset=0, showDayCount=this.DayData.length;
+                if (this.DayOffset)
                 {
-                    info.Message[0]=this.FormatDate(this.DayData[i].Date);
-                    info.BG={ Index: { Start:j*minuteCount+1, End: (j+1)*minuteCount-1 }, Date:this.DayData[i].Date };  //背景设置
+                    if (IFrameSplitOperator.IsNumber(this.DayOffset.Offset)) offset=this.DayOffset.Offset;
+                    if (IFrameSplitOperator.IsNumber(this.DayOffset.ShowDayCount)) showDayCount=this.DayOffset.ShowDayCount;
                 }
-                this.Frame.VerticalInfo.push(info);
+                this.DayOffset.DataOffset=offset*minuteCount;
+                this.DayOffset.ShowDataCount=this.DayOffset.ShowDayCount*minuteCount;
+                this.DayOffset.PageInfo={ Day:[] };
+                for(var i=this.DayData.length-1-offset, j=0; i>=0 && j<showDayCount; --i,++j)
+                {
+                    var info=new CoordinateInfo();
+                    info.Value=j*minuteCount+minuteMiddleCount;
+                    info.LineType=-1;    //线段不画
+                    if (this.ShowText) 
+                    {
+                        info.Message[0]=this.FormatDate(this.DayData[i].Date);
+                        info.BG={ Index: { Start:j*minuteCount+1, End: (j+1)*minuteCount-1 }, Date:this.DayData[i].Date };  //背景设置
+                    }
+                    this.Frame.VerticalInfo.push(info);
 
-                var info=new CoordinateInfo();
-                info.Value=(j+1)*minuteCount;
-                this.Frame.VerticalInfo.push(info);
+                    var info=new CoordinateInfo();
+                    info.Value=(j+1)*minuteCount;
+                    this.Frame.VerticalInfo.push(info);
 
-                this.DayOffset.PageInfo.Day.push({ Date:this.DayData[i].Date, Index:i });
+                    this.DayOffset.PageInfo.Day.push({ Date:this.DayData[i].Date, Index:i });
+                }
             }
         }
 
@@ -80642,6 +80729,15 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
         this.FloatTooltip.Update(sendData);
     }
+
+    this.GetKData=function()
+    {
+        if (!this.ChartPaint[0]) return null;
+        var data=this.HQChart.ChartPaint[0].Data;
+        if (!data) return null;
+
+        return data;
+    }
 }
 
 //API 返回数据 转化为array[]
@@ -83074,9 +83170,11 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
         if (this.DayCount>1)
         {
-            frame.XSplitOperator.DayCount=this.DayData.length;
+            var dayCount=this.DayCount;
+            if (IFrameSplitOperator.IsNonEmptyArray(this.DayData)) dayCount=this.DayData.length;
+            frame.XSplitOperator.DayCount=dayCount;
             frame.XSplitOperator.DayData=this.DayData;
-            frame.DayCount=this.DayData.length;
+            frame.DayCount=dayCount;
         }
         
 
@@ -86564,6 +86662,15 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         }
 
         this.DialogSelectRect.Update(sendData);
+    }
+
+    this.GetKData=function()
+    {
+        if (!this.SourceData) return null;
+        var data=this.SourceData;
+        if (!data) return null;
+
+        return data;
     }
 }
 

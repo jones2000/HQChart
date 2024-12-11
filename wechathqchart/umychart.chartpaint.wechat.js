@@ -3299,7 +3299,7 @@ function ChartSingleText()
         if (this.Direction==1) this.Canvas.textBaseline='bottom';
         else if (this.Direction==2) this.Canvas.textBaseline='top';
         else this.Canvas.textBaseline='middle';
-        this.Canvas.textAlign='left';
+        this.Canvas.textAlign=this.TextAlign;
         this.Canvas.font=this.TextFont;
         this.Canvas.fillStyle=this.Color;
         this.DrawText(this.DrawData.Text,x,y,isHScreen);
