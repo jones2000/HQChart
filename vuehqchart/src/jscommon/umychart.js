@@ -80733,7 +80733,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
     this.GetKData=function()
     {
         if (!this.ChartPaint[0]) return null;
-        var data=this.HQChart.ChartPaint[0].Data;
+        var data=this.ChartPaint[0].Data;
         if (!data) return null;
 
         return data;
