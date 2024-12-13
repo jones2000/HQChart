@@ -381,7 +381,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 66. [HQChart使用教程74-使用快速创建数字币深度图](https://blog.csdn.net/jones2000/article/details/115322752)<br>
 67. [HQChart使用教程75-K线图鼠标单击事件接口](https://blog.csdn.net/jones2000/article/details/115707759)<br>
 68. [HQChart使用教程76-K线图手势事件接口](https://blog.csdn.net/jones2000/article/details/115862159)<br>
-69. [HQChart使用教程77-Y轴刻度文字创建事件回调](https://blog.csdn.net/jones2000/article/details/116376898)<br>
+69. [HQChart使用教程77-Y,X轴刻度文字创建事件回调](https://blog.csdn.net/jones2000/article/details/116376898)<br>
 70. [HQChart使用教程78-分时图集合竞价](https://blog.csdn.net/jones2000/article/details/116523681)<br>
 71. [HQChart使用教程79-异常处理接口](https://blog.csdn.net/jones2000/article/details/117524401)<br>
 72. [HQChart使用教程80-自定义指标标题信息](https://blog.csdn.net/jones2000/article/details/117803420)<br>
@@ -484,6 +484,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 39. [HQChart使用教程30-K线图如何对接第3方数据39-缩放下载K线数据历史数据](https://blog.csdn.net/jones2000/article/details/132355466)  
 40. [HQChart使用教程30-K线图如何对接第3方数据40-日K叠加股票增量更新](https://jones2000.blog.csdn.net/article/details/139997350)    
 41. [HQChart使用教程30-K线图如何对接第3方数据41-分钟K线叠加股票增量更新](https://jones2000.blog.csdn.net/article/details/139997565)   
+42. [HQChart使用教程30-K线图如何对接第3方数据42-DRAWTEXTREL,DRAWTEXTABS数据结构](https://blog.csdn.net/jones2000/article/details/144444372)   
 
 
 ## 第3方数据前端接入教程(分笔明细)
