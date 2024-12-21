@@ -565,68 +565,12 @@
                     case 'JSSymbolData::GetSymbolData':                 //分时图数据对接
                         this.GetSymbolData(data, callback);
                         break;
-                    case "APIScriptIndex::ExecuteScript":
-                        this.GetAPIIndexData(data, callback);
-                        break;
-
                     case "KLineChartContainer::RequestDragDayData":
                         break;
-                   
                     default:
                         HQData.NetworkFilter(data, callback);
                         break;
                 }
-            }
-
-            this.ConvertData=function(data, callback)
-            {
-                var symbol=data.Request.Data.symbol;
-                var hqchartData={  symbol: symbol,name: symbol, data:[] };
-
-                for(var i=0;i<test_1.date.length;++i)
-                {
-                    var item=
-                    [ 
-                        test_1.date[i],
-                        test_1.yclose[i],
-                        test_1.open[i],
-                        test_1.high[i],
-                        test_1.low[i],
-                        test_1.close[i],
-                        test_1.vol[i],
-                        test_1.amount[i],
-                    ];
-
-                    hqchartData.data.push(item);
-                }
-
-                callback(hqchartData);
-            }
-
-            this.GetAPIIndexData=function(data, callback)
-            {
-                data.PreventDefault=true;
-                var request=data.Request;
-                if (request.Data.indexname=='CLOSE_LINE')
-                    this.GetAPIIndx_CLOSE_LINE(data, callback)
-            }
-
-            this.GetAPIIndx_CLOSE_LINE=function(data, callback)
-            {
-                var hqchart=data.HQChart;
-                var kData=hqchart.ChartPaint[0].Data;
-
-                var closeLine={ name:'价', type:0, data:kData.GetClose(), color:"rgb(255, 52, 179)" };
-
-                var apiData=
-                {
-                    code:0, 
-                    stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
-                    outdata: { date:kData.GetDate() ,time:kData.GetTime(), outvar:[closeLine] } 
-                };
-               
-                console.log('[KLineChart::GetAPIIndx_CLOSE_LINE] apiData ', apiData);
-                callback(apiData);
             }
 
             this.GetSymbolData=function(data, callback)
@@ -1388,7 +1332,7 @@
                 if (menuData.Data.ID==JSCHART_MENU_ID.CMD_SHOW_INDEX_ID || menuData.Data.ID==JSCHART_MENU_ID.CMD_SHOW_OVERLAY_INDEX_ID || 
                     menuData.Data.ID==JSCHART_MENU_ID.CMD_DELETE_OVERLAY_INDEX_ID || menuData.Data.ID==JSCHART_MENU_ID.CMD_SHOW_OVERLAY_Y_AXIS_ID ||
                     menuData.Data.ID==JSCHART_MENU_ID.CMD_ENABLE_OVERLAY_SHARE_Y_ID ||
-                    menuData.Data.ID==JSCHART_MENU_ID.CMD_MODIFY_INDEX_PARAM || JSCHART_MENU_ID.CMD_MODIFY_OVERLAY_INDEX_PARAM )
+                    menuData.Data.ID==JSCHART_MENU_ID.CMD_MODIFY_INDEX_PARAM || menuData.Data.ID==JSCHART_MENU_ID.CMD_MODIFY_OVERLAY_INDEX_PARAM )
                 {
                     this.Chart.JSChartContainer.ExecuteMenuCommand(menuData.Data.ID, menuData.Data.Args);
                 }
@@ -1530,10 +1474,27 @@
                     else if (item.Name=="指标切换")
                     {
                         item.SubMenu.push({ Name:JSPopMenu.SEPARATOR_LINE_NAME });
-                        var indexInfo={ API: { ID:"CLOSE_LINE", Name:'收盘线(后台指标)',Args:null, Url:'local'} };
+                        var indexInfo={ API: { ID:"API-DRAWTEXTREL", Name:'收盘线(后台)',Args:null, Url:'local'} };
                         //indexInfo.Window={ HorizontalReserved:{ Top:100, Bottom:50 } };
                         var newItem={ Name:indexInfo.API.Name, Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_API_INDEX_ID, Args:[frameID, indexInfo]}};
                         item.SubMenu.push(newItem);
+                        
+                        var indexInfo={ API: { ID:"API-MULTI_POINT", Name:'MULTI_POINT指标(后台)',Args:null, Url:'local'} };
+                        var newItem={ Name:indexInfo.API.Name, Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_API_INDEX_ID, Args:[frameID, indexInfo]}};
+                        item.SubMenu.push(newItem);
+
+                        var indexInfo={ API: { ID:"API-DRAWCOLORKLINE", Name:'DRAWCOLORKLINE指标(后台)',Args:null, Url:'local'} };
+                        var newItem={ Name:indexInfo.API.Name, Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_API_INDEX_ID, Args:[frameID, indexInfo]}};
+                        item.SubMenu.push(newItem);
+
+                        var indexInfo={ API: { ID:"API-DRAWBAND", Name:'DRAWBAND指标(后台)',Args:null, Url:'local'} };
+                        var newItem={ Name:indexInfo.API.Name, Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_API_INDEX_ID, Args:[frameID, indexInfo]}};
+                        item.SubMenu.push(newItem);
+
+                        var indexInfo={ API: { ID:"API-MULTI_LINE", Name:'MULTI_LINE指标(后台)',Args:null, Url:'local'} };
+                        var newItem={ Name:indexInfo.API.Name, Data:{ ID: JSCHART_MENU_ID.CMD_CHANGE_API_INDEX_ID, Args:[frameID, indexInfo]}};
+                        item.SubMenu.push(newItem);
+                        
 
                         var indexInfo={ Name:"高低均价(自定义脚本)", ID:"HIGH_LOW_AV", Script:"均价:(H+L)/2;高:H;低:L;" };
                         var option=null; //{ Window:{ HorizontalReserved:{ Top:100, Bottom:50 }} };

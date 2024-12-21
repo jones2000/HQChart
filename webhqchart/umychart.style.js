@@ -498,7 +498,17 @@ function GetBlackStyle()
         StockChip:
         {
             InfoColor:'rgb(255,255,255)', //文字颜色
-            DayInfoColor:'rgb(0,0,0)' //周期颜色内文字颜色
+            DayInfoColor:'rgb(0,0,0)', //周期颜色内文字颜色
+
+            //手机端
+            PhoneCloseButton:
+            {
+                Family:"iconfont", 
+                Size:16*GetDevicePixelRatio(), 
+                Text:"\ue60c", 
+                Color:"rgb(255,255,255)",
+                Border:{ BGColor:"rgb(40,42,44)" }
+            }
         },
     
         //深度图

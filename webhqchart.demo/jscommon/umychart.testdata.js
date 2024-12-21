@@ -178,6 +178,10 @@ HQData.NetworkFilter=function(data, callback)
             HQData.Report_RequestVirtualStockData(data, callback);         //股票数据 虚拟表格
             break;
 
+        case "APIScriptIndex::ExecuteScript":   //测试指标
+            HQData.Report_APIIndex(data, callback);
+            break;
+
     }
 }
 
@@ -1832,6 +1836,269 @@ HQData.GetMulitDayMinuteDataByDate=function(aryDay, aryDate)
     }
 
     return aryData;
+}
+
+
+HQData.Report_APIIndex=function(data, callback)
+{
+    var request=data.Request;
+    if (request.Data.indexname=='API-MULTI_POINT')
+        HQData.APIIndex_MULTI_POINT(data, callback);
+    else if (request.Data.indexname=="API-DRAWTEXTREL")
+        HQData.APIIndex_DRAWTEXTREL(data, callback);
+    else if (request.Data.indexname=="API-DRAWCOLORKLINE")
+        HQData.APIIndex_DRAWCOLORKLINE(data, callback);
+    else if (request.Data.indexname=="API-DRAWBAND")
+        HQData.APIIndex_DRAWBAND(data, callback);
+    else if (request.Data.indexname=="API-MULTI_LINE")
+        HQData.APIIndex_MULTI_LINE(data, callback);
+}
+
+
+HQData.APIIndex_MULTI_POINT=function(data, callback)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var kData=hqchart.GetKData();
+
+    var pointData= 
+    { 
+        name:'MULTI_POINT', type:1, 
+        Draw: 
+        { 
+            DrawType:'MULTI_POINT', 
+            DrawData:[],
+        } 
+    };
+
+    var point=
+    { 
+        Color:'rgb(211,211,211)', 
+        BGColor:"rgb(255,215,0)",
+        PointRadius:10,
+        LineWidth:2,
+        Point:[ ] 
+    };
+
+    for(var i=kData.Data.length-1, j=0; i>=0 && j<6; i-=5, ++j)
+    {
+        var item=kData.Data[i];
+        point.Point.push({Date:item.Date, Time:item.Time, Value:item.Low});
+    }
+
+    pointData.Draw.DrawData.push(point);
+    
+
+    var point=
+    { 
+        Color:'rgb(148,0,211)', 
+        BGColor:"rgb(30,144,255)",
+        PointRadius:5,
+        LineWidth:1,
+        Point:[ ] 
+    };
+
+    for(var i=kData.Data.length-3, j=0; i>=0 && j<5; i-=6, ++j)
+    {
+        var item=kData.Data[i];
+        point.Point.push({Date:item.Date, Time:item.Time, Value:(item.High+item.Low)/2});
+    }
+
+    pointData.Draw.DrawData.push(point);
+
+    var apiData=
+    { 
+        code:0, stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+        outdata: { date:kData.GetDate(), time:kData.GetTime(),  outvar: [pointData] } 
+    };
+               
+    console.log('[HQData.APIIndex_MULTI_POINT] apiData ', apiData);
+    callback(apiData);
+}
+
+HQData.APIIndex_DRAWTEXTREL=function(data, callback)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var kData=hqchart.GetKData();
+
+    var closeLine={ name:'价', type:0, data:kData.GetClose(), color:"rgb(255, 52, 179)" };
+
+    var divText=
+    { 
+        name:'DRAWTEXTREL', type:1, 
+        Draw: 
+        { 
+            DrawType:'DRAWTEXTREL', 
+            DrawData: 
+            {
+                Point: {X: 500, Y: 500 },
+                Text: "!!!!前方高能!!!!"
+            },
+
+            Font:"20px 微软雅黑"
+        },
+        color:"rgb(255,0,0)",
+
+        DrawVAlign:1,
+        DrawAlign:1,
+    }
+
+    var divText2=
+    { 
+        name:'DRAWTEXTABS', type:1, 
+        Draw: 
+        { 
+            DrawType:'DRAWTEXTABS', 
+            DrawData: 
+            {
+                Point: {X: 5, Y: 5 },
+                Text: "后台指标示例"
+            },
+
+            Font:"24px 微软雅黑"
+        },
+        color:"rgb(255,200,0)",
+
+        DrawVAlign:2,
+    }
+
+    var apiData=
+    {
+        code:0, 
+        stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+        outdata: { date:kData.GetDate() ,time:kData.GetTime(), outvar:[closeLine,divText, divText2] } 
+    };
+   
+    console.log('[HQData::APIIndex_DRAWTEXTREL] apiData ', apiData);
+    callback(apiData);
+}
+
+
+HQData.APIIndex_DRAWCOLORKLINE=function(data, callback)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var kData=hqchart.GetKData();
+
+    var aryTestKData=[];
+    var aryTestkData2=[];
+    for(var i=0;i<kData.Data.length;++i)
+    {
+        var item=kData.Data[i];
+        if (i%5==3) aryTestKData[i]={ Open:item.Open, High:item.High, Low:item.Low, Close:item.Close };
+        else aryTestKData[i]=null;
+
+        if (i%13==5) aryTestkData2[i]={ Open:item.Open, High:item.High, Low:item.Low, Close:item.Close };
+        else aryTestkData2[i]=null;
+    }
+
+    var varKLine={ type:1, name:"条件K线", Draw:{ DrawData:aryTestKData, DrawType:'DRAWCOLORKLINE', IsEmptyBar:false, Color:"rgb(100,0,100)"} }; 
+    var varKLine2={ type:1, name:"条件K线2", Draw:{ DrawData:aryTestkData2, DrawType:'DRAWCOLORKLINE', IsEmptyBar:false, Color:"rgb(255, 140, 0)"} }; 
+
+    var hqchartData=
+    { 
+        outdata:
+        { 
+            date:kData.GetDate(), time:kData.GetTime(), 
+            outvar:[ varKLine, varKLine2] 
+        } , 
+        code:0
+    };
+
+    console.log("[HQData.APIIndex_DRAWCOLORKLINE] DRAWCOLORKLINE=",hqchartData);
+
+    callback(hqchartData);
+}
+
+
+HQData.APIIndex_DRAWBAND=function(data, callback)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var kData=hqchart.GetKData();
+
+
+    var bandData=
+    { 
+        name:"DRAWBAND", type:1, 
+        Draw:
+        { 
+            Name:"DRAWBAND",
+            DrawType:"DRAWBAND",
+            DrawData:[],
+            Color:["rgb(220,20,60)","rgb(34,139,34)"]
+        }
+    };
+
+    for(var i=0;i<kData.Data.length;++i)
+    {
+        var kItem=kData.Data[i];
+        bandData.Draw.DrawData[i]={ Value:kItem.Close, Value2:kItem.Open };
+    }
+
+    //var closeLine={ Name:'收', Type:0, Data:aryClose };
+    //var openLine={ Name:'开', Type:0, Data:aryOpen};
+
+    var hqchartData=
+    { 
+        outdata:{ date:kData.GetDate(), time:kData.GetTime(), outvar:[ bandData, ] } , 
+        code:0
+    };
+
+    callback(hqchartData);
+}
+
+
+HQData.APIIndex_MULTI_LINE=function(data, callback)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var kData=hqchart.GetKData();
+
+    var line3= 
+    { 
+        name:'MULTI_LINE', type:1, 
+        
+        Draw: 
+        { 
+            DrawType:'MULTI_LINE', DrawData:[],
+            LineWidth:5,
+            Arrow: 
+            { 
+                Start:true,     //是否绘制开始箭头 <-
+                End:true,       //是否绘制结束箭头 ->
+                Angle:30,       //三角斜边一直线夹角
+                Length:10,      //三角斜边长度
+                LineWidth:4,    //箭头粗细
+            }
+        }, //绘制线段数组
+
+        IsShowTitle:false
+    };
+
+    var point3=
+    {
+        Color:'rgb(255,0,255)', 
+        Point:[]
+    }
+
+    for(var i=kData.Data.length-10;i<kData.Data.length;++i)
+    {
+        var item=kData.Data[i];
+        point3.Point.push({Date:item.Date, Time:item.Time, Value:item.High});
+    }
+    line3.Draw.DrawData.push(point3);
+
+    var apiData=
+    {
+        code:0, 
+        stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+        outdata: { date:kData.GetDate(), time:kData.GetTime(), outvar:[line3] } 
+    };
+    
+    console.log('[HQData.APIIndex_MULTI_LINE] apiData ', apiData);
+    callback(apiData);
 }
 
 

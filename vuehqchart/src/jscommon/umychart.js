@@ -2758,6 +2758,8 @@ var JSCHART_BUTTON_ID=
     INDEX_NAME_BUTTON:43,
 
     ADD_INDEX_WINDOW:44,    //增加指标窗口
+
+    CHIP_CLOSE:45,          //关闭筹码图
 }
 
 var JSCHART_DATA_FIELD_ID=
@@ -4842,6 +4844,34 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
     }
 
+    this.TryPhoneClickButton=function(x,y,e)
+    {
+        if (this.TryClickLock || this.TryClickIndexTitle) //指标枷锁区域 , 指标标题点击
+        {
+            if (this.TryClickLock && this.TryClickLock(x, y)) return true;
+            if (this.TryClickIndexTitle && this.TryClickIndexTitle(x,y)) return true;
+        }
+
+        if (this.ClickFrameButton)
+        {
+            var button=this.Frame.PtInButtons(x,y);
+            if (button)
+            {
+                this.ClickFrameButton(button, e);
+                return true;
+            }
+        }
+
+        button=this.PtInExtendChartButtons(x,y);
+        if (button && this.ClickExtendChartButton)
+        {
+            this.ClickExtendChartButton(button, e);
+            return true;
+        }
+
+        return false;
+    }
+
     this.OnTouchStart=function(e)
     {
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
@@ -4864,23 +4894,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             var touches = this.GetToucheData(e, this.IsForceLandscape);
             var pt=this.PointAbsoluteToRelative(touches[0].clientX, touches[0].clientY, true);
 
-            if (this.TryClickLock || this.TryClickIndexTitle) //指标枷锁区域 , 指标标题点击
-            {
-                var x = pt.X;
-                var y = pt.Y;
-                if (this.TryClickLock && this.TryClickLock(x, y)) return;
-                if (this.TryClickIndexTitle && this.TryClickIndexTitle(x,y)) return;
-            }
-
-            if (this.ClickFrameButton)
-            {
-                var button=this.Frame.PtInButtons(pt.X,pt.Y);
-                if (button)
-                {
-                    this.ClickFrameButton(button, e);
-                    return;
-                }
-            }
+            if (this.TryPhoneClickButton(pt.X, pt.Y, e)) return;
 
             if (this.EnableVerticalDrag )
             {
@@ -9977,8 +9991,9 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 if (this.ShowSelectData && srcParam) this.ShowSelectData(srcParam);
                 break;
             case JSCHART_MENU_ID.CMD_SELECTED_SUMMARY_ID:
-                if (this.DialogSelectRect && srcParam) this.DrawSelectRectDialog(srcParam);
+                this.OnCMDSelectedSummary(srcParam, aryArgs[1]);
                 break;
+
             case JSCHART_MENU_ID.CMD_SHOW_INDEX_ID:        //显示隐藏指标   [0]=windowIndex [1]=0=自动 1=隐藏 2=显示
                 if (param==null || !IFrameSplitOperator.IsNumber(aryArgs[1])) return false;
                 var windowIndex=param, showType=aryArgs[1];
@@ -10228,6 +10243,15 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         }
 
         this.PopupMenuByRClick(menuData, x, y);
+    }
+
+    this.OnCMDSelectedSummary=function(e, selectData)
+    {
+        if (selectData) this.UpdateSelectRect(selectData.Start,selectData.End);
+
+        this.HideSelectRect();
+
+        if (this.DialogSelectRect && e) this.DrawSelectRectDialog(e);
     }
 
     //指标窗口扩展图形
@@ -40641,34 +40665,43 @@ function ChartMultiSVGIconV2()
             {
                 var imageHeight=item.Image.Height;
                 var imageWidth=item.Image.Width;
-                var rtIcon=new Rect(x-imageWidth/2,y-imageHeight/2,imageWidth,imageHeight);
-                if (item.Baseline==1) 
+                if (this.IsHScreen)
                 {
-                    this.Canvas.textBaseline='top';
-                    rtIcon.Y=y;
+                    var xImage=x-imageWidth/2, yImage=y;
+                    if (item.Baseline==1) yImage=y-imageHeight;
+                    else if (item.Baseline==2)  yImage=y; 
+                    else yImage=y-imageHeight/2;
+    
+                    if (IFrameSplitOperator.IsNumber(item.YMove)) 
+                    {
+                        yImage-=item.YMove;
+                        y-=item.YMove;
+                    }
+
+                    this.Canvas.save(); 
+                    this.Canvas.translate(yImage+imageWidth/2, xImage+imageHeight/2);
+                    this.Canvas.rotate(90 * Math.PI / 180);
+                    this.Canvas.drawImage(item.Image.Data, -imageWidth/2, -imageHeight/2, item.Image.Width, item.Image.Height);
+                    this.Canvas.restore();
                 }
-                else if (item.Baseline==2) 
+                else
                 {
-                    this.Canvas.textBaseline='bottom';
-                    rtIcon.Y=y-imageHeight;
+                    var rtIcon=new Rect(x-imageWidth/2,y-imageHeight/2,imageWidth,imageHeight);
+                    if (item.Baseline==1) rtIcon.Y=y;
+                    else if (item.Baseline==2) rtIcon.Y=y-imageHeight;
+                    else rtIcon.Y=y-imageHeight/2;
+    
+                    if (IFrameSplitOperator.IsNumber(item.YMove)) 
+                    {
+                        y+=item.YMove;
+                        rtIcon.Y+=item.YMove;
+                    }
+    
+                    this.Canvas.drawImage(item.Image.Data, rtIcon.X, rtIcon.Y, item.Image.Width, item.Image.Height);
+
+                    if (item.Text) this.IconRect.push({ Rect:rtIcon , Item:item, KItem:kItem });
+                    else if (IFrameSplitOperator.IsNonEmptyArray(item.AryText)) this.IconRect.push({ Rect:rtIcon , Item:item, KItem:kItem });
                 }
-                else 
-                {
-                    this.Canvas.textBaseline = 'middle';
-                    rtIcon.Y=y-imageHeight/2;
-                } 
-
-                if (IFrameSplitOperator.IsNumber(item.YMove)) 
-                {
-                    y+=item.YMove;
-                    rtIcon.Y+=item.YMove;
-                }
-
-                this.Canvas.drawImage(item.Image.Data, rtIcon.X, rtIcon.Y, item.Image.Width, item.Image.Height);
-
-                if (item.Text) this.IconRect.push({ Rect:rtIcon , Item:item, KItem:kItem });
-                else if (IFrameSplitOperator.IsNonEmptyArray(item.AryText)) this.IconRect.push({ Rect:rtIcon , Item:item, KItem:kItem });
-
             }
             else
             {
@@ -44742,8 +44775,12 @@ function StockChipPhone()
     //手机端没有按钮
     this.DrawToolbar=function(moveonPoint, mouseStatus) { }
 
+    this.CloseButtonConfig=CloneData(g_JSChartResource.StockChip.PhoneCloseButton);
+    
+
     this.Draw=function()
     {
+        this.Buttons=[];
         this.IsHScreen=this.ChartFrame.IsHScreen==true;
         this.PixelRatio=GetDevicePixelRatio();
         if (this.IsHScreen)
@@ -44786,6 +44823,7 @@ function StockChipPhone()
         }
 
         this.DrawBorder();
+        this.DrawCloseButton();
         this.SizeChange=false;
     }
 
@@ -45147,6 +45185,73 @@ function StockChipPhone()
         }
         
         this.Canvas.fill();
+    }
+
+    //关闭按钮
+    this.DrawCloseButton=function()
+    {
+        var config=this.CloseButtonConfig;
+        var font=`${config.Size}px ${config.Family}`;
+        var rtButton=null;
+        if (this.IsHScreen)
+        {
+            var border=this.ChartBorder.GetHScreenBorder();
+            var right=border.Left-2;
+            var bottom=border.ChartHeight-2;
+            var left=right-config.Size;
+            var top=bottom-config.Size;
+
+            var rtButton={ Left:left, Top:top, Bottom:bottom, Right:right };
+            rtButton.Width=rtButton.Right-rtButton.Left;
+            rtButton.Height=rtButton.Bottom-rtButton.Top;
+        }
+        else
+        {
+            var border=this.ChartBorder.GetBorder();
+            var top=border.Bottom+2;
+            var bottom=top+config.Size;
+            var right=border.ChartWidth-2;
+            var left=right-config.Size;
+
+            var rtButton={ Left:left, Top:top, Bottom:bottom, Right:right };
+            rtButton.Width=rtButton.Right-rtButton.Left;
+            rtButton.Height=rtButton.Bottom-rtButton.Top;
+        }
+
+        if (!rtButton) return;
+
+        if (config.Border)
+        {
+            if (config.Border.BGColor) 
+            {
+                this.Canvas.fillStyle=config.Border.BGColor;
+                this.Canvas.fillRect(rtButton.Left,rtButton.Top,rtButton.Width,rtButton.Height);
+            }
+        }
+
+        this.Canvas.fillStyle=config.Color;
+        this.Canvas.font=font;
+        this.Canvas.textAlign="left";
+        this.Canvas.textBaseline="bottom";
+        if (this.IsHScreen)
+        {
+            var radius=config.Size/2;
+            var x=rtButton.Left+radius, y=rtButton.Bottom-radius;
+            this.Canvas.save(); 
+            this.Canvas.translate(x,y);
+            this.Canvas.rotate(90 * Math.PI / 180);
+            this.Canvas.fillText(config.Text,-radius,radius);
+            this.Canvas.restore();
+            
+        }
+        else
+        {
+            this.Canvas.fillText(config.Text, rtButton.Left, rtButton.Bottom);
+        }
+
+        var btnItem={ ID:JSCHART_BUTTON_ID.CHIP_CLOSE, Rect:rtButton };
+        this.Buttons.push(btnItem);
+    
     }
 }
 
@@ -48829,6 +48934,10 @@ IFrameSplitOperator.FormatDateString=function(value,format, languageID)
     {
         case 'MM-DD':
             return IFrameSplitOperator.NumberToString(month) + '-' + IFrameSplitOperator.NumberToString(day);
+        case "MM-DD/W":
+            var date=new Date(year,month-1,day);
+            var week=g_JSChartLocalization.GetText(WEEK_NAME[date.getDay()],languageID);
+            return `${IFrameSplitOperator.NumberToString(month)}-${IFrameSplitOperator.NumberToString(day)}/${week}`;
         case "MM/DD":
             return `${IFrameSplitOperator.NumberToString(month)}/${IFrameSplitOperator.NumberToString(day)}`;
         case "MM/DD/W":
@@ -60288,6 +60397,7 @@ function ChartDrawHLine()
     this.ButtonPosition=0;              //按钮位置, 0=价格后面， 1=价格上面 2=价格上面 左对齐 3=垂直排列
     this.ButtonBGColor='rgb(190,190,190)';
     this.ButtonSpace=3;
+    this.TopOffset=3;
     
     this.TextMargin={ Left:0, Right:0, Top:0, Bottom:0, YOffset:4*GetDevicePixelRatio() };
 
@@ -60342,6 +60452,7 @@ function ChartDrawHLine()
             if (IFrameSplitOperator.IsNumber(option.ButtonPosition)) this.ButtonPosition=option.ButtonPosition;
             if (IFrameSplitOperator.IsNumber(option.RightSpaceWidth)) this.RightSpaceWidth=option.RightSpaceWidth;
             if (IFrameSplitOperator.IsBool(option.AlwaysShowLab)) this.AlwaysShowLab=option.AlwaysShowLab;
+            if (IFrameSplitOperator.IsNumber(option.TopOffset)) this.TopOffset=option.TopOffset;
 
             
             if (option.Button)
@@ -60713,6 +60824,12 @@ function ChartDrawHLine()
         {
             yBottom=border.Bottom;
             yTop=yBottom-totalHeight;
+            if (yTop<this.TopOffset)
+            {
+                yTop=this.TopOffset;
+                yBottom=yTop+totalHeight;
+            }
+
             option.Top=yTop;
         }
 
@@ -70374,6 +70491,16 @@ function JSChartResource()
             Size:13*GetDevicePixelRatio(),
             MerginLeft:4
         },
+
+        //手机端
+        PhoneCloseButton:
+        {
+            Family:"iconfont", 
+            Size:16*GetDevicePixelRatio(), 
+            Text:"\ue60c", 
+            Color:"rgb(255,255,255)",
+            Border:{ BGColor:"rgb(169,169,169)" }
+        }
     }
 
     //深度图
@@ -71292,6 +71419,20 @@ function JSChartResource()
             if (item.DefaultButton) T_SetButtonStyle(item.DefaultButton, this.StockChip.DefaultButton);
             if (item.LongButton) T_SetButtonStyle(item.LongButton, this.StockChip.LongButton);
             if (item.RecentButton) T_SetButtonStyle(item.RecentButton, this.StockChip.RecentButton);
+            if (item.CloseButton) T_SetButtonStyle(item.CloseButton, this.StockChip.CloseButton);
+
+            if (item.PhoneCloseButton)
+            {
+                var subItem=item.PhoneCloseButton;
+                if (subItem.Family) this.StockChip.PhoneCloseButton.Family=subItem.Family;
+                if (subItem.Text) this.StockChip.PhoneCloseButton.Text=subItem.Text;
+                if (subItem.Color) this.StockChip.PhoneCloseButton.Color=subItem.Color;
+                if (IFrameSplitOperator.IsNumber(subItem.Size)) this.StockChip.PhoneCloseButton.Size=subItem.Size;
+                if (subItem.Border)
+                {
+                    if (subItem.Border.BGColor) this.StockChip.PhoneCloseButton.Border.BGColor=subItem.Border.BGColor;
+                }
+            }
         }
 
         if (style.DepthChart)
@@ -79161,7 +79302,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
     {
         var aryMenu=
         [
-            { Name:"区间统计", Data:{ ID:JSCHART_MENU_ID.CMD_SELECTED_SUMMARY_ID, Args:[e] }},
+            { Name:"区间统计", Data:{ ID:JSCHART_MENU_ID.CMD_SELECTED_SUMMARY_ID, Args:[e,data.SelectData] }},
             { Name:"区间放大", Data:{ ID:JSCHART_MENU_ID.CMD_SELECTED_ZOOM_ID, Args:[data.SelectData] }}
         ];
         
@@ -80537,6 +80678,10 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         {
             button.Chart.ShowType=2;
             this.Draw();
+        }
+        else if (button.ID==JSCHART_BUTTON_ID.CHIP_CLOSE)
+        {
+            if (this.DeleteStockChipChart) this.DeleteStockChipChart();
         }
     }
 
@@ -88138,6 +88283,9 @@ function KLineChartHScreenContainer(uielement)
             var touches = this.GetToucheData(e, false);
             var pt=this.PointAbsoluteToRelative(touches[0].clientX, touches[0].clientY, true);
 
+            if (this.TryPhoneClickButton(pt.X,pt.Y,e)) return;
+
+            /*
             if (this.TryClickLock || this.TryClickIndexTitle) //指标枷锁区域, 指标标题点击
             {
                 var x = pt.X;
@@ -88155,6 +88303,7 @@ function KLineChartHScreenContainer(uielement)
                     return;
                 }
             }
+            */
 
             if (this.EnableVerticalDrag )
             {

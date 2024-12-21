@@ -15,7 +15,7 @@ import
 {
     ChartData, HistoryData,
     SingleData, MinuteData,
-    Rect,
+    Rect,RectV2,
     JSCHART_EVENT_ID,
     OVERLAY_STATUS_ID,
 } from "./umychart.data.wechat.js";
@@ -115,6 +115,12 @@ function IChartPainting()
     this.GetYFromData=function(value,isLimit)
     {
         return this.ChartFrame.GetYFromData(value,isLimit);
+    }
+
+    this.GetBorder=function()
+    {
+        if (this.ChartFrame.IsHScreen) return this.ChartBorder.GetHScreenBorder();
+        return this.ChartBorder.GetBorder();
     }
     
     this.IsMinuteFrame=function()
@@ -8560,6 +8566,280 @@ function ChartStraightLine()
     }
 }
 
+//图标集合(2.0) 支持横屏
+function ChartMultiSVGIconV2()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName="ChartMultiSVGIconV2";
+    this.AryIcon;  //[ {Index:, Value:, Baseline:, Line:{ Color:, Dash:[虚线点], KData:"H/L", Offset:[5,10], Width:线粗细 }, Image:{ Data:Image图片, Width, Height } } ]
+    this.IsHScreen=false;
+    this.MapCache=null; //key=date/date-time  value={ Data:[] }
+
+    this.BuildKey=function(item)
+    {
+        if (IFrameSplitOperator.IsNumber(item.Time)) return `${item.Date}-${item.Time}`;
+        else return item.Date;
+    }
+
+    this.BuildCacheData=function()
+    {
+        var mapData=new Map();
+        this.MapCache=mapData;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.AryIcon)) return;
+
+        for(var i=0;i<this.AryIcon.length;++i)
+        {
+            var item=this.AryIcon[i];
+            var key=this.BuildKey(item);
+            if (mapData.has(key))
+            {
+                var mapItem=mapData.get(key);
+                mapItem.Data.push(item);
+            }
+            else
+            {
+                mapData.set(key,{ Data:[item] });
+            }
+        }
+    }
+
+    this.ClipClient=function(isHScreen)          //裁剪客户端
+    {
+        if (isHScreen==true)
+        {
+            var left=this.ChartBorder.GetLeft();
+            var right=this.ChartBorder.GetRight();
+            var top=this.ChartBorder.GetTop();
+            var bottom=this.ChartBorder.GetBottom();
+        }
+        else
+        {
+            var left=this.ChartBorder.GetLeft();
+            var right=this.ChartBorder.GetRight();
+            var top=this.ChartBorder.GetTop();
+            var bottom=this.ChartBorder.GetBottom();
+        }
+
+        this.Canvas.beginPath();
+        this.Canvas.rect(left,top,(right-left),(bottom-top));
+        //this.Canvas.stroke(); //调试用
+        this.Canvas.clip();
+    }
+
+    this.Draw=function()
+    {
+        if (!this.IsShow || this.ChartFrame.IsMinSize || !this.IsVisible) return;
+        if (this.IsHideScriptIndex()) return;
+        if (!this.Data || !IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return; //k线数据
+        if (!this.Family) return;
+        if (!this.MapCache || this.MapCache.size<=0) return;
+
+        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
+        var xPointCount=this.ChartFrame.XPointCount;
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var isMinute=this.IsMinuteFrame();
+
+        var border=this.GetBorder();
+        if (this.IsHScreen)
+        {
+            var xOffset=border.TopEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.BottomEx;
+            var chartLeft=border.TopEx;
+        }
+        else
+        {
+            var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.RightEx;
+            var chartLeft=border.LeftEx;
+        }
+
+        this.Canvas.save();
+        this.ClipClient(this.ChartFrame.IsHScreen);
+
+        var drawInfo={ Left:chartLeft, Right:chartright,  DataWidth:dataWidth, DistanceWidth:distanceWidth };
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var kItem=this.Data.Data[i];
+            var key=this.BuildKey(kItem);
+            if (!this.MapCache.has(key)) continue;
+            var mapItem=this.MapCache.get(key);
+
+            if (isMinute)
+            {
+                var x=this.ChartFrame.GetXFromIndex(j);
+            }
+            else
+            {
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                if (right>chartright) break;
+                var x=left+(right-left)/2;
+            }
+
+            this.DrawItem(mapItem, kItem, x, drawInfo);
+        }
+
+        this.Canvas.restore();
+    }
+
+    this.GetKValue=function(kItem, valueName)
+    {
+        switch(valueName)
+        {
+            case "HIGH":
+            case "H":
+                return kItem.High;
+            case "L":
+            case "LOW":
+                return kItem.Low;
+            case "C":
+            case "CLOSE":
+                return kItem.Close;
+            case "O":
+            case "OPEN":
+                return KItem.Open;
+            default:
+                return null;
+        }
+    }
+
+    this.DrawItem=function(groupItem, kItem, x, drawInfo)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(groupItem.Data)) return;
+
+        //var left=drawInfo.Left, right=drawInfo.Right;
+        //var dataWidth=drawInfo.DataWidth;
+        //var distanceWidth=drawInfo.DistanceWidth;
+
+        for(var i=0;i<groupItem.Data.length;++i)
+        {
+            var item=groupItem.Data[i]; 
+            var value=item.Value;
+            if (IFrameSplitOperator.IsString(item.Value)) value=this.GetKValue(kItem,item.Value);
+            if (!IFrameSplitOperator.IsNumber(value)) continue;
+            if (!item.Image) continue;
+
+            var y=this.ChartFrame.GetYFromData(item.Value,false);
+            var imageHeight=item.Image.Height;
+            var imageWidth=item.Image.Width;
+            
+
+            if (this.IsHScreen)
+            {
+                var xImage=x-imageWidth/2, yImage=y;
+                if (item.Baseline==1) yImage=y-imageHeight;
+                else if (item.Baseline==2)  yImage=y; 
+                else yImage=y-imageHeight/2;
+
+                if (IFrameSplitOperator.IsNumber(item.YMove)) 
+                {
+                    yImage-=item.YMove;
+                    y-=item.YMove;
+                }
+
+                //this.Canvas.drawImage(item.Image.Data, yImage, xImage,item.Image.Width, item.Image.Height);
+                
+                this.Canvas.save(); 
+                this.Canvas.translate(yImage+imageWidth/2, xImage+imageHeight/2);
+                this.Canvas.rotate(90 * Math.PI / 180);
+                this.Canvas.drawImage(item.Image.Data, -imageWidth/2, -imageHeight/2, item.Image.Width, item.Image.Height);
+                this.Canvas.restore();
+                
+            }
+            else
+            {
+                var rtIcon=new RectV2(x-imageWidth/2,y-imageHeight/2,imageWidth,imageHeight);
+                if (item.Baseline==1)  rtIcon.Y=y;
+                else if (item.Baseline==2)  rtIcon.Y=y-imageHeight;
+                else rtIcon.Y=y-imageHeight/2;
+
+                if (IFrameSplitOperator.IsNumber(item.YMove)) 
+                {
+                    y+=item.YMove;
+                    rtIcon.Y+=item.YMove;
+                }
+    
+                this.Canvas.drawImage(item.Image.Data, rtIcon.X, rtIcon.Y, item.Image.Width, item.Image.Height);
+            }
+
+            if (item.Line)
+            {
+                var price=item.Line.KData=="H"? kItem.High:kItem.Low;
+                var yPrice=this.ChartFrame.GetYFromData(price, false);
+                var yText=y;
+                if (Array.isArray(item.Line.Offset) && item.Line.Offset.length==2)
+                {
+                    if (yText>yPrice) //文字在下方
+                    {
+                        yText-=item.Line.Offset[1];
+                        yPrice+=item.Line.Offset[0]
+                    }
+                    else if (yText<yPrice)
+                    {
+                        yText+=item.Line.Offset[1];
+                        yPrice-=item.Line.Offset[0]
+                    }
+                }
+                this.Canvas.save();
+                if (item.Line.Dash) this.Canvas.setLineDash(item.Line.Dash);    //虚线
+                if (item.Line.Width>0) this.Canvas.lineWidth=item.Line.Width;   //线宽
+                this.Canvas.strokeStyle = item.Line.Color;
+                this.Canvas.beginPath();
+                if (this.IsHScreen)
+                {
+                    this.Canvas.moveTo(yText, ToFixedPoint(x));
+                    this.Canvas.lineTo(yPrice,ToFixedPoint(x));
+                }
+                else
+                {
+                    this.Canvas.moveTo(ToFixedPoint(x),yText);
+                    this.Canvas.lineTo(ToFixedPoint(x),yPrice);
+                }
+                
+                this.Canvas.stroke();
+                this.Canvas.restore();
+            }
+        }
+    }
+
+    this.GetMaxMin=function()
+    {
+        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
+        var range={ Min:null, Max:null };
+        if(!this.Data || !IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return range;
+        if (!this.MapCache || this.MapCache.size<=0) return;
+        var xPointCount=this.ChartFrame.XPointCount;
+
+        for(var i=this.Data.DataOffset,j=0, k=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        {
+            var kItem=this.Data.Data[i];
+            var key=this.BuildKey(kItem);
+            if (!this.MapCache.has(key)) continue;
+            var mapItem=this.MapCache.get(key);
+            if (!IFrameSplitOperator.IsNonEmptyArray(mapItem.Data)) continue;
+
+            for(k=0;k<mapItem.Data.length;++k)
+            {
+                var item=mapItem.Data[k];
+                var value=item.Value;
+                if (IFrameSplitOperator.IsString(item.Value)) value=this.GetKValue(kItem,item.Value);
+                if (!IFrameSplitOperator.IsNumber(value)) continue;
+
+                if (range.Max==null) range.Max=value;
+                else if (range.Max<value) range.Max=value;
+                if (range.Min==null) range.Min=value;
+                else if (range.Min>value) range.Min=value;
+            }
+        }
+
+        return range;
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // 其他图形
 //
@@ -10462,6 +10742,7 @@ export
     ChartOverlayMinutePriceLine,
     ChartLineMultiData,
     ChartStraightLine,
+    ChartMultiSVGIconV2,
     ChartPie,
     ChartCircle,
     ChartChinaMap,
@@ -10485,99 +10766,4 @@ export
     GetFontHeight,
     ColorToRGBA,
     ChartSingleLine,
-    
 };
-/*
-module.exports =
-{
-    JSCommonChartPaint:
-    {
-        IChartPaintin: IChartPainting,
-        ChartKLine: ChartKLine,
-        ChartColorKline:ChartColorKline,
-        ChartLine: ChartLine,
-        ChartSubLine: ChartSubLine,
-        ChartSingleText: ChartSingleText,
-        ChartDrawIcon:ChartDrawIcon,
-        ChartDrawText:ChartDrawText,
-        ChartDrawNumber:ChartDrawNumber,
-        ChartPointDot: ChartPointDot,
-        ChartStick: ChartStick,
-        ChartLineStick: ChartLineStick,
-        ChartStickLine: ChartStickLine,
-        ChartOverlayKLine: ChartOverlayKLine,
-        ChartMinuteInfo: ChartMinuteInfo,
-        ChartRectangle: ChartRectangle,
-        ChartMultiText: ChartMultiText,
-        ChartMultiHtmlDom:ChartMultiHtmlDom,
-        ChartMultiLine: ChartMultiLine,
-        ChartBackground:ChartBackground,
-        ChartBuySell: ChartBuySell,
-        ChartMultiBar: ChartMultiBar,
-        ChartMACD:ChartMACD,
-        ChartMinutePriceLine:ChartMinutePriceLine,
-        ChartLock:ChartLock,
-        ChartVolStick:ChartVolStick,
-        ChartBand:ChartBand,
-        ChartMinuteVolumBar:ChartMinuteVolumBar,
-        ChartText:ChartText,
-        ChartOverlayMinutePriceLine:ChartOverlayMinutePriceLine,
-        ChartLineMultiData:ChartLineMultiData,
-        ChartStraightLine:ChartStraightLine,
-        ChartStraightArea:ChartStraightArea,
-        ChartSplashPaint:ChartSplashPaint,
-        ChartPie: ChartPie,
-        ChartCircle: ChartCircle,
-        ChartChinaMap: ChartChinaMap,
-        ChartRadar: ChartRadar, 
-    
-        ChartCorssCursor: ChartCorssCursor, //十字光标 
-        DepthChartCorssCursor:DepthChartCorssCursor,
-        ChartOrderbookDepth:ChartOrderbookDepth,
-    },
-
-    //单个类导出
-    JSCommonChartPaint_IChartPainting: IChartPainting,
-    JSCommonChartPaint_ChartKLine: ChartKLine,
-    JSCommonChartPaint_ChartColorKline:ChartColorKline,
-    JSCommonChartPaint_ChartLine: ChartLine,
-    JSCommonChartPaint_ChartSubLine: ChartSubLine,
-    JSCommonChartPaint_ChartSingleText: ChartSingleText,
-    JSCommonChartPaint_ChartDrawIcon:ChartDrawIcon,
-    JSCommonChartPaint_ChartDrawText:ChartDrawText,
-    JSCommonChartPaint_ChartDrawNumber:ChartDrawNumber,
-    JSCommonChartPaint_ChartPointDot: ChartPointDot,
-    JSCommonChartPaint_ChartStick: ChartStick,
-    JSCommonChartPaint_ChartLineStick: ChartLineStick,
-    JSCommonChartPaint_ChartStickLine: ChartStickLine,
-    JSCommonChartPaint_ChartBackground:ChartBackground,
-    JSCommonChartPaint_ChartMinuteVolumBar:ChartMinuteVolumBar,
-    JSCommonChartPaint_ChartOverlayKLine: ChartOverlayKLine,
-    JSCommonChartPaint_ChartLock:ChartLock,
-    JSCommonChartPaint_ChartVolStick:ChartVolStick,
-    JSCommonChartPaint_ChartBand:ChartBand,
-    JSCommonChartPaint_ChartMinutePriceLine:ChartMinutePriceLine,
-    JSCommonChartPaint_ChartOverlayMinutePriceLine:ChartOverlayMinutePriceLine,
-    JSCommonChartPaint_ChartLineMultiData:ChartLineMultiData,
-    JSCommonChartPaint_ChartStraightLine:ChartStraightLine,
-    JSCommonChartPaint_ChartPie: ChartPie,
-    JSCommonChartPaint_ChartCircle: ChartCircle,
-    JSCommonChartPaint_ChartChinaMap: ChartChinaMap,
-    JSCommonChartPaint_ChartRadar: ChartRadar,
-    JSCommonChartPaint_ChartMinuteInfo: ChartMinuteInfo,
-    JSCommonChartPaint_ChartRectangle: ChartRectangle,
-    JSCommonChartPaint_ChartMultiText: ChartMultiText,
-    JSCommonChartPaint_ChartMultiLine: ChartMultiLine,
-    JSCommonChartPaint_ChartMultiHtmlDom: ChartMultiHtmlDom,
-    JSCommonChartPaint_ChartMultiBar: ChartMultiBar,
-    JSCommonChartPaint_ChartBuySell: ChartBuySell,
-    JSCommonChartPaint_ChartMACD: ChartMACD,
-    JSCommonChartPaint_ChartText:ChartText,
-    JSCommonChartPaint_ChartStraightArea:ChartStraightArea,
-    JSCommonChartPaint_ChartCorssCursor: ChartCorssCursor,
-    JSCommonChartPaint_DepthChartCorssCursor:DepthChartCorssCursor,
-    JSCommonChartPaint_ChartOrderbookDepth:ChartOrderbookDepth,
-    JSCommonChartPaint_ChartSplashPaint:ChartSplashPaint,
-    JSCommonChartPaint_GetFontHeight:GetFontHeight,
-};
-*/

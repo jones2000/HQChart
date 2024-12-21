@@ -183,6 +183,12 @@ function GetBlackStyle()
             ],
         },
 
+        StockChip:
+        {
+            Color:"rgb(255,255,255)",
+            Border:{ BGColor:"rgb(40,42,44)" }
+        },
+
         TooltipPaint:   //Tooltip
         {
             BGColor: 'rgba(20,20,20,0.8)',          //背景色

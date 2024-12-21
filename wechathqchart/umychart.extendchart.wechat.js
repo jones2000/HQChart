@@ -21,6 +21,8 @@ import
     ToFixedPoint,
     ToFixedRect,
     JSCHART_EVENT_ID,
+    JSCHART_BUTTON_ID,
+    CloneData,
 } from "./umychart.data.wechat.js";
 
 import 
@@ -1152,6 +1154,7 @@ function StockChipPhone()
     this.ColorBG='rgb(190,190,190)';                    //筹码背景线段颜色
     this.Font=g_JSChartResource.StockChip.Font;
     this.InfoColor=g_JSChartResource.StockChip.InfoColor;
+    this.CloseButtonConfig=CloneData(g_JSChartResource.StockChip.PhoneCloseButton);
 
     this.ShowType=0;                                    //0=所有筹码
     this.PixelRatio=1;
@@ -1160,6 +1163,7 @@ function StockChipPhone()
     this.Width=150;       //筹码图宽度
     this.CalculateType=0;   //0=平均分布 1=三角分布
     this.PriceZoom=100;     //价格放大倍数
+    this.Buttons=[];
 
     this.DAY_COLOR=
     [
@@ -1181,11 +1185,13 @@ function StockChipPhone()
         this.PenBorder=g_JSChartResource.FrameBorderPen;
         this.Font=g_JSChartResource.StockChip.Font;
         this.InfoColor=g_JSChartResource.StockChip.InfoColor;
+        this.CloseButtonConfig=CloneData(g_JSChartResource.StockChip.PhoneCloseButton);
        // this.DayInfoColor=g_JSChartResource.StockChip.DayInfoColor;
     }
 
     this.Draw=function()
     {
+        this.Buttons=[];
         this.IsHScreen=this.ChartFrame.IsHScreen==true;
         if (this.IsHScreen)
         {
@@ -1227,6 +1233,7 @@ function StockChipPhone()
         }
 
         this.DrawBorder();
+        this.DrawCloseButton();
         this.SizeChange=false;
     }
 
@@ -1593,6 +1600,76 @@ function StockChipPhone()
         }
         
         this.Canvas.fill();
+    }
+
+    //关闭按钮
+    this.DrawCloseButton=function()
+    {
+        var config=this.CloseButtonConfig;
+        var rtButton=null;
+        if (this.IsHScreen)
+        {
+            var border=this.ChartBorder.GetHScreenBorder();
+            var right=border.Left-2;
+            var bottom=border.ChartHeight-2;
+            var left=right-config.Size;
+            var top=bottom-config.Size;
+
+            var rtButton={ Left:left, Top:top, Bottom:bottom, Right:right };
+            rtButton.Width=rtButton.Right-rtButton.Left;
+            rtButton.Height=rtButton.Bottom-rtButton.Top;
+        }
+        else
+        {
+            var border=this.ChartBorder.GetBorder();
+            var top=border.Bottom+2;
+            var bottom=top+config.Size;
+            var right=border.ChartWidth-2;
+            var left=right-config.Size;
+
+            var rtButton={ Left:left, Top:top, Bottom:bottom, Right:right };
+            rtButton.Width=rtButton.Right-rtButton.Left;
+            rtButton.Height=rtButton.Bottom-rtButton.Top;
+        }
+
+        if (!rtButton) return;
+
+        if (config.Border)
+        {
+            if (config.Border.BGColor) 
+            {
+                this.Canvas.fillStyle=config.Border.BGColor;
+                this.Canvas.fillRect(rtButton.Left,rtButton.Top,rtButton.Width,rtButton.Height);
+            }
+        }
+
+        var rtIcon={ Left:rtButton.Left+2, Right:rtButton.Right-2, Top:rtButton.Top+2, Bottom:rtButton.Bottom-2 };
+        this.Canvas.strokeStyle=config.Color;
+        this.Canvas.beginPath();
+        this.Canvas.moveTo(rtIcon.Left,rtIcon.Top);
+        this.Canvas.lineTo(rtIcon.Right,rtIcon.Bottom);
+        this.Canvas.moveTo(rtIcon.Right,rtIcon.Top);
+        this.Canvas.lineTo(rtIcon.Left,rtIcon.Bottom);
+        this.Canvas.stroke();
+
+        var btnItem={ ID:JSCHART_BUTTON_ID.CHIP_CLOSE, Rect:rtButton };
+        this.Buttons.push(btnItem);
+    }
+
+    this.PtInButtons=function(x,y) //坐标是否在按钮上
+    {
+        for(var i=0;i<this.Buttons.length;++i)
+        {
+            var item=this.Buttons[i];
+            if (!item.Rect) continue;
+            var rect=item.Rect;
+            if (x>=rect.Left && x<=rect.Right && y>=rect.Top && y<=rect.Bottom)
+            {
+                return { ID:item.ID, Rect:rect };
+            }
+        }
+
+        return null;
     }
 
     /////////////////////////////////////////////////////////////////////////

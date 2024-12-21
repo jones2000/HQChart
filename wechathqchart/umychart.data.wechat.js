@@ -2173,6 +2173,24 @@ ChartData.GetPeriodName = function (period)
     return '';
 }
 
+function RectV2(x, y, width, height)
+{
+    this.X=x;
+    this.Y=y;
+    this.Width=width;
+    this.Height=height;
+
+    this.PtInRect=function(x,y)
+    {
+        var left=this.X, right=this.X+this.Width;
+        var top=this.Y, bottom=this.Y+this.Height;
+
+        if (x>=left && x<=right && y>=top && y<=bottom) return true;
+
+        return false;
+    }
+}
+
 function Rect(x, y, width, height) 
 {
     this.Left = x,
@@ -2250,6 +2268,8 @@ var JSCHART_EVENT_ID =
     ON_DRAW_REPORT_FIXEDROW_TEXT:58,        //报价列表固定行绘制
     ON_CLICK_REPORT_FIXEDROW:59,            //点击报价列表点击固定行
     ON_RCLICK_REPORT_FIXEDROW:60,           //点击报价列表右键点击固定行
+    
+    ON_CLICK_EXTENDCHART_BUTTON:72,  
 
     ON_FORMAT_CORSSCURSOR_Y_TEXT:75,    //格式化十字光标Y轴文字
     ON_FORMAT_INDEX_OUT_TEXT:76,           //格式化指标标题文字
@@ -2305,6 +2325,15 @@ var OVERLAY_STATUS_ID=
     STATUS_RECVDATA_ID:2,       //接收到数据
     STATUS_FINISHED_ID:3,       //数据下载完成
 };
+
+var JSCHART_BUTTON_ID=
+{
+    CHIP_DEFULT:8,
+    CHIP_LONG:9,
+    CHIP_RECENT:10,
+
+    CHIP_CLOSE:45,          //关闭筹码图
+}
 
 function PhoneDBClick()
 {
@@ -2391,6 +2420,7 @@ export
     CUSTOM_SECOND_PERIOD_START,
     CUSTOM_SECOND_PERIOD_END,
     Rect,
+    RectV2,
     DataPlus,
     g_DataPlus,
     Guid,
@@ -2398,6 +2428,7 @@ export
     ToFixedRect,
     JSCHART_EVENT_ID,
     JSCHART_DATA_FIELD_ID,
+    JSCHART_BUTTON_ID,
     PhoneDBClick,
     HQ_DATA_TYPE,
     OVERLAY_STATUS_ID,

@@ -377,6 +377,13 @@ function JSChartResource()
     {
         InfoColor:'rgb(0,0,0)', //文字颜色
         Font:'12px 微软雅黑',
+
+        PhoneCloseButton:
+        {
+            Color:"rgb(255,255,255)",
+            Size:15,
+            Border:{ BGColor:"rgb(169,169,169)" }
+        }
     }
 
     //深度图
@@ -677,6 +684,16 @@ function JSChartResource()
             var item=style.StockChip;
             if (item.Font) this.StockChip.Font=item.Font;
             if (item.InfoColor) this.StockChip.InfoColor=item.InfoColor;
+            if (item.PhoneCloseButton)
+            {
+                var subItem=item.PhoneCloseButton;
+                if (subItem.Color) this.StockChip.PhoneCloseButton.Color=subItem.Color;
+                if (IFrameSplitOperator.IsNumber(subItem.Size)) this.StockChip.PhoneCloseButton.Size=subItem.Size;
+                if (subItem.Border)
+                {
+                    if (subItem.Border.BGColor) this.StockChip.PhoneCloseButton.Border.BGColor=subItem.Border.BGColor;
+                }
+            }
         }
 
         if (style.DepthChart)

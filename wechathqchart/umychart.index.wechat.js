@@ -48,6 +48,7 @@ import {
     ChartMultiLine,
     ChartMultiPoint,
     ChartMultiBar,
+    ChartMultiSVGIconV2,
     ChartPie,
     ChartCircle,
     ChartChinaMap,
@@ -1191,6 +1192,22 @@ function ScriptIndex(name, script, args, option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateMultiSVGIcon=function(hqChart,windowIndex,varItem,i)
+    {
+        var chart=new ChartMultiSVGIconV2();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Family=varItem.Draw.DrawData.Family;
+        chart.AryIcon= varItem.Draw.DrawData.Icon;
+        chart.BuildCacheData();
+        this.SetChartIndexName(chart);
+        hqChart.ChartPaint.push(chart);
+    }
+
     this.CreateMulitHtmlDom=function(hqChart,windowIndex,varItem,i)
     {
         let chart=new ChartMultiHtmlDom();
@@ -1433,6 +1450,9 @@ function ScriptIndex(name, script, args, option)
                 //第3方指标定制
                 case 'MULTI_TEXT':
                     this.CreateMultiText(hqChart, windowIndex, item, i);
+                    break;
+                case 'MULTI_SVGICON':
+                    this.CreateMultiSVGIcon(hqChart,windowIndex,item,i);
                     break;
                 case "MULTI_HTMLDOM":
                     this.CreateMulitHtmlDom(hqChart,windowIndex,item,i);
@@ -1727,6 +1747,9 @@ function OverlayScriptIndex(name,script,args,option)
                         break;
                     case 'MULTI_TEXT':
                         this.CreateMultiText(hqChart,windowIndex,item,i);
+                        break;
+                    case 'MULTI_SVGICON':
+                        this.CreateMultiSVGIcon(hqChart,windowIndex,item,i);
                         break;
                     case 'MULTI_SVGICON':
                         this.CreateMultiSVGIcon(hqChart,windowIndex,item,i);
@@ -2514,6 +2537,25 @@ function OverlayScriptIndex(name,script,args,option)
         frame.ChartPaint.push(chart);
     }
 
+    this.CreateMultiSVGIcon=function(hqChart,windowIndex,varItem,i)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        var chart=new ChartMultiSVGIconV2();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+
+        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Family=varItem.Draw.DrawData.Family;
+        chart.AryIcon= varItem.Draw.DrawData.Icon;
+        chart.BuildCacheData();
+        this.SetChartIndexName(chart);
+        frame.ChartPaint.push(chart);
+    }
+
     this.CreateMulitHtmlDom=function(hqChart,windowIndex,varItem,i)
     {
         var overlayIndex=this.OverlayIndex;
@@ -2886,6 +2928,16 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
                     outVarItem.Draw = drawItem;
                     result.push(outVarItem);
                 }
+                else if (draw.DrawType=='MULTI_SVGICON')
+                {
+                    drawItem.Text=draw.Text;
+                    drawItem.Name=draw.Name;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData={ Icon:draw.DrawData.Icon, Family:draw.DrawData.Family };
+                    outVarItem.Draw=drawItem;
+
+                    result.push(outVarItem);
+                }
                 else if (draw.DrawType=="MULTI_HTMLDOM")    //外部自己创建dom
                 {
                     drawItem.Text=draw.Text;
@@ -3161,7 +3213,7 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
         var time=jsonData.time;
         var result=[];
         
-        for(var i in outVar)
+        for(var i=0; i<outVar.length; ++i)
         {
             var item=outVar[i];
             var outVarItem={Name:item.name,Type:item.type}
@@ -3270,10 +3322,8 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
                     drawItem.Text=draw.Text;
                     drawItem.Name=draw.Name;
                     drawItem.DrawType=draw.DrawType;
-                    drawItem.DrawData={ Icon:this.FittingMultiText(draw.DrawData.Icon,date,time,hqChart), Family:draw.DrawData.Family };
-                    this.GetKLineData(drawItem.DrawData.Icon, hqChart);
+                    drawItem.DrawData={ Icon:draw.DrawData.Icon, Family:draw.DrawData.Family };
                     outVarItem.Draw=drawItem;
-
                     result.push(outVarItem);
                 }
                 else if (draw.DrawType=="MULTI_HTMLDOM")    //外部自己创建dom

@@ -31,6 +31,7 @@ import {
     DataPlus,g_DataPlus,
     JSCHART_EVENT_ID,
     JSCHART_DATA_FIELD_ID,
+    JSCHART_BUTTON_ID,
     PhoneDBClick,
     OVERLAY_STATUS_ID,
 } from "./umychart.data.wechat.js";
@@ -1675,6 +1676,35 @@ function JSChartContainer(uielement)
         }
     }
 
+    this.TryPhoneClickButton=function(x,y,e)
+    {
+        if (this.TryClickLock || this.TryClickIndexTitle) 
+        {
+            if (this.TryClickLock && this.TryClickLock(x, y)) return true;
+            if (this.TryClickIndexTitle && this.TryClickIndexTitle(x, y)) return true;
+        }
+
+        var button=this.PtInExtendChartButtons(x,y);
+        if (button && this.ClickExtendChartButton)
+        {
+            this.ClickExtendChartButton(button, e);
+            return true;
+        }
+
+        return false;
+    }
+
+    this.ClickExtendChartButton=function(button, e)
+    {
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_EXTENDCHART_BUTTON);
+        if (event && event.Callback)
+        {
+            var data={ Info:button, PreventDefault:false  };    //PreventDefault 是否阻止内置的点击处理
+            event.Callback(event,data,this);
+            if (data.PreventDefault) return;
+        }
+    }
+
     //手机拖拽
     this.ontouchstart = function (e) 
     {
@@ -1690,6 +1720,7 @@ function JSChartContainer(uielement)
 
         if (this.IsPhoneDragging(e)) 
         {
+            /* 统一到TryPhoneClickButton里面了
             if (jsChart.TryClickLock || this.TryClickIndexTitle) 
             {
                 var touches = this.GetToucheData(e, jsChart.IsForceLandscape);
@@ -1698,6 +1729,12 @@ function JSChartContainer(uielement)
                 if (jsChart.TryClickLock && jsChart.TryClickLock(x, y)) return;
                 if (jsChart.TryClickIndexTitle && jsChart.TryClickIndexTitle(x, y)) return;
             }
+            */
+
+            var touches = this.GetToucheData(e, jsChart.IsForceLandscape);
+            var pt={ X:touches[0].clientX, Y:touches[0].clientY };
+            if (this.TryPhoneClickButton(pt.X,pt.Y,e)) return;
+
 
             //长按2秒,十字光标
             if (this.TouchTimer != null) clearTimeout(this.TouchTimer);
@@ -2084,6 +2121,25 @@ function JSChartContainer(uielement)
         }
 
         return false;
+    }
+
+    this.PtInExtendChartButtons=function(x,y)
+    {
+        for(var i=0;i<this.ExtendChartPaint.length; ++i)
+        {
+            var item=this.ExtendChartPaint[i];
+            if (item.PtInButtons)
+            {
+                var button=item.PtInButtons(x,y);
+                if (button)
+                {
+                    button.Chart=item;
+                    return button;
+                }
+            }
+        }
+
+        return null;
     }
 
     this.ZoomIndexWindow=function(frameID, option)   //最大化/最小化指标窗口 
@@ -3840,6 +3896,16 @@ function JSChartContainer(uielement)
     }
 
     //删除扩展画法
+    this.DeleteExtendChart=function(data)
+    {
+        if (data.Index>=this.ExtendChartPaint.length) return;
+        if (this.ExtendChartPaint[data.Index]!=data.Chart) return;
+
+        if (typeof(data.Chart.Clear)=='function') data.Chart.Clear();
+        this.ExtendChartPaint.splice(data.Index,1);
+    }
+
+    //删除扩展画法
     this.DeleteExtendChartByID=function(id)
     {
         for(var i=0;i<this.ExtendChartPaint.length;++i)
@@ -3958,6 +4024,8 @@ function JSChartContainer(uielement)
             item.Status=OVERLAY_STATUS_ID.STATUS_NONE_ID;
         }
     }
+
+    this.GetKData=function() { return null; }
 }
 
 function ToFixed(number, precision) 
@@ -7393,7 +7461,7 @@ function KLineChartContainer(uielement)
     {
         if (className) return this.GetExtendChartByClassName(className);
 
-        chart=this.GetExtendChartByClassName("StockChipPhone");
+        var chart=this.GetExtendChartByClassName("StockChipPhone");
         return chart;
     }
 
@@ -9003,6 +9071,46 @@ function KLineChartContainer(uielement)
         this.Draw();
     }
 
+    this.GetKData=function()
+    {
+        if (!this.ChartPaint[0]) return null;
+        var data=this.ChartPaint[0].Data;
+        if (!data) return null;
+
+        return data;
+    }
+
+    this.ClickExtendChartButton=function(button, e)
+    {
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_EXTENDCHART_BUTTON);
+        if (event && event.Callback)
+        {
+            var data={ Info:button, PreventDefault:false, e:e  };    //PreventDefault 是否阻止内置的点击处理
+            event.Callback(event,data,this);
+            if (data.PreventDefault) return;
+        }
+
+        //筹码按钮
+        if (button.ID==JSCHART_BUTTON_ID.CHIP_DEFULT)
+        {
+            button.Chart.ShowType=0;
+            this.Draw();
+        }
+        else if (button.ID==JSCHART_BUTTON_ID.CHIP_LONG)
+        {
+            button.Chart.ShowType=1;
+            this.Draw();
+        }
+        else if (button.ID==JSCHART_BUTTON_ID.CHIP_RECENT)
+        {
+            button.Chart.ShowType=2;
+            this.Draw();
+        }
+        else if (button.ID==JSCHART_BUTTON_ID.CHIP_CLOSE)
+        {
+            if (this.DeleteStockChipChart) this.DeleteStockChipChart();
+        }
+    }
 }
 
 //API 返回数据 转化为array[]
@@ -11408,6 +11516,15 @@ function MinuteChartContainer(uielement)
         JSConsole.Chart.Log("[MinuteChartContainer::CreateChartDrawPicture] ", name,this.CurrentChartDrawPicture);
         return true;
     }
+
+    this.GetKData=function()
+    {
+        if (!this.SourceData) return null;
+        var data=this.SourceData;
+        if (!data) return null;
+
+        return data;
+    }
 }
 
 //API 返回数据 转化为array[]
@@ -11741,15 +11858,10 @@ function KLineChartHScreenContainer(uielement)
 
         if (this.IsPhoneDragging(e)) 
         {
-            if (jsChart.TryClickLock || this.TryClickIndexTitle) 
-            {
-                var touches = this.GetToucheData(e);
-                var x = touches[0].clientX;
-                var y = touches[0].clientY;
-                if (jsChart.TryClickLock && jsChart.TryClickLock(x, y)) return;
-                if (jsChart.TryClickIndexTitle && jsChart.TryClickIndexTitle(x, y)) return;
-            }
-
+            var touches = this.GetToucheData(e);
+            var pt={ X:touches[0].clientX, Y:touches[0].clientY};
+            if (this.TryPhoneClickButton(pt.X, pt.Y, e)) return;
+           
             //长按2秒,十字光标
             if (this.TouchTimer != null) clearTimeout(this.TouchTimer);
             var bStartTimer=true;
