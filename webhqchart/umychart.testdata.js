@@ -1246,7 +1246,7 @@ HQData.Report_RequestStockData=function(data, callback)
                 newItem[33]=kData;
 
 
-                newItem[101]=105.0;
+                newItem[101]=HQData.GetRandomTestData(-90,1000);
                 newItem[201]=`A-[${HQData.GetRandomTestData(-90,90)}]-B`;
 
 
@@ -1852,6 +1852,8 @@ HQData.Report_APIIndex=function(data, callback)
         HQData.APIIndex_DRAWBAND(data, callback);
     else if (request.Data.indexname=="API-MULTI_LINE")
         HQData.APIIndex_MULTI_LINE(data, callback);
+    else if (request.Data.indexname=="API-MULTI_SVGICON")
+        HQData.APIIndex_MULTI_SVGICON(data, callback);
 }
 
 
@@ -2098,6 +2100,142 @@ HQData.APIIndex_MULTI_LINE=function(data, callback)
     };
     
     console.log('[HQData.APIIndex_MULTI_LINE] apiData ', apiData);
+    callback(apiData);
+}
+
+
+HQData.APIIndex_MULTI_SVGICON=function(data, callback)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var kData=hqchart.GetKData();
+
+    var iconData= 
+    { 
+        name:'MULTI_SVGICON', type:1, 
+        Draw: 
+        { 
+            DrawType:'MULTI_SVGICON', 
+            DrawData: 
+            {
+                Family:'iconfont', 
+                Icon:
+                [
+                    //{ Date:20190916, Value:"High", Symbol:'\ue611', Color:'rgb(240,0,0)', Baseline:2 , YMove:-5},  //0 居中 1 上 2 下
+                    //{ Date:20190919, Value:15.3, Symbol:'\ue615', Color:'rgb(240,240,0)', Baseline:2 },
+                    //{ Date:20190909, Value:15.4, Symbol:'\ue615', Color:'rgb(240,100,30)'}
+                ] 
+            }
+        } //绘制图标数组
+    };
+
+    var TEST_ICON_SYMBOL=['\ue678', '\ue66e', "\ue66b"];
+    var TEST_ICON_COLOR=["'rgb(240,0,0)", "rgb(240,100,30)", "rgb(138,43, 226)", "rgb(151,255,255)", "rgb(255, 20, 147)"];
+
+    for(var i=kData.Data.length-20, j=0;i<kData.Data.length;++i)
+    {
+        var item=kData.Data[i];
+
+        if (i%3!=1) continue;
+
+        var iconIndex=Math.ceil(Math.random()*10) % TEST_ICON_SYMBOL.length;
+        var colorIndex=Math.ceil(Math.random()*10) % TEST_ICON_COLOR.length;
+
+        if (j==2)
+        {
+            var iconItem=
+            {
+                Date:item.Date, Time:item.Time, 
+                Value:item.High,
+                Symbol:TEST_ICON_SYMBOL[iconIndex], 
+                Color:TEST_ICON_COLOR[colorIndex], 
+                Baseline:2,
+                YMove:-35,
+                Line:{ Color:"rgb(153,50,204)", KData:"H", Width:1, Offset:[3,10], Dash:[5,5] },
+            };
+
+            var iconItem2=
+            {
+                Date:item.Date, Time:item.Time, 
+                Value:item.Low,
+                Symbol:TEST_ICON_SYMBOL[iconIndex], 
+                Color:TEST_ICON_COLOR[colorIndex], 
+                Baseline:2,
+                YMove:50,
+            };
+
+            iconData.Draw.DrawData.Icon.push(iconItem2);
+        }
+        else if (j==3)
+        {
+            var iconItem=
+            {
+                Date:item.Date, Time:item.Time, 
+                Value:"L",
+                Symbol:TEST_ICON_SYMBOL[iconIndex], 
+                Color:TEST_ICON_COLOR[colorIndex], 
+                Baseline:1,
+                YMove:5,
+            };
+        }
+        else if (j==4)
+        {
+            var iconItem=
+            {
+                Date:item.Date, Time:item.Time, 
+                Value:item.Low*0.95,
+                Symbol:TEST_ICON_SYMBOL[iconIndex], 
+                Color:TEST_ICON_COLOR[colorIndex], 
+                Baseline:1,
+                YMove:5,
+                Line:{ Color:"rgb(153,50,204)", KData:"L", Width:1, Offset:[3,10], Dash:[5,5] },
+                Text:"提示信息:<br>这个是提示信息"
+            };
+        }
+        else
+        {
+            var iconItem=
+            {
+                Date:item.Date, Time:item.Time, 
+                Value:item.High,
+                Symbol:TEST_ICON_SYMBOL[iconIndex], 
+                Color:TEST_ICON_COLOR[colorIndex], 
+                Baseline:2,
+                YMove:-20,
+                Text:
+                { 
+                    AryText:
+                    [
+                        { Title:"日期:", Text:`${item.Date}`, Color:"rgb(230,230,230)", Align:"Left"},
+                        { Title:"提示:", Text:"提示信息xxxxx", Color:"rgb(250,0,0)",Align:"Left"}
+                    ] 
+                },
+
+                //Line:{ Color:"rgb(153,50,204)", KData:"H", Width:1, Offset:[3,10], Dash:[5,5] },
+            };
+
+
+            /*
+            if (j%5==1)
+                iconItem.Image={ Data:image1, Width:32, Height:32 };
+            else if (j%5==3)
+                iconItem.Image={ Data:image2, Width:32, Height:32 };
+            */
+        }
+
+        iconData.Draw.DrawData.Icon.push(iconItem);
+        ++j;
+    }
+
+    var apiData=
+    {
+        code:0, 
+        stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+        outdata: { date:kData.GetDate() , outvar:[iconData] } 
+    };
+
+    
+    console.log('[HQData.APIIndex_MULTI_SVGICON] apiData ', apiData);
     callback(apiData);
 }
 

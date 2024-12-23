@@ -70633,9 +70633,9 @@ function JSChartResource()
         SortIcon:
         {
             Size:12, Family:"iconfont",
-            Arrow:[null, "\ue6b2", "\ue6b1"],           //[0]=默认排序的图标背景色
-            Color:[null, "rgb(255,0,0)", "rgb(255,0,0)"],
-            Margin:{ Left:0, Bottom:6 }
+            Arrow:["\ue704", "\ue81b", "\uf0c9"],           //[0]=默认排序的图标背景色
+            Color:['rgb(169,169,169)', "rgb(51,51,51)", "rgb(51,51,51)"],
+            Margin:{ Left:1*GetDevicePixelRatio(), Bottom:2, Right:0,}
         },
 
         Item:
@@ -71894,6 +71894,23 @@ function JSChartResource()
                 var font=header.Font;
                 if (font.Name) this.Report.Header.Font.Name=font.Name;
                 if (IFrameSplitOperator.IsNumber(font.Size)) this.Report.Header.Font.Size=font.Size;
+            }
+        }
+
+        if (item.SortIcon)
+        {
+            var sort=item.SortIcon;
+            if (IFrameSplitOperator.IsNonEmptyArray(sort.Color)) this.Report.SortIcon.Color=sort.Color.slice();
+            if (IFrameSplitOperator.IsNumber(sort.Size)) this.Report.SortIcon.Size=sort.Size;
+            if (sort.Family) this.Report.SortIcon.Family=sort.Family;
+            if (IFrameSplitOperator.IsNonEmptyArray(sort.Arrow)) this.Report.SortIcon.Arrow=sort.Arrow.slice();
+            if (sort.Margin)
+            {
+                var margin=sort.Margin;
+                if (IFrameSplitOperator.IsNumber(margin.Left)) this.Report.SortIcon.Margin.Left=margin.Left;
+                if (IFrameSplitOperator.IsNumber(margin.Right)) this.Report.SortIcon.Margin.Right=margin.Right;
+                if (IFrameSplitOperator.IsNumber(margin.Top)) this.Report.SortIcon.Margin.Top=margin.Top;
+                if (IFrameSplitOperator.IsNumber(margin.Bottom)) this.Report.SortIcon.Margin.Bottom=margin.Bottom;
             }
         }
 

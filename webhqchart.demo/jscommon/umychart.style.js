@@ -630,6 +630,12 @@ function GetBlackStyle()
                 //Mergin:{ Left:5, Right:5, Top:4, Bottom:2 },
                 Font:{ Size:12, Name:"微软雅黑" }
             },
+
+             //排序图标
+            SortIcon:
+            {
+                Color:['rgb(105,105,105)', "rgb(255,255,255)", "rgb(255,255,255)"],
+            },
     
             Item:
             {

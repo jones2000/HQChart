@@ -1178,10 +1178,25 @@ function JSFloatTooltip()
             {
                 this.UpdateChartDrawSVGV2Tooltip(data);
             }
+           
         }
         else if (data.DataType==2)  //更新实时行情数据
         {
             this.UpdateRealtimeHQTooltip(data);
+        }
+        else if (data.DataType==3)  //报价列表
+        {
+            var tooltipData=data.Tooltip;
+            if (!tooltipData) return;
+
+            if (tooltipData.Type==2)  //报价列表表头图标提示信息
+            {
+                this.ReportHeaderIconTooltip(data);
+            }
+            else if (tooltipData.Type==1)   //单元格截断内容
+            {
+                this.ReportCellTruncateTooltip(data);
+            }
         }
     }
 
@@ -1418,6 +1433,34 @@ function JSFloatTooltip()
         }
 
         this.AryText=aryText;
+        this.UpdateTableDOM();
+
+        this.ShowTooltip(data);
+    }
+
+    //表头图标
+    this.ReportHeaderIconTooltip=function(data)
+    {
+        var tooltipData=data.Tooltip;
+        if (!tooltipData.Data || !IFrameSplitOperator.IsNonEmptyArray(tooltipData.Data.AryText)) return;
+        
+        this.AryText=tooltipData.Data.AryText;
+        this.UpdateTableDOM();
+
+        this.ShowTooltip(data);
+    }
+
+    //表格单元格截断内容
+    this.ReportCellTruncateTooltip=function(data)
+    {
+        var tooltipData=data.Tooltip;
+        if (!tooltipData.Data || !IFrameSplitOperator.IsNonEmptyArray(tooltipData.Data.AryText)) return;
+        
+        var item=tooltipData.Data.AryText[0];
+        if (!item.Text) return;
+        
+        this.AryText=[ { Title:item.Text, IsMergeCell:true } ];
+
         this.UpdateTableDOM();
 
         this.ShowTooltip(data);
