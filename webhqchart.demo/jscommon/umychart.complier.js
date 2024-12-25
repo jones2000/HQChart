@@ -11487,6 +11487,45 @@ function JSDraw(errorHandler,symbolData)
 
         return result;
     }
+
+    //表格
+    this.TABLE_CELL=function(text, color, textAlign)
+    {
+        var cellItem={ Text:text };
+        if (color) cellItem.Color=color;
+        if (IFrameSplitOperator.IsString(textAlign))
+        {
+            var strValue=textAlign.toLowerCase();   //转小写
+            cellItem.TextAlign=strValue;
+        }
+
+        return cellItem;
+    }
+
+    this.TABLE_ROW=function(aryData)
+    {
+        var aryCell=[];
+        for(var i=0;i<aryData.length;++i)
+        {
+            var item=aryData[i];
+            aryCell.push(item)
+        }
+
+        return aryCell;
+    }
+
+    this.DRAWTABLE=function(aryData)
+    {
+        var tableData=[]
+        for(var i=0;i<aryData.length;++i)
+        {
+            var item=aryData[i];
+            tableData.push({ AryCell:item });
+        }
+
+
+        return result={ DrawData:{ TableData:tableData }, DrawType:'DRAW_SIMPLE_TABLE' };
+    }
 }
 
 
@@ -11541,7 +11580,7 @@ JSDraw.prototype.IsDrawFunction=function(name)
         'DRAWOVERLAYLINE',"FILLRGN", "FILLRGN2","FILLTOPRGN", "FILLBOTTOMRGN", "FILLVERTICALRGN","FLOATRGN","DRAWSL", "DRAWGBK2","DRAWGBK_DIV",
         "VERTLINE","HORLINE","TIPICON",
         "BUY","SELL","SELLSHORT","BUYSHORT",
-        "DRAWLASTBARICON","DRAWLASTBARNUMBER", "DRAWLASTBARTEXT",
+        "DRAWLASTBARICON","DRAWLASTBARNUMBER", "DRAWLASTBARTEXT","DRAWTABLE",
     ]);
     if (setFunctionName.has(name)) return true;
 
@@ -18411,6 +18450,18 @@ function JSExecute(ast,option)
                 node.Out=node.Draw.DrawData.Data;
                 break;
 
+            //表格函数
+            case "TABLE_CELL":
+                node.Out=this.Draw.TABLE_CELL(args[0],args[1],args[2]);
+                break;
+            case "TABLE_ROW":
+                node.Out=this.Draw.TABLE_ROW(args);
+                break;
+            case "DRAWTABLE":
+                node.Draw=this.Draw.DRAWTABLE(args);
+                node.Out=[];
+                break;
+
             default:
                 node.Out=this.Algorithm.CallFunction(funcName, args, node, this.SymbolData);
                 break;
@@ -21376,6 +21427,29 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateSimpleTable=function(hqChart,windowIndex,varItem,id)
+    {
+        var chart=new ChartSimpleTable();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        if (varItem.Draw && varItem.Draw.DrawData)
+        {
+            var drawData=varItem.Draw.DrawData;
+            if (drawData.TableData) chart.Data.Data=drawData.TableData;
+            if (drawData.BGColor) chart.BGColor=drawData.BGColor;
+            if (drawData.BorderColor) chart.BorderColor=drawData.BorderColor;
+            if (drawData.TextFont) chart.TextFontConfig=drawData.TextFont;
+            if (drawData.TextColor) chart.TextColor=drawData.TextColor;
+            if (IFrameSplitOperator.IsNumber(drawData.XOffset)) chart.Offset.X=drawData.XOffset;
+            if (IFrameSplitOperator.IsNumber(drawData.YOffset)) chart.Offset.Y=drawData.YOffset;
+        }
+
+        hqChart.ChartPaint.push(chart);
+    }
+
     this.CreateTradeIcon=function(hqChart,windowIndex,varItem,id)
     {
         var chart=new ChartTradeIcon();
@@ -22241,6 +22315,9 @@ function ScriptIndex(name,script,args,option)
                     case "MULTI_POINT_LINE":
                         this.CreateLineMultiData(hqChart,windowIndex,item,i);
                         break;
+                    case "DRAW_SIMPLE_TABLE":
+                        this.CreateSimpleTable(hqChart,windowIndex,item,i);
+                        break;
                     case "BUY":
                     case "SELL":
                     case "SELLSHORT":
@@ -22586,6 +22663,10 @@ function OverlayScriptIndex(name,script,args,option)
                         break;
                     case "MULTI_HTMLDOM":
                         this.CreateMulitHtmlDom(hqChart,windowIndex,item,i);
+                        break;
+
+                    case "DRAW_SIMPLE_TABLE":
+                        this.CreateSimpleTable(hqChart,windowIndex,item,i);
                         break;
 
                     case "KLINE_BG":
@@ -23594,6 +23675,33 @@ function OverlayScriptIndex(name,script,args,option)
         chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
         chart.Texts=varItem.Draw.DrawData;
         chart.DrawCallback= varItem.Draw.Callback;
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateSimpleTable=function(hqChart,windowIndex,varItem,i)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        var chart=new ChartSimpleTable();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+        chart.HQChart=hqChart;
+
+        if (varItem.Draw && varItem.Draw.DrawData)
+        {
+            var drawData=varItem.Draw.DrawData;
+            if (drawData.TableData) chart.Data.Data=drawData.TableData;
+            if (drawData.BGColor) chart.BGColor=drawData.BGColor;
+            if (drawData.BorderColor) chart.BorderColor=drawData.BorderColor;
+            if (drawData.TextFont) chart.TextFontConfig=drawData.TextFont;
+            if (drawData.TextColor) chart.TextColor=drawData.TextColor;
+            if (IFrameSplitOperator.IsNumber(drawData.XOffset)) chart.Offset.X=drawData.XOffset;
+            if (IFrameSplitOperator.IsNumber(drawData.YOffset)) chart.Offset.Y=drawData.YOffset;
+        }
+            
         frame.ChartPaint.push(chart);
     }
 
@@ -24773,6 +24881,30 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     outVarItem.Draw=drawItem;
                     if (draw.Font) outVarItem.Font=draw.Font;
                     
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType=="DRAWTEXT_LINE")
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=draw.DrawData;    //{ Price:,  Text:{ Title:text, Color:textcolor }, Line:{ Type:linetype, Color:linecolor } };
+
+                    outVarItem.Draw=drawItem;
+                    if (draw.Font) outVarItem.Font=draw.Font;
+                    
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType=="DRAW_SIMPLE_TABLE")
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=draw.DrawData;    //{ TableData:[ [ {AryCell:[{Text:, Color: }]}, ], ], BGColor:， TextFont:{ Size:, Name: } };
+ 
+                    outVarItem.Draw=drawItem;
                     result.push(outVarItem);
                 }
                 else

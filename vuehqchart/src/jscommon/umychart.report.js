@@ -4383,6 +4383,8 @@ var REPORT_COLUMN_ID=
     CUSTOM_PROGRESS_ID:106,         //进度条
     CUSTOM_LINK_ID:107,              //链接
 
+    MULTI_LINE_CONTAINER:108,            //多行组合输出
+
 
     //预留数值类型 10个
     RESERVE_NUMBER1_ID:201,         //ReserveNumber1:
@@ -4944,6 +4946,10 @@ function ChartReport()
         {
             if (IFrameSplitOperator.IsNumber(item.FormatType)) colItem.FormatType=item.FormatType;
         }
+        else if (item.Type==REPORT_COLUMN_ID.MULTI_LINE_CONTAINER)
+        {
+            if (IFrameSplitOperator.IsNonEmptyArray(item.AryField)) colItem.AryField=item.AryField.slice();
+        }
 
         return colItem;
     }
@@ -5095,6 +5101,12 @@ function ChartReport()
             { Type:REPORT_COLUMN_ID.RISING_SPEED_5M_ID, Title:"5分涨速%", TextAlign:"right", Width:null, MaxText:"-888.88" },
             { Type:REPORT_COLUMN_ID.RISING_SPEED_10M_ID, Title:"10分涨速%", TextAlign:"right", Width:null, MaxText:"-888.88" },
             { Type:REPORT_COLUMN_ID.RISING_SPEED_15M_ID, Title:"15分涨速%", TextAlign:"right", Width:null, MaxText:"-888.88" },
+
+            //组合多行字段
+            { 
+                Type:REPORT_COLUMN_ID.MULTI_LINE_CONTAINER, Title:"涨幅",TextAlign:"right", MaxText:"1000.00%",
+                AryField:[ { Type:REPORT_COLUMN_ID.PRICE_ID},{ Type:REPORT_COLUMN_ID.INCREASE_ID, DynamicFormat:"{Value}%"} ] 
+            },
 
             { Type:REPORT_COLUMN_ID.RESERVE_NUMBER1_ID, Title:"数值1", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"9999.99", FloatPrecision:2 },
             { Type:REPORT_COLUMN_ID.RESERVE_NUMBER2_ID, Title:"数值2", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"9999.99", FloatPrecision:2 },
@@ -5304,6 +5316,17 @@ function ChartReport()
 
                 var rowHeight=nameHeight+symboHeight+this.ItemMergin.Top+ this.ItemMergin.Bottom;
                 this.ItemTextLines=2;
+                if (rowHeight>this.RowHeight) this.RowHeight=rowHeight;
+                if (rowHeight>this.FixedRowHeight) this.FixedRowHeight=rowHeight;
+            }
+            else if (item.Type==REPORT_COLUMN_ID.MULTI_LINE_CONTAINER)
+            {
+                if (IFrameSplitOperator.IsNumber(item.FixedWidth)) itemWidth=item.FixedWidth;
+                else itemWidth=this.Canvas.measureText(item.MaxText).width;
+
+                item.Width=itemWidth+4+this.ItemMergin.Left+this.ItemMergin.Right;
+                this.ItemTextLines=item.AryField.length;
+                var rowHeight=(this.ItemFontHeight*item.AryField.length)+this.ItemMergin.Top+ this.ItemMergin.Bottom;
                 if (rowHeight>this.RowHeight) this.RowHeight=rowHeight;
                 if (rowHeight>this.FixedRowHeight) this.FixedRowHeight=rowHeight;
             }
@@ -5900,6 +5923,87 @@ function ChartReport()
         }
     }
 
+    this.BuildSubCellTextData=function(subItem, column, stock, drawInfo, data, option)
+    {
+        switch(subItem.Type)
+        {
+            case REPORT_COLUMN_ID.NAME_ID:
+                if (stock && stock.Name) drawInfo.Text=stock.Name;
+                else drawInfo.Text=data.Name;
+                break;
+            case REPORT_COLUMN_ID.SYMBOL_ID:
+                if (stock && stock.Symbol) drawInfo.Text=stock.Symbol;
+                else drawInfo.Text=data.Symbol;
+                break;
+
+            case REPORT_COLUMN_ID.PRICE_ID:
+            case REPORT_COLUMN_ID.OPEN_ID:
+            case REPORT_COLUMN_ID.HIGH_ID:
+            case REPORT_COLUMN_ID.LOW_ID:
+            case REPORT_COLUMN_ID.YCLOSE_ID:
+            case REPORT_COLUMN_ID.BUY_PRICE_ID:
+            case REPORT_COLUMN_ID.SELL_PRICE_ID:
+            case REPORT_COLUMN_ID.AVERAGE_PRICE_ID:
+            case REPORT_COLUMN_ID.FUTURES_CLOSE_ID:
+            case REPORT_COLUMN_ID.FUTURES_YCLOSE_ID:
+                var fieldName=MAP_COLUMN_FIELD.get(subItem.Type);
+                if (stock && IFrameSplitOperator.IsNumber(stock[fieldName])) this.GetPriceDrawInfo(stock[fieldName], stock, data, drawInfo, option);
+                break;
+
+            case REPORT_COLUMN_ID.INCREASE_ID:
+            case REPORT_COLUMN_ID.AMPLITUDE_ID:
+            case REPORT_COLUMN_ID.UPDOWN_ID:
+            case REPORT_COLUMN_ID.RISING_SPEED_1M_ID:
+            case REPORT_COLUMN_ID.RISING_SPEED_3M_ID:
+            case REPORT_COLUMN_ID.RISING_SPEED_5M_ID:
+            case REPORT_COLUMN_ID.RISING_SPEED_10M_ID:
+            case REPORT_COLUMN_ID.RISING_SPEED_15M_ID:
+                var fieldName=MAP_COLUMN_FIELD.get(subItem.Type);
+                if (stock && IFrameSplitOperator.IsNumber(stock[fieldName]))
+                {
+                    var value=stock[fieldName];
+                    var text=value.toFixed(2);
+                    if (subItem.DynamicFormat)
+                        text=subItem.DynamicFormat.replace('{Value}',text);
+                    
+                    drawInfo.Text=text
+                    drawInfo.TextColor=this.GetUpDownColor(value,0);
+                }
+                break;
+        }
+    }
+
+    this.DrawSubCellText=function(drawInfo, column, rtText)
+    {
+        if (!drawInfo.Text) return;
+
+        var text=drawInfo.Text;
+        var x=rtText.Left;
+        if (drawInfo.TextAlign=='center')
+        {
+            x=rtText.Left+rtText.Width/2;
+            this.Canvas.textAlign="center";
+        }
+        else if (drawInfo.TextAlign=='right')
+        {
+            x=rtText.Left+rtText.Width-2;
+            this.Canvas.textAlign="right";
+        }
+        else
+        {
+            x+=2;
+            this.Canvas.textAlign="left";
+        }
+
+        var bClip=false;
+
+        this.Canvas.textBaseline="bottom";
+        this.Canvas.fillStyle=drawInfo.TextColor;
+        this.Canvas.fillText(text,x,rtText.Bottom);
+
+        if (bClip) this.Canvas.restore();
+    }
+
     this.DrawItem=function(index, data, column, left, top, rowType, columnIndex)
     {
         var itemWidth=column.Width;
@@ -6225,6 +6329,26 @@ function ChartReport()
         {
             this.FormatReserveButton(column, stock, drawInfo);
         }
+        else if (column.Type==REPORT_COLUMN_ID.MULTI_LINE_CONTAINER)
+        {
+            if (IFrameSplitOperator.IsNonEmptyArray(column.AryField))
+            {
+                var yBottom=rtItem.Bottom-this.ItemMergin.Bottom-(column.AryField.length-1)*this.ItemFontHeight;
+                var rtText={ Left:left+this.ItemMergin.Left, Width:textWidth, Height:this.ItemFontHeight, Bottom:yBottom };
+                rtText.Right=rtText.Left+rtText.Width;
+                rtText.Top=rtText.Bottom-rtText.Height;
+                for(var k=0;k<column.AryField.length;++k)
+                {
+                    drawInfo.Text=null;
+                    var subItem=column.AryField[k];
+                    this.BuildSubCellTextData(subItem, column, stock, drawInfo, data);
+                    this.DrawSubCellText(drawInfo, column, rtText);
+
+                    rtText.Bottom+=this.ItemFontHeight;
+                    rtText.Top+=this.ItemFontHeight;
+                }
+            }
+        }
         
 
         //拖拽行颜色
@@ -6254,6 +6378,10 @@ function ChartReport()
         else if (column.Type==REPORT_COLUMN_ID.CUSTOM_LINK_ID)
         {
             this.DrawLinkText(drawInfo, x, top, textWidth);
+        }
+        else if (column.Type==REPORT_COLUMN_ID.MULTI_LINE_CONTAINER)
+        {
+
         }
         else
         {

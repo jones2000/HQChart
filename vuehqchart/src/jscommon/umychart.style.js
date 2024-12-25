@@ -534,6 +534,13 @@ function GetBlackStyle()
             }
         },
 
+        ChartSimpleTable:
+        {
+            TextColor:"rgb(250,250,250)",
+            BGColor:"rgba(0,0,0,0.85)",
+            BorderColor:"rgb(90,90,90)",
+        },
+
         ChartDrawVolProfile:
         {
             BGColor:"rgba(244,250,254,0.3)",

@@ -1854,6 +1854,8 @@ HQData.Report_APIIndex=function(data, callback)
         HQData.APIIndex_MULTI_LINE(data, callback);
     else if (request.Data.indexname=="API-MULTI_SVGICON")
         HQData.APIIndex_MULTI_SVGICON(data, callback);
+    else if (request.Data.indexname=="API-DRAWTEXT_LINE")
+        HQData.APIIndex_DRAWTEXT_LINE(data, callback);
 }
 
 
@@ -2236,6 +2238,43 @@ HQData.APIIndex_MULTI_SVGICON=function(data, callback)
 
     
     console.log('[HQData.APIIndex_MULTI_SVGICON] apiData ', apiData);
+    callback(apiData);
+}
+
+
+HQData.APIIndex_DRAWTEXT_LINE=function(data, callback)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var kData=hqchart.GetKData();
+
+    var lastItem=kData.Data[kData.Data.length-1];
+    var price=(lastItem.High+lastItem.Low)/2;
+
+    var lineData= 
+    { 
+        name:'DRAWTEXT_LINE', type:1, 
+        Draw: 
+        { 
+            DrawType:'DRAWTEXT_LINE', 
+            DrawData: 
+            {
+                Price:price,
+                Text:{ Title:`价格:${price.toFixed(2)}`, Color:"rgb(255, 165, 0)" }, 
+                Line:{ Type:1, Color:"rgb(200,200,0)" },    //Type 0=不画 1=直线 2=虚线
+            }
+        } 
+    };
+
+    var apiData=
+    {
+        code:0, 
+        stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+        outdata: { date:kData.GetDate() , outvar:[lineData] } 
+    };
+
+    
+    console.log('[HQData.APIIndex_DRAWTEXT_LINE] apiData ', apiData);
     callback(apiData);
 }
 
