@@ -11489,10 +11489,24 @@ function JSDraw(errorHandler,symbolData)
     }
 
     //表格
-    this.TABLE_CELL=function(text, color, textAlign)
+    this.TABLE_CELL=function(data, color, textAlign, bgColor)
     {
+        var text=null;
+        if (IFrameSplitOperator.IsString(data)) 
+        {
+            text=data;
+        }
+        else if (IFrameSplitOperator.IsNonEmptyArray(data))
+        {
+            var precision=2;
+            var lastValue=data[data.length-1];
+            if (IFrameSplitOperator.IsNumber(lastValue)) text=lastValue.toFixed(precision);
+            else if (IFrameSplitOperator.IsString(lastValue)) text=lastValue;
+        }
+
         var cellItem={ Text:text };
         if (color) cellItem.Color=color;
+        if (bgColor) cellItem.BGColor=bgColor;
         if (IFrameSplitOperator.IsString(textAlign))
         {
             var strValue=textAlign.toLowerCase();   //转小写
@@ -18452,7 +18466,7 @@ function JSExecute(ast,option)
 
             //表格函数
             case "TABLE_CELL":
-                node.Out=this.Draw.TABLE_CELL(args[0],args[1],args[2]);
+                node.Out=this.Draw.TABLE_CELL(args[0],args[1],args[2],args[3]);
                 break;
             case "TABLE_ROW":
                 node.Out=this.Draw.TABLE_ROW(args);

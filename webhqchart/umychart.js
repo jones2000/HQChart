@@ -3053,12 +3053,17 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         IsDisplayLatest:false, 
         SelectedBorder:{ Mode:0, SelFrame:0 },          //边框选中模式  Mode:0=禁用 1=右侧标记选中 2=指标窗口标记选中
         SelectedXBorder: { Mode:0, Date:null },         //X边框选中模式 Mode:0=禁用 分时图图有效
-         //XDateFormat (多日分时图x轴底部日期格式)
+        //XDateFormat (多日分时图x轴底部日期格式)
+
+        //右侧框架外部坐标和间距
         RightHorizontal:
         { 
             //Show:true, 
             //Width:5 
-        }          //右侧框架外部坐标和间距
+        },          
+
+        //锁十字光标
+        LockCorssCursor:{ X:{ Enable:false } }
     };  
 
     this.VerticalDrag;              //通过X轴左右拖动数据(手势才有)
@@ -4464,7 +4469,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     this.UIOnMounseOut=function(e)
     {
         JSConsole.Chart.Log('[KLineChartContainer::UIOnMounseOut]',e);
-        this.UIOnMouseMove(e);
+        if (!this.IsLockCorssCursor()) this.UIOnMouseMove(e);   //锁十字光标时， 始终显示十字光标
     }
 
     this.UIOnMouseleave=function(e)
@@ -5685,15 +5690,16 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         
         var bDrawDialogTooltip=false;
         var ptPosition=null;    //鼠标位置 null 无效 -1 在外面 >=0 对应的指标窗口中ID
-        if (this.LastPoint.X!=null || this.LastPoint.Y!=null)
+        var corssCursorPos=this.GetCorssCursorPosition()
+        if (corssCursorPos.LastPoint.X!=null || corssCursorPos.LastPoint.Y!=null)
         {
             if (this.ChartCorssCursor)
             {
-                this.ChartCorssCursor.LastPoint=this.LastPoint;
-                this.ChartCorssCursor.CursorIndex=this.CursorIndex;
+                this.ChartCorssCursor.LastPoint=corssCursorPos.LastPoint;
+                this.ChartCorssCursor.CursorIndex=corssCursorPos.CursorIndex;
                 if (this.EnableNewIndex)
                 {
-                    this.ChartCorssCursor.CorssCursorIndex=this.CorssCursorIndex;
+                    this.ChartCorssCursor.CorssCursorIndex=corssCursorPos.CorssCursorIndex;
                     this.ChartCorssCursor.EnableNewIndex=this.EnableNewIndex;
                 }
 
@@ -5743,8 +5749,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             var item=this.TitlePaint[i];
             if (!item.IsDynamic) continue;
 
-            item.CursorIndex=this.CursorIndex;
-            item.LastPoint=this.LastPoint;
+            item.CursorIndex=corssCursorPos.CursorIndex;
+            item.LastPoint=corssCursorPos.LastPoint;
             if (item.ClassName=='DynamicChartTitlePainting')  item.OnDrawEvent=eventIndexTitleDraw
             else item.OnDrawEvent=eventTitleDraw;
 
@@ -5752,6 +5758,10 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             {
                 item.OnDrawEvent.FunctionName='Draw';
                 item.OnDrawEvent.PointPosition=ptPosition;
+                if (this.IsLockCorssCursor())
+                {
+                    if (item.OnDrawEvent.PointPosition<0) item.OnDrawEvent.PointPosition=0;
+                }
             }
 
             item.DrawStatus=drawStatus;
@@ -6061,6 +6071,25 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         }
     }
 
+    //十字光标坐标 
+    this.GetCorssCursorPosition=function()
+    {
+        var position=
+        { 
+            LastPoint:{ X:this.LastPoint.X, Y:this.LastPoint.Y },
+            CursorIndex:this.CursorIndex,
+        };
+
+        return position;
+    }
+
+    this.IsLockCorssCursor=function()
+    {
+        if (!this.GlobalOption || !this.GlobalOption.LockCorssCursor) return false;
+
+        return this.GlobalOption.LockCorssCursor.X.Enable;
+    }
+
     //画动态信息
     this.DrawDynamicInfo=function(option)
     {
@@ -6138,13 +6167,14 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
         this.DrawDrawPictureXYCoordinate();
         var bDrawDialogTooltip=false;
+        var corssCursorPos=this.GetCorssCursorPosition(); //十字光标的位置
         if (this.ChartCorssCursor)
         {
-            this.ChartCorssCursor.LastPoint=this.LastPoint;
-            this.ChartCorssCursor.CursorIndex=this.CursorIndex;
+            this.ChartCorssCursor.LastPoint=corssCursorPos.LastPoint;
+            this.ChartCorssCursor.CursorIndex=corssCursorPos.CursorIndex;
             if (this.EnableNewIndex)
             {
-                this.ChartCorssCursor.CorssCursorIndex=this.CorssCursorIndex;
+                this.ChartCorssCursor.CorssCursorIndex=corssCursorPos.CorssCursorIndex;
                 this.ChartCorssCursor.EnableNewIndex=this.EnableNewIndex;
             }
 
@@ -6198,18 +6228,29 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             var item=this.TitlePaint[i];
             if (!item.IsDynamic) continue;
 
-            item.CursorIndex=this.CursorIndex;
+            item.CursorIndex=corssCursorPos.CursorIndex;
             item.LastPoint=this.LastPoint;
             if (item.OnDrawEvent) 
             {
                 item.OnDrawEvent.FunctionName='DrawDynamicInfo';
                 item.OnDrawEvent.PointPosition=ptPosition;
+                if (this.IsLockCorssCursor())
+                {
+                    if (item.OnDrawEvent.PointPosition<0) item.OnDrawEvent.PointPosition=0;
+                }
             }
             item.DrawStatus=drawStatus;
 
             var pointInfo=null;
             if (option && IFrameSplitOperator.IsNumber(option.ClientPos) && option.Point)   //当前鼠标所在位置的详细信息 包含盘前盘后
+            {
                 pointInfo={ ClientPos:option.ClientPos, Point:{ X:option.Point.X, Y:option.Point.Y }};
+                if (this.IsLockCorssCursor())
+                {
+                    if (pointInfo.ClientPos<=0) pointInfo.ClientPos=1;
+                }
+            }
+                
             item.PointInfo=pointInfo;
 
             item.Draw(moveonPoint, this.LastMouseStatus);
@@ -56099,6 +56140,9 @@ function DynamicMinuteTitlePainting()
             isShowLastData=true;
         }
 
+        //十字光标锁定状态 禁用显示最后一个数据
+        if (this.GlobalOption && this.GlobalOption.LockCorssCursor && this.GlobalOption.LockCorssCursor.X.Enable) isShowLastData=false;
+
         var isLastOne=false;
         if (isShowLastData)
         {
@@ -56656,6 +56700,9 @@ function DynamicChartTitlePainting()
         {
             isShowLastData=true;
         }
+
+        //十字光标锁定状态 禁用显示最后一个数据
+        if (this.GlobalOption && this.GlobalOption.LockCorssCursor && this.GlobalOption.LockCorssCursor.X.Enable) isShowLastData=false;
 
         return isShowLastData;
     }
@@ -76940,6 +76987,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         this.Frame.ClearUpDonwFrameYData();
         this.ClearCustomKLine();
         this.ClearKLineCaluate();
+        this.UnlockCorssCursor();
        
 
         var kLineDrawType=this.GetKLineDrawType();
@@ -76977,6 +77025,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             this.ResetOverlaySymbolStatus();
             this.ClearIndexRunCount();
             this.Frame.ClearYCoordinateMaxMin();
+            this.UnlockCorssCursor();
             this.RequestHistoryData();                  //请求日线数据
             //this.ReqeustKLineInfoData();
         }
@@ -76988,6 +77037,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             this.ResetOverlaySymbolStatus();
             this.ClearIndexRunCount();
             this.Frame.ClearYCoordinateMaxMin();
+            this.UnlockCorssCursor();
             this.RequestHistoryMinuteData();            //请求分钟数据
         }  
         else if (ChartData.IsTickPeriod(this.Period))
@@ -76997,6 +77047,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             this.ResetScrollBar();
             this.ClearIndexRunCount();
             this.Frame.ClearYCoordinateMaxMin();
+            this.UnlockCorssCursor();
             this.RequestTickData();                     //请求分笔数据
         }
     }
@@ -77047,6 +77098,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                 this.ResetOverlaySymbolStatus();
                 this.ResetScrollBar();
                 this.Frame.ClearYCoordinateMaxMin();
+                this.UnlockCorssCursor();
                 this.RequestHistoryData();                  //请求日线数据
             }
             else if (ChartData.IsMinutePeriod(this.Period,true) || ChartData.IsSecondPeriod(this.Period) || ChartData.IsMilliSecondPeriod(this.Period))
@@ -77057,6 +77109,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                 this.ResetOverlaySymbolStatus();
                 this.ResetScrollBar();
                 this.Frame.ClearYCoordinateMaxMin();
+                this.UnlockCorssCursor();
                 this.RequestHistoryMinuteData();            //请求分钟数据
             }  
         }
@@ -78401,6 +78454,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         this.HideTooltip();
         this.ResetScrollBar();
         this.ClearIndexRunCount();
+        this.UnlockCorssCursor();
         this.Frame.ClearYCoordinateMaxMin();
         
         
@@ -81160,6 +81214,65 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
         return data;
     }
+
+    //十字光标解锁
+    this.UnlockCorssCursor=function(option)
+    {
+        var xItem=this.GlobalOption.LockCorssCursor.X;
+        xItem.Enable=false;
+        xItem.KLine=null;
+
+        if (option && option.Draw) this.Draw();
+    }
+
+    this.LockCorssCursor=function(option)
+    {
+        if (this.CursorIndex<0) return false;
+        var kData=this.GetKData();
+        if (!kData || !IFrameSplitOperator.IsNonEmptyArray(kData.Data)) return false;
+
+        var dataIndex=kData.DataOffset+parseInt(this.CursorIndex.toFixed(0));
+        var kItem=kData.Data[dataIndex];
+        if (!kItem) return false;
+
+        var xItem=this.GlobalOption.LockCorssCursor.X;
+        xItem.KLine={ DataIndex:dataIndex, Date:kItem.Date, Time:kItem.Time };
+        xItem.Enable=true;
+
+        if (option && option.Draw) this.Draw();
+        return true;
+    }
+
+    this.GetCorssCursorPosition=function()
+    {
+        var position=
+        { 
+            LastPoint:{ X:this.LastPoint.X, Y:this.LastPoint.Y },
+            CursorIndex:this.CursorIndex,
+        };
+
+        if (!this.GlobalOption || !this.GlobalOption.LockCorssCursor) return position;
+
+        var xItem=this.GlobalOption.LockCorssCursor.X;
+        if (xItem.Enable && xItem.KLine)
+        {
+            var kData=this.GetKData();
+            if (!kData || !IFrameSplitOperator.IsNonEmptyArray(kData.Data)) return position;
+
+            position.CursorIndex=xItem.KLine.DataIndex-kData.DataOffset;
+            position.LastPoint.X=this.Frame.GetXFromIndex(position.CursorIndex);
+
+            var border=this.Frame.ChartBorder.GetBorder();
+            if (position.LastPoint.Y<border.Top || position.LastPoint.Y>border.Bottom)  //超出图形框子, 调整为收盘价
+            {
+                var kItem=kData.Data[xItem.KLine.DataIndex];
+                var y = this.Frame.SubFrame[0].Frame.GetYFromData(kItem.Close);
+                position.LastPoint.Y=y;
+            }
+        }
+
+        return position;
+    }
 }
 
 //API 返回数据 转化为array[]
@@ -81591,7 +81704,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
     this.ColorLineData;    //主图价格线颜色自定义配置
     this.EnableSelectRect=false;    //是否可以区间选择
 
-    this.CorssCursorIndex={ DayIndex:-1, DataIndex:-1, Point:{X:-1, Y:-1} ,Type:-1 };
+    this.CorssCursorIndex={ DayIndex:-1, DataIndex:-1, Point:{X:-1, Y:-1} ,Type:-1 };   //Type: 单日(1=主图 2=盘前 3=盘后)  多日(10=主图 20=盘前 30=盘后)
     this.EnableNewIndex=false  //是否使用新的索引版本
 
     this.DayOffset={ Offset:0, ShowDayCount:-1, DataOffset:0, DayCount:1,  }; //Offset 日期偏移 , DataOffset数据偏移
@@ -82346,6 +82459,124 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                 }
             }
         }
+    }
+
+    this.LockCorssCursor=function(option)
+    {
+        var xItem=this.GlobalOption.LockCorssCursor.X;
+        
+        if (this.EnableNewIndex)
+        {
+            if (this.CorssCursorIndex.Type!=1 && this.CorssCursorIndex.Type!=10) return false;    //目前只支持连续交易时间段
+
+            xItem.Minute=
+            { 
+                DayIndex:this.CorssCursorIndex.DayIndex,  
+                DataIndex:this.CorssCursorIndex.DataIndex, 
+                Type:this.CorssCursorIndex.Type,
+                CursorIndex:this.CursorIndex,
+            };
+        }
+        else
+        {
+            xItem.Minute={ CursorIndex:this.CursorIndex };
+        }
+
+        xItem.Enable=true;
+
+        if (option && option.Draw) this.Draw();
+
+        return true;
+    }
+
+    this.UnlockCorssCursor=function(option)
+    {
+        var xItem=this.GlobalOption.LockCorssCursor.X;
+        xItem.Enable=false;
+        xItem.Minute=null;
+
+        if (option && option.Draw) this.Draw();
+    }
+
+    this.GetCorssCursorPosition=function()
+    {
+        var position=
+        { 
+            LastPoint:{ X:this.LastPoint.X, Y:this.LastPoint.Y },
+            CursorIndex:this.CursorIndex,
+            CorssCursorIndex:this.CorssCursorIndex,
+        };
+
+        if (!this.GlobalOption || !this.GlobalOption.LockCorssCursor) return position;
+
+        var xItem=this.GlobalOption.LockCorssCursor.X;
+        if (xItem.Enable && xItem.Minute)
+        {
+            if (this.EnableNewIndex)
+            {
+                var type=xItem.Minute.Type;
+                position.CorssCursorIndex={ DayIndex:xItem.Minute.DayIndex, DataIndex:xItem.Minute.DataIndex, Type:type };
+                position.CursorIndex=xItem.Minute.CursorIndex;
+                position.LastPoint.X=this.GetXPointByCorssCursorIndex(position.CorssCursorIndex);
+            }
+            else
+            {
+                var index=xItem.Minute.CursorIndex;
+                var x=this.Frame.GetXFromIndex(index,false);
+                position.LastPoint.X=x;
+                position.CursorIndex=xItem.Minute.CursorIndex;
+            }
+
+            var border=this.Frame.ChartBorder.GetBorder();
+            if (position.LastPoint.Y<border.Top || position.LastPoint.Y>border.Bottom)  //超出图形框子, 调整为收盘价
+            {
+                var kData=this.GetKData();
+                if (kData && IFrameSplitOperator.IsNonEmptyArray(kData.Data))
+                {
+                    var index=parseInt(position.CursorIndex.toFixed(0));
+                    var item=kData.Data[index];
+                    if (item && IFrameSplitOperator.IsNumber(item.Close))
+                    {
+                        var y = this.Frame.SubFrame[0].Frame.GetYFromData(item.Close);
+                        position.LastPoint.Y=y;
+                    }
+                }
+            }
+        }
+        
+        return position;
+    }
+
+    this.GetXPointByCorssCursorIndex=function(corssCursorIndex)
+    {
+        if (!corssCursorIndex) return;
+
+        var x=null;
+        var dayIndex=corssCursorIndex.DayIndex;
+        var dataIndex=corssCursorIndex.DataIndex;
+        switch(corssCursorIndex.Type)   //单日  1=主图 2=盘前 3=盘后  //多日  10=主图 20=盘前 30=盘后
+        {
+            case 1:     //单日  1=主图
+            case 10:    //多日  10=主图
+                x=this.Frame.GetXFromIndex(dataIndex)
+                break;
+                /*
+            case 2:     //单日  2=盘前
+                x=this.Frame.SubFrame[0].Frame.GetLeftExtendXFromIndex(dataIndex,this.GetBeforeOpenData());
+                break;
+            case 20:    //多日  20=盘前
+                x=this.Frame.SubFrame[0].Frame.GetLeftExtendXFromIndex(dataIndex,{ Data:this.MultiDayBeforeOpenData, });
+                break;
+            case 3:     //单日  3=盘后 
+                x=this.Frame.SubFrame[0].Frame.GetRightExtendXFromIndex(dataIndex,this.GetAfterCloseData());
+                break;
+            case 30:    //多日  30=盘后
+                x=this.Frame.SubFrame[0].Frame.GetRightExtendXFromIndex(dataIndex,{ Data:this.MultiDayAfterCloseData} );
+                break;
+                */
+        }
+
+        return x;
     }
 
     this.SetCorssCursorIndex=function(option)
@@ -84241,6 +84472,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         this.ReloadChartDrawPicture();
         this.ClearIndexRunCount();
         this.ClearStockCache();
+        this.UnlockCorssCursor();
         this.Frame.ClearYCoordinateMaxMin();
 
         if (option)
@@ -84376,6 +84608,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         this.AutoUpdateEvent(false, "MinuteChartContainer::ChangeDayCount");
         this.DayCount=count;
         this.ClearMinuteData();
+        this.UnlockCorssCursor();
 
         if (option && option.PageInfo)
         {
