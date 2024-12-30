@@ -541,6 +541,11 @@ function GetBlackStyle()
             BorderColor:"rgb(90,90,90)",
         },
 
+        ChartSimplePie:
+        {
+            BorderColor:"rgb(220,220,220)",
+        },
+
         ChartDrawVolProfile:
         {
             BGColor:"rgba(244,250,254,0.3)",

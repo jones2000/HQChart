@@ -31761,6 +31761,174 @@ function ChartSimpleTable()
     }
 }
 
+
+//饼图
+function ChartSimplePie()
+{   
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartSimplePie';    //类名
+    
+    this.BorderColor=g_JSChartResource.ChartSimplePie.BorderColor;
+    this.Offset=CloneData(g_JSChartResource.ChartSimplePie.Offset);
+    this.LineExtendWidth=10;
+    this.TextFontConfig=CloneData(g_JSChartResource.ChartSimplePie.TextFont);
+
+    this.RectClient={ };
+    this.TotalValue=1;
+    this.Radius = 50;  //半径默认值
+    this.TextFont;
+
+
+    this.ReloadResource=function(resource)
+    {
+        this.BorderColor=g_JSChartResource.ChartSimplePie.BorderColor;
+        this.Offset=CloneData(g_JSChartResource.ChartSimplePie.Offset);
+        this.TextFontConfig=CloneData(g_JSChartResource.ChartSimplePie.TextFont);
+    }
+
+    this.CalculateSize=function()
+    {
+        var border=this.ChartFrame.GetBorder();
+        var pixelRatio=GetDevicePixelRatio();
+        this.TextFont=`${this.TextFontConfig.Size*pixelRatio}px ${ this.TextFontConfig.Name}`;
+        this.LineExtendWidth=this.GetFontHeight(this.TextFont,"擎")+1;
+
+
+        this.RectClient={ Width:this.Radius*2*pixelRatio, Height:this.Radius*2*pixelRatio };
+
+        this.RectClient.Right=border.Right+this.Offset.X;
+        this.RectClient.Top=border.TopEx+this.Offset.Y;
+        this.RectClient.Left=this.RectClient.Right-this.RectClient.Width;
+        this.RectClient.Bottom=this.RectClient.Top+this.RectClient.Height;
+    }
+
+    this.CalculateTotalValue=function()
+    {
+        var totalValue=0;
+        for(var i=0; i<this.Data.Data.length; ++i)
+        {
+            var item=this.Data.Data[i];
+            if (!IFrameSplitOperator.IsPlusNumber(item.Value)) continue;
+            totalValue += item.Value;
+        }
+
+        this.TotalValue=totalValue;
+    }
+
+    this.DrawPie=function()
+    {
+        this.Canvas.font=this.TextFont;
+        this.Canvas.textBaseline='bottom';
+        this.Canvas.textAlign = 'left';
+
+        var aryText=[];
+        var maxTextWidth=0;
+        for(var i=0;i<this.Data.Data.length;++i)
+        {
+            var item=this.Data.Data[i];
+            if (!IFrameSplitOperator.IsPlusNumber(item.Value)) continue;
+            if (!item.Text) continue;
+            var textWidth=this.Canvas.measureText(item.Text).width;
+
+            aryText[i]={ Width:textWidth };
+
+            if (maxTextWidth<textWidth)  maxTextWidth=textWidth;
+        }
+
+        var xOffset=maxTextWidth+this.LineExtendWidth;
+        this.RectClient.Left-=xOffset;
+        this.RectClient.Right-=xOffset;
+
+
+        var start=0, end=0;
+        var x=this.RectClient.Left+this.Radius;
+        var y=this.RectClient.Top+this.Radius;
+
+        for(var i=0;i<this.Data.Data.length;++i)
+        {
+            var item=this.Data.Data[i];
+            if (!IFrameSplitOperator.IsPlusNumber(item.Value)) continue;
+
+            var rate=item.Value/this.TotalValue;
+
+            // 绘制扇形
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(x,y);
+ 
+            end += rate*2*Math.PI;//终止角度
+            this.Canvas.strokeStyle = this.BorderColor;
+            this.Canvas.fillStyle = item.Color;
+            this.Canvas.arc(x,y,this.Radius,start,end);
+            this.Canvas.fill();
+            this.Canvas.closePath();
+            this.Canvas.stroke();
+
+            if (item.Text)
+            {
+                // 绘制直线
+                var xLine=this.Radius*Math.cos(end- (end-start)/2)+x;
+                var yLine=this.Radius*Math.sin(end - (end-start)/2)+y;
+                var xEnd = (this.Radius + this.LineExtendWidth)*Math.cos(end- (end-start)/2)+x;
+                var yEnd = (this.Radius + this.LineExtendWidth)*Math.sin(end - (end-start)/2)+y;
+
+                this.Canvas.beginPath();
+                if (item.LineColor) this.Canvas.strokeStyle =item.LineColor;
+                else this.Canvas.strokeStyle = item.Color;
+                this.Canvas.moveTo(xLine,yLine);
+                this.Canvas.lineTo(xEnd,yEnd);
+
+                var textWidth=aryText[i].Width;
+                var yText=xEnd;
+                if( end - (end-start)/2 < 1.5*Math.PI && end - (end-start)/2 > 0.5*Math.PI )
+                {
+                    this.Canvas.lineTo( xEnd - textWidth, yEnd );
+                    yText=xEnd - textWidth;
+                }
+                else
+                {
+                    this.Canvas.lineTo( xEnd + textWidth, yEnd );
+                }
+                this.Canvas.stroke();
+
+                if (item.TextColor)  this.Canvas.fillStyle = item.TextColor;
+                else this.Canvas.fillStyle=item.Color;
+                this.Canvas.fillText(item.Text, yText, yEnd);
+            }
+
+            start += rate*2*Math.PI;//起始角度
+        }
+    }
+    
+    this.Draw=function()
+    {
+        if (!this.Data || !this.Data.Data || !(this.Data.Data.length>0)) return this.DrawEmptyData();
+
+        this.CalculateTotalValue();
+        if (!IFrameSplitOperator.IsPlusNumber(this.TotalValue)) this.DrawEmptyData();
+        this.CalculateSize();
+
+        this.Canvas.save();
+
+        this.DrawPie();
+
+        this.Canvas.restore();
+    }
+
+    //空数据
+    this.DrawEmptyData=function()
+    {
+        JSConsole.Chart.Log('[ChartSimplePie::DrawEmptyData]')
+    }
+
+    this.GetMaxMin=function()
+    {
+        return { Min:null, Max:null };
+    }
+}
+
 //分钟成交量 支持横屏
 function ChartMinuteVolumBar()
 {
@@ -36318,6 +36486,7 @@ function ChartMinutePriceLine()
         var pointCount=0;
         
         this.Canvas.save();
+        this.ClipClient(isHScreen);
         if (IFrameSplitOperator.IsPlusNumber(this.LineWidth>0)) this.Canvas.lineWidth=this.LineWidth;
         for(var i=data.DataOffset,j=0;i<data.Data.length && j<xPointCount;++i,++j)
         {
@@ -39823,8 +39992,8 @@ function ChartTextLine()
 
     this.ClassName="ChartTextLine";
 
-    this.Text;  //Text=内容 Color
-    this.Line;  //Type=线段类型 0=不画 1=直线 2=虚线, Color
+    this.Text;  //{ Title:内容, Color:  YOffset:, }
+    this.Line;  //{ Type=线段类型 0=不画 1=直线 2=虚线, Color:, Width:,  LineDash:[] }
     this.Price;
 
     this.Draw=function()
@@ -39838,6 +40007,10 @@ function ChartTextLine()
         var bottom=this.ChartBorder.GetBottomEx();
         var top=this.ChartBorder.GetTopEx();
         var y=this.ChartFrame.GetYFromData(this.Price);
+
+        this.Canvas.save();
+        this.ClipClient(this.IsHScreen);
+
         var textWidth=0;
         if (this.Text.Title)
         {
@@ -39867,9 +40040,11 @@ function ChartTextLine()
         {
             if (this.Line.Type==2)  //虚线
             {
-                this.Canvas.save();
-                this.Canvas.setLineDash([3,5]);   //虚线
+                if (IFrameSplitOperator.IsNonEmptyArray(this.Line.LineDash)) this.Canvas.setLineDash(this.Line.LineDash)
+                else this.Canvas.setLineDash([3,5]);   //虚线
             }
+
+            if (IFrameSplitOperator.IsNumber(this.Line.Width)) this.Canvas.lineWidth=this.Line.Width;
 
             var x=left+textWidth;
             this.Canvas.strokeStyle=this.Line.Color;
@@ -39877,13 +40052,10 @@ function ChartTextLine()
             this.Canvas.moveTo(x,ToFixedPoint(y));
             this.Canvas.lineTo(right,ToFixedPoint(y));
             this.Canvas.stroke();
-
-            if (this.Line.Type==2)
-            {
-                this.Canvas.restore();
-            }
         }
 
+
+        this.Canvas.restore();
     }
 
     this.GetMaxMin=function()
@@ -70372,6 +70544,13 @@ function JSChartResource()
         BorderColor:"rgb(217,217,217)",
     }
 
+    this.ChartSimplePie=
+    {
+        TextFont:{ Family:'微软雅黑' , Size:12 },
+        BorderColor:"rgb(169,169,169)",
+        Offset:{ X:-5, Y:5 }
+    }
+
     //手机端tooltip
     this.TooltipPaint = {
         BGColor:'rgba(250,250,250,0.8)',    //背景色
@@ -71601,6 +71780,7 @@ function JSChartResource()
         }
 
         if (style.ChartSimpleTable) this.SetChartSimpleTable(style.ChartSimpleTable);
+        if (style.ChartSimplePie) this.SetChartSimplePie(style.ChartSimplePie);
         
         if (style.DRAWICON) 
         {
@@ -72670,6 +72850,27 @@ function JSChartResource()
             if (IFrameSplitOperator.IsNumber(margin.Right))  dest.ItemMargin.Right=margin.Right;
             if (IFrameSplitOperator.IsNumber(margin.Top))  dest.ItemMargin.Top=margin.Top;
             if (IFrameSplitOperator.IsNumber(margin.Bottom))  dest.ItemMargin.Bottom=margin.Bottom;
+        }
+    }
+
+    this.SetChartSimplePie=function(style)
+    {
+        var dest=this.ChartSimplePie;
+
+        if (style.TextFont)
+        {
+            var item=style.TextFont;
+            if (item.Name) dest.TextFont.Name=item.Name;
+            if (IFrameSplitOperator.IsNumber(item.Size)) dest.TextFont.Size=item.Size;
+        }
+
+        if (style.BorderColor) dest.BorderColor=style.BorderColor;
+
+        if (style.Offset)
+        {
+            var item=style.Offset;
+            if (IFrameSplitOperator.IsNumber(item.X)) dest.Offset.X=item.X;
+            if (IFrameSplitOperator.IsNumber(item.Y)) dest.Offset.Y=item.Y;
         }
     }
 
@@ -82534,6 +82735,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                 if (kData && IFrameSplitOperator.IsNonEmptyArray(kData.Data))
                 {
                     var index=parseInt(position.CursorIndex.toFixed(0));
+                    if (index>=kData.Data.length) index=kData.Data.length-1;    //未开盘的时间，取最后一个数据的收盘价
                     var item=kData.Data[index];
                     if (item && IFrameSplitOperator.IsNumber(item.Close))
                     {

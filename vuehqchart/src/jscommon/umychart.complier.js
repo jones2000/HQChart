@@ -11540,6 +11540,30 @@ function JSDraw(errorHandler,symbolData)
 
         return result={ DrawData:{ TableData:tableData }, DrawType:'DRAW_SIMPLE_TABLE' };
     }
+
+    //饼图
+    this.PIE_CELL=function(value, color, text, textColor, lineColor)
+    {
+        var cellItem={ Value:value, Color:color };
+        if (text) cellItem.Text=text;
+        if (textColor) cellItem.TextColor=textColor;
+        if (lineColor) cellItem.LineColor=lineColor;
+
+        return cellItem
+    }
+
+    //0=Radius半径 
+    this.DRAWPIE=function(aryData)
+    {
+        var radius=aryData[0];
+        var aryCell=[];
+        for(var i=1;i<aryData.length;++i)
+        {
+            aryCell.push(aryData[i]);
+        }
+
+        return result={ DrawData:{ Data:aryCell, Radius:radius }, DrawType:"DRAW_SIMPLE_PIE" };
+    }
 }
 
 
@@ -11594,7 +11618,7 @@ JSDraw.prototype.IsDrawFunction=function(name)
         'DRAWOVERLAYLINE',"FILLRGN", "FILLRGN2","FILLTOPRGN", "FILLBOTTOMRGN", "FILLVERTICALRGN","FLOATRGN","DRAWSL", "DRAWGBK2","DRAWGBK_DIV",
         "VERTLINE","HORLINE","TIPICON",
         "BUY","SELL","SELLSHORT","BUYSHORT",
-        "DRAWLASTBARICON","DRAWLASTBARNUMBER", "DRAWLASTBARTEXT","DRAWTABLE",
+        "DRAWLASTBARICON","DRAWLASTBARNUMBER", "DRAWLASTBARTEXT","DRAWTABLE","DRAWPIE",
     ]);
     if (setFunctionName.has(name)) return true;
 
@@ -18475,6 +18499,14 @@ function JSExecute(ast,option)
                 node.Draw=this.Draw.DRAWTABLE(args);
                 node.Out=[];
                 break;
+            //饼图
+            case "PIE_CELL":
+                node.Out=this.Draw.PIE_CELL(args[0],args[1],args[2],args[3],args[4]);
+                break;
+            case "DRAWPIE":
+                node.Draw=this.Draw.DRAWPIE(args);
+                node.Out=[];
+                break;
 
             default:
                 node.Out=this.Algorithm.CallFunction(funcName, args, node, this.SymbolData);
@@ -19373,6 +19405,10 @@ function JSExplainer(ast,option)
             ["L2_VOLNUM", { Name:"L2_VOLNUM", Param:{ Count:2 }, ToString:function(args) { return `单数分档`; } }],
             ["L2_VOL", { Name:"L2_VOL", Param:{ Count:2 }, ToString:function(args) { return `成交量分档`; } }],
             ["L2_AMO", { Name:"L2_AMO", Param:{ Count:2 }, ToString:function(args) { return `成交额分档`; } }],
+
+            ["TABLE_CELL", { Name:"TABLE_CELL",Param:{ Dynamic:true }, ToString:function(args) { return `创建表格单元格`; } }],
+            ["TABLE_ROW", { Name:"TABLE_ROW",Param:{ Dynamic:true }, ToString:function(args) { return `创建表格行`; } }],
+            ["DRAWTABLE", { Name:"DRAWTABLE",Param:{ Dynamic:true }, ToString:function(args) { return `绘制表格`; } }]
             
         ]
     );
@@ -21464,6 +21500,29 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateSimplePie=function(hqChart,windowIndex,varItem,id)
+    {
+        var chart=new ChartSimplePie();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        if (varItem.Draw && varItem.Draw.DrawData)
+        {
+            var drawData=varItem.Draw.DrawData;
+            if (drawData.Data) chart.Data.Data=drawData.Data;
+            if (drawData.BorderColor) chart.BorderColor=drawData.BorderColor;
+            if (drawData.TextFont) chart.TextFontConfig=drawData.TextFont;
+            if (drawData.TextColor) chart.TextColor=drawData.TextColor;
+            if (IFrameSplitOperator.IsNumber(drawData.XOffset)) chart.Offset.X=drawData.XOffset;
+            if (IFrameSplitOperator.IsNumber(drawData.YOffset)) chart.Offset.Y=drawData.YOffset;
+            if (IFrameSplitOperator.IsPlusNumber(drawData.Radius)) chart.Radius=drawData.Radius;
+        }
+
+        hqChart.ChartPaint.push(chart);
+    }
+
     this.CreateTradeIcon=function(hqChart,windowIndex,varItem,id)
     {
         var chart=new ChartTradeIcon();
@@ -22332,6 +22391,8 @@ function ScriptIndex(name,script,args,option)
                     case "DRAW_SIMPLE_TABLE":
                         this.CreateSimpleTable(hqChart,windowIndex,item,i);
                         break;
+                    case "DRAW_SIMPLE_PIE":
+                        this.CreateSimplePie(hqChart,windowIndex,item,i);
                     case "BUY":
                     case "SELL":
                     case "SELLSHORT":
@@ -22682,6 +22743,8 @@ function OverlayScriptIndex(name,script,args,option)
                     case "DRAW_SIMPLE_TABLE":
                         this.CreateSimpleTable(hqChart,windowIndex,item,i);
                         break;
+                    case "DRAW_SIMPLE_PIE":
+                        this.CreateSimplePie(hqChart,windowIndex,item,i);
 
                     case "KLINE_BG":
                         this.CreateBackgroud(hqChart,windowIndex,item,i);
@@ -23716,6 +23779,33 @@ function OverlayScriptIndex(name,script,args,option)
             if (IFrameSplitOperator.IsNumber(drawData.YOffset)) chart.Offset.Y=drawData.YOffset;
         }
             
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateSimplePie=function(hqChart,windowIndex,varItem,id)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        var chart=new ChartSimplePie();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+        chart.HQChart=hqChart;
+
+        if (varItem.Draw && varItem.Draw.DrawData)
+        {
+            var drawData=varItem.Draw.DrawData;
+            if (drawData.Data) chart.Data.Data=drawData.Data;
+            if (drawData.BorderColor) chart.BorderColor=drawData.BorderColor;
+            if (drawData.TextFont) chart.TextFontConfig=drawData.TextFont;
+            if (drawData.TextColor) chart.TextColor=drawData.TextColor;
+            if (IFrameSplitOperator.IsNumber(drawData.XOffset)) chart.Offset.X=drawData.XOffset;
+            if (IFrameSplitOperator.IsNumber(drawData.YOffset)) chart.Offset.Y=drawData.YOffset;
+            if (IFrameSplitOperator.IsPlusNumber(drawData.Radius)) chart.Radius=drawData.Radius;
+        }
+
         frame.ChartPaint.push(chart);
     }
 
@@ -24917,6 +25007,17 @@ function APIScriptIndex(name,script,args,option, isOverlay)
 
                     drawItem.DrawType=draw.DrawType;
                     drawItem.DrawData=draw.DrawData;    //{ TableData:[ [ {AryCell:[{Text:, Color: }]}, ], ], BGColor:， TextFont:{ Size:, Name: } };
+ 
+                    outVarItem.Draw=drawItem;
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType=="DRAW_SIMPLE_PIE")
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=draw.DrawData;    //{ Data:[ {Value, Color, Text: }, ], BorderColor:， TextFont:{ Size:, Name: } };
  
                     outVarItem.Draw=drawItem;
                     result.push(outVarItem);

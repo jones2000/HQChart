@@ -231,6 +231,8 @@ HQData.Minute_RequestMinuteData=function(data, callback)
         }
         */
 
+        //stockItem.minute.length=50;
+
         var hqchartData={code:0, stock:[stockItem] };
     
 
@@ -1856,6 +1858,11 @@ HQData.Report_APIIndex=function(data, callback)
         HQData.APIIndex_MULTI_SVGICON(data, callback);
     else if (request.Data.indexname=="API-DRAWTEXT_LINE")
         HQData.APIIndex_DRAWTEXT_LINE(data, callback);
+    else if (request.Data.indexname=="API_DRAW_SIMPLE_TABLE")
+        HQData.APIIndex_DRAW_SIMPLE_TABLE(data, callback);
+    else if (request.Data.indexname=="API_DRAW_SIMPLE_PIE")
+        HQData.APIIndex_DRAW_SIMPLE_PIE(data, callback);
+    
 }
 
 
@@ -2260,8 +2267,19 @@ HQData.APIIndex_DRAWTEXT_LINE=function(data, callback)
             DrawData: 
             {
                 Price:price,
-                Text:{ Title:`价格:${price.toFixed(2)}`, Color:"rgb(255, 165, 0)" }, 
-                Line:{ Type:1, Color:"rgb(200,200,0)" },    //Type 0=不画 1=直线 2=虚线
+                Text:
+                { 
+                    Title:`价格:${price.toFixed(2)}`, 
+                    Color:"rgb(255, 165, 0)",
+                }, 
+
+                Line:
+                { 
+                    Type:1,  //Type 0=不画 1=直线 2=虚线
+                    //LineDash:[10,10],
+                    Color:"rgb(200,200,0)", 
+                    //Width:1,
+                },   
             }
         } 
     };
@@ -2275,6 +2293,97 @@ HQData.APIIndex_DRAWTEXT_LINE=function(data, callback)
 
     
     console.log('[HQData.APIIndex_DRAWTEXT_LINE] apiData ', apiData);
+    callback(apiData);
+}
+
+HQData.APIIndex_DRAW_SIMPLE_TABLE=function(data, callback)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var kData=hqchart.GetKData();
+
+    var tableData= 
+    { 
+        name:'DRAW_SIMPLE_TABLE', type:1, 
+        Draw: 
+        { 
+            DrawType:'DRAW_SIMPLE_TABLE', 
+            DrawData: 
+            {
+                //BGColor:"rgba(250,250,210,0.8)",
+                //BorderColor:"rgb(0,0,255)",
+                //TextColor:"rgb(0,191,255)",
+                TableData:
+                [
+                    { AryCell:[{ Text:"股票代码"}, { Text:"主营业务", TextAlign:'center'}, { Text:"每股收益(元)"}] },
+                    { AryCell:[{ Text:"美丽生态"}, { Text:"园林绿化"}, { Text:"13.5", Color:"rgb(139,0,139)"}] },
+                    { AryCell:[{ Text:"深物业A"}, { Text:"房地产及相关业务", BGColor:"rgb(200,200,200)"}, { Text:"0.12"}] },
+                    { AryCell:[{ Text:"深科技"}, { Text:"计算机硬件、通讯设备等"}, { Text:"5.4"}] },
+                ],
+
+                //TextFont:{ Size:16, Name:"微软雅黑"},
+                //XOffset:-10,
+                //YOffset:-15,
+            }
+        } 
+    };
+
+    var apiData=
+    {
+        code:0, 
+        stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+        outdata: { date:kData.GetDate(), time:kData.GetTime() , outvar:[tableData] } 
+    };
+
+    
+    console.log('[HQData.APIIndex_DRAW_SIMPLE_TABLE] apiData ', apiData);
+    callback(apiData);
+}
+
+
+HQData.APIIndex_DRAW_SIMPLE_PIE=function(data, callback)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var kData=hqchart.GetKData();
+
+    var tableData= 
+    { 
+        name:'DRAW_SIMPLE_PIE', type:1, 
+        Draw: 
+        { 
+            DrawType:'DRAW_SIMPLE_PIE', 
+            DrawData: 
+            {
+                //BGColor:"rgba(250,250,210,0.8)",
+                //BorderColor:"rgb(110,110,110)",
+                //TextColor:"rgb(0,191,255)",
+                Data:
+                [
+                    { Value:10, Text:"数据1:10", Color:"rgba(255,182,193,0.8)", TextColor:"rgb(250,250,250)", LineColor:"rgb(255,182,193)"},
+                    { Value:70, Text:"数据2:70", Color:"rgba(255,0,255,0.8)",TextColor:"rgb(250,250,250)", LineColor:"rgb(255,0,255)"},
+                    { Value:110, Text:"数据3:110", Color:"rgba(72,61,139,0.8)",TextColor:"rgb(250,250,250)", LineColor:"rgb(72,61,139)"},
+                    { Value:210, Text:"数据4:210", Color:"rgba(0,191,255,0.8)",TextColor:"rgb(250,250,250)", LineColor:"rgb(0,191,255)"},
+                    { Value:310, Text:"数据5:310", Color:"rgba(255,140,0,0.8)",TextColor:"rgb(250,250,250)", LineColor:"rgb(255,140,0)"},
+                ],
+
+                //TextFont:{ Size:16, Name:"微软雅黑"},
+                //XOffset:-10,
+                //YOffset:-15,
+                Radius:80,
+            }
+        } 
+    };
+
+    var apiData=
+    {
+        code:0, 
+        stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+        outdata: { date:kData.GetDate(), time:kData.GetTime() , outvar:[tableData] } 
+    };
+
+    
+    console.log('[HQData.APIIndex_DRAW_SIMPLE_PIE] apiData ', apiData);
     callback(apiData);
 }
 

@@ -179,7 +179,7 @@ function JSPopKeyboard()
             }
         }
     
-        if ((code>=48 && code<=57) || (code>=65 && code<=90) || (code>=97 && code<=122) || code==8)
+        if ((code>=48 && code<=57) || (code>=65 && code<=90) || (code>=96 && code<=122) || code==8)
         {
             var strText=this.InputDOM.value;
             strText=strText.toUpperCase();
@@ -277,7 +277,7 @@ function JSPopKeyboard()
         var code=event.keyCode;
         if (code==116) return;  //F5不处理
 
-        if (!this.IsShow() && (code>=48 && code<=57) || (code>=65 && code<=90) || (code>=97 && code<=122))
+        if (!this.IsShow() && (code>=48 && code<=57) || (code>=65 && code<=90) || (code>=96 && code<=122))
         {
             this.Show();
             this.InputDOM.focus();
