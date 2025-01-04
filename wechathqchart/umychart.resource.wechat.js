@@ -148,6 +148,7 @@ function JSChartResource()
     this.CorssCursorTextFont = "12px 微软雅黑";
     this.CorssCursorHPenColor = "rgb(130,130,130)";          //十字光标线段颜色(水平)
     this.CorssCursorVPenColor = "rgb(130,130,130)";          //十字光标线段颜色(垂直)
+    this.CorssCursorLineDash=[3,2];            //十字光标虚线
 
     this.CorssCursor=
     {
@@ -584,6 +585,7 @@ function JSChartResource()
         if (style.CorssCursorTextFont) this.CorssCursorTextFont = style.CorssCursorTextFont;
         if (style.CorssCursorHPenColor) this.CorssCursorHPenColor = style.CorssCursorHPenColor;
         if (style.CorssCursorVPenColor) this.CorssCursorVPenColor = style.CorssCursorVPenColor;
+        if (style.CorssCursorLineDash) this.CorssCursorLineDash = style.CorssCursorLineDash.slice();
         if (style.KLine) this.KLine = style.KLine;
         if (style.Index) 
         {

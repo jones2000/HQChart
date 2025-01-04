@@ -11542,8 +11542,24 @@ function JSDraw(errorHandler,symbolData)
     }
 
     //饼图
-    this.PIE_CELL=function(value, color, text, textColor, lineColor)
+    this.PIE_CELL=function(data, color, text, textColor, lineColor)
     {
+        var value=null;
+        if (IFrameSplitOperator.IsNumber(data)) 
+        {
+            value=data;
+        }
+        else if (IFrameSplitOperator.IsString(data))
+        {
+            value=parseFloat(data);
+        }
+        else if (IFrameSplitOperator.IsNonEmptyArray(data))
+        {
+            var lastValue=data[data.length-1];
+            if (IFrameSplitOperator.IsNumber(lastValue)) value=lastValue;
+            else if (IFrameSplitOperator.IsString(lastValue)) value=parseFloat(lastValue);
+        }
+
         var cellItem={ Value:value, Color:color };
         if (text) cellItem.Text=text;
         if (textColor) cellItem.TextColor=textColor;
@@ -21729,11 +21745,12 @@ function ScriptIndex(name,script,args,option)
             for(var j=0;j<drawData.length;++j)
             {
                 var item=drawData[j];
+                var kItem=chart.Data.Data[j];
                 if (!IFrameSplitOperator.IsNumber(item)) continue;
 
                 var svgItem=
                 { 
-                    Index:j, Value:item, 
+                    Value:item, Date:kItem.Date, Time:kItem.Time,
                     SVG:{ Symbol:varItem.Draw.Icon.Symbol, Size:svgSize, Color:svgColor, YOffset:svgYOffset, VAlign:svgVAlign }
                 };
 
@@ -21753,6 +21770,7 @@ function ScriptIndex(name,script,args,option)
             chart.Texts= aryData;
         }
 
+        chart.BuildCacheData();
         hqChart.ChartPaint.push(chart);
     }
 
@@ -21973,9 +21991,12 @@ function ScriptIndex(name,script,args,option)
             chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
         if (IFrameSplitOperator.IsBool(varItem.Draw.DrawData.EnableTooltip)) chart.EnableTooltip=varItem.Draw.DrawData.EnableTooltip;
         if (IFrameSplitOperator.IsBool(varItem.Draw.DrawData.IsDrawFirst)) chart.IsDrawFirst=varItem.Draw.DrawData.IsDrawFirst;
+        if (varItem.Draw.BuildKeyCallback) chart.BuildKeyCallback=varItem.Draw.BuildKeyCallback;
         chart.Family=varItem.Draw.DrawData.Family;
         chart.TextFont=varItem.Draw.DrawData.TextFont;
         chart.Texts= varItem.Draw.DrawData.Data;
+        chart.BuildCacheData();
+        this.SetChartIndexName(chart);
         hqChart.ChartPaint.push(chart);
     }
 
@@ -23496,11 +23517,12 @@ function OverlayScriptIndex(name,script,args,option)
             for(var j=0;j<drawData.length;++j)
             {
                 var item=drawData[j];
+                var kItem=chart.Data.Data[j];
                 if (!IFrameSplitOperator.IsNumber(item)) continue;
 
                 var svgItem=
                 { 
-                    Index:j, Value:item, 
+                    Value:item, Date:kItem.Date, Time:kItem.Time,
                     SVG:{ Symbol:varItem.Draw.Icon.Symbol, Size:svgSize, Color:svgColor, YOffset:svgYOffset, VAlign:svgVAlign }
                 };
 
@@ -23520,6 +23542,7 @@ function OverlayScriptIndex(name,script,args,option)
             chart.Texts= aryData;
         }
 
+        chart.BuildCacheData();
         frame.ChartPaint.push(chart);
     }
 
@@ -23725,13 +23748,15 @@ function OverlayScriptIndex(name,script,args,option)
         
         if (IFrameSplitOperator.IsBool(varItem.Draw.DrawData.EnableTooltip)) chart.EnableTooltip=varItem.Draw.DrawData.EnableTooltip;
         if (IFrameSplitOperator.IsBool(varItem.Draw.DrawData.IsDrawFirst)) chart.IsDrawFirst=varItem.Draw.DrawData.IsDrawFirst;
+        if (varItem.Draw.BuildKeyCallback) chart.BuildKeyCallback=varItem.Draw.BuildKeyCallback;
         chart.Family=varItem.Draw.DrawData.Family;
         chart.TextFont=varItem.Draw.DrawData.TextFont;
         chart.Texts= varItem.Draw.DrawData.Data;
         if (varItem.Draw.AutoPosition) chart.AutoPosition=varItem.Draw.AutoPosition;
 
         this.ReloadChartResource(hqChart, windowIndex, chart);
-        
+
+        chart.BuildCacheData();
         this.SetChartIndexName(chart);
         frame.ChartPaint.push(chart);
     }
@@ -24870,8 +24895,8 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     drawItem.Name=draw.Name;
                     drawItem.DrawType=draw.DrawType;
                     if (draw.AutoPosition) drawItem.AutoPosition=draw.AutoPosition;
-                    drawItem.DrawData={ Data:this.FittingMultiText(draw.Data,date,time,hqChart), Family:draw.Family, TextFont:draw.TextFont, EnableTooltip:draw.EnableTooltip, IsDrawFirst:draw.IsDrawFirst };
-                    this.GetKLineData(drawItem.DrawData.Data, hqChart);
+                    if (draw.BuildKeyCallback) drawItem.BuildKeyCallback=draw.BuildKeyCallback;
+                    drawItem.DrawData={ Data:draw.Data, Family:draw.Family, TextFont:draw.TextFont, EnableTooltip:draw.EnableTooltip, IsDrawFirst:draw.IsDrawFirst };
                     outVarItem.Draw=drawItem;
 
                     result.push(outVarItem);
@@ -25362,8 +25387,8 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     drawItem.Name=draw.Name;
                     drawItem.DrawType=draw.DrawType;
                     if (draw.AutoPosition) drawItem.AutoPosition=draw.AutoPosition;
-                    drawItem.DrawData={ Data:this.FittingMultiText(draw.Data,date,time,hqChart), Family:draw.Family, TextFont:draw.TextFont ,EnableTooltip:draw.EnableTooltip,IsDrawFirst:draw.IsDrawFirst };
-                    this.GetKLineData(drawItem.DrawData.Data, hqChart);
+                    if (draw.BuildKeyCallback) drawItem.BuildKeyCallback=draw.BuildKeyCallback;
+                    drawItem.DrawData={ Data:draw.Data, Family:draw.Family, TextFont:draw.TextFont , EnableTooltip:draw.EnableTooltip, IsDrawFirst:draw.IsDrawFirst };
                     outVarItem.Draw=drawItem;
 
                     result.push(outVarItem);

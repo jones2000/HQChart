@@ -9457,6 +9457,8 @@ function ChartCorssCursor()
     this.Font = g_JSChartResource.CorssCursorTextFont;            //字体
     this.TextColor = g_JSChartResource.CorssCursorTextColor;      //文本颜色
     this.TextBGColor = g_JSChartResource.CorssCursorBGColor;      //文本背景色
+    this.LineDash=g_JSChartResource.CorssCursorLineDash.slice();    //虚线
+
     this.TextHeight = 15;                     //文本字体高度
     this.LastPoint;
     this.CursorIndex;       //当前数据的位置
@@ -9591,7 +9593,7 @@ function ChartCorssCursor()
             if (this.HPenType==1 || this.HPenType==0)
             {
                 this.Canvas.strokeStyle = this.HPenColor;
-                if (this.HPenType == 0) this.Canvas.setLineDash([3, 2]);   //虚线
+                if (this.HPenType == 0) this.Canvas.setLineDash(this.LineDash);   //虚线
                 //this.Canvas.lineWidth=0.5
                 this.Canvas.beginPath();
                 this.Canvas.moveTo(left, ToFixedPoint(y));
@@ -9604,7 +9606,7 @@ function ChartCorssCursor()
             this.Canvas.strokeStyle = this.VPenColor;
             if (this.VPenType == 0) 
             {
-                this.Canvas.setLineDash([3, 2]);   //虚线
+                this.Canvas.setLineDash(this.LineDash);   //虚线
             }
             else if (this.VPenType == 2) 
             {
@@ -9965,7 +9967,7 @@ function ChartCorssCursor()
         {
             this.Canvas.save();
             this.Canvas.strokeStyle = this.HPenColor;
-            if (this.HPenType == 0) this.Canvas.setLineDash([3, 2]);   //虚线
+            if (this.HPenType == 0) this.Canvas.setLineDash(this.LineDash);   //虚线
            
             //画竖线
             this.Canvas.beginPath();
@@ -9978,7 +9980,7 @@ function ChartCorssCursor()
             this.Canvas.strokeStyle = this.VPenColor;
             if (this.VPenType == 0) 
             {
-                this.Canvas.setLineDash([3, 2]);   //虚线
+                this.Canvas.setLineDash(this.LineDash);   //虚线
             }
             else if (this.VPenType == 2) 
             {
