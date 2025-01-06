@@ -94,10 +94,6 @@ import {
     ChartMultiText,
     ChartMultiLine,
     ChartMultiBar,
-    ChartPie,
-    ChartCircle,
-    ChartChinaMap,
-    ChartRadar,
     ChartCorssCursor,
     ChartBuySell,
     ChartMACD,
@@ -910,24 +906,25 @@ function JSChart(element)
             if (IFrameSplitOperator.IsBool(item.IsFixXLastTime)) chart.ChartCorssCursor.IsFixXLastTime=item.IsFixXLastTime;
         }
 
-        if (option.Frame) 
+        if (IFrameSplitOperator.IsNonEmptyArray(option.Frame))
         {
-            for (var i in option.Frame) 
+            for (var i=0;i<option.Frame.length;++i) 
             {
                 if (!chart.Frame.SubFrame[i]) continue;
                 var item = option.Frame[i];
                 if (item.SplitCount) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount = item.SplitCount;
                 if (item.StringFormat) chart.Frame.SubFrame[i].Frame.YSplitOperator.StringFormat = item.StringFormat;
                 if (item.Height>0) chart.Frame.SubFrame[i].Height = item.Height;
-                if (item.IsShowLeftText === false || item.IsShowLeftText === true) chart.Frame.SubFrame[i].Frame.IsShowYText[0] = item.IsShowLeftText;            //显示左边刻度
-                if (item.IsShowRightText === false || item.IsShowRightText === true) chart.Frame.SubFrame[i].Frame.IsShowYText[1] = item.IsShowRightText;         //显示右边刻度 
+                if (IFrameSplitOperator.IsBool(item.IsShowLeftText)) chart.Frame.SubFrame[i].Frame.IsShowYText[0] = item.IsShowLeftText;            //显示左边刻度
+                if (IFrameSplitOperator.IsBool(item.IsShowRightText)) chart.Frame.SubFrame[i].Frame.IsShowYText[1] = item.IsShowRightText;         //显示右边刻度 
+                if (item.Custom) chart.Frame.SubFrame[i].Frame.YSplitOperator.Custom=item.Custom;
             }
         }
 
         if (option.KLine)
         {
-            if (option.KLine.ShowKLine == false) chart.ChartPaint[0].IsShow = false;
-            if (option.KLine.IsShowMaxMinPrice == false) chart.ChartPaint[0].IsShowMaxMinPrice = false;
+            if (IFrameSplitOperator.IsBool(option.KLine.ShowKLine)) chart.ChartPaint[0].IsShow = option.KLine.ShowKLine;
+            if (IFrameSplitOperator.IsBool(option.KLine.IsShowMaxMinPrice)) chart.ChartPaint[0].IsShowMaxMinPrice = option.KLine.IsShowMaxMinPrice;
         }
 
         //股票名称 日期 周期都不显示
@@ -937,7 +934,7 @@ function JSChart(element)
 
         //创建子窗口的指标
         let scriptData = new JSCommonIndexScript.JSIndexScript();
-        for (var i in option.Windows) 
+        for (var i=0;i<option.Windows.length;++i) 
         {
             var item = option.Windows[i];
             if (item.Script) 
@@ -960,12 +957,11 @@ function JSChart(element)
                     if (item.Lock) indexInfo.Lock = item.Lock;
                     chart.WindowIndex[i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args, indexInfo);    //脚本执行
                 }
-
             }
 
             if (item.Modify != null) chart.Frame.SubFrame[i].Frame.ModifyIndex = item.Modify;
             if (item.Change != null) chart.Frame.SubFrame[i].Frame.ChangeIndex = item.Change;
-            if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight = item.TitleHeight;
+            if (IFrameSplitOperator.IsNumber(item.TitleHeight)) chart.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight = item.TitleHeight;
         }
 
         return chart;
@@ -10395,12 +10391,12 @@ function MinuteChartContainer(uielement)
         else this.RequestHistoryMinuteData();              //请求数据
     }
 
-    this.RecvMinuteDataEvent = function () 
+    this.RecvMinuteDataEvent = function (option) 
     {
         if (!this.mapEvent.has(JSCHART_EVENT_ID.RECV_MINUTE_DATA)) return;
 
         var event = this.mapEvent.get(JSCHART_EVENT_ID.RECV_MINUTE_DATA);
-        var data = { MinuteData: this.SourceData, Stock: { Symbol: this.Symbol, Name: this.Name } }
+        var data = { MinuteData: this.SourceData, Stock: { Symbol: this.Symbol, Name: this.Name }, Option:option, DataStatus:this.DataStatus }
         event.Callback(event, data, this);
     }
 
@@ -10464,7 +10460,7 @@ function MinuteChartContainer(uielement)
         }
 
         this.UpdateHistoryMinuteUI();
-        this.RecvMinuteDataEvent();
+        this.RecvMinuteDataEvent({FunctionName:"RecvHistoryMinuteData"} );
         this.RequestOverlayHistoryMinuteData();
         this.BindAllOverlayIndexData(this.SourceData);
 
@@ -10636,16 +10632,19 @@ function MinuteChartContainer(uielement)
         }
 
         var aryMinuteData = MinuteChartContainer.JsonDataToMinuteData(data.data);
+
+        var bFirstData=(this.DataStatus.LatestDay==false);   //首条单日数据
         this.DataStatus.LatestDay=true;
-        
+        this.DataStatus.LatestDate=data.data.stock[0].date; //保存下最后一天的日期
+
         if (this.DayCount > 1)    //多日走势图
         {
             this.UpdateLatestMinuteData(aryMinuteData, data.data.stock[0].date);
             this.UpdateHistoryMinuteUI();
-            this.RecvMinuteDataEvent();
+            this.RecvMinuteDataEvent({FunctionName:"RecvMinuteData"} );
             this.RequestOverlayMinuteData();    //更新最新叠加数据
             this.BindAllOverlayIndexData(this.SourceData);
-            if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvMinuteData', this);
+            //if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvMinuteData', this);
             this.AutoUpdate();
             return;
         }
@@ -10662,22 +10661,35 @@ function MinuteChartContainer(uielement)
         //原始数据
         var sourceData = new ChartData();
         sourceData.Data = aryMinuteData;
+        this.SourceData = sourceData;
+        this.UpdateMinuteUI(data.data.stock[0],  {FunctionName:"RecvMinuteData", Day:{ IsFirstData:bFirstData} });
 
-        this.TradeDate = data.data.stock[0].date;
+        if (data.AutoUpdate===false) 
+        {
+
+        }
+        else
+        {
+            this.AutoUpdate();
+        }
+    }
+
+    this.UpdateMinuteUI=function(stockData, eventData)
+    {
+        this.TradeDate = stockData.date;
         this.Frame.SetDayCount(1);  //单日数据
 
-        this.SourceData = sourceData;
-        this.Symbol = data.data.stock[0].symbol;
-        this.Name = data.data.stock[0].name;
-        var yClose = data.data.stock[0].yclose;
+        this.Symbol = stockData.symbol;
+        this.Name = stockData.name;
+        var yClose = stockData.yclose;
         var upperSymbol = this.Symbol.toUpperCase();
         var isFutures = MARKET_SUFFIX_NAME.IsFutures(upperSymbol);
-        if (data.data.stock[0].yclearing && isFutures) yClose = data.data.stock[0].yclearing; //期货使用前结算价
-        this.CaclutateLimitPrice(yClose, data.data.stock[0].limitprice); //计算涨停价格
-        var extendData = { High: data.data.stock[0].high, Low: data.data.stock[0].low };
-        this.BindMainData(sourceData, yClose, extendData);
+        if (stockData.yclearing && isFutures) yClose = stockData.yclearing; //期货使用前结算价
+        this.CaclutateLimitPrice(yClose, stockData.limitprice); //计算涨停价格
+        var extendData = { High: stockData.high, Low: stockData.low };
+        this.BindMainData(this.SourceData, yClose, extendData);
 
-        for (let i in this.Frame.SubFrame)  //把股票代码设置到X轴刻度类里
+        for (let i=0;i<this.Frame.SubFrame.length;++i)  //把股票代码设置到X轴刻度类里
         {
             var item = this.Frame.SubFrame[i];
             item.Frame.XSplitOperator.Symbol = this.Symbol;
@@ -10690,7 +10702,7 @@ function MinuteChartContainer(uielement)
         if (this.Frame.SubFrame.length > 2) 
         {
             var bindData = new ChartData();
-            bindData.Data = aryMinuteData;
+            bindData.Data = this.SourceData.Data;
             for (var i = 2; i < this.Frame.SubFrame.length; ++i) 
             {
                 this.BindIndexData(i, bindData);
@@ -10702,7 +10714,7 @@ function MinuteChartContainer(uielement)
 
         var chartInfo = this.GetChartMinuteInfo();
         if (chartInfo) chartInfo.SourceData = this.SourceData;    //数据绑定到信息地雷上
-        this.RecvMinuteDataEvent();
+        this.RecvMinuteDataEvent(eventData);
         this.RequestMinuteInfoData();
         this.RequestOverlayMinuteData();//请求叠加数据 (主数据下载完再下载)
 
@@ -10711,10 +10723,6 @@ function MinuteChartContainer(uielement)
         this.Draw();
 
         this.BindAllOverlayIndexData(this.SourceData);
-
-        if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvMinuteData', this);
-
-        this.AutoUpdate();
     }
 
     this.RecvUpdateMinuteData=function(data)
@@ -10725,7 +10733,7 @@ function MinuteChartContainer(uielement)
         {
             this.UpdateLatestMinuteDataV2(minuteData);
             this.UpdateHistoryMinuteUI();
-            this.RecvMinuteDataEvent();
+            this.RecvMinuteDataEvent({FunctionName:"RecvUpdateMinuteData"});
             this.RequestOverlayMinuteData();    //更新最新叠加数据
             this.BindAllOverlayIndexData(this.SourceData);
             if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvMinuteData', this);
@@ -10734,52 +10742,16 @@ function MinuteChartContainer(uielement)
         }
 
         this.UpdateLatestMinuteDataV2(minuteData);
-        var sourceData=this.SourceData;
-        var aryMinuteData=this.SourceData.Data;
-        this.Frame.SetDayCount(1);  //单日数据
-        var upperSymbol = this.Symbol.toUpperCase();
-        var isFutures = MARKET_SUFFIX_NAME.IsFutures(upperSymbol);
-        var yClose=minuteData.YClose;
-        if (data.stock[0].yclearing && isFutures) yClose = data.stock[0].yclearing; //期货使用前结算价
-        this.CaclutateLimitPrice(yClose, data.stock[0].limitprice); //计算涨停价格
-        var extendData = { High: data.stock[0].high, Low: data.stock[0].low };
-        this.BindMainData(sourceData, yClose, extendData);
-
-        for (var i=0;i<this.Frame.SubFrame.length;++i)  //把股票代码设置到X轴刻度类里
+        this.UpdateMinuteUI(data.data.stock[0], {FunctionName:"RecvUpdateMinuteData"});
+        
+        if (data.AutoUpdate===false)    //不执行自动更新
         {
-            var item = this.Frame.SubFrame[i];
-            item.Frame.XSplitOperator.Symbol = this.Symbol;
-            item.Frame.XSplitOperator.DayCount = 1;
-            item.Frame.XSplitOperator.Operator();   //调整X轴个数
-            item.Frame.YSplitOperator.Symbol = this.Symbol;
-        }
 
-        //计算指标
-        if (this.Frame.SubFrame.length > 2) 
+        }   
+        else
         {
-            var bindData = new ChartData();
-            bindData.Data = aryMinuteData;
-            for (var i = 2; i < this.Frame.SubFrame.length; ++i) 
-            {
-                this.BindIndexData(i, bindData);
-            }
+            this.AutoUpdate();
         }
-
-        var chartInfo = this.GetChartMinuteInfo();
-        if (chartInfo) chartInfo.SourceData = this.SourceData;    //数据绑定到信息地雷上
-        this.RecvMinuteDataEvent();
-        this.RequestMinuteInfoData();
-        this.RequestOverlayMinuteData();//请求叠加数据 (主数据下载完再下载)
-
-        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-        this.Frame.SetSizeChage(true);
-        this.Draw();
-
-        this.BindAllOverlayIndexData(this.SourceData);
-
-        if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvMinuteData', this);
-
-        this.AutoUpdate();
     }
 
     //更新最新的几条数据

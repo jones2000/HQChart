@@ -277,6 +277,20 @@ function IFrameSplitOperator()
         var data={ ID:this.Frame.Identify, Frame:this.Frame };
         event.Callback(event,data,this);
     }
+
+    //回调外部处理自定义Y轴刻度
+    this.InvokeCustomYCoordinateCallback=function()
+    {
+        if (!this.GetEventCallback) return null;
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CREATE_CUSTOM_Y_COORDINATE);
+        if (!event || !event.Callback) return null;
+
+        var data={ ID:this.Frame.Identify, Frame:this.Frame, PreventDefault:false, Custom:this.Custom };
+        if (this.OverlayIdentify) data.OverlayIdentify=this.OverlayIdentify;
+        event.Callback(event,data,this);
+
+        return data;
+    }
 }
 
 //字符串格式化 千分位分割
@@ -748,6 +762,10 @@ function FrameSplitKLinePriceY()
 
     this.CustomCoordinate = function (floatPrecision) 
     {
+        this.Frame.CustomHorizontalInfo = [];
+        var data=this.InvokeCustomYCoordinateCallback();
+        if (data && data.PreventDefault==true) return;
+
         if (!IFrameSplitOperator.IsNumber(floatPrecision))
         {
             floatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.Symbol);
@@ -755,7 +773,6 @@ function FrameSplitKLinePriceY()
             if (this.FloatPrecision != null) floatPrecision = this.FloatPrecision;
         }
 
-        this.Frame.CustomHorizontalInfo = [];
         for (var i=0;i<this.Custom.length; ++i) 
         {
             var item = this.Custom[i];
@@ -1666,7 +1683,10 @@ function FrameSplitMinutePriceY()
     this.CustomCoordinate = function ()    //自定义刻度
     {
         this.Frame.CustomHorizontalInfo = [];
-        if (!this.Custom) return;
+        var data=this.InvokeCustomYCoordinateCallback();
+        if (data && data.PreventDefault==true) return;
+
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.Custom)) return;
 
         for (var i=0; i<this.Custom.length; ++i) 
         {

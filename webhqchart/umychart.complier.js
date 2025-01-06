@@ -11580,6 +11580,48 @@ function JSDraw(errorHandler,symbolData)
 
         return result={ DrawData:{ Data:aryCell, Radius:radius }, DrawType:"DRAW_SIMPLE_PIE" };
     }
+
+    this.RADAR_CELL=function(name, data, max, min)
+    {
+        var cellItem={ Name:name, Max:100, Min:0, Value:null };
+        if (IFrameSplitOperator.IsNumber(data)) 
+        {
+            cellItem.Value=data;
+        }
+        else if (IFrameSplitOperator.IsString(data)) 
+        {
+            cellItem.Value=parseFloat(data);
+        }
+        else if (IFrameSplitOperator.IsNonEmptyArray(data))
+        {
+            var lastValue=data[data.length-1];
+            if (IFrameSplitOperator.IsNumber(lastValue)) cellItem.Value=lastValue;
+            else if (IFrameSplitOperator.IsString(lastValue)) cellItem.Value=parseFloat(lastValue);
+        }
+
+        if (IFrameSplitOperator.IsNumber(max)) cellItem.Max=max;
+        if (IFrameSplitOperator.IsNumber(min)) cellItem.Min=min;
+
+        return cellItem;
+    }
+
+    this.DRAWRADAR=function(args)
+    {
+        var radius=args[0];
+        var color=args[1];
+
+        var aryIndex=[];
+        var aryData=[];
+        for(var i=2;i<args.length;++i)
+        {
+            var item=args[i];
+
+            aryIndex.push({ Name:item.Name, Max:item.Max, Min:item.Min });
+            aryData.push({ Value:item.Value, Name:item.Name, Group:"Default"});
+        }
+
+        return result={ DrawData:{ Data:aryData, AryIndex:aryIndex, Radius:radius, AryArea:[{ LineColor:color }] }, DrawType:"DRAW_SIMPLE_RADAR" };
+    }
 }
 
 
@@ -11634,7 +11676,7 @@ JSDraw.prototype.IsDrawFunction=function(name)
         'DRAWOVERLAYLINE',"FILLRGN", "FILLRGN2","FILLTOPRGN", "FILLBOTTOMRGN", "FILLVERTICALRGN","FLOATRGN","DRAWSL", "DRAWGBK2","DRAWGBK_DIV",
         "VERTLINE","HORLINE","TIPICON",
         "BUY","SELL","SELLSHORT","BUYSHORT",
-        "DRAWLASTBARICON","DRAWLASTBARNUMBER", "DRAWLASTBARTEXT","DRAWTABLE","DRAWPIE",
+        "DRAWLASTBARICON","DRAWLASTBARNUMBER", "DRAWLASTBARTEXT","DRAWTABLE","DRAWPIE","DRAWRADAR",
     ]);
     if (setFunctionName.has(name)) return true;
 
@@ -18523,6 +18565,14 @@ function JSExecute(ast,option)
                 node.Draw=this.Draw.DRAWPIE(args);
                 node.Out=[];
                 break;
+            //雷达图
+            case "RADAR_CELL":
+                node.Out=this.Draw.RADAR_CELL(args[0],args[1],args[2],args[3]);
+                break;
+            case "DRAWRADAR":
+                node.Draw=this.Draw.DRAWRADAR(args);
+                node.Out=[];
+                break;
 
             default:
                 node.Out=this.Algorithm.CallFunction(funcName, args, node, this.SymbolData);
@@ -21539,6 +21589,35 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateSimpleRadar=function(hqChart,windowIndex,varItem,id)
+    {
+        var chart=new ChartSimpleRadar();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        if (varItem.Draw && varItem.Draw.DrawData)
+        {
+            var drawData=varItem.Draw.DrawData;
+            if (drawData.Data) chart.Data.Data=drawData.Data;
+            if (drawData.AryIndex) chart.AryIndex=drawData.AryIndex;
+            if (IFrameSplitOperator.IsPlusNumber(drawData.Radius)) chart.Radius=drawData.Radius;
+            if (drawData.BorderColor) chart.BorderColor=drawData.BorderColor;
+
+            if (drawData.TextFont) chart.TextFontConfig=drawData.TextFont;
+            if (drawData.TextColor) chart.TextColor=drawData.TextColor;
+            if (drawData.BorderColor) chart.BorderColor=drawData.BorderColor;
+            if (IFrameSplitOperator.IsNumber(drawData.XOffset)) chart.Offset.X=drawData.XOffset;
+            if (IFrameSplitOperator.IsNumber(drawData.YOffset)) chart.Offset.Y=drawData.YOffset;
+            if (IFrameSplitOperator.IsNonEmptyArray(drawData.AryArea)) chart.AryAreaConfig=drawData.AryArea;
+
+            chart.BuildCacheData();
+        }
+    
+        hqChart.ChartPaint.push(chart);
+    }
+
     this.CreateTradeIcon=function(hqChart,windowIndex,varItem,id)
     {
         var chart=new ChartTradeIcon();
@@ -22414,6 +22493,10 @@ function ScriptIndex(name,script,args,option)
                         break;
                     case "DRAW_SIMPLE_PIE":
                         this.CreateSimplePie(hqChart,windowIndex,item,i);
+                        break;
+                    case "DRAW_SIMPLE_RADAR":
+                        this.CreateSimpleRadar(hqChart,windowIndex,item,i);
+                        break;
                     case "BUY":
                     case "SELL":
                     case "SELLSHORT":
@@ -22766,7 +22849,10 @@ function OverlayScriptIndex(name,script,args,option)
                         break;
                     case "DRAW_SIMPLE_PIE":
                         this.CreateSimplePie(hqChart,windowIndex,item,i);
-
+                        break;
+                    case "DRAW_SIMPLE_RADAR":
+                        this.CreateSimpleRadar(hqChart,windowIndex,item,i);
+                        break;
                     case "KLINE_BG":
                         this.CreateBackgroud(hqChart,windowIndex,item,i);
                         break;
@@ -23831,6 +23917,39 @@ function OverlayScriptIndex(name,script,args,option)
             if (IFrameSplitOperator.IsPlusNumber(drawData.Radius)) chart.Radius=drawData.Radius;
         }
 
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateSimpleRadar=function(hqChart,windowIndex,varItem,id)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        var chart=new ChartSimpleRadar();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+        chart.HQChart=hqChart;
+
+        if (varItem.Draw && varItem.Draw.DrawData)
+        {
+            var drawData=varItem.Draw.DrawData;
+            if (drawData.Data) chart.Data.Data=drawData.Data;
+            if (drawData.AryIndex) chart.AryIndex=drawData.AryIndex;
+            if (IFrameSplitOperator.IsPlusNumber(drawData.Radius)) chart.Radius=drawData.Radius;
+            if (drawData.BorderColor) chart.BorderColor=drawData.BorderColor;
+
+            if (drawData.TextFont) chart.TextFontConfig=drawData.TextFont;
+            if (drawData.TextColor) chart.TextColor=drawData.TextColor;
+            if (drawData.BorderColor) chart.BorderColor=drawData.BorderColor;
+            if (IFrameSplitOperator.IsNumber(drawData.XOffset)) chart.Offset.X=drawData.XOffset;
+            if (IFrameSplitOperator.IsNumber(drawData.YOffset)) chart.Offset.Y=drawData.YOffset;
+            if (IFrameSplitOperator.IsNonEmptyArray(drawData.AryArea)) chart.AryAreaConfig=drawData.AryArea;
+
+            chart.BuildCacheData();
+        }
+    
         frame.ChartPaint.push(chart);
     }
 
@@ -25043,6 +25162,17 @@ function APIScriptIndex(name,script,args,option, isOverlay)
 
                     drawItem.DrawType=draw.DrawType;
                     drawItem.DrawData=draw.DrawData;    //{ Data:[ {Value, Color, Text: }, ], BorderColor:， TextFont:{ Size:, Name: } };
+ 
+                    outVarItem.Draw=drawItem;
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType=="DRAW_SIMPLE_RADAR")
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=draw.DrawData;    //{ AryIndex:[ ], Data:[] };
  
                     outVarItem.Draw=drawItem;
                     result.push(outVarItem);

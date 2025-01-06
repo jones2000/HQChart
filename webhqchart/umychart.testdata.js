@@ -1862,6 +1862,8 @@ HQData.Report_APIIndex=function(data, callback)
         HQData.APIIndex_DRAW_SIMPLE_TABLE(data, callback);
     else if (request.Data.indexname=="API_DRAW_SIMPLE_PIE")
         HQData.APIIndex_DRAW_SIMPLE_PIE(data, callback);
+    else if (request.Data.indexname=="API_DRAW_SIMPLE_RADAR")
+        HQData.APIIndex_DRAW_SIMPLE_RADAR(data, callback);
     
 }
 
@@ -2384,6 +2386,76 @@ HQData.APIIndex_DRAW_SIMPLE_PIE=function(data, callback)
 
     
     console.log('[HQData.APIIndex_DRAW_SIMPLE_PIE] apiData ', apiData);
+    callback(apiData);
+}
+
+
+HQData.APIIndex_DRAW_SIMPLE_RADAR=function(data, callback)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var kData=hqchart.GetKData();
+
+    var tableData= 
+    { 
+        name:'DRAW_SIMPLE_RADAR', type:1, 
+        Draw: 
+        { 
+            DrawType:'DRAW_SIMPLE_RADAR', 
+            DrawData: 
+            {
+                //BGColor:"rgba(250,250,210,0.8)",
+                //BorderColor:"rgb(110,110,110)",
+                //TextColor:"rgb(0,191,255)",
+                Data:
+                [
+                    { Value:10, Name:"1月", Group:"组1"},
+                    { Value:70, Name:"2月", Group:"组1"},
+                    { Value:80, Name:"3月", Group:"组1"},
+                    { Value:10, Name:"4月", Group:"组1"},
+                    { Value:40, Name:"5月", Group:"组1"},
+                    { Value:60, Name:"6月", Group:"组1"},
+                    { Value:66, Name:"7月", Group:"组1"},
+                    { Value:69, Name:"8月", Group:"组1"},
+                    { Value:80, Name:"9月", Group:"组1"},
+                    { Value:30, Name:"10月", Group:"组1"},
+                    { Value:20, Name:"11月", Group:"组1"},
+                    { Value:68, Name:"12月", Group:"组1"},
+                ],
+
+                AryIndex:
+                [
+                    { Name:"1月" },
+                    { Name:"2月" },
+                    { Name:"3月" },
+                    { Name:"4月" },
+                    { Name:"5月" },
+                    { Name:"6月" },
+                    { Name:"7月" },
+                    { Name:"8月" },
+                    { Name:"9月" },
+                    { Name:"10月" },
+                    { Name:"11月" },
+                    { Name:"12月" },
+                ],
+
+                //TextFont:{ Size:16, Name:"微软雅黑"},
+                //XOffset:-10,
+                //YOffset:-15,
+                Radius:50,
+            }
+        } 
+    };
+
+    var apiData=
+    {
+        code:0, 
+        stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+        outdata: { date:kData.GetDate(), time:kData.GetTime() , outvar:[tableData] } 
+    };
+
+    
+    console.log('[HQData.APIIndex_DRAW_SIMPLE_RADAR] apiData ', apiData);
     callback(apiData);
 }
 

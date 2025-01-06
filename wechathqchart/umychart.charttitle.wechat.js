@@ -1319,6 +1319,13 @@ function DynamicChartTitlePainting()
         UnchangeColor:g_JSChartResource.IndexTitle.UpDownArrow.UnchangeColor
     };
 
+    this.ReloadResource=function()
+    {
+        this.BGColor=g_JSChartResource.IndexTitleBGColor;   //指标名字背景颜色
+        this.BGBorderColor=g_JSChartResource.IndexTitleBorderColor;
+        this.TitleColor = g_JSChartResource.IndexTitleColor;   //指标名字颜色
+    }
+
     this.SetDynamicTitleData=function(outName, args, data)
     {
         if (!data.OutName) data.OutName=new Map();

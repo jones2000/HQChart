@@ -546,6 +546,20 @@ function GetBlackStyle()
             BorderColor:"rgb(220,220,220)",
         },
 
+        ChartSimpleRadar:
+        {
+            //TextFont:{ Family:'微软雅黑' , Size:12 },
+            BorderColor:"rgb(230, 230, 230)",
+            //Offset:{ X:-5, Y:5 },
+            TextColor:"rgb(250, 250, 250)",
+            AryBGColor:['rgba(63,61,82,0.9)','rgba(56,55,80,0.9)'],
+            AryArea:
+            [ 
+                { Color:"rgba(242,154,118,0.4)", LineColor:"rgb(242,154,118)"}, 
+                { Color:"rgba(121,197,228,0.4)", LineColor:"rgb(92,165,196)"}, 
+            ],
+        },
+
         ChartDrawVolProfile:
         {
             BGColor:"rgba(244,250,254,0.3)",
