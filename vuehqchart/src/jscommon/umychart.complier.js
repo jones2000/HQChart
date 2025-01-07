@@ -21992,16 +21992,18 @@ function ScriptIndex(name,script,args,option)
         chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
 
-        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Data=hqChart.ChartPaint[0].Data;      //绑定K线
         chart.PointGroup=varItem.Draw.DrawData; 
         if (varItem.Draw.Name) chart.Name=varItem.Draw.Name;
+        chart.BuildCacheData();
+
         this.SetChartIndexName(chart);
         hqChart.ChartPaint.push(chart);
 
-         var titleIndex=windowIndex+1;
+        var titleIndex=windowIndex+1;
         var titleData=new DynamicTitleData(chart.Data,chart.Name, null);
         titleData.DataType="ChartMultiPoint";
-        titleData.PointGroup=chart.PointGroup;
+        titleData.GetItemCallback=(kItem)=>{ return chart.GetItem(kItem); }
         hqChart.TitlePaint[titleIndex].Data[i]=titleData;
     }
 
@@ -23716,7 +23718,7 @@ function OverlayScriptIndex(name,script,args,option)
         frame.ChartPaint.push(chart);
     }
 
-    this.CreateMultiPoint=function(hqChart,windowIndex,varItem,i)
+    this.CreateMultiPoint=function(hqChart,windowIndex,varItem,id)
     {
         var overlayIndex=this.OverlayIndex;
         var frame=overlayIndex.Frame;
@@ -23729,6 +23731,17 @@ function OverlayScriptIndex(name,script,args,option)
 
         chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
         chart.PointGroup=varItem.Draw.DrawData; 
+        chart.BuildCacheData();
+
+        var titleIndex=windowIndex+1;
+        var titlePaint=hqChart.TitlePaint[titleIndex];
+        var titleData=new DynamicTitleData(chart.Data,varItem.Name,null);
+        titleData.DataType="ChartMultiPoint";
+        titleData.GetItemCallback=(kItem)=>{ return chart.GetItem(kItem); }
+        titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=titleData;
+
+        this.SetChartIndexName(chart);
+        
         frame.ChartPaint.push(chart);
     }
 
@@ -24925,14 +24938,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     drawItem.Text=draw.Text;
                     drawItem.Name=draw.Name;
                     drawItem.DrawType=draw.DrawType;
-                    drawItem.DrawData=this.FittingMultiLine(draw.DrawData,date,time,hqChart);
-                    if (IFrameSplitOperator.IsNonEmptyArray(drawItem.DrawData))
-                    {
-                        for(var k=0; k<drawItem.DrawData.length; ++k)
-                        {
-                            this.GetKLineData(drawItem.DrawData[k].Point, hqChart);
-                        }
-                    }
+                    drawItem.DrawData=draw.DrawData;
                     
                     outVarItem.Draw=drawItem;
                     result.push(outVarItem);
@@ -25479,14 +25485,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     drawItem.Text=draw.Text;
                     drawItem.Name=draw.Name;
                     drawItem.DrawType=draw.DrawType;
-                    drawItem.DrawData=this.FittingMultiLine(draw.DrawData,date,time,hqChart);
-                    if (IFrameSplitOperator.IsNonEmptyArray(drawItem.DrawData))
-                    {
-                        for(var k=0; k<drawItem.DrawData.length; ++k)
-                        {
-                            this.GetKLineData(drawItem.DrawData[k].Point, hqChart);
-                        }
-                    }
+                    drawItem.DrawData=draw.DrawData;
                     
                     outVarItem.Draw=drawItem;
                     result.push(outVarItem);

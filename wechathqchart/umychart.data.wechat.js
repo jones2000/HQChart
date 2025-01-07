@@ -2173,6 +2173,28 @@ ChartData.GetPeriodName = function (period)
     return '';
 }
 
+ChartData.GetKValue=function(kItem, valueName)
+{
+    if (!kItem) return null;
+    switch(valueName)
+    {
+        case "HIGH":
+        case "H":
+            return kItem.High;
+        case "L":
+        case "LOW":
+            return kItem.Low;
+        case "C":
+        case "CLOSE":
+            return kItem.Close;
+        case "O":
+        case "OPEN":
+            return KItem.Open;
+        default:
+            return null;
+    }
+}
+
 function RectV2(x, y, width, height)
 {
     this.X=x;

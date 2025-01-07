@@ -5703,7 +5703,7 @@ function ChartMultiLine()
     }
 }
 
-// 线段集合 支持横屏
+// 多个点集合 支持横屏
 function ChartMultiPoint()
 {
     this.newMethod=IChartPainting;   //派生
@@ -5711,86 +5711,210 @@ function ChartMultiPoint()
     delete this.newMethod;
     
     this.ClassName="ChartMultiPoint";
-    this.PointGroup=[];   // [ {Point:[ {Index, Value }, ], Color:  }, ] 
+    this.PointGroup=[];   // [ {Point:[ { {Date, Time, Value } }, ], Color:  }, ] 
 
     this.IsHScreen=false;
     this.LineWidth=1;
     this.PointRadius=5;
 
-    this.Draw=function()
+    this.MapCache=null; //key=date/date-time  value={ Data:[] }
+    this.GetKValue=ChartData.GetKValue;
+
+    this.BuildKey=function(item)
     {
-        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
-        if (!this.Data || this.Data.length<=0) return;
+        if (IFrameSplitOperator.IsNumber(item.Time)) return `${item.Date}-${item.Time}`;
+        else return item.Date;
+    }
+
+    this.GetItem=function(kItem)
+    {
+        if (!this.MapCache || this.MapCache.size<=0) return null;
+
+        var key=this.BuildKey(kItem);
+        if (!this.MapCache.has(key)) return null;
+
+        return this.MapCache.get(key);
+    }
+
+    this.BuildCacheData=function()
+    {
+        var mapData=new Map();
+        this.MapCache=mapData;
         if (!IFrameSplitOperator.IsNonEmptyArray(this.PointGroup)) return;
-
-        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
-        var xPointCount=this.ChartFrame.XPointCount;
-        var offset=this.Data.DataOffset;
-
-        this.Canvas.save();
 
         for(var i=0; i<this.PointGroup.length; ++i)
         {
-            var item=this.PointGroup[i];
-            var color=item.Color;
-            var bgColor=item.BGColor;
-            var lineWidth=this.LineWidth;
-            var radius=this.PointRadius;
-            if (IFrameSplitOperator.IsNumber(item.LineWidth)) lineWidth=item.LineWidth;
-            if (IFrameSplitOperator.IsNumber(item.PointRadius)) radius=item.PointRadius;
+            var groupItem=this.PointGroup[i];
+            if (!groupItem || !IFrameSplitOperator.IsNonEmptyArray(groupItem.Point)) continue;
 
-            this.Canvas.lineWidth=lineWidth;
-            if (bgColor) this.Canvas.fillStyle=bgColor;      //背景填充颜色
-            if (color) this.Canvas.strokeStyle=color;
+            var clrConfig= { Color:groupItem.Color, BGColor:groupItem.BGColor, LineWidth:this.LineWidth, Radius:this.PointRadius, Name:groupItem.Name };
+            if (IFrameSplitOperator.IsNumber(groupItem.PointRadius)) clrConfig.Radius=groupItem.PointRadius;
 
-            for(var j=0; j<item.Point.length; ++j)
+            for(var j=0; j<groupItem.Point.length; ++j)
             {
-                var point=item.Point[j];
-                if (!IFrameSplitOperator.IsNumber(point.Index)) continue;
-
-                var index=point.Index-offset;
-                if (index>=0 && index<xPointCount)
+                var point=groupItem.Point[j];
+                var key=this.BuildKey(point);
+                
+                var item={ Data:point, ColorConfig:clrConfig }
+                if (mapData.has(key))
                 {
-                    var x=this.ChartFrame.GetXFromIndex(index);
-                    var y=this.ChartFrame.GetYFromData(point.Value);
-
-                    this.Canvas.beginPath();
-                    if (this.IsHScreen) 
-                        this.Canvas.arc(y,x,radius,0,360,false);
-                    else
-                        this.Canvas.arc(x,y,radius,0,360,false);
-
-                    if (bgColor) this.Canvas.fill();
-                    if (color) this.Canvas.stroke();
+                    var mapItem=mapData.get(key);
+                    mapItem.Data.push(item);
+                }
+                else
+                {
+                    mapData.set(key,{ Data:[item] });
                 }
             }
         }
+    }
 
+    this.Draw=function()
+    {
+        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
+        if (!this.Data || !IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return; //k线数据
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.PointGroup)) return;
+        if (!this.MapCache || this.MapCache.size<=0) return;
+
+        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
+        var xPointCount=this.ChartFrame.XPointCount;
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var isMinute=this.IsMinuteFrame();
+        var border=this.GetBorder();
+
+        if (this.IsHScreen)
+        {
+            var xOffset=border.TopEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.BottomEx;
+            var chartLeft=border.TopEx;
+        }
+        else
+        {
+            var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.RightEx;
+            var chartLeft=border.LeftEx;
+        }
+
+        //计算所有的点位置
+        var mapPoint=new Map();
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var kItem=this.Data.Data[i];
+            var key=this.BuildKey(kItem);
+            if (!this.MapCache.has(key)) continue;
+            var mapItem=this.MapCache.get(key);
+            if (!IFrameSplitOperator.IsNonEmptyArray(mapItem.Data)) continue;
+
+            if (isMinute)
+            {
+                var x=this.ChartFrame.GetXFromIndex(j);
+            }
+            else
+            {
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                if (right>chartright) break;
+                var x=left+(right-left)/2;
+            }
+
+            this.CalculateItem(mapItem, kItem, x, mapPoint);
+        }
+
+        if (mapPoint.size<=0) return;
+
+        this.Canvas.save();
+        this.DrawAllPoint(mapPoint);
         this.Canvas.restore();
+    }
+
+    this.CalculateItem=function(groupItem, kItem, x, mapPoint)
+    {
+        for(var i=0; i<groupItem.Data.length; ++i)
+        {
+            var item=groupItem.Data[i];
+            var value=item.Data.Value;
+            if (IFrameSplitOperator.IsString(item.Data.Value)) value=this.GetKValue(kItem,item.Data.Value);
+            if (!IFrameSplitOperator.IsNumber(value)) continue;
+
+            var y=this.ChartFrame.GetYFromData(value,false);
+
+            var strConfig=JSON.stringify(item.ColorConfig);
+            if (!mapPoint.has(strConfig)) mapPoint.set(strConfig, { AryPoint:[]});
+            var mapItem=mapPoint.get(strConfig);
+
+            mapItem.AryPoint.push({ X:x, Y:y, Data:item });
+        }
+    }
+
+    this.DrawAllPoint=function(mapPoint)
+    {
+        for(var mapItem of mapPoint)
+        {
+            var aryPoint=mapItem[1].AryPoint;
+            if (!IFrameSplitOperator.IsNonEmptyArray(aryPoint)) continue;
+            var config=null;
+            var path=new Path2D();
+            var count=0;
+            for(var i=0;i<aryPoint.length;++i)
+            {
+                var item=aryPoint[i];
+                if (!config) config=item.Data.ColorConfig;
+
+                var pointPath = new Path2D();
+                if (this.IsHScreen) 
+                    pointPath.arc(item.Y,item.X,config.Radius,0,360,false);
+                else
+                    pointPath.arc(item.X,item.Y,config.Radius,0,360,false);
+
+                path.addPath(pointPath);
+                ++count;
+            }
+
+            if (count>0 && config)
+            {
+                if (config.BGColor) 
+                {
+                    this.Canvas.fillStyle=config.BGColor;      //背景填充颜色
+                    this.Canvas.fill(path);
+                }
+
+                if (config.Color) 
+                {
+                    this.Canvas.lineWidth=config.LineWidth;
+                    this.Canvas.strokeStyle=config.Color;
+                    this.Canvas.stroke(path);
+                }
+            }
+        }
     }
 
     this.GetMaxMin=function()
     {
         var range={ Min:null, Max:null };
+        if(!this.Data || !IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return range;
+        if (!this.MapCache || this.MapCache.size<=0) return;
         var xPointCount=this.ChartFrame.XPointCount;
-        var start=this.Data.DataOffset;
-        var end=start+xPointCount;
 
-        for(var i=0; i<this.PointGroup.length; ++i)
+        for(var i=this.Data.DataOffset,j=0, k=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
-            var item=this.PointGroup[i];
-            if (!IFrameSplitOperator.IsNonEmptyArray(item.Point)) continue;
+            var kItem=this.Data.Data[i];
+            var key=this.BuildKey(kItem);
+            if (!this.MapCache.has(key)) continue;
+            var mapItem=this.MapCache.get(key);
+            if (!IFrameSplitOperator.IsNonEmptyArray(mapItem.Data)) continue;
 
-            for(var j=0; j<item.Point.length; ++j)
+            for(k=0;k<mapItem.Data.length;++k)
             {
-                var point=item.Point[j];
-                if (point.Index>=start && point.Index<end)
-                {
-                    if (range.Max==null) range.Max=point.Value;
-                    else if (range.Max<point.Value) range.Max=point.Value;
-                    if (range.Min==null) range.Min=point.Value;
-                    else if (range.Min>point.Value) range.Min=point.Value;
-                }
+                var item=mapItem.Data[k];
+                var value=item.Data.Value;
+                if (IFrameSplitOperator.IsString(item.Data.Value)) value=this.GetKValue(kItem,item.Data.Value);
+                if (!IFrameSplitOperator.IsNumber(value)) continue;
+
+                if (range.Max==null) range.Max=value;
+                else if (range.Max<value) range.Max=value;
+                if (range.Min==null) range.Min=value;
+                else if (range.Min>value) range.Min=value;
             }
         }
 

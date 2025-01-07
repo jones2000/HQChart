@@ -1890,13 +1890,14 @@ HQData.APIIndex_MULTI_POINT=function(data, callback)
         BGColor:"rgb(255,215,0)",
         PointRadius:10,
         LineWidth:2,
+        Name:"最低价",
         Point:[ ] 
     };
 
     for(var i=kData.Data.length-1, j=0; i>=0 && j<6; i-=5, ++j)
     {
         var item=kData.Data[i];
-        point.Point.push({Date:item.Date, Time:item.Time, Value:item.Low});
+        point.Point.push({Date:item.Date, Time:item.Time, Value:"LOW"});
     }
 
     pointData.Draw.DrawData.push(point);
@@ -1908,6 +1909,7 @@ HQData.APIIndex_MULTI_POINT=function(data, callback)
         BGColor:"rgb(30,144,255)",
         PointRadius:5,
         LineWidth:1,
+        Name:"中间价",
         Point:[ ] 
     };
 

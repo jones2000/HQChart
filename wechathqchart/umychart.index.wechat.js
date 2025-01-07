@@ -1274,7 +1274,7 @@ function ScriptIndex(name, script, args, option)
 
     this.CreateMultiPoint = function (hqChart, windowIndex, varItem, i) 
     {
-        let chart = new ChartMultiPoint();
+        var chart = new ChartMultiPoint();
         chart.Canvas = hqChart.Canvas;
         chart.Name = varItem.Name;
         chart.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
@@ -1283,7 +1283,8 @@ function ScriptIndex(name, script, args, option)
         chart.Data = hqChart.ChartPaint[0].Data;//绑定K线
         chart.PointGroup = varItem.Draw.DrawData;
         if (varItem.Draw.Name) chart.Name=varItem.Draw.Name;
-       
+        chart.BuildCacheData();
+
         hqChart.ChartPaint.push(chart);
     }
 
@@ -2470,6 +2471,7 @@ function OverlayScriptIndex(name,script,args,option)
 
         chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
         chart.PointGroup=varItem.Draw.DrawData; 
+        chart.BuildCacheData();
         
         frame.ChartPaint.push(chart);
     }
@@ -2882,16 +2884,8 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
                     drawItem.Text = draw.Text;
                     drawItem.Name = draw.Name;
                     drawItem.DrawType = draw.DrawType;
-                    drawItem.DrawData = this.FittingMultiLine(draw.DrawData, date, time, hqChart);
+                    drawItem.DrawData = draw.DrawData;
                     outVarItem.Draw = drawItem;
-                    if (IFrameSplitOperator.IsNonEmptyArray(drawItem.DrawData))
-                    {
-                        for(var k=0; k<drawItem.DrawData.length; ++k)
-                        {
-                            this.GetKLineData(drawItem.DrawData[k].Point, hqChart);
-                        }
-                    }
-
                     result.push(outVarItem);
                 }
                 else if (draw.DrawType == 'MULTI_BAR') 
@@ -3298,11 +3292,7 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
                     drawItem.Text=draw.Text;
                     drawItem.Name=draw.Name;
                     drawItem.DrawType=draw.DrawType;
-                    drawItem.DrawData=this.FittingMultiLine(draw.DrawData,date,time,hqChart);
-                    for(var k in drawItem.DrawData)
-                    {
-                        this.GetKLineData(drawItem.DrawData[k].Point, hqChart);
-                    }
+                    drawItem.DrawData=draw.DrawData;
                     outVarItem.Draw=drawItem;
 
                     result.push(outVarItem);
