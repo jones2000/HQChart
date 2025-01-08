@@ -31307,15 +31307,7 @@ function ChartOverlayKLine()
 
         if (!this.MainData || !this.Data) return range;
 
-        var firstOpen=null; //主线数据第1个收盘价
-        for(var i=this.Data.DataOffset,j=0;i<this.MainData.Data.length && j<xPointCount;++i,++j)
-        {
-            var data=this.MainData.Data[i];
-            if (data.Open==null || data.High==null || data.Low==null || data.Close==null) continue;
-            firstOpen=data.Close;
-            break;
-        }
-
+        var firstOpen=this.GetFirstOpen();
         if (firstOpen==null) return range;
 
         var firstOverlayOpen=null;
@@ -40913,7 +40905,7 @@ function ChartMultiLine()
     }
 }
 
-// 线段集合 支持横屏
+// 多个点集合 支持横屏
 function ChartMultiPoint()
 {
     this.newMethod=IChartPainting;   //派生
@@ -41084,7 +41076,7 @@ function ChartMultiPoint()
                 if (this.IsHScreen) 
                     pointPath.arc(item.Y,item.X,config.Radius*pixelRatio,0,360,false);
                 else
-                    pointPath.arc(item.X,item.Y,config.Radius**pixelRatio,0,360,false);
+                    pointPath.arc(item.X,item.Y,config.Radius*pixelRatio,0,360,false);
 
                 path.addPath(pointPath);
                 ++count;

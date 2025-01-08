@@ -5120,12 +5120,8 @@ function ChartOverlayKLine()
         if (bFirstPoint == false) this.Canvas.stroke();
     }
 
-    this.Draw = function () 
+    this.GetFirstOpen=function()
     {
-        this.TooltipRect = [];
-        this.DrawKRange={ Start:null, End:null };
-        if (!this.MainData || !this.Data) return;
-
         var xPointCount = this.ChartFrame.XPointCount;
         var firstOpen = null; //主线数据第1个开盘价
         for (var i = this.Data.DataOffset, j = 0; i < this.MainData.Data.length && j < xPointCount; ++i, ++j) 
@@ -5136,6 +5132,16 @@ function ChartOverlayKLine()
             break;
         }
 
+        return firstOpen;
+    }
+
+    this.Draw = function () 
+    {
+        this.TooltipRect = [];
+        this.DrawKRange={ Start:null, End:null };
+        if (!this.MainData || !this.Data) return;
+
+        var firstOpen = this.GetFirstOpen(); //主线数据第1个开盘价
         if (firstOpen == null) return;
 
         var drawTypeBackup = this.DrawType; //备份下线段类型
@@ -5157,15 +5163,7 @@ function ChartOverlayKLine()
 
         if (!this.MainData || !this.Data) return range;
 
-        var firstOpen = null; //主线数据第1个收盘价
-        for (var i = this.Data.DataOffset, j = 0; i < this.MainData.Data.length && j < xPointCount; ++i, ++j) 
-        {
-            var data = this.MainData.Data[i];
-            if (data.Open == null || data.High == null || data.Low == null || data.Close == null) continue;
-            firstOpen = data.Close;
-            break;
-        }
-
+        var firstOpen = this.GetFirstOpen(); //主线数据第1个收盘价
         if (firstOpen == null) return range;
 
         var firstOverlayOpen = null;
@@ -5854,20 +5852,24 @@ function ChartMultiPoint()
             var aryPoint=mapItem[1].AryPoint;
             if (!IFrameSplitOperator.IsNonEmptyArray(aryPoint)) continue;
             var config=null;
-            var path=new Path2D();
+            this.Canvas.beginPath();
             var count=0;
             for(var i=0;i<aryPoint.length;++i)
             {
                 var item=aryPoint[i];
                 if (!config) config=item.Data.ColorConfig;
 
-                var pointPath = new Path2D();
                 if (this.IsHScreen) 
-                    pointPath.arc(item.Y,item.X,config.Radius,0,360,false);
+                {
+                    this.Canvas.moveTo(item.Y+config.Radius,item.X);
+                    this.Canvas.arc(item.Y,item.X,config.Radius,0,360,false);
+                }
                 else
-                    pointPath.arc(item.X,item.Y,config.Radius,0,360,false);
-
-                path.addPath(pointPath);
+                {
+                    this.Canvas.moveTo(item.X+config.Radius,item.Y);
+                    this.Canvas.arc(item.X,item.Y,config.Radius,0,360,false);
+                }
+                    
                 ++count;
             }
 
@@ -5876,14 +5878,14 @@ function ChartMultiPoint()
                 if (config.BGColor) 
                 {
                     this.Canvas.fillStyle=config.BGColor;      //背景填充颜色
-                    this.Canvas.fill(path);
+                    this.Canvas.fill();
                 }
 
                 if (config.Color) 
                 {
                     this.Canvas.lineWidth=config.LineWidth;
                     this.Canvas.strokeStyle=config.Color;
-                    this.Canvas.stroke(path);
+                    this.Canvas.stroke();
                 }
             }
         }
