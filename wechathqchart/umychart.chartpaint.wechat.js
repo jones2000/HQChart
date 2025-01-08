@@ -5747,7 +5747,8 @@ function ChartMultiPoint()
 
             var clrConfig= { Color:groupItem.Color, BGColor:groupItem.BGColor, LineWidth:this.LineWidth, Radius:this.PointRadius, Name:groupItem.Name };
             if (IFrameSplitOperator.IsNumber(groupItem.PointRadius)) clrConfig.Radius=groupItem.PointRadius;
-
+            if (IFrameSplitOperator.IsNumber(groupItem.LineWidth)) clrConfig.LineWidth=groupItem.LineWidth;
+            
             for(var j=0; j<groupItem.Point.length; ++j)
             {
                 var point=groupItem.Point[j];

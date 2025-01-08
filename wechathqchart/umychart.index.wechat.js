@@ -1187,7 +1187,7 @@ function ScriptIndex(name, script, args, option)
         chart.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chart.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
 
-        chart.Data = hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Data = hqChart.GetKData();//绑定K线
         chart.Texts = varItem.Draw.DrawData;
         hqChart.ChartPaint.push(chart);
     }
@@ -1200,7 +1200,7 @@ function ScriptIndex(name, script, args, option)
         chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
 
-        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Data=hqChart.GetKData();//绑定K线
         chart.Family=varItem.Draw.DrawData.Family;
         chart.AryIcon= varItem.Draw.DrawData.Icon;
         chart.BuildCacheData();
@@ -1280,7 +1280,7 @@ function ScriptIndex(name, script, args, option)
         chart.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chart.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
 
-        chart.Data = hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Data = hqChart.GetKData();//绑定K线
         chart.PointGroup = varItem.Draw.DrawData;
         if (varItem.Draw.Name) chart.Name=varItem.Draw.Name;
         chart.BuildCacheData();
@@ -1296,7 +1296,7 @@ function ScriptIndex(name, script, args, option)
         chart.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chart.ChartFrame = hqChart.Frame.SubFrame[windowIndex].Frame;
 
-        chart.Data = hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Data = hqChart.GetKData();//绑定K线
         chart.Bars = varItem.Draw.DrawData;
         hqChart.ChartPaint.push(chart);
     }
@@ -2462,14 +2462,14 @@ function OverlayScriptIndex(name,script,args,option)
     {
         var overlayIndex=this.OverlayIndex;
         var frame=overlayIndex.Frame;
-        let chart=new ChartMultiLine();
+        let chart=new ChartMultiPoint();
         chart.Canvas=hqChart.Canvas;
         chart.Name=varItem.Name;
         chart.ChartBorder=frame.Frame.ChartBorder;
         chart.ChartFrame=frame.Frame;
         chart.Identify=overlayIndex.Identify;
 
-        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Data=hqChart.GetKData();//绑定K线
         chart.PointGroup=varItem.Draw.DrawData; 
         chart.BuildCacheData();
         
@@ -2550,7 +2550,7 @@ function OverlayScriptIndex(name,script,args,option)
         chart.ChartFrame=frame.Frame;
         chart.Identify=overlayIndex.Identify;
 
-        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Data=hqChart.GetKData();//绑定K线
         chart.Family=varItem.Draw.DrawData.Family;
         chart.AryIcon= varItem.Draw.DrawData.Icon;
         chart.BuildCacheData();

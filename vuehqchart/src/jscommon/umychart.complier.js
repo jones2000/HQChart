@@ -21992,7 +21992,7 @@ function ScriptIndex(name,script,args,option)
         chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
 
-        chart.Data=hqChart.ChartPaint[0].Data;      //绑定K线
+        chart.Data=hqChart.GetKData();      //绑定K线
         chart.PointGroup=varItem.Draw.DrawData; 
         if (varItem.Draw.Name) chart.Name=varItem.Draw.Name;
         chart.BuildCacheData();
@@ -22015,17 +22015,18 @@ function ScriptIndex(name,script,args,option)
         chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
 
-        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Data=hqChart.GetKData();//绑定K线
         chart.Bars=varItem.Draw.DrawData; 
-
-        var titleIndex=windowIndex+1;
-        var titleData=new DynamicTitleData({ KData:chart.Data, BarData:chart.Bars },varItem.Name,null);
-        titleData.IsShow=false;
-        titleData.DataType="MULTI_BAR";
-        hqChart.TitlePaint[titleIndex].Data[id]=titleData;
+        chart.BuildCacheData();
 
         this.SetChartIndexName(chart);
         hqChart.ChartPaint.push(chart);
+
+        var titleIndex=windowIndex+1;
+        var titleData=new DynamicTitleData(chart.Data,varItem.Name,null);
+        titleData.DataType="ChartMultiBar";
+        titleData.GetItemCallback=(kItem)=>{ return chart.GetItem(kItem); }
+        hqChart.TitlePaint[titleIndex].Data[id]=titleData;
     }
 
     this.CreateMultiText=function(hqChart,windowIndex,varItem,i)
@@ -22036,8 +22037,10 @@ function ScriptIndex(name,script,args,option)
         chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
 
-        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Data=hqChart.GetKData();//绑定K线
         chart.Texts=varItem.Draw.DrawData; 
+        chart.BuildCacheData();
+
         this.SetChartIndexName(chart);
         hqChart.ChartPaint.push(chart);
     }
@@ -22050,7 +22053,7 @@ function ScriptIndex(name,script,args,option)
         chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
 
-        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Data=hqChart.GetKData();//绑定K线
         chart.Family=varItem.Draw.DrawData.Family;
         chart.AryIcon= varItem.Draw.DrawData.Icon;
         chart.BuildCacheData();
@@ -22066,10 +22069,8 @@ function ScriptIndex(name,script,args,option)
         chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
 
-        if (hqChart.ChartPaint[0].IsMinuteFrame())
-            chart.Data=hqChart.SourceData;
-        else
-            chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        
+        chart.Data=hqChart.GetKData()
         if (IFrameSplitOperator.IsBool(varItem.Draw.DrawData.EnableTooltip)) chart.EnableTooltip=varItem.Draw.DrawData.EnableTooltip;
         if (IFrameSplitOperator.IsBool(varItem.Draw.DrawData.IsDrawFirst)) chart.IsDrawFirst=varItem.Draw.DrawData.IsDrawFirst;
         if (varItem.Draw.BuildKeyCallback) chart.BuildKeyCallback=varItem.Draw.BuildKeyCallback;
@@ -23577,11 +23578,7 @@ function OverlayScriptIndex(name,script,args,option)
         chart.ChartFrame=frame.Frame;
         chart.Identify=overlayIndex.Identify;
 
-        if (hqChart.ChartPaint[0].IsMinuteFrame())
-            chart.Data=hqChart.SourceData;
-        else
-            chart.Data=hqChart.ChartPaint[0].Data;  //绑定K线
-        
+        chart.Data=hqChart.GetKData();
         chart.Family=varItem.Draw.Icon.Family;
         chart.TextFont=g_JSChartResource.TIPICON.TextFont;
         
@@ -23729,7 +23726,7 @@ function OverlayScriptIndex(name,script,args,option)
         chart.ChartFrame=frame.Frame;
         chart.Identify=overlayIndex.Identify;
 
-        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Data=hqChart.GetKData();//绑定K线
         chart.PointGroup=varItem.Draw.DrawData; 
         chart.BuildCacheData();
 
@@ -23779,14 +23776,16 @@ function OverlayScriptIndex(name,script,args,option)
         chart.ChartFrame=frame.Frame;
         chart.Identify=overlayIndex.Identify;
 
-        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Data=hqChart.GetKData();//绑定K线
         chart.Bars=varItem.Draw.DrawData; 
+        chart.BuildCacheData();
 
         var titleIndex=windowIndex+1;
         var titlePaint=hqChart.TitlePaint[titleIndex];
-        var titleData=new DynamicTitleData({ KData:chart.Data, BarData:chart.Bars },varItem.Name,null);
-        titleData.IsShow=false;
-        titleData.DataType="MULTI_BAR";
+        var titleData=new DynamicTitleData(chart.Data,varItem.Name,null);
+        titleData.DataType="ChartMultiBar";
+        titleData.GetItemCallback=(kItem)=>{ return chart.GetItem(kItem); }
+
         titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=titleData;
 
         this.SetChartIndexName(chart);
@@ -23804,8 +23803,10 @@ function OverlayScriptIndex(name,script,args,option)
         chart.ChartFrame=frame.Frame;
         chart.Identify=overlayIndex.Identify;
 
-        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Data=hqChart.GetKData();//绑定K线
         chart.Texts=varItem.Draw.DrawData; 
+        chart.BuildCacheData();
+
         this.SetChartIndexName(chart);
         frame.ChartPaint.push(chart);
     }
@@ -23821,7 +23822,7 @@ function OverlayScriptIndex(name,script,args,option)
         chart.ChartFrame=frame.Frame;
         chart.Identify=overlayIndex.Identify;
 
-        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Data=hqChart.GetKData();//绑定K线
         chart.Family=varItem.Draw.DrawData.Family;
         chart.AryIcon= varItem.Draw.DrawData.Icon;
         chart.BuildCacheData();
@@ -23839,11 +23840,8 @@ function OverlayScriptIndex(name,script,args,option)
         chart.ChartBorder=frame.Frame.ChartBorder;
         chart.ChartFrame=frame.Frame;
         chart.Identify=overlayIndex.Identify;
-
-        if (hqChart.ChartPaint[0].IsMinuteFrame())
-            chart.Data=hqChart.SourceData;
-        else
-            chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Data=hqChart.GetKData();
+        
         
         if (IFrameSplitOperator.IsBool(varItem.Draw.DrawData.EnableTooltip)) chart.EnableTooltip=varItem.Draw.DrawData.EnableTooltip;
         if (IFrameSplitOperator.IsBool(varItem.Draw.DrawData.IsDrawFirst)) chart.IsDrawFirst=varItem.Draw.DrawData.IsDrawFirst;
@@ -24948,7 +24946,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     drawItem.Text=draw.Text;
                     drawItem.Name=draw.Name;
                     drawItem.DrawType=draw.DrawType;
-                    drawItem.DrawData=this.FittingMultiLine(draw.DrawData,date,time,hqChart);
+                    drawItem.DrawData=draw.DrawData;
                     outVarItem.Draw=drawItem;
 
                     result.push(outVarItem);
@@ -24999,8 +24997,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     drawItem.Text=draw.Text;
                     drawItem.Name=draw.Name;
                     drawItem.DrawType=draw.DrawType;
-                    drawItem.DrawData=this.FittingMultiText(draw.DrawData,date,time,hqChart);
-                    this.GetKLineData(drawItem.DrawData, hqChart);
+                    drawItem.DrawData=draw.DrawData;
                     outVarItem.Draw=drawItem;
                     result.push(outVarItem);
                 }
@@ -25495,8 +25492,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     drawItem.Text=draw.Text;
                     drawItem.Name=draw.Name;
                     drawItem.DrawType=draw.DrawType;
-                    drawItem.DrawData=this.FittingMultiText(draw.DrawData,date,time,hqChart);
-                    this.GetKLineData(drawItem.DrawData, hqChart);
+                    drawItem.DrawData=draw.DrawData;
                     outVarItem.Draw=drawItem;
                     result.push(outVarItem);
                 }

@@ -1864,6 +1864,8 @@ HQData.Report_APIIndex=function(data, callback)
         HQData.APIIndex_DRAW_SIMPLE_PIE(data, callback);
     else if (request.Data.indexname=="API_DRAW_SIMPLE_RADAR")
         HQData.APIIndex_DRAW_SIMPLE_RADAR(data, callback);
+    else if (request.Data.indexname=="API_MULTI_BAR")
+        HQData.APIIndex_MULTI_BAR(data, callback);
     
 }
 
@@ -2459,6 +2461,73 @@ HQData.APIIndex_DRAW_SIMPLE_RADAR=function(data, callback)
     
     console.log('[HQData.APIIndex_DRAW_SIMPLE_RADAR] apiData ', apiData);
     callback(apiData);
+}
+
+
+HQData.APIIndex_MULTI_BAR=function(data, callback)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var kData=hqchart.GetKData();
+
+    var barData= 
+    { 
+        name:'MULTI_BAR', type:1, 
+        Draw: 
+        { 
+            DrawType:'MULTI_BAR', 
+            DrawData:[] 
+        } //绘制柱子数组
+    };
+
+    //第一组柱子
+    var point=
+    { 
+        Color:'rgb(148,0,211)', //颜色
+        Type:0,
+        Name:"柱子上部",
+        Point:
+        [
+            //{Date:20190916, Time: Value:15.5, Value2:0 },
+        ],
+        Width:10
+    };
+
+    var point2=
+    { 
+        Color:'rgb(55,228,181)', //颜色
+        Type:1,
+        Name:"柱子下部",
+        Point:
+        [
+            //{Date:20190916, Time: Value:15.5, Value2:0 },
+        ],
+        Width:20
+    };
+
+    for(var i=0;i<kData.Data.length;++i)
+    {
+        var item=kData.Data[i];
+        point.Point.push({Date:item.Date, Time:item.Time, Value:(item.High+item.Low)/2, Value2:item.High});
+        point2.Point.push({Date:item.Date, Time:item.Time, Value:(item.High+item.Low)/2, Value2:item.Low});
+    }
+
+
+
+    barData.Draw.DrawData.push(point);
+    barData.Draw.DrawData.push(point2);
+
+    var apiData=
+    {
+        code:0, 
+        stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+        outdata: { date:kData.GetDate(), time:kData.GetTime() , outvar:[barData] } 
+    };
+
+    
+    console.log('[HQData.APIIndex_MULTI_BAR] apiData ', apiData);
+    callback(apiData);
+
 }
 
 
