@@ -1189,6 +1189,7 @@ function ScriptIndex(name, script, args, option)
 
         chart.Data = hqChart.GetKData();//绑定K线
         chart.Texts = varItem.Draw.DrawData;
+        chart.BuildCacheData();
         hqChart.ChartPaint.push(chart);
     }
 
@@ -1298,6 +1299,7 @@ function ScriptIndex(name, script, args, option)
 
         chart.Data = hqChart.GetKData();//绑定K线
         chart.Bars = varItem.Draw.DrawData;
+        chart.BuildCacheData();
         hqChart.ChartPaint.push(chart);
     }
 
@@ -2510,14 +2512,16 @@ function OverlayScriptIndex(name,script,args,option)
         chart.ChartFrame=frame.Frame;
         chart.Identify=overlayIndex.Identify;
 
-        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Data=hqChart.GetKData();//绑定K线
         chart.Bars=varItem.Draw.DrawData; 
+        chart.BuildCacheData();
 
         var titleIndex=windowIndex+1;
         var titlePaint=hqChart.TitlePaint[titleIndex];
-        var titleData=new DynamicTitleData({ KData:chart.Data, BarData:chart.Bars },varItem.Name,null);
+        var titleData=new DynamicTitleData(chart.Data,varItem.Name,null);
         titleData.IsShow=false;
-        titleData.DataType="MULTI_BAR";
+        titleData.DataType="ChartMultiPoint";
+        titleData.GetItemCallback=(kItem)=>{ return chart.GetItem(kItem); }
         titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=titleData;
 
         frame.ChartPaint.push(chart);
@@ -2534,8 +2538,10 @@ function OverlayScriptIndex(name,script,args,option)
         chart.ChartFrame=frame.Frame;
         chart.Identify=overlayIndex.Identify;
 
-        chart.Data=hqChart.ChartPaint[0].Data;//绑定K线
+        chart.Data=hqChart.GetKData();//绑定K线
         chart.Texts=varItem.Draw.DrawData; 
+        chart.BuildCacheData();
+
         frame.ChartPaint.push(chart);
     }
 
@@ -2893,7 +2899,7 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
                     drawItem.Text = draw.Text;
                     drawItem.Name = draw.Name;
                     drawItem.DrawType = draw.DrawType;
-                    drawItem.DrawData = this.FittingMultiLine(draw.DrawData, date, time, hqChart);
+                    drawItem.DrawData =draw.DrawData;
                     outVarItem.Draw = drawItem;
 
                     result.push(outVarItem);
@@ -2917,8 +2923,8 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
                     drawItem.Text = draw.Text;
                     drawItem.Name = draw.Name;
                     drawItem.DrawType = draw.DrawType;
-                    drawItem.DrawData = this.FittingMultiText(draw.DrawData, date, time, hqChart);
-                    this.GetKLineData(drawItem.DrawData, hqChart);
+                    drawItem.DrawData = draw.DrawData;
+
                     outVarItem.Draw = drawItem;
                     result.push(outVarItem);
                 }
@@ -3302,8 +3308,7 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
                     drawItem.Text=draw.Text;
                     drawItem.Name=draw.Name;
                     drawItem.DrawType=draw.DrawType;
-                    drawItem.DrawData=this.FittingMultiText(draw.DrawData,date,time,hqChart);
-                    this.GetKLineData(drawItem.DrawData, hqChart);
+                    drawItem.DrawData=draw.DrawData;
                     outVarItem.Draw=drawItem;
                     result.push(outVarItem);
                 }

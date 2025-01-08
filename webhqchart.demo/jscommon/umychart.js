@@ -40562,7 +40562,7 @@ function ChartMultiBar()
 
         for(var mapItem of mapBar)
         {
-            aryBar=mapItem[1].AryBar;
+            var aryBar=mapItem[1].AryBar;
             if (!IFrameSplitOperator.IsNonEmptyArray(aryBar)) continue;
 
             var config=null;
@@ -40570,6 +40570,7 @@ function ChartMultiBar()
             var count=0;
             var drawType=-1;    //1=直线 2=实心 3=空心
             var barWidth=1;
+            this.Canvas.beginPath();
             for(var i=0;i<aryBar.length;++i)
             {
                 var item=aryBar[i];
@@ -40593,7 +40594,6 @@ function ChartMultiBar()
 
                 if (drawType==1)
                 {
-                    this.Canvas.beginPath();
                     if (this.IsHScreen)
                     {
                         this.Canvas.moveTo(ToFixedPoint(item.Y),ToFixedPoint(item.X));
@@ -41398,7 +41398,6 @@ function ChartMultiText()
 
                 if (item.Line)
                 {
-                    var kItem=this.Data.Data[item.Index];
                     var price=item.Line.KData=="H"? kItem.High:kItem.Low;
                     var yPrice=this.ChartFrame.GetYFromData(price, false);
                     var yText=y;
