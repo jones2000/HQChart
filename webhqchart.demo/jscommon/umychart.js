@@ -4587,11 +4587,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         var y=(e.clientY-uielement.getBoundingClientRect().top)*pixelTatio;
         var data= { X:e.clientX, Y:e.clientY, FrameID:-1 };
     
-        var isInClient=false;
-        this.Canvas.beginPath();
-        this.Canvas.rect(this.Frame.ChartBorder.GetLeft(),this.Frame.ChartBorder.GetTop(),this.Frame.ChartBorder.GetWidth(),this.Frame.ChartBorder.GetHeight());
-        isInClient=this.Canvas.isPointInPath(x,y);
-        if (isInClient)
+        var clientPos=this.PtInClient(x,y);
+        if (clientPos>0)
         {
             var yValueExtend={};
             var yValue=this.Frame.GetYData(y,yValueExtend);
@@ -41340,10 +41337,18 @@ function ChartMultiText()
             var mapItem=this.MapCache.get(key);
             if (!IFrameSplitOperator.IsNonEmptyArray(mapItem.Data)) continue;
 
-            var left=xOffset;
-            var right=xOffset+dataWidth;
-            if (right>chartright) break;
-            var x=left+(right-left)/2;
+            if (isMinute)
+            {
+                var x=this.ChartFrame.GetXFromIndex(j);
+            }
+            else
+            {
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                if (right>chartright) break;
+                var x=left+(right-left)/2;
+            }
+            
 
             for(var k=0;k<mapItem.Data.length;++k)
             {
@@ -44365,11 +44370,15 @@ function KLineTooltipPaint()
         }
 
         //换手率
-        if (MARKET_SUFFIX_NAME.IsSHSZStockA(this.HQChart.Symbol) && item.FlowCapital>0)
+        if (IFrameSplitOperator.IsNumber(item.FlowCapital))
         {
+            var text="--.--"
             title=g_JSChartLocalization.GetText('Tooltip-Exchange',this.LanguageID);
-            var value=item.Vol/item.FlowCapital*100;
-            var text=value.toFixed(2)+'%';
+            if (item.FlowCapital!=0)
+            {
+                var value=item.Vol/item.FlowCapital*100;
+                var text=value.toFixed(2)+'%';
+            }
             aryText.push({Title:title, TitleColor:this.TitleColor, Text:text, Color:this.TitleColor });
         }
 
@@ -53149,8 +53158,9 @@ function ChartCorssCursor()
         Icon:g_JSChartResource.CorssCursor.RightButton.Icon
     };
 
-    this.RightMargin={ Left:2, Right:2, Top:4, Bottom:3 };
-    CopyMarginConfig(this.RightMargin, g_JSChartResource.CorssCursor.RightMargin);
+    this.RightMargin=CloneData(g_JSChartResource.CorssCursor.RightMargin);
+    this.BottomConfig=CloneData(g_JSChartResource.CorssCursor.BottomText);     //底部输出配置
+    this.LeftConfig=CloneData(g_JSChartResource.CorssCursor.LeftText);
 
     //内部使用
     this.Close=null;     //收盘价格
@@ -53522,36 +53532,48 @@ function ChartCorssCursor()
         {
             var text=this.StringFormatY.Text;
             this.Canvas.font=this.Font;
-            var textWidth=this.Canvas.measureText(text).width+4;    //前后各空2个像素
-            var textSize={ Width:textWidth, Height:this.TextHeight, Text:[] };
+            var textWidth=this.Canvas.measureText(text).width;    //前后各空2个像素
+            var textSize={ Width:textWidth+4, Height:this.TextHeight, Text:[] };
             var buttonData={Y:y, YValue:yValue, FrameID:yValueExtend.FrameID };
-            if (this.Frame.ChartBorder.Left>=30 && this.ShowTextMode.Left==1)
+
+            if (this.Frame.ChartBorder.Left>=30)    //左边
             {
-                if (left<textWidth ) //左边空白的地方太少了画布下
+                var margin=this.LeftConfig.Margin;
+                var textOffset=this.LeftConfig.TextOffset;
+
+                var rtBG=null;
+                if (this.ShowTextMode.Left==1)
                 {
-                    this.DrawTextBGRect(ToFixedPoint(2),ToFixedPoint(y-this.TextHeight/2),ToFixedRect(textWidth),ToFixedRect(this.TextHeight));
+                    var rtBG={ Right:left, Width:textWidth+margin.Left+margin.Right, YCenter:y, Height:textHeight+margin.Top+margin.Bottom };
+                    rtBG.Left=rtBG.Right-rtBG.Width;
+                    rtBG.Top=rtBG.YCenter-rtBG.Height/2;
+                    rtBG.Bottom=rtBG.Top+rtBG.Height;
+
+                    if (rtBG.Left<0) 
+                    {
+                        rtBG.Left=0;
+                        rtBG.Right=rtBG.Left+rtBG.Width;
+                    }
+                }
+                else if (this.ShowTextMode.Left==2) //在框架内显示
+                {
+                    var rtBG={ Left:left, Width:textWidth+margin.Left+margin.Right, YCenter:y, Height:textHeight+margin.Top+margin.Bottom };
+                    rtBG.Right=rtBG.Left+rtBG.Width;
+                    rtBG.Top=rtBG.YCenter-rtBG.Height/2;
+                    rtBG.Bottom=rtBG.Top+rtBG.Height;
+                }
+
+                if (rtBG)
+                {
+                    this.DrawTextBGRect(rtBG.Left,rtBG.Top,rtBG.Width,rtBG.Height);
                     this.Canvas.textAlign="left";
-                    this.Canvas.textBaseline="middle";
+                    this.Canvas.textBaseline="bottom";
                     this.Canvas.fillStyle=this.TextColor;
-                    this.Canvas.fillText(text,2+2,y,textWidth);
-                }
-                else
-                {
-                    this.DrawTextBGRect(left-2,y-this.TextHeight/2,-textWidth,this.TextHeight);
-                    this.Canvas.textAlign="right";
-                    this.Canvas.textBaseline="middle";
-                    this.Canvas.fillStyle=this.TextColor;
-                    this.Canvas.fillText(text,left-4,y,textWidth);
+                    this.Canvas.fillText(text,rtBG.Left+textOffset.X, rtBG.Bottom+textOffset.Y);
                 }
             }
-            else if (this.ShowTextMode.Left==2) //在框架内显示
-            {
-                this.DrawTextBGRect(left,y-this.TextHeight/2,textWidth,this.TextHeight);
-                this.Canvas.textAlign="left";
-                this.Canvas.textBaseline="middle";
-                this.Canvas.fillStyle=this.TextColor;
-                this.Canvas.fillText(text,left+2,y,textWidth);
-            }
+
+            
 
             var complexText=
             { 
@@ -53693,26 +53715,42 @@ function ChartCorssCursor()
             var text=this.StringFormatX.Text;
             this.Canvas.font=this.Font;
             this.Canvas.fillStyle=this.TextBGColor;
-            var textWidth=this.Canvas.measureText(text).width+4;    //前后各空2个像素
+            var textWidth=this.Canvas.measureText(text).width;    //前后各空2个像素
+            var margin=this.BottomConfig.Margin;
+            var textOffset=this.BottomConfig.TextOffset;
+            var rtBG=
+            { 
+                Top:bottom, Height:margin.Top+margin.Bottom+textHeight, 
+                XCenter:x, Width:textWidth+margin.Left+margin.Right 
+            };
+            rtBG.Bottom=rtBG.Top+rtBG.Height;
+            rtBG.Left=rtBG.XCenter-rtBG.Width/2;
+            rtBG.Right=rtBG.Left+rtBG.Width;
 
-            var yCenter=bottom+2+this.TextHeight/2;
-            var yTop=bottom+2;
+            if (rtBG.Left<=0)
+            {
+                rtBG.Left=0;
+                rtBG.Right=rtBG.Left+rtBG.Width;
+            }
+            else if (rtBG.Right>=right)
+            {
+                rtBG.Right=right;
+                rtBG.Left=rtBG.Right-rtBG.Width;
+            }
+
             var bShowText=true;
             if (this.ShowTextMode.Bottom==2)
             {
-                yCenter=bottom-this.TextHeight/2-2;
-                yTop=bottom-this.TextHeight-2;
+                rtBG.Bottom=bottom;
+                rtBG.Top=rtBG.Bottom-rtBG.Height;
             }
             else if (this.ShowTextMode.Bottom==8)
             {
                 var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CUSTOM_CORSSCURSOR_POSITION);
                 if (event && event.Callback)
                 {
-                    var sendData={ YCenter:yCenter, YTop:yTop, Height:this.TextHeight, IsShowText:bShowText };
+                    var sendData={ RectText:rtBG, IsShowText:bShowText, X:x, Y:y };
                     event.Callback(event, sendData, this);
-
-                    yCenter=sendData.YCenter;
-                    yTop=sendData.YTop;
                     bShowText=sendData.IsShowText;
                 }
             }
@@ -53720,31 +53758,12 @@ function ChartCorssCursor()
             //JSConsole.Chart.Log('[ChartCorssCursor::Draw] ',yCenter);
             if (bShowText)
             {
-                if (x-textWidth/2<3)    //左边位置不够了, 顶着左边画
-                {
-                    this.DrawTextBGRect(x-1,yTop,textWidth,this.TextHeight);
-                    this.Canvas.textAlign="left";
-                    this.Canvas.textBaseline="middle";
-                    this.Canvas.fillStyle=this.TextColor;
-                    this.Canvas.fillText(text,x+1,yCenter,textWidth);
-                }
-                else if (x+textWidth/2>=right)
-                {
-                    this.DrawTextBGRect(right-textWidth,yTop,textWidth,this.TextHeight);
-                    this.Canvas.textAlign="right";
-                    this.Canvas.textBaseline="middle";
-                    this.Canvas.fillStyle=this.TextColor;
-                    this.Canvas.fillText(text,right-2,yCenter,textWidth);
-                }
-                else
-                {
-                    this.DrawTextBGRect(x-textWidth/2,yTop,textWidth,this.TextHeight);
-                    this.Canvas.textAlign="center";
-                    this.Canvas.textBaseline="middle";
-                    this.Canvas.fillStyle=this.TextColor;
-                    this.Canvas.fillText(text,x,yCenter,textWidth);
-                }
-            }
+                this.DrawTextBGRect(rtBG.Left,rtBG.Top,rtBG.Width,rtBG.Height);
+                this.Canvas.textAlign="left";
+                this.Canvas.textBaseline="bottom";
+                this.Canvas.fillStyle=this.TextColor;
+                this.Canvas.fillText(text,rtBG.Left+textOffset.X,rtBG.Bottom+textOffset.Y,textWidth);
+        }
         }
 
         //子坐标Y轴
@@ -55551,13 +55570,19 @@ function HistoryDataStringFormat()
                 aryText.push(item);
             }
 
-            if(MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol) && data.FlowCapital>0)  //换手率
+            if(IFrameSplitOperator.IsNumber(data.FlowCapital))  //换手率
             {
-                var value=data.Vol/data.FlowCapital*100;
+                var text="--.--";
+                if (data.FlowCapital!=0)
+                {
+                    var value=data.Vol/data.FlowCapital*100;
+                    var text=`${value.toFixed(2)}%`;
+                }
+                
                 var item=
                 {
                     Title:g_JSChartLocalization.GetText('DivTooltip-Exchange',this.LanguageID),
-                    Text:`${value.toFixed(2)}%`,
+                    Text:text,
                     Color:this.TurnoverRateColor
                 }
                 aryText.push(item);
@@ -56254,10 +56279,14 @@ function DynamicKLineTitlePainting()
             aryText.push({ Text:text, Color:this.AmountColor});
         }
 
-        if (MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol) && item.FlowCapital>0)   //A股有换手率
+        if (IFrameSplitOperator.IsNumber(item.FlowCapital))   //换手率
         {
-            var value=item.Vol/item.FlowCapital*100;    //成交量/流通A股*100
-            var text=g_JSChartLocalization.GetText('KTitle-Exchange',this.LanguageID)+IFrameSplitOperator.FormatValueString(value,2,this.LanguageID)+'%';
+            var text="--.--";
+            if (item.FlowCapital!=0)
+            {
+                var value=item.Vol/item.FlowCapital*100;    //成交量/流通A股*100
+                var text=g_JSChartLocalization.GetText('KTitle-Exchange',this.LanguageID)+IFrameSplitOperator.FormatValueString(value,2,this.LanguageID)+'%';
+            }
             aryText.push({ Text:text, Color:this.TurnoverRateColor});
         }
 
@@ -71072,7 +71101,10 @@ function JSChartResource()
             Icon: { Text:'\ue6a3', Color:'rgb(255,255,255)', Family:"iconfont", Size:18 }
         },
 
-        RightMargin: { Left:2, Right:2, Top:5, Bottom:3 }
+        RightMargin: { Left:2, Right:2, Top:5, Bottom:3 },
+
+        BottomText:{ Margin: { Left:4, Right:4, Top:0, Bottom:0 }, TextOffset:{X:4, Y:-1 } },
+        LeftText:{ Margin: { Left:4, Right:4, Top:0, Bottom:0 }, TextOffset:{X:4, Y:-1 } }
     };
 
     this.LockBGColor = "rgb(220, 220, 220)";        //指标锁区域颜色

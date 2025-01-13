@@ -73,10 +73,8 @@ function JSTReportChart(divElement)
 
         if (option.EnableResize==true) this.CreateResizeListener();
 
-        if (option.MinuteChartTooltip && option.MinuteChartTooltip.Enable)
-        {
-            chart.InitalMinuteChartTooltip(option.MinuteChartTooltip);
-        }
+        if (option.MinuteChartTooltip && option.MinuteChartTooltip.Enable) chart.InitalMinuteChartTooltip(option.MinuteChartTooltip);   //分时图
+        if (option.FloatTooltip && option.FloatTooltip.Enable) chart.InitalFloatTooltip(option.FloatTooltip);   //提示信息
 
         if (option.Symbol)
         {
@@ -330,6 +328,7 @@ function JSTReportChartContainer(uielement)
     this.EnablePageCycle=false; //是否循环翻页
 
     this.TooltipMinuteChart;    //分时图
+    this.FloatTooltip;          //浮框提示
     this.LastMouseStatus={ MoveStatus:null, TooltipStatus:null, MouseOnStatus:null };
 
     this.IsDestroy=false;        //是否已经销毁了
@@ -339,6 +338,7 @@ function JSTReportChartContainer(uielement)
         this.IsDestroy=true;
         this.StopAutoUpdate();
         this.DestroyMinuteChartTooltip();
+        this.DestroyFloatTooltip();
     }
 
     this.InitalMinuteChartTooltip=function(option)
@@ -379,6 +379,51 @@ function JSTReportChartContainer(uielement)
         if (!this.TooltipMinuteChart) return;
 
         this.TooltipMinuteChart.Hide();
+    }
+
+    this.InitalFloatTooltip=function(option)
+    {
+        if (this.FloatTooltip) return;
+
+        this.FloatTooltip=new JSFloatTooltip();
+        this.FloatTooltip.Inital(this, option);
+        this.FloatTooltip.Create();
+    }
+
+    this.HideFloatTooltip=function()
+    {
+        if (!this.FloatTooltip) return;
+
+        this.FloatTooltip.Hide();
+    }
+
+    this.DestroyFloatTooltip=function()
+    {
+        if (!this.FloatTooltip) return;
+
+        this.FloatTooltip.Destroy();
+        this.FloatTooltip=null;
+    }
+
+    this.DrawFloatTooltip=function(point,toolTip)
+    {
+        if (!this.FloatTooltip) return;
+
+        this.UpdateFloatTooltip(point, toolTip)
+    }
+
+    this.UpdateFloatTooltip=function(point, toolTip)
+    {
+        if (!this.FloatTooltip) return;
+
+        var sendData=
+        {
+            Tooltip:toolTip,
+            Point:point,
+            DataType:4,
+        };
+
+        this.FloatTooltip.Update(sendData);
     }
 
     //清空固定行数据
@@ -1060,8 +1105,7 @@ function JSTReportChartContainer(uielement)
         var oldMouseOnStatus=this.LastMouseStatus.MouseOnStatus;
         this.LastMouseStatus.OnMouseMove=null;
 
-        var bDrawTooltip=false;
-        if (this.LastMouseStatus.TooltipStatus) bDrawTooltip=true;
+        var bShowTooltip=false;
         this.LastMouseStatus.TooltipStatus=null;
 
         var bShowChartTooltip=false;
@@ -1088,7 +1132,7 @@ function JSTReportChartContainer(uielement)
                 else
                 {
                     this.LastMouseStatus.TooltipStatus={ X:x, Y:y, Data:tooltipData, ClientX:e.clientX, ClientY:e.clientY };
-                    bDrawTooltip=true;
+                    bShowTooltip=true;
                 }
             }
             
@@ -1104,7 +1148,6 @@ function JSTReportChartContainer(uielement)
         */
 
         if (mouseStatus) this.UIElement.style.cursor=mouseStatus.Cursor;
-        //if (bDrawTooltip) this.DrawTooltip(this.LastMouseStatus.TooltipStatus);
 
         if (bShowChartTooltip)
         {
@@ -1113,6 +1156,17 @@ function JSTReportChartContainer(uielement)
         else
         {
             this.HideMinuteChartTooltip();
+        }
+
+        if (bShowTooltip)
+        {
+            var xTooltip = e.clientX-this.UIElement.getBoundingClientRect().left;
+            var yTooltip = e.clientY-this.UIElement.getBoundingClientRect().top;
+            this.DrawFloatTooltip({X:xTooltip, Y:yTooltip, YMove:20/pixelTatio},this.LastMouseStatus.TooltipStatus.Data);
+        }
+        else
+        {
+            this.HideFloatTooltip();
         }
     }
 
@@ -1343,6 +1397,7 @@ function JSTReportChartContainer(uielement)
         {
             this.LastMouseStatus.TooltipStatus=null;
             this.HideMinuteChartTooltip();
+            this.HideFloatTooltip();
             var result=this.MoveSelectedRow(1,{ EnablePageCycle:this.EnablePageCycle })
             if (result)
             {
@@ -1354,6 +1409,7 @@ function JSTReportChartContainer(uielement)
         {
             this.LastMouseStatus.TooltipStatus=null;
             this.HideMinuteChartTooltip();
+            this.HideFloatTooltip();
             var result=this.MoveSelectedRow(-1,{ EnablePageCycle:this.EnablePageCycle} );
             if (result)
             {
@@ -1376,6 +1432,7 @@ function JSTReportChartContainer(uielement)
         if (keyID==116) return; //F15刷新不处理
 
         this.HideMinuteChartTooltip();
+        this.HideFloatTooltip();
 
         switch(keyID)
         {
@@ -2496,11 +2553,11 @@ function ChartTReport()
             if (leftData.TitleColor) drawInfo.TextColor=leftData.TitleColor;
             if (leftData.Text && leftData.TextColor)
             {
-                drawInfo.Left={ Text:leftData.Text, TextColor:leftData.TextColor};
+                drawInfo.Left={ Text:leftData.Text, TextColor:leftData.TextColor, Tooltip:leftData.Tooltip};
             }
             else if (leftData.IconFont && leftData.TextColor)
             {
-                drawInfo.Left={ IconFont:leftData.IconFont, TextColor:leftData.TextColor};
+                drawInfo.Left={ IconFont:leftData.IconFont, TextColor:leftData.TextColor, Tooltip:leftData.Tooltip};
             }
            
         }
@@ -2512,11 +2569,11 @@ function ChartTReport()
 
             if (rightData.Text && rightData.TextColor)
             {
-                drawInfo.Right={ Text:rightData.Text, TextColor:rightData.TextColor};
+                drawInfo.Right={ Text:rightData.Text, TextColor:rightData.TextColor, Tooltip:rightData.Tooltip};
             }
             else if (rightData.IconFont && rightData.TextColor)
             {
-                drawInfo.Right={ IconFont:rightData.IconFont, TextColor:rightData.TextColor};
+                drawInfo.Right={ IconFont:rightData.IconFont, TextColor:rightData.TextColor, Tooltip:rightData.Tooltip};
             }
         }
     }
@@ -2547,9 +2604,21 @@ function ChartTReport()
 
         this.FormatCenterItem(data,drawInfo);
 
-       
-
         this.DrawCell(drawInfo);
+
+        if (drawInfo.LeftIconTooltip)
+        {
+            var tooltipItem=drawInfo.LeftIconTooltip;
+            var tooltipData={ Rect:tooltipItem.Rect, Data:tooltipItem.Data, Index:index, Column:column, CellType:cellType, Type:2 };
+            this.TooltipRect.push(tooltipData);
+        }
+
+        if (drawInfo.RightIconTooltip)
+        {
+            var tooltipItem=drawInfo.RightIconTooltip;
+            var tooltipData={ Rect:tooltipItem.Rect, Data:tooltipItem.Data, Index:index, Column:column, CellType:cellType, Type:3 };
+            this.TooltipRect.push(tooltipData);
+        }
     }
 
     this.DrawItem=function(index, exePriceData, data, column, rtItem, cellType)
@@ -2818,7 +2887,7 @@ function ChartTReport()
             this.DrawText(drawInfo.Text, drawInfo.TextAlign, rtText.Left, yCenter, rtText.Width);
         }
 
-        if (drawInfo.Left)
+        if (drawInfo.Left)  //左边图标
         {
             var item=drawInfo.Left;
             this.Canvas.textAlign="left";
@@ -2829,6 +2898,13 @@ function ChartTReport()
                 if (!fontBackup) fontBackup=this.Canvas.font;
                 this.Canvas.font=item.IconFont.Font;
                 this.Canvas.fillText(item.IconFont.Symbol,rtText.Left,yCenter);
+                if (item.Tooltip)
+                {
+                    var iconWidth=this.Canvas.measureText(item.IconFont.Symbol).width;
+                    var rtIcon={ Left:rtText.Left, Top:rtText.Top, Bottom:rtText.Bottom, Height:rtText.Height, Width:iconWidth };
+                    rtIcon.Right=rtIcon.Left+rtIcon.Width;
+                    drawInfo.LeftIconTooltip={ Rect:rtIcon, Data:item.Tooltip };
+                }
             }
             else if (item.Text)
             {
@@ -2836,7 +2912,7 @@ function ChartTReport()
             }
         }
 
-        if (drawInfo.Right)
+        if (drawInfo.Right) //右边图标
         {
             var item=drawInfo.Right;
             this.Canvas.textAlign="right";
@@ -2847,6 +2923,14 @@ function ChartTReport()
                 if (!fontBackup) fontBackup=this.Canvas.font;
                 this.Canvas.font=item.IconFont.Font;
                 this.Canvas.fillText(item.IconFont.Symbol,rtText.Right,yCenter);
+
+                if (item.Tooltip)
+                {
+                    var iconWidth=this.Canvas.measureText(item.IconFont.Symbol).width;
+                    var rtIcon={ Right:rtText.Right, Top:rtText.Top, Bottom:rtText.Bottom, Height:rtText.Height, Width:iconWidth };
+                    rtIcon.Left=rtIcon.Right-rtIcon.Width;
+                    drawInfo.RightIconTooltip={ Rect:rtIcon, Data:item.Tooltip };
+                }
             }
             else if (item.Text)
             {

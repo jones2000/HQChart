@@ -269,6 +269,20 @@ function KLineTooltipPaint()
             aryText.push({Title:title, TitleColor:this.TitleColor, Text:text, Color:this.TitleColor });
         }
 
+        //换手率
+        if (IFrameSplitOperator.IsNumber(item.FlowCapital) )
+        {
+            var text="--.--%";
+            title=g_JSChartLocalization.GetText('Tooltip-Exchange',this.LanguageID);
+            if (item.FlowCapital!=0)
+            {
+                var value=item.Vol/item.FlowCapital*100;
+                text=value.toFixed(2)+'%';
+            }
+            
+            aryText.push({Title:title, TitleColor:this.TitleColor, Text:text, Color:this.TitleColor });
+        }
+
         //持仓量
         if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol) && IFrameSplitOperator.IsNumber(item.Position)) 
         {

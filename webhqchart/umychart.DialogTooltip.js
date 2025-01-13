@@ -543,7 +543,7 @@ function JSDialogTooltip()
         
 
         //换手率
-        if (MARKET_SUFFIX_NAME.IsSHSZStockA(upperSymbol) && data.FlowCapital>0)
+        if (IFrameSplitOperator.IsNumber(data.FlowCapital))
         {
             aryText.push(this.FormatExchange(data.Vol,data.FlowCapital,'DialogTooltip-Exchange' ));
         }
@@ -1198,6 +1198,16 @@ function JSFloatTooltip()
                 this.ReportCellTruncateTooltip(data);
             }
         }
+        else if (data.DataType==4)  //T型报价
+        {
+            var tooltipData=data.Tooltip;
+            if (!tooltipData) return;
+
+            if (tooltipData.Type==2 || tooltipData.Type==3)
+            {
+                this.TReportIconTooltip(data);
+            }
+        }
     }
 
     this.UpdateRealtimeHQTooltip=function(data)
@@ -1465,6 +1475,17 @@ function JSFloatTooltip()
 
         this.ShowTooltip(data);
     }
+
+    this.TReportIconTooltip=function(data)
+    {
+        var tooltipData=data.Tooltip;
+        if (!tooltipData.Data || !IFrameSplitOperator.IsNonEmptyArray(tooltipData.Data.AryText)) return;
+        
+        this.AryText=tooltipData.Data.AryText;
+        this.UpdateTableDOM();
+
+        this.ShowTooltip(data);
+    }
  
     this.UpdateTableDOM=function()
     {
@@ -1558,7 +1579,7 @@ function JSFloatTooltip()
         if (overlayItem) aryText.unshift(overlayItem);
         
         //换手率
-        if (MARKET_SUFFIX_NAME.IsSHSZStockA(upperSymbol) && data.FlowCapital>0)
+        if (IFrameSplitOperator.IsNumber(data.FlowCapital))
         {
             aryText.push(this.FormatExchange(data.Vol,data.FlowCapital,'FloatTooltip-Exchange' ));
         }

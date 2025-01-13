@@ -1866,6 +1866,8 @@ HQData.Report_APIIndex=function(data, callback)
         HQData.APIIndex_DRAW_SIMPLE_RADAR(data, callback);
     else if (request.Data.indexname=="API_MULTI_BAR")
         HQData.APIIndex_MULTI_BAR(data, callback);
+    else if (request.Data.indexname=="API_MULTI_TEXT")
+        HQData.APIIndex_MULTI_TEXT(data, callback);
     
 }
 
@@ -2502,7 +2504,7 @@ HQData.APIIndex_MULTI_BAR=function(data, callback)
         [
             //{Date:20190916, Time: Value:15.5, Value2:0 },
         ],
-        Width:20
+        Width:5
     };
 
     for(var i=0;i<kData.Data.length;++i)
@@ -2528,6 +2530,57 @@ HQData.APIIndex_MULTI_BAR=function(data, callback)
     console.log('[HQData.APIIndex_MULTI_BAR] apiData ', apiData);
     callback(apiData);
 
+}
+
+
+HQData.APIIndex_MULTI_TEXT=function(data, callback)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var kData=hqchart.GetKData();
+
+    var SVGData= 
+    { 
+        name:'MULTI_TEXT', type:1, 
+        Draw: 
+        { 
+            DrawType:'MULTI_TEXT', 
+            DrawData: []
+        } //绘制文字
+    };
+
+    var ARRAY_COLOR=['rgb(255,248,220)','rgb(230,230,250)','rgb(100,149,237)','rgb(32,178,170)','rgb(152,251,152)','rgb(128,128,0)','rgb(255,165,0)','rgb(255,160,122)','rgb(205,92,92)']
+
+    for(var i=0;i<kData.Data.length;++i)
+    {
+        var item=kData.Data[i];
+        if (i%5!=3) continue;
+
+        var colorIndex=Math.ceil(Math.random()*ARRAY_COLOR.length-1);
+        var drawItem=
+        { 
+            Date:item.Date, Time:item.Time, Value:"H", Text:`最高：${item.High.toFixed(2)}`,Color:ARRAY_COLOR[colorIndex], Baseline:2, YMove:-2
+        };
+
+        var colorIndex=Math.ceil(Math.random()*ARRAY_COLOR.length-1);
+        var drawItem2=
+        { 
+            Date:item.Date, Time:item.Time, Value:item.Low, Text:`最低:${item.Low.toFixed(2)}`,Color:ARRAY_COLOR[colorIndex], Baseline:1, YMove:2
+        };
+
+        SVGData.Draw.DrawData.push(drawItem);
+        SVGData.Draw.DrawData.push(drawItem2);
+    }
+
+    var apiData=
+    {
+        code:0, 
+        stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+        outdata: { date:kData.GetDate(), time:kData.GetTime(), outvar:[SVGData] } 
+    };
+
+    console.log('[HQData.APIIndex_MULTI_TEXT] apiData ', apiData);
+    callback(apiData);
 }
 
 

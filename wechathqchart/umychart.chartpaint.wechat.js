@@ -5288,10 +5288,17 @@ function ChartMultiText()
             var mapItem=this.MapCache.get(key);
             if (!IFrameSplitOperator.IsNonEmptyArray(mapItem.Data)) continue;
 
-            var left=xOffset;
-            var right=xOffset+dataWidth;
-            if (right>chartright) break;
-            var x=left+(right-left)/2;
+            if (isMinute)
+            {
+                var x=this.ChartFrame.GetXFromIndex(j);
+            }
+            else
+            {
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                if (right>chartright) break;
+                var x=left+(right-left)/2;
+            }
 
             for(var k=0;k<mapItem.Data.length;++k)
             {

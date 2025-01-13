@@ -61,7 +61,7 @@ function HistoryData()
     this.Vol;
     this.Amount;
     this.Time;  //分钟 HHMM / 秒HHMMSS
-    this.FlowCapital = 0;   //流通股本
+    this.FlowCapital=null;   //流通股本
     this.Position = null;   //持仓量
 
     //指数才有的数据
