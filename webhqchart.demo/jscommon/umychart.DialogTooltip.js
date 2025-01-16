@@ -49,6 +49,8 @@ function JSDialogTooltip()
     this.LastValueCacheID=null;     //鼠标信息
     this.DataID=null;               //当前显示的数据时间{ Symbol:, Date:, Time: }
 
+    this.RestoreFocusDelay=800;
+
     this.Inital=function(hqchart, option)
     {
         this.HQChart=hqchart;
@@ -414,6 +416,8 @@ function JSDialogTooltip()
         if (!this.DivDialog) return;
 
         this.DivDialog.style.visibility='hidden';
+
+        if (this.HQChart) this.HQChart.RestoreFocus(this.RestoreFocusDelay);
     }
 
     this.OnMouseDownTitle=function(e)

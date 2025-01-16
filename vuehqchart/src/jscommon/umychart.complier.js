@@ -11622,6 +11622,18 @@ function JSDraw(errorHandler,symbolData)
 
         return result={ DrawData:{ Data:aryData, AryIndex:aryIndex, Radius:radius, AryArea:[{ LineColor:color }] }, DrawType:"DRAW_SIMPLE_RADAR" };
     }
+
+    this.DRAWDOUGHNUT=function(aryData)
+    {
+        var radius=aryData[0];
+        var aryCell=[];
+        for(var i=1;i<aryData.length;++i)
+        {
+            aryCell.push(aryData[i]);
+        }
+
+        return result={ DrawData:{ Data:aryCell, Radius:radius , InnerRadius:radius/2 }, DrawType:"DRAW_SIMPLE_DOUGHNUT" };
+    }
 }
 
 
@@ -11676,7 +11688,7 @@ JSDraw.prototype.IsDrawFunction=function(name)
         'DRAWOVERLAYLINE',"FILLRGN", "FILLRGN2","FILLTOPRGN", "FILLBOTTOMRGN", "FILLVERTICALRGN","FLOATRGN","DRAWSL", "DRAWGBK2","DRAWGBK_DIV",
         "VERTLINE","HORLINE","TIPICON",
         "BUY","SELL","SELLSHORT","BUYSHORT",
-        "DRAWLASTBARICON","DRAWLASTBARNUMBER", "DRAWLASTBARTEXT","DRAWTABLE","DRAWPIE","DRAWRADAR",
+        "DRAWLASTBARICON","DRAWLASTBARNUMBER", "DRAWLASTBARTEXT","DRAWTABLE","DRAWPIE","DRAWRADAR","DRAWDOUGHNUT",
     ]);
     if (setFunctionName.has(name)) return true;
 
@@ -18565,6 +18577,10 @@ function JSExecute(ast,option)
                 node.Draw=this.Draw.DRAWPIE(args);
                 node.Out=[];
                 break;
+            case "DRAWDOUGHNUT":
+                node.Draw=this.Draw.DRAWDOUGHNUT(args);
+                node.Out=[];
+                break;
             //雷达图
             case "RADAR_CELL":
                 node.Out=this.Draw.RADAR_CELL(args[0],args[1],args[2],args[3]);
@@ -21618,6 +21634,30 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateSimpleDoughnut=function(hqChart,windowIndex,varItem,id)
+    {
+        var chart=new ChartSimpleDoughnut();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        if (varItem.Draw && varItem.Draw.DrawData)
+        {
+            var drawData=varItem.Draw.DrawData;
+            if (drawData.Data) chart.Data.Data=drawData.Data;
+            if (drawData.BorderColor) chart.BorderColor=drawData.BorderColor;
+            if (drawData.TextFont) chart.TextFontConfig=drawData.TextFont;
+            if (drawData.TextColor) chart.TextColor=drawData.TextColor;
+            if (IFrameSplitOperator.IsNumber(drawData.XOffset)) chart.Offset.X=drawData.XOffset;
+            if (IFrameSplitOperator.IsNumber(drawData.YOffset)) chart.Offset.Y=drawData.YOffset;
+            if (IFrameSplitOperator.IsPlusNumber(drawData.Radius)) chart.Radius=drawData.Radius;
+            if (IFrameSplitOperator.IsPlusNumber(drawData.InnerRadius)) chart.InnerRadius=drawData.InnerRadius;
+        }
+    
+        hqChart.ChartPaint.push(chart);
+    }
+
     this.CreateTradeIcon=function(hqChart,windowIndex,varItem,id)
     {
         var chart=new ChartTradeIcon();
@@ -22500,6 +22540,9 @@ function ScriptIndex(name,script,args,option)
                     case "DRAW_SIMPLE_RADAR":
                         this.CreateSimpleRadar(hqChart,windowIndex,item,i);
                         break;
+                    case "DRAW_SIMPLE_DOUGHNUT":
+                        this.CreateSimpleDoughnut(hqChart,windowIndex,item,i);
+                        break;
                     case "BUY":
                     case "SELL":
                     case "SELLSHORT":
@@ -22852,6 +22895,9 @@ function OverlayScriptIndex(name,script,args,option)
                         break;
                     case "DRAW_SIMPLE_PIE":
                         this.CreateSimplePie(hqChart,windowIndex,item,i);
+                        break;
+                    case "DRAW_SIMPLE_DOUGHNUT":
+                        this.CreateSimpleDoughnut(hqChart,windowIndex,item,i);
                         break;
                     case "DRAW_SIMPLE_RADAR":
                         this.CreateSimpleRadar(hqChart,windowIndex,item,i);
@@ -23926,6 +23972,34 @@ function OverlayScriptIndex(name,script,args,option)
             if (IFrameSplitOperator.IsNumber(drawData.XOffset)) chart.Offset.X=drawData.XOffset;
             if (IFrameSplitOperator.IsNumber(drawData.YOffset)) chart.Offset.Y=drawData.YOffset;
             if (IFrameSplitOperator.IsPlusNumber(drawData.Radius)) chart.Radius=drawData.Radius;
+        }
+
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateSimpleDoughnut=function(hqChart,windowIndex,varItem,id)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        var chart=new ChartSimpleDoughnut();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+        chart.HQChart=hqChart;
+
+        if (varItem.Draw && varItem.Draw.DrawData)
+        {
+            var drawData=varItem.Draw.DrawData;
+            if (drawData.Data) chart.Data.Data=drawData.Data;
+            if (drawData.BorderColor) chart.BorderColor=drawData.BorderColor;
+            if (drawData.TextFont) chart.TextFontConfig=drawData.TextFont;
+            if (drawData.TextColor) chart.TextColor=drawData.TextColor;
+            if (IFrameSplitOperator.IsNumber(drawData.XOffset)) chart.Offset.X=drawData.XOffset;
+            if (IFrameSplitOperator.IsNumber(drawData.YOffset)) chart.Offset.Y=drawData.YOffset;
+            if (IFrameSplitOperator.IsPlusNumber(drawData.Radius)) chart.Radius=drawData.Radius;
+            if (IFrameSplitOperator.IsPlusNumber(drawData.InnerRadius)) chart.InnerRadius=drawData.InnerRadius;
         }
 
         frame.ChartPaint.push(chart);
@@ -25158,7 +25232,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     outVarItem.Draw=drawItem;
                     result.push(outVarItem);
                 }
-                else if (draw.DrawType=="DRAW_SIMPLE_PIE")
+                else if (draw.DrawType=="DRAW_SIMPLE_PIE" || draw.DrawType=="DRAW_SIMPLE_DOUGHNUT")
                 {
                     drawItem.Name=draw.Name;
                     drawItem.Type=draw.Type;

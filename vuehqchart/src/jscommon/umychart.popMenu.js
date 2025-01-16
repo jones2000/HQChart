@@ -19,9 +19,12 @@ function JSPopMenu()
     this.ArySubRootDOM=[];
 
     this.ClickCallback=null;        //点击回调
+    this.RestoreFocusCallback=null;
     this.CheckedClassName="UMyChart_MenuItem_Span_Checked  iconfont icon-checked";   //选中图标
     this.RightArrowClassName="UMyChart_MenuItem_Span_Arrow  iconfont icon-menu_arraw_right";  //右侧箭头
     this.SelectedClassName="UMyChart_MenuItem_Tr_Selected";
+
+    this.RestoreFocusDelay=1000;
 
     this.AryTDClassName=
     [
@@ -31,8 +34,9 @@ function JSPopMenu()
         "UMyChart_MenuItem_Td_Arrow"        //箭头
     ];
 
-    this.Inital=function()
+    this.Inital=function(hqchart, option)
     {
+        this.HQChart=hqchart;
         window.addEventListener('mousedown', (e)=>{ this.OnWindowMouseDown(e)});
     }
 
@@ -77,6 +81,7 @@ function JSPopMenu()
 
         if (IFrameSplitOperator.IsNumber(data.Position)) this.Data.Position=data.Position;
         if (data.ClickCallback) this.ClickCallback=data.ClickCallback;
+        if (data.RestoreFocusCallback) this.RestoreFocusCallback=data.RestoreFocusCallback;
        
     }
 
@@ -226,6 +231,8 @@ function JSPopMenu()
         if (!this.RootDOM) return;  
         if (!rtTab) return;
 
+        if (this.HQChart) this.HQChart.ClearRestoreFocusTimer();
+
         var xLeft=rtTab.Left;
         var yTop=rtTab.Top-this.RootDOM.offsetHeight;
 
@@ -239,6 +246,8 @@ function JSPopMenu()
     {
         if (!this.RootDOM) return;  
         if (!IFrameSplitOperator.IsNumber(x) || !IFrameSplitOperator.IsNumber(y)) return;
+
+        if (this.HQChart) this.HQChart.ClearRestoreFocusTimer();
 
         //菜单在当前屏幕无法显示需要调整
         var menuHeight=this.RootDOM.offsetHeight;
@@ -261,6 +270,8 @@ function JSPopMenu()
     {
         if (!this.RootDOM) return;  
         if (!rtButton) return;
+
+        if (this.HQChart) this.HQChart.ClearRestoreFocusTimer();
 
         var xLeft=rtButton.Left;
         var yTop=rtButton.Bottom;
@@ -369,6 +380,8 @@ function JSPopMenu()
         console.log("[JSPopMenu::OnWindowMouseDown] e=", e);
 
         this.Clear();
+
+        if (this.HQChart) this.HQChart.RestoreFocus(this.RestoreFocusDelay);
     }
 }
 

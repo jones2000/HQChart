@@ -546,6 +546,11 @@ function GetBlackStyle()
             BorderColor:"rgb(220,220,220)",
         },
 
+        ChartSimpleDoughnut:
+        {
+            BorderColor:"rgb(220,220,220)",
+        },
+
         ChartSimpleRadar:
         {
             //TextFont:{ Family:'微软雅黑' , Size:12 },

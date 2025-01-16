@@ -3097,6 +3097,29 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     this.DialogModifyIndexParam;    //指标参数修改
 
 
+    this.RestoreFocusTimer=null;    //恢复焦点定时器
+
+    this.RestoreFocus=function(delay)
+    {
+        var value=1000;
+        if (IFrameSplitOperator.IsNumber(delay)) value=delay;
+
+        this.ClearRestoreFocusTimer();
+        this.RestoreFocusTimer=setTimeout(()=>
+        {
+            this.SetFocus();
+        }, value);
+    }
+
+    this.ClearRestoreFocusTimer=function()
+    {
+        if (this.RestoreFocusTimer) 
+        {
+            clearTimeout(this.RestoreFocusTimer);
+            this.RestoreFocusTimer = null;
+        }
+    }
+
     this.GetVolUnit=function()  //成交量单位
     {
         var upperSymbol=this.Symbol?this.Symbol.toUpperCase():null;
@@ -3114,7 +3137,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         if (this.JSPopMenu) return;
 
         this.JSPopMenu=new JSPopMenu();     //内置菜单
-        this.JSPopMenu.Inital();
+        this.JSPopMenu.Inital(this);
     }
 
     this.InitalDrawToolDialog=function()
@@ -11118,7 +11141,7 @@ function ChartFrameFactory()
     {
         if (!this.DataMap.has(name)) 
         {
-            JSConsole.Warn(`[ChartFrameFactory::Create] can't find class=${name}.`);
+            JSConsole.Chart.Warn(`[ChartFrameFactory::Create] can't find class=${name}.`);
             return null;
         }
 
@@ -24419,7 +24442,7 @@ function ChartPaintFactory()
     {
         if (!this.DataMap.has(name)) 
         {
-            JSConsole.Warn(`[ChartPaintFactory::Create] can't find class=${name}.`);
+            JSConsole.Chart.Warn(`[ChartPaintFactory::Create] can't find class=${name}.`);
             return null;
         }
 
@@ -31870,10 +31893,11 @@ function ChartSimplePie()
         this.RectClient.Left-=xOffset;
         this.RectClient.Right-=xOffset;
 
-
+        var pixelRatio=GetDevicePixelRatio();
+        var radius=this.Radius*pixelRatio;
         var start=0, end=0;
-        var x=this.RectClient.Left+this.Radius;
-        var y=this.RectClient.Top+this.Radius;
+        var x=this.RectClient.Left+radius;
+        var y=this.RectClient.Top+radius;
 
         for(var i=0;i<this.Data.Data.length;++i)
         {
@@ -31889,7 +31913,7 @@ function ChartSimplePie()
             end += rate*2*Math.PI;//终止角度
             this.Canvas.strokeStyle = this.BorderColor;
             this.Canvas.fillStyle = item.Color;
-            this.Canvas.arc(x,y,this.Radius,start,end);
+            this.Canvas.arc(x,y,radius,start,end);
             this.Canvas.fill();
             this.Canvas.closePath();
             this.Canvas.stroke();
@@ -31897,10 +31921,181 @@ function ChartSimplePie()
             if (item.Text)
             {
                 // 绘制直线
-                var xLine=this.Radius*Math.cos(end- (end-start)/2)+x;
-                var yLine=this.Radius*Math.sin(end - (end-start)/2)+y;
-                var xEnd = (this.Radius + this.LineExtendWidth)*Math.cos(end- (end-start)/2)+x;
-                var yEnd = (this.Radius + this.LineExtendWidth)*Math.sin(end - (end-start)/2)+y;
+                var xLine=radius*Math.cos(end- (end-start)/2)+x;
+                var yLine=radius*Math.sin(end - (end-start)/2)+y;
+                var xEnd = (radius + this.LineExtendWidth)*Math.cos(end- (end-start)/2)+x;
+                var yEnd = (radius + this.LineExtendWidth)*Math.sin(end - (end-start)/2)+y;
+
+                this.Canvas.beginPath();
+                if (item.LineColor) this.Canvas.strokeStyle =item.LineColor;
+                else this.Canvas.strokeStyle = item.Color;
+                this.Canvas.moveTo(xLine,yLine);
+                this.Canvas.lineTo(xEnd,yEnd);
+
+                var textWidth=aryText[i].Width;
+                var yText=xEnd;
+                if( end - (end-start)/2 < 1.5*Math.PI && end - (end-start)/2 > 0.5*Math.PI )
+                {
+                    this.Canvas.lineTo( xEnd - textWidth, yEnd );
+                    yText=xEnd - textWidth;
+                }
+                else
+                {
+                    this.Canvas.lineTo( xEnd + textWidth, yEnd );
+                }
+                this.Canvas.stroke();
+
+                if (item.TextColor)  this.Canvas.fillStyle = item.TextColor;
+                else this.Canvas.fillStyle=item.Color;
+                this.Canvas.fillText(item.Text, yText, yEnd);
+            }
+
+            start += rate*2*Math.PI;//起始角度
+        }
+    }
+    
+    this.Draw=function()
+    {
+        if (!this.Data || !this.Data.Data || !(this.Data.Data.length>0)) return this.DrawEmptyData();
+
+        this.CalculateTotalValue();
+        if (!IFrameSplitOperator.IsPlusNumber(this.TotalValue)) this.DrawEmptyData();
+        this.CalculateSize();
+
+        this.Canvas.save();
+
+        this.DrawPie();
+
+        this.Canvas.restore();
+    }
+
+    //空数据
+    this.DrawEmptyData=function()
+    {
+        JSConsole.Chart.Log('[ChartSimplePie::DrawEmptyData]')
+    }
+
+    this.GetMaxMin=function()
+    {
+        return { Min:null, Max:null };
+    }
+}
+
+
+//圆环
+function ChartSimpleDoughnut()
+{   
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartSimpleDoughnut';    //类名
+    
+    this.BorderColor=g_JSChartResource.ChartSimpleDoughnut.BorderColor;
+    this.Offset=CloneData(g_JSChartResource.ChartSimpleDoughnut.Offset);
+    this.LineExtendWidth=10;
+    this.TextFontConfig=CloneData(g_JSChartResource.ChartSimpleDoughnut.TextFont);
+
+    this.RectClient={ };
+    this.TotalValue=1;
+    this.Radius = 50;       //外圈半径默认值
+    this.InnerRadius=30;    //内圈半径
+    this.TextFont;
+
+
+    this.ReloadResource=function(resource)
+    {
+        this.BorderColor=g_JSChartResource.ChartSimpleDoughnut.BorderColor;
+        this.Offset=CloneData(g_JSChartResource.ChartSimpleDoughnut.Offset);
+        this.TextFontConfig=CloneData(g_JSChartResource.ChartSimpleDoughnut.TextFont);
+    }
+
+    this.CalculateSize=function()
+    {
+        var border=this.ChartFrame.GetBorder();
+        var pixelRatio=GetDevicePixelRatio();
+        this.TextFont=`${this.TextFontConfig.Size*pixelRatio}px ${ this.TextFontConfig.Name}`;
+        this.LineExtendWidth=this.GetFontHeight(this.TextFont,"擎")+1;
+
+
+        this.RectClient={ Width:this.Radius*2*pixelRatio, Height:this.Radius*2*pixelRatio };
+
+        this.RectClient.Right=border.Right+this.Offset.X;
+        this.RectClient.Top=border.TopEx+this.Offset.Y;
+        this.RectClient.Left=this.RectClient.Right-this.RectClient.Width;
+        this.RectClient.Bottom=this.RectClient.Top+this.RectClient.Height;
+    }
+
+    this.CalculateTotalValue=function()
+    {
+        var totalValue=0;
+        for(var i=0; i<this.Data.Data.length; ++i)
+        {
+            var item=this.Data.Data[i];
+            if (!IFrameSplitOperator.IsPlusNumber(item.Value)) continue;
+            totalValue += item.Value;
+        }
+
+        this.TotalValue=totalValue;
+    }
+
+    this.DrawPie=function()
+    {
+        this.Canvas.font=this.TextFont;
+        this.Canvas.textBaseline='bottom';
+        this.Canvas.textAlign = 'left';
+
+        var aryText=[];
+        var maxTextWidth=0;
+        for(var i=0;i<this.Data.Data.length;++i)
+        {
+            var item=this.Data.Data[i];
+            if (!IFrameSplitOperator.IsPlusNumber(item.Value)) continue;
+            if (!item.Text) continue;
+            var textWidth=this.Canvas.measureText(item.Text).width;
+
+            aryText[i]={ Width:textWidth };
+
+            if (maxTextWidth<textWidth)  maxTextWidth=textWidth;
+        }
+
+        var xOffset=maxTextWidth+this.LineExtendWidth;
+        this.RectClient.Left-=xOffset;
+        this.RectClient.Right-=xOffset;
+
+        var pixelRatio=GetDevicePixelRatio();
+        var radius=this.Radius*pixelRatio;
+        var innerRadius=this.InnerRadius*pixelRatio;
+        var start=0, end=0;
+        var x=this.RectClient.Left+radius;
+        var y=this.RectClient.Top+radius;
+
+        for(var i=0;i<this.Data.Data.length;++i)
+        {
+            var item=this.Data.Data[i];
+            if (!IFrameSplitOperator.IsPlusNumber(item.Value)) continue;
+
+            var rate=item.Value/this.TotalValue;
+
+            // 绘制扇形
+            this.Canvas.beginPath();
+ 
+            end += rate*2*Math.PI;//终止角度
+            this.Canvas.strokeStyle = this.BorderColor;
+            this.Canvas.fillStyle = item.Color;
+            this.Canvas.arc(x,y,radius,start,end);
+            this.Canvas.arc(x,y,innerRadius,end-2*Math.PI,start-2*Math.PI, true);
+            this.Canvas.fill();
+            this.Canvas.closePath();
+            this.Canvas.stroke();
+
+            if (item.Text)
+            {
+                // 绘制直线
+                var xLine=radius*Math.cos(end- (end-start)/2)+x;
+                var yLine=radius*Math.sin(end - (end-start)/2)+y;
+                var xEnd = (radius + this.LineExtendWidth)*Math.cos(end- (end-start)/2)+x;
+                var yEnd = (radius + this.LineExtendWidth)*Math.sin(end - (end-start)/2)+y;
 
                 this.Canvas.beginPath();
                 if (item.LineColor) this.Canvas.strokeStyle =item.LineColor;
@@ -71464,6 +71659,13 @@ function JSChartResource()
         Offset:{ X:-5, Y:5 }
     }
 
+    this.ChartSimpleDoughnut=
+    {
+        TextFont:{ Family:'微软雅黑' , Size:12 },
+        BorderColor:"rgb(169,169,169)",
+        Offset:{ X:-5, Y:5 }
+    }
+
     this.ChartSimpleRadar=
     {
         TextFont:{ Family:'微软雅黑' , Size:12 },
@@ -72709,6 +72911,8 @@ function JSChartResource()
 
         if (style.ChartSimpleTable) this.SetChartSimpleTable(style.ChartSimpleTable);
         if (style.ChartSimplePie) this.SetChartSimplePie(style.ChartSimplePie);
+        if (style.ChartSimpleDoughnut) this.SetChartSimpleDoughnut(style.ChartSimpleDoughnut);
+        
         if (style.ChartSimpleRadar) this.SetChartSimpleRadar(style.ChartSimpleRadar);
         
         if (style.DRAWICON) 
@@ -73785,6 +73989,27 @@ function JSChartResource()
     this.SetChartSimplePie=function(style)
     {
         var dest=this.ChartSimplePie;
+
+        if (style.TextFont)
+        {
+            var item=style.TextFont;
+            if (item.Name) dest.TextFont.Name=item.Name;
+            if (IFrameSplitOperator.IsNumber(item.Size)) dest.TextFont.Size=item.Size;
+        }
+
+        if (style.BorderColor) dest.BorderColor=style.BorderColor;
+
+        if (style.Offset)
+        {
+            var item=style.Offset;
+            if (IFrameSplitOperator.IsNumber(item.X)) dest.Offset.X=item.X;
+            if (IFrameSplitOperator.IsNumber(item.Y)) dest.Offset.Y=item.Y;
+        }
+    }
+
+    this.SetChartSimpleDoughnut=function(style)
+    {
+        var dest=this.ChartSimpleDoughnut;
 
         if (style.TextFont)
         {
@@ -92939,7 +93164,7 @@ function DialogFactory()
     {
         if (!this.DataMap.has(name)) 
         {
-            JSConsole.Warn(`[DialogFactory::Create] can't find class=${name}.`);
+            JSConsole.Chart.Warn(`[DialogFactory::Create] can't find class=${name}.`);
             return null;
         }
 

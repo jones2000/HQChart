@@ -1862,6 +1862,8 @@ HQData.Report_APIIndex=function(data, callback)
         HQData.APIIndex_DRAW_SIMPLE_TABLE(data, callback);
     else if (request.Data.indexname=="API_DRAW_SIMPLE_PIE")
         HQData.APIIndex_DRAW_SIMPLE_PIE(data, callback);
+    else if (request.Data.indexname=="API_DRAW_SIMPLE_DOUGHNUT")
+        HQData.APIIndex_DRAW_SIMPLE_DOUGHNUT(data, callback);
     else if (request.Data.indexname=="API_DRAW_SIMPLE_RADAR")
         HQData.APIIndex_DRAW_SIMPLE_RADAR(data, callback);
     else if (request.Data.indexname=="API_MULTI_BAR")
@@ -2369,6 +2371,52 @@ HQData.APIIndex_DRAW_SIMPLE_PIE=function(data, callback)
                 Data:
                 [
                     { Value:10, Text:"数据1:10", Color:"rgba(255,182,193,0.8)", TextColor:"rgb(250,250,250)", LineColor:"rgb(255,182,193)"},
+                    { Value:70, Text:"数据2:70", Color:"rgba(255,0,255,0.8)",TextColor:"rgb(250,250,250)", LineColor:"rgb(255,0,255)"},
+                    { Value:110, Text:"数据3:110", Color:"rgba(72,61,139,0.8)",TextColor:"rgb(250,250,250)", LineColor:"rgb(72,61,139)"},
+                    { Value:210, Text:"数据4:210", Color:"rgba(0,191,255,0.8)",TextColor:"rgb(250,250,250)", LineColor:"rgb(0,191,255)"},
+                    { Value:310, Text:"数据5:310", Color:"rgba(255,140,0,0.8)",TextColor:"rgb(250,250,250)", LineColor:"rgb(255,140,0)"},
+                ],
+
+                //TextFont:{ Size:16, Name:"微软雅黑"},
+                //XOffset:-10,
+                //YOffset:-15,
+                Radius:80,
+            }
+        } 
+    };
+
+    var apiData=
+    {
+        code:0, 
+        stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+        outdata: { date:kData.GetDate(), time:kData.GetTime() , outvar:[tableData] } 
+    };
+
+    
+    console.log('[HQData.APIIndex_DRAW_SIMPLE_PIE] apiData ', apiData);
+    callback(apiData);
+}
+
+HQData.APIIndex_DRAW_SIMPLE_DOUGHNUT=function(data, callback)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var kData=hqchart.GetKData();
+
+    var tableData= 
+    { 
+        name:'DRAW_SIMPLE_DOUGHNUT', type:1, 
+        Draw: 
+        { 
+            DrawType:'DRAW_SIMPLE_DOUGHNUT', 
+            DrawData: 
+            {
+                //BGColor:"rgba(250,250,210,0.8)",
+                //BorderColor:"rgb(110,110,110)",
+                //TextColor:"rgb(0,191,255)",
+                Data:
+                [
+                    { Value:100, Text:"数据1:10", Color:"rgba(255,182,193,0.8)", TextColor:"rgb(250,250,250)", LineColor:"rgb(255,182,193)"},
                     { Value:70, Text:"数据2:70", Color:"rgba(255,0,255,0.8)",TextColor:"rgb(250,250,250)", LineColor:"rgb(255,0,255)"},
                     { Value:110, Text:"数据3:110", Color:"rgba(72,61,139,0.8)",TextColor:"rgb(250,250,250)", LineColor:"rgb(72,61,139)"},
                     { Value:210, Text:"数据4:210", Color:"rgba(0,191,255,0.8)",TextColor:"rgb(250,250,250)", LineColor:"rgb(0,191,255)"},

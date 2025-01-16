@@ -43,6 +43,8 @@ function JSDialogSelectRect()
     this.ShowData;
     this.SelectData;
 
+    this.RestoreFocusDelay=800;
+
     this.Inital=function(hqchart, option)
     {
         this.HQChart=hqchart;
@@ -207,6 +209,8 @@ function JSDialogSelectRect()
         this.DivDialog.style.visibility='hidden';
         this.ShowData=null;
         this.SelectData=null;
+
+        if (this.HQChart) this.HQChart.RestoreFocus(this.RestoreFocusDelay);
     }
 
     this.MoveStartDate=function(step)
@@ -315,6 +319,8 @@ function JSDialogSelectRect()
         }
         */
 
+        if (this.HQChart) this.HQChart.ClearRestoreFocusTimer();
+        
         var top=this.HQChart.Frame.ChartBorder.GetTop();
         var left=this.HQChart.Frame.ChartBorder.GetLeft();
         var rtClient=this.HQChart.UIElement.getBoundingClientRect();

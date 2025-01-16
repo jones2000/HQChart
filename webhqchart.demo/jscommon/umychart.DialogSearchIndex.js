@@ -41,6 +41,8 @@ function JSDialogSearchIndex()
     this.AryGroup=[];   //分类
     this.IndexData=JSDialogSearchIndex.GetDefaultIndexData();
 
+    this.RestoreFocusDelay=800;
+
     this.Inital=function(hqchart, option)
     {
         this.HQChart=hqchart;
@@ -84,6 +86,8 @@ function JSDialogSearchIndex()
         if (!this.DivDialog) return;
 
         this.DivDialog.style.visibility='hidden';
+
+        if (this.HQChart) this.HQChart.RestoreFocus(this.RestoreFocusDelay);
     }
 
     this.OnMouseDownTitle=function(e)
@@ -129,6 +133,8 @@ function JSDialogSearchIndex()
     {
         if (!this.DivDialog) return;
 
+        if (this.HQChart) this.HQChart.ClearRestoreFocusTimer();
+        
         if (!groupID) groupID=this.IndexData.Data[0].Group.ID;
         
         this.UpdateGroupData();
@@ -724,6 +730,8 @@ function JSDialogModifyIndexParam()
     this.IndexData=null;    //指标数据 { WindowsIndex:, Type:1=主图 2=叠加, Identify, IndexScript: }
     this.Arguments=[];           //参数备份
 
+    this.RestoreFocusDelay=800;
+
     this.Inital=function(hqchart, option)
     {
         this.HQChart=hqchart;
@@ -750,7 +758,8 @@ function JSDialogModifyIndexParam()
     this.Show=function(x,y)
     {
         if (!this.DivDialog) return;
-        //if (!this.HQChart) return;
+
+        if (this.HQChart) this.HQChart.ClearRestoreFocusTimer();
 
         this.UpdateParam();
 
@@ -794,6 +803,8 @@ function JSDialogModifyIndexParam()
         if (!this.DivDialog) return;
 
         this.DivDialog.style.visibility='hidden';
+
+        if (this.HQChart) this.HQChart.RestoreFocus(this.RestoreFocusDelay);
     }
 
     this.SetIndexData=function(data)

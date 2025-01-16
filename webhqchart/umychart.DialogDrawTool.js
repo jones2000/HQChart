@@ -162,6 +162,8 @@ function JSDialogDrawTool()
 
     this.DragTitle=null;
 
+    this.RestoreFocusDelay=800;
+
     this.Inital=function(hqchart)
     {
        this.LineColor=g_JSChartResource.DrawPicture.LineColor[0];
@@ -501,6 +503,8 @@ function JSDialogDrawTool()
         if (!this.DivDialog) return;
 
         this.DivDialog.style.visibility='hidden';
+
+        if (this.HQChart) this.HQChart.RestoreFocus(this.RestoreFocusDelay);
     }
 
     this.IsShow=function()
@@ -637,6 +641,8 @@ function JSDialogModifyDraw()
         { Title:"删除图形", ClassName: 'hqchart_drawtool icon-recycle_bin', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_DELETE_DRAW_CHART_ID }},
 
     ];
+
+    this.RestoreFocusDelay=800;
    
     this.Inital=function(hqchart)
     {
@@ -776,6 +782,8 @@ function JSDialogModifyDraw()
 
         this.ChartPicture=null;
         this.DivDialog.style.visibility='hidden';
+
+        if (this.HQChart) this.HQChart.RestoreFocus(this.RestoreFocusDelay);
     }
 
     this.IsShow=function()
