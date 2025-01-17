@@ -3334,7 +3334,7 @@ function JSChartContainer(uielement)
         titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
         this.TitlePaint[index+1]=titlePaint;
         this.SetSubFrameOption(subFrame,option);
-       
+        this.UpdateSubFrameDataWidth(subFrame.Frame);
         //最后一个显示X轴坐标
         for(var i=0;i<this.Frame.SubFrame.length;++i)
         {
@@ -3351,6 +3351,18 @@ function JSChartContainer(uielement)
         this.Draw();
 
         return index;
+    }
+
+    this.UpdateSubFrameDataWidth=function(frame)
+    {
+        //同步柱子宽度
+        var mainFrame=this.Frame.SubFrame[0].Frame;
+        frame.XPointCount= mainFrame.XPointCount;
+        frame.ZoomIndex= mainFrame.ZoomIndex;
+        frame.DataWidth= mainFrame.DataWidth;
+        frame.DistanceWidth= mainFrame.DistanceWidth;
+        frame.LastCalculateStatus.Width=mainFrame.LastCalculateStatus.Width;
+        frame.LastCalculateStatus.XPointCount=mainFrame.LastCalculateStatus.XPointCount;
     }
 
      //增加一个指标窗口

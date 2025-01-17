@@ -1911,7 +1911,7 @@ function FrameSplitXDepth()
             var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_SPLIT_XCOORDINATE);
             if (event && event.Callback)
             {
-                var data={ID:this.Frame.Identify, Frame:this.Frame };
+                var data={ID:this.Frame.Identify, Frame:this.Frame, IsShowText:this.ShowText };
                 event.Callback(event,data,this);
             }
         }
