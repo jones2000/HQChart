@@ -21962,7 +21962,7 @@ function ScriptIndex(name,script,args,option)
 
     this.CreatePartLine=function(hqChart,windowIndex,varItem,i)
     {
-        let chart=new ChartPartLine();
+        var chart=new ChartPartLine();
         chart.Canvas=hqChart.Canvas;
         chart.Name=varItem.Name;
         chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
@@ -21973,6 +21973,9 @@ function ScriptIndex(name,script,args,option)
             let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
             if (IFrameSplitOperator.IsPlusNumber(width)) chart.LineWidth=width;
         }
+
+        if (IFrameSplitOperator.IsBool(varItem.IsDotLine)) chart.IsDotLine=varItem.IsDotLine;
+        if (IFrameSplitOperator.IsNonEmptyArray(varItem.LineDash)) chart.LineDash=varItem.LineDash;
 
         chart.Data.Data=varItem.Draw.DrawData;
 
@@ -23710,7 +23713,7 @@ function OverlayScriptIndex(name,script,args,option)
     {
         var overlayIndex=this.OverlayIndex;
         var frame=overlayIndex.Frame;
-        let chart=new ChartPartLine();
+        var chart=new ChartPartLine();
         chart.Canvas=hqChart.Canvas;
         chart.Name=varItem.Name;
         chart.ChartBorder=frame.Frame.ChartBorder;
@@ -23722,6 +23725,9 @@ function OverlayScriptIndex(name,script,args,option)
             let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
             if (IFrameSplitOperator.IsPlusNumber(width)) chart.LineWidth=width;
         }
+
+        if (IFrameSplitOperator.IsBool(varItem.IsDotLine)) chart.IsDotLine=varItem.IsDotLine;
+        if (IFrameSplitOperator.IsNonEmptyArray(varItem.LineDash)) chart.LineDash=varItem.LineDash;
 
         chart.Data.Data=varItem.Draw.DrawData;
         this.SetChartIndexName(chart);

@@ -9043,6 +9043,63 @@ function JSDraw(errorHandler, symbolData)
         
         return drawData;
     }
+
+    //用法:PARTLINE(PRICE,COND1,COLOR1,COND2,COLOR2...),
+    //绘制PRICE线,当COND1条件满足时,用COLOR1颜色,当COND2条件满足时,用COLOR2颜色,否则不绘制,从COLOR1之后的参数均可以省略,最多可以有10组条件
+    //例如:PARTLINE(CLOSE,CLOSE>OPEN,RGB(255,0,0),CLOSE<OPEN,RGB(0,255,0),1,RGB(0,0,255))
+    //表示画收盘价线,阳线时用红色,阴线时用绿色,平盘用蓝色.注意最后一个条件为1,表示前面都不满足时必然满足这个条件
+    this.PARTLINE=function(args)
+    {
+        let drawData=[];
+        let result={DrawData:drawData, DrawType:'PARTLINE'};
+        if (args.length<3) return result;
+
+        var data=args[0];
+        var condition=[];
+        for(var i=1;i<args.length && i+1<args.length;i+=2)
+        {
+            condition.push({Cond:args[i], RGB:args[i+1]});
+        }
+
+        for(var i in data)
+        {
+            var drawItem={Value:null, RGB:null};
+            drawData[i]=drawItem;
+
+            var value=data[i];
+            if (!this.IsNumber(value)) continue;
+
+            var rgb=null;
+            for(var j in condition)
+            {
+                var item=condition[j];
+                if (Array.isArray(item.Cond))
+                {
+                    if (i<item.Cond.length && item.Cond[i])
+                    {
+                        rgb=item.RGB;
+                        break;
+                    }
+                }
+                else 
+                {
+                    if (this.IsNumber(item.Cond) && item.Cond)  //单数值条件
+                    {
+                        rgb=item.RGB;
+                        break;
+                    }
+                }
+            }
+
+            if (rgb) 
+            {
+                drawItem.Value=value;
+                drawItem.RGB=rgb;
+            }
+        }
+
+        return result;
+    }
 }
 
 
@@ -9099,7 +9156,7 @@ JSDraw.prototype.IsDrawFunction=function(name)
     let setFunctionName = new Set(
     [
         "STICKLINE", "DRAWTEXT", 'SUPERDRAWTEXT', "DRAWTEXT_FIX", 'DRAWLINE', 'DRAWBAND', "DRAWKLINE1","DRAWCOLORKLINE",
-        'DRAWKLINE', 'DRAWKLINE_IF', 'PLOYLINE', 'POLYLINE', 'DRAWNUMBER', 'DRAWICON',"ICON",
+        'DRAWKLINE', 'DRAWKLINE_IF', 'PLOYLINE', 'POLYLINE', 'DRAWNUMBER', 'DRAWICON',"ICON","PARTLINE",
         'DRAWRECTREL', "DRAWTEXTABS","DRAWTEXTREL", "DRAWGBK", "DRAWGBK2","DRAWGBK_DIV"
     ]);
     if (setFunctionName.has(name)) return true;
@@ -13174,13 +13231,13 @@ function JSExecute(ast,option)
                     var upDownDot=false;
                     var circleDot=false;
                     var lineStick=false;
+                    var isDotLine=false;
                     var stick=false;
                     var volStick=false;
                     var lineArea=false;
                     var stepLine=false;
                     var isShow = true;
                     var isExData = false;
-                    var isDotLine = false;
                     var isOverlayLine = false;    //叠加线
                     var isSingleLine=false;     //独立线段
                     var isNoneName=false;
@@ -13471,7 +13528,7 @@ function JSExecute(ast,option)
                         if (lineWidth) value.LineWidth=lineWidth;
                         if (isShow == false) value.IsShow = false;
                         if (isExData == true) value.IsExData = true;
-                        if (isDotLine == true) value.IsDotLine = true;
+                        if (IFrameSplitOperator.IsBool(isDotLine)) value.IsDotLine = isDotLine;
                         if (IFrameSplitOperator.IsNonEmptyArray(lineDash)) value.LineDash=lineDash;
                         if (isOverlayLine == true) value.IsOverlayLine = true;
                         if (isSingleLine == true) value.IsSingleLine = true;
@@ -13484,6 +13541,8 @@ function JSExecute(ast,option)
                     {
                         var outVar = { Name: draw.Name, Draw: draw, Type: 1 };
                         if (color) outVar.Color = color;
+                        if (IFrameSplitOperator.IsBool(isDotLine)) outVar.IsDotLine=isDotLine;
+                        if (IFrameSplitOperator.IsNonEmptyArray(lineDash)) outVar.LineDash=lineDash;
                         if (lineWidth) outVar.LineWidth = lineWidth;
                         if (isDrawAbove) outVar.IsDrawAbove=true;
                         if (drawAlign>=0) outVar.DrawAlign=drawAlign;
@@ -13872,6 +13931,10 @@ function JSExecute(ast,option)
                 break;
             case "LINEDASH":
                 node.Out=this.Draw.LINEDASH(args);
+                break;
+            case 'PARTLINE':
+                node.Draw=this.Draw.PARTLINE(args);
+                node.Out=[];
                 break;
             case 'DRAWRECTREL':
                 node.Draw = this.Draw.DRAWRECTREL(args[0], args[1], args[2], args[3], args[4]);

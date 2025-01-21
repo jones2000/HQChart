@@ -3872,6 +3872,144 @@ function ChartSingleLine()
     }
 }
 
+//彩色线段
+function ChartPartLine()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartPartLine';     //类名
+    this.LineWidth;                     //线段宽度    
+    this.IsDotLine=false;               //虚线
+    this.LineDash=[3,5];                //虚线设置    
+
+    this.Draw=function()
+    {
+        if (!this.IsShow || this.ChartFrame.IsMinSize || !this.IsVisible) return;
+        if (this.IsHideScriptIndex()) return;
+        if (!this.Data || !this.Data.Data) return;
+
+        this.DrawLine();
+    }
+
+    this.DrawLine=function()
+    {
+        var bHScreen=(this.ChartFrame.IsHScreen===true);
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        if (bHScreen)
+        {
+            var border=this.ChartBorder.GetHScreenBorder();
+            var chartright=border.BottomEx;
+            var xOffset=border.TopEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        }
+        else
+        {
+            var border=this.ChartBorder.GetBorder();
+            var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.RightEx;
+        }
+
+        var xPointCount=this.ChartFrame.XPointCount;
+        var isMinute=this.IsMinuteFrame();
+
+        this.Canvas.save();
+        if (this.LineWidth>0) this.Canvas.lineWidth=this.LineWidth;
+        if (this.IsDotLine) this.Canvas.setLineDash(this.LineDash);         //画虚线
+        
+        var drawCount=0;
+        var lastColor;
+        var lastPoint={X:null,Y:null};
+        var isPerNull=false;
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var item=this.Data.Data[i];
+            if (item==null || item.Value==null) 
+            {
+                lastPoint.X=null;
+                lastPoint.Y=null;
+                isPerNull=true;
+                continue;
+            }
+
+            if (isMinute)
+            {
+                var x=this.ChartFrame.GetXFromIndex(j);
+            }
+            else
+            {
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                if (right>chartright) break;
+                var x=left+(right-left)/2;
+            }
+
+            var value=item.Value;
+            var color=item.RGB;
+            var y=this.ChartFrame.GetYFromData(value);
+
+            if (x>chartright) break;
+
+            if (color!=lastColor || isPerNull==true)
+            {
+                if (lastColor && drawCount>0) this.Canvas.stroke();
+
+                drawCount=0;
+                lastColor=color;
+                this.Canvas.strokeStyle=color;
+                this.Canvas.beginPath();
+
+                if (lastPoint.X!=null && lastPoint.Y!=null) //接着上一个点连线
+                {
+                    if (bHScreen) this.Canvas.moveTo(lastPoint.Y,lastPoint.X);  //横屏坐标轴对调
+                    else this.Canvas.moveTo(lastPoint.X,lastPoint.Y);
+
+                    if (bHScreen) this.Canvas.lineTo(y,x);
+                    else this.Canvas.lineTo(x,y);
+
+                    ++drawCount;
+                }
+                else
+                {
+                    if (bHScreen) this.Canvas.moveTo(y,x);  //横屏坐标轴对调
+                    else this.Canvas.moveTo(x,y);
+                }
+            }
+            else
+            {
+                if (bHScreen) this.Canvas.lineTo(y,x);
+                else this.Canvas.lineTo(x,y);
+                ++drawCount;
+            }
+
+            lastPoint.X=x;
+            lastPoint.Y=y;
+            isPerNull=false;
+        }
+
+        if (drawCount>0) this.Canvas.stroke();
+        this.Canvas.restore();
+    }
+
+    this.GetMaxMin=function()
+    {
+        var xPointCount=this.ChartFrame.XPointCount;
+        var range={};
+        range.Min=null;
+        range.Max=null;
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        {
+            var item = this.Data.Data[i];
+            if (!item || !item.Value) continue;
+            if (range.Max == null || range.Max<item.Value) range.Max = item.Value;
+            if (range.Min == null || range.Min>item.Value) range.Min = item.Value;
+        }
+
+        return range;
+    }
+}
+
 //面积图 支持横屏
 function ChartArea()
 {
@@ -10401,4 +10539,5 @@ export
     GetFontHeight,
     ColorToRGBA,
     ChartSingleLine,
+    ChartPartLine,
 };

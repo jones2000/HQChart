@@ -25433,6 +25433,32 @@ function ChartKLine()
         Text:{ Color:g_JSChartResource.PriceGapStyple.Text.Color, Font: g_JSChartResource.PriceGapStyple.Text.Font } 
     };
     this.AryPriceGapCache=[];   //缺口数据 { }
+
+    //面积图和收盘价线 断开点
+    this.AryBreakPoint;
+
+    this.BuildDateTimeKey=function(item)
+    {
+        if (!item) return null;
+
+        if (!IFrameSplitOperator.IsNumber(item.Time)) return `${item.Date}`;
+        return `${item.Date}-${item.Time}`;
+    }
+
+    this.BuildBreakPoint=function()
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.AryBreakPoint)) return null;
+        
+        var mapBreakPoint=new Map();
+        for(var i=0;i<this.AryBreakPoint.length;++i)
+        {
+            var item=this.AryBreakPoint[i];
+            var key=this.BuildDateTimeKey(item);
+            if (key) mapBreakPoint.set(key, item);
+        }
+
+        return mapBreakPoint;
+    }
     
     this.ReloadResource=function(resource)
     {
@@ -25458,6 +25484,11 @@ function ChartKLine()
     this.ClearCustomKLine=function()
     {
         this.CustomKLine=null;
+    }
+
+    this.ClearBreakPoint=function()
+    {
+        this.AryBreakPoint=null;
     }
 
     this.GetCustomKLine=function(kItem)
@@ -25936,6 +25967,7 @@ function ChartKLine()
         }
         
         var bFirstPoint=true;
+        var drawCount=0;
         this.Canvas.beginPath();
         this.Canvas.strokeStyle=this.CloseLineColor;
         if (IFrameSplitOperator.IsNumber(this.CloseLineWidth)) this.Canvas.lineWidth=this.CloseLineWidth;
@@ -25945,6 +25977,8 @@ function ChartKLine()
         this.ShowRange.DataCount=0;
         this.ShowRange.ShowCount=xPointCount;
         this.DrawKRange.Start=this.Data.DataOffset;
+
+        var mapBreakPoint=this.BuildBreakPoint();   //断点
 
         var preKItemInfo=null;
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth),++this.ShowRange.DataCount)
@@ -25971,8 +26005,9 @@ function ChartKLine()
                 if (isHScreen) this.Canvas.lineTo(yClose,x);
                 else this.Canvas.lineTo(x,yClose);
             }
+            ++drawCount;
 
-            if (this.PriceGap.Enable )
+            if (this.PriceGap.Enable)
             {
                 var yLow=this.GetYFromData(data.Low, false);
                 var yHigh=this.GetYFromData(data.High, false);
@@ -25989,9 +26024,23 @@ function ChartKLine()
 
                 preKItemInfo=kItemInfo;
             }
+
+            //断开点
+            if (mapBreakPoint)
+            {
+                var kItem=data;
+                var key=this.BuildDateTimeKey(kItem);
+                if (key && mapBreakPoint.has(key))
+                {
+                    if (drawCount>0) this.Canvas.stroke();
+
+                    bFirstPoint=true;
+                    drawCount=0;
+                }
+            }
         }
 
-        if (bFirstPoint==false) this.Canvas.stroke();
+        if (drawCount>0) this.Canvas.stroke();
     }
 
     this.DrawKBar=function()        //蜡烛头
@@ -33920,7 +33969,9 @@ function ChartPartLine()
     delete this.newMethod;
 
     this.ClassName='ChartPartLine';     //类名
-    this.LineWidth;                     //线段宽度            
+    this.LineWidth;                     //线段宽度    
+    this.IsDotLine=false;               //虚线
+    this.LineDash=[3,5];                //虚线设置    
 
     this.Draw=function()
     {
@@ -33962,7 +34013,8 @@ function ChartPartLine()
 
         this.Canvas.save();
         if (this.LineWidth>0) this.Canvas.lineWidth=this.LineWidth * GetDevicePixelRatio();
-        var bFirstPoint=true;
+        if (this.IsDotLine) this.Canvas.setLineDash(this.LineDash);         //画虚线
+        
         var drawCount=0;
         var lastColor;
         var lastPoint={X:null,Y:null};
@@ -75166,6 +75218,16 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         if (option && option.Draw==true) this.Draw();
     }
 
+    this.ClearKLineBreakPoint=function(option)
+    {
+        var klineChart=this.ChartPaint[0];
+        if (!klineChart) return;
+
+        klineChart.ClearBreakPoint();
+
+        if (option && option.Draw==true) this.Draw();
+    }
+
     this.StopAutoUpdate=function()
     {
         this.CancelAutoUpdate();
@@ -76312,6 +76374,15 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         this.TitlePaint[0].GetEventCallback=(id)=>{ return this.GetEventCallback(id); };
     }
 
+
+    this.BindKLineBreakPoint=function(data)
+    {
+        var klineChart=this.ChartPaint[0];
+        if (!klineChart) return;
+        if (!IFrameSplitOperator.IsNonEmptyArray(data.AryBreakPoint)) return;
+        klineChart.AryBreakPoint=data.AryBreakPoint.slice();
+    }
+
     //绑定主图K线数据
     this.BindMainData=function(hisData, showCount, chartOperator)
     {
@@ -77278,10 +77349,11 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         {
             var item=data.ChartOperator;
             chartOperator={ };
-            if (item.IsShowAll===true) chartOperator.IsShowAll=true; //全部显示
+            if (item.IsShowAll===true) chartOperator.IsShowAll=true;                                                        //全部显示
         }
         
         this.BindMainData(bindData,this.PageSize,chartOperator);
+        this.BindKLineBreakPoint(data);
         if (this.AfterBindMainData) this.AfterBindMainData("RecvMinuteHistoryData");
         this.Frame.SetSizeChage(true);
         
@@ -78408,6 +78480,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         }
 
         this.ClearIndexPaint();
+        this.ClearKLineBreakPoint();
 
         if (ChartData.IsDayPeriod(this.Period,true))
         {
@@ -79842,6 +79915,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         this.AutoUpdateEvent(false,'KLineChartContainer::ChangeSymbol');
         this.ClearRectSelect(true);
         this.ClearCustomKLine();
+        this.ClearKLineBreakPoint();
         this.ClearKLineCaluate();
         this.HideTooltip();
         this.ResetScrollBar();

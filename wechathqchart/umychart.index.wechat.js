@@ -69,6 +69,7 @@ import {
     ChartStepLine,
     ChartBackgroundDiv,
     ChartSingleLine,
+    ChartPartLine,
 } from "./umychart.chartpaint.wechat.js";
 
 import 
@@ -1289,6 +1290,29 @@ function ScriptIndex(name, script, args, option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreatePartLine=function(hqChart,windowIndex,varItem,i)
+    {
+        var chart=new ChartPartLine();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        if (varItem.LineWidth) 
+        {
+            let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
+            if (IFrameSplitOperator.IsPlusNumber(width)) chart.LineWidth=width;
+        }
+
+        if (IFrameSplitOperator.IsBool(varItem.IsDotLine)) chart.IsDotLine=varItem.IsDotLine;
+        if (IFrameSplitOperator.IsNonEmptyArray(varItem.LineDash)) chart.LineDash=varItem.LineDash;
+
+        chart.Data.Data=varItem.Draw.DrawData;
+
+        this.SetChartIndexName(chart);
+        hqChart.ChartPaint.push(chart);
+    }
+
     this.CreateMultiBar = function (hqChart, windowIndex, varItem, i) 
     {
         let chart = new ChartMultiBar();
@@ -1471,6 +1495,9 @@ function ScriptIndex(name, script, args, option)
                     break;
                 case "KLINE_BG":
                     this.CreateBackgroud(hqChart,windowIndex,item,i);
+                    break;
+                case 'PARTLINE':
+                    this.CreatePartLine(hqChart,windowIndex,item,i);
                     break;
                 case SCRIPT_CHART_NAME.OVERLAY_BARS:
                     this.CreateStackedBar(hqChart,windowIndex,item,i);
@@ -2430,6 +2457,31 @@ function OverlayScriptIndex(name,script,args,option)
 
         //var titleIndex=windowIndex+1;
         //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreatePartLine=function(hqChart,windowIndex,varItem,i)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        var chart=new ChartPartLine();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+
+        if (varItem.LineWidth) 
+        {
+            let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
+            if (IFrameSplitOperator.IsPlusNumber(width)) chart.LineWidth=width;
+        }
+
+        if (IFrameSplitOperator.IsBool(varItem.IsDotLine)) chart.IsDotLine=varItem.IsDotLine;
+        if (IFrameSplitOperator.IsNonEmptyArray(varItem.LineDash)) chart.LineDash=varItem.LineDash;
+
+        chart.Data.Data=varItem.Draw.DrawData;
+        this.SetChartIndexName(chart);
         frame.ChartPaint.push(chart);
     }
 
