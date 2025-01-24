@@ -192,7 +192,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 * 筹码图  
 ![筹码图](/小程序行情模块用例/image/phone_chip.gif)  
 ![筹码图](/小程序行情模块用例/image/phone_chip2.gif)   
-
+* 多股同列 十字光标联动
+![多股同列](/小程序行情模块用例/image/Multi_Kline.gif)  
 
 # 2. 走势图
 * 支持指标 <br>
@@ -210,6 +211,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 * 支持涨停坐标 <br>
 * 支持美股盘前,盘中,盘后,全部全部行情展示   
 ![美股](/小程序行情模块用例/image/minute_usa.gif)
+* 多股同列 十字光标联动
+![多股同列](/小程序行情模块用例/image/Multi_minute.gif)  
 
 # 3. 其他图形
 * 成交明细表, 支持键盘,滚轴翻页<br>
