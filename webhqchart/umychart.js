@@ -28393,9 +28393,10 @@ function ChartKLine()
             var item=this.TradeIconTooltipRect[i];
             if (!item.Rect) continue;
             var rect=item.Rect;
-            this.Canvas.beginPath();
-            this.Canvas.rect(rect.X,rect.Y,rect.Width,rect.Height);
-            if (this.Canvas.isPointInPath(x,y))
+            var left=rect.X, top=rect.Y;
+            var right=left+rect.Width;
+            var bottom=top+rect.Height;
+            if (x>=left && x<=right && y>=top && y<=bottom)
             {
                 JSConsole.Chart.Log('[ChartKLine::GetTooltipData] trade icon ', item);
                 tooltip.Data=item;
@@ -28410,9 +28411,10 @@ function ChartKLine()
             var item=this.InfoTooltipRect[i];
             if (!item.Rect) continue;
             var rect=item.Rect;
-            this.Canvas.beginPath();
-            this.Canvas.rect(rect.X,rect.Y,rect.Width,rect.Height);
-            if (this.Canvas.isPointInPath(x,y))
+            var left=rect.X, top=rect.Y;
+            var right=left+rect.Width;
+            var bottom=top+rect.Height;
+            if (x>=left && x<=right && y>=top && y<=bottom)
             {
                 //JSConsole.Chart.Log('[ChartKLine::GetTooltipData] info ', item);
                 tooltip.Data=item;
@@ -28422,18 +28424,22 @@ function ChartKLine()
             }
         }
 
-        for(var i in this.TooltipRect)
+        if (IFrameSplitOperator.IsNonEmptyArray(this.TooltipRect))
         {
-            var rect=this.TooltipRect[i][1];
-            this.Canvas.beginPath();
-            this.Canvas.rect(rect.X,rect.Y,rect.Width,rect.Height);
-            if (this.Canvas.isPointInPath(x,y))
+            for(var i=0; i<this.TooltipRect.length; ++i)
             {
-                var index=this.TooltipRect[i][0];
-                tooltip.Data=this.Data.Data[index];
-                tooltip.ChartPaint=this;
-                tooltip.Type=0; //K线信息
-                return true;
+                var rect=this.TooltipRect[i][1];
+                var left=rect.X, top=rect.Y;
+                var right=left+rect.Width;
+                var bottom=top+rect.Height;
+                if (x>=left && x<=right && y>=top && y<=bottom)
+                {
+                    var index=this.TooltipRect[i][0];
+                    tooltip.Data=this.Data.Data[index];
+                    tooltip.ChartPaint=this;
+                    tooltip.Type=0; //K线信息
+                    return true;
+                }
             }
         }
 
@@ -42725,8 +42731,8 @@ function ChartDrawSVG()
                     }
                     else  
                     {
-                        if (IFrameSplitOperator.IsString(lineItem.Value))
-                            price=this.GetKValue(kItem,lineItem.Value);
+                        if (IFrameSplitOperator.IsString(lineItem.Value)) price=this.GetKValue(kItem,lineItem.Value);
+                        else if (IFrameSplitOperator.IsNumber(lineItem.Value)) price=lineItem.Value;
 
                         if (!IFrameSplitOperator.IsNumber(price)) continue;
                         yPrice=this.ChartFrame.GetYFromData(price);
@@ -75704,7 +75710,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
             this.ChartOperator_Temp_Update();
         }
-        else if (id==JSCHART_OPERATOR_ID.OP_CORSSCURSOR_GOTO)   //移动十字光标{ Date:, Time }
+        else if (id==JSCHART_OPERATOR_ID.OP_CORSSCURSOR_GOTO)   //移动十字光标{ Date:, Time, Type:1=如果不存在 就隐藏十字光标  }
         {
             if (!IFrameSplitOperator.IsNumber(obj.Date)) return;
             var bTime=IFrameSplitOperator.IsNumber(obj.Time);
@@ -75745,6 +75751,23 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
             if (findIndex<0) 
             {
+                if (obj.Type==1)    // 如果不存在 就隐藏十字光标
+                {
+                    var x=-1,y=-1;
+                    var MoveStatus={ X:x, Y:y, IsInClient: this.IsMouseOnClient(x,y) };
+                    this.LastMouseStatus.OnMouseMove=MoveStatus;
+                    this.LastMouseStatus.MoveOnPoint={X:x, Y:y};    //鼠标移动的位置
+
+                    var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_MOUSE_MOVE);
+                    var titleChart=this.TitlePaint[0];
+                    if (event && titleChart) titleChart.OnMouseMoveEvent=event;
+
+                    var e={clientX:x, clientY:y};
+                    this.MoveOnPoint={X:x, Y:y};
+                    this.OnMouseMove(x,y,e);
+                    this.LastMouseStatus.MoveOnPoint=null;
+                    if (titleChart) titleChart.OnMouseMoveEvent=null;
+                }
                 return;
             }
 

@@ -3021,6 +3021,8 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
 
                     outVarItem.Draw=drawItem;
                     if (draw.LineWidth) outVarItem.LineWidth=draw.LineWidth;
+                    if (IFrameSplitOperator.IsBool(draw.IsDotLine)) outVarItem.IsDotLine=draw.IsDotLine;
+                    if (IFrameSplitOperator.IsNonEmptyArray(draw.LineDash)) outVarItem.LineDash=draw.LineDash;
                     
                     result.push(outVarItem);
                 }
