@@ -2191,7 +2191,7 @@ var SH_600000_1DAY_MINUTE={
                     "low": 8.51,
                     "high": 8.51,
                     "vol": 0,
-                    "amount": 47285797,
+                    "amount": 4728579,
                     "time": 1500
                 }
             ],

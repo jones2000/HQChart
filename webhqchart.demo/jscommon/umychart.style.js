@@ -151,9 +151,9 @@ function GetBlackStyle()
            
             PercentageText:      //百分比坐标文字颜色
             { 
-                PriceColor:'rgb(101,104,112)', 
-                PercentageColor:"rgb(101,104,112)", 
-                SplitColor:"rgb(101,104,112)",
+                PriceColor:'rgb(220,220,220)', 
+                PercentageColor:"rgb(220,220,220)", 
+                SplitColor:"rgb(220,220,220)",
                 Font:14*GetDevicePixelRatio() +"px 微软雅黑"
             }
         }, 

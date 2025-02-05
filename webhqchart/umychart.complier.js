@@ -25470,7 +25470,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
             {
                 outVarItem.Data=this.FittingMinuteArray(item.data,date,time,hqChart);
                 if (item.color) outVarItem.Color=item.color;
-                if (item.linewidth>=1) outVarItem.LineWidth=item.linewidth;
+                if (item.linewidth) outVarItem.LineWidth=item.linewidth;
                 if (item.isshow==false) outVarItem.IsShow = false;
                 if (item.isexdata==true) outVarItem.IsExData = true;
                 if (item.BreakPoint) outVarItem.BreakPoint=item.BreakPoint;

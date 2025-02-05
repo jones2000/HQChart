@@ -321,6 +321,8 @@ function JSChart(element)
                 let maxPageSize = chart.GetMaxPageSize();
                 if (maxPageSize < option.KLine.PageSize) chart.PageSize = maxPageSize;
                 else chart.PageSize = option.KLine.PageSize;
+
+                JSConsole.Chart.Log(`[JSChart:CreateKLineChartContainer] PageSize=${option.KLine.PageSize}, MaxPageSize=${maxPageSize}`, );
             }
             if (option.KLine.InfoDrawType) chart.ChartPaint[0].InfoDrawType = option.KLine.InfoDrawType;
             if (IFrameSplitOperator.IsNumber(item.OneLimitBarType)) klineChart.OneLimitBarType=item.OneLimitBarType;

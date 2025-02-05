@@ -293,6 +293,36 @@ HQData.Minute_RequestPopMinuteData=function(data, callback)
 }
 
 
+HQData.KLine_RequestMulitDayMinuteData=function(data, callback)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Data.symbol;                //请求的股票代码
+
+    console.log(`[HQData::KLine_RequestMulitDayMinuteData] Symbol=${symbol}`);
+
+    var fullData=HQData.GetMulitDayMinuteDataBySymbol(symbol);
+
+    var aryKLine=[];
+    var aryBreakPoint=[];
+    for(var i=fullData.length-1;i>=0;--i)
+    {
+        var dayItem=fullData[i];
+        var yClose=dayItem.yclose
+        for(var j=0;j<dayItem.minute.length;++j)
+        {
+            var minItem=dayItem.minute[j];
+            var kItem=[dayItem.date, yClose, minItem[1], minItem[2], minItem[3], minItem[4],minItem[5],minItem[6], minItem[0] ];
+            aryKLine.push(kItem);
+        }
+
+        aryBreakPoint.push({ Date:dayItem.date, Time:1500 })
+    }
+
+    var hqchartData={ name:symbol, symbol:symbol, data:aryKLine, ver:2.0, AryBreakPoint:aryBreakPoint };
+    callback(hqchartData);
+}
+
+
 HQData.Minute_RequestHistoryMinuteData=function(data, callback)
 {
     data.PreventDefault=true;
@@ -1754,6 +1784,19 @@ HQData.GetDayMinuteDataBySymbol=function(symbol)
 
     if (!data) return null;
 
+    //生成测试均价
+    var total=0, count=0;
+    for(var i=0;i<data.stock[0].minute.length;++i)
+    {
+        var item=data.stock[0].minute[i];
+        if (IFrameSplitOperator.IsPlusNumber(item.price))
+        {
+            total+=item.price;
+            ++count;
+            item.avprice=total/count;
+        }
+    }
+
     /*
     var aryMinute=[];
     for(var i=0;i<data.stock[0].minute.length;++i)
@@ -1800,26 +1843,23 @@ HQData.GetMulitDayMinuteDataBySymbol=function(symbol)
 
     if (!data) return null;
 
-    /*
-    var aryDay=[];
+    //生成测试均价
     for(var i=0;i<data.data.length;++i)
     {
         var dayItem=data.data[i];
-        
-        var newDayItem={ minute:[],  date:dayItem.date, close:dayItem.close, yclose:dayItem.yclose };
+        var total=0, count=0;
         for(var j=0;j<dayItem.minute.length;++j)
         {
             var item=dayItem.minute[j];
-            newDayItem.minute[j]=item.slice(0,7);
+            if (IFrameSplitOperator.IsPlusNumber(item[2]))
+            {
+                total+=item[2];
+                ++count;
+                item[7]=total/count;
+            }
         }
-
-
-        aryDay.push(newDayItem);
     }
-    data.data=aryDay;
-    */
-
-
+    
     return data.data;
 }
 
@@ -1870,6 +1910,8 @@ HQData.Report_APIIndex=function(data, callback)
         HQData.APIIndex_MULTI_BAR(data, callback);
     else if (request.Data.indexname=="API_MULTI_TEXT")
         HQData.APIIndex_MULTI_TEXT(data, callback);
+    else if (request.Data.indexname=="API_PARTLINE")
+        HQData.APIIndex_PARTLINE(data, callback);
     
 }
 
@@ -2111,11 +2153,51 @@ HQData.APIIndex_MULTI_LINE=function(data, callback)
     }
     line3.Draw.DrawData.push(point3);
 
+
+    var point1={ Color:'rgb(0,0,255)', Point:[] };
+    var point2={ Color:'rgb(255,140,0)', Point:[] };
+    var point3={ Color:'rgb(255, 255, 0)', Point:[] };
+    var colorLine= 
+    { 
+        name:'MULTI_LINE', type:1, 
+        
+        Draw: 
+        { 
+            DrawType:'MULTI_LINE', DrawData:[point1,point2,point3],
+            LineWidth:2,
+        }, //绘制线段数组
+
+        IsShowTitle:false
+    };
+
+
+    var index=kData.Data.length-50;
+    if (index<0) index=0;
+    for(var j=0; index<kData.Data.length && j<10; ++index, ++j)
+    {
+        var item=kData.Data[index];
+        point1.Point.push({Date:item.Date, Time:item.Time, Value:item.Close});
+    }
+
+    --index;
+    for(var j=0; index<kData.Data.length && j<10; ++index, ++j)
+    {
+        var item=kData.Data[index];
+        point2.Point.push({Date:item.Date, Time:item.Time, Value:item.Close});
+    }
+
+    --index;
+    for(var j=0; index<kData.Data.length && j<10; ++index, ++j)
+    {
+        var item=kData.Data[index];
+        point3.Point.push({Date:item.Date, Time:item.Time, Value:item.Close});
+    }
+
     var apiData=
     {
         code:0, 
         stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
-        outdata: { date:kData.GetDate(), time:kData.GetTime(), outvar:[line3] } 
+        outdata: { date:kData.GetDate(), time:kData.GetTime(), outvar:[line3,colorLine] } 
     };
     
     console.log('[HQData.APIIndex_MULTI_LINE] apiData ', apiData);
@@ -2628,6 +2710,52 @@ HQData.APIIndex_MULTI_TEXT=function(data, callback)
     };
 
     console.log('[HQData.APIIndex_MULTI_TEXT] apiData ', apiData);
+    callback(apiData);
+}
+
+
+HQData.APIIndex_PARTLINE=function(data, callback)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var kData=hqchart.GetKData();
+
+
+    var lineData= 
+    { 
+        name:'PARTLINE', type:1, 
+        Draw: 
+        { 
+            DrawType:'PARTLINE', 
+            DrawData: [],
+            LineWidth:"LINETHICK2",
+            IsDotLine:true,
+            LineDash:[10,5]
+        } 
+    };
+
+    var colorIndex=0;
+    var ARRAY_COLOR=["rgb(0, 0 ,255)", "rgb(255,0,255)", "rgb(255,165,0)"];
+    for(var i=0;i<kData.Data.length;++i)
+    {
+        var kItem=kData.Data[i];
+
+        var color=ARRAY_COLOR[colorIndex%ARRAY_COLOR.length];
+
+        lineData.Draw.DrawData.push({ Value:kItem.Close, RGB:color});
+
+        if (i%10==3) ++colorIndex;
+    }
+
+
+    var apiData=
+    {
+        code:0, 
+        stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+        outdata: { date:kData.GetDate(), time:kData.GetTime(), outvar:[lineData] } 
+    };
+
+    console.log('[HQData.APIIndex_PARTLINE] apiData ', apiData);
     callback(apiData);
 }
 
