@@ -213,6 +213,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![美股](/小程序行情模块用例/image/minute_usa.gif)
 * 多股同列 十字光标联动
 ![多股同列](/小程序行情模块用例/image/Multi_minute.gif)  
+* 预测线
+![预测线](/小程序行情模块用例/image/minute_PredictLine.png)  
 
 # 3. 其他图形
 * 成交明细表, 支持键盘,滚轴翻页<br>
