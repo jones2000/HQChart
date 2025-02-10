@@ -153,6 +153,13 @@ function JSPopMinuteChart()
             this.Minute.JSChart.ChangeSymbol(data.Symbol);
         }
 
+        if (!this.Minute.Option.EnableResize)
+        {
+            if (this.Minute.JSChart) this.Minute.JSChart.OnSize();
+        }
+
+        
+
         //超出窗口调整位置
         var height=this.DivDialog.offsetHeight;
         var width=this.DivDialog.offsetWidth;
@@ -254,7 +261,7 @@ JSPopMinuteChart.GetMinuteOption=function()
         
         EnableSelectRect:true,
         EnableZoomIndexWindow:true,
-        EnableResize:true,
+        EnableResize:false,
 
         //BeforeOpen:{IsShow:true, Width:120, IsShowMultiDay:true, MulitiDayWidth:100, },
         //AfterClose:{IsShow:true, Width:100, IsShowMultiDay:true, MulitiDayWidth:50,  ShareVol:2 }, //ShareVol:0=盘后成交量独立坐标, 1==盘后成交量主图共用 2==盘后成交量盘前共用

@@ -1505,6 +1505,8 @@ input[type="color"] {
 .jchart_pop_minute_dailog
 {
     position: absolute;
+    left: 1px;
+    top: 1px;
     height: 500px;
     width: 600px;
     z-index: 809;

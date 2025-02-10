@@ -36,8 +36,13 @@ function JSPopKeyboard()
         JSChart:null,
     }
 
-    this.Inital=function()
+    this.Inital=function(option)
     {
+        if (option)
+        {
+            if (IFrameSplitOperator.IsBool(option.EnableResize))  this.Keyboard.Option.EnableResize=option.EnableResize;
+        }
+
         window.addEventListener('mousedown', (e)=>{ this.OnWindowMouseDown(e)});
     }
 
@@ -237,6 +242,11 @@ function JSPopKeyboard()
     {
         if (!this.DivDialog) return;
 
+        if (!this.Keyboard.Option.EnableResize) //自动调整大小
+        {
+            if (this.Keyboard.JSChart) this.Keyboard.JSChart.OnSize();
+        }
+
         //显示在右下方
         var height=this.DivDialog.offsetHeight;
         var width=this.DivDialog.offsetWidth;
@@ -368,7 +378,7 @@ JSPopKeyboard.GetOption=function()
         },
 
         BorderLine:1|2|4|8,
-        EnableResize:true,
+        EnableResize:false,
 
         //{ Type:列id, Title:标题, TextAlign:文字对齐方式, MaxText:文字最大宽度 , TextColor:文字颜色, Sort:0=不支持排序 1=本地排序 0=远程排序 }
         Column:   

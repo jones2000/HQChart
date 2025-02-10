@@ -906,6 +906,34 @@ function JSChartResource()
                 }
             }
         }
+
+        if (style.KLineTrain)  this.SetKLineTrain(style.KLineTrain);
+    }
+
+    this.SetKLineTrain=function(style)
+    {
+        var dest=this.KLineTrain;
+        if (style.Font) dest.Font=style.Font;
+        if (style.LastDataIcon)
+        {
+            var subItem=style.LastDataIcon;
+            if (subItem.Color) dest.LastDataIcon.Color=subItem.Color;
+            if (subItem.Text) dest.LastDataIcon.Text=subItem.Text;
+        }
+
+        if (style.BuyIcon)
+        {
+            var subItem=style.BuyIcon;
+            if (subItem.Color) dest.BuyIcon.Color=subItem.Color;
+            if (subItem.Text) dest.BuyIcon.Text=subItem.Text;
+        }
+
+        if (style.SellIcon)
+        {
+            var subItem=style.SellIcon;
+            if (subItem.Color) dest.SellIcon.Color=subItem.Color;
+            if (subItem.Text) dest.SellIcon.Text=subItem.Text;
+        }
     }
 
     
