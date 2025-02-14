@@ -25,7 +25,6 @@ if (!JSConsole)
 function JSChart(divElement, bOffscreen, bCacheCanvas)
 {
     this.DivElement=divElement;
-    this.DivToolElement=null;           //工具条
     this.JSChartContainer;              //画图控件
     this.ResizeListener;
 
@@ -121,6 +120,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         //画布大小通过div获取 如果有style里的大小 使用style里的
         var height=this.DivElement.offsetHeight;
         var width=this.DivElement.offsetWidth;
+        var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率s
         if (this.DivElement.style.height && this.DivElement.style.width)
         {
             if (this.DivElement.style.height.includes("px"))
@@ -128,21 +128,12 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (this.DivElement.style.width.includes("px"))
                 width=parseInt(this.DivElement.style.width.replace("px",""));
         }
-        
-        if (this.ToolElement)
-        {
-            //TODO调整工具条大小
-            height-=this.ToolElement.style.height.replace("px","");   //减去工具条的高度
-        }
 
-        this.CanvasElement.height=height;
-        this.CanvasElement.width=width;
-        this.CanvasElement.style.width=this.CanvasElement.width+'px';
-        this.CanvasElement.style.height=this.CanvasElement.height+'px';
+        this.CanvasElement.style.width=`${width}px`;
+        this.CanvasElement.style.height=`${height}px`;
 
-        var pixelTatio = GetDevicePixelRatio(); //获取设备的分辨率
-        this.CanvasElement.height*=pixelTatio;
-        this.CanvasElement.width*=pixelTatio;
+        this.CanvasElement.height=parseInt(pixelTatio*height);  //根据分辨率缩放
+        this.CanvasElement.width=parseInt(pixelTatio*width);
 
         if (this.OffscreenCanvasElement)
         {
@@ -2665,7 +2656,9 @@ var JSCHART_EVENT_ID=
     ON_RCLICK_TREPORT_HEADER:125,             //右键点击T型报价表头
     ON_TREPORT_LOCAL_SORT:126,                //T型报价列表本地排序
     ON_CLICK_TREPORT_ROW:127,                 //左键点击点击T型报价列表
-    ON_MOVE_SELECTED_TREPORT_ROW:128,      //选中行变动
+    ON_MOVE_SELECTED_TREPORT_ROW:128,         //T型报价 选中行变动
+
+    ON_MOVE_SELECTED_REPORT_ROW:129,          //报价列表 选中行变动
 
     ON_DRAW_REPORT_ROW_BG:140,              //报价列表整行背景
     ON_CLICK_REPORT_CHECKBOX:141,           //报价列表checkbox
@@ -2877,7 +2870,12 @@ var JSCHART_MENU_ID=
     CMD_MODIFY_OVERLAY_INDEX_PARAM:46,  //叠加指标修改  [windowIndex, ID ]
 
     CMD_LOCK_CROSSCURSOR:47,              //锁十字光标
-    CMD_UNLOCK_CROSSCURSOR:48,                  //解锁十字光标
+    CMD_UNLOCK_CROSSCURSOR:48,            //解锁十字光标
+
+    CMD_CORSS_ON_CLOSE_LINE_ID:49,          //十字光标在价格线上(分时图)
+    CMD_CORSS_ON_VAILD_TIME_ID:50,          //超出当前时间的,X轴调整到当前最后的时间(分时图)
+    CMD_CORSS_ON_KLINE_ID:51,               //十字光标只能画在K线上   
+
 
 
     CMD_REPORT_CHANGE_BLOCK_ID:100,      //报价列表 切换板块ID
@@ -10265,6 +10263,19 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 break;
             case JSCHART_MENU_ID.CMD_UNLOCK_CROSSCURSOR:
                 if (this.IsLockCorssCursor()) this.UnlockCorssCursor({ Draw:true })
+                break;
+            case JSCHART_MENU_ID.CMD_CORSS_ON_CLOSE_LINE_ID:
+                if (IFrameSplitOperator.IsBool(srcParam) && this.ChartCorssCursor) this.ChartCorssCursor.IsOnlyDrawMinute=srcParam;
+                break;
+            case JSCHART_MENU_ID.CMD_CORSS_ON_VAILD_TIME_ID:
+                if (IFrameSplitOperator.IsBool(srcParam) && this.ChartCorssCursor) this.ChartCorssCursor.IsFixXLastTime=srcParam;
+                break;
+            case JSCHART_MENU_ID.CMD_CORSS_ON_KLINE_ID:
+                if (IFrameSplitOperator.IsBool(srcParam) && this.ChartCorssCursor) 
+                {
+                    this.ChartCorssCursor.IsOnlyDrawKLine=srcParam;
+                    this.ChartCorssCursor.IsShowClose=srcParam;
+                }
                 break;
         }
     }
@@ -40807,7 +40818,7 @@ function ChartMultiBar()
             var groupItem=this.Bars[i];
             if (!groupItem || !IFrameSplitOperator.IsNonEmptyArray(groupItem.Point)) continue;
 
-            var clrConfig= { Color:groupItem.Color, Width:5, Name:groupItem.Name, Type:0 };
+            var clrConfig= { Color:groupItem.Color, Width:null, Name:groupItem.Name, Type:0 };
             if (IFrameSplitOperator.IsNumber(groupItem.Width)) clrConfig.Width=groupItem.Width;
             if (IFrameSplitOperator.IsNumber(groupItem.Type)) clrConfig.Type=groupItem.Type;
 
@@ -40922,7 +40933,7 @@ function ChartMultiBar()
     this.DrawAllBar=function(mapBar)
     {
         var pixelRatio=GetDevicePixelRatio();
-
+        var dataWidth=this.ChartFrame.DataWidth;
         for(var mapItem of mapBar)
         {
             var aryBar=mapItem[1].AryBar;
@@ -40931,16 +40942,17 @@ function ChartMultiBar()
             var config=null;
             var path=new Path2D();
             var count=0;
-            var drawType=-1;    //1=直线 2=实心 3=空心
-            var barWidth=1;
+            var drawType=-1;        //1=直线 2=实心 3=空心
+            var barWidth=dataWidth; //默认K线宽度
             this.Canvas.beginPath();
             for(var i=0;i<aryBar.length;++i)
             {
                 var item=aryBar[i];
                 if (!config)
                 {
+                    barWidth=dataWidth;             //默认K线宽度
                     config=item.Data.ColorConfig;
-                    barWidth=config.Width*pixelRatio;
+                    if (IFrameSplitOperator.IsNumber(config.Width)) barWidth=config.Width*pixelRatio;
                     if (barWidth>4)
                     {
                         if (config.Type==0) drawType=2;         //实心
@@ -79712,6 +79724,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                 chart.SetOption(option);
                 this.ExtendChartPaint.push(chart);
                 return chart;
+            case "BackgroundPaint":
             case '背景图':
                 chart=new BackgroundPaint();
                 chart.Canvas=this.Canvas;
@@ -80863,7 +80876,14 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         //var stockChipConfig={Name:'StockChipPhone', Width:150 };  //手机版筹码
 
         var bShowCorss=false;   //十字光标十字线
-        if (this.ChartCorssCursor) bShowCorss=this.ChartCorssCursor.IsShowCorss;
+        var bCorssDrawKLine=false;
+        var bCorssDrawVaildTime=false;
+        if (this.ChartCorssCursor) 
+        {
+            bShowCorss=this.ChartCorssCursor.IsShowCorss;
+            bCorssDrawKLine=this.ChartCorssCursor.IsOnlyDrawKLine && this.ChartCorssCursor.IsShowClose;
+            bCorssDrawVaildTime=this.ChartCorssCursor.IsFixXLastTime;
+        }
 
         var bPopMinuteChart=false;
         if (this.PopMinuteChart) bPopMinuteChart=true;
@@ -81033,6 +81053,15 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                 ]
             },
             {
+                Name:"十字光标",
+                SubMenu:
+                [
+                    { Name:"显示", Data:{ ID:JSCHART_MENU_ID.CMD_SHOW_CORSS_LINE_ID, Args:[!bShowCorss]}, Checked:bShowCorss },
+                    { Name:"显示在K线上", Data:{ ID:JSCHART_MENU_ID.CMD_CORSS_ON_KLINE_ID, Args:[!bCorssDrawKLine]}, Checked:bCorssDrawKLine },
+                    { Name:"画在有效X轴上",Data:{ ID:JSCHART_MENU_ID.CMD_CORSS_ON_VAILD_TIME_ID, Args:[!bCorssDrawVaildTime]}, Checked:bCorssDrawVaildTime },
+                ]
+            },
+            {
                 Name:"其他设置",
                 SubMenu:
                 [
@@ -81048,7 +81077,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
                     { Name:"移动筹码图", Data:{ ID:bShowStockChip?JSCHART_MENU_ID.CMD_HIDE_STOCKCHIP_ID:JSCHART_MENU_ID.CMD_SHOW_STOCKCHIP_ID, Args:[stockChipConfig.Name, stockChipConfig]}, Checked:bShowStockChip},
 
-                    { Name:"十字光标线", Data:{ ID:JSCHART_MENU_ID.CMD_SHOW_CORSS_LINE_ID, Args:[!bShowCorss]}, Checked:bShowCorss },
+                   
 
                     { Name:"双击弹分时图", Data:{ ID:JSCHART_MENU_ID.CMD_ENABLE_POP_MINUTE_CHART_ID, Args:[!bPopMinuteChart]}, Checked:bPopMinuteChart},
 
@@ -81161,7 +81190,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                     }
                 }
             }
-            else if (item.Name=="其他设置")
+            else if (item.Name=="十字光标")
             {
                 if (kItem)
                 {
@@ -85006,8 +85035,16 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             if (item && item.Symbol) aryOverlaySymbol.push(item.Symbol)
         }
 
-        var bShowCorss=false;   //十字光标十字线
-        if (this.ChartCorssCursor) bShowCorss=this.ChartCorssCursor.IsShowCorss;
+        var bShowCorss=false;           //十字光标十字线
+        var bCorssDrawCloseLine=false;  //十字光标只能画在走势图价格线上
+        var bCorssDrawVaildTime=false;
+        if (this.ChartCorssCursor) 
+        {
+            bShowCorss=this.ChartCorssCursor.IsShowCorss;
+            bCorssDrawCloseLine=this.ChartCorssCursor.IsOnlyDrawMinute;
+            bCorssDrawVaildTime=this.ChartCorssCursor.IsFixXLastTime;
+        }
+
 
         var minItem=null;
         if (frameID>=0 && option && IFrameSplitOperator.IsNumber(option.CursorIndex))
@@ -85083,12 +85120,22 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             {
                 Name:"区间选择",Data:{ ID: JSCHART_MENU_ID.CMD_ENABLE_SELECT_RECT_ID, Args:[!this.EnableSelectRect]}, Checked:this.EnableSelectRect
             },
+            { 
+                Name:"十字光标",
+                SubMenu:
+                [
+                    { Name:"显示", Data:{ ID:JSCHART_MENU_ID.CMD_SHOW_CORSS_LINE_ID, Args:[!bShowCorss]}, Checked:bShowCorss },
+                    { Name:"画在价格线上", Data:{ ID:JSCHART_MENU_ID.CMD_CORSS_ON_CLOSE_LINE_ID, Args:[!bCorssDrawCloseLine]}, Checked:bCorssDrawCloseLine },
+                    { Name:"画在有效X轴上",Data:{ ID:JSCHART_MENU_ID.CMD_CORSS_ON_VAILD_TIME_ID, Args:[!bCorssDrawVaildTime]}, Checked:bCorssDrawVaildTime },
+                ]
+            },
+
             {
                 Name:"其他设置",
                 SubMenu:
                 [
                     { Name:"画图工具", Data:{ ID:JSCHART_MENU_ID.CMD_SHOW_DRAWTOOL_ID, Args:[]}, Checked:this.IsShowDrawToolDialog()},
-                    { Name:"十字光标线", Data:{ ID:JSCHART_MENU_ID.CMD_SHOW_CORSS_LINE_ID, Args:[!bShowCorss]}, Checked:bShowCorss },
+
                     { Name:JSPopMenu.SEPARATOR_LINE_NAME },
                     
                     { 
@@ -85131,7 +85178,6 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             var item={ Name:"集合竞价",Data:{ ID: JSCHART_MENU_ID.CMD_SHOW_BEFORE_DATA_ID, Args:[!this.IsShowBeforeData] }, Checked:this.IsShowBeforeData };
             aryMenu.splice(4,0,item);
         }
-
         
         
         for(var i=0;i<aryMenu.length;++i)
@@ -85149,7 +85195,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                     }
                 }
             }
-            else if (item.Name=="其他设置")
+            else if (item.Name=="十字光标")
             {
                 if (minItem)
                 {
@@ -88312,6 +88358,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                 chart.SetOption(option);
                 this.ExtendChartPaint.push(chart);
                 return chart;
+            case "BackgroundPaint":
             case "背景图":
                 chart=new BackgroundPaint();
                 chart.Canvas=this.Canvas;

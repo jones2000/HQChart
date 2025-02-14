@@ -67,6 +67,25 @@ function IExtendChartPainting()
 
     this.Draw = function () { } //画图接口
     this.SetOption = function (option) { }  //设置参数接口
+
+    this.SetFillStyle=function(color, x0, y0, x1, y1)
+    {
+        if (Array.isArray(color))
+        {
+            let gradient = this.Canvas.createLinearGradient(x0, y0, x1, y1);
+            var offset=1/(color.length-1);
+            for(var i=0; i<color.length; ++i)
+            {
+                var value=i*offset;
+                gradient.addColorStop(value, color[i]);
+            }
+            this.Canvas.fillStyle=gradient;
+        }
+        else
+        {
+            this.Canvas.fillStyle=color;
+        }
+    }
 }
 
 //K线Tooltip, 显示在左边或右边
@@ -824,218 +843,206 @@ function BackgroundPaint()
     this.IsDynamic = false;
     this.IsCallbackDraw = true;   //在回调函数里绘制, 不在Draw()中绘制
 
+    this.IsDrawAllFrame=false;          //全部的指标框都画
+    this.SetDrawFrameID=new Set([0]);   //指定几个指标框画
+
     this.FrameID = 0;
-    this.Data;      //背景数据 { Start:, End:, Color:[] }
+    this.Data;      //背景数据[ { Start:{ Date:, Time: }, End:{ Date:, Time }, Color:['rgb(44,55,255)','rgb(200,55,255)'] }]
+    this.IsShow=true;
+    this.SubFrame=null;
     this.ID = Guid(); //唯一的ID
 
-    /*
-    this.Data=
-    [ 
-        { Start:{ Date:20181201 }, End:{ Date:20181230 }, Color:'rgb(44,55,44)' } , 
-        { Start:{ Date:20190308 }, End:{ Date:20190404 }, Color:['rgb(44,55,255)','rgb(200,55,255)'] } 
-    ]
-    */
-
-    this.ChartSubFrame;
-    this.ChartBorder;
-    this.KData;
-    this.Period;
-    this.XPointCount = 0;
+    this.HQChart;
 
     this.SetOption = function (option) //设置
     {
-        if (option.FrameID > 0) this.FrameID = option.FrameID;
-        if (IFrameSplitOperator.IsObjectExist(option.ID)) this.ID = option.ID;
+        if (!option) return;
+
+        if (IFrameSplitOperator.IsNumber(option.FrameID)) this.FrameID=option.FrameID;
+        if (IFrameSplitOperator.IsObjectExist(option.ID)) this.ID=option.ID;
+        if (IFrameSplitOperator.IsBool(option.IsDrawAllFrame)) this.IsDrawAllFrame=option.IsDrawAllFrame;
+        if (IFrameSplitOperator.IsNonEmptyArray(option.AryFrameID)) this.SetDrawFrameID=new Set(option.AryFrameID);
     }
 
-    this.Draw = function () 
+    this.Draw=function()
     {
-        if (!this.Data || !this.HQChart) return;
-        if (!this.ChartFrame || !this.ChartFrame.SubFrame || this.ChartFrame.SubFrame.length <= this.FrameID) return;
-        var klineChart = this.HQChart.ChartPaint[0];
-        if (!klineChart || !klineChart.Data) return;
+        this.SubFrame=null;
 
-        this.ChartSubFrame = this.ChartFrame.SubFrame[this.FrameID].Frame;
-        this.ChartBorder = this.ChartSubFrame.ChartBorder;
-        this.KData = klineChart.Data;
-        this.Period = this.HQChart.Period;
-        if (!this.KData || this.KData.Data.length <= 0) return;
+        if (this.FrameID<0) return;
+        if (!this.HQChart) return;
+        if (!this.ChartFrame || !IFrameSplitOperator.IsNonEmptyArray(this.ChartFrame.SubFrame)) return;
+        if (!this.IsShow) return;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.Data)) return;
+        if (!this.ChartFrame.SubFrame[this.FrameID]) return;
+        this.SubFrame=this.ChartFrame.SubFrame[this.FrameID].Frame;
+        if (!this.SubFrame) return;
 
-        var isHScreen = (this.ChartSubFrame.IsHScreen === true);
-        this.XPointCount = this.ChartSubFrame.XPointCount;
-        var xPointCount = this.ChartSubFrame.XPointCount;
+        var kData=this.HQChart.GetKData();
+        if (!kData || !IFrameSplitOperator.IsNonEmptyArray(kData.Data)) return;
 
-        var firstKItem = this.KData.Data[this.KData.DataOffset];
-        var endIndex = this.KData.DataOffset + xPointCount - 1;
-        if (endIndex >= this.KData.Data.length) endIndex = this.KData.Data.length - 1;
-        var endKItem = this.KData.Data[endIndex];
-        var showData = this.GetShowData(firstKItem, endKItem);
-        if (!showData || showData.length <= 0) return;
-
-        var kLineMap = this.BuildKLineMap();
-        var bottom = this.ChartBorder.GetBottomEx();
-        var top = this.ChartBorder.GetTopEx();
-        var height = this.ChartBorder.GetHeightEx();
-        if (isHScreen) 
+        var bHScreen=(this.SubFrame.IsHScreen===true);
+        this.IsHScreen=bHScreen;
+        var isMinute=this.SubFrame.IsMinuteFrame();
+        var dataWidth=this.SubFrame.DataWidth;
+        var distanceWidth=this.SubFrame.DistanceWidth;
+        var xPointCount=this.SubFrame.XPointCount;
+        
+        var border=this.SubFrame.GetBorder();
+        if (bHScreen)
         {
-            top = this.ChartBorder.GetRightEx();
-            bottom = this.ChartBorder.GetLeftEx();
-            height = this.ChartBorder.GetWidthEx();
+            var chartright=border.BottomEx;
+            var xOffset=border.TopEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        }
+        else
+        {
+            var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.RightEx;
         }
 
-        for (var i in showData) 
+        var mapBG=new Map();    //key= index, Value={  Start:{Left, Center, Right, Item:}, End:{ Left, Center, Right, Item:} }
+        var startIndex=kData.DataOffset;
+        for(var i=startIndex,j=0;i<kData.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
         {
-            var item = showData[i];
-            var rt = this.GetBGCoordinate(item, kLineMap);
-            if (!rt) continue;
+            var kItem=kData.Data[i];
+            var aryFind=this.FindMatchData(kItem);
+            if (!aryFind) continue;
 
-            if (Array.isArray(item.Color)) 
+            if (isMinute)
             {
-                var gradient;
-                if (isHScreen) gradient = this.Canvas.createLinearGradient(bottom, rt.Left, top, rt.Left);
-                else gradient = this.Canvas.createLinearGradient(rt.Left, top, rt.Left, bottom);
-                var offset = 1 / item.Color.length;
-                for (var i in item.Color) 
-                {
-                    gradient.addColorStop(i * offset, item.Color[i]);
-                }
-                this.Canvas.fillStyle = gradient;
+                var x=this.ChartFrame.GetXFromIndex(j);
+                var left=x;
+                var right=x;
             }
-            else 
-            {
-                this.Canvas.fillStyle = item.Color;
-            }
-
-            if (isHScreen) this.Canvas.fillRect(ToFixedRect(bottom), ToFixedRect(rt.Left), ToFixedRect(height), ToFixedRect(rt.Width));
-            else this.Canvas.fillRect(ToFixedRect(rt.Left), ToFixedRect(top), ToFixedRect(rt.Width), ToFixedRect(height));
-        }
-    }
-
-    this.GetShowData = function (first, end) 
-    {
-        var aryData = [];
-        for (var i in this.Data) {
-            var item = this.Data[i];
-            var showItem = {};
-            if (item.Start.Date >= first.Date && item.Start.Date <= end.Date) showItem.Start = item.Start;
-            if (item.End.Date >= first.Date && item.End.Date <= end.Date) showItem.End = item.End;
-            if (showItem.Start || showItem.End) 
-            {
-                showItem.Color = item.Color;
-                aryData.push(showItem);
-            }
-        }
-
-        return aryData;
-    }
-
-    this.BuildKLineMap = function () 
-    {
-        var isHScreen = (this.ChartSubFrame.IsHScreen === true);
-        var dataWidth = this.ChartSubFrame.DataWidth;
-        var distanceWidth = this.ChartSubFrame.DistanceWidth;
-        var xOffset = this.ChartBorder.GetLeft() + distanceWidth / 2.0 + g_JSChartResource.FrameLeftMargin;
-        if (isHScreen) xOffset = this.ChartBorder.GetTop() + distanceWidth / 2.0 + g_JSChartResource.FrameLeftMargin;
-        var chartright = this.ChartBorder.GetRight();
-        if (isHScreen) chartright = this.ChartBorder.GetBottom();
-
-        var mapKLine = { Data: new Map() }; //Key: date / date time, Value:索引
-        for (var i = this.KData.DataOffset, j = 0; i < this.KData.Data.length && j < this.XPointCount; ++i, ++j, xOffset += (dataWidth + distanceWidth)) 
-        {
-            var kItem = this.KData.Data[i];
-            var left = xOffset;
-            var right = xOffset + dataWidth;
-            if (right > chartright) break;
-            var x = left + (right - left) / 2;
-
-            if (j == 0) mapKLine.XLeft = left;
-            mapKLine.XRight = right;
-
-            var value = { Index: i, ShowIndex: j, X: x, Right: right, Left: left, Date: kItem.Date };
-            if (ChartData.IsMinutePeriod(this.Period, true)) 
-            {
-                var key = `Date:${kItem.Date} Time:${kItem.Time}`;
-                value.Time = kItem.Time;
-            }
-            else 
-            {
-                var key = `Date:${kItem.Date}`;
-            }
-
-            mapKLine.Data.set(key, value);
-        }
-
-        return mapKLine;
-    }
-
-    this.GetBGCoordinate = function (item, kLineMap) 
-    {
-        var xLeft = null, xRight = null;
-        if (item.Start) 
-        {
-            if (ChartData.IsMinutePeriod(this.Period, true))
-                var key = `Date:${item.Start.Date} Time:${item.Start.Time}`;
             else
-                var key = `Date:${item.Start.Date}`;
-
-            if (kLineMap.Data.has(key)) 
             {
-                var findItem = kLineMap.Data.get(key);
-                xLeft = findItem.Left;
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                var x=left+(right-left)/2;
             }
-            else 
+
+            for(var k=0;k<aryFind.length;++k)
             {
-                for (var kItem of kLineMap.Data) 
+                var findItem=aryFind[k];
+                if (mapBG.has(findItem.Index))
                 {
-                    var value = kItem[1];
-                    if (value.Date > item.Start.Date) 
-                    {
-                        xLeft = value.Left;
-                        break;
-                    }
+                    var bgItem=mapBG.get(findItem.Index);
+                    bgItem.End.Left=left;
+                    bgItem.End.Right=right;
+                    bgItem.End.Item=findItem.Item;
+                }
+                else
+                {
+                    mapBG.set(findItem.Index, { Item:findItem.Item, Start:{ Left:left, Right:right, Item:findItem.Item }, End:{ Left:left, Right:right, Item:findItem.Item }})
                 }
             }
         }
-        else 
+
+        if (mapBG.size>0)
         {
-            xLeft = kLineMap.XLeft;
+            this.Canvas.save();
+            //this.ClipClient(bHScreen);
+            
+            this.DrawBG(mapBG);
+    
+            this.Canvas.restore();
+        }
+    }
+
+    this.FindMatchData=function(kItem)
+    {
+        var aryFind=[];
+        for(var i=0;i<this.Data.length;++i)
+        {
+            var item=this.Data[i];
+            var start=item.Start;
+            var end=item.End;
+            var bMatch=false;
+            if (IFrameSplitOperator.IsNumber(kItem.Date) && IFrameSplitOperator.IsNumber(kItem.Time))
+            {
+                if (kItem.Date>start.Date && kItem.Date<end.Date)
+                {
+                    bMatch=true;
+                }
+                else if (kItem.Date==start.Date && kItem.Date==end.Date)
+                {
+                    if (kItem.Time>=start.Time && kItem.Time<=end.Time)bMatch=true;
+                }
+                else if (kItem.Date==start.Date)
+                {
+                    if (kItem.Time>=start.Time) bMatch=true;
+                }
+                else if (kItem.Date==end.Date)
+                {
+                    if ((kItem.Time<=end.Time)) bMatch=true;
+                }
+            }
+            else if (IFrameSplitOperator.IsNumber(kItem.Date) && !IFrameSplitOperator.IsNumber(kItem.Time))
+            {
+                if (kItem.Date>=start.Date && kItem.Date<=end.Date) bMatch=true;
+            }
+
+            if (bMatch) aryFind.push({ Index:i, Item:item });
         }
 
-        if (item.End) 
-        {
-            if (ChartData.IsMinutePeriod(this.Period, true))
-                var key = `Date:${item.End.Date} Time:${item.End.Time}`;
-            else
-                var key = `Date:${item.End.Date}`;
+        if (aryFind.Length<=0) return null;
 
-            if (kLineMap.Data.has(key)) 
+        return aryFind;
+    }
+
+    this.DrawBG=function(mapBG)
+    {
+        for(var mapItem of mapBG)
+        {
+            var bgItem=mapItem[1];
+            //this.DrawBGItem(this.SubFrame, bgItem);
+            
+            for(var i=0;i<this.ChartFrame.SubFrame.length;++i)
             {
-                var findItem = kLineMap.Data.get(key);
-                xRight = findItem.Right;
-            }
-            else 
-            {
-                var previousX = null;
-                for (var kItem of kLineMap.Data) 
+                var subFrame=this.ChartFrame.SubFrame[i].Frame;
+                if (this.IsDrawAllFrame || this.SetDrawFrameID.has(i))
                 {
-                    var value = kItem[1];
-                    if (value.Date > item.End.Date) 
-                    {
-                        xRight = previousX;
-                        break;
-                    }
-                    previousX = value.Right;
+                    this.DrawBGItem(subFrame, bgItem);
                 }
             }
         }
-        else 
+    }
+
+    this.DrawBGItem=function(frame, bgItem)
+    {
+        var border=frame.GetBorder();
+        if (this.IsHScreen)
         {
-            xRight = kLineMap.XRight;
+            var top=border.RightEx;
+            var bottom=border.LeftEx;
+            var left=border.Top;
+        }
+        else
+        {
+            var top=border.TopEx;
+            var bottom=border.BottomEx;
+            var left=border.Left;
         }
 
-        if (xLeft == null || xRight == null) return null;
-
-        return { Left: xLeft, Right: xRight, Width: xRight - xLeft };
+        if (this.IsHScreen)
+        {
+            this.SetFillStyle(bgItem.Item.Color,top,left,bottom,left);
+            var start=bgItem.Start;
+            var end=bgItem.End;
+            var rtBG={ Left:bottom, Right:top, Top:start.Left, Bottom:end.Right };
+            rtBG.Width=rtBG.Right-rtBG.Left;
+            rtBG.Height=rtBG.Bottom-rtBG.Top;
+            this.Canvas.fillRect(ToFixedRect(rtBG.Left),ToFixedRect(rtBG.Top),ToFixedRect(rtBG.Width),ToFixedRect(rtBG.Height));
+        }
+        else
+        {
+            this.SetFillStyle(bgItem.Item.Color, left,top, left,bottom);
+            var start=bgItem.Start;
+            var end=bgItem.End;
+            var rtBG={ Left:start.Left, Right:end.Right, Top:top, Bottom:bottom };
+            rtBG.Width=rtBG.Right-rtBG.Left;
+            rtBG.Height=rtBG.Bottom-rtBG.Top;
+            this.Canvas.fillRect(ToFixedRect(rtBG.Left),ToFixedRect(rtBG.Top),ToFixedRect(rtBG.Width),ToFixedRect(rtBG.Height));
+        }
     }
 }
 

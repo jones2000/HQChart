@@ -7524,6 +7524,7 @@ function KLineChartContainer(uielement)
                 chart.SetOption(option);
                 this.ExtendChartPaint.push(chart);
                 return chart;
+            case "BackgroundPaint":
             case '背景图':
                 chart = new BackgroundPaint();
                 chart.Canvas = this.Canvas;
@@ -11343,6 +11344,16 @@ function MinuteChartContainer(uielement)
                 chart.ChartFrame = this.Frame;
                 chart.HQChart = this;
                 option.LanguageID = this.LanguageID;
+                chart.SetOption(option);
+                this.ExtendChartPaint.push(chart);
+                return chart;
+            case "BackgroundPaint":
+            case '背景图':
+                chart = new BackgroundPaint();
+                chart.Canvas = this.Canvas;
+                chart.ChartBorder = this.Frame.ChartBorder;
+                chart.ChartFrame = this.Frame;
+                chart.HQChart = this;
                 chart.SetOption(option);
                 this.ExtendChartPaint.push(chart);
                 return chart;

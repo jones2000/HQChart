@@ -6201,6 +6201,7 @@ function ChartMultiBar()
 
     this.DrawAllBar=function(mapBar)
     {
+        var dataWidth=this.ChartFrame.DataWidth;
         for(var mapItem of mapBar)
         {
             var aryBar=mapItem[1].AryBar;
@@ -6209,15 +6210,16 @@ function ChartMultiBar()
             var config=null;
             var count=0;
             var drawType=-1;    //1=直线 2=实心 3=空心
-            var barWidth=1;
+            var barWidth=dataWidth;
             this.Canvas.beginPath();
             for(var i=0;i<aryBar.length;++i)
             {
                 var item=aryBar[i];
                 if (!config)
                 {
+                    barWidth=dataWidth;
                     config=item.Data.ColorConfig;
-                    barWidth=config.Width;
+                    if (IFrameSplitOperator.IsNumber(config.Width)) barWidth=config.Width;
                     if (barWidth>4)
                     {
                         if (config.Type==0) drawType=2;         //实心

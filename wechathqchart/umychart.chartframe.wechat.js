@@ -289,6 +289,16 @@ function IChartFramePainting()
         if (font) this.Canvas.font=font;
         return this.Canvas.measureText("擎").width;
     }
+
+    //bIncludeOverlay =false不包含叠加框架  true=主框架+叠加框架 默认true
+    this.IsMinuteFrame=function(bIncludeOverlay)
+    {
+        var aryName=["MinuteFrame", "MinuteHScreenFrame", "OverlayMinuteFrame", "OverlayMinuteHScreenFrame"];
+        if (bIncludeOverlay===false) aryName=["MinuteFrame", "MinuteHScreenFrame"];
+
+        var isMinute=aryName.includes(this.ClassName);
+        return isMinute;
+    }
 }
 
 

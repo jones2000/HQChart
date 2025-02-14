@@ -1842,19 +1842,21 @@ function JSReportChartContainer(uielement)
                 }
                 break;
             case 38:    //up
-                var result=this.MoveSelectedRow(-1);
+                var result=this.MoveSelectedRow(-1, {EnablePageCycle: this.PageUpDownCycle});
                 if (result)
                 {
                     if (result.Redraw) this.Draw();
                     if (result.Update) this.DelayUpdateStockData();
+                    this.MoveSelectedRowEvent(result.OldIndex, result.NewIndex);
                 }
                 break;
             case 40:    //down
-                var result=this.MoveSelectedRow(1)
+                var result=this.MoveSelectedRow(1, {EnablePageCycle: this.PageUpDownCycle})
                 if (result)
                 {
                     if (result.Redraw) this.Draw();
                     if (result.Update) this.DelayUpdateStockData();
+                    this.MoveSelectedRowEvent(result.OldIndex, result.NewIndex);
                 }
                 break;
             case 37: //left
@@ -3015,13 +3017,19 @@ function JSReportChartContainer(uielement)
         return false;
     }
 
-    this.MoveSelectedRow=function(step)
+    // option={ EnablePageCycle: true/false(是否循环翻页) }
+    this.MoveSelectedRow=function(step, option)
     {
         var chart=this.ChartPaint[0];
         if (!chart) return null;
         if (!IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return null;
+        var bPageCycle=false;
+        if (option)
+        {
+            if (IFrameSplitOperator.IsBool(option.EnablePageCycle)) bPageCycle=option.EnablePageCycle;
+        }
 
-        var result={ Redraw:false, Update:false };  //Redraw=重绘, Update=更新数据
+        var result={ Redraw:false, Update:false, OldIndex:-1, NewIndex:-1 };  //Redraw=重绘, Update=更新数据
 
         if (chart.MultiSelectModel==1)
         {
@@ -3123,6 +3131,7 @@ function JSReportChartContainer(uielement)
             var pageStatus=chart.GetCurrentPageStatus();
             var pageSize=pageStatus.End-pageStatus.Start+1;
             var selected=pageStatus.SelectedRow;
+            result.OldIndex=this.Data.YOffset+selected;
             if (step>0)
             {
                 selected+=step;
@@ -3130,6 +3139,7 @@ function JSReportChartContainer(uielement)
                 chart.SelectedRow=selected;
                 chart.SelectedFixedRow=-1;
                 result.Redraw=true;
+                result.NewIndex=this.Data.YOffset+selected;
                 return result;
             }
             else if (step<0)
@@ -3143,6 +3153,7 @@ function JSReportChartContainer(uielement)
 
                 chart.SelectedRow=selected;
                 chart.SelectedFixedRow=-1;
+                result.NewIndex=this.Data.YOffset+selected;
                 result.Redraw=true;
                 return result;
             }
@@ -3152,18 +3163,23 @@ function JSReportChartContainer(uielement)
             var pageStatus=chart.GetCurrentPageStatus();
             var pageSize=pageStatus.PageSize;
             var selected=pageStatus.SelectedRow;
+            result.OldIndex=pageStatus.SelectedRow;
             if (step>0)
             {
                 if (selected<0 || selected<pageStatus.Start || selected>pageStatus.End)
                 {
                     chart.SelectedRow=pageStatus.Start;
                     result.Redraw=true;
+                    result.NewIndex=pageStatus.Start;
                     return result;
                 }
 
                 var offset=this.Data.YOffset;
                 for(var i=0;i<step;++i)
                 {
+                    if (selected+1>=this.Data.Data.length && !bPageCycle)
+                        break;
+
                     ++selected;
                     if (selected>pageStatus.End) ++offset;
 
@@ -3179,7 +3195,7 @@ function JSReportChartContainer(uielement)
 
                 chart.SelectedRow=selected;
                 this.Data.YOffset=offset;
-
+                result.NewIndex=selected;
                 return result;
             }
             else if (step<0)
@@ -3188,6 +3204,7 @@ function JSReportChartContainer(uielement)
                 {
                     chart.SelectedRow=pageStatus.End;
                     result.Redraw=true;
+                    result.NewIndex=pageStatus.End;
                     return result;
                 }
 
@@ -3195,6 +3212,9 @@ function JSReportChartContainer(uielement)
                 var offset=this.Data.YOffset;
                 for(var i=0;i<step;++i)
                 {
+                    if (selected<=0 && !bPageCycle)    //不能循环翻页
+                        break;
+
                     --selected;
                     if (selected<pageStatus.Start) --offset;
 
@@ -3211,12 +3231,43 @@ function JSReportChartContainer(uielement)
 
                 chart.SelectedRow=selected;
                 this.Data.YOffset=offset;
+                result.NewIndex=selected;
 
                 return result;
             }
         }
 
         return null;
+    }
+
+    this.MoveSelectedRowEvent=function(oldIndex, newIndex)
+    {
+        var chart=this.ChartPaint[0];
+        if (!chart) return null;
+
+        if (oldIndex==newIndex) return;
+
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_MOVE_SELECTED_REPORT_ROW);
+        if (!event || !event.Callback) return;
+
+        if (!IFrameSplitOperator.IsNonEmptyArray(chart.Data.Data)) return;
+        var arySymbol=chart.Data.Data;
+
+        var oldData=null, newData=null;
+        if (oldIndex>=0 && oldIndex<arySymbol.length)
+        {
+            var symbol=arySymbol[oldIndex];
+            oldData={ Symbol:symbol, Index:oldIndex };
+        }
+
+        if (newIndex>=0 && newIndex<arySymbol.length)
+        {
+            var symbol=arySymbol[newIndex];
+            newData={ Symbol:symbol, Index:newIndex };
+        }
+
+        var endData={ Old:oldData, Now:newData };
+        event.Callback(event, endData, this);
     }
 
     //左右移动
