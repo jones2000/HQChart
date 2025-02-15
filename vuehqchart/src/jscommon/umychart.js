@@ -40818,9 +40818,10 @@ function ChartMultiBar()
             var groupItem=this.Bars[i];
             if (!groupItem || !IFrameSplitOperator.IsNonEmptyArray(groupItem.Point)) continue;
 
-            var clrConfig= { Color:groupItem.Color, Width:null, Name:groupItem.Name, Type:0 };
+            var clrConfig= { Color:groupItem.Color, BGColor:null, Width:null, Name:groupItem.Name, Type:0 };
             if (IFrameSplitOperator.IsNumber(groupItem.Width)) clrConfig.Width=groupItem.Width;
             if (IFrameSplitOperator.IsNumber(groupItem.Type)) clrConfig.Type=groupItem.Type;
+            if (groupItem.BorderColor) clrConfig.BorderColor=groupItem.BorderColor;
 
             for(var j=0; j<groupItem.Point.length; ++j)
             {
@@ -40941,8 +40942,9 @@ function ChartMultiBar()
 
             var config=null;
             var path=new Path2D();
+            var pathBG=new Path2D();
             var count=0;
-            var drawType=-1;        //1=直线 2=实心 3=空心
+            var drawType=-1;        //1=直线 2=实心 3=空心 4=边框+背景
             var barWidth=dataWidth; //默认K线宽度
             this.Canvas.beginPath();
             for(var i=0;i<aryBar.length;++i)
@@ -40957,6 +40959,7 @@ function ChartMultiBar()
                     {
                         if (config.Type==0) drawType=2;         //实心
                         else if (config.Type==1)  drawType=3;    //空心
+                        else if (config.Type==2) drawType=4;    //边框+背景
                         else continue;
                     }
                     else    //太细了， 直线
@@ -41013,6 +41016,31 @@ function ChartMultiBar()
                     path.addPath(barPath);
                     ++count;
                 }
+                else if (drawType==4)   //背景+边框
+                {
+                    var x=item.X-(barWidth/2);
+                    var y=Math.min(item.Y,item.Y2);
+                    var barWidth=barWidth;
+                    var barHeight=Math.abs(item.Y-item.Y2);
+
+                    var barPath = new Path2D();
+                    if (this.IsHScreen) 
+                        barPath.rect(ToFixedRect(y),ToFixedRect(x),ToFixedRect(barHeight),ToFixedRect(barWidth))
+                    else
+                        barPath.rect(ToFixedRect(x),ToFixedRect(y),ToFixedRect(barWidth),ToFixedRect(barHeight))
+
+                    pathBG.addPath(barPath);
+
+                    var barPath = new Path2D();
+                    if (this.IsHScreen) 
+                        barPath.rect(ToFixedPoint(y),ToFixedPoint(x),ToFixedPoint(barHeight),ToFixedPoint(barWidth))
+                    else
+                        barPath.rect(ToFixedPoint(x),ToFixedPoint(y),ToFixedPoint(barWidth),ToFixedPoint(barHeight))
+
+                    path.addPath(barPath);
+
+                    ++count;
+                }
             }
 
 
@@ -41034,6 +41062,21 @@ function ChartMultiBar()
                     this.Canvas.lineWidth=1*pixelRatio;
                     this.Canvas.strokeStyle=config.Color;
                     this.Canvas.stroke(path);
+                }
+                else if (drawType==4)
+                {
+                    if (config.Color)
+                    {
+                        this.Canvas.fillStyle=config.Color;      //背景填充颜色
+                        this.Canvas.fill(path);
+                    }
+
+                    if (config.BorderColor)
+                    {
+                        this.Canvas.lineWidth=1*pixelRatio;
+                        this.Canvas.strokeStyle=config.BorderColor;
+                        this.Canvas.stroke(path);
+                    }
                 }
             }
 
