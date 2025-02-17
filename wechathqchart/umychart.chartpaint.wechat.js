@@ -18,6 +18,7 @@ import
     Rect,RectV2,
     JSCHART_EVENT_ID,
     OVERLAY_STATUS_ID,
+    CloneData
 } from "./umychart.data.wechat.js";
 
 import 
@@ -9257,6 +9258,13 @@ function ChartCorssCursor()
     this.RightMargin={ Left:2, Right:2, Top:2, Bottom:1 };
     JSChartResource.CopyMargin(this.RightMargin, g_JSChartResource.CorssCursor.RightMargin);
 
+    this.CorssPointConfig=
+    { 
+        Enable:false, 
+        Center:CloneData(g_JSChartResource.CorssCursor.CorssPoint.Center),
+        Border:CloneData(g_JSChartResource.CorssCursor.CorssPoint.Border)
+    }
+
     //内部使用
     this.Close = null;     //收盘价格
 
@@ -9410,6 +9418,10 @@ function ChartCorssCursor()
             }
 
             this.Canvas.stroke();
+            this.Canvas.restore();
+
+            this.Canvas.save();
+            this.DrawCorssPoint(x,y);
             this.Canvas.restore();
         }
 
@@ -9783,6 +9795,10 @@ function ChartCorssCursor()
 
             this.Canvas.stroke();
             this.Canvas.restore();
+
+            this.Canvas.save();
+            this.DrawCorssPoint(x,y);
+            this.Canvas.restore();
         }
 
         var xValue = this.Frame.GetXData(y);
@@ -9943,6 +9959,29 @@ function ChartCorssCursor()
                     this.Canvas.restore();
                 }
             }
+        }
+    }
+
+    this.DrawCorssPoint=function(x,y)
+    {
+        var config=this.CorssPointConfig;
+        if (!config.Enable) return;
+
+        this.Canvas.beginPath();
+        this.Canvas.arc(x,y,config.Center.Radius,0,360,false);
+        this.Canvas.closePath();
+
+        if (config.Center && config.Center.Color)
+        {
+            this.Canvas.fillStyle=config.Center.Color;
+            this.Canvas.fill(); 
+        }
+                                
+        if (config.Border && config.Border.Color)
+        {
+            this.Canvas.strokeStyle=config.Border.Color;
+            if (IFrameSplitOperator.IsNumber(config.Border.Width)) this.Canvas.lineWidth=config.Border.Width;
+            this.Canvas.stroke();
         }
     }
 }

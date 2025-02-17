@@ -188,7 +188,9 @@ function GetBlackStyle()
                 BGColor:'rgb(43,54,69)', 
                 PenColor:'rgb(255,255,255)',
                 Icon: { Text:'\ue6a3', Color:'rgb(255,255,255)', Family:"iconfont", Size:18 }
-            } 
+            },
+
+            CorssPoint:{ Center:{ Color:"rgb(50,171,205)" }, Border:{ Color:'rgba(0,0,0,0.8)', Width:1*GetDevicePixelRatio() } }
         },
     
         //订单流配置

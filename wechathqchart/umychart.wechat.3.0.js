@@ -352,6 +352,7 @@ function JSChart(element)
             if (IFrameSplitOperator.IsNumber(item.DateFormatType)) chart.ChartCorssCursor.StringFormatX.DateFormatType=item.DateFormatType;
             if (IFrameSplitOperator.IsNumber(item.PriceFormatType)) chart.ChartCorssCursor.StringFormatY.PriceFormatType=item.PriceFormatType;
             if (IFrameSplitOperator.IsNumber(item.DataFormatType)) chart.ChartCorssCursor.StringFormatY.DataFormatType=item.DataFormatType;
+            if (IFrameSplitOperator.IsBool(item.IsShowCorssPoint)) chart.ChartCorssCursor.CorssPointConfig.Enable=item.IsShowCorssPoint;
         }
 
         if (typeof (option.UpdateUICallback) == 'function') //数据到达回调
@@ -669,6 +670,7 @@ function JSChart(element)
             if (IFrameSplitOperator.IsBool(item.IsOnlyDrawMinute)) chart.ChartCorssCursor.IsOnlyDrawMinute = item.IsOnlyDrawMinute;    //Y轴显示收盘价
             if (IFrameSplitOperator.IsNumber(item.HPenType)) chart.ChartCorssCursor.HPenType=item.HPenType;
             if (IFrameSplitOperator.IsNumber(item.VPenType)) chart.ChartCorssCursor.VPenType=item.VPenType;
+            if (IFrameSplitOperator.IsBool(item.IsShowCorssPoint)) chart.ChartCorssCursor.CorssPointConfig.Enable=item.IsShowCorssPoint;
         }
 
         if (option.MinuteInfo) chart.CreateMinuteInfo(option.MinuteInfo);

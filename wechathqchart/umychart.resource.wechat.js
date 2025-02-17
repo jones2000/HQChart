@@ -152,7 +152,12 @@ function JSChartResource()
 
     this.CorssCursor=
     {
-        RightMargin: { Left:2, Right:2, Top:2, Bottom:1 }
+        RightMargin: { Left:2, Right:2, Top:2, Bottom:1 },
+        CorssPoint:
+        {
+            Center:{ Radius:5, Color:"rgb(50,171,205)"},
+             Border:{ Color:'rgb(255,255,255)', Width:1} 
+        }
     }
 
     this.Domain = "http://127.0.0.1:8080";               //API域名
@@ -586,6 +591,27 @@ function JSChartResource()
         if (style.CorssCursorHPenColor) this.CorssCursorHPenColor = style.CorssCursorHPenColor;
         if (style.CorssCursorVPenColor) this.CorssCursorVPenColor = style.CorssCursorVPenColor;
         if (style.CorssCursorLineDash) this.CorssCursorLineDash = style.CorssCursorLineDash.slice();
+
+        if (style.CorssCursor && style.CorssCursor.CorssPoint)
+        {
+            var item=style.CorssCursor.CorssPoint;
+            if (item.Center)
+            {
+                var subItem=item.Center;
+                var subDest=this.CorssCursor.CorssPoint.Center;
+                if (IFrameSplitOperator.IsNumber(subItem.Radius)) subDest.Radius=subItem.Radius;
+                if (subItem.Color) subDest.Color=subItem.Color;
+            }
+
+            if (item.Border)
+            {
+                var subItem=item.Border;
+                var subDest=this.CorssCursor.CorssPoint.Border;
+                if (IFrameSplitOperator.IsNumber(subItem.Width)) subDest.Width=subItem.Width;
+                if (subItem.Color) subDest.Color=subItem.Color;
+            }
+        }
+        
         if (style.KLine) this.KLine = style.KLine;
         if (style.Index) 
         {

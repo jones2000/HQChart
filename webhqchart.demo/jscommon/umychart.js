@@ -491,6 +491,8 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (IFrameSplitOperator.IsNumber(item.PriceFormatType)) chart.ChartCorssCursor.StringFormatY.PriceFormatType=item.PriceFormatType;
             if (IFrameSplitOperator.IsNumber(item.DataFormatType)) chart.ChartCorssCursor.StringFormatY.DataFormatType=item.DataFormatType;
             if (IFrameSplitOperator.IsBool(item.EnableKeyboard)) chart.ChartCorssCursor.EnableKeyboard=item.EnableKeyboard;
+
+            if (IFrameSplitOperator.IsBool(item.IsShowCorssPoint)) chart.ChartCorssCursor.CorssPointConfig.Enable=item.IsShowCorssPoint;
            
         }
 
@@ -984,6 +986,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (IFrameSplitOperator.IsNumber(item.HPenType)) chart.ChartCorssCursor.HPenType=item.HPenType;
             if (IFrameSplitOperator.IsNumber(item.VPenType)) chart.ChartCorssCursor.VPenType=item.VPenType;
             if (IFrameSplitOperator.IsBool(item.EnableKeyboard)) chart.ChartCorssCursor.EnableKeyboard=item.EnableKeyboard;
+            if (IFrameSplitOperator.IsBool(item.IsShowCorssPoint)) chart.ChartCorssCursor.CorssPointConfig.Enable=item.IsShowCorssPoint;
         }
 
         if (option.MinuteInfo) chart.CreateMinuteInfo(option.MinuteInfo);
@@ -2875,6 +2878,7 @@ var JSCHART_MENU_ID=
     CMD_CORSS_ON_CLOSE_LINE_ID:49,          //十字光标在价格线上(分时图)
     CMD_CORSS_ON_VAILD_TIME_ID:50,          //超出当前时间的,X轴调整到当前最后的时间(分时图)
     CMD_CORSS_ON_KLINE_ID:51,               //十字光标只能画在K线上   
+    CMD_CORSS_POINT_ID:52,                  //十字光标圆点
 
 
 
@@ -10276,6 +10280,9 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                     this.ChartCorssCursor.IsOnlyDrawKLine=srcParam;
                     this.ChartCorssCursor.IsShowClose=srcParam;
                 }
+                break;
+            case JSCHART_MENU_ID.CMD_CORSS_POINT_ID:
+                if (IFrameSplitOperator.IsBool(srcParam) && this.ChartCorssCursor) this.ChartCorssCursor.CorssPointConfig.Enable=srcParam;
                 break;
         }
     }
@@ -40818,9 +40825,10 @@ function ChartMultiBar()
             var groupItem=this.Bars[i];
             if (!groupItem || !IFrameSplitOperator.IsNonEmptyArray(groupItem.Point)) continue;
 
-            var clrConfig= { Color:groupItem.Color, Width:null, Name:groupItem.Name, Type:0 };
+            var clrConfig= { Color:groupItem.Color, BGColor:null, Width:null, Name:groupItem.Name, Type:0 };
             if (IFrameSplitOperator.IsNumber(groupItem.Width)) clrConfig.Width=groupItem.Width;
             if (IFrameSplitOperator.IsNumber(groupItem.Type)) clrConfig.Type=groupItem.Type;
+            if (groupItem.BorderColor) clrConfig.BorderColor=groupItem.BorderColor;
 
             for(var j=0; j<groupItem.Point.length; ++j)
             {
@@ -40941,8 +40949,9 @@ function ChartMultiBar()
 
             var config=null;
             var path=new Path2D();
+            var pathBG=new Path2D();
             var count=0;
-            var drawType=-1;        //1=直线 2=实心 3=空心
+            var drawType=-1;        //1=直线 2=实心 3=空心 4=边框+背景
             var barWidth=dataWidth; //默认K线宽度
             this.Canvas.beginPath();
             for(var i=0;i<aryBar.length;++i)
@@ -40957,6 +40966,7 @@ function ChartMultiBar()
                     {
                         if (config.Type==0) drawType=2;         //实心
                         else if (config.Type==1)  drawType=3;    //空心
+                        else if (config.Type==2) drawType=4;    //边框+背景
                         else continue;
                     }
                     else    //太细了， 直线
@@ -41013,6 +41023,31 @@ function ChartMultiBar()
                     path.addPath(barPath);
                     ++count;
                 }
+                else if (drawType==4)   //背景+边框
+                {
+                    var x=item.X-(barWidth/2);
+                    var y=Math.min(item.Y,item.Y2);
+                    var barWidth=barWidth;
+                    var barHeight=Math.abs(item.Y-item.Y2);
+
+                    var barPath = new Path2D();
+                    if (this.IsHScreen) 
+                        barPath.rect(ToFixedRect(y),ToFixedRect(x),ToFixedRect(barHeight),ToFixedRect(barWidth))
+                    else
+                        barPath.rect(ToFixedRect(x),ToFixedRect(y),ToFixedRect(barWidth),ToFixedRect(barHeight))
+
+                    pathBG.addPath(barPath);
+
+                    var barPath = new Path2D();
+                    if (this.IsHScreen) 
+                        barPath.rect(ToFixedPoint(y),ToFixedPoint(x),ToFixedPoint(barHeight),ToFixedPoint(barWidth))
+                    else
+                        barPath.rect(ToFixedPoint(x),ToFixedPoint(y),ToFixedPoint(barWidth),ToFixedPoint(barHeight))
+
+                    path.addPath(barPath);
+
+                    ++count;
+                }
             }
 
 
@@ -41034,6 +41069,21 @@ function ChartMultiBar()
                     this.Canvas.lineWidth=1*pixelRatio;
                     this.Canvas.strokeStyle=config.Color;
                     this.Canvas.stroke(path);
+                }
+                else if (drawType==4)
+                {
+                    if (config.Color)
+                    {
+                        this.Canvas.fillStyle=config.Color;      //背景填充颜色
+                        this.Canvas.fill(path);
+                    }
+
+                    if (config.BorderColor)
+                    {
+                        this.Canvas.lineWidth=1*pixelRatio;
+                        this.Canvas.strokeStyle=config.BorderColor;
+                        this.Canvas.stroke(path);
+                    }
                 }
             }
 
@@ -53442,6 +53492,13 @@ function ChartCorssCursor()
     this.IsFixXLastTime=false;                                  //是否修正X轴,超出当前时间的,X轴调整到当前最后的时间.
     this.IsDrawXRangeBG=false;                                  //是否绘制十字光标背景
 
+    this.CorssPointConfig=
+    { 
+        Enable:false, 
+        Center:CloneData(g_JSChartResource.CorssCursor.CorssPoint.Center),
+        Border:CloneData(g_JSChartResource.CorssCursor.CorssPoint.Border)
+    }
+
     this.EnableNewIndex=false;      //分时图是否使用最新的索引结构 (由外部chart容器传入)
     this.CorssCursorIndex;          //分时图新版本的索引结构 (由外部chart容器传入)
 
@@ -53490,6 +53547,10 @@ function ChartCorssCursor()
         this.BorderColor=g_JSChartResource.CorssCursorBorderColor;  //边框颜色
         this.XRangeBGColor=g_JSChartResource.CorssCursorXRangeBGColor;
         this.LineDash=g_JSChartResource.CorssCursorLineDash.slice();    //虚线
+
+
+        this.CorssPointConfig.Center=CloneData(g_JSChartResource.CorssCursor.CorssPoint.Center);
+        this.CorssPointConfig.Border=CloneData(g_JSChartResource.CorssCursor.CorssPoint.Border);
     }
 
     this.GetCloseYPoint=function(index)
@@ -53814,7 +53875,10 @@ function ChartCorssCursor()
             
             this.Canvas.stroke();
             this.Canvas.restore();
-            
+
+            this.Canvas.save();
+            this.DrawCorssPoint(x,y);
+            this.Canvas.restore();
         }
 
         var xValue=this.Frame.GetXData(x);
@@ -54417,6 +54481,10 @@ function ChartCorssCursor()
 
             this.Canvas.stroke();
             this.Canvas.restore();
+
+            this.Canvas.save();
+            this.DrawCorssPoint(x,y);
+            this.Canvas.restore();
         }
 
         var xValue=this.Frame.GetXData(y);
@@ -54673,6 +54741,30 @@ function ChartCorssCursor()
             this.IsShowCorss=true;
             data.Draw=true;
             if (this.OnChangeStatusCallback) this.OnChangeStatusCallback({ Type:1, IsShowCorss:this.IsShowCorss }, this);
+        }
+    }
+
+
+    this.DrawCorssPoint=function(x,y)
+    {
+        var config=this.CorssPointConfig;
+        if (!config.Enable) return;
+
+        this.Canvas.beginPath();
+        this.Canvas.arc(x,y,config.Center.Radius,0,360,false);
+        this.Canvas.closePath();
+
+        if (config.Center && config.Center.Color)
+        {
+            this.Canvas.fillStyle=config.Center.Color;
+            this.Canvas.fill(); 
+        }
+                                
+        if (config.Border && config.Border.Color)
+        {
+            this.Canvas.strokeStyle=config.Border.Color;
+            if (IFrameSplitOperator.IsNumber(config.Border.Width)) this.Canvas.lineWidth=config.Border.Width;
+            this.Canvas.stroke();
         }
     }
 
@@ -71419,7 +71511,9 @@ function JSChartResource()
         RightMargin: { Left:2, Right:2, Top:5, Bottom:3 },
 
         BottomText:{ Margin: { Left:4, Right:4, Top:0, Bottom:0 }, TextOffset:{X:4, Y:-1 } },
-        LeftText:{ Margin: { Left:4, Right:4, Top:0, Bottom:0 }, TextOffset:{X:4, Y:-1 } }
+        LeftText:{ Margin: { Left:4, Right:4, Top:0, Bottom:0 }, TextOffset:{X:4, Y:-1 } },
+
+        CorssPoint:{ Center:{ Radius:5*GetDevicePixelRatio(), Color:"rgb(50,171,205)"}, Border:{ Color:'rgb(255,255,255)', Width:1*GetDevicePixelRatio() } }
     };
 
     this.LockBGColor = "rgb(220, 220, 220)";        //指标锁区域颜色
@@ -72857,6 +72951,26 @@ function JSChartResource()
             if (item.BGColor) this.CorssCursor.RightButton.BGColor=item.BGColor;
             if (item.PenColor) this.CorssCursor.RightButton.PenColor=item.PenColor;
             if (item.Icon) this.CorssCursor.RightButton.Icon=item.Icon;
+        }
+
+        if (style.CorssCursor && style.CorssCursor.CorssPoint)
+        {
+            var item=style.CorssCursor.CorssPoint;
+            if (item.Center)
+            {
+                var subItem=item.Center;
+                var subDest=this.CorssCursor.CorssPoint.Center;
+                if (IFrameSplitOperator.IsNumber(subItem.Radius)) subDest.Radius=subItem.Radius;
+                if (subItem.Color) subDest.Color=subItem.Color;
+            }
+
+            if (item.Border)
+            {
+                var subItem=item.Border;
+                var subDest=this.CorssCursor.CorssPoint.Border;
+                if (IFrameSplitOperator.IsNumber(subItem.Width)) subDest.Width=subItem.Width;
+                if (subItem.Color) subDest.Color=subItem.Color;
+            }
         }
         
         if (style.KLine) this.KLine = style.KLine;
@@ -80878,11 +80992,13 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         var bShowCorss=false;   //十字光标十字线
         var bCorssDrawKLine=false;
         var bCorssDrawVaildTime=false;
+        var bCorssDrawPoint=false;
         if (this.ChartCorssCursor) 
         {
             bShowCorss=this.ChartCorssCursor.IsShowCorss;
             bCorssDrawKLine=this.ChartCorssCursor.IsOnlyDrawKLine && this.ChartCorssCursor.IsShowClose;
             bCorssDrawVaildTime=this.ChartCorssCursor.IsFixXLastTime;
+            bCorssDrawPoint=this.ChartCorssCursor.CorssPointConfig.Enable;
         }
 
         var bPopMinuteChart=false;
@@ -81059,6 +81175,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                     { Name:"显示", Data:{ ID:JSCHART_MENU_ID.CMD_SHOW_CORSS_LINE_ID, Args:[!bShowCorss]}, Checked:bShowCorss },
                     { Name:"显示在K线上", Data:{ ID:JSCHART_MENU_ID.CMD_CORSS_ON_KLINE_ID, Args:[!bCorssDrawKLine]}, Checked:bCorssDrawKLine },
                     { Name:"画在有效X轴上",Data:{ ID:JSCHART_MENU_ID.CMD_CORSS_ON_VAILD_TIME_ID, Args:[!bCorssDrawVaildTime]}, Checked:bCorssDrawVaildTime },
+                    { Name:"画圆点",Data:{ ID:JSCHART_MENU_ID.CMD_CORSS_POINT_ID, Args:[!bCorssDrawPoint]}, Checked:bCorssDrawPoint },
                 ]
             },
             {
@@ -85038,11 +85155,13 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         var bShowCorss=false;           //十字光标十字线
         var bCorssDrawCloseLine=false;  //十字光标只能画在走势图价格线上
         var bCorssDrawVaildTime=false;
+        var bCorssDrawPoint=false;
         if (this.ChartCorssCursor) 
         {
             bShowCorss=this.ChartCorssCursor.IsShowCorss;
             bCorssDrawCloseLine=this.ChartCorssCursor.IsOnlyDrawMinute;
             bCorssDrawVaildTime=this.ChartCorssCursor.IsFixXLastTime;
+            bCorssDrawPoint=this.ChartCorssCursor.CorssPointConfig.Enable;
         }
 
 
@@ -85127,6 +85246,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                     { Name:"显示", Data:{ ID:JSCHART_MENU_ID.CMD_SHOW_CORSS_LINE_ID, Args:[!bShowCorss]}, Checked:bShowCorss },
                     { Name:"画在价格线上", Data:{ ID:JSCHART_MENU_ID.CMD_CORSS_ON_CLOSE_LINE_ID, Args:[!bCorssDrawCloseLine]}, Checked:bCorssDrawCloseLine },
                     { Name:"画在有效X轴上",Data:{ ID:JSCHART_MENU_ID.CMD_CORSS_ON_VAILD_TIME_ID, Args:[!bCorssDrawVaildTime]}, Checked:bCorssDrawVaildTime },
+                    { Name:"画圆点",Data:{ ID:JSCHART_MENU_ID.CMD_CORSS_POINT_ID, Args:[!bCorssDrawPoint]}, Checked:bCorssDrawPoint },
                 ]
             },
 

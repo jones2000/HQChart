@@ -3242,11 +3242,7 @@ JSIndexScript.prototype.TEST = function ()
             Script: //脚本
                 //"T2:KDJ.J;"+
                 //"收盘价:C;成交量:VOL, SINGLELINE, RGB(100,100,100);"
-                `DRAWTEXTREL(120,30,STRFORMAT("当前屏K线最小值: {0}",SYSPARAM(5))), RGB(250,0,0);
-                DRAWTEXTREL(120,100,STRFORMAT("当前屏K线最大值: {0}",SYSPARAM(4))), RGB(0,250,0);
-                
-                DRAWTEXTREL(120,170,STRFORMAT("主图可见K线最初位置: {0}",SYSPARAM(2))), RGB(0,0,0);
-                DRAWTEXTREL(120,260,STRFORMAT("主图可见K线最后位置: {0}",SYSPARAM(3))), RGB(0,0,0);`
+                `PARTLINE(CLOSE,CLOSE>OPEN,RGB(255,0,0),CLOSE<OPEN,RGB(0,255,0),1,RGB(0,0,255)),LINETHICK2,DOTLINE,LINEDASH(10,5);`
                 //"T2:IF(KDJ.J>-10,KDJ.J#WEEK,0);"
                 
 
