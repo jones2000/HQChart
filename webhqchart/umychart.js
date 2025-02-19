@@ -987,6 +987,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (IFrameSplitOperator.IsNumber(item.VPenType)) chart.ChartCorssCursor.VPenType=item.VPenType;
             if (IFrameSplitOperator.IsBool(item.EnableKeyboard)) chart.ChartCorssCursor.EnableKeyboard=item.EnableKeyboard;
             if (IFrameSplitOperator.IsBool(item.IsShowCorssPoint)) chart.ChartCorssCursor.CorssPointConfig.Enable=item.IsShowCorssPoint;
+            if (IFrameSplitOperator.IsNumber(item.VLineType)) chart.ChartCorssCursor.VLineType=item.VLineType;
         }
 
         if (option.MinuteInfo) chart.CreateMinuteInfo(option.MinuteInfo);
@@ -15022,7 +15023,8 @@ function MinuteFrame()
         }
 
         if (IFrameSplitOperator.IsNonEmptyArray(dayItem.AryText))    //[ [{Text:, Color:},], []]
-        {
+        { 
+            if (dayItem.Font) this.Canvas.font=dayItem.Font;
             this.Canvas.textAlign="left";
             this.Canvas.textBaseline="top";
             var yText=border.Bottom+2;
@@ -15170,6 +15172,7 @@ function MinuteFrame()
     this.DrawCustomHorizontal=function()    //Y轴刻度定制显示
     {
         if (this.IsMinSize) return;
+        if (this.ChartBorder.IsShowTitleOnly) return;
         for(var i in this.CustomHorizontalInfo)
         {
             var item=this.CustomHorizontalInfo[i];
@@ -44020,10 +44023,10 @@ function ChartLock()
     this.ClassName="ChartLock";
     this.WidthDiv = 0.2;  // 框子宽度占比
     this.LockCount = 20; // 锁最新的几个数据
-    this.BGColor = g_JSChartResource.LockBGColor;
-    this.TextColor = g_JSChartResource.LockTextColor;
-    this.Font = g_JSChartResource.DefaultTextFont;
-    this.Title = '🔒开通权限';
+    this.BGColor = g_JSChartResource.IndexLock.BGColor;
+    this.TextColor = g_JSChartResource.IndexLock.TextColor;
+    this.Font = g_JSChartResource.IndexLock.Font;
+    this.Title = g_JSChartResource.IndexLock.Title;
     this.LockRect=null; //上锁区域
     this.LockID;        //锁ID
     this.Callback;      //回调
@@ -53585,7 +53588,8 @@ function ChartCorssCursor()
         {
 
             if (!IFrameSplitOperator.IsNumber(index)) return null;
-            index=parseInt(index);
+            index=parseInt(index.toFixed(0));
+            //index=parseInt(index);
             if (!this.StringFormatX.Data) return null;
             var data = this.StringFormatX.Data;
             if (!data.Data || data.Data.length <= 0) return null;
@@ -71515,9 +71519,15 @@ function JSChartResource()
 
         CorssPoint:{ Center:{ Radius:5*GetDevicePixelRatio(), Color:"rgb(50,171,205)"}, Border:{ Color:'rgb(255,255,255)', Width:1*GetDevicePixelRatio() } }
     };
-
-    this.LockBGColor = "rgb(220, 220, 220)";        //指标锁区域颜色
-    this.LockTextColor = "rgb(210, 34, 34)";        //指标锁提示信息文字颜色
+   
+    //指标锁
+    this.IndexLock=
+    {
+        BGColor:"rgb(220, 220, 220)",
+        TextColor:"rgb(210, 34, 34)",
+        Font:`${14*GetDevicePixelRatio()}px 微软雅黑`,
+        Title:'🔒开通权限'
+    }
 
     this.Domain="http://127.0.0.1:8080";                 //API域名
     this.CacheDomain="http://127.0.0.1:8087";            //缓存域名
@@ -73598,6 +73608,8 @@ function JSChartResource()
 
         if (style.MinuteToolbar) this.SetMinuteToolbar(style.MinuteToolbar);
         if (style.KLineToolbar) this.SetKLineToolbar(style.KLineToolbar);
+
+        if (style.IndexLock) this.SetIndexLock(style.IndexLock);
     }
 
 
@@ -74284,6 +74296,16 @@ function JSChartResource()
 
         if (IFrameSplitOperator.IsNonEmptyArray(style.AryBGColor)) dest.AryBGColor=style.AryBGColor.slice();
         if (IFrameSplitOperator.IsNonEmptyArray(style.AryArea)) dest.AryArea=style.AryArea.slice();
+    }
+
+    this.SetIndexLock=function(style)
+    {
+        var item=style;
+        var dest=this.IndexLock;
+        if (item.BGColor) dest.BGColor=item.BGColor;
+        if (item.TextColor) dest.TextColor=item.TextColor;
+        if (item.Font) dest.Font=item.Font;
+        if (item.Title) dest.Title=item.Title;
     }
 
 }
@@ -75227,7 +75249,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
     this.SourceDataLimit=new Map();     //每个周期缓存数据最大个数 key=周期 value=最大个数 
     this.CtrlMoveStep=5;                //Ctrl+(Left/Right) 移动数据个数  
 
-    this.CustomShow=null;               //首先显示的K线的起始日期 { Date:日期, Time:时间, PageSize:, Callback:}
+    this.CustomShow=null;               //首先显示的K线的起始日期 { Date:日期, Time:时间, PageSize:, Callback:, Position:0=left 1=center }
     this.ZoomType=0;                    //缩放模式 0=最右边固定缩放, 1=十字光标两边缩放
     this.IsZoomLockRight=false;         
     this.KLineSize=null;                //{ DataWidth:, }
@@ -75815,12 +75837,12 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                 this.ChartOperator_Temp_Update();
             }
         }
-        else if (id==JSCHART_OPERATOR_ID.OP_GOTO) //{ Date:日期, Time:, PageSize:可选 }
+        else if (id==JSCHART_OPERATOR_ID.OP_GOTO) //{ Date:日期, Time:, PageSize:可选, Position:0=left 1=center }
         {
             if (!IFrameSplitOperator.IsNumber(obj.Date)) return;
 
             var hisData=this.ChartOperator_Temp_GetHistoryData();
-            if (!hisData) return;  //数据还没有到达
+            if (!hisData || !IFrameSplitOperator.IsNonEmptyArray(hisData.Data)) return;  //数据还没有到达
 
             var index=this.ChartOperator_GetIndex_ByDateTime(hisData, obj, this.Period, 0);
 
@@ -75830,6 +75852,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                 return;
             }
 
+            var position=0;
+            if (IFrameSplitOperator.IsNumber(obj.Position)) position=obj.Position;
             var oldXPointCount=this.Frame.SubFrame[0].Frame.XPointCount;
             var xPointCount=oldXPointCount;
             if (obj.PageSize>0) //调整一屏显示的个数
@@ -75841,6 +75865,17 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             {
                 //设置X轴显示数据个数
                 this.Frame.SetXShowCount(xPointCount);
+            }
+
+            if (position==1)    //居中
+            {
+                var moveStep=parseInt(xPointCount/2);
+                index-=moveStep;
+                if (index<0) index=0;
+            }
+            else
+            {
+
             }
 
             hisData.DataOffset=index;
@@ -76748,6 +76783,15 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                 item.XPointCount=showCount;
             }
         }
+
+        if (IFrameSplitOperator.IsNumber(customShow.Position))
+        {
+            var xCount=this.Frame.SubFrame[0].Frame.XPointCount;
+            var moveStep=parseInt(xCount/2);
+            index-=moveStep;
+            if (index<0) index=0;
+        }
+        
         
         this.ChartPaint[0].Data.DataOffset=index;
         this.CursorIndex=0;
@@ -78773,9 +78817,10 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
     {
         if (!obj || !obj.Date) return;
 
-        var option={ ID:JSCHART_OPERATOR_ID.OP_GOTO, Date:obj.Date };
+        var option={ ID:JSCHART_OPERATOR_ID.OP_GOTO, Date:obj.Date, Position:0 };
         if (IFrameSplitOperator.IsNumber(obj.Time)) option.Time=obj.Time;
         if (IFrameSplitOperator.IsNumber(obj.PageSize)) option.PageSize=obj.PageSize;
+        if (IFrameSplitOperator.IsNumber(obj.Position)) option.Position=obj.Position;
 
         this.ChartOperator(option);
     }
@@ -80173,9 +80218,10 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             if (option.CustomShow && IFrameSplitOperator.IsPlusNumber(option.CustomShow.Date))
             {
                 var item=option.CustomShow;
-                this.CustomShow={ Date:item.Date };
+                this.CustomShow={ Date:item.Date, Position:0 };
                 if (IFrameSplitOperator.IsNumber(item.Time)) this.CustomShow.Time=item.Time;
                 if (IFrameSplitOperator.IsPlusNumber(item.PageSize)) this.CustomShow.PageSize=item.PageSize;
+                if (IFrameSplitOperator.IsNumber(item.Position)) this.CustomShow.Position=item.Position;
             }
         }
 
@@ -85334,6 +85380,53 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
     this.OnWheel=function(e)
     {
         JSConsole.Chart.Log('[MinuteChartContainer::OnWheel]',e);
+        if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
+
+        var pixelTatio = GetDevicePixelRatio();
+        var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
+        var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
+
+        var isInClient=false;
+        var rtClient=
+        { 
+            Left:this.Frame.ChartBorder.GetLeft(), Right:this.Frame.ChartBorder.GetRight(),
+            Top:this.Frame.ChartBorder.GetTop(), Bottom:this.Frame.ChartBorder.GetBottom(), 
+            Width:this.Frame.ChartBorder.GetWidth(), Height:this.Frame.ChartBorder.GetHeight() 
+        };
+
+        if (x>=rtClient.Left && x<=rtClient.Right && y>=rtClient.Top && y<=rtClient.Bottom ) isInClient=true;
+
+        if (!this.OnWheel_ZoomUpDownFrameY(e,x,y)) return;
+
+        if(e.preventDefault) e.preventDefault();
+        else e.returnValue = false;
+    }
+
+    //通过滚轴缩放Y轴
+    this.OnWheel_ZoomUpDownFrameY=function(e, x, y)
+    {
+        if (!this.EnableYDrag.Wheel) return false;
+
+        var frameID=this.Frame.PtInFrame(x,y);
+        if (frameID<0) return false;
+
+        var frame=this.Frame.SubFrame[frameID].Frame;
+        var splitOper=frame.YSplitOperator;
+        if (!splitOper || !splitOper.FixedYMaxMin) return false;    //Y轴缩放状态下才有效
+
+        var wheelValue=e.wheelDelta;
+        if (!IFrameSplitOperator.IsObjectExist(e.wheelDelta))
+            wheelValue=e.deltaY* -0.01;
+
+        var yMove=this.EnableYDrag.WheelYMove;
+        if (wheelValue>0) yMove*=-1;
+        var dragY={ Position:0, Index:frameID, Right:false, Left:false };   //只能两边缩放
+        if (!this.Frame.OnZoomUpDownFrameY(dragY, yMove)) return false;
+
+        this.Frame.SetSizeChage(true);
+        this.Draw();
+
+        return true;
     }
 
     this.OnDoubleClick=function(x,y,e)

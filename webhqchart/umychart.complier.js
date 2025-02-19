@@ -24718,15 +24718,18 @@ function APIScriptIndex(name,script,args,option, isOverlay)
         }
         this.BindData(hqChart,windowIndex,hisData);
 
-        if (this.IsLocked==false) //不上锁
+        if (!this.IsOverlayIndex)
         {
-            hqChart.Frame.SubFrame[windowIndex].Frame.SetLock(null);
-        }
-        else    //上锁
-        {
-            let lockData={ IsLocked:true,Callback:this.LockCallback,IndexName:this.Name ,ID:this.LockID,
-                BG:this.LockBG,Text:this.LockText,TextColor:this.LockTextColor, Font:this.LockFont, Count:this.LockCount, MinWidth:this.LockMinWidth };
-            hqChart.Frame.SubFrame[windowIndex].Frame.SetLock(lockData);
+            if (this.IsLocked==false) //不上锁
+            {
+                hqChart.Frame.SubFrame[windowIndex].Frame.SetLock(null);
+            }
+            else    //上锁
+            {
+                let lockData={ IsLocked:true,Callback:this.LockCallback,IndexName:this.Name ,ID:this.LockID,
+                    BG:this.LockBG,Text:this.LockText,TextColor:this.LockTextColor, Font:this.LockFont, Count:this.LockCount, MinWidth:this.LockMinWidth };
+                hqChart.Frame.SubFrame[windowIndex].Frame.SetLock(lockData);
+            }
         }
 
         hqChart.UpdataDataoffset();           //更新数据偏移

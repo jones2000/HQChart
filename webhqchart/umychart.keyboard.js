@@ -167,11 +167,11 @@ function JSKeyboardChart(divElement)
         }
     }
 
-    this.ChartDestory=function()
+    this.ChartDestroy=function()
     {
-        if (this.JSChartContainer && typeof (this.JSChartContainer.ChartDestory) == 'function') 
+        if (this.JSChartContainer && typeof (this.JSChartContainer.ChartDestroy) == 'function') 
         {
-            this.JSChartContainer.ChartDestory();
+            this.JSChartContainer.ChartDestroy();
         }
     }
 
@@ -261,7 +261,7 @@ function JSKeyboardChartContainer(uielement)
 
     this.IsDestroy=false;        //是否已经销毁了
 
-    this.ChartDestory=function()    //销毁
+    this.ChartDestroy=function()    //销毁
     {
         this.IsDestroy=true;
     }

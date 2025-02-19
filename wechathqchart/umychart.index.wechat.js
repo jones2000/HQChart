@@ -2664,6 +2664,7 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
     this.newMethod(name, script, args, option);
     delete this.newMethod;
 
+    this.IsOverlayIndex=(isOverlay==true);  //是否是叠加指标
     this.ApiUrl;    //指标执行api地址
     this.HQDataType;
 
@@ -2799,18 +2800,21 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
         }
         this.BindData(hqChart, windowIndex, hisData);
 
-        if (this.IsLocked == false) //不上锁
+        if (!this.IsOverlayIndex)
         {
-            hqChart.Frame.SubFrame[windowIndex].Frame.SetLock(null);
-        }
-        else    //上锁
-        {
-            let lockData = 
+            if (this.IsLocked == false) //不上锁
             {
-                IsLocked: true, Callback: this.LockCallback, IndexName: this.Name, ID: this.LockID,
-                BG: this.LockBG, Text: this.LockText, TextColor: this.LockTextColor, Font: this.LockFont, Count: this.LockCount, MinWidth: this.LockMinWidth
-            };
-            hqChart.Frame.SubFrame[windowIndex].Frame.SetLock(lockData);
+                hqChart.Frame.SubFrame[windowIndex].Frame.SetLock(null);
+            }
+            else    //上锁
+            {
+                let lockData = 
+                {
+                    IsLocked: true, Callback: this.LockCallback, IndexName: this.Name, ID: this.LockID,
+                    BG: this.LockBG, Text: this.LockText, TextColor: this.LockTextColor, Font: this.LockFont, Count: this.LockCount, MinWidth: this.LockMinWidth
+                };
+                hqChart.Frame.SubFrame[windowIndex].Frame.SetLock(lockData);
+            }
         }
 
         hqChart.UpdataDataoffset();           //更新数据偏移

@@ -7840,10 +7840,10 @@ function ChartLock()
     delete this.newMethod;
     this.WidthDiv = 0.2;  // 框子宽度占比
     this.LockCount = 10; // 锁最新的几个数据
-    this.BGColor = g_JSChartResource.LockBGColor;
-    this.TextColor = g_JSChartResource.LockTextColor;
-    this.Font = g_JSChartResource.DefaultTextFont;
-    this.Title = '🔒开通权限';
+    this.BGColor = g_JSChartResource.IndexLock.BGColor;
+    this.TextColor = g_JSChartResource.IndexLock.TextColor;
+    this.Font = g_JSChartResource.IndexLock.Font;
+    this.Title = g_JSChartResource.IndexLock.Title;
     this.LockRect = null; //上锁区域
     this.LockID;        //锁ID
     this.Callback;      //回调
@@ -9288,7 +9288,7 @@ function ChartCorssCursor()
     this.GetMinuteCloseYPoint=function(index)
     {
         if (!IFrameSplitOperator.IsNumber(index)) return null;
-        index=parseInt(index);
+        index=parseInt(index.toFixed(0));
         if (!this.StringFormatX.Data) return null;
         var data = this.StringFormatX.Data;
         if (!data.Data || data.Data.length <= 0) return null;

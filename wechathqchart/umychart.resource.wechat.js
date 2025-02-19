@@ -160,6 +160,15 @@ function JSChartResource()
         }
     }
 
+    //指标锁
+    this.IndexLock=
+    {
+        BGColor:"rgb(220, 220, 220)",
+        TextColor:"rgb(210, 34, 34)",
+        Font:'14px 微软雅黑',
+        Title:'🔒开通权限'
+    }
+
     this.Domain = "http://127.0.0.1:8080";               //API域名
     this.CacheDomain = "http://127.0.0.1:8087";     //缓存域名
 
@@ -934,6 +943,7 @@ function JSChartResource()
         }
 
         if (style.KLineTrain)  this.SetKLineTrain(style.KLineTrain);
+        if (style.IndexLock) this.SetIndexLock(style.IndexLock);
     }
 
     this.SetKLineTrain=function(style)
@@ -960,6 +970,16 @@ function JSChartResource()
             if (subItem.Color) dest.SellIcon.Color=subItem.Color;
             if (subItem.Text) dest.SellIcon.Text=subItem.Text;
         }
+    }
+
+    this.SetIndexLock=function(style)
+    {
+        var item=style;
+        var dest=this.IndexLock;
+        if (item.BGColor) dest.BGColor=item.BGColor;
+        if (item.TextColor) dest.TextColor=item.TextColor;
+        if (item.Font) dest.Font=item.Font;
+        if (item.Title) dest.Title=item.Title;
     }
 
     

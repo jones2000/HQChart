@@ -55,6 +55,11 @@ import
     g_MinuteTimeStringData
 } from "./umychart.coordinatedata.wechat.js";
 
+import
+{
+    ChartLock
+} from "./umychart.chartpaint.wechat.js"
+
 
 function IChartFramePainting() 
 {

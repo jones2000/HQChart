@@ -268,6 +268,13 @@ function GetBlackStyle()
             Line:{ Color:"rgb(128,128,128)" }, 
             Text:{ Color:"rgb(219,220,220)", Font:`${12*GetDevicePixelRatio()}px 微软雅黑` } 
         },
+
+        //指标锁
+        IndexLock:
+        {
+            BGColor:"rgb(105,105,105)",
+            TextColor:"rgb(255,0,0)",
+        },
     
         Index: 
         {      

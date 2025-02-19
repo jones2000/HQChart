@@ -155,6 +155,14 @@ function JSDealChart(divElement)
             this.JSChartContainer.ReloadResource(option);
         }
     }
+
+    this.ChartDestroy=function()
+    {
+        if (this.JSChartContainer && typeof (this.JSChartContainer.ChartDestroy) == 'function') 
+        {
+            this.JSChartContainer.ChartDestroy();
+        }
+    }
 }
 
 
@@ -198,7 +206,7 @@ function JSDealChartContainer(uielement)
 
     this.IsDestroy=false;        //是否已经销毁了
 
-    this.ChartDestory=function()    //销毁
+    this.ChartDestroy=function()    //销毁
     {
         this.IsDestroy=true;
         this.StopAutoUpdate();

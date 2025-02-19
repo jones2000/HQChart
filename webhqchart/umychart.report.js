@@ -308,11 +308,11 @@ function JSReportChart(divElement)
         }
     }
 
-    this.ChartDestory=function()
+    this.ChartDestroy=function()
     {
-        if (this.JSChartContainer && typeof (this.JSChartContainer.ChartDestory) == 'function') 
+        if (this.JSChartContainer && typeof (this.JSChartContainer.ChartDestroy) == 'function') 
         {
-            this.JSChartContainer.ChartDestory();
+            this.JSChartContainer.ChartDestroy();
         }
     }
 
@@ -481,7 +481,7 @@ function JSReportChartContainer(uielement)
     //MouseOnStatus:{ RowIndex:行, ColumnIndex:列} 
     this.LastMouseStatus={ MoveStatus:null, TooltipStatus:null, MouseOnStatus:null };
    
-    this.ChartDestory=function()    //销毁
+    this.ChartDestroy=function()    //销毁
     {
         this.IsDestroy=true;
         this.StopAutoUpdate();

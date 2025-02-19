@@ -153,11 +153,11 @@ function JSScrollBarChart(divElement)
         }
     }
 
-    this.ChartDestory=function()
+    this.ChartDestroy=function()
     {
-        if (this.JSChartContainer && typeof (this.JSChartContainer.ChartDestory) == 'function') 
+        if (this.JSChartContainer && typeof (this.JSChartContainer.ChartDestroy) == 'function') 
         {
-            this.JSChartContainer.ChartDestory();
+            this.JSChartContainer.ChartDestroy();
         }
     }
 
@@ -270,7 +270,7 @@ function JSScrollBarChartContainer(uielement)
 
     this.HQChart=null;
 
-    this.ChartDestory=function()    //销毁
+    this.ChartDestroy=function()    //销毁
     {
         this.IsDestroy=true;
     }
