@@ -570,6 +570,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (option.KLine.InfoPosition>0) klineChart.InfoPosition=option.KLine.InfoPosition;
             if (IFrameSplitOperator.IsBool(item.IsShowMaxMinPrice)) klineChart.IsShowMaxMinPrice=item.IsShowMaxMinPrice;
             if (IFrameSplitOperator.IsNumber(item.OneLimitBarType)) klineChart.OneLimitBarType=item.OneLimitBarType;
+            if (IFrameSplitOperator.IsNumber(item.UnchangeBarType)) klineChart.UnchangeBarType=item.UnchangeBarType;
             if (item.PriceGap)
             {
                 if (IFrameSplitOperator.IsBool(item.PriceGap.Enable)) klineChart.PriceGap.Enable=item.PriceGap.Enable;
@@ -2694,6 +2695,11 @@ var JSCHART_EVENT_ID=
     SEARCH_DIALOG_ON_CLICK_INDEX:163,           //切换指标-指标对话框
 
     ON_CALCULATE_CHIP_DATA:164,                //计算筹码数据 (筹码图用)
+
+
+    ON_CLICK_DEAL_ROW:165,
+    ON_RCLICK_DEAL_ROW:166,
+    ON_DBCLICK_DEAL_ROW:167,
 }
 
 var JSCHART_OPERATOR_ID=
@@ -6981,7 +6987,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         return this.Frame.ZoomIndexWindow(frameID, option);
     }
 
-    this.ShowIndexTitleOnly=function(frameID, option)      //只显示指标的标题
+    this.ShowIndexTitleOnly=function(frameID, option)      //只显示指标的标题 option={ Enable:true/false }
     {
         if (frameID<0 || frameID>=this.Frame.SubFrame.length) return false;
         return this.Frame.ShowIndexTitleOnly(frameID, option);
@@ -19943,16 +19949,21 @@ function HQTradeFrame()
 
         this.RestoreIndexWindows();
 
-        if (subChartBorder.IsShowTitleOnly)
+        var bChange=false;
+        var bEnable=!subChartBorder.IsShowTitleOnly;
+        if (option)
         {
-            subChartBorder.IsShowTitleOnly=false;
-        }
-        else
-        {
-            subChartBorder.IsShowTitleOnly=true;
+            if (IFrameSplitOperator.IsBool(option.Enable)) bEnable=option.Enable;
         }
 
-        return true;
+        if (subChartBorder.IsShowTitleOnly!=bEnable) 
+        {
+            subChartBorder.IsShowTitleOnly=bEnable;
+            bChange=true;
+
+        }
+
+        return bChange;
     }
 
     this.CalculateChartBorder=function()    //计算每个子框架的边框信息
@@ -25277,7 +25288,7 @@ function IChartPainting()
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
         {
             var data=this.Data.Data[i];
-            if (data.Open==null || data.High==null || data.Low==null || data.Close==null) continue;
+            if (!data || data.Open==null || data.High==null || data.Low==null || data.Close==null) continue;
 
             if (firstOverlayOpen==null) firstOverlayOpen=data.Open;
 
@@ -25437,7 +25448,8 @@ function ChartKLine()
     this.DrawKRange={ Start:null, End:null };   //当前屏K线的索引{ Start: , End:}
 
     this.IsThinAKBar=true;      //美国线 柱子是否是线段 (false=柱子)
-    this.OneLimitBarType=0;    //一字板颜色类型 4个价格全部都在同一个价位上 0=使用平盘颜色 1=跟昨收比较
+    this.OneLimitBarType=0;     //一字板颜色类型 4个价格全部都在同一个价位上 0=使用平盘颜色 1=跟昨收比较
+    this.UnchangeBarType=0;     //0=使用unchange color 1=和昨收比较
 
     this.HighLowBarColor=g_JSChartResource.HighLowBarColor;
     this.HighLowTextConfig=
@@ -26206,7 +26218,7 @@ function ChartKLine()
         {
             var data=this.Data.Data[i];
             this.ShowRange.End=i;
-            if (data.Open==null || data.High==null || data.Low==null || data.Close==null) continue;
+            if (!data || data.Open==null || data.High==null || data.Low==null || data.Close==null) continue;
 
             var left=xOffset;
             var right=xOffset+dataWidth;
@@ -26584,6 +26596,11 @@ function ChartKLine()
 
     this.DrawKBar_Unchagne=function(data, dataWidth, unchagneColor, drawType, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen) //平线
     {
+        if (this.UnchangeBarType==1)    //十字星颜色
+        {
+            unchagneColor=this.GetUnchangeBarColor(data);
+        }
+
         if (this.OneLimitBarType===1&& this.IsOneLimitBar(data))    //一字板
         {
             unchagneColor=this.GetOneLimitBarColor(data);
@@ -26691,6 +26708,16 @@ function ChartKLine()
         if (kItem.Close>kItem.YClose) return this.UpColor;
         else if (kItem.Close<kItem.YClose) return this.DownColor;
         else return this.UnchagneColor;
+    }
+
+    //十字星颜色
+    this.GetUnchangeBarColor=function(kItem)
+    {
+        if (!kItem || !IFrameSplitOperator.IsNumber(kItem.YClose)) return this.UnchagneColor;
+
+        if (kItem.Close>kItem.YClose) return this.UpColor;
+        else if (kItem.Close<kItem.YClose) return this.DownColor;
+        else return this.UnchagneColor
     }
 
     this.DrawKBar_Custom=function(data, dataWidth, barColor, drawType, option, x, y, left, right, yLow, yHigh, yOpen, yClose, border, isHScreen)
@@ -28559,6 +28586,7 @@ function ChartKLine()
                     tooltip.Data=this.Data.Data[index];
                     tooltip.ChartPaint=this;
                     tooltip.Type=0; //K线信息
+                    tooltip.Symbol=this.Symbol;
                     return true;
                 }
             }
@@ -28593,7 +28621,7 @@ function ChartKLine()
             for(var i=start,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
             {
                 var data=this.Data.Data[i];
-                if (!IFrameSplitOperator.IsNumber(data.Close)) continue;
+                if (!data || !IFrameSplitOperator.IsNumber(data.Close)) continue;
 
                 if (range.Max==null) range.Max=data.Close;
                 if (range.Min==null) range.Min=data.Close;
@@ -28607,7 +28635,7 @@ function ChartKLine()
             for(var i=start,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
             {
                 var data=this.Data.Data[i];
-                if (data.Open==null || data.High==null || data.Low==null || data.Close==null) continue;
+                if (!data || data.Open==null || data.High==null || data.Low==null || data.Close==null) continue;
 
                 if (this.DrawType==5 && data.OrderFlow && IFrameSplitOperator.IsNumber(data.OrderFlow.PriceOffset))
                 {
@@ -35066,7 +35094,11 @@ function ChartVolStick()
             else return { Color:this.DownColor, IsUp:false };
         }
 
-        if (kItem.Close>=kItem.Open) return { Color:this.UpColor, IsUp:true };  //颜色, 是否是上涨
+        //平盘K线，使用昨收盘比较
+        if (kItem.Close>kItem.Open) return { Color:this.UpColor, IsUp:true };  //颜色, 是否是上涨
+        else if (kItem.Close<kItem.Open) return { Color:this.DownColor, IsUp:false };
+        
+        if (kItem.Close>=kItem.YClose) return { Color:this.UpColor, IsUp:true };  //颜色, 是否是上涨
         else return { Color:this.DownColor, IsUp:false };
     }
 
@@ -57750,6 +57782,19 @@ function DynamicChartTitlePainting()
         DownColor:g_JSChartResource.IndexTitle.UpDownArrow.DownColor,
         UnchangeColor:g_JSChartResource.IndexTitle.UpDownArrow.UnchangeColor
     };
+
+
+    //K线标题颜色
+    this.UpColor=g_JSChartResource.UpTextColor;
+    this.DownColor=g_JSChartResource.DownTextColor;
+    this.UnchangeColor=g_JSChartResource.UnchagneTextColor;
+
+    this.VolColor=g_JSChartResource.Title.VolColor;
+    this.AmountColor=g_JSChartResource.Title.AmountColor;
+    this.DateTimeColor=g_JSChartResource.Title.DateTimeColor;
+    this.NameColor = g_JSChartResource.Title.NameColor;
+    this.PositionColor=g_JSChartResource.Title.PositionColor;   //持仓
+
     
 
     //动态标题
@@ -57770,6 +57815,15 @@ function DynamicChartTitlePainting()
         this.BGColor=g_JSChartResource.IndexTitleBGColor;
         this.BGBorderColor=g_JSChartResource.IndexTitleBorderColor;
         this.BGBorderMoveOnColor=g_JSChartResource.IndexTitleBorderMoveOnColor;
+
+        this.UpColor=g_JSChartResource.UpTextColor;
+        this.DownColor=g_JSChartResource.DownTextColor;
+        this.UnchangeColor=g_JSChartResource.UnchagneTextColor;
+
+        this.VolColor=g_JSChartResource.Title.VolColor;
+        this.AmountColor=g_JSChartResource.Title.AmountColor;
+        this.DateTimeColor=g_JSChartResource.Title.DateTimeColor;
+        this.PositionColor=g_JSChartResource.Title.PositionColor;   //持仓
     }
 
     this.SetDynamicTitleData=function(outName, args, data)
@@ -57991,6 +58045,93 @@ function DynamicChartTitlePainting()
         if (aryText.length<=0) return null;
 
         return aryText;
+    }
+
+    this.FromatKLineTitle=function(item, dataInfo)
+    {
+        var defaultfloatPrecision=GetfloatPrecision(dataInfo.Symbol);//价格小数位数
+        var upperSymbol="";
+        if (dataInfo.Symbol) upperSymbol=dataInfo.Symbol.toUpperCase();
+        var pixelRatio=GetDevicePixelRatio();
+        var leftSpace=3*pixelRatio;
+
+        var aryText=[];
+
+
+        if (IFrameSplitOperator.IsNumber(item.Date)) 
+        {
+            var text=IFrameSplitOperator.FormatDateString(item.Date);
+            aryText.push({ Text:text, Color:this.DateTimeColor });
+        }
+
+        if (IFrameSplitOperator.IsNumber(item.Open))
+        {
+            var color=this.GetColor(item.Open,item.YClose);
+            var text=g_JSChartLocalization.GetText('KTitle-Open',this.LanguageID)+item.Open.toFixed(defaultfloatPrecision);
+            aryText.push({ Text:text, Color:color, LeftSpace:leftSpace});
+        }
+           
+        if (IFrameSplitOperator.IsNumber(item.High))
+        {
+            var color=this.GetColor(item.High,item.YClose);
+            var text=g_JSChartLocalization.GetText('KTitle-High',this.LanguageID)+item.High.toFixed(defaultfloatPrecision);
+            aryText.push({ Text:text, Color:color, LeftSpace:leftSpace });
+        }
+        
+        if (IFrameSplitOperator.IsNumber(item.Low))
+        {
+            var color=this.GetColor(item.Low,item.YClose);
+            var text=g_JSChartLocalization.GetText('KTitle-Low',this.LanguageID)+item.Low.toFixed(defaultfloatPrecision);
+            aryText.push({ Text:text, Color:color, LeftSpace:leftSpace});
+        }
+        
+        if (IFrameSplitOperator.IsNumber(item.Close))
+        {
+            var color=this.GetColor(item.Close,item.YClose);
+            var text=g_JSChartLocalization.GetText('KTitle-Close',this.LanguageID)+item.Close.toFixed(defaultfloatPrecision);
+            aryText.push({ Text:text, Color:color, LeftSpace:leftSpace});
+        }
+
+        //涨幅
+        if (item.YFClose>0 && MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol))
+        {
+            var value=(item.Close-item.YFClose)/item.YFClose*100;
+            var color = this.GetColor(value, 0);
+            var text = g_JSChartLocalization.GetText('KTitle-Increase',this.LanguageID) + value.toFixed(2)+'%';
+            aryText.push({ Text:text, Color:color, LeftSpace:leftSpace});
+        }
+        else if (item.YClose>0)
+        {
+            var value=(item.Close-item.YClose)/item.YClose*100;
+            var color = this.GetColor(value, 0);
+            var text = g_JSChartLocalization.GetText('KTitle-Increase',this.LanguageID) + value.toFixed(2)+'%';
+            aryText.push({ Text:text, Color:color, LeftSpace:leftSpace});
+        }
+
+        if (IFrameSplitOperator.IsNumber(item.Vol)) //成交量
+        {
+            var unit=MARKET_SUFFIX_NAME.GetVolUnit(upperSymbol);
+            var vol=item.Vol/unit;
+            var text=g_JSChartLocalization.GetText('KTitle-Vol',this.LanguageID)+IFrameSplitOperator.FromatIntegerString(vol,2,this.LanguageID);
+            aryText.push({ Text:text, Color:this.VolColor, LeftSpace:leftSpace});
+        }
+        
+        if (IFrameSplitOperator.IsNumber(item.Amount))  //成交金额
+        {
+            var text=g_JSChartLocalization.GetText('KTitle-Amount',this.LanguageID)+IFrameSplitOperator.FormatValueString(item.Amount,2,this.LanguageID);
+            aryText.push({ Text:text, Color:this.AmountColor, LeftSpace:leftSpace});
+        }
+
+        return aryText;
+    }
+
+    this.GetColor=function(price,yClose)
+    {
+        if (!IFrameSplitOperator.IsNumber(yClose)) return this.UnchangeColor;
+
+        if(price>yClose) return this.UpColor;
+        else if (price<yClose) return this.DownColor;
+        else return this.UnchangeColor;
     }
 
     this.ForamtMultiLineTitle=function(dataIndex, dataInfo)
@@ -58475,6 +58616,12 @@ function DynamicChartTitlePainting()
             else if (item.DataType=="ChartStackedBar")
             {
                 aryText=this.FromatStackedBarTitle(value, item);
+                if (!aryText) return null;
+                return { Text:null, ArrayText:aryText };
+            }
+            else if (item.DataType=="DRAWKLINE")
+            {
+                aryText=this.FromatKLineTitle(value, item);
                 if (!aryText) return null;
                 return { Text:null, ArrayText:aryText };
             }
@@ -72420,7 +72567,12 @@ function JSChartResource()
 
         UpTextColor:"rgb(238,21,21)",      //上涨文字颜色
         DownTextColor:"rgb(25,158,0)",     //下跌文字颜色
-        UnchagneTextColor:"rgb(0,0,0)"     //平盘文字颜色 
+        UnchagneTextColor:"rgb(0,0,0)",     //平盘文字颜色 
+
+        Selected:
+        {
+            BGColor:"rgb(180,240,240)",
+        }
     },
 
     //报价列表
@@ -72440,7 +72592,7 @@ function JSChartResource()
         SortIcon:
         {
             Size:12, Family:"iconfont",
-            Arrow:["\ue704", "\ue81b", "\uf0c9"],           //[0]=默认排序的图标背景色
+            Arrow:["\ue704",  "\uf0c9","\ue81b"],           //[0]=默认排序的图标背景色
             Color:['rgb(169,169,169)', "rgb(51,51,51)", "rgb(51,51,51)"],
             Margin:{ Left:1*GetDevicePixelRatio(), Bottom:2, Right:0,}
         },
@@ -73472,6 +73624,12 @@ function JSChartResource()
                     for(var i=0;i<filed.Bar.length;++i)
                         this.DealList.FieldColor.Bar[i]=filed.Bar[i];
                 }
+            }
+
+            if (item.Selected)
+            {
+                var subItem=item.Selected;
+                if (subItem.BGColor) this.DealList.Selected.BGColor=subItem.BGColor;
             }
         }
 

@@ -20257,6 +20257,8 @@ var SCRIPT_CHART_NAME=
     SCATTER_PLOT:"SCATTER_PLOT",     //散点图
 
     CLIP_COLOR_STICK:"CLIP_COLOR_STICK",  //上下柱子 裁剪
+
+    DRAW_KLINE:"DRAWKLINE"
 }
 
 
@@ -21325,6 +21327,26 @@ function ScriptIndex(name,script,args,option)
         if (varItem.Color)  //如果设置了颜色,使用外面设置的颜色
             chart.UnchagneColor=chart.DownColor=chart.UpColor=this.GetColor(varItem.Color);
 
+        if (varItem.Draw.Config)
+        {
+            var config=varItem.Draw.Config;
+            if (IFrameSplitOperator.IsBool(config.IsShowMaxMinPrice)) chart.IsShowMaxMinPrice=config.IsShowMaxMinPrice;
+            if (IFrameSplitOperator.IsBool(config.IsShowKTooltip)) chart.IsShowKTooltip=config.IsShowKTooltip;
+            if (config.Symbol) chart.Symbol=config.Symbol;
+            if (config.Name) chart.Title=config.Name;
+        }
+
+        var bShowTitle=false;
+        if (IFrameSplitOperator.IsBool(varItem.IsShowTitle)) bShowTitle=varItem.IsShowTitle;
+        if (bShowTitle)
+        {
+            let titleIndex=windowIndex+1;
+            var titleData=new DynamicTitleData(chart.Data,varItem.Name,chart.Color); //标题
+            titleData.DataType="DRAWKLINE";
+            titleData.Symbol=chart.Symbol;
+            hqChart.TitlePaint[titleIndex].Data[id]=titleData;
+        }
+
         this.SetChartIndexName(chart);
         hqChart.ChartPaint.push(chart);
     }
@@ -22013,12 +22035,10 @@ function ScriptIndex(name,script,args,option)
         this.SetChartIndexName(chart);
         hqChart.ChartPaint.push(chart);
 
-         var titleIndex=windowIndex+1;
-        if (varItem.IsShowTitle===false)
-        {
-
-        }
-        else
+        var titleIndex=windowIndex+1;
+        var bShowTitle=true;
+        if (varItem.IsShowTitle===false) bShowTitle=false;
+        if (bShowTitle)
         {
             var titleData=new DynamicTitleData(chart.Data,chart.Name, null);
             titleData.DataType="ChartMultiLine";
@@ -22044,10 +22064,15 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
 
         var titleIndex=windowIndex+1;
-        var titleData=new DynamicTitleData(chart.Data,chart.Name, null);
-        titleData.DataType="ChartMultiPoint";
-        titleData.GetItemCallback=(kItem)=>{ return chart.GetItem(kItem); }
-        hqChart.TitlePaint[titleIndex].Data[i]=titleData;
+        var bShowTitle=true;
+        if (varItem.IsShowTitle===false) bShowTitle=false;
+        if (bShowTitle)
+        {
+            var titleData=new DynamicTitleData(chart.Data,chart.Name, null);
+            titleData.DataType="ChartMultiPoint";
+            titleData.GetItemCallback=(kItem)=>{ return chart.GetItem(kItem); }
+            hqChart.TitlePaint[titleIndex].Data[i]=titleData;
+        }
     }
 
     this.CreateMultiBar=function(hqChart,windowIndex,varItem,id)
@@ -22066,10 +22091,17 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
 
         var titleIndex=windowIndex+1;
-        var titleData=new DynamicTitleData(chart.Data,varItem.Name,null);
-        titleData.DataType="ChartMultiBar";
-        titleData.GetItemCallback=(kItem)=>{ return chart.GetItem(kItem); }
-        hqChart.TitlePaint[titleIndex].Data[id]=titleData;
+
+        var bShowTitle=true;
+        if (varItem.IsShowTitle===false) bShowTitle=false;
+        if (bShowTitle)
+        {
+            var titleData=new DynamicTitleData(chart.Data,varItem.Name,null);
+            titleData.DataType="ChartMultiBar";
+            titleData.GetItemCallback=(kItem)=>{ return chart.GetItem(kItem); }
+            hqChart.TitlePaint[titleIndex].Data[id]=titleData;
+        }
+        
     }
 
     this.CreateMultiText=function(hqChart,windowIndex,varItem,i)
@@ -23783,11 +23815,16 @@ function OverlayScriptIndex(name,script,args,option)
         chart.BuildCacheData();
 
         var titleIndex=windowIndex+1;
-        var titlePaint=hqChart.TitlePaint[titleIndex];
-        var titleData=new DynamicTitleData(chart.Data,varItem.Name,null);
-        titleData.DataType="ChartMultiPoint";
-        titleData.GetItemCallback=(kItem)=>{ return chart.GetItem(kItem); }
-        titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=titleData;
+        var bShowTitle=true;
+        if (varItem.IsShowTitle===false) bShowTitle=false;
+        if (bShowTitle)
+        {
+            var titlePaint=hqChart.TitlePaint[titleIndex];
+            var titleData=new DynamicTitleData(chart.Data,varItem.Name,null);
+            titleData.DataType="ChartMultiPoint";
+            titleData.GetItemCallback=(kItem)=>{ return chart.GetItem(kItem); }
+            titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=titleData;
+        }
 
         this.SetChartIndexName(chart);
         
@@ -23833,12 +23870,16 @@ function OverlayScriptIndex(name,script,args,option)
         chart.BuildCacheData();
 
         var titleIndex=windowIndex+1;
-        var titlePaint=hqChart.TitlePaint[titleIndex];
-        var titleData=new DynamicTitleData(chart.Data,varItem.Name,null);
-        titleData.DataType="ChartMultiBar";
-        titleData.GetItemCallback=(kItem)=>{ return chart.GetItem(kItem); }
-
-        titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=titleData;
+        var bShowTitle=true;
+        if (varItem.IsShowTitle===false) bShowTitle=false;
+        if (bShowTitle)
+        {
+            var titlePaint=hqChart.TitlePaint[titleIndex];
+            var titleData=new DynamicTitleData(chart.Data,varItem.Name,null);
+            titleData.DataType="ChartMultiBar";
+            titleData.GetItemCallback=(kItem)=>{ return chart.GetItem(kItem); }
+            titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=titleData;
+        }
 
         this.SetChartIndexName(chart);
         frame.ChartPaint.push(chart);
@@ -25262,6 +25303,17 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     drawItem.DrawType=draw.DrawType;
                     drawItem.DrawData=draw.DrawData;    //{ AryIndex:[ ], Data:[] };
  
+                    outVarItem.Draw=drawItem;
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType==SCRIPT_CHART_NAME.DRAW_KLINE)
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+                    drawItem.DrawType=draw.DrawType;
+
+                    drawItem.DrawData=this.FittingArray(draw.DrawData,date,time,hqChart,1);
+                    drawItem.Config=draw.Config;
                     outVarItem.Draw=drawItem;
                     result.push(outVarItem);
                 }

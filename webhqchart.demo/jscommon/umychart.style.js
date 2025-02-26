@@ -655,7 +655,12 @@ function GetBlackStyle()
     
             UpTextColor:"rgb(238,21,21)",      //上涨文字颜色
             DownTextColor:"rgb(25,158,0)",     //下跌文字颜色
-            UnchagneTextColor:"rgb(228,228,228)"    //平盘文字颜色 
+            UnchagneTextColor:"rgb(228,228,228)",    //平盘文字颜色 
+
+            Selected:
+            {
+                BGColor:"rgb(49,48,56)",
+            }
         },
     
         //报价列表

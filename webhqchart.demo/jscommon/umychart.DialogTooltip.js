@@ -1252,14 +1252,21 @@ function JSFloatTooltip()
         var symbol=data.Symbol;
         var name=data.Name;
         var bOverlay=false; //是否是叠加指标
+        var bIndexKLine=false;
         if (tooltipData.ChartPaint.Name=="Overlay-KLine")
         {
             symbol=tooltipData.ChartPaint.Symbol;
             name=tooltipData.ChartPaint.Title;
             bOverlay=true;
         }
+        else if (tooltipData.ChartPaint.Name=="DRAWKLINE")
+        {
+            symbol=tooltipData.ChartPaint.Symbol;
+            name=tooltipData.ChartPaint.Title;
+            bIndexKLine=true;
+        }
 
-        var kItem={ Symbol:symbol, Name:name, Item:CloneData(tooltipData.Data), IsOverlay:bOverlay };
+        var kItem={ Symbol:symbol, Name:name, Item:CloneData(tooltipData.Data), IsOverlay:bOverlay, IsIndexKLine:bIndexKLine };
         var strKItem=JSON.stringify(kItem);
         var bUpdata=false;
         if (this.KItemCacheID!=strKItem)    //数据变动的才更新
@@ -1560,8 +1567,9 @@ function JSFloatTooltip()
         if (IFrameSplitOperator.IsNumber(data.Time)) timeItem=this.FormatTime(data.Time, this.HQChart.Period, null, 'FloatTooltip-Time');
 
         var overlayItem=null;
-        if (kItem.IsOverlay)
+        if (kItem.IsOverlay || (kItem.IsIndexKLine && kItem.Name))
             overlayItem={ Title:"", Text:kItem.Name, Color:this.TextColor, ClassName:this.ValueAlign.Left };
+        
         
         
         var yClose=data.YClose; //昨收价|昨结算价

@@ -60,6 +60,17 @@ function JSDealChart(divElement)
 
         this.JSChartContainer=chart;
         this.DivElement.JSChart=this;   //div中保存一份
+
+        //注册事件
+        if (option.EventCallback)
+        {
+            for(var i=0;i<option.EventCallback.length;++i)
+            {
+                var item=option.EventCallback[i];
+                chart.AddEventCallback(item);
+            }
+        }
+
         if (!option.Symbol) 
         {
             chart.Draw();
@@ -284,6 +295,7 @@ function JSDealChartContainer(uielement)
         chart.Frame=this.Frame;
         chart.ChartBorder=this.Frame.ChartBorder;
         chart.Canvas=this.Canvas;
+        chart.UIElement=this.UIElement;
         chart.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
         this.ChartPaint[0]=chart;
 
@@ -311,10 +323,16 @@ function JSDealChartContainer(uielement)
                 bRegisterWheel=false;
                 JSConsole.Chart.Log('[JSDealChartContainer::Create] not register wheel event.');
             }
+
+            if (IFrameSplitOperator.IsBool(option.EnableSelected)) chart.SelectedData.Enable=option.EnableSelected;
         }
 
         if (bRegisterKeydown) this.UIElement.addEventListener("keydown", (e)=>{ this.OnKeyDown(e); }, true);            //键盘消息
         if (bRegisterWheel) this.UIElement.addEventListener("wheel", (e)=>{ this.OnWheel(e); }, true);                  //上下滚动消息
+
+        this.UIElement.onmousedown=(e)=> { this.UIOnMouseDown(e); }
+        this.UIElement.ondblclick=(e)=>{ this.UIOnDblClick(e); }
+        this.UIElement.oncontextmenu=(e)=> { this.UIOnContextMenu(e); }
     }
 
     this.Draw=function()
@@ -688,6 +706,40 @@ function JSDealChartContainer(uielement)
         else e.returnValue = false;
     }
 
+    this.UIOnMouseDown=function(e)
+    {
+        var pixelTatio = GetDevicePixelRatio();
+        var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
+        var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
+
+        
+        var chart=this.ChartPaint[0];
+        if (!chart) return;
+         
+        var clickData=chart.OnMouseDown(x,y,e);
+        if (!clickData) return;
+
+        if ((clickData.Type==1) && (e.button==0 || e.button==2))  //点击行
+        {
+            if (clickData.Redraw==true) this.Draw();
+        }
+    }
+
+    this.UIOnDblClick=function(e)
+    {
+        var pixelTatio = GetDevicePixelRatio();
+        var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
+        var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
+
+        var chart=this.ChartPaint[0];
+        if (chart) chart.OnDblClick(x,y,e);
+    }
+
+    this.UIOnContextMenu=function(e)
+    {
+        e.preventDefault();
+    }
+
     this.GotoNextPage=function()
     {
         if (!this.Data || !IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return false;
@@ -781,7 +833,7 @@ JSDealChartContainer.JsonDataToDealData=function(data)
     {
         var item=data.detail[i];
         
-        var dealItem={ Time:item[0], Price:item[1], Vol:item[2], BS:item[4], Amount:item[3] };
+        var dealItem={ Time:item[0], Price:item[1], Vol:item[2], BS:item[4], Amount:item[3], Guid:Guid() };
         dealItem.Source=item;
 
         if (item[5]) dealItem.StrTime=item[5];
@@ -907,6 +959,7 @@ function ChartDealList()
     this.IsSingleTable=false;    //单表模式
     this.IsShowHeader=true;    //是否显示表头
     this.ShowOrder=1;           //0=顺序 1=倒序
+    this.SelectedData={ Index:null, Guid:null, Enable:false };         //{ Index:序号, Guid, Enable:是否启动 }
 
     this.SizeChange=true;
 
@@ -916,6 +969,8 @@ function ChartDealList()
     this.UnchagneColor=g_JSChartResource.DealList.UnchagneTextColor; 
 
     this.BorderColor=g_JSChartResource.DealList.BorderColor;    //边框线
+
+    this.SelectedConfig={ BGColor:g_JSChartResource.DealList.Selected.BGColor };
 
     //表头配置
     this.HeaderFontConfig={ Size:g_JSChartResource.DealList.Header.Font.Size, Name:g_JSChartResource.DealList.Header.Font.Name };
@@ -956,6 +1011,7 @@ function ChartDealList()
     ];
 
     this.RectClient={};
+    this.AryCellRect=[];    //{ Rect:, Type: 1=单行 }
 
     this.ReloadResource=function(resource)
     {
@@ -1056,6 +1112,7 @@ function ChartDealList()
 
     this.Draw=function()
     {
+        this.AryCellRect=[];
         if (this.SizeChange) this.CalculateSize();
         else this.UpdateCacheData();
 
@@ -1211,6 +1268,7 @@ function ChartDealList()
                 for(j=0;j<this.RowCount && index>=0;++j, --index)
                 {
                     var dataItem=this.Data.Data[index];
+                    this.DrawSelectedRow(dataItem, index, rtRow);
     
                     this.DrawRow(dataItem, textLeft, textTop, index);
     
@@ -1228,8 +1286,15 @@ function ChartDealList()
                 for(j=0;j<this.RowCount && index<dataCount;++j, ++index)
                 {
                     var dataItem=this.Data.Data[index];
+                    var rtRow={ Left:textLeft-this.HeaderMergin.Left, Top:textTop, Height:this.RowHeight, Width:this.TableWidth };
+                    rtRow.Right=rtRow.Left+rtRow.Width;
+                    rtRow.Bottom=rtRow.Top+rtRow.Height;
+
+                    this.DrawSelectedRow(dataItem, index, rtRow);
     
                     this.DrawRow(dataItem, textLeft, textTop, index);
+
+                    this.AryCellRect.push({ Rect:rtRow, Type:1, DataIndex:index });
     
                     textTop+=this.RowHeight;
                 }
@@ -1333,6 +1398,16 @@ function ChartDealList()
 
             left+=item.Width;
         }
+    }
+
+    this.DrawSelectedRow=function(data, index, rtRow)
+    {
+        if (!this.SelectedData) return;
+        if (!this.SelectedData.Enable) return;
+        if (!this.SelectedData.Guid || this.SelectedData.Guid!=data.Guid) return; 
+
+        this.Canvas.fillStyle=this.SelectedConfig.BGColor;
+        this.Canvas.fillRect(rtRow.Left,rtRow.Top, rtRow.Width, rtRow.Height);
     }
 
     this.DrawItemText=function(text, textColor, textAlign, left, top, width)
@@ -1460,5 +1535,80 @@ function ChartDealList()
     this.GetFontHeight=function(font,word)
     {
         return GetFontHeight(this.Canvas, font, word);
+    }
+
+    this.OnMouseDown=function(x,y,e)    //Type: 1=行
+    {
+        if (!this.Data) return null;
+
+        var pixelTatio = GetDevicePixelRatio();
+        var insidePoint={X:x/pixelTatio, Y:y/pixelTatio};
+        var uiElement;
+        if (this.UIElement) uiElement={Left:this.UIElement.getBoundingClientRect().left, Top:this.UIElement.getBoundingClientRect().top};
+        else uiElement={Left:null, Top:null};
+
+        var row=this.PtInBody(x,y);
+        if (row)
+        {
+            var bRedraw=true;
+            var index=row.DataIndex;
+            var id=row.Item.Guid
+            if (this.SelectedData.Index==index && this.SelectedData.Guid==id) bRedraw=false;
+
+            this.SelectedData.Index=index;
+            this.SelectedData.Guid=id;
+
+            var eventID=JSCHART_EVENT_ID.ON_CLICK_DEAL_ROW;
+            if (e.button==2) eventID=JSCHART_EVENT_ID.ON_RCLICK_DEAL_ROW;
+
+            this.SendClickEvent(eventID, { Data:row, X:x, Y:y, e:e, Inside:insidePoint, UIElement:uiElement });
+
+            return { Type:row.Type, Redraw:bRedraw, Row:row };
+        }
+
+        return null;
+    }
+
+    this.OnDblClick=function(x,y,e)
+    {
+        if (!this.Data) return false;
+
+        var row=this.PtInBody(x,y);
+        if (row)
+        {
+            this.SendClickEvent(JSCHART_EVENT_ID.ON_DBCLICK_DEAL_ROW, { Data:row, X:x, Y:y });
+            return true;
+        }
+
+        return false;
+    }
+
+    this.PtInBody=function(x,y)
+    {
+        if (!this.Data) return null;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return null;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.AryCellRect)) return null;
+
+        for(var i=0;i<this.AryCellRect.length;++i)
+        {
+            var item=this.AryCellRect[i];
+            var rtRow=item.Rect;
+            if (x>=rtRow.Left && x<=rtRow.Right && y>=rtRow.Top && y<=rtRow.Bottom)
+            {
+                var data={ Rect:rtRow, DataIndex:item.DataIndex, Item:this.Data.Data[item.DataIndex], Type:item.Type };
+                return data;
+            }
+        }
+
+        return null;
+    }
+
+    this.SendClickEvent=function(id, data)
+    {
+        var event=this.GetEventCallback(id);
+        if (event && event.Callback)
+        {
+            event.Callback(event,data,this);
+        }
     }
 }

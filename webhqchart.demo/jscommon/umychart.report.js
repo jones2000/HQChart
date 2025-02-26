@@ -8578,7 +8578,7 @@ function ChartReport()
         return null;
     }
 
-    //设置选中行 data={ Symbol:, AutoYScroll:true/false Y滚动条自定定位 }
+    //设置选中行 option={ Symbol:, AutoYScroll:true/false Y滚动条自定定位 }
     this.SetSelectedRow=function(option)
     {
         if (!option) return false;

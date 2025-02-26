@@ -368,6 +368,8 @@ HQData.Minute_RequestHistoryMinuteData=function(data, callback)
    
     var hqchartData={code:0, data:aryDay, name:symbol, symbol: symbol};
 
+    //hqchartData.data[0].minute.length=45;
+
     callback(hqchartData);
 }
 
@@ -1766,16 +1768,21 @@ HQData.GetKLineDataByDate=function(fullData, startDate, endDate)
 HQData.GetDayMinuteDataBySymbol=function(symbol)
 {
     var data=null;
-    switch(symbol)
+    var upperSymbol=null;
+    if (symbol) upperSymbol=symbol.toUpperCase();
+    switch(upperSymbol)
     {
-        case "000001.sz":
+        case "000001.SZ":
             data=SZ_000001_1DAY_MINUTE;
             break;
-        case "600000.sh":
+        case "600000.SH":
             data=SH_600000_1DAY_MINUTE;
             break;
-        case "000151.sz":
+        case "000151.SZ":
             data=SZ_000151_1DAY_MINUTE;
+            break;
+        case "IM2503.CF":
+            data=CF_IM2503_1DAY_MINUTE;
             break;
         default:
             data=SZ_000151_1DAY_MINUTE;
@@ -1912,7 +1919,10 @@ HQData.Report_APIIndex=function(data, callback)
         HQData.APIIndex_MULTI_TEXT(data, callback);
     else if (request.Data.indexname=="API_PARTLINE")
         HQData.APIIndex_PARTLINE(data, callback);
-    
+    else if (request.Data.indexname=="API_CHANNELV2")
+        HQData.APIIndex_CHANNEL_V2(data, callback);
+    else if (request.Data.indexname=="API_DRAWKLINE")
+        HQData.APIIndex_DRAWKLINE(data, callback);
 }
 
 
@@ -2609,7 +2619,8 @@ HQData.APIIndex_MULTI_BAR=function(data, callback)
         { 
             DrawType:'MULTI_BAR', 
             DrawData:[] 
-        } //绘制柱子数组
+        }, //绘制柱子数组\
+        IsShowTitle:false,
     };
 
     //第一组柱子
@@ -2627,14 +2638,15 @@ HQData.APIIndex_MULTI_BAR=function(data, callback)
 
     var point2=
     { 
-        Color:'rgb(55,228,181)', //颜色
-        Type:1,
+        Color:'rgb(55,228,181)',            //颜色
+        BorderColor:"rgb(255,165,0)",       //边框景色
+        Type:2,
         Name:"柱子下部",
         Point:
         [
             //{Date:20190916, Time: Value:15.5, Value2:0 },
         ],
-        Width:5
+        Width:10
     };
 
     for(var i=0;i<kData.Data.length;++i)
@@ -2646,7 +2658,7 @@ HQData.APIIndex_MULTI_BAR=function(data, callback)
 
 
 
-    barData.Draw.DrawData.push(point);
+    //barData.Draw.DrawData.push(point);
     barData.Draw.DrawData.push(point2);
 
     var apiData=
@@ -2756,6 +2768,109 @@ HQData.APIIndex_PARTLINE=function(data, callback)
     };
 
     console.log('[HQData.APIIndex_PARTLINE] apiData ', apiData);
+    callback(apiData);
+}
+
+
+HQData.APIIndex_CHANNEL_V2=function(data, callback)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var kData=hqchart.GetKData();
+
+    var channelData= 
+    { 
+        name:'通道示例', type:1, 
+        Draw: 
+        { 
+            DrawType:'JS_CHART_CHANNEL_V2', 
+            DrawData:
+            {
+                AryData:[]
+            }
+        } 
+    };
+
+    var aryTestData=kData.GetCloseMA(10);
+    var ARRAY_COLOR=["rgb(0, 0 ,255)", "rgb(255,0,255)", "rgb(255,165,0)"];
+    var colorIndex=0;
+    for(var i=20;i<kData.Data.length;++i)
+    {
+        var index=i%15;
+        var kItem=kData.Data[i];
+        var value=aryTestData[i];
+        var value2=value*1.03;
+        var item={ Date:kItem.Date, Time:kItem.Time, Value: value, Value2:value2 };
+        //var item={ Date:kItem.Date, Time:kItem.Time, Value: kItem.Close*(1.05), Value2:kItem.Close };
+
+        item.Color=ARRAY_COLOR[colorIndex%ARRAY_COLOR.length];
+        channelData.Draw.DrawData.AryData.push(item);
+
+        if (index==0 && i>0) ++colorIndex;
+    }
+
+    var apiData=
+    {
+        code:0, 
+        stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+        outdata: { date:kData.GetDate(), time:kData.GetTime(), outvar:[channelData] } 
+    };
+
+    console.log('[HQData.APIIndex_CHANNEL_V2] apiData ', apiData);
+    callback(apiData);
+}
+
+
+HQData.APIIndex_DRAWKLINE=function(data, callback)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var kData=hqchart.GetKData();
+
+    var klineData=
+    { 
+        name:"DRAWKLINE", type:1, 
+        Draw:
+        { 
+            Name:"DRAWKLINE",
+            DrawType:"DRAWKLINE",
+            DrawData:[],
+            Config:{ IsShowMaxMinPrice:true, IsShowKTooltip:true, Symbol:"000001.sh", Name:"上证指数11" }
+        },
+        IsShowTitle:true,
+    };
+
+    var aryDate=[];
+    var aryTime=[];
+    for(var i=100;i<kData.Data.length-100;++i)
+    {
+        var kItem=kData.Data[i];
+        var newItem=
+        { 
+            YClose:kItem.YClose, 
+            Open:kItem.Open, 
+            High:kItem.High, 
+            Low:kItem.Low, 
+            Close:kItem.Close, 
+            Date:kItem.Date, 
+            Time:kItem.Time,
+            Vol:kItem.Vol,
+        };
+
+        klineData.Draw.DrawData.push(newItem);
+
+        aryDate.push(kItem.Date);
+        aryTime.push(kItem.Time)
+    }
+
+    var apiData=
+    {
+        code:0, 
+        stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+        outdata: { date:aryDate, time:aryTime, outvar:[klineData] } 
+    };
+
+    console.log('[HQData.APIIndex_DRAWKLINE] apiData ', apiData);
     callback(apiData);
 }
 
