@@ -2840,6 +2840,9 @@ HQData.APIIndex_DRAWKLINE=function(data, callback)
         IsShowTitle:true,
     };
 
+
+    var textData={ name:"", type:10, color:"rgb(148,0,211)", data:[], isshow:false };    //名字
+
     var aryDate=[];
     var aryTime=[];
     for(var i=100;i<kData.Data.length-100;++i)
@@ -2860,14 +2863,16 @@ HQData.APIIndex_DRAWKLINE=function(data, callback)
         klineData.Draw.DrawData.push(newItem);
 
         aryDate.push(kItem.Date);
-        aryTime.push(kItem.Time)
+        aryTime.push(kItem.Time);
+
+        textData.data.push(kItem.YClose.toFixed(2));
     }
 
     var apiData=
     {
         code:0, 
         stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
-        outdata: { date:aryDate, time:aryTime, outvar:[klineData] } 
+        outdata: { date:aryDate, time:aryTime, outvar:[textData, klineData] } 
     };
 
     console.log('[HQData.APIIndex_DRAWKLINE] apiData ', apiData);

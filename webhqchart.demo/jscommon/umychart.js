@@ -859,13 +859,20 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         if (option.DisableMouse==true) chart.DisableMouse=option.DisableMouse;
         if (option.ScriptError) chart.ScriptErrorCallback=option.ScriptError;       //指标执行错误回调
         if (IFrameSplitOperator.IsString(option.SplashTitle)) chart.LoadDataSplashTitle=option.SplashTitle;
-        if (IFrameSplitOperator.IsBool(option.EnableSelectRect)) chart.EnableSelectRect=option.EnableSelectRect; //是否启用区间选择
         if (IFrameSplitOperator.IsBool(option.EnableZoomIndexWindow)) chart.EnableZoomIndexWindow=option.EnableZoomIndexWindow;
         if (IFrameSplitOperator.IsBool(option.IsDrawPictureXY)) chart.IsDrawPictureXY=option.IsDrawPictureXY;
         if (IFrameSplitOperator.IsBool(option.EnableNewIndex)) chart.EnableNewIndex=option.EnableNewIndex;
         if (IFrameSplitOperator.IsBool(option.EnableIndexChartDrag)) chart.EnableIndexChartDrag=option.EnableIndexChartDrag;
         if (IFrameSplitOperator.IsBool(option.EnableVerifyRecvData)) chart.EnableVerifyRecvData=option.EnableVerifyRecvData;
         if (IFrameSplitOperator.IsBool(option.EnableNightDayBG)) chart.EnableNightDayBG=option.EnableNightDayBG;
+
+        //老版本开启左键区间选择
+        if (IFrameSplitOperator.IsBool(option.EnableSelectRect))
+        {
+            if (!option.DragSelectRect) option.DragSelectRect={ };
+            option.DragSelectRect.Enable=true;
+            option.DragSelectRect.EnableLButton=true;
+        }
 
         if (option.GlobalOption)
         {
@@ -2843,7 +2850,7 @@ var JSCHART_MENU_ID=
     CMD_SHOW_STOCKCHIP_ID:20,   //筹码分布
     CMD_HIDE_STOCKCHIP_ID:21,
 
-    CMD_ENABLE_SELECT_RECT_ID:22,   //启动区间选择
+    CMD_XXXXXX_NONE_ID:22,          //未用!!!!
     CMD_CHANGE_DAY_COUNT_ID:23,     //切换天数
     CMD_SHOW_BEFORE_DATA_ID:24,     //显示|隐藏集合竞价
 
@@ -2886,6 +2893,9 @@ var JSCHART_MENU_ID=
     CMD_CORSS_ON_VAILD_TIME_ID:50,          //超出当前时间的,X轴调整到当前最后的时间(分时图)
     CMD_CORSS_ON_KLINE_ID:51,               //十字光标只能画在K线上   
     CMD_CORSS_POINT_ID:52,                  //十字光标圆点
+
+    CMD_RBUTTON_SELECT_RECT_ID:53,          //右键区间选择
+    CMD_LBUTTON_SELECT_RECT_ID:54,          //左键区间选择
 
 
 
@@ -3139,6 +3149,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
 
     this.RestoreFocusTimer=null;    //恢复焦点定时器
+    this.DocContextMenuTimer=null; //清空整体的框架
 
     this.RestoreFocus=function(delay)
     {
@@ -3589,7 +3600,9 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
         if(typeof(this.OnRightMenu)=='function') this.OnRightMenu(x,y,e);   //右键菜单事件
 
-        return false;
+        if (e && e.preventDefault) e.preventDefault();
+        if (e && e.stopPropagation) e.stopPropagation();
+        e.returnValue=false;
     }
 
     this.UIOnDblClick=function(e)
@@ -4112,15 +4125,17 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
         document.onmousemove=(e)=>{ this.DocOnMouseMove(e); }
         document.onmouseup=(e)=> { this.DocOnMouseUp(e); }
-
-
+        document.oncontextmenu=(e)=> { this.DocContextMenu(e); }
     }
 
     this.DocOnMouseMove=function(e)
     {
         //加载数据中,禁用鼠标事件
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash) return;
-        
+
+        var bRButtonSelectRect=this.IsEnableRSelectRect(e, "DocOnMouseMove");   //右键区间选择
+        var bLButtonSelectRect=this.IsEnableLSelectRect(e, "DocOnMouseMove");   //左键区间选择
+         
         var drag=this.MouseDrag;
         if (!drag) return;
 
@@ -4159,7 +4174,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             drag.LastMove.X=e.clientX;
             drag.LastMove.Y=e.clientY;
         }
-        else if (this.IndexChartDrag && this.IndexChartDrag.SelectedChart)
+        else if (this.IndexChartDrag && this.IndexChartDrag.SelectedChart)  //选中图形移动
         {
             if(Math.abs(drag.LastMove.Y-e.clientY)<2 &&  Math.abs(drag.LastMove.X-e.clientX)<2) return;
 
@@ -4189,7 +4204,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             var sendData={X:x, Y:y, e:e, ChartDrag:this.CustomChartDrag, Drag:drag };
             this.TryDragMove_CustomChartDrag(sendData);
         }
-        else if (this.CurrentChartDrawPicture && this.CurrentChartDrawPicture.EnableMove===true)
+        else if (this.CurrentChartDrawPicture && this.CurrentChartDrawPicture.EnableMove===true)    //画图工具移动
         {
             var drawPicture=this.CurrentChartDrawPicture;
             if (drawPicture.Status==1 || drawPicture.Status==2)
@@ -4231,11 +4246,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             drag.LastMove.X=e.clientX;
             drag.LastMove.Y=e.clientY;
         }
-        else if (this.DragMode==1 || isDragSelectRect || isDragSubSelectRect)  //数据上下左右拖拽
-        {
-            this.OnDragMode_One({X:moveSetp, Y:moveSetpY}, e);
-        }
-        else if (this.DragMode==2) //区间选择
+        else if ((bLButtonSelectRect || bRButtonSelectRect) && !isDragSelectRect && !isDragSubSelectRect)  //左右键区间选择
         {
             var yMoveSetp=Math.abs(drag.LastMove.Y-e.clientY);
 
@@ -4249,7 +4260,10 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
             drag.LastMove.X=e.clientX;
             drag.LastMove.Y=e.clientY;
-
+        }
+        else if (this.DragMode==1 || isDragSelectRect || isDragSubSelectRect)  //数据上下左右拖拽 区间选择框左右拖动
+        {
+            this.OnDragMode_One({X:moveSetp, Y:moveSetpY}, e);
         }
     }
 
@@ -4390,11 +4404,32 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         return true;
     }
 
+    this.ClearDocContextMenuTimer=function(delay)
+    {
+        var value=5000;
+        if (IFrameSplitOperator.IsNumber(delay)) value=delay;
+
+        if (this.DocContextMenuTimer)
+        {
+            clearTimeout(this.DocContextMenuTimer);
+            this.DocContextMenuTimer = null;
+        }
+
+        this.DocContextMenuTimer=setTimeout(()=>
+        {
+            document.oncontextmenu=null;
+        }, value);
+    }
+
     this.DocOnMouseUp=function(e)
     {
         //清空事件
         document.onmousemove=null;
         document.onmouseup=null;
+ 
+        var bRButtonSelectRect=this.IsEnableRSelectRect(e, "DocOnMouseUp");   //右键区间选择
+        var bLButtonSelectRect=this.IsEnableLSelectRect(e, "DocOnMouseUp");   //左键区间选择
+
         var IsMinuteChart=(this.ClassName=="MinuteChartContainer" || this.ClassName=="MinuteChartHScreenContainer") ? true:false;
         var isDragSelectRect=(this.RectSelectDrag && this.RectSelectDrag.Index>=0);
         var isDragSubSelectRect=(this.RectSelectDrag && this.RectSelectDrag.Type==4);
@@ -4441,7 +4476,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         {
             if (this.OnMinuteSelectRectMouseUp) this.OnMinuteSelectRectMouseUp(e);
         }
-        else if (this.DragMode==2)  //区间选择
+        else if (bLButtonSelectRect || bRButtonSelectRect)  //区间选择
         {
             var drag=this.MouseDrag;
             drag.LastMove.X=e.clientX;
@@ -4457,7 +4492,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             selectData.JSChartContainer=this;
             selectData.Stock={Symbol:this.Symbol, Name:this.Name};
 
-            if (this.ChartDragSelectRect.Enable && !this.BorderDrag && this.GetSelectRectData(selectData))
+            if (!this.BorderDrag && this.GetSelectRectData(selectData))
             {
                 var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_SELECT_RECT);
                 var paint=this.GetRectSelectPaint();
@@ -4534,6 +4569,13 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         this.IndexChartDrag=null;
         this.CustomChartDrag=null;
         if (bClearDrawPicture===true) this.CurrentChartDrawPicture=null;
+
+        this.ClearDocContextMenuTimer(5000);
+    }
+
+    this.DocContextMenu=function(e)
+    {
+        e.preventDefault();
     }
 
     this.UIOnMounseOut=function(e)
@@ -10093,10 +10135,6 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                     this.Draw();
                 }
                 break;
-            case JSCHART_MENU_ID.CMD_ENABLE_SELECT_RECT_ID:
-                if (IFrameSplitOperator.IsBool(srcParam))
-                    this.EnableSelectRect=srcParam;
-                break;
             case JSCHART_MENU_ID.CMD_CHANGE_DAY_COUNT_ID:
                 if (this.ChangeDayCount && param!=null)
                     this.ChangeDayCount(param);
@@ -10291,6 +10329,12 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             case JSCHART_MENU_ID.CMD_CORSS_POINT_ID:
                 if (IFrameSplitOperator.IsBool(srcParam) && this.ChartCorssCursor) this.ChartCorssCursor.CorssPointConfig.Enable=srcParam;
                 break;
+            case JSCHART_MENU_ID.CMD_RBUTTON_SELECT_RECT_ID:
+                if (IFrameSplitOperator.IsBool(srcParam) && this.ChartDragSelectRect) this.ChartDragSelectRect.EnableRButton=srcParam;
+                break;
+            case JSCHART_MENU_ID.CMD_LBUTTON_SELECT_RECT_ID:
+                if (IFrameSplitOperator.IsBool(srcParam) && this.ChartDragSelectRect) this.ChartDragSelectRect.EnableLButton=srcParam;
+                break;
         }
     }
 
@@ -10465,7 +10509,6 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         var chart=g_ExtendChartPaintFactory.Create("RectDragPaint",option);
         if (!chart) return null;
 
-        if (option && option.Enable===true) chart.Enable=true;
         chart.ChartBorder=this.Frame.ChartBorder;
         chart.ChartFrame=this.Frame;
         chart.HQChart=this;
@@ -10631,13 +10674,13 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         var setMainIndex=new Set();         //主图指标
         var setOverlayIndex=new Set();      //附图指标
 
-        for(var i=0;aryIndex.length;++i)
+        for(var i=0;i<aryIndex.length;++i)
         {
             var item=aryIndex[i];
             if (!item) continue;
 
-            if (item.ID) setMainIndex.set(item.ID);
-            if (item.OverlayID) setOverlayIndex.set(item.OverlayID);
+            if (item.ID) setMainIndex.add(item.ID);
+            if (item.OverlayID) setOverlayIndex.add(item.OverlayID);
         }
 
         if (setMainIndex.size<=0 && setOverlayIndex.size<0) return false;
@@ -10678,7 +10721,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     
                     if (setOverlayIndex.has(overlayItem.Identify))
                     {
-                        this.BindOverlayIndexData(overlayItem,i,hisData)
+                        this.BindOverlayIndexData(overlayItem,i,bindData)
                     }
                 }
             }
@@ -10699,6 +10742,44 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     this.GetKData=function()
     {
         return null;
+    }
+
+    this.IsEnableRSelectRect=function(event, funcName)
+    {
+        if (!this.ChartDragSelectRect) return false;
+        if (!this.ChartDragSelectRect.EnableRButton) return false;
+        if (!event) return false;
+
+        //两个事件使用不同的变量获取鼠标按键状态
+        if (funcName=="DocOnMouseUp")
+        {
+            if (event.button!=2) return false;
+        }
+        else if (funcName=="DocOnMouseMove")
+        {
+            if (event.buttons!=2) return false;
+        }
+
+        return true;
+    }
+
+    this.IsEnableLSelectRect=function(event, funcName)
+    {
+        if (!this.ChartDragSelectRect) return false;
+        if (!this.ChartDragSelectRect.EnableLButton) return false;
+        if (!event) return false;
+
+        //两个事件使用不同的变量获取鼠标按键状态
+        if (funcName=="DocOnMouseUp")
+        {
+            if (event.button!=0) return false;
+        }
+        else if (funcName=="DocOnMouseMove")
+        {
+            if (event.buttons!=1) return false;
+        }
+
+        return true;
     }
 }
 
@@ -23386,7 +23467,9 @@ function ChartData()
             if (this.Data[i] && this.Data[i].Value!=null)
             { 
                 var item=this.Data[i].Value;
-                if (!isNaN(item))
+                if (IFrameSplitOperator.IsNumber(item))
+                    result[i]=item;
+                else if (IFrameSplitOperator.IsString(item))
                     result[i]=item;
                 else if (item instanceof Array)   //支持数组
                     result[i]=item;
@@ -33403,6 +33486,28 @@ function ChartLine()
     }
 }
 
+
+//标题
+function ChartIndexTitle()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartIndexTitle';    //类名
+
+    this.Draw=function()
+    {
+        
+    }
+
+    this.GetMaxMin=function()
+    {
+        return { Min:null, Max:null };
+    }
+}
+
+
 //面积图 支持横屏
 function ChartArea()
 {
@@ -35076,6 +35181,8 @@ function ChartVolStick()
         for(var i=start,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
         {
             var value=this.Data.Data[i];
+            if (!IFrameSplitOperator.IsNumber(value)) continue;
+
             if (!IFrameSplitOperator.IsNumber(range.Max) || range.Max<value) range.Max=value;
             if (!IFrameSplitOperator.IsNumber(range.Min) || range.Min>value) range.Min=value
         }
@@ -48038,12 +48145,19 @@ function RectDragPaint()
     this.LineWidth=g_JSChartResource.RectDrag.LineWidth;
     this.BGColor=g_JSChartResource.RectDrag.BGColor;
     this.ShowMode=0;    //0=只画边框 1=遮挡未选中区域 2=整体全选
-    this.Enable=false;  
+
+    this.EnableRButton=false;   //右键选择
+    this.EnableLButton=false;    //左键选择
 
     this.FirstPoint;
     this.SecondPoint;
 
     this.IsClearCanvas=true;    //画布是否是清空状态
+
+    this.IsEnable=function()
+    {
+        return this.EnableRButton || this.EnableLButton;
+    }
 
     //设置参数接口
     this.SetOption=function(option)
@@ -48053,6 +48167,8 @@ function RectDragPaint()
             if (option.LineColor) this.LineColor=option.LineColor;
             if (option.BGColor) this.BGColor=option.BGColor;
             if (IFrameSplitOperator.IsNumber(option.ShowMode)) this.ShowMode=option.ShowMode;
+            if (IFrameSplitOperator.IsBool(option.EnableRButton)) this.EnableRButton=option.EnableRButton;
+            if (IFrameSplitOperator.IsBool(option.EnableLButton)) this.EnableLButton=option.EnableLButton;
         }
     }
 
@@ -48147,7 +48263,7 @@ function RectDragPaint()
 
     this.Draw=function()
     {
-        if (!this.Enable) return;
+        if (!this.IsEnable()) return;
         if (!this.HQChart) return;
 
         var finder=this.HQChart.GetExtraCanvas(JSChart.RectDragCanvasKey);
@@ -58577,6 +58693,7 @@ function DynamicChartTitlePainting()
                 if (!aryText) return null;
                 return { Text:null, ArrayText:aryText };
             }
+            
 
             value=item.Data.Data[dataIndex];
             
@@ -58624,6 +58741,12 @@ function DynamicChartTitlePainting()
                 aryText=this.FromatKLineTitle(value, item);
                 if (!aryText) return null;
                 return { Text:null, ArrayText:aryText };
+            }
+            else if (item.DataType=="ChartIndexTitle")
+            {
+                var text=item.Data.Data[dataIndex];
+                if (!IFrameSplitOperator.IsString(text)) return null;
+                return { Text:text, ArrayText:null };
             }
             else if (g_ScriptIndexChartFactory.Has(item.DataType)) //外部挂接
             {
@@ -59013,6 +59136,11 @@ function DynamicChartTitlePainting()
                     else if (item.DataType=="ChartMultiBar")
                     {
                         aryText=this.ForamtMultiBarTitle(dataIndex, item);
+                        if (!aryText) continue;
+                    }
+                    else if (item.DataType=="DRAWKLINE")
+                    {
+                        aryText=this.FromatKLineTitle(value, item);
                         if (!aryText) continue;
                     }
                     else
@@ -81208,6 +81336,14 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         var bPopMinuteChart=false;
         if (this.PopMinuteChart) bPopMinuteChart=true;
 
+        var bRButtonSelectRect=false, bLButtonSelectRect=false;
+        if (this.ChartDragSelectRect) 
+        {
+            bRButtonSelectRect=this.ChartDragSelectRect.EnableRButton;
+            bLButtonSelectRect=this.ChartDragSelectRect.EnableLButton;
+        }
+
+
         var kItem=null;
         if (frameID>=0 && option && IFrameSplitOperator.IsNumber(option.CursorIndex))
         {
@@ -81389,7 +81525,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                     
                     { Name:"禁止拖拽", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_DRAG_MODE_ID, Args:[0]}, Checked:0==this.DragMode },
                     { Name:"启动拖拽", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_DRAG_MODE_ID, Args:[1]}, Checked:1==this.DragMode },
-                    { Name:"左键区间选择", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_DRAG_MODE_ID, Args:[2]}, Checked:2==this.DragMode },
+                    { Name:"左键区间选择", Data:{ ID:JSCHART_MENU_ID.CMD_LBUTTON_SELECT_RECT_ID, Args:[!bLButtonSelectRect]}, Checked:bLButtonSelectRect },
+                    { Name:"右键区间选择", Data:{ ID:JSCHART_MENU_ID.CMD_RBUTTON_SELECT_RECT_ID, Args:[!bRButtonSelectRect]}, Checked:bRButtonSelectRect },
                     { Name:JSPopMenu.SEPARATOR_LINE_NAME },
 
                     { Name:"背景分割", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_BG_SPLIT_ID, Args:[!bBGSpit]}, Checked:bBGSpit},
@@ -83619,7 +83756,6 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
     this.HistoryMinuteApiUrl=g_JSChartResource.Domain+'/API/StockMinuteData';  //历史分钟数据
 
     this.ColorLineData;    //主图价格线颜色自定义配置
-    this.EnableSelectRect=false;    //是否可以区间选择
 
     this.CorssCursorIndex={ DayIndex:-1, DataIndex:-1, Point:{X:-1, Y:-1} ,Type:-1 };   //Type: 单日(1=主图 2=盘前 3=盘后)  多日(10=主图 20=盘前 30=盘后)
     this.EnableNewIndex=false  //是否使用新的索引版本
@@ -83980,7 +84116,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                 }
             }
         }
-        else if (this.RectSelectDrag && this.RectSelectDrag.Index>=0)    //区间选择
+        else if (this.RectSelectDrag && this.RectSelectDrag.Index>=0)    //区间选择 左右调整
         {
             if (moveSetp<5) return;
             var obj={ X:e.clientX, Y:e.clientY, PointIndex:this.RectSelectDrag.Index, Name:"MoveRectSelectLine" };
@@ -83990,10 +84126,10 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                 bNeedDraw=true;
             }
         }
-        else
+        else        //显示区间选择
         {
             if (moveSetp<5 && yMoveSetp<5) return;
-            if (!this.EnableSelectRect) return;
+            if (this.ChartDragSelectRect && !this.ChartDragSelectRect.Enable) return;
 
             //this.UIElement.style.cursor="default";
             this.SetCursor({Cursor:"default"});
@@ -84011,6 +84147,9 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
     this.OnMinuteSelectRectMouseUp=function(e)
     {
+        var bRButtonSelectRect=this.IsEnableRSelectRect(e, "DocOnMouseUp");   //右键区间选择
+        var bLButtonSelectRect=this.IsEnableLSelectRect(e, "DocOnMouseUp");   //左键区间选择
+
         var drag=this.MouseDrag;
         drag.LastMove.X=e.clientX;
         drag.LastMove.Y=e.clientY;
@@ -84029,7 +84168,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         {
 
         }
-        else if (this.EnableSelectRect && !this.BorderDrag && this.GetSelectRectData(selectData))
+        else if ((bRButtonSelectRect || bLButtonSelectRect) && !this.BorderDrag && this.GetSelectRectData(selectData))
         {
             var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_SELECT_RECT);
             var paint=this.GetRectSelectPaint();
@@ -85368,7 +85507,13 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             bCorssDrawPoint=this.ChartCorssCursor.CorssPointConfig.Enable;
         }
 
-
+        var bRButtonSelectRect=false,bLButtonSelectRect=false;
+        if (this.ChartDragSelectRect) 
+        {
+            bRButtonSelectRect=this.ChartDragSelectRect.EnableRButton;
+            bLButtonSelectRect=this.ChartDragSelectRect.EnableLButton;
+        }
+        
         var minItem=null;
         if (frameID>=0 && option && IFrameSplitOperator.IsNumber(option.CursorIndex))
         {
@@ -85441,7 +85586,12 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                 ]
             },
             {
-                Name:"区间选择",Data:{ ID: JSCHART_MENU_ID.CMD_ENABLE_SELECT_RECT_ID, Args:[!this.EnableSelectRect]}, Checked:this.EnableSelectRect
+                Name:"区间选择",
+                SubMenu:
+                [
+                    { Name:"左键区间选择",Data:{ ID:JSCHART_MENU_ID.CMD_LBUTTON_SELECT_RECT_ID, Args:[!bLButtonSelectRect]}, Checked:bLButtonSelectRect },
+                    { Name:"右键区间选择",Data:{ ID:JSCHART_MENU_ID.CMD_RBUTTON_SELECT_RECT_ID, Args:[!bRButtonSelectRect]}, Checked:bRButtonSelectRect },
+                ]
             },
             { 
                 Name:"十字光标",

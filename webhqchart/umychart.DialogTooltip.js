@@ -1555,7 +1555,10 @@ function JSFloatTooltip()
     {
         var data=kItem.Item;
         var symbol=kItem.Symbol;
-        var upperSymbol=symbol.toUpperCase();
+        if (data && data.Symbol) symbol=symbol;
+        var upperSymbol="";
+        if (symbol) upperSymbol=symbol.toUpperCase();
+        
         var defaultfloatPrecision=GetfloatPrecision(symbol);//价格小数位数
         var unit=MARKET_SUFFIX_NAME.GetVolUnit(upperSymbol);
 
@@ -1567,9 +1570,15 @@ function JSFloatTooltip()
         if (IFrameSplitOperator.IsNumber(data.Time)) timeItem=this.FormatTime(data.Time, this.HQChart.Period, null, 'FloatTooltip-Time');
 
         var overlayItem=null;
-        if (kItem.IsOverlay || (kItem.IsIndexKLine && kItem.Name))
+        if (kItem.IsOverlay)
             overlayItem={ Title:"", Text:kItem.Name, Color:this.TextColor, ClassName:this.ValueAlign.Left };
-        
+        else if (kItem.IsIndexKLine)
+        {
+            if (kItem.Name)
+                overlayItem={ Title:"", Text:kItem.Name, Color:this.TextColor, ClassName:this.ValueAlign.Left };
+            else if (data && data.Name )
+                overlayItem={ Title:"", Text:data.Name, Color:this.TextColor, ClassName:this.ValueAlign.Left };
+        }
         
         
         var yClose=data.YClose; //昨收价|昨结算价

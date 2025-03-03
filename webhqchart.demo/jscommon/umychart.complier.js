@@ -20745,7 +20745,7 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(line);
     }
 
-    this.CreateArea=function(hqChart, windowIndex, varItem, id,)
+    this.CreateArea=function(hqChart, windowIndex, varItem, id)
     {
         var line=new ChartArea();
 
@@ -20799,6 +20799,29 @@ function ScriptIndex(name,script,args,option)
         
         this.SetChartIndexName(line);
         hqChart.ChartPaint.push(line);
+    }
+
+    //标题显示，没有图形
+    this.CreateTitle=function(hqChart, windowIndex, varItem, id)
+    {
+        var chart=new ChartIndexTitle();
+
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        chart.Identify=this.Guid;
+        if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
+        else chart.Color=this.GetDefaultColor(id);
+        chart.Data.Data=varItem.Data;
+        
+        var titleIndex=windowIndex+1;
+        var titleData=new DynamicTitleData(chart.Data,varItem.Name,chart.Color);
+        titleData.DataType="ChartIndexTitle";
+        hqChart.TitlePaint[titleIndex].Data[id]=titleData;
+
+        this.SetChartIndexName(chart);
+        hqChart.ChartPaint.push(chart);
     }
 
     this.CreateOverlayLine=function(hqChart,windowIndex,varItem,id,lineType)
@@ -22644,6 +22667,10 @@ function ScriptIndex(name,script,args,option)
             {
                 this.CreateArea(hqChart,windowIndex,item,i);
             }
+            else if (item.Type==10) //标题
+            {
+                this.CreateTitle(hqChart,windowIndex,item,i);
+            }
 
             var titlePaint=hqChart.TitlePaint[windowIndex+1];
             if (titlePaint &&  titlePaint.Data && i<titlePaint.Data.length) //设置标题数值 小数位数和格式
@@ -23455,7 +23482,7 @@ function OverlayScriptIndex(name,script,args,option)
     {
         var overlayIndex=this.OverlayIndex;
         var frame=overlayIndex.Frame;
-        let chart=new ChartKLine();
+        var chart=new ChartKLine();
         chart.Canvas=hqChart.Canvas;
         chart.Name=varItem.Name;
         chart.ChartBorder=frame.Frame.ChartBorder;
@@ -23468,6 +23495,28 @@ function OverlayScriptIndex(name,script,args,option)
 
         if (varItem.Color)  //如果设置了颜色,使用外面设置的颜色
             chart.UnchagneColor=chart.DownColor=chart.UpColor=this.GetColor(varItem.Color);
+
+        if (varItem.Draw.Config)
+        {
+            var config=varItem.Draw.Config;
+            if (IFrameSplitOperator.IsBool(config.IsShowMaxMinPrice)) chart.IsShowMaxMinPrice=config.IsShowMaxMinPrice;
+            if (IFrameSplitOperator.IsBool(config.IsShowKTooltip)) chart.IsShowKTooltip=config.IsShowKTooltip;
+            if (config.Symbol) chart.Symbol=config.Symbol;
+            if (config.Name) chart.Title=config.Name;
+        }
+
+        var bShowTitle=false;
+        if (IFrameSplitOperator.IsBool(varItem.IsShowTitle)) bShowTitle=varItem.IsShowTitle;
+        if (bShowTitle)
+        {
+            var titleIndex=windowIndex+1;
+            chart.Data.Data=varItem.Draw.DrawData;
+            var titlePaint=hqChart.TitlePaint[titleIndex];
+            var titleData=new DynamicTitleData(chart.Data,varItem.Name,chart.Color);
+            titleData.DataType="DRAWKLINE";
+            titleData.Symbol=chart.Symbol;
+            titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=titleData;
+        }
 
         frame.ChartPaint.push(chart);
     }
