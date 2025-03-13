@@ -157,6 +157,7 @@ function JSReportChart(divElement)
         if (option.EnablePopMenuV2===true) chart.InitalPopMenu();
         if (option.FloatTooltip && option.FloatTooltip.Enable) chart.InitalFloatTooltip(option.FloatTooltip);   //提示信息
         if (option.MinuteChartTooltip && option.MinuteChartTooltip.Enable) chart.InitalMinuteChartTooltip(option.MinuteChartTooltip);
+        if (option.KLineChartTooltip && option.KLineChartTooltip.Enable) chart.InitalKLineChartTooltip(option.KLineChartTooltip);
 
         if (option.Symbol) chart.Symbol=option.Symbol;
         if (option.Name) chart.Name=option.Name;
@@ -477,6 +478,7 @@ function JSReportChartContainer(uielement)
 
     //
     this.TooltipMinuteChart;    //分时图
+    this.TooltipKLineChart;     //分时图
 
     //MouseOnStatus:{ RowIndex:行, ColumnIndex:列} 
     this.LastMouseStatus={ MoveStatus:null, TooltipStatus:null, MouseOnStatus:null };
@@ -487,6 +489,7 @@ function JSReportChartContainer(uielement)
         this.StopAutoUpdate();
 
         this.DestroyMinuteChartTooltip();
+        this.DestroyKLineChartTooltip();
         this.DestroyFloatTooltip();
     }
 
@@ -525,6 +528,24 @@ function JSReportChartContainer(uielement)
         this.TooltipMinuteChart.Destroy();
         this.TooltipMinuteChart=null;
     }
+
+    this.InitalKLineChartTooltip=function(option)
+    {
+        if (this.TooltipKLineChart) return;
+
+        this.TooltipKLineChart=new JSTooltipKLineChart();
+        this.TooltipKLineChart.Inital(this, option);
+        this.TooltipKLineChart.Create();
+    }
+
+    this.DestroyKLineChartTooltip=function()
+    {
+        if (!this.TooltipKLineChart) return;
+
+        this.TooltipKLineChart.Destroy();
+        this.TooltipKLineChart=null;
+    }
+    
 
     this.InitalFloatTooltip=function(option)
     {
@@ -594,6 +615,35 @@ function JSReportChartContainer(uielement)
         this.TooltipMinuteChart.Hide();
     }
 
+
+    this.ShowKLineChartTooltip=function(x,y, data)
+    {
+        if (!this.TooltipKLineChart) return;
+
+        var rtClient=this.UIElement.getBoundingClientRect();
+        var rtScroll=GetScrollPosition();
+
+        var offsetLeft=rtClient.left+rtScroll.Left;
+        var offsetTop=rtClient.top+rtScroll.Top;
+
+        data.Offset={ Left:offsetLeft, Top:offsetTop };
+
+        this.TooltipKLineChart.Show(data, x,y);
+    }
+
+    this.HideKLineChartTooltip=function()
+    {
+        if (!this.TooltipKLineChart) return;
+
+        this.TooltipKLineChart.Hide();
+    }
+
+    this.HideAllTooltip=function()
+    {
+        this.HideKLineChartTooltip();
+        this.HideMinuteChartTooltip();
+        this.HideFloatTooltip();
+    }
 
 
     this.AutoScrollPage=function(step)
@@ -960,7 +1010,7 @@ function JSReportChartContainer(uielement)
                 if (IFrameSplitOperator.IsNumber(item.Sort)) this.SortInfo.Sort=item.Sort;
             }
 
-            if (IFrameSplitOperator.IsBool(option.IsReloadStockList))
+            if (IFrameSplitOperator.IsBool(option.IsReloadStockList) && option.IsReloadStockList)
             {
                 var requestOption={ Callback:null };
                 if (this.Symbol) requestOption.Callback=()=>{ this.RequestMemberListData(); };
@@ -1764,8 +1814,7 @@ function JSReportChartContainer(uielement)
             if (wheelValue<0)   //下
             {
                 this.LastMouseStatus.TooltipStatus=null;
-                this.HideMinuteChartTooltip();
-                this.HideFloatTooltip();
+                this.HideAllTooltip();
                 if (this.GotoNextItem(1))
                 {
                     this.Draw();
@@ -1775,8 +1824,7 @@ function JSReportChartContainer(uielement)
             else if (wheelValue>0)  //上
             {
                 this.LastMouseStatus.TooltipStatus=null;
-                this.HideMinuteChartTooltip();
-                this.HideFloatTooltip();
+                this.HideAllTooltip();
                 if (this.GotoNextItem(-1))
                 {
                     this.Draw();
@@ -1789,8 +1837,7 @@ function JSReportChartContainer(uielement)
             if (wheelValue<0)   //下一页
             {
                 this.LastMouseStatus.TooltipStatus=null;
-                this.HideMinuteChartTooltip();
-                this.HideFloatTooltip();
+                this.HideAllTooltip();
                 if (this.GotoNextPage(this.PageUpDownCycle)) 
                 {
                     this.Draw();
@@ -1800,8 +1847,7 @@ function JSReportChartContainer(uielement)
             else if (wheelValue>0)  //上一页
             {
                 this.LastMouseStatus.TooltipStatus=null;
-                this.HideMinuteChartTooltip();
-                this.HideFloatTooltip();
+                this.HideAllTooltip();
                 if (this.GotoPreviousPage(this.PageUpDownCycle)) 
                 {
                     this.Draw();
@@ -1823,8 +1869,7 @@ function JSReportChartContainer(uielement)
         var keyID = e.keyCode ? e.keyCode :e.which;
         if (keyID==116) return; //F15刷新不处理
 
-        this.HideMinuteChartTooltip();
-        this.HideFloatTooltip();
+        this.HideAllTooltip();
         switch(keyID)
         {
             case 33:    //page up
@@ -2113,7 +2158,8 @@ function JSReportChartContainer(uielement)
         if (this.LastMouseStatus.TooltipStatus) bDrawTooltip=true;
         this.LastMouseStatus.TooltipStatus=null;
 
-        var bShowChartTooltip=false;
+        var bShowKLineTooltip=false;
+        var bShowMinuteTooltip=false;
         var chartTooltipData=null;
         
         if (this.DragRow) return;
@@ -2189,7 +2235,15 @@ function JSReportChartContainer(uielement)
                     {
                         if (tooltipData.Stock && tooltipData.Stock.Symbol)
                         {
-                            bShowChartTooltip=true;
+                            bShowMinuteTooltip=true;
+                            chartTooltipData={ Symbol:tooltipData.Stock.OriginalSymbol, Rect:tooltipData.Rect };
+                        }
+                    }
+                    else if (tooltipData.Type==21)
+                    {
+                        if (tooltipData.Stock && tooltipData.Stock.Symbol)
+                        {
+                            bShowKLineTooltip=true;
                             chartTooltipData={ Symbol:tooltipData.Stock.OriginalSymbol, Rect:tooltipData.Rect };
                         }
                     }
@@ -2239,20 +2293,17 @@ function JSReportChartContainer(uielement)
             this.HideFloatTooltip();
         }
 
-        if (bShowChartTooltip)
-        {
-            this.ShowMinuteChartTooltip(null, null, chartTooltipData);
-        }
-        else
-        {
-            this.HideMinuteChartTooltip();
-        }
+        if (!bShowKLineTooltip) this.HideKLineChartTooltip();
+        if (!bShowMinuteTooltip) this.HideMinuteChartTooltip();
+
+        if (bShowMinuteTooltip) this.ShowMinuteChartTooltip(null, null, chartTooltipData);
+        if (bShowKLineTooltip) this.ShowKLineChartTooltip(null, null, chartTooltipData);
+
     }
 
     this.UIOnMounseOut=function(e)
     {
-        this.HideMinuteChartTooltip();
-        this.HideFloatTooltip();
+        this.HideAllTooltip();
         
         var bDraw=false;
         var tabChart=this.GetTabChart();
@@ -2278,8 +2329,7 @@ function JSReportChartContainer(uielement)
 
     this.UIOnMouseleave=function(e)
     {
-        this.HideMinuteChartTooltip();
-        this.HideFloatTooltip();
+        this.HideAllTooltip();
 
         var tabChart=this.GetTabChart();
         if (tabChart && tabChart.MoveOnTabIndex>=0)
@@ -2505,7 +2555,7 @@ function JSReportChartContainer(uielement)
         document.onmouseup=null;
 
         this.StopAutoDragScrollTimer();
-        this.HideTooltip();
+        this.HideAllTooltip();
         var reportChart=this.GetReportChart();
 
         var mouseStatus={ Cursor:"default", Name:"Default"};;   //鼠标状态
@@ -4897,7 +4947,8 @@ function ChartReport()
         if (IFrameSplitOperator.IsNumber(item.FloatPrecision)) colItem.FloatPrecision=item.FloatPrecision;    //小数位数
         if (IFrameSplitOperator.IsNumber(item.ColorType))  colItem.ColorType=item.ColorType;        //0=默认 1=(>0, =0, <0) 2=(>=0, <0)
         if (item.Icon) colItem.Icon=item.Icon;
-        if (IFrameSplitOperator.IsBool(item.EnableChartTooltip)) colItem.EnableChartTooltip=item.EnableChartTooltip;
+        if (IFrameSplitOperator.IsBool(item.EnableChartTooltip)) colItem.ChartTooltip={ Enable:item.EnableChartTooltip, Type:20 };
+        if (item.ChartTooltip) colItem.ChartTooltip={ Enable:item.ChartTooltip.Enable, Type:item.ChartTooltip.Type };
 
         //点击表头弹出菜单
         if (IFrameSplitOperator.IsBool(item.EnablePopupHeaderMenu)) colItem.EnablePopupHeaderMenu=item.EnablePopupHeaderMenu;
@@ -4959,6 +5010,10 @@ function ChartReport()
         {
             if (item.Button) colItem.Button=CloneData(item.Button);
             else colItem.Button=this.ButtonConfig;
+        }
+        else if (this.IsReserveNumber(item.Type))
+        {
+            if (item.Format) colItem.Format=item.Format;    //数据格式化设置{ Type:1=原始 2=千分位分割 3=万亿转换, ExFloatPrecision:万亿转换以后的小数位数 }
         }
         else if (item.Type==REPORT_COLUMN_ID.CUSTOM_PROGRESS_ID)
         {
@@ -6362,9 +6417,7 @@ function ChartReport()
         {
             this.GetCustomLinkDrawInfo(data, column, drawInfo);
         }
-        else if ([REPORT_COLUMN_ID.RESERVE_NUMBER1_ID,REPORT_COLUMN_ID.RESERVE_NUMBER2_ID,REPORT_COLUMN_ID.RESERVE_NUMBER3_ID,
-                REPORT_COLUMN_ID.RESERVE_NUMBER4_ID,REPORT_COLUMN_ID.RESERVE_NUMBER5_ID,REPORT_COLUMN_ID.RESERVE_NUMBER6_ID,REPORT_COLUMN_ID.RESERVE_NUMBER7_ID,
-                REPORT_COLUMN_ID.RESERVE_NUMBER8_ID,REPORT_COLUMN_ID.RESERVE_NUMBER9_ID,REPORT_COLUMN_ID.RESERVE_NUMBER10_ID].includes(column.Type))
+        else if (this.IsReserveNumber(column.Type))
         {
             this.FormatReserveNumber(column, stock, drawInfo);
         }
@@ -6464,9 +6517,9 @@ function ChartReport()
             var tooltipData={ Rect:rtItem, Stock:stock, Index:index, Column:column, RowType:rowType, Type:drawInfo.Tooltip.Type, Data:drawInfo.Tooltip.Data };
             this.TooltipRect.push(tooltipData);
         }
-        else if (column.EnableChartTooltip)
+        else if (column.ChartTooltip && column.ChartTooltip.Enable && IFrameSplitOperator.IsNumber(column.ChartTooltip.Type))   //Type 20分时图 21K线图
         {
-            var tooltipData={ Rect:rtItem, Stock:stock, Index:index, Column:column, RowType:rowType, Type:20 };
+            var tooltipData={ Rect:rtItem, Stock:stock, Index:index, Column:column, RowType:rowType, Type:column.ChartTooltip.Type };
             this.TooltipRect.push(tooltipData);
         }
 
@@ -6498,6 +6551,18 @@ function ChartReport()
             REPORT_COLUMN_ID.RESERVE_BUTTON1_ID, REPORT_COLUMN_ID.RESERVE_BUTTON2_ID,REPORT_COLUMN_ID.RESERVE_BUTTON3_ID,
             REPORT_COLUMN_ID.RESERVE_BUTTON4_ID,REPORT_COLUMN_ID.RESERVE_BUTTON5_ID,REPORT_COLUMN_ID.RESERVE_BUTTON6_ID,REPORT_COLUMN_ID.RESERVE_BUTTON7_ID,
             REPORT_COLUMN_ID.RESERVE_BUTTON8_ID,REPORT_COLUMN_ID.RESERVE_BUTTON9_ID,REPORT_COLUMN_ID.RESERVE_BUTTON10_ID
+        ];
+
+        return ARARY_TYPE.includes(value);
+    }
+
+    this.IsReserveNumber=function(value)
+    {
+        var ARARY_TYPE=
+        [
+            REPORT_COLUMN_ID.RESERVE_NUMBER1_ID,REPORT_COLUMN_ID.RESERVE_NUMBER2_ID,REPORT_COLUMN_ID.RESERVE_NUMBER3_ID,
+            REPORT_COLUMN_ID.RESERVE_NUMBER4_ID,REPORT_COLUMN_ID.RESERVE_NUMBER5_ID,REPORT_COLUMN_ID.RESERVE_NUMBER6_ID,REPORT_COLUMN_ID.RESERVE_NUMBER7_ID,
+            REPORT_COLUMN_ID.RESERVE_NUMBER8_ID,REPORT_COLUMN_ID.RESERVE_NUMBER9_ID,REPORT_COLUMN_ID.RESERVE_NUMBER10_ID
         ];
 
         return ARARY_TYPE.includes(value);
@@ -6913,8 +6978,27 @@ function ChartReport()
             }
         }
 
-        //TODO: 不同类型的 格式化输出 
-        drawInfo.Text=value.toFixed(column.FloatPrecision);
+        var text=value.toFixed(column.FloatPrecision);
+        if (column.Format && IFrameSplitOperator.IsNumber(column.Format.Type))
+        {
+            var format=column.Format;
+            switch(format.Type)
+            {
+                case 1: //原始数据
+                    text=value.toFixed(column.FloatPrecision);
+                    break;
+                case 2: //千分位分割
+                    text=IFrameSplitOperator.FormatValueThousandsString(value, column.FloatPrecision);
+                    break;
+                case 3:
+                    var exfloatPrecision=1;
+                    if (IFrameSplitOperator.IsNumber(format.ExFloatPrecision)) exfloatPrecision=format.ExFloatPrecision;
+                    text=IFrameSplitOperator.FormatValueStringV2(value, column.FloatPrecision,exfloatPrecision);
+                    break;
+            }
+        }
+        
+        drawInfo.Text=text;
     }
 
     this.FormatReserveString=function(column, data, drawInfo)

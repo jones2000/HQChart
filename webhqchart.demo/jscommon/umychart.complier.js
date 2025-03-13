@@ -23021,6 +23021,12 @@ function OverlayScriptIndex(name,script,args,option)
             {
                 this.CreateLine(hqChart,windowIndex,item,i, item.Type);
             }
+            else if (item.Type==10)
+            {
+                this.CreateTitle(hqChart,windowIndex,item,i);
+            }
+
+            
 
             var titleData=titleInfo.Data[i];
             if (titleData)
@@ -23588,6 +23594,7 @@ function OverlayScriptIndex(name,script,args,option)
         chart.Name=varItem.Name;
         chart.ChartBorder=frame.Frame.ChartBorder;
         chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
         if (varItem.Draw && varItem.Draw.DrawData)
         {
             var drawData=varItem.Draw.DrawData;
@@ -23596,6 +23603,32 @@ function OverlayScriptIndex(name,script,args,option)
             chart.Price=drawData.Price;
         }
 
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateTitle=function(hqChart,windowIndex,varItem,id)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartIndexTitle();
+        chart.Canvas=hqChart.Canvas;
+
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+        
+        if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
+        else chart.Color=this.GetDefaultColor(id);
+        chart.Data.Data=varItem.Data;
+
+        var titleIndex=windowIndex+1;
+        var titlePaint=hqChart.TitlePaint[titleIndex];
+        var titleData=new DynamicTitleData(chart.Data,chart.Name,chart.Color);
+        titleData.DataType="ChartIndexTitle";
+        titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=titleData;
+        
+        this.SetChartIndexName(chart);
         frame.ChartPaint.push(chart);
     }
 

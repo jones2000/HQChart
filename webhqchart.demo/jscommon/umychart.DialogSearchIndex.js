@@ -1110,8 +1110,16 @@ function JSDialogModifyIndexParam()
 
         item.Value=value;
 
-        if (this.IndexData.Type==1) this.HQChart.UpdateWindowIndex(this.IndexData.WindowIndex);
-        else if (this.IndexData.Type==2) this.HQChart.UpdateOverlayIndex(this.IndexData.Identify);
+        
+
+        if (this.IndexData.Type==1) 
+        {
+            this.HQChart.UpdateWindowIndex(this.IndexData.WindowIndex);
+        }
+        else if (this.IndexData.Type==2) 
+        {
+            this.HQChart.UpdateOverlayIndex(this.IndexData.Identify);
+        }
     }
 }
 

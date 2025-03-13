@@ -182,6 +182,13 @@ HQData.NetworkFilter=function(data, callback)
             HQData.Report_APIIndex(data, callback);
             break;
 
+
+        /////////////////////////////////////////////////////////////////
+        //
+        case "KLineChartContainer::RequestVolumeProfileData":       //成交量分布图
+            HQData.RequestVolumeProfileData(data, callback);
+            break;
+
     }
 }
 
@@ -1280,7 +1287,7 @@ HQData.Report_RequestStockData=function(data, callback)
                 newItem[33]=kData;
 
 
-                newItem[101]=HQData.GetRandomTestData(-90,1000);
+                newItem[101]=HQData.GetRandomTestData(-9990,10000000);
                 newItem[201]=`A-[${HQData.GetRandomTestData(-90,90)}]-B`;
 
 
@@ -1923,6 +1930,8 @@ HQData.Report_APIIndex=function(data, callback)
         HQData.APIIndex_CHANNEL_V2(data, callback);
     else if (request.Data.indexname=="API_DRAWKLINE")
         HQData.APIIndex_DRAWKLINE(data, callback);
+    else if (request.Data.indexname=="API_TITLE")
+        HQData.APIIndex_TITLE(data, callback);
 }
 
 
@@ -2101,7 +2110,7 @@ HQData.APIIndex_DRAWBAND=function(data, callback)
             DrawType:"DRAWBAND",
             DrawData:[],
             Color:["rgb(220,20,60)","rgb(34,139,34)"]
-        }
+        },
     };
 
     for(var i=0;i<kData.Data.length;++i)
@@ -2147,7 +2156,7 @@ HQData.APIIndex_MULTI_LINE=function(data, callback)
             }
         }, //绘制线段数组
 
-        IsShowTitle:false
+        IsShowTitle:true,
     };
 
     var point3=
@@ -2236,7 +2245,9 @@ HQData.APIIndex_MULTI_SVGICON=function(data, callback)
                     //{ Date:20190919, Value:15.3, Symbol:'\ue615', Color:'rgb(240,240,0)', Baseline:2 },
                     //{ Date:20190909, Value:15.4, Symbol:'\ue615', Color:'rgb(240,100,30)'}
                 ] 
-            }
+            },
+
+           
         } //绘制图标数组
     };
 
@@ -2619,8 +2630,8 @@ HQData.APIIndex_MULTI_BAR=function(data, callback)
         { 
             DrawType:'MULTI_BAR', 
             DrawData:[] 
-        }, //绘制柱子数组\
-        IsShowTitle:false,
+        }, //绘制柱子数组
+        IsShowTitle:true,
     };
 
     //第一组柱子
@@ -2633,7 +2644,7 @@ HQData.APIIndex_MULTI_BAR=function(data, callback)
         [
             //{Date:20190916, Time: Value:15.5, Value2:0 },
         ],
-        Width:10
+        //Width:10
     };
 
     var point2=
@@ -2646,19 +2657,22 @@ HQData.APIIndex_MULTI_BAR=function(data, callback)
         [
             //{Date:20190916, Time: Value:15.5, Value2:0 },
         ],
-        Width:10
+        //Width:10
     };
 
     for(var i=0;i<kData.Data.length;++i)
     {
         var item=kData.Data[i];
-        point.Point.push({Date:item.Date, Time:item.Time, Value:(item.High+item.Low)/2, Value2:item.High});
-        point2.Point.push({Date:item.Date, Time:item.Time, Value:(item.High+item.Low)/2, Value2:item.Low});
+        ///point.Point.push({Date:item.Date, Time:item.Time, Value:(item.High+item.Low)/2, Value2:item.High});
+        ///point2.Point.push({Date:item.Date, Time:item.Time, Value:(item.High+item.Low)/2, Value2:item.Low});
+
+        point.Point.push({Date:item.Date, Time:item.Time, Value:(item.High+item.Low)/2+HQData.GetRandomTestData(2,10), Value2:item.High});
+        point2.Point.push({Date:item.Date, Time:item.Time, Value:(item.High+item.Low)/2-HQData.GetRandomTestData(2,10), Value2:item.Low});
     }
 
 
 
-    //barData.Draw.DrawData.push(point);
+    barData.Draw.DrawData.push(point);
     barData.Draw.DrawData.push(point2);
 
     var apiData=
@@ -2840,9 +2854,6 @@ HQData.APIIndex_DRAWKLINE=function(data, callback)
         IsShowTitle:true,
     };
 
-
-    var textData={ name:"", type:10, color:"rgb(148,0,211)", data:[], isshow:false };    //名字
-
     var aryDate=[];
     var aryTime=[];
     for(var i=100;i<kData.Data.length-100;++i)
@@ -2864,19 +2875,122 @@ HQData.APIIndex_DRAWKLINE=function(data, callback)
 
         aryDate.push(kItem.Date);
         aryTime.push(kItem.Time);
-
-        textData.data.push(kItem.YClose.toFixed(2));
     }
 
     var apiData=
     {
         code:0, 
         stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
-        outdata: { date:aryDate, time:aryTime, outvar:[textData, klineData] } 
+        outdata: { date:aryDate, time:aryTime, outvar:[ klineData] } 
     };
 
     console.log('[HQData.APIIndex_DRAWKLINE] apiData ', apiData);
     callback(apiData);
+}
+
+
+HQData.APIIndex_TITLE=function(data, callback)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var kData=hqchart.GetKData();
+
+    var textData={ name:"标题", type:10, color:"rgb(0,128,128)", data:[], };    //名字
+    var closeData={ name:"收盘价", type:0, color:"rgb(255,165,0)", data:[] } ;    //
+
+    var aryDate=[];
+    var aryTime=[];
+    for(var i=0;i<kData.Data.length-30;++i)
+    {
+        var kItem=kData.Data[i];
+        
+        closeData.data.push(kItem.Close);
+
+        textData.data.push(
+            [
+                { Name:`收`, Text:`${kItem.Close.toFixed(2)}`, Color:"rgb(200,10,10)",},
+                { Name:`开`, Text:`${kItem.Open.toFixed(2)}`, Color:"rgb(0,200,10)", LeftSpace:2 }
+            ]);
+
+        //textData.data.push(`价格:${kItem.Close.toFixed(2)}`);
+
+        aryDate.push(kItem.Date);
+        aryTime.push(kItem.Time);
+    }
+
+
+    var apiData=
+    {
+        code:0, 
+        stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+        outdata: { date:aryDate, time:aryTime, outvar:[ textData, closeData] },
+
+        //error: { message:"无权限查看指标“测试指标1”" }
+    };
+
+    console.log('[HQData.APIIndex_TITLE] apiData ', apiData);
+    callback(apiData);
+}
+
+
+HQData.RequestVolumeProfileData=function(data, callback)
+{
+    var request=data.Request;
+    var startIndex=request.Start.DataIndex;
+    var endIndex=request.End.DataIndex;
+
+    var hqchart=data.Self;
+    var kData=hqchart.GetKData();
+
+    var maxPrice=null,minPrice=null;
+    for(var i=startIndex;i<=endIndex && i<kData.Data.length; ++i)
+    {
+        var kItem=kData.Data[i];
+        if (!kItem) continue;
+        
+        if (maxPrice==null || maxPrice<kItem.High) maxPrice=kItem.High;
+        if (minPrice==null || minPrice>kItem.Low) minPrice=kItem.Low;
+    }
+
+    var aryData=[];
+    var step=0.1;
+    for(var i=minPrice, j=0;i<=maxPrice; i+=step, ++j)
+    {
+        var item=
+        {
+            Price:i, 
+            Vol:
+            [
+                {
+                    Value:HQData.GetRandomTestData(0,500)*1000, 
+                    //Color:"rgba(103,179,238,0.8)",
+                    ColorID:0,
+                }, 
+                {
+                    Value:HQData.GetRandomTestData(0,500)*1000, 
+                    //Color:"rgba(237,208,105,0.8)",
+                    ColorID:1,
+                }
+            ]
+        };
+
+        item.TotalVol={ Value:item.Vol[0].Value+ item.Vol[1].Value, ColorID:0 };
+
+        if (j>5)
+        {
+            item.Vol[0].ColorID=2;
+            item.Vol[1].ColorID=3;
+            item.TotalVol.ColorID=2;
+        }
+
+        aryData.push(item);
+    }
+
+    var hqchartData={ Data:aryData, MaxPrice:maxPrice, MinPrice:minPrice, PriceOffset:step, code:0 };
+
+    console.log('[HQData.RequestVolumeProfileData] hqchartData=', hqchartData);
+
+    callback(hqchartData);
 }
 
 

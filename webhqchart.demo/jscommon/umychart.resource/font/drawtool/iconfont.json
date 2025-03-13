@@ -6,6 +6,34 @@
   "description": "hqchart画图工具",
   "glyphs": [
     {
+      "icon_id": "37944372",
+      "name": "图标_固定范围成交量分布图",
+      "font_class": "tubiao_gudingfanweichengjiaoliangfenbutu",
+      "unicode": "e79e",
+      "unicode_decimal": 59294
+    },
+    {
+      "icon_id": "5756279",
+      "name": "zoom out",
+      "font_class": "zoomout",
+      "unicode": "e897",
+      "unicode_decimal": 59543
+    },
+    {
+      "icon_id": "5756284",
+      "name": "zoom in",
+      "font_class": "zoomin",
+      "unicode": "e898",
+      "unicode_decimal": 59544
+    },
+    {
+      "icon_id": "6161498",
+      "name": "编辑",
+      "font_class": "bianji",
+      "unicode": "e651",
+      "unicode_decimal": 58961
+    },
+    {
       "icon_id": "6151227",
       "name": "unlock",
       "font_class": "unlock",

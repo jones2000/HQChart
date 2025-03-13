@@ -1448,8 +1448,11 @@ function DynamicChartTitlePainting()
 
     this.FormatMultiReport = function (data, format) 
     {
+        if (!IFrameSplitOperator.IsNonEmptyArray(data)) return null;
+
         var text = "";
-        for (var i in data) {
+        for(var i=0; i<data.length; ++i)
+        {
             var item = data[i];
             let quarter = item.Quarter;
             let year = item.Year;
@@ -1480,7 +1483,7 @@ function DynamicChartTitlePainting()
     }
 
     //多变量输出
-    this.FromatStackedBarTitle=function(aryBar, dataInfo)
+    this.FormatStackedBarTitle=function(aryBar, dataInfo)
     {
         if (!IFrameSplitOperator.IsNonEmptyArray(aryBar)) return null;
         if (!IFrameSplitOperator.IsNonEmptyArray(dataInfo.Color)) return null;
@@ -1669,42 +1672,37 @@ function DynamicChartTitlePainting()
             index = parseInt(index.toFixed(0));
             var dataIndex=item.Data.DataOffset+index;
             if (dataIndex >= item.Data.Data.length) return null;
-
-            value = item.Data.Data[dataIndex];
-            if (value == null) return null;
-
-            if (item.DataType == "HistoryData-Vol") 
+            if (dataIndex>=0 && item.Data && IFrameSplitOperator.IsNonEmptyArray(item.Data.Data)) value=item.Data.Data[dataIndex];
+            
+            if (this.GetEventCallback)
             {
-                value = value.Vol;
-                valueText = this.FormatValue(value, item);
+                var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_FORMAT_INDEX_OUT_TEXT);
+                if (event)
+                {
+                    var sendData=
+                    { 
+                        Item:item, Index:titleIndex, Data:this.Data, FrameID:this.Frame.Identify,
+                        DataIndex:dataIndex, Value:value, PreventDefault:false, Out:null
+                     };
+                    event.Callback(event,sendData,this);
+                    if (sendData.Out) return sendData.Out;
+                    if (sendData.PreventDefault) return sendData.Out;
+                }
             }
-            else if (item.DataType == "MultiReport") 
+
+            if (item.DataType == "MultiReport") 
             {
                 valueText = this.FormatMultiReport(value, item);
+                if (!valueText) return;
             }
             else if (item.DataType=="ChartStackedBar")
             {
-                aryText=this.FromatStackedBarTitle(value, item);
+                aryText=this.FormatStackedBarTitle(value, item);
                 if (!aryText) return null;
             }
             else 
             {
-                if (this.GetEventCallback)
-                {
-                    var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_FORMAT_INDEX_OUT_TEXT);
-                    if (event)
-                    {
-                        var data=
-                        { 
-                            Item:item, Index:titleIndex, Data:this.Data, FrameID:this.Frame.Identify,
-                            DataIndex:dataIndex, Value:value,
-                            Out:null
-                         };
-                        event.Callback(event,data,this);
-                        if (data.Out) return data.Out;
-                    }
-                }
-
+                if (value == null) return null;
                 var arrowSuper=null;    //独立颜色
                 if (this.IsShowUpDownArrow)
                 {

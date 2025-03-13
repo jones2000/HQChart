@@ -96,7 +96,12 @@ function GetBlackStyle()
             BGColor:"rgba(0,0,0,0.85)",
             BorderColor:"rgb(230,230,230)",
         },
-    
+
+        PopKLineChart:
+        {
+            BGColor:"rgba(0,0,0,0.85)",
+            BorderColor:"rgb(230,230,230)",
+        },
     
         DefaultTextColor: "rgb(101,104,112)",
         DefaultTextFont: 14*GetDevicePixelRatio() +'px 微软雅黑',

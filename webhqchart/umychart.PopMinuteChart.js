@@ -326,7 +326,7 @@ function JSTooltipMinuteChart()
 
     this.BGColor=g_JSChartResource.PopMinuteChart.BGColor;
     this.BorderColor=g_JSChartResource.PopMinuteChart.BorderColor;
-    this.OnCreateCallback;
+    this.OnCreatedCallback;
 
     this.Minute=
     {
@@ -346,8 +346,11 @@ function JSTooltipMinuteChart()
             {
                 var item=CloneData(option.Option);  //复制一份出来
                 this.Minute.Option=Object.assign(this.Minute.Option,item);
+
+                if (IFrameSplitOperator.IsNonEmptyArray(option.Option.EventCallback)) this.Minute.Option.EventCallback=option.Option.EventCallback;
             }
-            if (option.OnCreateCallback) this.OnCreateCallback=option.OnCreateCallback;
+            if (option.OnCreatedCallback) this.OnCreatedCallback=option.OnCreatedCallback;
+            
         }
     }
 
@@ -405,7 +408,7 @@ function JSTooltipMinuteChart()
 
     this.OnCreateHQChart=function(chart)
     {
-        if (this.OnCreateCallback) this.OnCreateCallback(chart);
+        if (this.OnCreatedCallback) this.OnCreatedCallback(chart);
     }
 
     this.Destroy=function()
