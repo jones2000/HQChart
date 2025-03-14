@@ -229,11 +229,13 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 5. 支持走势图
 6. 支持单K线柱
 7. 拖拽调整表头顺序和列宽度
+8. 支持K线和分时图浮窗
 ![报价列表](/小程序行情模块用例/image/hqchart_report.gif)<br>
 ![报价列表](/小程序行情模块用例/image/hqchart_report2.gif)<br>
 ![报价列表](/小程序行情模块用例/image/hqchart_report_closeline.png)<br>
 ![报价列表](/小程序行情模块用例/image/hqchart_report_kbar.png)<br>
 ![报价列表](/小程序行情模块用例/image/hqchart_report_2.gif)<br>
+![报价列表](/小程序行情模块用例/image/report_chart.gif)<br>
 * 键盘精灵<br>
 ![键盘精灵](/小程序行情模块用例/image/sendsymbol_demo.gif)<br>
 * T型报价   
