@@ -3425,6 +3425,51 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         this.DialogSearchIndex=null;
     }
 
+    this.DestroyDialogDrawTool=function()
+    {
+        if (!this.DialogDrawTool) return;
+
+        this.DialogDrawTool.Destroy();
+        this.DialogDrawTool=null;
+    }
+
+    this.DestroyDialogModifyIndexParam=function()
+    {
+        if (this.DialogModifyIndexParam) return;
+
+        this.DialogModifyIndexParam.Destroy();
+        this.DialogModifyIndexParam=null;
+    }
+
+    this.DestroyDialogSelectRect=function()
+    {
+        if (!this.DialogSelectRect) return;
+
+        this.DialogSelectRect.Destroy();
+        this.DialogSelectRect=null;
+    }
+
+    this.DestroyDialogModifyDraw=function()
+    {
+        if (!this.DialogModifyDraw) return;
+
+        this.DialogModifyDraw.Destroy();
+        this.DialogModifyDraw=null;
+    }
+
+    //隐藏内置的弹框div
+    this.HideAllPopDiv=function()
+    {
+        this.HideFloatTooltip();
+        this.CloseTooltipDialog();
+
+        if (this.DialogDrawTool) this.DialogDrawTool.Close();
+        this.CloseModifyDrawDialog();
+
+        if (this.DialogSelectRect) this.DialogSelectRect.Close();
+        if (this.DialogSearchIndex) this.DialogSearchIndex.Close();
+        if (this.DialogModifyIndexParam) this.DialogModifyIndexParam.Close();
+    }
 
 
     //obj={ Element:, Canvas: }
@@ -3476,9 +3521,17 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     {
         this.IsDestroy=true;
         this.StopAutoUpdate();
+
         this.DestroyTooltipDialog();
         this.DestroyFloatTooltip();
+
         this.DestroySearchIndexDialog();
+        this.DestroyDialogModifyIndexParam();
+
+        this.DestroyDialogDrawTool();
+        this.DestroyDialogModifyDraw();
+
+        this.DestroyDialogSelectRect();
     }
 
     this.ChartDestory=this.ChartDestroy;    //老版本写错了,需要兼容下
@@ -36028,23 +36081,22 @@ function ChartStickLine()
     delete this.newMethod;
 
     this.ClassName='ChartStickLine';    //类名
-    this.Color="rgb(255,193,37)";               //线段颜色
-    this.BarType=0;                     //柱子类型 0=实心 1=空心 -1=画虚线空心柱
-    this.LineDotted=[3,3];              //虚线设置
-    this.Width=0;                       //柱子宽度 0=1 3,50=k线宽度 101=K线宽度+间距宽度
+    this.Color="rgb(255,193,37)";                //线段颜色
+    this.BarType=0;                                 //柱子类型 0=实心 1=空心 -1=画虚线空心柱
+    this.LineDotted=[3,3];                          //虚线设置
+    this.Width=0;                                   //柱子宽度 0=1 3,50=k线宽度 101=K线宽度+间距宽度
+    this.IsHScreen=false;
+    
+    this.EmptyBGColor=null;             //空心柱子背景色(缓存)
+    this.BarCache={ };                  //Type:1=线段 2=柱子
 
     this.SetEmptyBar=function()         //设置空心柱子
     {
         if (this.BarType!=1 && this.BarType!=-1) return false;
 
-        this.Canvas.lineWidth=GetDevicePixelRatio();
-        this.Canvas.strokeStyle=this.Color;
         var emptyBGColor=g_JSChartResource.EmptyBarBGColor;
-        if (emptyBGColor) this.Canvas.fillStyle=emptyBGColor;
-        if (this.BarType==-1)   //虚线
-        {
-            this.Canvas.setLineDash(this.LineDotted);   //虚线
-        }
+        if (emptyBGColor) this.BarCache.EmptyBGColor=emptyBGColor;
+        if (this.BarType==-1) this.BarCache.LineDotted=this.LineDotted;
 
         return true;
     }
@@ -36052,13 +36104,6 @@ function ChartStickLine()
     this.IsEmptyBar=function()
     {
         return (this.BarType==1 || this.BarType==-1);
-    }
-
-    this.CalculateBarHeight=function(y,y2)
-    {
-        var barHeight=Math.abs(y-y2);
-        if (barHeight<=0) barHeight=1;
-        return barHeight;
     }
 
     this.Draw=function()
@@ -36075,81 +36120,93 @@ function ChartStickLine()
 
         if (!this.Data || !this.Data.Data) return;
 
-        var isHScreen=(this.ChartFrame.IsHScreen===true);
+        var pixelRatio=GetDevicePixelRatio();
+        this.BarCache={ Color:this.Color, EmptyBGColor:null, Width:1*pixelRatio, Type:0, LineDotted:null };
+
+        this.IsHScreen=(this.ChartFrame.IsHScreen===true);;
         var dataWidth=this.ChartFrame.DataWidth;
         var distanceWidth=this.ChartFrame.DistanceWidth;
         var chartright=this.ChartBorder.GetRight();
-        var zoomIndex=this.ChartFrame.ZoomIndex;
-        if (isHScreen) chartright=this.ChartBorder.GetBottom();
         var xPointCount=this.ChartFrame.XPointCount;
         var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
-        if (isHScreen) xOffset=this.ChartBorder.GetTop()+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        if (this.IsHScreen) 
+        {
+            chartright=this.ChartBorder.GetBottom();
+            xOffset=this.ChartBorder.GetTop()+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        }
 
         var isMinute=this.IsMinuteFrame();
         
-        this.Canvas.save();
-        var bFillBar=false;
-        var bFillKLine=false;
-        var emptyBGColor=g_JSChartResource.EmptyBarBGColor;
-
         if (isMinute)
         {
-            if (this.Width>1) this.Canvas.lineWidth=2*GetDevicePixelRatio();
-            else this.Canvas.lineWidth=GetDevicePixelRatio();
-            this.Canvas.strokeStyle=this.Color;
+            if (this.Width>1) this.BarCache.Width=2*pixelRatio;
+            this.BarCache.Type=1;
         }
-        else if(this.Width==0)  //宽度时0，使用宽度1
+        else if(this.Width<=0)  //宽度时0，使用宽度1
         {
+            this.BarCache.Type=1;
             this.SetEmptyBar();
-            this.Canvas.lineWidth=GetDevicePixelRatio();
-            this.Canvas.strokeStyle=this.Color;
         }
         else if (this.Width==3 || this.Width==50)   //3和50 K线宽度
         {
+            this.BarCache.Type=1;
             if (dataWidth>=4)
             {
-                bFillKLine=true; 
+                this.BarCache.Type=2;
+                this.BarCache.Width=dataWidth;
                 this.SetEmptyBar();
-                if (!this.IsEmptyBar()) this.Canvas.fillStyle=this.Color; 
-                this.Canvas.strokeStyle=this.Color;
             }
-            else    //太细了 画竖线
-            {
-                this.Canvas.lineWidth=GetDevicePixelRatio();
-                this.Canvas.strokeStyle=this.Color;
-            }  
         }
-        else if (this.Width==101)
+        else if (this.Width==101)   //柱子+间距
         {
-            var lineWidth=dataWidth+distanceWidth+1*GetDevicePixelRatio();
-            this.Canvas.lineWidth=lineWidth;
-            this.Canvas.strokeStyle=this.Color;
+            this.BarCache.Type=1;
+            var lineWidth=dataWidth+distanceWidth+1*pixelRatio;
+            if (lineWidth>=4)
+            {
+                this.BarCache.Type=2;
+                this.BarCache.Width=lineWidth
+                this.SetEmptyBar();
+            }
         }
         else if (this.Width<=3)
         {
-            var minWidth=2*GetDevicePixelRatio();
+            var minWidth=2*pixelRatio;
             var barWidth=dataWidth*(this.Width/3);
             if (barWidth<minWidth) barWidth=minWidth;
-            this.SetEmptyBar();
-            if (!this.IsEmptyBar()) this.Canvas.fillStyle=this.Color;
-            bFillBar=true;
+            this.BarCache.Type=1;
+            if (barWidth>=4)
+            {
+                this.BarCache.Type=2;
+                this.BarCache.Width=barWidth;
+                this.SetEmptyBar();
+            }
         }
         else
         {
-            var barWidth=this.Width*GetDevicePixelRatio()+dataWidth;
+            var barWidth=this.Width*pixelRatio+dataWidth;
+            this.BarCache.Type=2;
+            this.BarCache.Width=barWidth;
             this.SetEmptyBar();
-            if (!this.IsEmptyBar()) this.Canvas.fillStyle=this.Color;
-            bFillBar=true;
         }
+
+        this.Canvas.save();
+        this.ClipClient(this.IsHScreen);
+
+        this.Canvas.strokeStyle=this.BarCache.Color;
+        if (this.BarCache.EmptyBGColor) this.Canvas.fillStyle=this.BarCache.EmptyBGColor;   //空心柱子
+        else this.Canvas.fillStyle=this.BarCache.Color;
+        if (IFrameSplitOperator.IsNonEmptyArray(this.BarCache.LineDotted)) this.Canvas.setLineDash(this.BarCache.LineDotted);   //虚线
+        if (this.BarCache.Type==1) this.Canvas.lineWidth=this.BarCache.Width;
 
         for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
         {
             var value=this.Data.Data[i];
-            if (value==null) continue;
+            if (!value) continue;
+            if (!IFrameSplitOperator.IsNumber(value.Value)) continue;
 
             var price=value.Value;
-            var price2=value.Value2;
-            if (price2==null) price2=0;
+            var price2=0;
+            if (IFrameSplitOperator.IsNumber(value.Value2)) price2=value.Value2;
 
             if (isMinute)
             {
@@ -36162,103 +36219,79 @@ function ChartStickLine()
                 var x=left+(right-left)/2;
             }
 
-            var y=this.ChartFrame.GetYFromData(price);
-            var y2=this.ChartFrame.GetYFromData(price2);
+            var y=this.ChartFrame.GetYFromData(price,false);
+            var y2=this.ChartFrame.GetYFromData(price2,false);
 
             if (x>chartright) break;
 
-            if (bFillBar)
-            {
-                if (isHScreen)
-                {
-                    var left=x-barWidth/2;
-                    var width=barWidth;
-                    if (this.IsEmptyBar()) //空心
-                    {
-                        this.Canvas.beginPath();
-                        this.Canvas.rect(ToFixedPoint(Math.min(y,y2)),ToFixedPoint(left),ToFixedRect(Math.abs(y-y2)),ToFixedRect(width));
-                        this.Canvas.stroke();
-                    }
-                    else
-                    {
-                        this.Canvas.fillRect(ToFixedRect(Math.min(y,y2)),ToFixedRect(left),ToFixedRect(Math.abs(y-y2)),ToFixedRect(width));
-                    }
-                }
-                else
-                {
-                    var left=x-barWidth/2;
-                    var width=barWidth;
-                    if (left+width>chartright) width=chartright-left; //不要超过右边框子
-                    if (this.IsEmptyBar()) //空心
-                    {
-                        if (emptyBGColor)
-                            this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(Math.min(y,y2)),ToFixedRect(width),ToFixedRect(Math.abs(y-y2)));
+            var xCenter=x;
+            var yTop=Math.min(y,y2);
+            var barHeight=Math.abs(y-y2);   //柱子高度
 
-                        this.Canvas.beginPath();
-                        this.Canvas.rect(ToFixedPoint(left),ToFixedPoint(Math.min(y,y2)),ToFixedRect(width),ToFixedRect(Math.abs(y-y2)));
-                        this.Canvas.stroke();
-                    }
-                    else
-                    {
-                        this.Canvas.fillRect(ToFixedRect(left),ToFixedRect(Math.min(y,y2)),ToFixedRect(width),ToFixedRect(this.CalculateBarHeight(y,y2)));
-                    }
-                }
+            this.DrawBar(xCenter, yTop, barHeight);
+        }
+            
+        this.Canvas.restore();
+    }
+
+    this.DrawBar=function(xCenter, ytop, barHeight)
+    {
+        if (barHeight<1) barHeight=1;
+
+        if (this.BarCache.Type==1)  //线段
+        {
+            if (this.IsHScreen)
+            {
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(ytop,ToFixedPoint(xCenter));
+                this.Canvas.lineTo(ytop+barHeight,ToFixedPoint(xCenter));
+                this.Canvas.stroke();
             }
-            else if (bFillKLine)
+            else
             {
-                if (this.IsEmptyBar())    //空心
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(ToFixedPoint(xCenter),ytop);
+                this.Canvas.lineTo(ToFixedPoint(xCenter),ytop+barHeight);  
+                this.Canvas.stroke();
+            }
+        }
+        else if (this.BarCache.Type==2) //柱子
+        {
+            if (this.IsHScreen)
+            {
+                var xLeft=xCenter-this.BarCache.Width/2;
+                if (this.IsEmptyBar()) //空心
                 {
-                    if (isHScreen)
-                    {
-                        this.Canvas.beginPath();
-                        this.Canvas.rect(ToFixedPoint(Math.min(y,y2)),ToFixedPoint(xOffset),ToFixedRect(Math.abs(y-y2)),ToFixedRect(dataWidth));
-                        this.Canvas.stroke();
-                    }
-                    else
-                    {
-                        if (emptyBGColor)
-                            this.Canvas.fillRect(ToFixedRect(xOffset),ToFixedRect(Math.min(y,y2)),ToFixedRect(dataWidth),ToFixedRect(Math.abs(y-y2)));
+                    if (this.BarCache.EmptyBGColor) //背景色填充
+                        this.Canvas.fillRect(ToFixedRect(ytop),ToFixedRect(xLeft),ToFixedRect(barHeight),ToFixedRect(this.BarCache.Width));
 
-                        this.Canvas.beginPath();
-                        this.Canvas.rect(ToFixedPoint(xOffset),ToFixedPoint(Math.min(y,y2)),ToFixedRect(dataWidth),ToFixedRect(Math.abs(y-y2)));
-                        this.Canvas.stroke();
-                    }
+                    this.Canvas.beginPath();
+                    this.Canvas.rect(ToFixedPoint(ytop),ToFixedPoint(xLeft),ToFixedRect(barHeight),ToFixedRect(this.BarCache.Width));
+                    this.Canvas.stroke();
                 }
                 else
                 {
-                    if (isHScreen) 
-                    {
-                        this.Canvas.fillRect(ToFixedRect(Math.min(y,y2)),ToFixedRect(xOffset),ToFixedRect(Math.abs(y-y2)),ToFixedRect(dataWidth));
-                    }
-                    else 
-                    {
-                        this.Canvas.fillRect(ToFixedRect(xOffset),ToFixedRect(Math.min(y,y2)),ToFixedRect(dataWidth),ToFixedRect(this.CalculateBarHeight(y,y2)));
-                    }
-                        
+                    this.Canvas.fillRect(ToFixedRect(ytop),ToFixedRect(xLeft),ToFixedRect(barHeight),ToFixedRect(this.BarCache.Width));
                 }
             }
             else
             {
-                if (isHScreen)
+                var xLeft=xCenter-this.BarCache.Width/2;
+                if (this.IsEmptyBar()) //空心
                 {
+                    if (this.BarCache.EmptyBGColor) //背景色填充
+                        this.Canvas.fillRect(ToFixedRect(xLeft),ToFixedRect(ytop),ToFixedRect(this.BarCache.Width),ToFixedRect(barHeight));
+
                     this.Canvas.beginPath();
-                    this.Canvas.moveTo(y,ToFixedPoint(x));
-                    this.Canvas.lineTo(y2,ToFixedPoint(x));
+                    this.Canvas.rect(ToFixedPoint(xLeft),ToFixedPoint(ytop),ToFixedRect(this.BarCache.Width),ToFixedRect(barHeight));
                     this.Canvas.stroke();
                 }
                 else
                 {
-                    var xFix=parseInt(x.toString())+0.5;
-                    this.Canvas.beginPath();
-                    this.Canvas.moveTo(xFix,y);
-                    if (Math.abs(y-y2)>0) this.Canvas.lineTo(xFix,y2);
-                    else this.Canvas.lineTo(xFix,y+1);  //太窄了，就画一个像素的宽度
-                    this.Canvas.stroke();
+                    this.Canvas.fillRect(ToFixedRect(xLeft),ToFixedRect(ytop),ToFixedRect(this.BarCache.Width),ToFixedRect(barHeight));
                 }
             }
         }
-
-        this.Canvas.restore();
     }
 
     this.GetMaxMin=function()
