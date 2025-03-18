@@ -1079,6 +1079,10 @@ function JSDialogModifyDraw()
             bShowLineColor=false;
             bAdvanced=true;
         }
+        else if (chart.ClassName=="ChartDrawPictureIconFont")
+        {
+            bShowFontZoom=true;
+        }
         
         if (this.ColorButton)
         {

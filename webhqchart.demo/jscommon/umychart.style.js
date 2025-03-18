@@ -268,6 +268,23 @@ function GetBlackStyle()
             LineDash:[2,2]
         },
 
+        PredictionKLine:
+        {
+            Line:
+            {
+                Color:"rgb(220,220,220)", 
+                LineDash:[3*GetDevicePixelRatio(),3*GetDevicePixelRatio()]
+            },
+
+            Bar:
+            {
+                UpColor:"rgb(30,144,255)",
+                DownColor:"rgb(30,144,255)", 
+                UnchangeColor:"rgb(30,144,255)" , 
+                DrawType:3
+            }
+        },
+
         PriceGapStyple:
         { 
             Line:{ Color:"rgb(128,128,128)" }, 
