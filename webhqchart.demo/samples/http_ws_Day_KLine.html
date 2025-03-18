@@ -3,13 +3,18 @@
 <head>  
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
 <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>http+ws日线更新示例</title>  
+<title>http+ws更新K线示例</title>  
     <!-- 加载资源 -->
     <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
     <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
 </head>  
 <body>
-    <div id="kline" >
+    <div id="kline" ></div>
+
+    <div>
+        <span id="button_1" class="btn-style">日</span>
+        <span id="button_2" class="btn-style">1分钟</span>
+    </div>
 
     <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
     <script src="../jscommon/umychart.resource/js/webfont.js"></script>
@@ -112,7 +117,7 @@
                 {
                     DragMode:1,                 //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
                     Right:0,                    //复权 0 不复权 1 前复权 2 后复权
-                    Period:0,                   // [30001-32000) 秒周期
+                    Period:4,                   // [30001-32000) 秒周期
                                                 // 0=日线 1=周线 2=月线 3=年线 9=季线  [40001-50000) 自定义日线
                                                 // 4=1分钟 5=5分钟 6=15分钟 7=30分钟 8=60分钟 11=120分钟 12=240分钟 [20001-30000) 自定义分钟
                     MaxReqeustDataCount:1000,   //数据个数
@@ -165,12 +170,21 @@
                 this.Chart.SetOption(this.Option);  //设置K线配置
             }
 
-            this.StartWSUpdate=function(symbol) //开始ws更新数据
+            this.StartWSUpdate=function(symbol, period) //开始ws更新数据(日K) period=周期
             {
                 this.StopWSUpdate();
                 this.WS=setInterval(()=>
                 {
-                    this.OnRecvWSRealtimeData(symbol);
+                    this.OnRecvWSRealtimeData(symbol, period);
+                }, 1000);
+            }
+
+            this.StartWSMinuteUpdate=function(symbol, period) //开始ws更新数据(分钟K线)
+            {
+                this.StopWSUpdate();
+                this.WS=setInterval(()=>
+                {
+                    this.OnRecvWSMinuteRealtimeData(symbol,period);
                 }, 1000);
             }
 
@@ -185,13 +199,11 @@
 
             this.OnSize=function()  //自适应大小调整
             {
-                var height= $(window).height();
+                var height= $(window).height()-30;
                 var width = $(window).width();
-                this.DivKLine.style.top='px';
-                this.DivKLine.style.left='px';
                 this.DivKLine.style.width=width+'px';
                 this.DivKLine.style.height=height+'px';
-                this.Chart.OnSize();
+                if (this.Chart) this.Chart.OnSize();
             }
 
             this.NetworkFilter=function(data, callback)
@@ -199,8 +211,13 @@
                 console.log('[KLineChart::NetworkFilter] data', data);
                 switch(data.Name)
                 {
-                    case "KLineChartContainer::RequestHistoryData":
+                    case "KLineChartContainer::RequestHistoryData":             //日线全量数据下载
+                        //HQChart使用教程30-K线图如何对接第3方数据2-日K数据
                         this.RequestHistoryData(data, callback);
+                        break;
+                    case 'KLineChartContainer::ReqeustHistoryMinuteData':           //分钟全量数据下载
+                        //HQChart使用教程30-K线图如何对接第3方数据3-1分钟K数据
+                        this.RequestHistoryMinuteData(data, callback);
                         break;
                     default:
                         HQData.NetworkFilter(data, callback);
@@ -210,12 +227,17 @@
 
             this.RequestHistoryData=function(data, callback)
             {
+                this.StopWSUpdate();
+
                 data.PreventDefault=true;
                 var symbol=data.Request.Data.symbol; //请求的股票代码
-                var count=data.Request.Data.count
-                console.log(`[KLineChart::RequestMinuteDaysData] Symbol=${symbol}`);
+                var period=data.Request.Data.period; //周期
+                
+                console.log(`[KLineChart::RequestMinuteDaysData] Symbol=${symbol}, Period=${period}`);
 
-                var fullData=HQData.GetDayKLineDataBySymbol(symbol);    //生成测试数据
+                //生成测试数据
+                var count=data.Request.Data.count
+                var fullData=HQData.GetDayKLineDataBySymbol(symbol);    
                 var aryData=[];
                 if (IFrameSplitOperator.IsNonEmptyArray(fullData))
                 {
@@ -229,7 +251,7 @@
             
                 callback(hqchartData);
 
-                this.StartWSUpdate(symbol); //开始启动ws 自动更新
+                this.StartWSUpdate(symbol, period); //开始启动ws 自动更新
             }
 
             this.OnRecvWSRealtimeData=function(symbol)
@@ -265,8 +287,68 @@
 
                 this.Chart.JSChartContainer.RecvRealtimeData(hqchartData);
             }
-        }
 
+
+            this.RequestHistoryMinuteData=function(data, callback)
+            {
+                this.StopWSUpdate();
+
+                data.PreventDefault=true;
+                var symbol=data.Request.Data.symbol;    //请求的股票代码
+                var period=data.Request.Data.period;    //周期
+                console.log(`[KLineChart::RequestHistoryMinuteData] Symbol=${symbol}, Period=${period}`);
+
+                //获取内置的测试数据
+                var count=data.Request.Data.count*200;  //请求的数据长度
+                var fullData=HQData.GetM1KLineDataBySymbol(symbol);
+                var aryData=[];
+                if (IFrameSplitOperator.IsNonEmptyArray(fullData))
+                {
+                    var dataCount=fullData.length;
+                    var start=dataCount-count;
+                    if (start<0) start=0;
+                    aryData=fullData.slice(start);
+                }
+                
+                var hqchartData={ name:symbol, symbol:symbol, data:aryData, ver:2.0 };
+                callback(hqchartData);
+
+                this.StartWSMinuteUpdate(symbol, period);
+            }
+
+
+            this.OnRecvWSMinuteRealtimeData=function(symbol)
+            {
+                //生成内置的测试数据
+                var kData=this.Chart.JSChartContainer.GetKData();
+                var lastItem=kData.Data[kData.Data.length-1];
+                var fullData=HQData.GetM1KLineDataBySymbol(symbol);
+                if (!IFrameSplitOperator.IsNonEmptyArray(fullData)) return;
+
+                var aryData=HQData.GetKLineDataByDateTime(fullData, lastItem.Date, lastItem.Time, 20999999, 9999);
+                if (!IFrameSplitOperator.IsNonEmptyArray(aryData)) return;
+
+                var kItem=JSON.parse(JSON.stringify(aryData[0]));
+
+                //生成随机测试数据
+                var aryMinuteData=[];     //主图
+
+                var price=kItem[5];
+                var value=Math.ceil(Math.random()*10)/5000*price;
+                var bUp=Math.ceil(Math.random()*10)>=5;
+                
+                if (bUp) price+=value;
+                else price-=value;
+                kItem[5]=price;
+                kItem[3]=Math.max(price, kItem[3]);
+                kItem[4]=Math.min(price, kItem[4]);
+                aryMinuteData.push(kItem);
+                
+                var hqchartData={ name:symbol, symbol:symbol, ver:2.0, data:aryMinuteData };
+            
+                this.Chart.JSChartContainer.RecvMinuteRealtimeData(hqchartData);
+            }
+        }
         
 
         $(function () 
@@ -274,6 +356,9 @@
             WebFont.load({ custom: { families: ['iconfont'] } });   //预加载下iconfont资源
             var klineControl=new KLineChart(document.getElementById('kline'));
             klineControl.Create();
+
+            $("#button_1").click(function() { klineControl.Chart.ChangePeriod(0); } );
+            $("#button_2").click(function() { klineControl.Chart.ChangePeriod(4); } );
         })
 
     </script>  
@@ -291,6 +376,15 @@
     height:95%;
     position: relative;
     /*margin-top: 100px;*/
+}
+
+.btn-style
+{
+    padding: 3px 8px;
+    border: 1px solid #ececec;
+    border-radius: 5px;
+    background-color: #f5f5f5;
+    cursor: pointer;
 }
         
 </style>
