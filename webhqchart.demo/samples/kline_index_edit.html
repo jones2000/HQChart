@@ -456,7 +456,7 @@
                 
                 var resource=JSChart.GetResource();
                 this.DivKLine.style.backgroundColor=resource.BGColor; //设置最外面的div背景
-
+                resource.FrameLogo.Text+= ` 版本:${HQCHART_VERSION}`;
                 
                 this.Option.EventCallback=
                 [
