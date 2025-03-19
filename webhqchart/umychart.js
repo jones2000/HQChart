@@ -6986,16 +6986,16 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     {
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
 
+        var keyID = e.keyCode ? e.keyCode :e.which;
+
         //回调事件
         var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_KEYDOWN);
         if (event && event.Callback)
         {
-            var sendData={ e:e, PreventDefault:false };
+            var sendData={ e:e, KeyID:keyID, PreventDefault:false };
             event.Callback(event, sendData, this);
             if (sendData.PreventDefault) return;
         }
-        
-        var keyID = e.keyCode ? e.keyCode :e.which;
 
         var draw=false;
         if (this.ChartCorssCursor && this.ChartCorssCursor.OnKeyDown)   //十字光标 隐藏显示
@@ -10809,7 +10809,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         }
     }
 
-    //手动更新指标 [ {ID:主图指标ID, OverlayID:叠加指标ID }]
+    //手动更新指标 [ {ID:主图指标窗口索引, OverlayID:叠加指标ID }]
     this.UpdateWindowIndexV2=function(aryIndex, option)
     {
         if (!this.Frame || !this.Frame.SubFrame) return false;
@@ -10827,7 +10827,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             var item=aryIndex[i];
             if (!item) continue;
 
-            if (item.ID) setMainIndex.add(item.ID);
+            if (IFrameSplitOperator.IsNumber(item.ID)) setMainIndex.add(item.ID);
             if (item.OverlayID) setOverlayIndex.add(item.OverlayID);
         }
 
@@ -10850,7 +10850,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 var item=this.WindowIndex[i];
                 if (!item) continue;
     
-                if (setMainIndex.has(item.ID)) 
+                if (setMainIndex.has(i)) 
                 {
                     this.BindIndexData(i,bindData);
                 }
@@ -36087,8 +36087,7 @@ function ChartStickLine()
     this.Width=0;                                   //柱子宽度 0=1 3,50=k线宽度 101=K线宽度+间距宽度
     this.IsHScreen=false;
     
-    this.EmptyBGColor=null;             //空心柱子背景色(缓存)
-    this.BarCache={ };                  //Type:1=线段 2=柱子
+    this.BarCache={ Type:0 };                  //Type:1=线段 2=柱子
 
     this.SetEmptyBar=function()         //设置空心柱子
     {
@@ -72079,6 +72078,12 @@ function JSChartResource()
 
         TitleColor:'rgb(250,250,250)',       //标题颜色
         TitleBGColor:"rgb(200, 66, 69)",    //标题背景颜色
+
+        Mark:
+        {
+            LineColor:"rgba(255,165,0,0.6)",
+            LineWidth:2,
+        }
     }
 
     this.PopKLineChart=
@@ -73685,6 +73690,11 @@ function JSChartResource()
             if (item.BorderColor) dest.BorderColor=item.BorderColor;
             if (item.TitleColor) dest.TitleColor=item.TitleColor;
             if (item.TitleBGColor) dest.TitleBGColor=item.TitleBGColor;
+            if (item.Mark)
+            {
+                if (item.Mark.LineColor) dest.Mark.LineColor=item.Mark.LineColor;
+                if (IFrameSplitOperator.IsNumber(item.Mark.LineWidth)) dest.Mark.LineWidth=item.Mark.LineWidth;
+            }
         }
 
         if (style.PopKLineChart)
@@ -77173,6 +77183,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
     this.ShowMinuteChartDialog=function(data, x,y)
     {
         if (!this.PopMinuteChart) return;
+        if (!ChartData.IsDayPeriod(this.Period,true)) return;   //只支持日K
         if (!data.Tooltip || !data.Chart) return;
 
         var pixelRatio=GetDevicePixelRatio();
@@ -77198,7 +77209,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
         if (!symbol) return;
 
-        this.PopMinuteChart.Show({ Date:date, Symbol:symbol, Data:data.Tooltip.Data }, x/pixelRatio,y/pixelRatio);
+        this.PopMinuteChart.Show({ Date:date, Symbol:symbol, Data:data.Tooltip.Data, Chart:data.Tooltip.ChartPaint }, x/pixelRatio,y/pixelRatio);
     }
 
    
@@ -86024,16 +86035,16 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
 
+        var keyID = e.keyCode ? e.keyCode :e.which;
+
         //回调事件
         var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_KEYDOWN);
         if (event && event.Callback)
         {
-            var sendData={ e:e, PreventDefault:false };
+            var sendData={ e:e, KeyID:keyID, PreventDefault:false };
             event.Callback(event, sendData, this);
             if (sendData.PreventDefault) return;
         }
-
-        var keyID = e.keyCode ? e.keyCode :e.which;
 
         var draw=false;
         if (this.ChartCorssCursor && this.ChartCorssCursor.OnKeyDown)   //十字光标 隐藏显示
@@ -95381,9 +95392,13 @@ var MARKET_SUFFIX_NAME=
     {
         if (!upperSymbol) return false;
 
-        if (this.IsSH(upperSymbol)) //51XXXX.SH
+        if (this.IsSH(upperSymbol)) //51XXXX.SH 58xxxx.sh 56xxxx.sh
         {
-            if (upperSymbol.charAt(0)=='5' && upperSymbol.charAt(1)=='1') return true;
+            if (upperSymbol.charAt(0)=='5')
+            {
+                var secondChar=upperSymbol.charAt(1);
+                if (["1", "2", "3", "4", "5", "7", "6", "8"].includes(secondChar)) return true;
+            } 
         }
         else if (this.IsSZ(upperSymbol)) //15XXXX.sz, 16XXXX.sz, 17XXXX.sz, 18XXXX.sz
         {

@@ -30,6 +30,17 @@ function JSPopMinuteChart()
         Option:JSPopMinuteChart.GetMinuteOption(),
         JSChart:null,
         Date:null,
+        Symbol:null,
+        Name:null,
+        Chart:null,
+    }
+
+    this.ClearCache=function()
+    {
+        this.Minute.Date=null;
+        this.Minute.Symbol=null;
+        this.Minute.Name=null;
+        this.Minute.Chart=null;
     }
 
     this.Inital=function(hqchart, option)
@@ -42,6 +53,11 @@ function JSPopMinuteChart()
             {
                 var item=CloneData(option.Option);  //复制一份出来
                 this.Minute.Option=Object.assign(this.Minute.Option,item);
+            }
+
+            if (option.EnableMarkBG)    //标记背景
+            {
+                this.HQChart.CreateExtendChart("MarkPopMinutePaint");
             }
         }
     }
@@ -83,6 +99,15 @@ function JSPopMinuteChart()
         if (this.HQChart) this.Minute.Option.Language=g_JSChartLocalization.GetLanguageName(this.HQChart.LanguageID);
         this.Minute.Option.OnCreatedCallback=(chart)=>{ this.OnCreateHQChart(chart); }
         this.Minute.Option.NetworkFilter=(data, callback)=>{ this.NetworkFilter(data, callback); }
+
+        this.Minute.Option.EventCallback=
+        [
+            {
+                event:JSCHART_EVENT_ID.ON_KEYDOWN,  //键盘消息
+                callback:(event, data, obj)=>{ this.OnKeyDown(event, data, obj); }
+            },
+        ];
+
         chart.SetOption(this.Minute.Option);  //设置K线配置
 
         document.body.appendChild(divDom);
@@ -143,14 +168,16 @@ function JSPopMinuteChart()
         if (!data.Symbol || !IFrameSplitOperator.IsPlusNumber(data.Date)) return;
 
         this.Date=data.Date;
-        var name=data.Symbol;
-        if (data.Name) name=data.Name;
-        var title=`${name} ${IFrameSplitOperator.FormatDateString(data.Date)} 分时图`
-        this.TitleBox.DivName.innerText=title;
+        this.Symbol=this.Name=data.Symbol;
+        if (data.Name) this.Name=data.Name;
+        this.Chart=data.Chart;
+       
+        this.UpdateDialogTitle();
 
         if (this.Minute.JSChart)
         {
-            this.Minute.JSChart.ChangeSymbol(data.Symbol);
+            this.Minute.JSChart.ChangeSymbol(this.Symbol);
+            this.MarkKLineBG();
         }
 
         if (!this.Minute.Option.EnableResize)
@@ -173,11 +200,19 @@ function JSPopMinuteChart()
         this.DivDialog.style.left = x + "px";
     }
 
+    this.UpdateDialogTitle=function()
+    {
+        var title=`${this.Name} ${IFrameSplitOperator.FormatDateString(this.Date)} 分时图 PageUp/PageDown翻页`;
+        this.TitleBox.DivName.innerText=title;
+    }
+
     this.Close=function(e)
     {
         if (!this.DivDialog) return;
 
+        this.ClearCache();
         this.DivDialog.style.visibility='hidden';
+        this.ClearMarkKLineBG();
     }
 
     this.OnMouseDownTitle=function(e)
@@ -238,6 +273,126 @@ function JSPopMinuteChart()
         if (!this.DivDialog) return;
 
         if (this.Minute.JSChart) this.Minute.JSChart.SetLanguage(language);
+    }
+
+
+    this.OnKeyDown=function(event, data, obj)
+    {
+        switch(data.KeyID)
+        {
+            case 33:    //page up
+                data.PreventDefault=true;
+                var item=this.GetNextData(1);
+                if (item) this.ChangeSymbol(item.Symbol, item.Date);
+                break;
+            case 34:    //page down
+                data.PreventDefault=true;
+                var item=this.GetNextData(-1);
+                if (item) this.ChangeSymbol(item.Symbol, item.Date);
+                break;
+            default:
+                return;
+        }
+    }
+
+    this.GetNextData=function(step)
+    {
+        if (!this.Chart) return null;
+        if (!IFrameSplitOperator.IsNumber(this.Date)) return null;
+        if (step==0) return null;
+
+        var kData=this.Chart.Data;
+        if (!kData || !IFrameSplitOperator.IsNonEmptyArray(kData.Data)) return null;
+
+        var index=-1;
+        for(var i=0;i<kData.Data.length;++i)
+        {
+            var kItem=kData.Data[i];
+            if (!kItem) continue;
+
+            if (kItem.Date==this.Date)
+            {
+                index=i;
+                break;
+            }
+        }
+
+        if (index<0) return null;
+
+        var date=null;
+        var symbol=null;
+        if (step>0)
+        {
+            for(var i=1, j=0;j<step && index+i<kData.Data.length;++i)
+            {
+                var kItem=kData.Data[index+i];
+                if (!kItem || !IFrameSplitOperator.IsNumber(kItem.Date)) continue;
+
+                date=kItem.Date;
+                if (kItem.Symbol) symbol=kItem.Symbol;
+                else symbol=null;
+                ++j;
+            }
+        }
+        else
+        {
+            step=Math.abs(step);
+            for(var i=1, j=0;j<step && index-i>=0;++i)
+            {
+                var kItem=kData.Data[index-i];
+                if (!kItem || !IFrameSplitOperator.IsNumber(kItem.Date)) continue;
+
+                date=kItem.Date;
+                if (kItem.Symbol) symbol=kItem.Symbol;
+                else symbol=null;
+                ++j;
+            }
+        }
+
+        if (date==this.Date) return null;
+
+        return { Date:date, Symbol:symbol };
+    }
+
+    //修改日期
+    this.ChangeSymbol=function(symbol, date)
+    {
+        if (!this.Minute.JSChart) return;
+        
+        if (symbol) 
+        {
+            this.Symbol=symbol;
+            this.Name=symbol;
+        }
+        
+        if (IFrameSplitOperator.IsPlusNumber(date)) this.Date=date;
+
+        this.UpdateDialogTitle();
+        this.Minute.JSChart.ChangeSymbol(this.Symbol);
+        this.MarkKLineBG();
+    }
+
+    this.MarkKLineBG=function()
+    {
+        if (!this.HQChart) return;
+
+        var finder=this.HQChart.GetExtendChartByClassName("MarkPopMinutePaint");
+        if (!finder || !finder.Chart) return;
+
+        finder.Chart.SetDate([this.Date]);
+        this.HQChart.Draw();
+
+    }
+
+    this.ClearMarkKLineBG=function()
+    {
+        if (!this.HQChart) return;
+
+        var finder=this.HQChart.GetExtendChartByClassName("MarkPopMinutePaint");
+        if (!finder || !finder.Chart) return;
+
+        finder.Chart.ClearData();
+        this.HQChart.Draw();
     }
 }
 
@@ -568,6 +723,118 @@ JSTooltipMinuteChart.GetMinuteOption=function()
 
     return option;
 }
+
+
+///////////////////////////////////////////////////////
+// K线上标记选中
+
+function MarkPopMinutePaint()
+{
+    this.newMethod=IExtendChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName="MarkPopMinutePaint";
+    this.MapDate;   //标记日期
+    this.BGColor="rgba(100,100,100,0.2)";
+    this.LineWidth=g_JSChartResource.PopMinuteChart.Mark.LineWidth;
+    this.LineColor=g_JSChartResource.PopMinuteChart.Mark.LineColor;
+    this.SubFrame;
+    this.IsDynamic=true;
+
+
+    this.ReloadResource=function(resource)
+    {
+        this.LineWidth=g_JSChartResource.PopMinuteChart.Mark.LineWidth;
+        this.LineColor=g_JSChartResource.PopMinuteChart.Mark.LineColor;
+    }
+
+    this.SetDate=function(aryDate)
+    {
+        this.MapDate=new Map();
+        if (IFrameSplitOperator.IsNonEmptyArray(aryDate))
+        {
+            for(var i=0;i<aryDate.length;++i)
+            {
+                var date=aryDate[i];
+                this.MapDate.set(date, { Date:date} );
+            }
+        }
+    }
+
+    this.ClearData=function()
+    {
+        this.MapDate=null;
+    }
+
+    this.Draw=function()
+    {
+        this.SubFrame=null;
+        if (!this.HQChart) return;
+        if (!this.ChartFrame || !IFrameSplitOperator.IsNonEmptyArray(this.ChartFrame.SubFrame)) return;
+        if (!this.MapDate || this.MapDate.size<=0) return;
+
+        var kData=this.HQChart.GetKData();
+        if (!kData || !IFrameSplitOperator.IsNonEmptyArray(kData.Data)) return;
+        this.SubFrame=this.ChartFrame.SubFrame[0].Frame;
+        if (!this.SubFrame) return;
+
+        var dataWidth=this.SubFrame.DataWidth;
+        var distanceWidth=this.SubFrame.DistanceWidth;
+        var xPointCount=this.SubFrame.XPointCount;
+        var border=this.SubFrame.GetBorder();
+        var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        var chartright=border.RightEx;
+       
+        var startIndex=kData.DataOffset;
+        var aryBG=[];
+        for(var i=startIndex,j=0;i<kData.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var kItem=kData.Data[i];
+            if (!kItem) continue;
+            if (!this.MapDate.has(kItem.Date)) continue
+            
+            var left=xOffset;
+            var right=xOffset+dataWidth;
+            var x=left+(right-left)/2;
+
+            var bgItem={ Left:left, XCenter:x, Right:right, DataIndex:i, DataWidth:dataWidth };
+            aryBG.push(bgItem);
+        }
+
+        if (IFrameSplitOperator.IsNonEmptyArray(aryBG))
+        {
+            this.Canvas.save();
+            this.DrawBG(aryBG);
+            this.Canvas.restore();
+        }
+
+        this.SubFrame=null;
+    }
+
+    this.DrawBG=function(aryBG)
+    {
+        var border=this.ChartFrame.ChartBorder.GetBorder();
+        var pixelRatio=GetDevicePixelRatio();
+        if (this.MapDate.size==1)   //标记一天
+        {
+            var item=aryBG[0];
+            var lineWidth=this.LineWidth*pixelRatio;
+            if (item.DataWidth<=4) lineWidth=1*pixelRatio;
+
+            this.Canvas.lineWidth=lineWidth;
+            this.Canvas.strokeStyle=this.LineColor;
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(item.XCenter,border.TopEx);
+            this.Canvas.lineTo(item.XCenter,border.BottomEx);
+            this.Canvas.stroke();
+        }
+    }
+}
+
+
+JSChart.RegisterExtendChartClass("MarkPopMinutePaint", { Create:function() { return new MarkPopMinutePaint}} );
+
 
 
 

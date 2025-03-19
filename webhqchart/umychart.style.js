@@ -95,6 +95,11 @@ function GetBlackStyle()
         {
             BGColor:"rgba(0,0,0,0.85)",
             BorderColor:"rgb(230,230,230)",
+
+            Mark:
+            {
+                LineColor:"rgba(255,215,0,0.6)",
+            }
         },
 
         PopKLineChart:
