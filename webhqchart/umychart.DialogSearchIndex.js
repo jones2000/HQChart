@@ -305,9 +305,13 @@ function JSDialogSearchIndex()
         {
             if (!IFrameSplitOperator.IsNumber(this.OpData.WindowIndex)) return;
             var indexItem=cellItem.IndexItem;
-            if (indexItem.Type==0)  //系统指标
+            if (indexItem.Type==0 )  //系统指标 
             {
                 this.HQChart.ChangeIndex(this.OpData.WindowIndex, indexItem.ID );
+            }
+            else if(indexItem.Type==4 || indexItem.Type==5) //五彩K线
+            {
+                this.HQChart.ChangeInstructionIndex(indexItem.ID);
             }
             else if (indexItem.Type==1) //自定义脚本指标
             {
@@ -347,6 +351,10 @@ function JSDialogSearchIndex()
             else if (indexItem.Type==3) //指标模板
             {
                 this.HQChart.ChangeIndexTemplate(indexItem.TemplateData)
+            }
+            else if(indexItem.Type==4 || indexItem.Type==5) //五彩K线
+            {
+                this.HQChart.ChangeInstructionIndex(indexItem.ID);
             }
         }
         else if (this.OpData.OpType==3) //新增加指标窗口
@@ -570,7 +578,7 @@ JSDialogSearchIndex.GetDefaultIndexData=function()
                 Group:{ ID:"超买超卖型", Name:"超买超卖型"} , 
                 AryIndex:
                 [
-                    {Name:"ADTM 动态买卖气指标", ID:"ADTM", Type:0 },      //Type:0=系统指标 1=自定义通达信脚本 2=api指标
+                    {Name:"ADTM 动态买卖气指标", ID:"ADTM", Type:0 },      //Type:0=系统指标 1=自定义通达信脚本 2=api指标 3=指标模板 4=交易系统 5=五彩K线 
                     {Name:"BIAS 乖离率", ID:"BIAS", Type:0},
                     {Name:"BIAS36 三六乖离", ID:"BIAS36", Type:0 },
                     {Name:"BIAS_QL 乖离率-传统版", ID:"BIAS_QL", Type:0 },
@@ -640,6 +648,80 @@ JSDialogSearchIndex.GetDefaultIndexData=function()
                     {Name:"CR 带状能量线",            ID:"CR", Type:0},
                     {Name:"VR 成交量变异率",          ID:"VR", Type:0},
                     {Name:"WAD 威廉多空力度线",        ID:"WAD", Type:0}
+                ]
+            },
+            {
+                Group:{ ID:"五彩K线", Name:"五彩K线"} , 
+                AryIndex:
+                [
+                    {Name:"五彩K线-十字星",            ID:"五彩K线-十字星", Type:5},
+                    {Name:"五彩K线-早晨之星",          ID:"五彩K线-早晨之星", Type:5},
+                    {Name:"五彩K线-黄昏之星",          ID:"五彩K线-黄昏之星", Type:5},
+                    {Name:"五彩K线-长十字",            ID:"五彩K线-长十字", Type:5},
+
+                    {Name:"五彩K线-身怀六甲",          ID:"五彩K线-身怀六甲", Type:5},
+                    {Name:"五彩K线-三个白武士",        ID:"五彩K线-三个白武士", Type:5},
+                    {Name:"五彩K线-三只乌鸦",          ID:"五彩K线-三只乌鸦", Type:5},
+                    {Name:"五彩K线-光头阳线",          ID:"五彩K线-光头阳线", Type:5},
+
+                    {Name:"五彩K线-光脚阴线",          ID:"五彩K线-光脚阴线线", Type:5},
+                    {Name:"五彩K线-垂死十字",          ID:"五彩K线-垂死十字", Type:5},
+                    {Name:"五彩K线-早晨十字星",        ID:"五彩K线-早晨十字星", Type:5},
+                    {Name:"五彩K线-黄昏十字星",        ID:"五彩K线-黄昏十字星", Type:5},
+
+                    {Name:"五彩K线-射击之星",          ID:"五彩K线-射击之星", Type:5},
+                    {Name:"五彩K线-倒转锤头",          ID:"五彩K线-倒转锤头", Type:5},
+                    {Name:"五彩K线-锤头",              ID:"五彩K线-锤头", Type:5},
+                    {Name:"五彩K线-吊颈",              ID:"五彩K线-吊颈星", Type:5},
+
+                    {Name:"五彩K线-穿头破脚",              ID:"五彩K线-穿头破脚", Type:5},
+                    {Name:"五彩K线-出水芙蓉",              ID:"五彩K线-出水芙蓉", Type:5},
+                    {Name:"五彩K线-乌云盖顶",              ID:"五彩K线-乌云盖顶", Type:5},
+                    {Name:"五彩K线-曙光初现",              ID:"五彩K线-曙光初现", Type:5},
+
+                    {Name:"五彩K线-十字胎",               ID:"五彩K线-十字胎", Type:5},
+                    {Name:"五彩K线-剑",                  ID:"五彩K线-剑", Type:5},
+                    {Name:"五彩K线-平顶",                ID:"五彩K线-平顶", Type:5},
+                    {Name:"五彩K线-平底",                ID:"五彩K线-平底", Type:5},
+
+                    {Name:"五彩K线-大阳烛",              ID:"五彩K线-大阳烛", Type:5},
+                    {Name:"五彩K线-大阴烛",              ID:"五彩K线-大阴烛", Type:5},
+
+                    {Name:"五彩K线-好友反攻",              ID:"五彩K线-好友反攻", Type:5},
+                    {Name:"五彩K线-跳空缺口",              ID:"五彩K线-跳空缺口", Type:5},
+
+                    {Name:"五彩K线-双飞乌鸦",              ID:"五彩K线-双飞乌鸦", Type:5},
+                    {Name:"五彩K线-上升三部曲",              ID:"五彩K线-上升三部曲", Type:5},
+                    {Name:"五彩K线-下跌三部曲",              ID:"五彩K线-下跌三部曲", Type:5},
+                    {Name:"五彩K线-长下影",                 ID:"五彩K线-长下影", Type:5},
+
+                    {Name:"五彩K线-长上影",                 ID:"五彩K线-长上影", Type:5},
+                    {Name:"五彩K线-分离",                 ID:"五彩K线-分离", Type:5},
+
+                ]
+            },
+            {
+                Group:{ ID:"交易系统", Name:"交易系统"} , 
+                AryIndex:
+                [
+                    {Name:"交易系统-BIAS",            ID:"交易系统-BIAS", Type:4},
+                    {Name:"交易系统-CCI",            ID:"交易系统-CCI", Type:4},
+                    {Name:"交易系统-DMI",            ID:"交易系统-DMI", Type:4},
+                    {Name:"交易系统-KD",            ID:"交易系统-KD", Type:4},
+
+                    {Name:"交易系统-BOLL",            ID:"交易系统-BOLL", Type:4},
+                    {Name:"交易系统-KDJ",            ID:"交易系统-KDJ", Type:4},
+                    {Name:"交易系统-MACD",            ID:"交易系统-MACD", Type:4},
+                    {Name:"交易系统-KD",            ID:"交易系统-KD", Type:4},
+
+                    {Name:"交易系统-MTM",            ID:"交易系统-MTM", Type:4},
+                    {Name:"交易系统-PSY",            ID:"交易系统-PSY", Type:4},
+                    {Name:"交易系统-ROC",            ID:"交易系统-ROC", Type:4},
+                    {Name:"交易系统-RSI",            ID:"交易系统-RSI", Type:4},
+
+                    {Name:"交易系统-VR",            ID:"交易系统-VR", Type:4},
+                    {Name:"交易系统-DPSJ",           ID:"交易系统-DPSJ", Type:4},
+
                 ]
             },
 

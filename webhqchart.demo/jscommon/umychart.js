@@ -289,6 +289,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         if (IFrameSplitOperator.IsBool(option.EnableZoomIndexWindow)) chart.EnableZoomIndexWindow=option.EnableZoomIndexWindow;
         if (IFrameSplitOperator.IsBool(option.IsDrawPictureXY)) chart.IsDrawPictureXY=option.IsDrawPictureXY;
         if (IFrameSplitOperator.IsNumber(option.CtrlMoveStep)) chart.CtrlMoveStep=option.CtrlMoveStep;
+        if (IFrameSplitOperator.IsNumber(option.ShiftMoveStep)) chart.ShiftMoveStep=option.ShiftMoveStep;
         if (IFrameSplitOperator.IsBool(option.EnableIndexChartDrag)) chart.EnableIndexChartDrag=option.EnableIndexChartDrag;
         if (IFrameSplitOperator.IsBool(option.EnableVerifyRecvData)) chart.EnableVerifyRecvData=option.EnableVerifyRecvData;
 
@@ -2499,9 +2500,6 @@ JSChart.GetfloatPrecision=function(symbol)
     return GetfloatPrecision(symbol);
 }
 
-
-
-
 var JSCHART_EVENT_ID=
 {
     //RECV_KLINE_MATCH:1, //接收到形态匹配
@@ -2900,7 +2898,9 @@ var JSCHART_MENU_ID=
 
     CMD_RBUTTON_SELECT_RECT_ID:53,          //右键区间选择
     CMD_LBUTTON_SELECT_RECT_ID:54,          //左键区间选择
-    CMD_ENABLE_XDRAG_BOTTOM_ID:55,                 //X轴拖动缩放
+    CMD_ENABLE_XDRAG_BOTTOM_ID:55,          //X轴拖动缩放
+
+    CMD_FULLSCREEN_SUMMARY_ID:56,           //当前屏区间统计
 
 
 
@@ -3055,6 +3055,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     this.ZoomStepPixel=5;               //放大缩小手势需要的最小像素
     this.TouchMoveMinAngle=70;          //左右移动最小角度
     this.EnableAnimation=false;         //是否开启动画
+    this.ShiftUpDownStepPixel=1*GetDevicePixelRatio();             //Shift+(up/down) 移动十字光标
 
     //tooltip提示信息
     this.Tooltip=document.createElement("div");
@@ -3155,7 +3156,10 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
     this.RestoreFocusTimer=null;        //恢复焦点定时器
     this.PreventRightMenu={ Timer:null, Enable:false, Delay:2000 };  //阻止右键菜单
-    
+
+                        //SecondKeyID 1=shiftKey 2=ctrlKey 3=altKey
+    this.AryHotKey=[];  //热键 { KeyID:87, SecondKeyID:1, CMD:JSCHART_MENU_ID.CMD_FULLSCREEN_SUMMARY_ID, Args:null, Description:"Alt+W	全屏区间统计" },
+
     this.RestoreFocus=function(delay)
     {
         var value=1000;
@@ -6982,6 +6986,40 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             this.UIElement.style.cursor=obj.Cursor;
     }
 
+    this.OnHotKeyDown=function(keyID, e)   //热键触发
+    {
+        var item=this.FindHotKey(keyID,e);
+        if (!item) return false;
+
+        this.ExecuteMenuCommand(item.CMD, item.Args);
+        return true;
+    }
+
+    this.FindHotKey=function(keyID, e)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.AryHotKey)) return null;
+
+        for(var i=0;i<this.AryHotKey.length;++i)
+        {
+            var item=this.AryHotKey[i];
+            if (keyID==item.KeyID)
+            {
+                //SecondKeyID 1=shiftKey 2=ctrlKey 3=altKey
+                if ((item.SecondKeyID==1 && e.shiftKey) || (item.SecondKeyID==2 && e.ctrlKey) || (item.SecondKeyID==3 && e.altKey))
+                    return item;
+            }
+        }
+
+        return null;
+    }
+
+    this.IsHotKey=function(keyID, e)
+    {
+        var item=this.FindHotKey(keyID,e);
+        if (!item) return false;
+        return true;
+    }
+
     this.OnKeyDown=function(e)
     {
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
@@ -7005,15 +7043,23 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             draw=sendData.Draw;
         }
 
+        if (this.OnHotKeyDown(keyID, e))
+        {
+            //不让滚动条滚动
+            if(e.preventDefault) e.preventDefault();
+            else e.returnValue = false;
+            return;
+        }
+
         switch(keyID)
         {
             case 37: //left
-                if (e.ctrlKey && this.OnCustomKeyDown)
+                if ((e.ctrlKey||e.shiftKey) && this.OnCustomKeyDown)
                 {
                     if (this.OnCustomKeyDown(keyID, e))
                         break;
                 }
-
+               
                 if (this.CursorIndex<=0.99999)
                 {
                     if (!this.DataMoveLeft()) 
@@ -7038,7 +7084,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 }
                 break;
             case 39: //right
-                if (e.ctrlKey && this.OnCustomKeyDown)
+                if ((e.ctrlKey|| e.shiftKey) && this.OnCustomKeyDown)
                 {
                     if (this.OnCustomKeyDown(keyID, e))
                         break;
@@ -7074,8 +7120,14 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 }
                 break;
             case 38:    //up
+                if ((e.ctrlKey||e.shiftKey) && this.OnCustomKeyDown)
+                {
+                    if (this.OnCustomKeyDown(keyID, e))
+                        break;
+                }
                 if (this.EnableZoomUpDown && this.EnableZoomUpDown.Keyboard===false) break;
                 var cursorIndex={ ZoomType:this.ZoomType, IsLockRight:this.IsZoomLockRight };
+                if (e.ctrlKey) cursorIndex.ZoomType=1;  //ctrl 十字中心缩放
                 cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
                 if (!this.Frame.ZoomUp(cursorIndex)) break;
                 this.CursorIndex=cursorIndex.Index;
@@ -7088,8 +7140,14 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 this.OnKLinePageChange("keydown");
                 break;
             case 40:    //down
+                if ((e.ctrlKey||e.shiftKey) && this.OnCustomKeyDown)
+                {
+                    if (this.OnCustomKeyDown(keyID, e))
+                        break;
+                }
                 if (this.EnableZoomUpDown && this.EnableZoomUpDown.Keyboard===false) break;
                 var cursorIndex={ ZoomType:this.ZoomType ,IsLockRight:this.IsZoomLockRight };
+                if (e.ctrlKey) cursorIndex.ZoomType=1;  //ctrl 十字中心缩放
                 cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
                 if (!this.Frame.ZoomDown(cursorIndex, { ZoomDownloadDataCallback:(requestData)=>{ this.ZoomDownloadData(requestData) } })) break;
                 
@@ -9100,6 +9158,43 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         return width;
     }
 
+    this.GetChartPaintByClassName=function(name)
+    {
+        var aryData=[];
+        for(var i=0;i<this.ChartPaint.length;++i)
+        {
+            var item=this.ChartPaint[i];
+            if (item.ClassName==name)
+            {
+                var frameID=null;
+                if (item.ChartFrame) frameID=item.ChartFrame.Identify;
+                aryData.push({ IsOverlay:false, Chart:item, FrameID:frameID });
+            }
+        }
+
+        for(var i=0;i<this.Frame.SubFrame.length;++i)
+        {
+            var subItem=this.Frame.SubFrame[i];
+            if (!subItem) continue;
+            if (!IFrameSplitOperator.IsNonEmptyArray(subItem.OverlayIndex)) continue;
+
+            for(var j=0;j<subItem.OverlayIndex.length;++j)
+            {
+                var item=subItem.OverlayIndex[j];
+                for(var k=0;k<item.ChartPaint.length;++k)
+                {
+                    var chartItem=item.ChartPaint[k];
+                    if (chartItem.ClassName==name)
+                    {
+                        aryData.push({ IsOverlay:true, Chart:chartItem, FrameID:subItem.Frame.Identify, SubFrameID:j });
+                    }
+                }
+            }
+        }
+
+        return aryData;
+    }
+
     //删除扩展画法
     this.DeleteExtendChart=function(data)
     {
@@ -10483,6 +10578,9 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             case JSCHART_MENU_ID.CMD_ENABLE_XDRAG_BOTTOM_ID:
                 if (IFrameSplitOperator.IsBool(srcParam)) this.EnableXDrag.Bottom=srcParam;
                 break;
+            case JSCHART_MENU_ID.CMD_FULLSCREEN_SUMMARY_ID:
+                this.FullScreenSummary();
+                break;
         }
     }
 
@@ -11038,6 +11136,63 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
             this.Draw();
         }
+    }
+
+    this.MoveCorssCursorUp=function(step)
+    {
+        if (!IFrameSplitOperator.IsNumber(this.LastPoint.Y)) return;
+        var border=this.Frame.ChartBorder.GetBorder();
+        var top=border.TopEx;
+        if (this.LastPoint.Y-step<=top) return;
+
+        this.LastPoint.Y-=step;
+        this.DrawDynamicInfo();
+    }
+
+    this.MoveCorssCursorDown=function(step)
+    {
+        if (!IFrameSplitOperator.IsNumber(this.LastPoint.Y)) return;
+        var border=this.Frame.ChartBorder.GetBorder();
+        var border=this.Frame.ChartBorder.GetBorder();
+        var bottom=border.BottomEx;
+        if (this.LastPoint.Y+step>=bottom) return;
+
+        this.LastPoint.Y+=step;
+        this.DrawDynamicInfo();
+    }
+
+    //整屏区间统计
+    this.FullScreenSummary=function()
+    {
+        var kData=this.GetKData();
+        if (!kData || !IFrameSplitOperator.IsNonEmptyArray(kData.Data)) return false;
+
+        var paint=this.GetRectSelectPaint();
+        if (!paint) return false;
+
+        var xPointcount=0;
+        if (this.Frame.XPointCount) xPointcount=this.Frame.XPointCount;
+        else xPointcount=this.Frame.SubFrame[0].Frame.XPointCount;
+        if (!IFrameSplitOperator.IsPlusNumber(xPointcount)) return false;
+
+        var startIndex=kData.DataOffset;
+        var endIndex=startIndex+xPointcount;
+        this.UpdateSelectRect(startIndex, endIndex);
+
+        var selectData=paint.GetSelectRectData();
+        var border=this.Frame.SubFrame[0].Frame.GetBorder();
+
+        var data=
+        {
+            X:border.ChartWidth/2, Y:border.ChartHeight/2,
+            SelectData:selectData,          //区间选择的数据
+            RectSelectPaint:paint           //区间选择背景
+        }
+
+        var e={ data:data };
+        if (this.DialogSelectRect) this.DrawSelectRectDialog(e);
+
+        return true;
     }
 }
 
@@ -42686,7 +42841,7 @@ function ChartMultiSVGIconV2()
             if (IFrameSplitOperator.IsString(item.Value)) value=this.GetKValue(kItem,item.Value);
             if (!IFrameSplitOperator.IsNumber(value)) continue;
 
-            var y=this.ChartFrame.GetYFromData(item.Value,false);
+            var y=this.ChartFrame.GetYFromData(value,false);
 
             if (item.Image)
             {
@@ -76121,7 +76276,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
     this.ChartDrawStorageCache=null;    //首次需要创建的画图工具数据
     this.RightSpaceCount=0;             //右侧空白个数
     this.SourceDataLimit=new Map();     //每个周期缓存数据最大个数 key=周期 value=最大个数 
-    this.CtrlMoveStep=5;                //Ctrl+(Left/Right) 移动数据个数  
+    this.CtrlMoveStep=5;                //Ctrl+(Left/Right) 移动数据个数 
+    this.ShiftMoveStep=1;               //Shift+(Left/Right) 移动K线
 
     this.CustomShow=null;               //首先显示的K线的起始日期 { Date:日期, Time:时间, PageSize:, Callback:, Position:0=left 1=center }
     this.ZoomType=0;                    //缩放模式 0=最右边固定缩放, 1=十字光标两边缩放
@@ -76174,6 +76330,13 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
     this.ScrollBar=null;            //横向滚动条
     this.IsAutoSyncDataOffset=true; //增量更新时,是否移动当前屏数据
+
+    //热键 
+    this.AryHotKey=
+    [ 
+        //SecondKeyID 1=shiftKey 2=ctrlKey 3=altKey 
+        { KeyID:87, SecondKeyID:3, CMD:JSCHART_MENU_ID.CMD_FULLSCREEN_SUMMARY_ID, Args:null, Description:"Alt+W	全屏区间统计" },
+    ]
 
     this.GetKLineCalulate=function()
     {
@@ -77212,7 +77375,9 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         this.PopMinuteChart.Show({ Date:date, Symbol:symbol, Data:data.Tooltip.Data, Chart:data.Tooltip.ChartPaint }, x/pixelRatio,y/pixelRatio);
     }
 
-   
+    //Alt+W	区间统计
+    //Alt+数字	切换多个窗口
+    //Ctrl+I
     this.OnCustomKeyDown=function(keyID, e) //自定义键盘事件
     {
         if (keyID==37 && e.ctrlKey) //Ctrl+Left
@@ -77225,9 +77390,86 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             this.MoveCorssCursorRight(this.CtrlMoveStep);
             return true;
         }
+        else if (keyID==37 && e.shiftKey)    //shift+Left 移动K线
+        {
+            this.MoveKLineLeft(this.ShiftMoveStep);
+            return true;
+        }
+        else if (keyID==39 && e.shiftKey)    //shift+Right 移动K线
+        {
+            this.MoveKLineRight(this.ShiftMoveStep);
+            return true;
+        }
+        else if (keyID==38 && e.shiftKey)  //shift+up   上移十字光标
+        {
+            this.MoveCorssCursorUp(this.ShiftUpDownStepPixel);
+            return true;
+        }
+        else if (keyID==40 && e.shiftKey)   //shift+down    下移十字光标
+        {
+            this.MoveCorssCursorDown(this.ShiftUpDownStepPixel);
+            return true;
+        }
         else
         {
             return false;
+        }
+    }
+
+    this.MoveKLineLeft=function(value)
+    {
+        return this.MoveKLine(-value);
+    }
+
+    this.MoveKLineRight=function(value)
+    {
+        return this.MoveKLine(value);
+    }
+
+    this.MoveKLine=function(step)
+    {
+        if (step==0) return;
+
+        var oneStepWidth=this.GetMoveOneStepWidth();
+        var moveSetp=step*oneStepWidth;
+        var bLeft=true;
+        if (step<0) 
+        {
+            moveSetp=Math.abs(step)*oneStepWidth;
+            bLeft=false;
+        }
+
+        if(!this.DataMove(moveSetp,bLeft)) return;
+        
+        this.UpdataDataoffset();
+        this.RepairCursorIndex();
+        this.UpdatePointByCursorIndex(); //推拽数据的时候不需要把鼠标位置更新到K线上
+        this.UpdateFrameMaxMin();
+        this.ResetFrameXYSplit();
+        this.Draw();
+        this.ShowTooltipByKeyDown();
+        this.OnKLinePageChange("datamove");
+    }
+
+    //修复 当前数据索引大于数据个数的请求
+    this.RepairCursorIndex=function()
+    {
+        var kData=this.GetKData();
+        if (!kData) return;
+
+        var xPointcount=0;
+        if (this.Frame.XPointCount) xPointcount=this.Frame.XPointCount;
+        else xPointcount=this.Frame.SubFrame[0].Frame.XPointCount;
+        if (!IFrameSplitOperator.IsPlusNumber(xPointcount)) return;
+
+        if (this.CursorIndex<0) this.CursorIndex=0;
+
+        var index=this.CursorIndex;
+        index=parseInt(index.toFixed(0));
+
+        if (index+kData.DataOffset>=kData.Data.length)
+        {
+            this.CursorIndex=kData.Data.length-1-kData.DataOffset;
         }
     }
 
@@ -84550,6 +84792,13 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
     this.BaselineType=0;    //基准线类型 0=最新昨收盘 1=多日前昨收盘
     this.EnableNightDayBG=false;    //是否启动夜盘背景色
 
+    //热键 
+    this.AryHotKey=
+    [ 
+        //SecondKeyID 1=shiftKey 2=ctrlKey 3=altKey 
+        { KeyID:87, SecondKeyID:3, CMD:JSCHART_MENU_ID.CMD_FULLSCREEN_SUMMARY_ID, Args:null, Description:"Alt+W	全屏区间统计" },
+    ]
+
     //集合竞价设置 obj={ Left:true/false, Right:true/false, MultiDay:{Left:, Right:} }
     this.SetCallCationDataBorder=function(obj)
     {
@@ -86054,6 +86303,14 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             draw=sendData.Draw;
         }
 
+        if (this.OnHotKeyDown(keyID, e))
+        {
+            //不让滚动条滚动
+            if(e.preventDefault) e.preventDefault();
+            else e.returnValue = false;
+            return;
+        }
+
         switch(keyID)
         {
             case 37: //left
@@ -86167,6 +86424,11 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                         this.CurrentChartDrawPicture=null;
                 }
                 break;
+            case 38:
+            case 40:
+                if ((e.ctrlKey||e.shiftKey) && this.OnCustomKeyDown)
+                    this.OnCustomKeyDown(keyID, e)
+                break;
             default:
                 return;
         }
@@ -86176,6 +86438,24 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         //不让滚动条滚动
         if(e.preventDefault) e.preventDefault();
         else e.returnValue = false;
+    }
+
+    this.OnCustomKeyDown=function(keyID, e) //自定义键盘事件
+    {
+        if (keyID==38 && e.shiftKey)  //shift+up   上移十字光标
+        {
+            this.MoveCorssCursorUp(this.ShiftUpDownStepPixel);
+            return true;
+        }
+        else if (keyID==40 && e.shiftKey)   //shift+down    下移十字光标
+        {
+            this.MoveCorssCursorDown(this.ShiftUpDownStepPixel);
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 
     /*

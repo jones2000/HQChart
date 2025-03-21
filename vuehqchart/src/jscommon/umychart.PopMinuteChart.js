@@ -100,14 +100,21 @@ function JSPopMinuteChart()
         this.Minute.Option.OnCreatedCallback=(chart)=>{ this.OnCreateHQChart(chart); }
         this.Minute.Option.NetworkFilter=(data, callback)=>{ this.NetworkFilter(data, callback); }
 
-        this.Minute.Option.EventCallback=
-        [
-            {
-                event:JSCHART_EVENT_ID.ON_KEYDOWN,  //键盘消息
-                callback:(event, data, obj)=>{ this.OnKeyDown(event, data, obj); }
-            },
-        ];
+        var keyDownEvent=
+        {
+            event:JSCHART_EVENT_ID.ON_KEYDOWN,  //键盘消息
+            callback:(event, data, obj)=>{ this.OnKeyDown(event, data, obj); }
+        };
 
+        if (Array.isArray(this.Minute.Option.EventCallback))
+        {
+            this.Minute.Option.EventCallback.push(keyDownEvent);
+        }
+        else
+        {
+            this.Minute.Option.EventCallback=[keyDownEvent];
+        }
+        
         chart.SetOption(this.Minute.Option);  //设置K线配置
 
         document.body.appendChild(divDom);
@@ -364,7 +371,7 @@ function JSPopMinuteChart()
             this.Symbol=symbol;
             this.Name=symbol;
         }
-        
+
         if (IFrameSplitOperator.IsPlusNumber(date)) this.Date=date;
 
         this.UpdateDialogTitle();
@@ -533,6 +540,11 @@ function JSTooltipMinuteChart()
         document.body.appendChild(divDom);
 
         this.UpdateStyle();
+
+        if (!this.Minute.Option.EnableResize)
+        {
+            if (this.Minute.JSChart) this.Minute.JSChart.OnSize();
+        }
     }
 
     this.UpdateStyle=function()
@@ -741,6 +753,7 @@ function MarkPopMinutePaint()
     this.LineColor=g_JSChartResource.PopMinuteChart.Mark.LineColor;
     this.SubFrame;
     this.IsDynamic=true;
+    this.IsShow=true;
 
 
     this.ReloadResource=function(resource)
@@ -770,6 +783,7 @@ function MarkPopMinutePaint()
     this.Draw=function()
     {
         this.SubFrame=null;
+        if (!this.IsShow) return;
         if (!this.HQChart) return;
         if (!this.ChartFrame || !IFrameSplitOperator.IsNonEmptyArray(this.ChartFrame.SubFrame)) return;
         if (!this.MapDate || this.MapDate.size<=0) return;
@@ -824,9 +838,10 @@ function MarkPopMinutePaint()
 
             this.Canvas.lineWidth=lineWidth;
             this.Canvas.strokeStyle=this.LineColor;
+            var x=ToFixedPoint2(lineWidth,item.XCenter);
             this.Canvas.beginPath();
-            this.Canvas.moveTo(item.XCenter,border.TopEx);
-            this.Canvas.lineTo(item.XCenter,border.BottomEx);
+            this.Canvas.moveTo(x,border.TopEx);
+            this.Canvas.lineTo(x,border.BottomEx);
             this.Canvas.stroke();
         }
     }

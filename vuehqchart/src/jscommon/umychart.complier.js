@@ -25772,6 +25772,19 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     
                     result.push(outVarItem);
                 }
+                else if (draw.DrawType=="DRAWTEXT_LINE")
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=draw.DrawData;    //{ Price:,  Text:{ Title:text, Color:textcolor }, Line:{ Type:linetype, Color:linecolor } };
+
+                    outVarItem.Draw=drawItem;
+                    if (draw.Font) outVarItem.Font=draw.Font;
+                    
+                    result.push(outVarItem);
+                }
                 else
                 {
                     var find=g_ScriptIndexChartFactory.Get(draw.DrawType);  //外部挂接

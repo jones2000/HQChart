@@ -74,6 +74,11 @@ function JSTooltipKLineChart()
         document.body.appendChild(divDom);
 
         this.UpdateStyle();
+
+        if (!this.KLine.Option.EnableResize)
+        {
+            if (this.KLine.JSChart) this.KLine.JSChart.OnSize({ Type:1 });
+        }
     }
 
     this.UpdateStyle=function()
@@ -125,11 +130,6 @@ function JSTooltipKLineChart()
                 this.KLine.Symbol=symbol;
                 this.KLine.JSChart.ChangeSymbol(symbol);
             }
-        }
-
-        if (!this.KLine.Option.EnableResize)
-        {
-            if (this.KLine.JSChart) this.KLine.JSChart.OnSize({ Type:1 });
         }
 
         if (IFrameSplitOperator.IsNumberV2(x,y))
@@ -249,17 +249,18 @@ JSTooltipKLineChart.GetKLineOption=function()
             AutoRight:{ Blank:5, MinWidth:30 },
         },
                 
-            Frame:  //子框架设置
-            [
-                {
-                    SplitCount:4,
-                    IsShowLeftText:false,
-                },
+        Frame:  //子框架设置
+        [
+            {
+                SplitCount:4,
+                IsShowLeftText:false,
+            },
 
-                { SplitCount:3,IsShowLeftText:false, },
-                { SplitCount:3, IsShowLeftText:false,}
-            ],
-        }
+            { SplitCount:3,IsShowLeftText:false, },
+            { SplitCount:3, IsShowLeftText:false,}
+        ],
+    }
+
     return option;
 }
 
