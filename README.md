@@ -321,6 +321,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 [HQChart支持的画图工具列表](https://jones2000.blog.csdn.net/article/details/133781956)  
 ## 麦语法函数帮助文档
 [HQChart麦语法内置函数帮助文档](https://jones2000.blog.csdn.net/article/details/129125330)   
+## HQChart常用快捷键
+[HQChart常用快捷键](https://blog.csdn.net/jones2000/article/details/146417859)  
 ## H5教程
 1. [HQChart使用教程1-如何快速创建一个K线图页面](https://blog.csdn.net/jones2000/article/details/90272733) <br>
 2. [HQChart使用教程2-如何把自定义指标显示在K线图页面](https://blog.csdn.net/jones2000/article/details/90273684) <br>
