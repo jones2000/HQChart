@@ -589,7 +589,17 @@ JSDialogSearchIndex.GetDefaultIndexData=function()
                     {Name:"OSC 变动速率线", ID:"OSC", Type:0},
                     {Name:"RSI 相对强弱指标", ID:"RSI", Type:0},
                     {Name:"ROC 变动率指标", ID:"ROC", Type:0},
-                    {Name:"WR 威廉指标", ID:"WR", Type:0}
+                    {Name:"WR 威廉指标", ID:"WR", Type:0},
+                    {Name:"UDL 引力线", ID:"UDL", Type:0},
+                    {Name:"LWR 威廉指标", ID:"LWR", Type:0},
+                    {Name:"MARSI 相对强弱平均线", ID:"MARSI", Type:0},
+                    {Name:"ACCER 幅度涨速", ID:"ACCER", Type:0},
+                    {Name:"CYD 承接因子", ID:"CYD", Type:0},
+                    {Name:"CYF 市场能量", ID:"CYF", Type:0},
+                    {Name:"ADTM 动态买卖气指标", ID:"ADTM", Type:0},
+                    {Name:"ATR 真实波幅", ID:"ATR", Type:0},
+                    {Name:"DKX 多空线", ID:"DKX", Type:0},
+                    {Name:"TAPI 加权指数成交值", ID:"TAPI", Type:0},
                 ]
             },
 
@@ -604,7 +614,22 @@ JSDialogSearchIndex.GetDefaultIndexData=function()
                     {Name:"MACD 平滑异同平均",    ID:"MACD", Type:0 },
                     {Name:"TRIX 三重指数平均线",  ID:"TRIX", Type:0 },
                     {Name:"UOS 终极指标",         ID:"UOS", Type:0 },
-                    {Name:"TRIX 三重指数平均线",  ID:"TRIX", Type:0 }
+                    {Name:"TRIX 三重指数平均线",  ID:"TRIX", Type:0 },
+                    {Name:"VMACD 量平滑异同平均",  ID:"VMACD", Type:0 },
+
+                    {Name:"VMACD 量平滑异同平均",  ID:"VMACD", Type:0 },
+                    {Name:"SMACD 单线平滑异同平均线",  ID:"SMACD", Type:0 },
+                    {Name:"QACD 快速异同平均",  ID:"QACD", Type:0 },
+                    {Name:"VPT 量价曲线",  ID:"VPT", Type:0 },
+                    {Name:"WVAD 威廉变异离散量",  ID:"WVAD", Type:0 },
+
+                    {Name:"DBQR 对比强弱",  ID:"DBQR", Type:0 },
+                    {Name:"WVAD 威廉变异离散量",  ID:"WVAD", Type:0 },
+                    {Name:"JS 加速线",  ID:"JS", Type:0 },
+                    {Name:"CYE 市场趋势",  ID:"CYE", Type:0 },
+                    {Name:"QR 强弱指标",  ID:"QR", Type:0 },
+                    {Name:"GDX 轨道线",  ID:"GDX", Type:0 },
+                    {Name:"JLHB 绝路航标",  ID:"JLHB", Type:0 },
                 ]
             },
 
@@ -616,7 +641,18 @@ JSDialogSearchIndex.GetDefaultIndexData=function()
                     {Name:"OBV 累积能量线",       ID:"OBV", Type:0},
                     {Name:"NVI 负成交量",         ID:"NVI", Type:0},
                     {Name:"PVI 正成交量",         ID:"PVI", Type:0},
-                    {Name:"VOL 成交量",           ID:"VOL", Type:0}
+                    {Name:"VOL 成交量",           ID:"VOL", Type:0},
+                    {Name:"VOL-TDX 成交量(虚拟)",           ID:"VOL-TDX", Type:0},
+                    {Name:"AMO 成交金额",           ID:"AMO", Type:0},
+                    {Name:"AMO-TDX 成交金额(虚拟)",           ID:"AMO-TDX", Type:0},
+                    {Name:"VRSI 相对强弱量",           ID:"VRSI", Type:0},
+                    {Name:"HSCOL 换手柱",           ID:"HSCOL", Type:0},
+                    {Name:"DBQRV 对比强弱量",           ID:"DBQRV", Type:0},
+                    {Name:"DBLB 对比量比",           ID:"DBLB", Type:0},
+                    {Name:"WSBVOL 维斯波成交量",           ID:"WSBVOL", Type:0},
+
+                    {Name:"CCYD 持仓异动(适用于期货)",           ID:"CCYD", Type:0},
+                    {Name:"CCL 持仓量(适用于期货)",           ID:"CCL", Type:0},
                 ]
             },
             {
@@ -624,7 +660,22 @@ JSDialogSearchIndex.GetDefaultIndexData=function()
                 AryIndex:
                 [
                     {Name:"MA 均线", ID:"MA", Type:0},
-                    {Name:"BBI 多空线", ID:"BBI", Type:0}
+                    {Name:"MA4 4根均线", ID:"MA4", Type:0},
+                    {Name:"MA5 5根均线", ID:"MA5", Type:0},
+                    {Name:"MA7 6根均线", ID:"MA6", Type:0},
+                    {Name:"MA7 7根均线", ID:"MA7", Type:0},
+                    {Name:"MA8 8根均线", ID:"MA8", Type:0},
+                    {Name:"BBI 多空线", ID:"BBI", Type:0},
+                    {Name:"ACD 升降线", ID:"ACD", Type:0},
+                    {Name:"EXPMA 指数平均线", ID:"EXPMA", Type:0},
+                    {Name:"EXPMA_S 指数平均线-副图", ID:"EXPMA_S", Type:0},
+                    {Name:"HMA 高价平均线", ID:"HMA", Type:0},
+                    {Name:"LMA 低价平均线", ID:"LMA", Type:0},
+                    {Name:"VMA 变异平均线", ID:"VMA", Type:0},
+                    {Name:"AMV 成本价均线", ID:"AMV", Type:0},
+                    {Name:"BBIBOLL 多空布林线", ID:"BBIBOLL", Type:0},
+                    {Name:"ALLIGAT 鳄鱼线", ID:"ALLIGAT", Type:0},
+                    {Name:"GMMA 顾比均线", ID:"GMMA", Type:0},
                 ]
             },
             {
@@ -632,9 +683,13 @@ JSDialogSearchIndex.GetDefaultIndexData=function()
                 AryIndex:
                 [
                     {Name:"BOLL 布林线",          ID:"BOLL", Type:0},
-                    {Name:"BOLL副图 布林线",      ID:"BOLL副图", Type:0},
+                    {Name:"BOLL 布林线-副图",      ID:"BOLL副图", Type:0},
                     {Name:"MIKE 麦克支撑压力",    ID:"MIKE", Type:0},
-                    {Name:"ENE 轨道线",           ID:"ENE", Type:0}
+                    {Name:"ENE 轨道线",           ID:"ENE", Type:0},
+                    {Name:"PBX 瀑布线",           ID:"PBX", Type:0},
+                    {Name:"XS 薛斯通道",           ID:"XS", Type:0},
+                    {Name:"XS2 薛斯通道II",           ID:"XS2", Type:0},
+                    {Name:"DC 唐奇安通道",           ID:"DC", Type:0}
                 ]
             },
             {
@@ -647,9 +702,19 @@ JSDialogSearchIndex.GetDefaultIndexData=function()
                     {Name:"PSY 心理线",               ID:"PSY", Type:0},
                     {Name:"CR 带状能量线",            ID:"CR", Type:0},
                     {Name:"VR 成交量变异率",          ID:"VR", Type:0},
-                    {Name:"WAD 威廉多空力度线",        ID:"WAD", Type:0}
+                    {Name:"WAD 威廉多空力度线",        ID:"WAD", Type:0},
+                    {Name:"PCNT 幅度比",        ID:"PCNT", Type:0}
                 ]
             },
+            {
+                Group:{ ID:"大势型", Name:"大势型"}, 
+                AryIndex:
+                [
+                    {Name:"ABI 绝对广量指标",         ID:"ABI", Type:0 },
+                    {Name:"ADL 腾落指标",             ID:"ADL", Type:0 },
+                ]
+            },
+
             {
                 Group:{ ID:"五彩K线", Name:"五彩K线"} , 
                 AryIndex:

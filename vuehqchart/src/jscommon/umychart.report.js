@@ -284,6 +284,16 @@ function JSReportChart(divElement)
         if (this.JSChartContainer) this.JSChartContainer.SetSelectedRow(option);
     }
 
+    this.DeleteSymbol=function(arySymbol, option)
+    {
+        if (this.JSChartContainer) this.JSChartContainer.DeleteSymbol(arySymbol, option);
+    }
+
+    this.AddSymbol=function(arySymbol, option)
+    {
+        if (this.JSChartContainer) this.JSChartContainer.AddSymbol(arySymbol, option);
+    }
+
     this.EnableFilter=function(bEnable, option) //启动|关闭筛选
     {
         if (this.JSChartContainer) this.JSChartContainer.EnableFilter(bEnable, option);
@@ -1188,22 +1198,108 @@ function JSReportChartContainer(uielement)
         this.UpdateStockData();
     }
 
-    this.AutoUpdateEvent=function(bStart, explain)          //自定更新事件, 是给websocket使用
+    //删除股票
+    this.DeleteSymbol=function(arySymbol, option)
     {
-        var eventID=bStart ? JSCHART_EVENT_ID.RECV_START_AUTOUPDATE:JSCHART_EVENT_ID.RECV_STOP_AUTOUPDATE;
-        if (!this.mapEvent.has(eventID)) return;
+        if (!IFrameSplitOperator.IsNonEmptyArray(arySymbol)) return false;
 
-        var self=this;
-        var event=this.mapEvent.get(eventID);
-        var data={ Stock:{ Symbol:this.Symbol, Name:this.Name, DayCount:this.DayCount }, Explain: explain };
-        if (bStart) 
+        var setSymbol=new Set(arySymbol);
+        var bFinder=false;
+        if (IFrameSplitOperator.IsNonEmptyArray(this.SourceData.Data))
         {
-            data.Callback=function(data) //数据到达更新回调
-            { 
-                self.RecvDealUpdateData(data); 
+            var aryData=[];
+            for(var i=0;i<this.SourceData.Data.length;++i)
+            {
+                var item=this.SourceData.Data[i];
+                if (setSymbol.has(item)) 
+                {
+                    bFinder=true;
+                    continue;
+                }
+                aryData.push(item);
+            }
+
+            if (bFinder) this.SourceData.Data=aryData;
+        }
+
+        if (IFrameSplitOperator.IsNonEmptyArray(this.Data.Data))
+        {
+            var aryData=[];
+            for(var i=0;i<this.Data.Data.length;++i)
+            {
+                var item=this.Data.Data[i];
+                if (setSymbol.has(item)) 
+                {
+                    bFinder=true;
+                    continue;
+                }
+                aryData.push(item);
+            }
+
+            if (bFinder) this.Data.Data=aryData;
+        }
+
+        if (!bFinder) return false;
+        
+        this.Draw();
+        this.UpdateStockData();
+
+        return true;
+    }
+
+    //添加股票
+    this.AddSymbol=function(arySymbol, option)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(arySymbol)) return false;
+
+        var bDuplicate=true;
+        if (option && IFrameSplitOperator.IsBool(option.Duplicate)) bDuplicate=option.Duplicate; //是否去重
+
+        var mapSymbol=new Map();
+        for(var i=0;i<arySymbol.length;++i)
+        {
+            var item={ Symbol:arySymbol[i], IsExist:false, IsExist2:false };
+            mapSymbol.set(item.Symbol, item);
+        }
+
+        if (bDuplicate)
+        {
+            if (IFrameSplitOperator.IsNonEmptyArray(this.SourceData.Data))
+            {
+                for(var i=0;i<this.SourceData.Data.length;++i)
+                {
+                    var item=this.Data.Data[i];
+                    if (mapSymbol.has(item))
+                    {
+                        mapSymbol.get(item).IsExist=true;
+                    }
+                }
+            }
+
+            if (IFrameSplitOperator.IsNonEmptyArray(this.Data.Data))
+            {
+                for(var i=0;i<this.Data.Data.length;++i)
+                {
+                    var item=this.Data.Data[i];
+                    if (mapSymbol.has(item))
+                    {
+                        mapSymbol.get(item).IsExist2=true;
+                    }
+                }
             }
         }
-        event.Callback(event,data,this);
+
+        for(var mapItem of mapSymbol)
+        {
+            var item=mapItem[1];
+            if (!item.IsExist) this.SourceData.Data.push(item.Symbol);
+            if (!item.IsExist2) this.Data.Data.push(item.Symbol);
+        }
+
+        this.Draw();
+        this.UpdateStockData();
+
+        return true;
     }
 
     //下载码表
@@ -1738,7 +1834,6 @@ function JSReportChartContainer(uielement)
     this.StopAutoUpdate=function()
     {
         this.CancelAutoUpdate();
-        this.AutoUpdateEvent(false,'JSDealChartContainer::StopAutoUpdate');
         if (!this.IsAutoUpdate) return;
         this.IsAutoUpdate=false;
     }

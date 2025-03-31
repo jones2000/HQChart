@@ -421,6 +421,14 @@ HQData.RequestHistoryData=function(data,callback)
         var start=dataCount-count;
         if (start<0) start=0;
         aryData=fullData.slice(start);
+
+        /*
+        for(var i=aryData.length-5;i<aryData.length;++i)
+        {
+            var item=aryData[i];
+            item[13]=true;
+        }
+        */
     }
     
     var hqchartData={ name:symbol, symbol:symbol, data:aryData, ver:2.0 };
@@ -446,6 +454,17 @@ HQData.RequestRealtimeData=function(data, callback)
     var end=data.Request.Data.dateRange.End;
     var endDate=end.Date;
     var aryStock=[];
+    var hqchart=data.Self;
+    var kData=hqchart.GetKData();
+    for(var i=kData.Data.length-1;i>=0;--i)
+    {
+        var item=kData.Data[i];
+        if (!item.IsVirtual) 
+        {
+            endDate=item.Date;
+            break;
+        }
+    }
 
     for(var i=0;i<data.Request.Data.symbol.length;++i)
     {
@@ -622,6 +641,19 @@ HQData.RequestIndexVariantData=function(data,callback)
             var kItem=kData.Data[i];
             hqchartData.Data.push({ Date:kItem.Date, Time:kItem.Time, Value:kItem.Vol*0.17 });
         }
+        callback(hqchartData);
+    }
+    else if (varName=="EXCHANGE" || varName=="HSL")
+    {
+        var kData=data.Self.Data;
+        var hqchartData={ DataType:0, Data:[], Ver:2.0 };
+        for(var i=0;i<kData.Data.length;++i)
+        {
+            var kItem=kData.Data[i];
+            var value=HQData.GetRandomTestData(1,10);
+            hqchartData.Data.push({ Date:kItem.Date, Time:kItem.Time, Value:value });
+        }
+
         callback(hqchartData);
     }
     else
@@ -1772,6 +1804,55 @@ HQData.GetKLineDataByDate=function(fullData, startDate, endDate)
     return aryData;
 }
 
+//日线随机K线
+HQData.GetKLineRandomDayData=function(fullData, startDate, dayCount)
+{
+    var startIndex=-1;
+    var startItem=null;
+    for(var i=0;i<fullData.length;++i)
+    {
+        var kItem=fullData[i];
+        if (kItem[0]==startDate)
+        {
+            startIndex=i;
+            startItem=kItem;
+            break;
+        }
+    }
+
+    if (!startItem) return null;
+
+    var date=startItem[0];
+    var year=parseInt(date/10000);
+    var month=parseInt(date/100)%100;
+    var day=date%100;
+    var newDate=new Date(year,month-1, day);
+
+    var yClose=startItem[1];
+    var aryData=[];
+    for(var i=0; i<dayCount; ++i)
+    {
+        newDate.setDate(newDate.getDate()+1);
+        var week=newDate.getDay();
+        if (week==0 || week==6) continue;
+
+        var date=newDate.getFullYear()*10000+(newDate.getMonth()+1)*100+newDate.getDate();
+
+        var index=startIndex-i-1;
+        var kItem=fullData[index];
+
+        var newItem=[date, yClose, kItem[2], kItem[3], kItem[4],kItem[5]];
+        newItem[13]=true;
+
+        aryData.push(newItem);
+
+        yClose=newItem[5];
+    }
+
+    return aryData;
+}
+
+
 HQData.GetDayMinuteDataBySymbol=function(symbol)
 {
     var data=null;
@@ -2369,7 +2450,7 @@ HQData.APIIndex_DRAWTEXT_LINE=function(data, callback)
     var kData=hqchart.GetKData();
 
     var lastItem=kData.Data[kData.Data.length-1];
-    var price=(lastItem.High+lastItem.Low)/2;
+    var price=(lastItem.High+lastItem.Low)/2+0.3;
 
     var lineData= 
     { 

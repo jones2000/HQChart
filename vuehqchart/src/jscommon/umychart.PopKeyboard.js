@@ -58,6 +58,15 @@ function JSPopKeyboard()
         }
     }
 
+    this.Destroy=function()
+    {
+        if (this.DivDialog) document.body.removeChild(this.DivDialog);
+        this.DivDialog=null;
+        this.TitleBox=null;
+        if (!this.Keyboard.JSChart) this.Keyboard.JSChart.ChartDestory();
+        this.Keyboard.JSChart=null;
+    }
+
     this.Create=function()
     {
         var divDom=document.createElement('div');

@@ -795,7 +795,7 @@ function GetBlackStyle()
                 Color:"rgba(255,250, 250,0.8)",
                 TextColor:'rgba(0,0, 0, 0.8)',
 
-                MoveRowColor:'rgb(135,206,250)',
+                MoveRowColor:'rgb(37,47,69)',
                 SrcRowColor:'rgb(49,48,56)',
             },
 

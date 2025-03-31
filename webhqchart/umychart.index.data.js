@@ -99,7 +99,7 @@ function JSIndexScript()
             ['VRSI',this.VRSI],['HSCOL',this.HSCOL],['DBQRV',this.DBQRV],['DBLB',this.DBLB],
             ['ACD',this.ACD],['EXPMA',this.EXPMA],['EXPMA_S',this.EXPMA_S],['HMA',this.HMA],
             ['LMA',this.LMA],['VMA',this.VMA],['AMV',this.AMV],['BBIBOLL',this.BBIBOLL],
-            ['ALLIGAT',this.ALLIGAT],['ZX',this.ZX],['XS',this.XS],['XS2',this.XS2],
+            ['ALLIGAT',this.ALLIGAT],["GMMA",this.GMMA],['ZX',this.ZX],['XS',this.XS],['XS2',this.XS2],
             ['SG-XDT',this.SG_XDT],['SG-SMX',this.SG_SMX],['SG-LB',this.SG_LB],['SG-PF',this.SG_PF],
             ['RAD',this.RAD],['SHT',this.SHT],['ZLJC',this.ZLJC],['ZLMM',this.ZLMM],['SLZT',this.SLZT],
             ['ADVOL',this.ADVOL],['CYC',this.CYC],['CYS',this.CYS],['CYQKL',this.CYQKL],
@@ -111,7 +111,8 @@ function JSIndexScript()
             ['神奇九转', this.NineTurns],
             ['EMA', this.EMA3], ['EMA4', this.EMA4], ['EMA5', this.EMA5],['EMA6', this.EMA6],
             ["ICHIMOKU",this.ICHIMOKU],["CDP-STD", this.CDP_STD],["TBP-STD",this.TBP_STD],
-            ["ADX", this.ADX],
+            ["ADX", this.ADX],["SMACD", this.SMACD],["ACCER",this.ACCER],["AMO-TDX", this.AMO_TDX],
+            ["WSBVOL",this.WSBVOL], ["CCYD",this.CCYD], ["CCL",this.CCL],["ABI", this.ABI],
 
             ["持仓量", this.VOL_POSITION],  //成交量+持仓量
 
@@ -131,11 +132,11 @@ function JSIndexScript()
 
             ["两融余额", this.Margin2],["两融余额2", this.Margin3],
   
-            //外包指标
-            ['放心股-操盘BS点',this.FXG_BSPoint],
-            ['放心股-涨停多空线',this.FXG_INDEX],
-            ['放心股-涨停吸筹区',this.FXG_INDEX2],
-            ['放心股-量能黄金点',this.FXG_INDEX3],
+            //特色指标
+            ['特色指标-操盘BS点',this.FXG_BSPoint],
+            ['特色指标-涨停多空线',this.FXG_INDEX],
+            ['特色指标-涨停吸筹区',this.FXG_INDEX2],
+            ['特色指标-量能黄金点',this.FXG_INDEX3],
 
             //五彩K线(函数COLOR_开头)
             ['五彩K线-十字星',this.COLOR_KSTAR1],['五彩K线-早晨之星',this.COLOR_KSTAR2],['五彩K线-黄昏之星',this.COLOR_KSTAR3],['五彩K线-长十字',this.COLOR_SHI1],
@@ -690,6 +691,28 @@ STICKLINE((CURRBARSCOUNT=1 AND DYNAINFO(8)>1),VVOL,0,-1,-1),COLORYELLOW;\n\
 VOLUME:VOL,VOLSTICK;\n\
 MAVOL1:MA(VOLUME,M1);\n\
 MAVOL2:MA(VOLUME,M2);'
+
+    };
+
+    return data;
+}
+
+
+JSIndexScript.prototype.AMO_TDX=function()
+{
+    let data=
+    {
+        Name:'AMO-TDX', Description:'成交金额(虚拟)', IsMainIndex:false,FloatPrecision:0,
+        Args:[ { Name:'M1', Value:5}, { Name:'M2', Value:10} ],
+        Script: //脚本
+'TOTAL:=IF(PERIOD=1,5,IF(PERIOD=2,15,IF(PERIOD=3,30,IF(PERIOD=4,60,IF(PERIOD=5,TOTALFZNUM,1)))));\n\
+MTIME:=MOD(FROMOPEN,TOTAL);\n\
+CTIME:=IF(MTIME<0.5,TOTAL,MTIME);\n\
+VAMO:=IF((CURRBARSCOUNT=1 AND DYNAINFO(8)>1),AMOUNT/10000.0*TOTAL/CTIME,DRAWNULL);\n\
+STICKLINE((CURRBARSCOUNT=1 AND DYNAINFO(8)>1),VAMO,0,-1,-1),COLOR00C0C0;\n\
+AMOW:AMOUNT/10000.0,VOLSTICK;\n\
+AMO1:MA(AMOW,M1);\n\
+AMO2:MA(AMOW,M2);'
 
     };
 
@@ -1433,6 +1456,40 @@ MACD:DIF-DEA,COLORSTICK;'
     return data;
 }
 
+JSIndexScript.prototype.SMACD = function () 
+{
+    let data =
+    {
+        Name: 'SMACD', Description: '单线平滑异同平均线', IsMainIndex: false,
+        Args: [{ Name: 'SHORT', Value: 12 },{ Name: 'LONG', Value: 26 },{ Name: 'MID', Value: 9 }],
+        Script: //脚本
+'DIF:=EMA(CLOSE,SHORT)-EMA(CLOSE,LONG);\n\
+DEA:EMA(DIF,MID);\n\
+MACD:DIF,COLORSTICK;'
+
+    };
+
+    return data;
+}
+
+
+JSIndexScript.prototype.ACCER = function () 
+{
+    let data =
+    {
+        Name: 'ACCER', Description: '幅度涨速', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 8 }],
+        Script: //脚本
+'ACCER:SLOPE(CLOSE,N)/CLOSE;'
+
+    };
+
+    return data;
+}
+
+
+
+
 JSIndexScript.prototype.QACD = function () 
 {
     let data =
@@ -1851,6 +1908,32 @@ JSIndexScript.prototype.ALLIGAT = function ()
 上唇:REF(MA(NN,5),3),COLOR40FF40;\n\
 牙齿:REF(MA(NN,8),5),COLOR0000C0;\n\
 下颚:REF(MA(NN,13),8),COLORFF4040;'
+
+    };
+
+    return data;
+}
+
+
+JSIndexScript.prototype.GMMA = function () 
+{
+    let data =
+    {
+        Name: 'GMMA', Description: '顾比均线', IsMainIndex: true,
+        Args: [],
+        Script: //脚本
+'MA3:EMA(CLOSE,3),COLORC08080;\n\
+MA5:EMA(CLOSE,5),COLORC08080;\n\
+MA8:EMA(CLOSE,8),COLORC08080;\n\
+MA10:EMA(CLOSE,10),COLORC08080;\n\
+MA12:EMA(CLOSE,12),COLORC08080;\n\
+MA15:EMA(CLOSE,15),COLORC08080;\n\
+MA30:EMA(CLOSE,30),COLOR0080FF;\n\
+MA35:EMA(CLOSE,35),COLOR0080FF;\n\
+MA40:EMA(CLOSE,40),COLOR0080FF;\n\
+MA45:EMA(CLOSE,45),COLOR0080FF;\n\
+MA50:EMA(CLOSE,50),COLOR0080FF;\n\
+MA60:EMA(CLOSE,60),COLOR0080FF;'
 
     };
 
@@ -3892,6 +3975,94 @@ B:=REF(LLV(CLOSE,N),1);
     return data;
 }
 
+
+JSIndexScript.prototype.WSBVOL = function() 
+{
+    let data =
+    {
+        Name: 'WSBVOL', Description: '维斯波成交量', IsMainIndex: false,
+        Script: //脚本
+`UPTJ1:=CLOSE>REF(CLOSE,1);
+UPTJ2:=(CLOSE==REF(CLOSE,1) && REF(CLOSE,1)>REF(CLOSE,2));
+UPTJ3:=MAX(OPEN,CLOSE)<REF(C,BARSLAST(CLOSE>REF(CLOSE,1))) AND MIN(OPEN,CLOSE)>REF(O,BARSLAST(CLOSE>REF(CLOSE,1)));
+UPTJ4:=NOT (H<REF(H,1) AND L<REF(L,1));
+UP:=(UPTJ1 || UPTJ2 || UPTJ3) AND UPTJ4;
+DOWN:=NOT(UP);
+M1:=BARSLASTCOUNT(UP);
+N1:=BARSLASTCOUNT(DOWN);
+CZB:=IF(M1=1 OR N1=1,2*INTPART(VOL*100/10000),INTPART(VOL*100/10000));
+SZ:=IF(M1>0,SUM(CZB,M1),-1*SUM(CZB,N1));
+GY:=IF(N1>0,SUM(CZB,N1),0);
+XQ:=IF(M1>0,SUM(CZB,M1),0);
+NOTEXT1:STICKLINE(M1>0,0,XQ,1,0),COLORRED;
+NOTEXT2:STICKLINE(N1>0,0,GY,1,0),COLORGREEN;
+WSB:SZ,NODRAW;`
+    };
+
+    return data;
+}
+
+
+JSIndexScript.prototype.CCL = function() 
+{
+    let data =
+    {
+        Name: 'CCL', Description: '持仓量(适用于期货)', IsMainIndex: false,
+        Script: //脚本
+`持仓量:VOLINSTK;
+成交:VOL,COLORLIRED;
+仓差:VOLINSTK-REF(VOLINSTK,1),NODRAW;
+STICKLINE(仓差>0 AND C>REF(C,1),0,仓差,2,3),COLORRED;
+STICKLINE(仓差>0 AND C<REF(C,1),0,仓差,2,3),COLORCYAN;
+STICKLINE(仓差>0 AND C=REF(C,1),0,仓差,2,3),COLORGRAY;
+STICKLINE(仓差<0 AND C>REF(C,1),0,仓差,2,3),COLORRED;
+STICKLINE(仓差<0 AND C<REF(C,1),0,仓差,2,3),COLORCYAN;
+STICKLINE(仓差<0 AND C=REF(C,1),0,仓差,2,3),COLORGRAY;`
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.CCYD = function() 
+{
+    let data =
+    {
+        Name: 'CCYD', Description: '持仓异动(适用于期货)', IsMainIndex: false,
+        Script: //脚本
+`CCYD:=VOLINSTK-REF(VOLINSTK,1);
+SPYD:=C-REF(C,1);
+多头增仓:IF(SPYD>=0 AND CCYD>=0,ABS(CCYD),DRAWNULL),COLOR3232FF,NODRAW;
+空头减仓:IF(SPYD>0 AND CCYD<0,ABS(CCYD),DRAWNULL),COLOR3232FF,NODRAW;
+空头增仓:IF(SPYD<0 AND CCYD>=0,ABS(CCYD),DRAWNULL),COLORFFFF54,NODRAW;
+多头减仓:IF(SPYD<0 AND CCYD<0,ABS(CCYD),DRAWNULL),COLORFFFF54,NODRAW;
+STICKLINE(SPYD>=0 AND CCYD>=0,0,CCYD,3,1),COLOR3232FF;
+STICKLINE(SPYD>0 AND CCYD<0,CCYD,0,3,1),COLOR3232FF;
+STICKLINE(SPYD<0 AND CCYD>=0,CCYD,0,3,0),COLORFFFF54;
+STICKLINE(SPYD<0 AND CCYD<0,CCYD,0,3,0),COLORFFFF54;`
+    };
+
+    return data;
+}
+
+JSIndexScript.prototype.ABI = function() 
+{
+    let data =
+    {
+        Name: 'ABI', Description: '绝对广量指标', IsMainIndex: false,
+        Args: [{ Name: 'N', Value: 10 }],
+        Condition: 
+        { 
+            Period:[CONDITION_PERIOD.KLINE_DAY_ID, CONDITION_PERIOD.KLINE_WEEK_ID, CONDITION_PERIOD.KLINE_TWOWEEK_ID,
+                CONDITION_PERIOD.KLINE_MONTH_ID, CONDITION_PERIOD.KLINE_QUARTER_ID ,CONDITION_PERIOD.KLINE_YEAR_ID ],
+            Include:["000001.SH", "000003.SH", "000016.SH", "000300.SH", "000905.SH", "399001.SZ", " 399005.SZ", "399006.SZ"] 
+        },
+        Script: //脚本
+`ABI:100*ABS(ADVANCE-DECLINE)/(ADVANCE+DECLINE);
+MAABI:EMA(ABI,M);`
+    };
+
+    return data;
+}
 
 
 

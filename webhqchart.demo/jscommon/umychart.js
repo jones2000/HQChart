@@ -317,6 +317,8 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         {
             var item=option.EnableXDrag;
             if (IFrameSplitOperator.IsBool(item.Bottom)) chart.EnableXDrag.Bottom=item.Bottom;
+            if (item.LButton && IFrameSplitOperator.IsNumber(item.LButton.Type)) chart.EnableXDrag.LButton.Type=item.LButton.Type;
+            if (item.RButton && IFrameSplitOperator.IsNumber(item.RButton.Type)) chart.EnableXDrag.RButton.Type=item.RButton.Type;
         }
 
         if (option.KLineTooltip)
@@ -441,6 +443,12 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
                 if (IFrameSplitOperator.IsNumber(item.ZIndex)) zindex=item.ZIndex;
                 if (item.Enable) this.CreateExtraCanvasElement(JSChart.RectDragCanvasKey, { ZIndex:zindex });   //创建独立的区间选择画布
             }
+
+            if (option.DragKLine)
+            {
+                var item=option.DragKLine;
+                if (IFrameSplitOperator.IsBool(item.EnableShfit)) chart.KLineDragConfig.EnableShfit=item.EnableShfit;
+            }
         }
 
         //创建子窗口
@@ -492,6 +500,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (IFrameSplitOperator.IsNumber(item.PriceFormatType)) chart.ChartCorssCursor.StringFormatY.PriceFormatType=item.PriceFormatType;
             if (IFrameSplitOperator.IsNumber(item.DataFormatType)) chart.ChartCorssCursor.StringFormatY.DataFormatType=item.DataFormatType;
             if (IFrameSplitOperator.IsBool(item.EnableKeyboard)) chart.ChartCorssCursor.EnableKeyboard=item.EnableKeyboard;
+            if (IFrameSplitOperator.IsBool(item.EnableDBClick)) chart.ChartCorssCursor.EnableDBClick=item.EnableDBClick;
 
             if (IFrameSplitOperator.IsBool(item.IsShowCorssPoint)) chart.ChartCorssCursor.CorssPointConfig.Enable=item.IsShowCorssPoint;
            
@@ -868,6 +877,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         if (IFrameSplitOperator.IsBool(option.EnableIndexChartDrag)) chart.EnableIndexChartDrag=option.EnableIndexChartDrag;
         if (IFrameSplitOperator.IsBool(option.EnableVerifyRecvData)) chart.EnableVerifyRecvData=option.EnableVerifyRecvData;
         if (IFrameSplitOperator.IsBool(option.EnableNightDayBG)) chart.EnableNightDayBG=option.EnableNightDayBG;
+        if (IFrameSplitOperator.IsNumber(option.MaxDayCount)) chart.MaxDayCount=option.MaxDayCount;
 
         //老版本开启左键区间选择
         if (IFrameSplitOperator.IsBool(option.EnableSelectRect))
@@ -997,6 +1007,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (IFrameSplitOperator.IsNumber(item.HPenType)) chart.ChartCorssCursor.HPenType=item.HPenType;
             if (IFrameSplitOperator.IsNumber(item.VPenType)) chart.ChartCorssCursor.VPenType=item.VPenType;
             if (IFrameSplitOperator.IsBool(item.EnableKeyboard)) chart.ChartCorssCursor.EnableKeyboard=item.EnableKeyboard;
+            if (IFrameSplitOperator.IsBool(item.EnableDBClick)) chart.ChartCorssCursor.EnableDBClick=item.EnableDBClick;
             if (IFrameSplitOperator.IsBool(item.IsShowCorssPoint)) chart.ChartCorssCursor.CorssPointConfig.Enable=item.IsShowCorssPoint;
             if (IFrameSplitOperator.IsNumber(item.VLineType)) chart.ChartCorssCursor.VLineType=item.VLineType;
         }
@@ -2500,6 +2511,17 @@ JSChart.GetfloatPrecision=function(symbol)
     return GetfloatPrecision(symbol);
 }
 
+//获取不带后缀的代码
+JSChart.GetShortSymbol=function(symbol)
+{
+    if (IFrameSplitOperator.IsString(symbol)) return null;
+    var pos=symbol.lastIndexOf(".");
+    if (pos<=0) return symbol;
+
+    return symbol.slice(0,pos);
+}
+
+
 var JSCHART_EVENT_ID=
 {
     //RECV_KLINE_MATCH:1, //接收到形态匹配
@@ -2895,12 +2917,14 @@ var JSCHART_MENU_ID=
     CMD_CORSS_ON_VAILD_TIME_ID:50,          //超出当前时间的,X轴调整到当前最后的时间(分时图)
     CMD_CORSS_ON_KLINE_ID:51,               //十字光标只能画在K线上   
     CMD_CORSS_POINT_ID:52,                  //十字光标圆点
+    
 
     CMD_RBUTTON_SELECT_RECT_ID:53,          //右键区间选择
     CMD_LBUTTON_SELECT_RECT_ID:54,          //左键区间选择
     CMD_ENABLE_XDRAG_BOTTOM_ID:55,          //X轴拖动缩放
 
     CMD_FULLSCREEN_SUMMARY_ID:56,           //当前屏区间统计
+    CMD_CORSS_DBCLICK_ID:57,                //双击显示隐藏十字光标
 
 
 
@@ -3096,7 +3120,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         Wheel:false, WheelYMove:5  //是否可以滚轴缩放Y轴最大最小值
     }; 
     
-    this.EnableXDrag={ Bottom:true };   //X轴拖动缩放
+    this.EnableXDrag={ Bottom:true, LButton:{ Type:1 }, RButton:{ Type:2 } };   //X轴拖动缩放 Type: 1=拖动K线 2=缩放K线
 
     this.EnableZoomIndexWindow=false;               //是否支持双击缩放附图窗口
     this.EnableVerifyRecvData=false;                //是否检测接收到的数据
@@ -3663,7 +3687,11 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
       
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
         if (!this.IsShowRightMenu) return;
-        if (this.PreventRightMenu.Enable) return;
+        if (this.PreventRightMenu.Enable) 
+        {
+            this.PreventRightMenu.Enable=false; //生效一次就可以
+            return;
+        }
 
         var x = e.clientX-this.UIElement.getBoundingClientRect().left;
         var y = e.clientY-this.UIElement.getBoundingClientRect().top;
@@ -4194,6 +4222,17 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         document.oncontextmenu=(e)=> { this.DocContextMenu(e); }
     }
 
+
+    this.IsShfitDragKLine=function(e)
+    {
+        if (this.DragMode!=1) return false;
+        if (!this.KLineDragConfig) return false;
+        if (!this.KLineDragConfig.EnableShfit) return false;
+        if (!e.shiftKey) return false;
+
+        return true;
+    }
+
     this.DocOnMouseMove=function(e)
     {
         //加载数据中,禁用鼠标事件
@@ -4209,6 +4248,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         var moveSetpY=Math.abs(drag.LastMove.Y-e.clientY);
         var isDragSelectRect=(this.RectSelectDrag && this.RectSelectDrag.Index>=0);
         var isDragSubSelectRect=(this.RectSelectDrag && this.RectSelectDrag.Type==4);
+        var bShfitDragKLine=this.IsShfitDragKLine(e);   //shift+鼠标移动K线
         if (drag.CurrentMove) 
         {
             drag.CurrentMove.X=e.clientX;
@@ -4314,9 +4354,14 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         }
         else if (drag.Click && drag.Click.IsInFrameBottom)
         {
-            this.OnDragXCoordinateZoom(drag, {X:moveSetp, Y:moveSetpY}, e);
+            var dragType=this.GetDragXCoordinateType(e,"DocOnMouseMove");
+           
+            if (dragType==2)
+                this.OnDragXCoordinateZoom(drag, {X:moveSetp, Y:moveSetpY}, e);
+            else if (dragType==1)
+                this.OnDragXCoordinateKLine(drag, {X:moveSetp, Y:moveSetpY}, e);
         }
-        else if ((bLButtonSelectRect || bRButtonSelectRect) && !isDragSelectRect && !isDragSubSelectRect)  //左右键区间选择
+        else if ((bLButtonSelectRect || bRButtonSelectRect) && !isDragSelectRect && !isDragSubSelectRect && !bShfitDragKLine)  //左右键区间选择
         {
             var yMoveSetp=Math.abs(drag.LastMove.Y-e.clientY);
 
@@ -4337,6 +4382,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         }
     }
 
+    //X轴坐标拖动 缩放K线
     this.OnDragXCoordinateZoom=function(drag, moveData, e)
     {
         var moveSetp=moveData.X;
@@ -4368,6 +4414,56 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         drag.LastMove.X=e.clientX;
         this.SetCursor({Cursor:cursorStatus});
     }
+
+    //X轴坐标拖动 拖动K线
+    this.OnDragXCoordinateKLine=function(drag, moveData, e)
+    {
+        var moveSetpX=moveData.X;
+        var moveSetpY=moveData.Y;
+
+        if (moveSetpX<5) return false;
+
+        var isLeft=true;
+        if (drag.LastMove.X<e.clientX) isLeft=false;    //右移数据
+
+        var cursorStatus="pointer";
+        var oneStepWidth=this.GetMoveOneStepWidth();
+        if (moveSetpX<oneStepWidth)
+        {
+            this.SetCursor({Cursor:cursorStatus});
+            return false;
+        }
+
+        var bNeedDraw=false;
+        if(this.DataMove(moveSetpX,isLeft))
+        {
+            this.UpdataDataoffset();
+            //this.UpdatePointByCursorIndex(); //推拽数据的时候不需要把鼠标位置更新到K线上
+            this.UpdateFrameMaxMin();
+            this.ResetFrameXYSplit();
+            bNeedDraw=true;
+        }
+        else
+        {
+            if (this.DragDownloadData) 
+            {
+                this.DragDownloadData();
+                if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash) return true;
+            }
+        }
+
+        drag.LastMove.X=e.clientX;
+        this.SetCursor({Cursor:cursorStatus});
+
+        if (bNeedDraw) 
+        {
+            this.Draw();
+            this.OnKLinePageChange("datamove");
+        }
+
+        return true;
+    }
+
 
     this.OnDragMode_One=function(moveData, e)
     {
@@ -4428,6 +4524,9 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 var isLeft=true;
                 if (drag.LastMove.X<e.clientX) isLeft=false;//右移数据
 
+                //按住shift才能移动K线
+                if (this.KLineDragConfig && this.KLineDragConfig.EnableShfit && !e.shiftKey) return;
+
                 var cursorStatus="pointer";
                 var oneStepWidth=this.GetMoveOneStepWidth();
                 if (moveSetp<oneStepWidth)
@@ -4469,6 +4568,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         }
     }
 
+    
     this.GetXDataIndex=function(obj)
     {
         if (!this.ChartPaint[0] || !this.ChartPaint[0].Data) return false;
@@ -4525,6 +4625,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         var isDragSelectRect=(this.RectSelectDrag && this.RectSelectDrag.Index>=0);
         var isDragSubSelectRect=(this.RectSelectDrag && this.RectSelectDrag.Type==4);
         var bClearDrawPicture=true;
+        var bShfitDragKLine=this.IsShfitDragKLine(e);
         if (this.CurrentChartDrawPicture)
         {
             var drawPicture=this.CurrentChartDrawPicture;
@@ -4567,7 +4668,11 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         {
             if (this.OnMinuteSelectRectMouseUp) this.OnMinuteSelectRectMouseUp(e);  //分时图区间选择
         }
-        else if (bLButtonSelectRect || bRButtonSelectRect)  //K线图区间选择
+        else if (this.MouseDrag && this.MouseDrag.Click && this.MouseDrag.Click.IsInFrameBottom)
+        {
+            if (e && e.button===2 && this.EnableXDrag.RButton.Type>=1) this.PreventRightMenu.Enable=true;
+        }
+        else if ((bLButtonSelectRect || bRButtonSelectRect) && !bShfitDragKLine)  //K线图区间选择
         {
             var drag=this.MouseDrag;
             drag.LastMove.X=e.clientX;
@@ -5856,6 +5961,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 item.Draw();
         }
 
+        this.DrawExtendChartPaint(IExtendChartPainting.DRAW_PRIORITY_ID.LEVEL_5);
+
         if (this.Frame.DrawOveraly)
             this.Frame.DrawOveraly(true);   //画叠加指标
 
@@ -5879,9 +5986,14 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             item.Draw();
         }
 
+        this.DrawExtendChartPaint(IExtendChartPainting.DRAW_PRIORITY_ID.LEVEL_8);
+
         if (this.Frame.DrawOveraly)
             this.Frame.DrawOveraly(false);   //画叠加指标
 
+        this.DrawExtendChartPaint(IExtendChartPainting.DRAW_PRIORITY_ID.LEVEL_10);
+
+        /*
         //固定扩展图形
         for(var i=0;i<this.ExtendChartPaint.length;++i)
         {
@@ -5890,6 +6002,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             if (item.DrawAfterPicture) continue;
             if (!item.IsDynamic && item.IsAnimation==false) item.Draw();
         }
+        */
 
         if (this.Frame.DrawInsideHorizontal) this.Frame.DrawInsideHorizontal();
         this.KLineIncreaseCustomHorizontal();
@@ -5918,6 +6031,10 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
         var moveonPoint=null;
         if (this.LastMouseStatus && this.LastMouseStatus.MoveOnPoint) moveonPoint=this.LastMouseStatus.MoveOnPoint;
+
+        this.DrawExtendChartPaint(IExtendChartPainting.DRAW_PRIORITY_ID.LEVEL_20, { MoveonPoint:moveonPoint} );
+
+        /*
         for(var i=0;i<this.ExtendChartPaint.length;++i) //动态扩展图形
         {
             var item=this.ExtendChartPaint[i];
@@ -5929,6 +6046,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 if (item.DrawToolbar) item.DrawToolbar(moveonPoint);
             }
         }
+        */
 
         for(var i=0;i<this.ChartDrawPicture.length;++i)
         {
@@ -6018,6 +6136,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             item.Draw(moveonPoint, this.LastMouseStatus);
         }
 
+        this.DrawExtendChartPaint(IExtendChartPainting.DRAW_PRIORITY_ID.LEVEL_25);
+        /*
         for(var i=0;i<this.ExtendChartPaint.length;++i) //动态扩展图形
         {
             var item=this.ExtendChartPaint[i];
@@ -6025,7 +6145,11 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             if (item.DrawAfterPicture) continue;
             if (item.IsDynamic && item.DrawAfterTitle===true && item.IsAnimation==false) item.Draw();
         }
+        */
 
+        if (this.EnableAnimation) this.DrawExtendChartPaint(IExtendChartPainting.DRAW_PRIORITY_ID.LEVEL_30);
+
+        /*
         if (this.EnableAnimation)
         {
             for(var i=0;i<this.ExtendChartPaint.length;++i) //动画
@@ -6034,6 +6158,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 if (item.IsAnimation===true) item.Draw();
             }
         }
+        */
 
         for(var i=0;i<this.ChartDrawPicture.length;++i)
         {
@@ -6052,12 +6177,15 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             this.CurrentChartDrawPicture.Draw();
         }
 
+        this.DrawExtendChartPaint(IExtendChartPainting.DRAW_PRIORITY_ID.LEVEL_50);
+        /*
         for(var i=0;i<this.ExtendChartPaint.length;++i) //画图工具绘制完成以后 动态扩展图形
         {
             var item=this.ExtendChartPaint[i];
             if (item.DrawAfterPicture)
                 item.Draw();
         }
+        */
 
         this.OffscreenToShowCanvas();
 
@@ -6084,6 +6212,45 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         }
 
         ++this.TouchDrawCount;
+    }
+
+    this.DrawExtendChartPaint=function(level, option)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.ExtendChartPaint)) return;
+
+        //扩展图形
+        for(var i=0;i<this.ExtendChartPaint.length;++i)
+        {
+            var item=this.ExtendChartPaint[i];
+            if (item.IsCallbackDraw) continue;
+            
+            var value=item.GetPriority();   //绘图优先级
+            if (value!=level) continue;
+
+            if (level==IExtendChartPainting.DRAW_PRIORITY_ID.LEVEL_20)
+            {
+                item.Draw();
+                if (item.DrawToolbar && option) item.DrawToolbar(option.MoveonPoint, option.LastMouseStatus);
+            }
+            else if (level==IExtendChartPainting.DRAW_PRIORITY_ID.LEVEL_25 && option)
+            {
+                if (item.ClassName=='KLineTooltipPaint' && option)
+                {
+                    if (option.Tooltip==false) continue;
+                    if (option.Point) item.LatestPoint=option.Point;
+                }
+                else if (item.ClassName=="MinuteTooltipPaint" && option)
+                {
+                    if (option.Point) item.LatestPoint=option.Point;
+                }
+
+                item.Draw(option.MoveonPoint, option.LastMouseStatus);
+            }
+            else
+            {
+                item.Draw();
+            }
+        }
     }
 
     this.PtInButton=function(x, y)
@@ -6398,6 +6565,10 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
         var moveonPoint=null;
         if (this.LastMouseStatus && this.LastMouseStatus.MoveOnPoint) moveonPoint=this.LastMouseStatus.MoveOnPoint;
+
+        this.DrawExtendChartPaint(IExtendChartPainting.DRAW_PRIORITY_ID.LEVEL_20, { MoveonPoint:moveonPoint, LastMouseStatus:this.LastMouseStatus } );
+
+        /*
         for(var i=0;i<this.ExtendChartPaint.length;++i) //动态扩展图形
         {
             var item=this.ExtendChartPaint[i];
@@ -6409,6 +6580,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 if (item.DrawToolbar) item.DrawToolbar(moveonPoint, this.LastMouseStatus);
             }
         }
+        */
 
         for(var i=0;i<this.ChartDrawPicture.length;++i)
         {
@@ -6507,6 +6679,15 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             item.Draw(moveonPoint, this.LastMouseStatus);
         }
 
+
+        var exChartOption={ MoveonPoint:moveonPoint, LastMouseStatus:this.LastMouseStatus };
+        if (option)
+        {
+            exChartOption.Tooltip=option.Tooltip;
+            exChartOption.Point=option.Point;
+        }
+        this.DrawExtendChartPaint(IExtendChartPainting.DRAW_PRIORITY_ID.LEVEL_25,exChartOption);
+        /*
         for(var i=0;i<this.ExtendChartPaint.length;++i) //动态扩展图形   在动态标题以后画
         {
             var item=this.ExtendChartPaint[i];
@@ -6524,7 +6705,10 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
             if (item.IsDynamic && item.DrawAfterTitle===true) item.Draw(moveonPoint, this.LastMouseStatus);
         }
+        */
 
+        if (this.EnableAnimation) this.DrawExtendChartPaint(IExtendChartPainting.DRAW_PRIORITY_ID.LEVEL_30);
+        /*
         if (this.EnableAnimation)
         {
             for(var i=0;i<this.ExtendChartPaint.length;++i) //动画
@@ -6533,6 +6717,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 if (item.IsAnimation===true) item.Draw();
             }
         }
+        */
 
         for(var i=0;i<this.ChartDrawPicture.length;++i)
         {
@@ -6554,12 +6739,15 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             this.CurrentChartDrawPicture.Draw();
         }
 
+        this.DrawExtendChartPaint(IExtendChartPainting.DRAW_PRIORITY_ID.LEVEL_50);
+        /*
         for(var i=0;i<this.ExtendChartPaint.length;++i) //动态扩展图形
         {
             var item=this.ExtendChartPaint[i];
             if (item.DrawAfterPicture) 
                 item.Draw();
         }
+        */
 
         if (this.LastMouseStatus.MouseOnToolbar)    //工具栏按钮提示信息
         {
@@ -6815,7 +7003,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         //X轴拖动缩放
         if (this.ClassName=="KLineChartContainer"  && this.EnableXDrag.Bottom && this.Frame.PtInFrameBottom(x,y))
         {
-            mouseStatus={ Cursor:"ew-resize", Name:"FrameButtom"};
+            //var dragType=this.GetDragXCoordinateType(e,"OnMouseMove");
+            //mouseStatus={ Cursor:"pointer", Name:"FrameButtom"};
             JSConsole.Chart.Log("[JSChartContainer::OnMouseMove] frame bottom ");
         }
 
@@ -7036,7 +7225,12 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         }
 
         var draw=false;
-        if (this.ChartCorssCursor && this.ChartCorssCursor.OnKeyDown)   //十字光标 隐藏显示
+        if (keyID==27 && this.PopMinuteChart && this.PopMinuteChart.IsShow())
+        {
+            this.PopMinuteChart.Close();
+            draw=true;
+        }
+        else if (this.ChartCorssCursor && this.ChartCorssCursor.OnKeyDown)   //十字光标 隐藏显示
         {
             var sendData={ e:e, KeyID:keyID, Draw:false, PreventDefault:false };
             this.ChartCorssCursor.OnKeyDown(sendData);
@@ -7058,6 +7252,15 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 {
                     if (this.OnCustomKeyDown(keyID, e))
                         break;
+                }
+
+                //K线 如果超出K线数据了 调整到最后一个数据
+                if (this.FixCursorIndexValid && this.FixCursorIndexValid())
+                {
+                    this.UpdatePointByCursorIndex();
+                    this.DrawDynamicInfo();
+                    this.ShowTooltipByKeyDown();
+                    break;
                 }
                
                 if (this.CursorIndex<=0.99999)
@@ -7088,6 +7291,15 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 {
                     if (this.OnCustomKeyDown(keyID, e))
                         break;
+                }
+
+                //K线 如果超出K线数据了 调整到最后一个数据
+                if (this.FixCursorIndexValid && this.FixCursorIndexValid())
+                {
+                    this.UpdatePointByCursorIndex();
+                    this.DrawDynamicInfo();
+                    this.ShowTooltipByKeyDown();
+                    break;
                 }
 
                 var xPointcount=0;
@@ -7200,6 +7412,9 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                         this.CurrentChartDrawPicture=null;
                 }
                 break;
+            case 13:    //回车
+                if (this.OnCustomKeyDown) this.OnCustomKeyDown(keyID, e);
+                break;
             default:
                 return;
         }
@@ -7213,7 +7428,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
     this.OnDoubleClick=function(x,y,e)
     {
-        //JSConsole.Chart.Log(e);
+        
     }
 
     this.ZoomIndexWindow=function(frameID, option)   //最大化/最小化指标窗口 
@@ -7507,13 +7722,21 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             return;
         }
 
+        var kData=this.GetKData();
+        if (!kData || !IFrameSplitOperator.IsNonEmptyArray(kData.Data)) return;
+
         var index=Math.abs(this.CursorIndex-0.5);
         index=parseInt(index.toFixed(0));
         if (this.ClassName=='KLineChartContainer' || this.ClassName=='KLineTrainChartContainer') index=this.CursorIndex;
 
+        var dataIndex=kData.DataOffset+index;
+        if (dataIndex<0 || dataIndex>=kData.Data.length) return;
+        var kItem=kData.Data[dataIndex];
+        if (!kItem) return;
+
         var data=this.Frame.Data;
         var toolTip=new TooltipData();
-        toolTip.Data=data.Data[data.DataOffset+index];
+        toolTip.Data=kItem;
         toolTip.ChartPaint=this.ChartPaint[0];
 
         var pixelTatio = GetDevicePixelRatio();
@@ -10326,7 +10549,12 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 if (this.ClearKLineInfo) this.ClearKLineInfo();
                 break;
             case JSCHART_MENU_ID.CMD_CHANGE_DRAG_MODE_ID:
-                if (param!=null) this.DragMode=param;
+                if (param!=null) 
+                {
+                    this.DragMode=param;
+                    if (this.DragMode==1 && IFrameSplitOperator.IsBool(aryArgs[1]))     //shift+左键拖动
+                        this.KLineDragConfig.EnableShfit=aryArgs[1];
+                }
                 break;
             case JSCHART_MENU_ID.CMD_CHANGE_BG_SPLIT_ID:
                 if (IFrameSplitOperator.IsBool(srcParam))
@@ -10569,6 +10797,9 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             case JSCHART_MENU_ID.CMD_CORSS_POINT_ID:
                 if (IFrameSplitOperator.IsBool(srcParam) && this.ChartCorssCursor) this.ChartCorssCursor.CorssPointConfig.Enable=srcParam;
                 break;
+            case JSCHART_MENU_ID.CMD_CORSS_DBCLICK_ID:
+                if (IFrameSplitOperator.IsBool(srcParam) && this.ChartCorssCursor) this.ChartCorssCursor.EnableDBClick=srcParam;
+                break;
             case JSCHART_MENU_ID.CMD_RBUTTON_SELECT_RECT_ID:
                 if (IFrameSplitOperator.IsBool(srcParam) && this.ChartDragSelectRect) this.ChartDragSelectRect.EnableRButton=srcParam;
                 break;
@@ -10577,6 +10808,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 break;
             case JSCHART_MENU_ID.CMD_ENABLE_XDRAG_BOTTOM_ID:
                 if (IFrameSplitOperator.IsBool(srcParam)) this.EnableXDrag.Bottom=srcParam;
+                if (IFrameSplitOperator.IsNonEmptyArray(aryArgs) && IFrameSplitOperator.IsNumber(aryArgs[1])) this.EnableXDrag.LButton.Type=aryArgs[1];
+                if (IFrameSplitOperator.IsNonEmptyArray(aryArgs) && IFrameSplitOperator.IsNumber(aryArgs[2])) this.EnableXDrag.RButton.Type=aryArgs[2];
                 break;
             case JSCHART_MENU_ID.CMD_FULLSCREEN_SUMMARY_ID:
                 this.FullScreenSummary();
@@ -11026,6 +11259,17 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         }
 
         return true;
+    }
+
+    this.GetDragXCoordinateType=function(event, funcName)
+    {
+        if (funcName=="DocOnMouseMove")
+        {
+            if (event.buttons==1) return this.EnableXDrag.LButton.Type;     //左键
+            else if (event.buttons==2) return this.EnableXDrag.RButton.Type;//右键
+        }
+        
+        return null;
     }
 
     this.OnMarkRectSelect=function(e)
@@ -45251,11 +45495,33 @@ function IExtendChartPainting()
     this.IsCallbackDraw=false;          //在回调函数里绘制, 不在Draw()中绘制
     this.ID=Guid();
 
+    this.DrawPriority=null;             //绘图优先级
+
     //上下左右间距
     this.Left=5;
     this.Right=5;
     this.Top=5;
     this.Bottom=5;
+
+
+    this.GetPriority=function()
+    {
+        if (IFrameSplitOperator.IsNumber(this.DrawPriority)) return this.DrawPriority;  //新版本
+
+        //老版本转换
+
+        if (!this.IsDynamic && !this.DrawAfterPicture) return IExtendChartPainting.DRAW_PRIORITY_ID.LEVEL_10;
+
+        if (this.DrawAfterTitle===false && this.IsAnimation==false) return IExtendChartPainting.DRAW_PRIORITY_ID.LEVEL_20;
+
+        if (this.DrawAfterTitle===true) return IExtendChartPainting.DRAW_PRIORITY_ID.LEVEL_25;
+
+        if (this.IsAnimation===true) return IExtendChartPainting.DRAW_PRIORITY_ID.LEVEL_35;
+
+        if (this.DrawAfterPicture===true) IExtendChartPainting.DRAW_PRIORITY_ID.LEVEL_50;
+
+        return IExtendChartPainting.DRAW_PRIORITY_ID.LEVEL_50
+    }
 
     this.Draw=function()
     {
@@ -45293,6 +45559,23 @@ function IExtendChartPainting()
     }
 }
 
+//绘图优先级
+IExtendChartPainting.DRAW_PRIORITY_ID=
+{
+    LEVEL_1:1,
+    LEVEL_5:5,      //  叠加指数图形前面  指标图形 IsDrawFirst=true
+    LEVEL_8:8,      //  叠加指数图形前面  指标图形 IsDrawFirst=false  
+    LEVEL_10:10,    //  IsDynamic=false 
+
+    LEVEL_20:20,    //  IsDynamic=true  
+
+    LEVEL_25:25,    //  DrawAfterTitle=true 标题栏绘制完成以后
+
+    LEVEL_35:35,    //  IsAnimation=true
+
+    LEVEL_50:50,    //  DrawAfterPicture=true;       是否在画图工具以后绘制
+}
+
 //K线Tooltip, 显示在左边或右边
 function KLineTooltipPaint()
 {
@@ -45312,6 +45595,7 @@ function KLineTooltipPaint()
     this.AmountColor=g_JSChartResource.TooltipPaint.AmountColor;    //成交金额
     this.LatestPoint;               //手势位置
     this.ShowPosition=0;            //显示位置 0=左 1=右
+    this.DrawPriority=IExtendChartPainting.DRAW_PRIORITY_ID.LEVEL_25;
 
     this.Left=1*GetDevicePixelRatio();
     this.Top=5*GetDevicePixelRatio();
@@ -46055,6 +46339,7 @@ function MinuteLeftTooltipPaint()
     this.IsDynamic=true;
     this.IsEraseBG=true;
     this.DrawAfterTitle=true;
+    this.DrawPriority=IExtendChartPainting.DRAW_PRIORITY_ID.LEVEL_25;
     this.ClassName='MinuteLeftTooltipPaint';
     this.BorderColor=g_JSChartResource.PCTooltipPaint.BorderColor;    //边框颜色
     this.BGColor=g_JSChartResource.PCTooltipPaint.BGColor;            //背景色
@@ -46465,6 +46750,7 @@ function StockChip()
     this.PixelRatio=GetDevicePixelRatio();
     this.ShowType=0;    //0=所有筹码  1=周期前  2=周期内
     this.IsDynamic=true;
+    this.DrawPriority=IExtendChartPainting.DRAW_PRIORITY_ID.LEVEL_20;
     this.ClientRect={};
     this.Font=g_JSChartResource.StockChip.Font;
     this.InfoColor=g_JSChartResource.StockChip.InfoColor;
@@ -50144,6 +50430,7 @@ function FrameButtomToolbarPaint()
     this.FrameGuid=null;
     this.IsDynamic=true;
     this.DrawAfterTitle=true;
+    this.DrawPriority=IExtendChartPainting.DRAW_PRIORITY_ID.LEVEL_25;
 
     this.AryButton=[];      // { Title:, ID:, Data:数据, TooltipText:提示信息 }
     this.SelectedID=null;   // 选中按钮ID
@@ -54289,6 +54576,7 @@ function ChartCorssCursor()
     this.CallAcutionXOperator;
 
     this.EnableKeyboard=false;   //是否支持键盘隐藏显示
+    this.EnableDBClick=false;     //是否允许双击显示|隐藏十字光标
     this.OnChangeStatusCallback;    //状态切换以后回调
     
 
@@ -55513,6 +55801,27 @@ function ChartCorssCursor()
             if (this.IsShowCorss) return;
             this.IsShowCorss=true;
             data.Draw=true;
+            if (this.OnChangeStatusCallback) this.OnChangeStatusCallback({ Type:1, IsShowCorss:this.IsShowCorss }, this);
+        }
+    }
+
+    this.OnDBClick=function(data)
+    {
+        if (!this.EnableDBClick) return; 
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.Frame.SubFrame)) return;
+
+        //在主图框架内
+        var frame=this.Frame.SubFrame[0].Frame;
+        if (!frame) return;
+
+        var border=frame.GetBorder();
+        var rtClient={ Left:border.Left, Top:border.Top, Bottom:border.Bottom, Right:border.Right };
+        var x=data.X, y=data.Y;
+        if (x>=rtClient.Left && x<=rtClient.Right && y>=rtClient.Top && y<=rtClient.Bottom)
+        {
+            this.IsShowCorss=!this.IsShowCorss
+            data.Draw=true;
+    
             if (this.OnChangeStatusCallback) this.OnChangeStatusCallback({ Type:1, IsShowCorss:this.IsShowCorss }, this);
         }
     }
@@ -76338,6 +76647,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         { KeyID:87, SecondKeyID:3, CMD:JSCHART_MENU_ID.CMD_FULLSCREEN_SUMMARY_ID, Args:null, Description:"Alt+W	全屏区间统计" },
     ]
 
+    this.KLineDragConfig={ EnableShfit:false };  //是否启动Shift+鼠标拖动K线
+
     this.GetKLineCalulate=function()
     {
         var kLineDrawType=this.GetKLineDrawType();
@@ -77410,6 +77721,10 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             this.MoveCorssCursorDown(this.ShiftUpDownStepPixel);
             return true;
         }
+        else if (keyID==13) //回车显示分时图
+        {
+            this.OnEnterKeyDown();
+        }
         else
         {
             return false;
@@ -77547,6 +77862,30 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         this.UpdatePointByCursorIndex();
         this.DrawDynamicInfo();
         this.ShowTooltipByKeyDown();
+    }
+
+    this.OnEnterKeyDown=function()
+    {
+        if (!this.PopMinuteChart) return false;
+        if (!ChartData.IsDayPeriod(this.Period,true)) return false;   //只支持日K
+        if (!this.ChartCorssCursor || !this.ChartCorssCursor.IsShowCorss || this.ChartCorssCursor.ClientPos<0) return false;
+        var index=this.ChartCorssCursor.CursorIndex;
+        index=parseInt(index.toFixed(0));
+        var kData=this.GetKData();
+        if (!kData || !IFrameSplitOperator.IsNonEmptyArray(kData.Data)) return false;
+        var dataIndex=kData.DataOffset+index;
+        if (dataIndex<0 || dataIndex>=kData.Data.length) return false;
+
+        var kItem = kData.Data[dataIndex];
+        if (!kItem) return false;
+        
+        var frame=this.Frame.SubFrame[0].Frame;
+        var x=frame.GetXFromIndex(index);
+        var y=frame.GetYFromData(kItem.Close);
+
+        var data={ Chart:this, Tooltip:{ ChartPaint:this.ChartPaint[0], Data:kItem } };
+
+        this.ShowMinuteChartDialog(data, x, y);
     }
 
     //获取K线图实例
@@ -82306,12 +82645,14 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         var bCorssDrawKLine=false;
         var bCorssDrawVaildTime=false;
         var bCorssDrawPoint=false;
+        var bCorssBCClick=false;
         if (this.ChartCorssCursor) 
         {
             bShowCorss=this.ChartCorssCursor.IsShowCorss;
             bCorssDrawKLine=this.ChartCorssCursor.IsOnlyDrawKLine && this.ChartCorssCursor.IsShowClose;
             bCorssDrawVaildTime=this.ChartCorssCursor.IsFixXLastTime;
             bCorssDrawPoint=this.ChartCorssCursor.CorssPointConfig.Enable;
+            bCorssBCClick=this.ChartCorssCursor.EnableDBClick;
         }
 
         var bPopMinuteChart=false;
@@ -82497,16 +82838,13 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                     { Name:"显示在K线上", Data:{ ID:JSCHART_MENU_ID.CMD_CORSS_ON_KLINE_ID, Args:[!bCorssDrawKLine]}, Checked:bCorssDrawKLine },
                     { Name:"画在有效X轴上",Data:{ ID:JSCHART_MENU_ID.CMD_CORSS_ON_VAILD_TIME_ID, Args:[!bCorssDrawVaildTime]}, Checked:bCorssDrawVaildTime },
                     { Name:"画圆点",Data:{ ID:JSCHART_MENU_ID.CMD_CORSS_POINT_ID, Args:[!bCorssDrawPoint]}, Checked:bCorssDrawPoint },
+                    { Name:"双击显示/隐藏", Data:{ ID:JSCHART_MENU_ID.CMD_CORSS_DBCLICK_ID, Args:[!bCorssBCClick]}, Checked:bCorssBCClick },
                 ]
             },
             {
                 Name:"其他设置",
                 SubMenu:
                 [
-                    
-                    { Name:"禁止拖拽", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_DRAG_MODE_ID, Args:[0]}, Checked:0==this.DragMode },
-                    { Name:"启动拖拽", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_DRAG_MODE_ID, Args:[1]}, Checked:1==this.DragMode },
-                    { Name:"X轴拖动缩放", Data:{  ID:JSCHART_MENU_ID.CMD_ENABLE_XDRAG_BOTTOM_ID, Args:[!this.EnableXDrag.Bottom]}, Checked:this.EnableXDrag.Bottom },
                     { Name:"左键区间选择", Data:{ ID:JSCHART_MENU_ID.CMD_LBUTTON_SELECT_RECT_ID, Args:[!bLButtonSelectRect]}, Checked:bLButtonSelectRect },
                     { Name:"右键区间选择", Data:{ ID:JSCHART_MENU_ID.CMD_RBUTTON_SELECT_RECT_ID, Args:[!bRButtonSelectRect]}, Checked:bRButtonSelectRect },
                     { Name:JSPopMenu.SEPARATOR_LINE_NAME },
@@ -82562,6 +82900,27 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                         [
                             { Name:"启用", Data:{ ID:JSCHART_MENU_ID.CMD_KLINE_TOOLTIP_ATTRIBUTE, Args:[{Enable:!this.KLineTooltipConfig.Enable}]}, Checked:this.KLineTooltipConfig.Enable },
                             { Name:"键盘左右显示", Data:{ ID:JSCHART_MENU_ID.CMD_KLINE_TOOLTIP_ATTRIBUTE, Args:[{EnableKeyDown:!this.KLineTooltipConfig.EnableKeyDown}]}, Checked:this.KLineTooltipConfig.EnableKeyDown },
+                        ]
+                    },
+                    {
+                        Name:"X轴拖动",
+                        SubMenu:
+                        [
+                            { Name:"启动", Data:{  ID:JSCHART_MENU_ID.CMD_ENABLE_XDRAG_BOTTOM_ID, Args:[!this.EnableXDrag.Bottom]}, Checked:this.EnableXDrag.Bottom },
+                            { Name:"左键拖动K线", Data:{  ID:JSCHART_MENU_ID.CMD_ENABLE_XDRAG_BOTTOM_ID, Args:[null, this.EnableXDrag.LButton.Type===1?0:1]}, Checked:this.EnableXDrag.LButton.Type===1 && this.EnableXDrag.Bottom },
+                            { Name:"左键缩放K线", Data:{  ID:JSCHART_MENU_ID.CMD_ENABLE_XDRAG_BOTTOM_ID, Args:[null, this.EnableXDrag.LButton.Type===2?0:2]}, Checked:this.EnableXDrag.LButton.Type===2 && this.EnableXDrag.Bottom },
+
+                            { Name:"右键拖动K线", Data:{  ID:JSCHART_MENU_ID.CMD_ENABLE_XDRAG_BOTTOM_ID, Args:[null, null, this.EnableXDrag.RButton.Type===1?0:1]}, Checked:this.EnableXDrag.RButton.Type===1 && this.EnableXDrag.Bottom },
+                            { Name:"右键缩放K线", Data:{  ID:JSCHART_MENU_ID.CMD_ENABLE_XDRAG_BOTTOM_ID, Args:[null, null, this.EnableXDrag.RButton.Type===2?0:2]}, Checked:this.EnableXDrag.RButton.Type===2 && this.EnableXDrag.Bottom },
+                        ]
+                    },
+                    {
+                        Name:"K线拖动",
+                        SubMenu:
+                        [
+                            { Name:"禁用", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_DRAG_MODE_ID, Args:[0]}, Checked:0==this.DragMode },
+                            { Name:"左键拖拽", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_DRAG_MODE_ID, Args:[1, false]}, Checked:1==(this.DragMode && !this.KLineDragConfig.EnableShfit) },
+                            { Name:"Shift+左键拖拽", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_DRAG_MODE_ID, Args:[1, true]}, Checked:1==(this.DragMode && this.KLineDragConfig.EnableShfit) },
                         ]
                     }
                 ]
@@ -82970,6 +83329,14 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
     this.OnDoubleClick=function(x,y,e)
     {
+        var bDraw=false;
+        if (this.ChartCorssCursor)
+        {
+            var data={ e:e, X:x, Y:y, Draw:false };
+            this.ChartCorssCursor.OnDBClick(data);
+            bDraw=data.Draw
+        }
+            
         if (this.EnableYDrag && (this.EnableYDrag.Left || this.EnableYDrag.Right) && this.Frame && this.Frame.PtInFrameY)
         {
             var pixelTatio = GetDevicePixelRatio();
@@ -83005,6 +83372,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                 }
             }
         }
+
+        if (bDraw) this.Draw();
 
         var tooltip=new TooltipData();
         if (!this.PtInChartPaintTooltip(x,y,tooltip))
@@ -84330,6 +84699,22 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
         return result;
     }
+
+    //修正十字光标位置有效的K线
+    this.FixCursorIndexValid=function()
+    {
+        var kData=this.GetKData();
+        if (!kData || !IFrameSplitOperator.IsNonEmptyArray(kData.Data)) return false;
+
+        var dataIndex=this.CursorIndex+kData.DataOffset;
+        if (dataIndex>=kData.Data.length)
+        {
+            this.CursorIndex=kData.Data.length-kData.DataOffset-1;
+            return true;
+        }
+
+        return false;
+    }
 }
 
 //API 返回数据 转化为array[]
@@ -84751,6 +85136,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
     this.AutoUpdateTimer;                     //自动更新定时器
     this.TradeDate=0;                         //行情交易日期
     this.DayCount=1;                          //显示几天的数据
+    this.MaxDayCount=-1;                      //最大显示天数 -1 无限制
     this.DayData;                             //多日分钟数据
     this.LimitPrice;                          //涨停价格 { Max:null, Min:null };  
 
@@ -85311,8 +85697,8 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         if (!startItem || !endItem) return;
 
         JSConsole.Chart.Log('[MinuteChartContainer::UpdateSelectRect]',startItem,endItem);
-        paint.SetPoint(startItem, { Index:0 });
-        paint.SetPoint(endItem, { Index:1 });
+        paint.SetPoint(startItem, { Index:0 , DataIndex:start });
+        paint.SetPoint(endItem, { Index:1,DataIndex:end  });
 
         this.Draw();
     }
@@ -85339,7 +85725,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         var item = kData.Data[dataIndex];
         JSConsole.Chart.Log("[MinuteChartContainer::MoveRectSelectPoint] point, item", obj.PointIndex, item);
 
-        if (!paint.SetPoint(item,{ Index: obj.PointIndex })) return false;
+        if (!paint.SetPoint(item,{ Index: obj.PointIndex,DataIndex:dataIndex })) return false;
 
         var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DRAG_SELECT_RECT);
         if (event)
@@ -86567,12 +86953,14 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         var bCorssDrawCloseLine=false;  //十字光标只能画在走势图价格线上
         var bCorssDrawVaildTime=false;
         var bCorssDrawPoint=false;
+        var bCorssBCClick=false;
         if (this.ChartCorssCursor) 
         {
             bShowCorss=this.ChartCorssCursor.IsShowCorss;
             bCorssDrawCloseLine=this.ChartCorssCursor.IsOnlyDrawMinute;
             bCorssDrawVaildTime=this.ChartCorssCursor.IsFixXLastTime;
             bCorssDrawPoint=this.ChartCorssCursor.CorssPointConfig.Enable;
+            bCorssBCClick=this.ChartCorssCursor.EnableDBClick;
         }
 
         var bRButtonSelectRect=false,bLButtonSelectRect=false;
@@ -86669,6 +87057,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                     { Name:"画在价格线上", Data:{ ID:JSCHART_MENU_ID.CMD_CORSS_ON_CLOSE_LINE_ID, Args:[!bCorssDrawCloseLine]}, Checked:bCorssDrawCloseLine },
                     { Name:"画在有效X轴上",Data:{ ID:JSCHART_MENU_ID.CMD_CORSS_ON_VAILD_TIME_ID, Args:[!bCorssDrawVaildTime]}, Checked:bCorssDrawVaildTime },
                     { Name:"画圆点",Data:{ ID:JSCHART_MENU_ID.CMD_CORSS_POINT_ID, Args:[!bCorssDrawPoint]}, Checked:bCorssDrawPoint },
+                    { Name:"双击显示/隐藏", Data:{ ID:JSCHART_MENU_ID.CMD_CORSS_DBCLICK_ID, Args:[!bCorssBCClick]}, Checked:bCorssBCClick },
                 ]
             },
 
@@ -86772,10 +87161,22 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
         if (x>=rtClient.Left && x<=rtClient.Right && y>=rtClient.Top && y<=rtClient.Bottom ) isInClient=true;
 
-        if (!this.OnWheel_ZoomUpDownFrameY(e,x,y)) return;
+        var bPreventDefault=false;
+        if (this.OnWheel_ChangeDayCount(e,x,y)) //ctrl+上下滚轴
+        {
+            bPreventDefault=true;
+        }
+        else
+        {
+            if (this.OnWheel_ZoomUpDownFrameY(e,x,y))
+                bPreventDefault=true;
+        }
 
-        if(e.preventDefault) e.preventDefault();
-        else e.returnValue = false;
+        if (bPreventDefault)
+        {
+            if(e.preventDefault) e.preventDefault();
+            else e.returnValue = false;
+        }
     }
 
     //通过滚轴缩放Y轴
@@ -86805,9 +87206,39 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         return true;
     }
 
+    this.OnWheel_ChangeDayCount=function(e, x, y)
+    {
+        if (!e.ctrlKey) return false;
+
+        var wheelValue=e.wheelDelta;
+        if (!IFrameSplitOperator.IsObjectExist(e.wheelDelta))
+            wheelValue=e.deltaY* -0.01;
+
+        var value=wheelValue>=0?-1:1;
+        var dayCount=this.DayCount;
+
+        dayCount+=value;
+        if (IFrameSplitOperator.IsPlusNumber(dayCount))
+        {
+            if (IFrameSplitOperator.IsPlusNumber(this.MaxDayCount) && dayCount>this.MaxDayCount) return true;
+
+            this.ChangeDayCount(dayCount);
+        }
+       
+        return true;
+    }
+
     this.OnDoubleClick=function(x,y,e)
     {
         JSConsole.Chart.Log("[MinuteChartContainer::OnDoubleClick]", e);
+
+        var bDraw=false;
+        if (this.ChartCorssCursor)
+        {
+            var data={ e:e, X:x, Y:y, Draw:false };
+            this.ChartCorssCursor.OnDBClick(data);
+            bDraw=data.Draw
+        }
 
         if (this.EnableYDrag && (this.EnableYDrag.Left || this.EnableYDrag.Right) && this.Frame && this.Frame.PtInFrameY)
         {
@@ -86846,10 +87277,12 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                 if (this.ZoomIndexWindow(frameId, {X:x, Y:y}))
                 {
                     this.Frame.SetSizeChage(true);
-                    this.Draw();
+                    bDraw=true;
                 }
             }
         }
+
+        if (bDraw) this.Draw();
     }
 
     this.GetDataItem=function(pointInfo)
@@ -86944,7 +87377,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         this.ChartCorssCursor.StringFormatY.ShareAfterVol=this.ShareAfterVol;
         this.ChartCorssCursor.CallAcutionXOperator=new CallAcutionXOperator();
         this.ChartCorssCursor.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
-       
+        this.ChartCorssCursor.OnChangeStatusCallback=(data, obj)=>{ this.OnChangeCorssCursorStatus(data,obj); }
 
         //创建等待提示
         this.ChartSplashPaint = new ChartSplashPaint();

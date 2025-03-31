@@ -1109,7 +1109,7 @@ function Node(ErrorHandler)
         //CAPITAL流通股本(手), EXCHANGE 换手率, TOTALCAPITAL 总股本(手)
         let setVariantName=new Set(
         [
-            "CAPITAL","TOTALCAPITAL","EXCHANGE",
+            "CAPITAL","TOTALCAPITAL","EXCHANGE","HSL",
             "HYBLOCK","DYBLOCK","GNBLOCK","FGBLOCK","ZSBLOCK","ZHBLOCK","ZDBLOCK","HYZSCODE",
             "GNBLOCKNUM","FGBLOCKNUM","ZSBLOCKNUM","ZHBLOCKNUM","ZDBLOCKNUM",
             "HYSYL","HYSJL","FROMOPEN",
@@ -14653,7 +14653,7 @@ function JSSymbolData(ast,option,jsExecute)
                 {
                     var dataType=0;
                     if (IFrameSplitOperator.IsNumber(recvData.DataType)) dataType=recvData.DataType;
-                    self.RecvStockValue(recvData.Data,jobItem,key,dataType);
+                    self.RecvStockValue(recvData.Data,jobItem,key,dataType,recvData);
                 }
                
                 self.Execute.RunNextJob();
@@ -14668,7 +14668,7 @@ function JSSymbolData(ast,option,jsExecute)
         };
 
         var apiDownload;
-        if (jobItem.VariantName=="CAPITAL" || jobItem.VariantName=="TOTALCAPITAL" || jobItem.VariantName=="EXCHANGE")
+        if (jobItem.VariantName=="CAPITAL" || jobItem.VariantName=="TOTALCAPITAL" || jobItem.VariantName=="EXCHANGE" || jobItem.VariantName=="HSL")
         {
             var callback=function(recvData, jobItem, key) 
             { 
@@ -14863,7 +14863,7 @@ function JSSymbolData(ast,option,jsExecute)
         }
     }
 
-    this.RecvStockValue=function(recvData,jobItem,key,dataType)
+    this.RecvStockValue=function(recvData,jobItem,key,dataType, srcData)
     {
         if (!recvData)
         {
@@ -14894,8 +14894,9 @@ function JSSymbolData(ast,option,jsExecute)
                 var bindData=new ChartData();
                 bindData.Data=aryFittingData;
                 var result=bindData.GetValue();
+                var bVersion2=srcData && srcData.Ver==2;    //2.0 版本
 
-                if (key=="EXCHANGE")    //计算换手率=成交量/流通股本*100
+                if (!bVersion2 && (key=="EXCHANGE" || key=="HSL"))    //计算换手率=成交量/流通股本*100
                 {
                     for(var i in result)
                     {
@@ -16915,7 +16916,7 @@ function JSExecute(ast,option)
 
         ['CAPITAL',null],   //流通股本（手）
         ["TOTALCAPITAL",null], //TOTALCAPITAL  当前总股本 手
-        ['EXCHANGE',null],   //换手率
+        ['EXCHANGE',null],   ["HSL",null], //换手率
         ['SETCODE', null],  //市场类型
         ['CODE',null],      //品种代码
         ['STKNAME',null],   //品种名称
@@ -17165,6 +17166,7 @@ function JSExecute(ast,option)
             case "TOTALCAPITAL":
             case 'CAPITAL':
             case 'EXCHANGE':
+            case "HSL":
 
             case "HYBLOCK":
             case "DYBLOCK":
@@ -18832,7 +18834,7 @@ function JSExplainer(ast,option)
         ['BARSTATUS',"数据位置状态"],     //BARSTATUS返回数据位置信息,1表示第一根K线,2表示最后一个数据,0表示中间位置.
 
         ['CAPITAL',"当前流通股本(手)"], ["TOTALCAPITAL","当前总股本(手)"], 
-        ['EXCHANGE',"换手率"],   //换手率
+        ['EXCHANGE',"换手率"],   ['HSL',"换手线"],
         ['SETCODE', "市场类型"],  //市场类型
         ['CODE',"品种代码"],      //品种代码
         ['STKNAME',"品种名称"],   //品种名称
@@ -26090,6 +26092,7 @@ function DownloadFinanceData(obj)
             case 1: //FINANCE(1) 总股本(随时间可能有变化) 股
             case 7: //FINANCE(7) 流通股本(随时间可能有变化) 股
             case "EXCHANGE": //换手率
+            case "HSL"://换手率
                 this.DownloadHistoryData(id);
                 break;
             case 3:
@@ -26216,6 +26219,7 @@ function DownloadFinanceData(obj)
                 return ["capital.total", "capital.date"];
             case 7:
                 return ["capital.a", "capital.date"];
+            case "HSL":
             case "EXCHANGE":
                 return ["capital.a", "capital.date"];
 
@@ -26349,6 +26353,7 @@ function DownloadFinanceData(obj)
                 if (!item.capital) return null;
                 return { Date:date, Value:item.capital.total };
             case 7:
+            case "HSL": //换手率
             case "EXCHANGE":    //换手率 历史流通股本
                 if (!item.capital) return null;
                 return { Date:date, Value:item.capital.a };
