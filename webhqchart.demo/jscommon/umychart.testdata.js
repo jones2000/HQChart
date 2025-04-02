@@ -2013,6 +2013,8 @@ HQData.Report_APIIndex=function(data, callback)
         HQData.APIIndex_DRAWKLINE(data, callback);
     else if (request.Data.indexname=="API_TITLE")
         HQData.APIIndex_TITLE(data, callback);
+    else if (request.Data.indexname=="API_SCATTER_PLOT_V2")
+        HQData.APIIndex_SCATTER_PLOT_V2(data, callback);
 }
 
 
@@ -3010,6 +3012,67 @@ HQData.APIIndex_TITLE=function(data, callback)
     };
 
     console.log('[HQData.APIIndex_TITLE] apiData ', apiData);
+    callback(apiData);
+}
+
+HQData.APIIndex_SCATTER_PLOT_V2=function(data, callback)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var kData=hqchart.GetKData();
+
+    var pointData=
+    { 
+        name:"SCATTER_PLOT_V2", type:1, 
+        Draw:
+        { 
+            Name:"SCATTER_PLOT_V2",
+            DrawType:"SCATTER_PLOT_V2",
+            DrawData:[],
+            Config:{  Color:"rgb(100,100,0)", Radius:5 },
+        },
+    };
+
+    for(var i=0;i<kData.Data.length;++i)
+    {
+        var kItem=kData.Data[i];
+        
+        var item={ Date:kItem.Date, Time:kItem.Time, Value:kItem.High, Color:"rgb(0,0,0)", IsEmpty:true };
+        if (kItem.Close>kItem.Open) 
+        {
+            item.ColorBorder="rgb(0,250,0)";
+            item.Text={ Text:`${kItem.High.toFixed(2)}`, Color:"rgb(250,250,250)", BaseLine:1, YOffset:8, Align:2, BG:{ Color:"rgb(255,140,0)", MarginLeft:5, MarginRight:5, YOffset:5, MarginTop:8, MarginBottom:1 }};
+        }
+        else  
+        {
+            item.ColorBorder="rgb(250,0,0)";
+            item.Text=
+            { 
+                Text:`${kItem.High.toFixed(2)}`, Color:"rgb(178,34,34)", BaseLine:2, YOffset:10, Align:2,
+                //BG:{ Color:"rgb(255,255,0)" }
+            };
+        }
+
+
+        item.Tooltip=
+        [
+            {Title:"日期", Text:`${kItem.Date}`},
+            {Title:"最高", Text:`${kItem.High.toFixed(2)}`, TextColor:"rgb(250,0,0)"},
+            {Title:"最低", Text:`${kItem.Low.toFixed(2)}`,TextColor:"rgb(0,255,0)" },
+        ]
+        pointData.Draw.DrawData.push(item);
+    }
+
+    var apiData=
+    {
+        code:0, 
+        stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+        outdata: { date:kData.GetDate(), time:kData.GetTime(), outvar:[ pointData] },
+
+        //error: { message:"无权限查看指标“测试指标1”" }
+    };
+
+    console.log('[HQData.APIIndex_SCATTER_PLOT_V2] apiData ', apiData);
     callback(apiData);
 }
 

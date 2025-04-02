@@ -8954,7 +8954,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         this.ReloadChartDrawPictureResource(option.Resource);
 
         if (option.Update && this.Update) this.Update( {UpdateCursorIndexType:2} );       //是否立即更新并重绘
-        else if (option.Draw==true) this.Draw(); //是否立即重绘
+        else if (option.Draw==true || option.Redraw==true) this.Draw(); //是否立即重绘
 
         if (this.PopMinuteChart) this.PopMinuteChart.ReloadResource(option);
         if (this.DialogTooltip) this.DialogTooltip.ReloadResource(option);
@@ -11513,6 +11513,14 @@ function ToFixed(number, precision)
     
 
     return s;
+}
+
+function IsRectOverlap(rt, rt2)
+{
+    if (Math.max(rt.Left,rt2.Left)<Math.min(rt.Right,rt2.Right) && Math.max(rt.Top,rt2.Top)<Math.min(rt.Bottom, rt2.Bottom)) 
+        return true;
+
+    return false;
 }
 
 Number.prototype.toFixed2=Number.prototype.toFixed; //备份下老的
@@ -34798,6 +34806,326 @@ function ChartScatterPlot()
             if (this.Canvas.isPointInPath(x,y))
             {
                 JSConsole.Chart.Log('[ChartScatterPlot::GetTooltipData] point', item);
+                tooltip.Data=item;
+                tooltip.ChartPaint=this;
+                tooltip.Type=6; //散点图
+                return true;
+            }
+        }
+    }
+   
+}
+
+//散点图
+function ChartScatterPlotV2()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartScatterPlotV2';      //类名
+
+    //默认点配置
+    this.Color=g_JSChartResource.ChartScatterPlotV2.Color;           //点颜色
+    this.TextColor=g_JSChartResource.ChartScatterPlotV2.TextColor;
+    this.Radius=g_JSChartResource.ChartScatterPlotV2.Radius;   
+    this.Font=g_JSChartResource.ChartScatterPlotV2.Font;                          //半径
+
+    this.TooltipData=[];
+    this.MapCache=null; //key=date/date-time  value={ Data:[] }
+    this.AryPoint=[ ];  //[{ Value:, Radius:半径(可选), Color:颜色(可选),ColorBorder:边框颜色(可选), 
+                        //  Text:{ Text:显示文字, Color:"rgb(0,30,100)", BaseLine:1, YOffset:5, Align:2 };  }]
+                        //  BaseLine: 0=圆点上面 1=圆点下面 Align: 2=居中 1=左 3=右 
+    
+    this.GetKValue=ChartData.GetKValue;
+    this.TextHeight=10;
+    this.AryDrawRect=[];
+
+    this.ReloadResource=function(resource)
+    {
+        this.Color=g_JSChartResource.ChartScatterPlotV2.Color;           //点颜色
+        this.TextColor=g_JSChartResource.ChartScatterPlotV2.TextColor;
+        this.Radius=g_JSChartResource.ChartScatterPlotV2.Radius;   
+        this.Font=g_JSChartResource.ChartScatterPlotV2.Font;    
+    }
+
+    this.BuildCacheData=function()
+    {
+        var mapData=new Map();
+        this.MapCache=mapData;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.AryPoint)) return;
+
+        for(var i=0;i<this.AryPoint.length;++i)
+        {
+            var item=this.AryPoint[i];
+            var key=this.BuildKey(item);
+            if (mapData.has(key))
+            {
+                var mapItem=mapData.get(key);
+                mapItem.Data.push(item);
+            }
+            else
+            {
+                mapData.set(key,{ Data:[item] });
+            }
+        }
+    }
+
+    this.Draw=function()
+    {
+        this.TooltipData=[];
+        this.AryDrawRect=[];
+        if (!this.IsShow || this.ChartFrame.IsMinSize || !this.IsVisible) return;
+        if (this.IsShowIndexTitleOnly()) return;
+        if (this.IsHideScriptIndex()) return;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.AryPoint)) return;
+        if (!this.MapCache || this.MapCache.size<=0) return;
+        if(!this.Data || !IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return;
+
+        this.DrawScatterPlot();
+        this.AryDrawRect=[];
+    }
+
+    this.DrawScatterPlot=function()
+    {
+        var bHScreen=(this.ChartFrame.IsHScreen===true);
+        var isMinute=this.IsMinuteFrame();
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xPointCount=this.ChartFrame.XPointCount;
+
+        if (bHScreen)
+        {
+            var border=this.ChartBorder.GetHScreenBorder();
+            var chartright=border.BottomEx;
+            var xOffset=border.TopEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        }
+        else
+        {
+            var border=this.ChartBorder.GetBorder();
+            var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.RightEx;
+        }
+
+        var lockRect=this.GetLockRect();
+        if (lockRect)
+        {
+            if (bHScreen) chartright=lockRect.Top;
+            else chartright=lockRect.Left;
+        }
+
+        this.Canvas.save();
+        this.ClipClient(bHScreen);
+
+        this.Canvas.font=this.Font;
+        this.Canvas.textAlign = "left";
+        this.Canvas.textBaseline = "bottom";
+        this.TextHeight=this.GetFontHeight();
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var kItem=this.Data.Data[i];
+            if (!kItem) continue;
+
+            var key=this.BuildKey(kItem);
+            if (!this.MapCache.has(key)) continue;
+            var mapItem=this.MapCache.get(key);
+            if (!IFrameSplitOperator.IsNonEmptyArray(mapItem.Data)) continue;
+
+            if (isMinute)
+            {
+                var x=this.ChartFrame.GetXFromIndex(j);
+            }
+            else
+            {
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                if (right>chartright) break;
+                var x=left+(right-left)/2;
+            }
+
+            if (x>chartright) break;
+
+            for(var k=0;k<mapItem.Data.length;++k)
+            {
+                var item=mapItem.Data[k];
+                this.DrawItem(kItem, item, x);
+            }
+        }
+
+        this.Canvas.restore();
+    }
+
+    this.DrawItem=function(kItem, item, x)
+    {
+        var dataWidth=this.ChartFrame.DataWidth;
+        var maxRadius=dataWidth/2;
+        if (!item) return;
+        var price=item.Value;
+        if (IFrameSplitOperator.IsString(item.Value)) price=this.GetKValue(kItem,item.Value);
+        if (!IFrameSplitOperator.IsNumber(price)) return;
+
+        var y=this.GetYFromData(price,false);
+
+        var radius=this.Radius;
+        if (item.Radius) radius=item.Radius;
+        if (!IFrameSplitOperator.IsNumber(radius)) return;
+        if (radius>maxRadius) radius=maxRadius;
+
+        this.Canvas.beginPath();
+        this.Canvas.arc(x, y, radius, 0, 2 * Math.PI);
+
+        var color=this.Color;
+        if (item.Color) color=item.Color;
+        if (color)
+        {
+            this.Canvas.fillStyle=color;
+            this.Canvas.fill();
+        }
+
+        if (item.ColorBorder) 
+        {
+            this.Canvas.strokeStyle=item.ColorBorder;
+            this.Canvas.stroke()
+        }
+
+        if (dataWidth>this.TextHeight)
+        {
+            this.DrawText(item.Text,x,y,radius);
+        }
+
+        var itemTooltip={ X:x, Y:y, Radius:radius, Data:item };
+        this.TooltipData.push(itemTooltip);
+    }
+
+    this.DrawText=function(item, x, y, radius)
+    {
+        if (!item || !item.Text) return;
+
+        var bHScreen=(this.ChartFrame.IsHScreen===true);
+        if (bHScreen) return;
+
+        var text=item.Text;
+        var textWidth=this.Canvas.measureText(text).width;
+
+        var baseLine=1; //1=上 2=下
+        var align=2;
+        var yOffset=2;
+        var xText=x;
+        if (IFrameSplitOperator.IsNumber(item.YOffset)) yOffset=item.YOffset;   //Y偏移
+        if (IFrameSplitOperator.IsNumber(item.BaseLine)) baseLine=item.BaseLine;
+        var yText=y-radius-yOffset;
+        if (baseLine==2) yText=y+radius+this.TextHeight+yOffset; //下
+
+        if (IFrameSplitOperator.IsNumber(item.Align)) align=item.Align;   //左中右
+        if (align==1) xText=x-textWidth;
+        else if (align==2) xText=x-textWidth/2;
+
+        var rtText=null;
+        if (item.BG && item.BG.Color)
+        {
+            var bgItem=item.BG;
+            var marginLeft=2, marginRight=2, yBGOffset=1, marginBottom=0, marginTop=0;
+            if (IFrameSplitOperator.IsNumber(bgItem.MarginLeft)) marginLeft=bgItem.MarginLeft;
+            if (IFrameSplitOperator.IsNumber(bgItem.MarginRight)) marginRight=bgItem.MarginRight;
+            if (IFrameSplitOperator.IsNumber(bgItem.MarginBottom)) marginBottom=bgItem.MarginBottom;
+            if (IFrameSplitOperator.IsNumber(bgItem.MarginTop)) marginTop=bgItem.MarginTop;
+            if (IFrameSplitOperator.IsNumber(bgItem.YOffset)) yBGOffset=bgItem.YOffset;
+
+            var rtBG={ Left:xText-marginLeft, Bottom:yText+yBGOffset+marginBottom, Width:textWidth+marginLeft+marginRight, Height:this.TextHeight+marginBottom+marginTop };
+            rtBG.Right=rtBG.Left+rtBG.Width;
+            rtBG.Top=rtBG.Bottom-rtBG.Height;
+
+            if (this.IsTextOverlap(rtBG)) return;
+
+            this.Canvas.fillStyle=bgItem.Color;
+            this.Canvas.fillRect(rtBG.Left,rtBG.Top,rtBG.Width,rtBG.Height);
+
+            rtText=rtBG;
+        }
+        else
+        {
+            rtText={ Left:xText, Bottom:yText, Width:textWidth, Height:this.TextHeight };
+            rtText.Right=rtText.Left+rtText.Width;
+            rtText.Top=rtText.Bottom-rtText.Height;
+
+            if (this.IsTextOverlap(rtText)) return;
+        }
+        
+        if (item.Color) this.Canvas.fillStyle=item.Color; 
+        else this.Canvas.fillStyle=this.TextColor;
+        this.Canvas.fillText(text, xText, yText);
+
+        this.AryDrawRect.push(rtText);
+    }
+
+    this.IsTextOverlap=function(rtText)
+    {
+        for(var i=0; i<this.AryDrawRect.length; ++i)
+        {
+            var item=this.AryDrawRect[i];
+            if (IsRectOverlap(rtText,item)) return true;
+        }
+
+        return false;
+    }
+
+    this.GetMaxMin=function()
+    {
+        var range={Min:null, Max:null };
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.AryPoint)) return range;
+        if (!this.MapCache || this.MapCache.size<=0) return range;
+        if(!this.Data || !IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return range;
+
+        var xPointCount=this.ChartFrame.XPointCount;
+        var start=this.Data.DataOffset;
+        if (this.ChartFrame.GlobalOption && this.ChartFrame.GlobalOption.IsValueFullRange)
+        {
+            start=0;
+            xPointCount=this.Data.Data.length;
+        }
+
+        for(var i=start,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        {
+            var kItem=this.Data.Data[i];
+            if (!kItem) continue;
+
+            var key=this.BuildKey(kItem);
+            if (!this.MapCache.has(key)) continue;
+            var mapItem=this.MapCache.get(key);
+            if (!IFrameSplitOperator.IsNonEmptyArray(mapItem.Data)) continue;
+
+            for(k=0;k<mapItem.Data.length;++k)
+            {
+                var item=mapItem.Data[k];
+                var value=item.Value;
+                if (IFrameSplitOperator.IsString(item.Value)) value=this.GetKValue(kItem,item.Value);
+                if (!IFrameSplitOperator.IsNumber(value)) continue;
+
+                if (range.Max==null) range.Max=value;
+                else if (range.Max<value) range.Max=value;
+                if (range.Min==null) range.Min=value;
+                else if (range.Min>value) range.Min=value;
+            }
+        }
+
+        return range;
+    }
+
+    this.GetTooltipData=function(x,y,tooltip)
+    {
+        if (!this.IsShow) return false;
+
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.TooltipData)) return false;
+        
+        for(var i=this.TooltipData.length-1; i>=0; --i)
+        {
+            var item=this.TooltipData[i];
+            
+            this.Canvas.beginPath();
+            this.Canvas.arc(item.X, item.Y, item.Radius, 0, 2 * Math.PI);
+            if (this.Canvas.isPointInPath(x,y))
+            {
+                JSConsole.Chart.Log('[ChartScatterPlotV2::GetTooltipData] point', item);
                 tooltip.Data=item;
                 tooltip.ChartPaint=this;
                 tooltip.Type=6; //散点图
@@ -73548,6 +73876,14 @@ function JSChartResource()
         DiffValueBGColor:"rgb(251,140,1)"
     }
 
+    this.ChartScatterPlotV2=
+    {
+        Color:"rgb(0,0,255)",
+        TextColor:"rgb(0,0,0)",
+        Radius:3,
+        Font:`${10*GetDevicePixelRatio()}px 微软雅黑`
+    }
+
     //筹码分布图
     this.StockChip=
     {
@@ -74948,6 +75284,7 @@ function JSChartResource()
         if (style.KLineToolbar) this.SetKLineToolbar(style.KLineToolbar);
 
         if (style.IndexLock) this.SetIndexLock(style.IndexLock);
+        if (style.ChartScatterPlotV2) this.SetChartScatterPlotV2(style.ChartScatterPlotV2);
     }
 
 
@@ -75644,6 +75981,17 @@ function JSChartResource()
         if (item.TextColor) dest.TextColor=item.TextColor;
         if (item.Font) dest.Font=item.Font;
         if (item.Title) dest.Title=item.Title;
+    }
+
+    this.SetChartScatterPlotV2=function(style)
+    {
+        var item=style;
+        var dest=this.ChartScatterPlotV2;
+
+        if (item.Color) dest.Color=item.Color;
+        if (item.TextColor) dest.TextColor=item.TextColor;
+        if (item.Font) dest.Font=item.Font;
+        if (IFrameSplitOperator.IsNumber(item.Radius)) dest.Radius=item.Radius
     }
 
 }

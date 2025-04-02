@@ -20256,7 +20256,9 @@ var SCRIPT_CHART_NAME=
 {
     OVERLAY_BARS:"OVERLAY_BARS",     //叠加柱子图
     KLINE_TABLE:"KLINE_TABLE",
-    SCATTER_PLOT:"SCATTER_PLOT",     //散点图
+    SCATTER_PLOT:"SCATTER_PLOT",            //散点图
+    SCATTER_PLOT_V2:"SCATTER_PLOT_V2",      //散点图V2
+
 
     CLIP_COLOR_STICK:"CLIP_COLOR_STICK",  //上下柱子 裁剪
 
@@ -22263,6 +22265,34 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateScatterPlotV2=function(hqChart,windowIndex,varItem,i)
+    {
+        var chart=new ChartScatterPlotV2();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        chart.HQChart=hqChart;
+        chart.Identify=this.Guid;
+
+        chart.Data=hqChart.GetKData();      //绑定K线
+        chart.AryPoint=varItem.Draw.DrawData;
+
+        var config=varItem.Draw.Config;
+        if (config)
+        {
+            if (config.Color) chart.Color=config.Color;
+            if (IFrameSplitOperator.IsNumber(config.Radius)) chart.Radius=config.Radius;
+            if (config.TextColor) chart.TextColor=config.TextColor;
+            if (config.Font) chart.Font=config.Font;
+        }
+        
+        chart.BuildCacheData();
+
+        hqChart.ChartPaint.push(chart);
+    }
+
+
     this.CreateClipColorStick=function(hqChart,windowIndex,varItem,id)
     {
         var chart=new ChartClipColorStick();
@@ -22624,6 +22654,9 @@ function ScriptIndex(name,script,args,option)
                         break;
                     case SCRIPT_CHART_NAME.SCATTER_PLOT:
                         this.CreateScatterPlot(hqChart,windowIndex,item,i);
+                        break;
+                    case SCRIPT_CHART_NAME.SCATTER_PLOT_V2:
+                        this.CreateScatterPlotV2(hqChart,windowIndex,item,i);
                         break;
                     case SCRIPT_CHART_NAME.CLIP_COLOR_STICK:
                         this.CreateClipColorStick(hqChart,windowIndex,item,i);
@@ -25184,6 +25217,16 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     drawItem.Radius=draw.Radius;
                     outVarItem.Draw=drawItem;
 
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType==SCRIPT_CHART_NAME.SCATTER_PLOT_V2)
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=draw.DrawData;
+                    drawItem.Config=draw.Config;
+                    outVarItem.Draw=drawItem;
                     result.push(outVarItem);
                 }
                 else if (draw.DrawType==SCRIPT_CHART_NAME.KLINE_TABLE)

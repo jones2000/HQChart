@@ -190,6 +190,7 @@ function GetBlackStyle()
 
         StockChip:
         {
+            InfoColor:'rgb(255,255,255)', //文字颜色
             Color:"rgb(255,255,255)",
             Border:{ BGColor:"rgb(40,42,44)" }
         },

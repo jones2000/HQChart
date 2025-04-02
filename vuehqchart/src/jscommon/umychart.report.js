@@ -192,6 +192,14 @@ function JSReportChart(divElement)
         if (IFrameSplitOperator.IsBool(option.EnableDragHeader)) chart.EnableDragHeader=option.EnableDragHeader;
         if (IFrameSplitOperator.IsNumber(option.WheelPageType)) chart.WheelPageType=option.WheelPageType;
         if (IFrameSplitOperator.IsBool(option.PageUpDownCycle)) chart.PageUpDownCycle=option.PageUpDownCycle;
+
+        //数据下载提示信息
+        if (IFrameSplitOperator.IsObject(option.SplashTitle)) 
+        {
+            var item=option.SplashTitle;
+            if (item) chart.SplashTitle.StockList=item.StockList;
+            if (item) chart.SplashTitle.MemberList=item.MemberList;
+        }
        
         
         if (option.VScrollbar) chart.SetVScrollbar(option.VScrollbar);
@@ -3505,13 +3513,14 @@ function JSReportChartContainer(uielement)
             if (item.ReloadResource) item.ReloadResource(option);
         }
 
-        if (option && option.Redraw)
+        if (option && (option.Redraw || option.Draw))
         {
             this.SetSizeChange(true);
             this.Draw();
         }
 
-        if (this.MinuteChartTooltip) this.MinuteChartTooltip.ReloadResource(option);
+        if (this.TooltipMinuteChart) this.TooltipMinuteChart.ReloadResource(option);    //分时图
+        if (this.TooltipKLineChart)   this.TooltipKLineChart.ReloadResource(option);  
     }
 
     //列排序
