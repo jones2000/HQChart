@@ -13593,9 +13593,7 @@ function JSSymbolData(ast,option,jsExecute)
                 return result.GetAmount();
             case 'V':
             case "VOL":
-                if (MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol)) 
-                    return result.GetVol(100);
-                return result.GetVol();
+                return result.GetVol(MARKET_SUFFIX_NAME.GetVolUnit(upperSymbol));
             case "VOLINSTK":
                 return result.GetPosition();
             default:
@@ -22175,6 +22173,9 @@ function ScriptIndex(name,script,args,option)
         chart.Data=hqChart.GetKData()
         if (IFrameSplitOperator.IsBool(varItem.Draw.DrawData.EnableTooltip)) chart.EnableTooltip=varItem.Draw.DrawData.EnableTooltip;
         if (IFrameSplitOperator.IsBool(varItem.Draw.DrawData.IsDrawFirst)) chart.IsDrawFirst=varItem.Draw.DrawData.IsDrawFirst;
+        if (IFrameSplitOperator.IsBool(varItem.Draw.EnalbeDetailNoOverlap)) chart.EnalbeDetailNoOverlap=varItem.Draw.EnalbeDetailNoOverlap;
+        if (IFrameSplitOperator.IsBool(varItem.Draw.EnableClick)) chart.EnableClick=varItem.Draw.EnableClick;
+        
         if (varItem.Draw.BuildKeyCallback) chart.BuildKeyCallback=varItem.Draw.BuildKeyCallback;
         chart.Family=varItem.Draw.DrawData.Family;
         chart.TextFont=varItem.Draw.DrawData.TextFont;
@@ -22233,16 +22234,43 @@ function ScriptIndex(name,script,args,option)
         chart.HQChart=hqChart;
         chart.Identify=this.Guid;
 
-        chart.Data.Data=varItem.Draw.DrawData;
+        chart.Data=hqChart.GetKData();      //绑定K线
+        chart.AryTableData=varItem.Draw.DrawData;
         if (IFrameSplitOperator.IsNumber(varItem.Draw.RowCount)) chart.RowCount=varItem.Draw.RowCount;
-        if (IFrameSplitOperator.IsBool(varItem.Draw.IsShowRowName)) chart.IsShowRowName=varItem.Draw.IsShowRowName;
         if (IFrameSplitOperator.IsNonEmptyArray(varItem.Draw.RowName)) chart.RowName=varItem.Draw.RowName;
-        if (varItem.Draw.BGColor) chart.BGColor=varItem.Draw.BGColor;
 
+        var config=varItem.Draw.Config;
+        if (config)
+        {
+            if (config.BGColor) chart.BGColor=config.BGColor;
+            if (config.TextColor) chart.TextColor=config.TextColor;
+            if (config.BorderColor) chart.BorderColor=config.BorderColor;
+            if (IFrameSplitOperator.IsNumber(config.RowNamePosition)) chart.RowNamePosition=config.RowNamePosition;
+            if (IFrameSplitOperator.IsNumber(config.RowHeightType)) chart.RowHeightType=config.RowHeightType;
+
+            if (config.ItemMergin)
+            {
+                var subItem=config.ItemMergin;
+                if (IFrameSplitOperator.IsNumber(subItem.Left)) chart.ItemMergin.Left=subItem.Left;
+                if (IFrameSplitOperator.IsNumber(subItem.Top)) chart.ItemMergin.Top=subItem.Top;
+                if (IFrameSplitOperator.IsNumber(subItem.Bottom)) chart.ItemMergin.Bottom=subItem.Bottom;
+                if (IFrameSplitOperator.IsNumber(subItem.Right)) chart.ItemMergin.Right=subItem.Right;
+                if (IFrameSplitOperator.IsNumber(subItem.YOffset)) chart.ItemMergin.YOffset=subItem.YOffset;
+            }
+           
+            if (config.TextFont)
+            {
+                var subItem=config.TextFont;
+                if (IFrameSplitOperator.IsNumber(subItem.FontMaxSize)) chart.TextFontConfig.FontMaxSize=subItem.FontMaxSize;
+                if (subItem.Family) chart.TextFontConfig.Family=subItem.Family;
+            }
+        }
+        
+        chart.BuildCacheData();
+        this.SetChartIndexName(chart);
         hqChart.ChartPaint.push(chart);
 
         var titleIndex=windowIndex+1;
-
         var titleData=new DynamicTitleData(chart.Data,chart.BarName,chart.BarColor);
         titleData.DataType="ChartKLineTable";
         hqChart.TitlePaint[titleIndex].Data[i]=titleData;
@@ -22288,7 +22316,7 @@ function ScriptIndex(name,script,args,option)
         }
         
         chart.BuildCacheData();
-
+        this.SetChartIndexName(chart);
         hqChart.ChartPaint.push(chart);
     }
 
@@ -24060,6 +24088,8 @@ function OverlayScriptIndex(name,script,args,option)
         chart.TextFont=varItem.Draw.DrawData.TextFont;
         chart.Texts= varItem.Draw.DrawData.Data;
         if (varItem.Draw.AutoPosition) chart.AutoPosition=varItem.Draw.AutoPosition;
+        if (IFrameSplitOperator.IsBool(varItem.Draw.EnalbeDetailNoOverlap)) chart.EnalbeDetailNoOverlap=varItem.Draw.EnalbeDetailNoOverlap;
+        if (IFrameSplitOperator.IsBool(varItem.Draw.EnableClick)) chart.EnableClick=varItem.Draw.EnableClick;
 
         this.ReloadChartResource(hqChart, windowIndex, chart);
 
@@ -25234,13 +25264,11 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     drawItem.Name=draw.Name;
                     drawItem.Type=draw.Type;
                     drawItem.DrawType=draw.DrawType;
-                    drawItem.DrawData=this.FittingArray(draw.DrawData,date,time,hqChart,1);
+                    drawItem.DrawData=draw.DrawData;
                     drawItem.RowCount=draw.RowCount;
                     drawItem.RowName=draw.RowName;
-                    drawItem.IsShowRowName=draw.IsShowRowName;
-                    drawItem.BGColor=draw.BGColor;
+                    drawItem.Config=draw.Config;
                     outVarItem.Draw=drawItem;
-
                     result.push(outVarItem);
                 }
                 else if (draw.DrawType=='MULTI_TEXT')
@@ -25268,6 +25296,8 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     drawItem.Name=draw.Name;
                     drawItem.DrawType=draw.DrawType;
                     if (draw.AutoPosition) drawItem.AutoPosition=draw.AutoPosition;
+                    drawItem.EnalbeDetailNoOverlap=draw.EnalbeDetailNoOverlap;
+                    drawItem.EnableClick=draw.EnableClick;
                     if (draw.BuildKeyCallback) drawItem.BuildKeyCallback=draw.BuildKeyCallback;
                     drawItem.DrawData={ Data:draw.Data, Family:draw.Family, TextFont:draw.TextFont, EnableTooltip:draw.EnableTooltip, IsDrawFirst:draw.IsDrawFirst };
                     outVarItem.Draw=drawItem;
@@ -25776,6 +25806,8 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     drawItem.Name=draw.Name;
                     drawItem.DrawType=draw.DrawType;
                     if (draw.AutoPosition) drawItem.AutoPosition=draw.AutoPosition;
+                    drawItem.EnalbeDetailNoOverlap=draw.EnalbeDetailNoOverlap;
+                    drawItem.EnableClick=draw.EnableClick;
                     if (draw.BuildKeyCallback) drawItem.BuildKeyCallback=draw.BuildKeyCallback;
                     drawItem.DrawData={ Data:draw.Data, Family:draw.Family, TextFont:draw.TextFont , EnableTooltip:draw.EnableTooltip, IsDrawFirst:draw.IsDrawFirst };
                     outVarItem.Draw=drawItem;

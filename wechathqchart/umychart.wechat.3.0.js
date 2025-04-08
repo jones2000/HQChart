@@ -228,7 +228,7 @@ function JSChart(element)
             }
             else
             {
-                if (this.JSChartContainer.Frame) this.JSChartContainer.Frame.SetSizeChage(true);
+                if (this.JSChartContainer.Frame) this.JSChartContainer.Frame.SetSizeChange(true);
                 this.JSChartContainer.Draw();
             }
         }
@@ -2114,7 +2114,7 @@ function JSChartContainer(uielement)
         {
             if (this.ZoomIndexWindow(frameId, {X:x, Y:y}))
             {
-                this.Frame.SetSizeChage(true);
+                this.Frame.SetSizeChange(true);
                 this.Draw();
                 return true;
             }
@@ -3348,7 +3348,7 @@ function JSChartContainer(uielement)
         }
 
         this.UpdataDataoffset();        //更新数据偏移  
-        this.Frame.SetSizeChage(true);
+        this.Frame.SetSizeChange(true);
         if (this.UpdateXShowText) this.UpdateXShowText();
         this.ResetFrameXYSplit();
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
@@ -3468,7 +3468,7 @@ function JSChartContainer(uielement)
 
         if (this.Frame && this.Frame.SetLanguage) this.Frame.SetLanguage(this.LanguageID);
 
-        this.Frame.SetSizeChage(true);
+        this.Frame.SetSizeChange(true);
         this.Draw();
     }
 
@@ -4038,6 +4038,16 @@ function JSChartContainer(uielement)
     }
 
     this.GetKData=function() { return null; }
+
+    this.SetSizeChange=function(bChanged)
+    {
+        this.Frame.SetSizeChange(bChanged);
+        for(var i=0;i<this.ExtendChartPaint.length;++i)
+        {
+            var item=this.ExtendChartPaint[i];
+            item.SizeChange=bChanged;
+        }
+    }
 }
 
 function ToFixed(number, precision) 
@@ -4589,8 +4599,8 @@ function HQTradeFrame()
             if (item.Frame.DrawCustomVertical) item.Frame.DrawCustomVertical();
         }
     }
-
-    this.SetSizeChage = function (sizeChange) 
+    
+    this.SetSizeChange = function (sizeChange) 
     {
         this.SizeChange = sizeChange;
 
@@ -4609,6 +4619,8 @@ function HQTradeFrame()
             H: this.ChartBorder.UIElement.clientHeight
         };
     }
+
+    //this.SetSizeChage=this.SetSizeChange; //单词拼错
 
     this.SetDrawOtherChart = function (callback)  //在画完框架以后调用的扩展画法
     {
@@ -5667,7 +5679,7 @@ function KLineChartContainer(uielement)
     {
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-        this.Frame.SetSizeChage(true);
+        this.Frame.SetSizeChange(true);
         this.Draw();
         this.UpdatePointByCursorIndex();   //更新十字光标位子
     }
@@ -6148,7 +6160,7 @@ function KLineChartContainer(uielement)
         this.Name = data.name;
         this.BindMainData(bindData, this.PageSize);
         if (this.AfterBindMainData) this.AfterBindMainData("RecvHistoryData");
-        this.Frame.SetSizeChage(true);              //数据到达通知坐标框架
+        this.Frame.SetSizeChange(true);              //数据到达通知坐标框架
         
         var firstSubFrame;  //主窗口
         if (this.Frame.SubFrame[0]) firstSubFrame=this.Frame.SubFrame[0].Frame;
@@ -6167,7 +6179,7 @@ function KLineChartContainer(uielement)
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdatePointByCursorIndex();   //更新十字光标位子
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-        this.Frame.SetSizeChage(true);
+        this.Frame.SetSizeChange(true);
         this.Draw();
 
         this.BindInstructionIndexData(bindData);                //执行指示脚本
@@ -6290,7 +6302,7 @@ function KLineChartContainer(uielement)
         this.Name = data.name;
         this.BindMainData(bindData, this.PageSize);
         if (this.AfterBindMainData) this.AfterBindMainData("RecvMinuteHistoryData");
-        this.Frame.SetSizeChage(true);
+        this.Frame.SetSizeChange(true);
         
         var firstSubFrame;  //主窗口
         if (this.Frame.SubFrame[0]) firstSubFrame=this.Frame.SubFrame[0].Frame;
@@ -6312,7 +6324,7 @@ function KLineChartContainer(uielement)
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdatePointByCursorIndex();   //更新十字光标位子
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-        this.Frame.SetSizeChage(true);
+        this.Frame.SetSizeChange(true);
         this.Draw();
 
         this.RequestOverlayHistoryMinuteData();     //请求叠加数据 (主数据下载完再下载)
@@ -6468,7 +6480,7 @@ function KLineChartContainer(uielement)
         //绑定数据
         this.UpdateMainData(bindData, lastDataCount);
         this.UpdateOverlayRealtimeData(data);       //更新叠加股票数据
-        this.Frame.SetSizeChage(true);
+        this.Frame.SetSizeChange(true);
         this.BindInstructionIndexData(bindData);    //执行指示脚本
 
         for (var i = 0; i < this.Frame.SubFrame.length; ++i) {
@@ -6479,7 +6491,7 @@ function KLineChartContainer(uielement)
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdatePointByCursorIndex();   //更新十字光标位子
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-        this.Frame.SetSizeChage(true);
+        this.Frame.SetSizeChange(true);
         this.Draw();
 
         this.SendKLineUpdateEvent(bindData);
@@ -6713,7 +6725,7 @@ function KLineChartContainer(uielement)
         
         //绑定数据
         this.UpdateMainData(bindData, lastDataCount);
-        this.Frame.SetSizeChage(true);
+        this.Frame.SetSizeChange(true);
         this.BindInstructionIndexData(bindData);    //执行指示脚本
 
         for (var i = 0; i < this.Frame.SubFrame.length; ++i) {
@@ -6724,7 +6736,7 @@ function KLineChartContainer(uielement)
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdatePointByCursorIndex();   //更新十字光标位子
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-        this.Frame.SetSizeChage(true);
+        this.Frame.SetSizeChange(true);
         this.Draw();
 
         this.SendKLineUpdateEvent(bindData);
@@ -6767,7 +6779,7 @@ function KLineChartContainer(uielement)
         //绑定数据
         this.UpdateMainData(bindData, lastDataCount);
         this.UpdateOverlayMinuteRealtimeData(data);     //更新叠加股票数据
-        this.Frame.SetSizeChage(true);
+        this.Frame.SetSizeChange(true);
         this.BindInstructionIndexData(bindData);    //执行指示脚本
 
         for (var i = 0; i < this.Frame.SubFrame.length; ++i) {
@@ -6778,7 +6790,7 @@ function KLineChartContainer(uielement)
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdatePointByCursorIndex();   //更新十字光标位子
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-        this.Frame.SetSizeChage(true);
+        this.Frame.SetSizeChange(true);
         this.Draw();
 
         this.SendKLineUpdateEvent(bindData);
@@ -7257,7 +7269,7 @@ function KLineChartContainer(uielement)
         if (isDraw == false) return;
 
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-        this.Frame.SetSizeChage(true);
+        this.Frame.SetSizeChange(true);
         this.Draw();
     }
 
@@ -7388,7 +7400,7 @@ function KLineChartContainer(uielement)
             }
         }
 
-        this.Frame.SetSizeChage(true);
+        this.Frame.SetSizeChange(true);
 
         if (!bRefreshData)
         {
@@ -7462,7 +7474,7 @@ function KLineChartContainer(uielement)
             this.ChartDrawPicture=aryDrawPicture;
         }
 
-        this.Frame.SetSizeChage(true);
+        this.Frame.SetSizeChange(true);
         this.UpdateFrameMaxMin();
         this.ResetFrameXYSplit();
         this.Draw();
@@ -7717,7 +7729,7 @@ function KLineChartContainer(uielement)
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdatePointByCursorIndex();   //更新十字光标位子
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-        this.Frame.SetSizeChage(true);
+        this.Frame.SetSizeChange(true);
         this.Draw();
     }
 
@@ -8005,7 +8017,7 @@ function KLineChartContainer(uielement)
         
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-        this.Frame.SetSizeChage(true);
+        this.Frame.SetSizeChange(true);
         this.Draw();
     }
 
@@ -8092,7 +8104,7 @@ function KLineChartContainer(uielement)
         this.Frame.SubFrame[0].Frame.YSplitOperator.CoordinateType=1; //调整为百份比坐标
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-        this.Frame.SetSizeChage(true);
+        this.Frame.SetSizeChange(true);
         this.Draw();
     }
 
@@ -8555,7 +8567,7 @@ function KLineChartContainer(uielement)
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdatePointByCursorIndex();   //更新十字光标位子
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-        this.Frame.SetSizeChage(true);
+        this.Frame.SetSizeChange(true);
         this.Draw();
 
          //叠加指标计算
@@ -8835,7 +8847,7 @@ function KLineChartContainer(uielement)
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdatePointByCursorIndex();   //更新十字光标位子
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-        this.Frame.SetSizeChage(true);
+        this.Frame.SetSizeChange(true);
         this.Draw();
 
         //更新信息地雷
@@ -8962,7 +8974,7 @@ function KLineChartContainer(uielement)
         if (!this.Frame.OnSize) return;
 
         var obj=this.Frame.OnSize();
-        this.Frame.SetSizeChage(true);
+        this.Frame.SetSizeChange(true);
         if (obj.Changed)
         {
             this.UpdataDataoffset();
@@ -10180,7 +10192,7 @@ function MinuteChartContainer(uielement)
             }
         }
 
-        this.Frame.SetSizeChage(true);
+        this.Frame.SetSizeChange(true);
 
         if (!bRefreshData)
         {
@@ -10205,7 +10217,7 @@ function MinuteChartContainer(uielement)
         }
         else
         {
-            //this.Frame.SetSizeChage(true);
+            //this.Frame.SetSizeChange(true);
             if (dayCount!=null) this.ChangeDayCount(dayCount);
         }
     }
@@ -10241,7 +10253,7 @@ function MinuteChartContainer(uielement)
             item.Identify=i;
         }
 
-        this.Frame.SetSizeChage(true);
+        this.Frame.SetSizeChange(true);
         this.UpdateFrameMaxMin();
         this.ResetFrameXYSplit();
         this.Draw();
@@ -10556,7 +10568,7 @@ function MinuteChartContainer(uielement)
         this.ChartCorssCursor.StringFormatX.Symbol = this.Symbol;
         this.TitlePaint[0].IsShowDate = true;
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-        this.Frame.SetSizeChage(true);
+        this.Frame.SetSizeChange(true);
         this.Draw();
     }
 
@@ -10736,7 +10748,7 @@ function MinuteChartContainer(uielement)
         this.RequestOverlayMinuteData();//请求叠加数据 (主数据下载完再下载)
 
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-        this.Frame.SetSizeChage(true);
+        this.Frame.SetSizeChange(true);
         this.Draw();
 
         this.BindAllOverlayIndexData(this.SourceData);
@@ -10943,7 +10955,7 @@ function MinuteChartContainer(uielement)
         if (bRedraw)
         {
             this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-            this.Frame.SetSizeChage(true);
+            this.Frame.SetSizeChange(true);
             this.Draw();
         }
     }
@@ -11055,7 +11067,7 @@ function MinuteChartContainer(uielement)
         paint.Status=OVERLAY_STATUS_ID.STATUS_FINISHED_ID;
 
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-        this.Frame.SetSizeChage(true);
+        this.Frame.SetSizeChange(true);
         this.Draw();
     }
 
@@ -11814,7 +11826,7 @@ function CustomKLineChartContainer(uielement) {
         this.UpdataDataoffset();           //更新数据偏移
         this.UpdatePointByCursorIndex();   //更新十字光标位子
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
-        this.Frame.SetSizeChage(true);
+        this.Frame.SetSizeChange(true);
         this.Draw();
 
         if (typeof (this.UpdateUICallback) == 'function') this.UpdateUICallback('RecvHistoryData', this);

@@ -319,7 +319,7 @@ function NoneFrame()
 
     this.DrawInsideHorizontal = function () { }
 
-    this.SetSizeChage = function (sizeChange) 
+    this.SetSizeChange = function (sizeChange) 
     {
         this.SizeChange = sizeChange;
 
@@ -3158,7 +3158,7 @@ function DepthChartFrame()
         this.ScreenImageData=this.Canvas.getImageData(0,0,this.ChartBorder.GetChartWidth(),this.ChartBorder.GetChartHeight());
     }
 
-    this.SetSizeChage=function(sizeChange)
+    this.SetSizeChange=function(sizeChange)
     {
         this.SizeChange=sizeChange;
 

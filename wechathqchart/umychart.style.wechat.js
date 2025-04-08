@@ -192,7 +192,8 @@ function GetBlackStyle()
         {
             InfoColor:'rgb(255,255,255)', //文字颜色
             Color:"rgb(255,255,255)",
-            Border:{ BGColor:"rgb(40,42,44)" }
+            Border:{ BGColor:"rgb(40,42,44)" },
+            DayInfoColor:'rgb(0,0,0)', //周期颜色内文字颜色
         },
 
         TooltipPaint:   //Tooltip

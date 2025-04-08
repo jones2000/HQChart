@@ -1176,6 +1176,8 @@ function StockChipPhone()
     this.Font=g_JSChartResource.StockChip.Font;
     this.InfoColor=g_JSChartResource.StockChip.InfoColor;
     this.CloseButtonConfig=CloneData(g_JSChartResource.StockChip.PhoneCloseButton);
+    this.DayInfoColor=g_JSChartResource.StockChip.DayInfoColor;
+    this.PeriodTextTemplate="999周期内成本99.9%";
 
     this.ShowType=0;                                    //0=所有筹码
     this.PixelRatio=1;
@@ -1195,7 +1197,7 @@ function StockChipPhone()
     this.SetOption=function(option)
     {
         if (!option) return;
-        //if (IFrameSplitOperator.IsNumber(option.ShowType)) this.ShowType=option.ShowType;
+        if (IFrameSplitOperator.IsNumber(option.ShowType)) this.ShowType=option.ShowType;
         if (option.Width>100) this.Width=option.Width;
         if (option.CalculateType>0) this.CalculateType=option.CalculateType;
         if (IFrameSplitOperator.IsNumber(option.PriceZoom)) this.PriceZoom=option.PriceZoom;
@@ -1207,7 +1209,7 @@ function StockChipPhone()
         this.Font=g_JSChartResource.StockChip.Font;
         this.InfoColor=g_JSChartResource.StockChip.InfoColor;
         this.CloseButtonConfig=CloneData(g_JSChartResource.StockChip.PhoneCloseButton);
-       // this.DayInfoColor=g_JSChartResource.StockChip.DayInfoColor;
+        this.DayInfoColor=g_JSChartResource.StockChip.DayInfoColor;
     }
 
     this.Draw=function()
@@ -1245,7 +1247,7 @@ function StockChipPhone()
             if (this.CalculateChip())
             {
                 this.DrawAllChip();
-                //if (this.ShowType==1|| this.ShowType==2) this.DrawDayChip();
+                if (this.ShowType==1|| this.ShowType==2) this.DrawDayChip();
 
                 this.CalculateCast();   //计算成本 
                 if (this.IsHScreen) this.DrawHScreenChipInfo(); 
@@ -1525,7 +1527,6 @@ function StockChipPhone()
         for(var i=0;i<aryText.length;++i)
         {
             var item=aryText[i];
-
             var textColor=item.TitleColor;
             if (item.TitleColor) textColor=item.TitleColor;
             this.Canvas.fillStyle=textColor;
@@ -1555,6 +1556,35 @@ function StockChipPhone()
             }
 
             yText-=lineHeight;
+        }
+
+        this.DrawChipPeriodInfo(yText);
+
+    }
+
+    this.DrawChipPeriodInfo=function(bottom)
+    {
+        if (this.ShowType!=1 && this.ShowType!=2) return;
+
+        var lineHeight=this.LineHeight;
+        var right=this.ClientRect.Left+this.ClientRect.Width-1;
+        this.Canvas.textAlign='right';
+        var maxTextWidth=this.Canvas.measureText(this.PeriodTextTemplate).width+2;
+        this.PeriodTextTemplate
+        this.Data.DayChip.sort(function(a,b){return b.Day-a.Day;})
+        for(var i=0;i<this.Data.DayChip.length;++i)
+        {
+            var item=this.Data.DayChip[i];
+            var rate=0;
+            if (this.Data.ChipInfo && this.Data.ChipInfo.Vol>0) rate=item.Vol/this.Data.ChipInfo.Vol*100;
+            var text=item.Day+'周期'+(this.ShowType==1?'前':'内')+'成本'+(IFrameSplitOperator.IsNumber(rate)? (rate.toFixed(1)+'%'):"--.-%");
+
+            this.Canvas.fillStyle=item.Color;
+            this.Canvas.fillRect(right-maxTextWidth,bottom-lineHeight,maxTextWidth,lineHeight);
+
+            this.Canvas.fillStyle=this.DayInfoColor;
+            this.Canvas.fillText(text,right-1,bottom);
+            bottom-=lineHeight;
         }
     }
 

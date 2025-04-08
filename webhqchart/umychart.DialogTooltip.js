@@ -1182,6 +1182,10 @@ function JSFloatTooltip()
             {
                 this.UpdateChartDrawSVGV2Tooltip(data);
             }
+            else if (tooltipData.Type==9)   //ChartKLineTable
+            {
+                this.UpdateChartKLineTableTooltip(data);
+            }
            
         }
         else if (data.DataType==2)  //更新实时行情数据
@@ -1326,6 +1330,12 @@ function JSFloatTooltip()
         this.UpdateTableDOM();
 
         this.ShowTooltip(data);
+    }
+    
+
+    this.UpdateChartKLineTableTooltip=function(data)
+    {
+        this.UpdateChartDrawSVGV2Tooltip(data);
     }
 
     //交易指标

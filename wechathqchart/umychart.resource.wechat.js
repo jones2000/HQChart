@@ -392,6 +392,7 @@ function JSChartResource()
     {
         InfoColor:'rgb(0,0,0)', //文字颜色
         Font:'12px 微软雅黑',
+        DayInfoColor:'rgb(255,255,255)', //周期颜色内文字颜色
 
         PhoneCloseButton:
         {
@@ -721,6 +722,7 @@ function JSChartResource()
             var item=style.StockChip;
             if (item.Font) this.StockChip.Font=item.Font;
             if (item.InfoColor) this.StockChip.InfoColor=item.InfoColor;
+            if (item.DayInfoColor) this.StockChip.DayInfoColor=item.DayInfoColor;
             if (item.PhoneCloseButton)
             {
                 var subItem=item.PhoneCloseButton;

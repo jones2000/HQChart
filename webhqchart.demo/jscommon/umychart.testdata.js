@@ -2015,6 +2015,10 @@ HQData.Report_APIIndex=function(data, callback)
         HQData.APIIndex_TITLE(data, callback);
     else if (request.Data.indexname=="API_SCATTER_PLOT_V2")
         HQData.APIIndex_SCATTER_PLOT_V2(data, callback);
+    else if (request.Data.indexname=="API_KLINE_TABLE")
+        HQData.APIIndex_KLINE_TABLE(data, callback);
+    else if (request.Data.indexname=="API_DRAWSVG")
+        HQData.APIIndex_DRAWSVG(data, callback); 
 }
 
 
@@ -3073,6 +3077,217 @@ HQData.APIIndex_SCATTER_PLOT_V2=function(data, callback)
     };
 
     console.log('[HQData.APIIndex_SCATTER_PLOT_V2] apiData ', apiData);
+    callback(apiData);
+}
+
+HQData.APIIndex_KLINE_TABLE=function(data, callback)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var kData=data.HQChart.GetKData(); //hqchart图形的分钟数据
+
+    var tableData= 
+    { 
+        name:'KLINE_TABLE', type:1, 
+        Draw: 
+        { 
+            DrawType:'KLINE_TABLE', 
+            DrawData:[ ] ,                                      //数据  [ [ { Text, Color: BGColor }, ...... ], [],]
+            RowCount:4,
+            RowName:[ {Name:"账户1",TextAlign:"center"}, {Name:"账户2",TextAlign:"center"}, {Name:"账户3",TextAlign:"center"},{Name:"账户4", TextAlign:"center"}],
+
+            Config:
+            {
+                BGColor:"rgb(0,0,0)",
+                BorderColor:"rgb(220,220,220)",
+                TextColor:"rgb(250,250,250)",
+                ItemMergin:{ Left:2, Right:2, Top:4, Bottom:4, YOffset:3 },
+                RowNamePosition:3,
+                TextFont:{ Family:'微软雅黑' , FontMaxSize:14*GetDevicePixelRatio(), },
+                RowHeightType:1,
+            }
+        },
+        
+    };
+
+    var ACCOUNT_TEST_DATA=
+    [
+        { Name:"账户1", DayCount:5, OperatorID:0 },
+        { Name:"账户2", DayCount:10, OperatorID:0 },
+        { Name:"账户3", DayCount:4, OperatorID:0 },
+        { Name:"账户4", DayCount:8, OperatorID:0 },
+    ]
+    
+    for(var i=0;i<kData.Data.length;++i)   
+    {
+        var kItem=kData.Data[i];
+
+        //一列数据
+        var colItem={ Date:kItem.Date, Time:kItem.Time, Data:[ ] };
+
+        for(var j=0;j<ACCOUNT_TEST_DATA.length;++j)
+        {
+            var accountItem=ACCOUNT_TEST_DATA[j];
+            if (i%accountItem.DayCount==0)
+            {
+                accountItem.OperatorID++;
+                if (accountItem.OperatorID>=3) accountItem.OperatorID=0;
+
+                if (accountItem.OperatorID==1)
+                {
+                    colItem.Data[j]= 
+                    {
+                        Text:"买", Color:"rgb(250,250,250)", BGColor:'rgb(250,0,0)', TextAlign:"center",
+                        Tooltip:
+                        {
+                            AryText:
+                            [
+                                {Title:"日期", Text:`${kItem.Date}`},
+                                {Title:"买入价", Text:`${kItem.Close.toFixed(2)}`, TextColor:"rgb(250,0,0)"},
+                                {Title:"数量", Text:`${HQData.GetRandomTestData(100,400).toFixed(0)}`,TextColor:"rgb(255,165,0)" },
+                            ]
+                        }
+                    };
+                }
+                else if (accountItem.OperatorID==2)
+                {
+                    colItem.Data[j]= 
+                    {
+                        Text:"卖", Color:"rgb(250,250,250)", BGColor:'rgb(34,139,34)', TextAlign:"center",
+                        Tooltip:
+                        {
+                            AryText:
+                            [
+                                {Title:"日期", Text:`${kItem.Date}`},
+                                {Title:"卖入价", Text:`${kItem.Close.toFixed(2)}`, TextColor:"rgb(34,139,34)"},
+                                {Title:"数量", Text:`${HQData.GetRandomTestData(100,400).toFixed(0)}`,TextColor:"rgb(255,165,0)" },
+                            ]
+                        }
+                    };
+                }
+                    
+            }
+            else
+            {
+                if (accountItem.OperatorID==0) continue;    //空闲
+
+                if (accountItem.OperatorID==1)
+                    colItem.Data[j]= {Text:"持", Color:"rgb(250,250,250)", BGColor:'rgb(255,140,0)',TextAlign:"center"};
+            }
+        }
+
+        tableData.Draw.DrawData.push(colItem);
+    }
+
+    var apiData=
+    {
+        code:0, 
+        stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+        outdata: { date:kData.GetDate(), time:kData.GetTime(), outvar:[tableData] } 
+    };
+
+    console.log('[KLineChart::APIIndex_KLINE_TABLE] apiData ', apiData);
+    callback(apiData);
+}
+
+
+HQData.APIIndex_DRAWSVG=function(data, callback)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var kData=hqchart.GetKData();
+    var kCount=kData.Data.length;
+
+    var SVGData= 
+    { 
+        name:'买卖图标', type:1, 
+        Draw: 
+        { 
+            DrawType:'DRAWSVG', 
+            Family:'iconfont', 
+            TextFont:`${12*GetDevicePixelRatio()}px 微软雅黑`,
+            EnableClick:true,
+            EnalbeDetailNoOverlap:true,
+            Data: 
+            [
+                /*
+                { Date:kData.Data[kCount-30].Date, Value:15.5, Text:'15.5' , Guid:"jj_1"},
+                */
+            ],
+            
+            /*
+            BuildKeyCallback:(item)=>
+            {
+                return `${item.Date}`;
+            }
+            */
+        } //绘制文字
+    };
+
+    var TEST_ICON_COLOR=["rgb(240,0,0)", "rgb(240,100,30)", "rgb(138,43, 226)", "rgb(151,255,255)", "rgb(255, 20, 147)"];
+
+    var count=1;
+    for(var i=0 ;i<kCount;++i)
+    {
+        var item=kData.Data[i];
+        if (i%10!=3) continue;
+        count++;
+
+        var text=`提示信息:<br>日期:${IFrameSplitOperator.FormatDateString(item.Date)}<br>信息描述:太极（Tai Chi），即是阐明宇宙从无极而太极，以至万物化生的过程。`;
+        if (IFrameSplitOperator.IsNumber(item.Time)) text=`提示信息:<br>日期:${IFrameSplitOperator.FormatDateString(item.Date)}<br>时间:${item.Time}`;
+       
+        var colorIndex=Math.ceil(Math.random()*10) % (TEST_ICON_COLOR.length-1);
+
+        var drawItem=
+        { 
+            Date:item.Date, Time:item.Time, Value:"H", ID:count,
+            Text:{Content:`${count}`, Color:"rgb(0,0,0)", YOffset:-14},
+            SVG: { Symbol:"\ue6a7", Color:TEST_ICON_COLOR[colorIndex], Size:32*GetDevicePixelRatio(),YOffset:-5 },
+            Tooltip:
+            { 
+                Text:text,
+                Ver:2.0,
+                AryText:
+                [
+                    { Text:"提示信息", TextColor:"rgb(255,215,0)"},
+                    { Text:`ID:${count}`, TextColor:"rgb(255,215,0)"},
+                    { Title:"日期", Text:`${IFrameSplitOperator.FormatDateString(item.Date)}`},
+                    { Title:"信息描述", Text:`太极生两仪，两仪生四象!!!`, TextColor:"rgb(255,0,255)"}
+                ]
+            },
+            Line: { Color:"rgb(255,0,255)", Dash:[5,5], Value:"C", Width:1, SVGBlank:4 },
+
+            Detail:
+            { 
+                Content:
+                [ 
+                    {Text:"买:11.99", Color:"rgb(255,100,100)" }, 
+                    {Text:"涨幅:90.0%", Color:"rgb(230,230,0)"}
+                ] ,
+                Font:`${12*GetDevicePixelRatio()}px 微软雅黑`,
+                ItemSpace:3, 
+                YOffset:-5, 
+                XOffset:2,
+                BGColor:"rgba(0, 0, 0, 0.8)", 
+                BorderColor:"rgb(255, 185, 15)" ,
+                LeftMargin:3,
+                RightMargin:4
+            },
+        };
+
+        if (count%20==1) drawItem.Value="Top";
+
+        SVGData.Draw.Data.push(drawItem);
+    }
+
+    var apiData=
+    {
+        code:0, 
+        stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+        outdata: { date:kData.GetDate(), time:kData.GetTime(), outvar:[SVGData] } 
+    };
+
+    console.log('[HQData.APIIndex_DRAWSVG] apiData ', apiData);
     callback(apiData);
 }
 

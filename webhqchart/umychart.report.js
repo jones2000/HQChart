@@ -1962,6 +1962,16 @@ function JSReportChartContainer(uielement)
         if (!reportChart) return;
 
         var keyID = e.keyCode ? e.keyCode :e.which;
+
+         //回调事件
+         var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_KEYDOWN);
+         if (event && event.Callback)
+         {
+             var sendData={ e:e, KeyID:keyID, PreventDefault:false, ReportChart:reportChart };
+             event.Callback(event, sendData, this);
+             if (sendData.PreventDefault) return;
+         }
+
         if (keyID==116) return; //F15刷新不处理
 
         this.HideAllTooltip();
