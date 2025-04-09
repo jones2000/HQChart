@@ -236,6 +236,8 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![报价列表](/小程序行情模块用例/image/hqchart_report_kbar.png)<br>
 ![报价列表](/小程序行情模块用例/image/hqchart_report_2.gif)<br>
 ![报价列表](/小程序行情模块用例/image/report_chart.gif)<br>
+![报价列表](/小程序行情模块用例/image/report_selfstock.gif)<br>
+
 * 键盘精灵<br>
 ![键盘精灵](/小程序行情模块用例/image/sendsymbol_demo.gif)<br>
 * T型报价   

@@ -1571,8 +1571,9 @@ function DynamicChartTitlePainting()
 
         if (this.Frame.IsHScreen === true) 
         {
+            var rtText={ };
             this.Canvas.save();
-            this.DrawItem(true,true);
+            this.DrawItem(true,true,rtText);
             this.DrawOverlayIndexSingleLine();
             this.Canvas.restore();
 
@@ -1588,8 +1589,9 @@ function DynamicChartTitlePainting()
             return;
         }
 
-        this.DrawItem(true,true);
-        this.DrawOverlayIndexSingleLine();
+        var rtText={ };
+        this.DrawItem(true,true,rtText);
+        this.DrawOverlayIndexSingleLine(rtText);
     }
 
     this.DrawTitle = function () 
@@ -1743,13 +1745,14 @@ function DynamicChartTitlePainting()
         return { Text:valueText, ArrayText:aryText };
     }
 
-    this.DrawItem=function(bDrawTitle, bDrawValue)
+    this.DrawItem=function(bDrawTitle, bDrawValue, rtText)
     {
         var isHScreen=(this.Frame.IsHScreen === true);
         var left = this.Frame.ChartBorder.GetLeft() + 1;
         var bottom = this.Frame.ChartBorder.GetTop() + this.Frame.ChartBorder.TitleHeight / 2;    //上下居中显示
         if (this.TitleAlign == 'bottom') bottom = this.Frame.ChartBorder.GetTopEx() - this.TitleBottomDistance;
         var right = this.Frame.ChartBorder.GetRight();
+        var lineHeight=this.Canvas.measureText("擎").width+2;
         var textWidth;
 
         if (isHScreen)
@@ -1915,7 +1918,11 @@ function DynamicChartTitlePainting()
                         else text=titleItem.Text;
     
                         var textWidth=this.Canvas.measureText(text).width 
-                        if ((left+textWidth)>right) break;
+                        if ((left+textWidth)>right) //换行
+                        {
+                            left=this.Frame.ChartBorder.GetLeft() + 3;
+                            bottom+=lineHeight;
+                        }
     
                         this.Canvas.fillStyle=titleItem.Color;
                         this.Canvas.fillText(text,left,bottom,textWidth);
@@ -1949,7 +1956,12 @@ function DynamicChartTitlePainting()
                     }
                     
                     textWidth = this.Canvas.measureText(text).width + this.ParamSpace;    //后空2个像素
-                    if (textWidth+left>right) break;    //画不下了就不画了
+                    if (textWidth+left>right)   //换行
+                    {
+                        left=this.Frame.ChartBorder.GetLeft() + 3;
+                        bottom+=lineHeight;
+                    }
+
                     this.Canvas.fillStyle = item.Color;
                     this.Canvas.fillText(text, left, bottom, textWidth);
                     left += textWidth;
@@ -1996,6 +2008,12 @@ function DynamicChartTitlePainting()
                 }
             }
         }
+
+        if (rtText) 
+        {
+            if (this.TitleAlign=="middle")  rtText.Bottom=bottom+lineHeight/2+1;
+            else rtText.Bottom=bottom+1;
+        }
     }
 
     this.OnDrawTitleEvent=function()
@@ -2019,7 +2037,7 @@ function DynamicChartTitlePainting()
         event.Callback(event,data,this);
     }
 
-    this.DrawOverlayIndexSingleLine=function()   //叠加指标1个指标一行
+    this.DrawOverlayIndexSingleLine=function(rtText)   //叠加指标1个指标一行
     {
         if (this.OverlayIndex.size<=0) return;
 
@@ -2042,6 +2060,7 @@ function DynamicChartTitlePainting()
         else
         {
             var top=border.TopTitle+2;
+            if (rtText && IFrameSplitOperator.IsNumber(rtText.Bottom) && rtText.Bottom>top) top=rtText.Bottom;
             if (!this.IsShowMainIndexTitle) top=this.Frame.ChartBorder.GetTop()+2;
             var left=border.Left+1;
             var right=border.Right;

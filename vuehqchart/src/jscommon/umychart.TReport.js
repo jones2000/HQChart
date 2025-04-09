@@ -3026,6 +3026,89 @@ function ChartTReport()
         return null;
     }
 
+    //获取一行位置 option={ Symbol:, RowIndex:}
+    this.GetRowRect=function(option)
+    {
+        if (!this.Data) return null;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return null;
+
+        var symbol=null;
+        var rowIndex=null;
+        if (option)
+        {
+            if (option.Symbol) symbol=option.Symbol;
+            if (IFrameSplitOperator.IsNumber(option.RowIndex)) rowIndex=option.RowIndex;
+        }
+        var top=this.RectClient.Top+this.HeaderHeight;
+        var left=this.RectClient.Left;
+        var right=this.RectClient.Right;
+
+        var textTop=top+this.FixedRowHeight*this.FixedRowCount;
+        for(var i=this.Data.YOffset, j=0; i<this.Data.Data.length && j<this.RowCount ;++i, ++j, textTop+=this.RowHeight)
+        {
+            var exePrice=this.Data.Data[i];
+            var rtRow={ Left:left, Top:textTop, Right:right, Bottom: textTop+this.RowHeight };
+            rtRow.Height=rtRow.Bottom-rtRow.Top;
+            rtRow.Width=rtRow.Right-rtRow.Left;
+            
+            var data={ RectRow:rtRow, DataIndex:i, Index:j, ExePrice:exePrice };
+            var item=this.GetExePriceDataCallback(exePrice);
+            if (!item) continue;
+            
+            var bLeftFind=false, bRightFind=false;
+            if (symbol)
+            {
+                if (item.LeftData && item.LeftData.Symbol && item.LeftData.Symbol==symbol) bLeftFind=true;
+                if (item.RightData && item.RightData.Symbol && item.RightData.Symbol==symbol) bRightFind=true;
+            }
+            else if (IFrameSplitOperator.IsNumber(rowIndex))
+            {
+                if (rowIndex==i)
+                {
+                    bLeftFind=true;
+                    bRightFind=true;
+                }
+            }
+            
+            if (bLeftFind || bRightFind)
+            {
+                data.Item=item;
+                data.AryLeftRect=[];
+                data.AryRightRect=[];
+                data.ElementRect=this.UIElement.getBoundingClientRect();
+                data.PixelRatio=GetDevicePixelRatio();
+
+                var rtCenterItem=this.GetCenterItemRect();
+                var rtCenter={Left:rtCenterItem.Left, Right:rtCenterItem.Right, Top:rtRow.Top, Height:rtRow.Height, Bottom:rtRow.Bottom };
+
+                var xLeft=rtCenterItem.Left;    //左边
+                var xRight=rtCenterItem.Right;  //右边
+        
+                var reportleft=this.RectClient.Left;
+                var reportRight=this.RectClient.Right;
+                for(var k=this.Data.XOffset;k<this.Column.length;++k)
+                {
+                    var colItem=this.Column[k];
+                    var itemWidth=colItem.Width+this.ItemExtraWidth;
+                    xLeft-=itemWidth;
+                    if (xLeft<reportleft) break;
+        
+                    var rtItem={ Left:xLeft, Right:xLeft+itemWidth, Top:rtRow.Top, Height:rtRow.Height, Bottom:rtRow.Bottom, Width:itemWidth };
+                    data.AryLeftRect.push({ Rect:rtItem, ColumnIndex:k, Column:colItem })
+        
+                    rtItem={ Left:xRight, Right:xRight+itemWidth, Top:rtRow.Top, Height:rtRow.Height, Bottom:rtRow.Bottom, Width:itemWidth };
+                    data.AryRightRect.push({ Rect:rtItem, ColumnIndex:k, Column:colItem });
+
+                    xRight+=itemWidth;
+                }
+
+                return data;
+            }
+        }
+
+        return null;
+    }
+
     this.PtInBody=function(x,y)
     {
         if (!this.Data) return null;

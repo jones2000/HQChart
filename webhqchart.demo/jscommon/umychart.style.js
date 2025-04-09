@@ -296,6 +296,13 @@ function GetBlackStyle()
             Text:{ Color:"rgb(219,220,220)", Font:`${12*GetDevicePixelRatio()}px 微软雅黑` } 
         },
 
+        DaySummaryKLine:
+        {
+            //Font:`${12*GetDevicePixelRatio()}px 微软雅黑`,
+            TextColor:"rgb(255,165,0)"
+        },
+
+
         //指标锁
         IndexLock:
         {
