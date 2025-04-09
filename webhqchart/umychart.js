@@ -12740,7 +12740,7 @@ function AverageWidthFrame()
             var left=border.Left;
             var yButton=border.Top+this.ChartBorder.TitleHeight/2;
 
-            this.ToolbarCacheSize={ RToolbar:{ Right:right, Left:left }}
+            this.ToolbarCacheSize={ RToolbar:{ Right:right, Left:right }}
 
             //右往左绘制
             for(var i=0;i<aryButton.length;++i)
