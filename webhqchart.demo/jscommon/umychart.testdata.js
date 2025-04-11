@@ -2985,24 +2985,38 @@ HQData.APIIndex_TITLE=function(data, callback)
     var textData={ name:"标题", type:10, color:"rgb(0,128,128)", data:[], };    //名字
     var closeData={ name:"收盘价", type:0, color:"rgb(255,165,0)", data:[] } ;    //
 
-    var aryDate=[];
-    var aryTime=[];
+    var titleData=
+    { 
+        name:"我的指标标题", type:1, 
+        Draw:
+        { 
+            Name:"指标标题测试",
+            DrawType:"DRAWTITLE",
+            DrawData:{ AryTitle:[] },
+        },
+    };
+
     for(var i=0;i<kData.Data.length-30;++i)
     {
         var kItem=kData.Data[i];
         
         closeData.data.push(kItem.Close);
 
-        textData.data.push(
-            [
-                { Name:`收`, Text:`${kItem.Close.toFixed(2)}`, Color:"rgb(200,10,10)",},
-                { Name:`开`, Text:`${kItem.Open.toFixed(2)}`, Color:"rgb(0,200,10)", LeftSpace:2 }
-            ]);
+        titleData.Draw.DrawData.AryTitle.push(
+            {
+                Date:kItem.Date, Time:kItem.Time,
+
+                AryText:
+                [
+                    { Name:`收`, Text:`${kItem.Close.toFixed(2)}`, Color:"rgb(200,10,10)",},
+                    { Name:`开`, Text:`${kItem.Open.toFixed(2)}`, Color:"rgb(0,200,10)", LeftSpace:2 },
+                    { Name:"标题1", Text:"1xxxxx", Color:"rgb(100,200,10)", LeftSpace:2},
+                    { Name:"标题2", Text:"2xxxxx", Color:"rgb(200,200,10)", LeftSpace:2},
+                    { Name:"标题3", Text:"3xxxxx", Color:"rgb(100,70,80)", LeftSpace:2},
+                ]
+            });
 
         //textData.data.push(`价格:${kItem.Close.toFixed(2)}`);
-
-        aryDate.push(kItem.Date);
-        aryTime.push(kItem.Time);
     }
 
 
@@ -3010,7 +3024,7 @@ HQData.APIIndex_TITLE=function(data, callback)
     {
         code:0, 
         stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
-        outdata: { date:aryDate, time:aryTime, outvar:[ textData, closeData] },
+        outdata: { date:kData.GetDate(), time:kData.GetTime(), outvar:[ titleData, closeData] },
 
         //error: { message:"无权限查看指标“测试指标1”" }
     };

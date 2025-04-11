@@ -20813,13 +20813,16 @@ function ScriptIndex(name,script,args,option)
         chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
         chart.Identify=this.Guid;
+        chart.Data=hqChart.GetKData();                  //绑定K线
         if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
         else chart.Color=this.GetDefaultColor(id);
-        chart.Data.Data=varItem.Data;
+        chart.AryTitle=varItem.Draw.DrawData.AryTitle;
+        chart.BuildCacheData();
         
         var titleIndex=windowIndex+1;
         var titleData=new DynamicTitleData(chart.Data,varItem.Name,chart.Color);
         titleData.DataType="ChartIndexTitle";
+        titleData.Chart=chart;
         hqChart.TitlePaint[titleIndex].Data[id]=titleData;
 
         this.SetChartIndexName(chart);
@@ -22637,6 +22640,9 @@ function ScriptIndex(name,script,args,option)
                     case "DRAWSVG":
                         this.CreateChartDrawSVG(hqChart,windowIndex,item,i);
                         break;
+                    case "DRAWTITLE":
+                        this.CreateTitle(hqChart,windowIndex,item,i);
+                        break;
                     case "MULTI_HTMLDOM":
                         this.CreateMulitHtmlDom(hqChart,windowIndex,item,i);
                         break;
@@ -22730,11 +22736,7 @@ function ScriptIndex(name,script,args,option)
             {
                 this.CreateArea(hqChart,windowIndex,item,i);
             }
-            else if (item.Type==10) //标题
-            {
-                this.CreateTitle(hqChart,windowIndex,item,i);
-            }
-
+        
             var titlePaint=hqChart.TitlePaint[windowIndex+1];
             if (titlePaint &&  titlePaint.Data && i<titlePaint.Data.length) //设置标题数值 小数位数和格式
             {
@@ -23011,6 +23013,9 @@ function OverlayScriptIndex(name,script,args,option)
                     case "DRAWSVG":
                         this.CreateChartDrawSVG(hqChart,windowIndex,item,i);
                         break;
+                    case "DRAWTITLE":
+                        this.CreateTitle(hqChart,windowIndex,item,i);
+                        break;
                     case "MULTI_HTMLDOM":
                         this.CreateMulitHtmlDom(hqChart,windowIndex,item,i);
                         break;
@@ -23084,11 +23089,6 @@ function OverlayScriptIndex(name,script,args,option)
             {
                 this.CreateLine(hqChart,windowIndex,item,i, item.Type);
             }
-            else if (item.Type==10)
-            {
-                this.CreateTitle(hqChart,windowIndex,item,i);
-            }
-
             
 
             var titleData=titleInfo.Data[i];
@@ -23673,22 +23673,25 @@ function OverlayScriptIndex(name,script,args,option)
     {
         var overlayIndex=this.OverlayIndex;
         var frame=overlayIndex.Frame;
-        let chart=new ChartIndexTitle();
+        var chart=new ChartIndexTitle();
         chart.Canvas=hqChart.Canvas;
 
         chart.Name=varItem.Name;
         chart.ChartBorder=frame.Frame.ChartBorder;
         chart.ChartFrame=frame.Frame;
         chart.Identify=overlayIndex.Identify;
-        
+        chart.Data=hqChart.GetKData();                  //绑定K线
+
         if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
         else chart.Color=this.GetDefaultColor(id);
-        chart.Data.Data=varItem.Data;
+        chart.AryTitle=varItem.Draw.DrawData.AryTitle;
+        chart.BuildCacheData();
 
         var titleIndex=windowIndex+1;
         var titlePaint=hqChart.TitlePaint[titleIndex];
         var titleData=new DynamicTitleData(chart.Data,chart.Name,chart.Color);
         titleData.DataType="ChartIndexTitle";
+        titleData.Chart=chart;
         titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=titleData;
         
         this.SetChartIndexName(chart);
@@ -25304,6 +25307,18 @@ function APIScriptIndex(name,script,args,option, isOverlay)
 
                     result.push(outVarItem);
                 }
+                else if (draw.DrawType=="DRAWTITLE")
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=draw.DrawData;
+
+                    outVarItem.Draw=drawItem;
+                    
+                    result.push(outVarItem);
+                }
                 else if (draw.DrawType=="MULTI_HTMLDOM")    //外部自己创建dom
                 {
                     drawItem.Text=draw.Text;
@@ -25859,6 +25874,18 @@ function APIScriptIndex(name,script,args,option, isOverlay)
 
                     outVarItem.Draw=drawItem;
                     if (draw.Font) outVarItem.Font=draw.Font;
+                    
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType=="DRAWTITLE")
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=draw.DrawData;
+
+                    outVarItem.Draw=drawItem;
                     
                     result.push(outVarItem);
                 }

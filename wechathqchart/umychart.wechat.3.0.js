@@ -1281,11 +1281,11 @@ function JSChart(element)
     }
     this.StopAutoUpdata = this.StopAutoUpdate;
 
-    this.ChartDestory=function()
+    this.ChartDestroy=function()
     {
-        if (this.JSChartContainer && typeof (this.JSChartContainer.ChartDestory) == 'function') {
-            JSConsole.Chart.Log("[JSChart::ChartDestory]");
-            this.JSChartContainer.ChartDestory();
+        if (this.JSChartContainer && typeof (this.JSChartContainer.ChartDestroy) == 'function') {
+            JSConsole.Chart.Log("[JSChart::ChartDestroy]");
+            this.JSChartContainer.ChartDestroy();
         }
     }
 
@@ -1572,11 +1572,12 @@ function JSChartContainer(uielement)
     //全局配置
     this.GlobalOption= { RightHorizontal: { Show:false, } }
 
-    this.ChartDestory=function()    //销毁
+    this.ChartDestroy=function()    //销毁
     {
         this.IsDestroy=true;
         this.StopAutoUpdate();
     }
+    
 
     this.AddEventCallback = function (object) //设置事件回调 {event:事件id, callback:回调函数}
     {

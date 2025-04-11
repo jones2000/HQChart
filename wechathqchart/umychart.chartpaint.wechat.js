@@ -9246,6 +9246,10 @@ function ChartCorssCursor()
         Border:CloneData(g_JSChartResource.CorssCursor.CorssPoint.Border)
     }
 
+    this.RightMargin=CloneData(g_JSChartResource.CorssCursor.RightMargin);
+    this.BottomConfig=CloneData(g_JSChartResource.CorssCursor.BottomText);     //底部输出配置
+    this.LeftConfig=CloneData(g_JSChartResource.CorssCursor.LeftText);
+
     //内部使用
     this.Close = null;     //收盘价格
 
@@ -9418,41 +9422,48 @@ function ChartCorssCursor()
         this.StringFormatY.Point={X:x, Y:y};
         this.StringFormatY.FrameID = yValueExtend.FrameID;
 
+        this.Canvas.font = this.Font;
+        var textHeight=this.GetFontHeight();
+        if (textHeight>this.TextHeight) this.TextHeight=textHeight;
+
         if (((this.ShowTextMode.Left == 1 && this.Frame.ChartBorder.Left >= 30) || this.ShowTextMode.Left == 2 ||
             (this.ShowTextMode.Right == 1 && this.Frame.ChartBorder.Right >= 30) || this.ShowTextMode.Right == 2) && this.StringFormatY.Operator()) 
         {
             var text = this.StringFormatY.Text;
-            this.Canvas.font = this.Font;
-            var textWidth = this.Canvas.measureText(text).width + 4;    //前后各空2个像素
+            var textWidth = this.Canvas.measureText(text).width;    //前后各空2个像素
+            var textSize={ Width:textWidth+4, Height:this.TextHeight, Text:[] };
+            var margin=this.LeftConfig.Margin;
+            var textOffset=this.LeftConfig.TextOffset;
+            var rtBG=null;
 
-            if (this.Frame.ChartBorder.Left >= 30 && this.ShowTextMode.Left == 1) 
+            if (this.Frame.ChartBorder.Left >= 30 && this.ShowTextMode.Left==1) 
             {
-                this.Canvas.fillStyle = this.TextBGColor;
-                if (left < textWidth) //左边空白的地方太少了画布下
-                {
-                    this.Canvas.fillRect(2, y - this.TextHeight / 2, textWidth, this.TextHeight);
-                    this.Canvas.textAlign = "left";
-                    this.Canvas.textBaseline = "middle";
-                    this.Canvas.fillStyle = this.TextColor;
-                    this.Canvas.fillText(text, 2 + 2, y, textWidth);
-                }
-                else 
-                {
-                    this.Canvas.fillRect(left - 2, y - this.TextHeight / 2, -textWidth, this.TextHeight);
-                    this.Canvas.textAlign = "right";
-                    this.Canvas.textBaseline = "middle";
-                    this.Canvas.fillStyle = this.TextColor;
-                    this.Canvas.fillText(text, left - 4, y, textWidth);
-                }
+                    var rtBG={ Right:left, Width:textWidth+margin.Left+margin.Right, YCenter:y, Height:textHeight+margin.Top+margin.Bottom };
+                    rtBG.Left=rtBG.Right-rtBG.Width;
+                    rtBG.Top=rtBG.YCenter-rtBG.Height/2;
+                    rtBG.Bottom=rtBG.Top+rtBG.Height;
+
+                    if (rtBG.Left<0) 
+                    {
+                        rtBG.Left=0;
+                        rtBG.Right=rtBG.Left+rtBG.Width;
+                    }
+            } 
+            else if (this.ShowTextMode.Left==2) //在框架内显示
+            {
+                var rtBG={ Left:left, Width:textWidth+margin.Left+margin.Right, YCenter:y, Height:textHeight+margin.Top+margin.Bottom };
+                rtBG.Right=rtBG.Left+rtBG.Width;
+                rtBG.Top=rtBG.YCenter-rtBG.Height/2;
+                rtBG.Bottom=rtBG.Top+rtBG.Height;
             }
-            else if (this.ShowTextMode.Left == 2) 
+
+            if (rtBG)
             {
-                this.Canvas.fillStyle = this.TextBGColor;
-                this.Canvas.fillRect(left, y - this.TextHeight / 2, textWidth, this.TextHeight);
-                this.Canvas.textAlign = "left";
-                this.Canvas.textBaseline = "middle";
-                this.Canvas.fillStyle = this.TextColor;
-                this.Canvas.fillText(text, left + 2, y, textWidth);
+                this.DrawTextBGRect(rtBG.Left,rtBG.Top,rtBG.Width,rtBG.Height);
+                this.Canvas.textAlign="left";
+                this.Canvas.textBaseline="bottom";
+                this.Canvas.fillStyle=this.TextColor;
+                this.Canvas.fillText(text,rtBG.Left+textOffset.X, rtBG.Bottom+textOffset.Y);
             }
 
             var complexText=
@@ -9486,8 +9497,6 @@ function ChartCorssCursor()
                 if (!complexText.Font) complexText.Color=this.TextColor;
             }
                 
-               
-           
             this.CalculateComplexTextSize(complexText, textSize);
 
             if (this.Frame.ChartBorder.Right >= 30 && this.ShowTextMode.Right == 1) 
@@ -9520,53 +9529,63 @@ function ChartCorssCursor()
             this.Canvas.font = this.Font;
 
             this.Canvas.fillStyle = this.TextBGColor;
-            var textWidth = this.Canvas.measureText(text).width + 4;    //前后各空2个像素
+            var textWidth = this.Canvas.measureText(text).width;    //前后各空2个像素
+            var margin=this.BottomConfig.Margin;
+            var textOffset=this.BottomConfig.TextOffset;
+            var rtBG=
+            { 
+                Top:bottom, Height:margin.Top+margin.Bottom+textHeight, 
+                XCenter:x, Width:textWidth+margin.Left+margin.Right 
+            };
+            rtBG.Bottom=rtBG.Top+rtBG.Height;
+            rtBG.Left=rtBG.XCenter-rtBG.Width/2;
+            rtBG.Right=rtBG.Left+rtBG.Width;
+
+            if (rtBG.Left<=0)
+            {
+                rtBG.Left=0;
+                rtBG.Right=rtBG.Left+rtBG.Width;
+            }
+            else if (rtBG.Right>=right)
+            {
+                rtBG.Right=right;
+                rtBG.Left=rtBG.Right-rtBG.Width;
+            }
+
             var bShowText=true;
-            var yText=bottom + 2;   //文字顶部坐标
-            if (this.ShowTextMode.Bottom==8)
+            if (this.ShowTextMode.Bottom==2)
+            {
+                rtBG.Bottom=bottom;
+                rtBG.Top=rtBG.Bottom-rtBG.Height;
+            }
+            else if (this.ShowTextMode.Bottom==8)
             {
                 var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CUSTOM_CORSSCURSOR_POSITION);
                 if (event && event.Callback)
                 {
-                    var yCenter=yText+this.TextHeight/2;
-                    var yTop=yText;
-                    var sendData={ YCenter:yCenter, YTop:yTop, Height:this.TextHeight, IsShowText:bShowText };
+                    var sendData={ RectText:rtBG, IsShowText:bShowText, X:x, Y:y };
                     event.Callback(event, sendData, this);
-
-                    yCenter=sendData.YCenter;
-                    yText=sendData.YTop;
                     bShowText=sendData.IsShowText;
                 }
             }
 
+            //JSConsole.Chart.Log('[ChartCorssCursor::Draw] ',yCenter);
             if (bShowText)
             {
-                if (x - textWidth / 2 < 3)    //左边位置不够了, 顶着左边画
-                {
-                    this.Canvas.fillRect(x - 1, yText, textWidth, this.TextHeight);
-                    this.Canvas.textAlign = "left";
-                    this.Canvas.textBaseline = "top";
-                    this.Canvas.fillStyle = this.TextColor;
-                    this.Canvas.fillText(text, x + 1, yText, textWidth);
-                }
-                else if ((right - left) - x < textWidth) 
-                {            //右边位置不够用，顶着右边画
-                    this.Canvas.fillRect(right - textWidth, yText, textWidth, this.TextHeight);
-                    this.Canvas.textAlign = "right";
-                    this.Canvas.textBaseline = "top";
-                    this.Canvas.fillStyle = this.TextColor;
-                    this.Canvas.fillText(text, right - 1, yText, textWidth);
-                }
-                else 
-                {
-                    this.Canvas.fillRect(x - textWidth / 2, yText, textWidth, this.TextHeight);
-                    this.Canvas.textAlign = "center";
-                    this.Canvas.textBaseline = "top";
-                    this.Canvas.fillStyle = this.TextColor;
-                    this.Canvas.fillText(text, x, yText, textWidth);
-                }
+                this.DrawTextBGRect(rtBG.Left,rtBG.Top,rtBG.Width,rtBG.Height);
+                this.Canvas.textAlign="left";
+                this.Canvas.textBaseline="bottom";
+                this.Canvas.fillStyle=this.TextColor;
+                this.Canvas.fillText(text,rtBG.Left+textOffset.X,rtBG.Bottom+textOffset.Y,textWidth);
             }
         }
+    }
+
+    this.GetFontHeight=function(font)
+    {
+        if (font) this.Canvas.font=font;
+        var textHeight= this.Canvas.measureText("擎").width;
+        return textHeight;
     }
 
     this.DrawTextBGRect=function(x,y, height, width)

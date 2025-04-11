@@ -432,8 +432,17 @@ function AverageWidthFrame()
                         if (this.YTextBaseline==1) this.Canvas.textBaseline = "bottom";
                         else this.Canvas.textBaseline = "middle";
                     }
-                    var textObj = { X: left, Y: yText, Text: { BaseLine: this.Canvas.textBaseline, Font: this.Canvas.font, Value: item.Message[0] } };
-                    if (!this.IsOverlayMaxMin || !this.IsOverlayMaxMin(textObj)) this.Canvas.fillText(item.Message[0], left + 1, yText);
+
+                    var yOffset=0;
+                    if (IFrameSplitOperator.IsNonEmptyArray(item.YOffset))  //文字Y轴偏移
+                    {
+                        var offsetItem=item.YOffset[0];
+                        if (offsetItem && IFrameSplitOperator.IsNumber(offsetItem.Offset))
+                            yOffset=offsetItem.Offset;
+                    }
+
+                    var textObj = { X: left, Y: yText+yOffset, Text: { BaseLine: this.Canvas.textBaseline, Font: this.Canvas.font, Value: item.Message[0] } };
+                    if (!this.IsOverlayMaxMin || !this.IsOverlayMaxMin(textObj)) this.Canvas.fillText(item.Message[0], left + 1, yText+yOffset);
                 }
 
                 if (item.Message[1] != null && borderRight < 10 && this.IsShowYText[1] === true) 
@@ -457,10 +466,19 @@ function AverageWidthFrame()
                         if (this.YTextBaseline==1) this.Canvas.textBaseline = "bottom";
                         else this.Canvas.textBaseline = "middle";
                     }
+
+                    var yOffset=0;
+                    if (IFrameSplitOperator.IsNonEmptyArray(item.YOffset))  //文字Y轴偏移
+                    {
+                        var offsetItem=item.YOffset[1];
+                        if (offsetItem && IFrameSplitOperator.IsNumber(offsetItem.Offset))
+                            yOffset=offsetItem.Offset;
+                    }
+
                     var textWidth = this.Canvas.measureText(item.Message[1]).width;
-                    var textObj = { X: right - textWidth, Y: yText, Text: { BaseLine: this.Canvas.textBaseline, TextAlign: this.Canvas.textAlign, Font: this.Canvas.font, Value: item.Message[1] } };
+                    var textObj = { X: right - textWidth, Y: yText+yOffset, Text: { BaseLine: this.Canvas.textBaseline, TextAlign: this.Canvas.textAlign, Font: this.Canvas.font, Value: item.Message[1] } };
                     if (!this.IsOverlayMaxMin || !this.IsOverlayMaxMin(textObj))
-                        this.Canvas.fillText(item.Message[1], right - 1, yText);
+                        this.Canvas.fillText(item.Message[1], right - 1, yText+yOffset);
                 }
 
                 yPrev = y;
