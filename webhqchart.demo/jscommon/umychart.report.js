@@ -221,6 +221,7 @@ function JSReportChart(divElement)
         {
             if (IFrameSplitOperator.IsNumber(option.TextOverflowStyle)) reportChart.TextOverflowStyle=option.TextOverflowStyle;
             if (IFrameSplitOperator.IsNumber(option.MultiSelectModel)) reportChart.MultiSelectModel=option.MultiSelectModel;
+            if (IFrameSplitOperator.IsNumber(option.SelectedStyle)) reportChart.SelectedStyle=option.SelectedStyle;
         }
 
         this.SetChartBorder(chart, option);
@@ -4731,6 +4732,7 @@ function ChartReport()
     this.SelectedModel=0;               //选中模式 0=SelectedRow表示当前屏索引
     this.SelectedRow=-1;                //选中行ID
     this.SelectedFixedRow=-1;           //选中固定行ID
+    this.SelectedStyle=1;               //选中行样式 1=整行填充 2=底部绘制直线
     this.IsDrawBorder=1;                //是否绘制单元格边框
     this.HeaderRowCount=1;              //表头行数
 
@@ -4755,6 +4757,7 @@ function ChartReport()
 
     this.BorderColor=g_JSChartResource.Report.BorderColor;          //边框线
     this.SelectedColor=g_JSChartResource.Report.SelectedColor;      //选中行
+    this.SelectedLineConfig={ Color:g_JSChartResource.Report.SelectedLine.Color, Width:g_JSChartResource.Report.SelectedLine.Width }; //选中行底部线段
 
     //表头配置
     this.HeaderFontConfig={ Size:g_JSChartResource.Report.Header.Font.Size, Name:g_JSChartResource.Report.Header.Font.Name };
@@ -4874,6 +4877,8 @@ function ChartReport()
     this.BottomToolbarHeight=0;  //底部工具条高度
     this.IsShowAllColumn=false;   //是否已显示所有列
     this.DevicePixelRatio=GetDevicePixelRatio();  //分辨率
+
+    this.AryFullSelectedRow=[];     //选中行
 
     //{ 
     //  Type:列id, Title:标题, TextAlign:文字对齐方式, MaxText:文字最大宽度 , TextColor:文字颜色, Sort:0=不支持排序 1=本地排序 0=远程排序, 
@@ -5019,8 +5024,11 @@ function ChartReport()
         if (IFrameSplitOperator.IsNumber(item.Sort)) colItem.Sort=item.Sort;
         if (IFrameSplitOperator.IsNumber(item.FixedWidth)) colItem.FixedWidth=item.FixedWidth;
         if (IFrameSplitOperator.IsBool(item.EnableDragWidth)) colItem.EnableDragWidth=item.EnableDragWidth;
+
+        colItem.IsDrawCallback=false;
         if (IFrameSplitOperator.IsBool(item.IsDrawCallback)) colItem.IsDrawCallback=item.IsDrawCallback;
-        else colItem.IsDrawCallback=false;
+
+        if (IFrameSplitOperator.IsBool(item.EnableFormatDrawInfoEvent)) colItem.EnableFormatDrawInfoEvent=item.EnableFormatDrawInfoEvent;
 
         if (IFrameSplitOperator.IsNumber(item.FloatPrecision)) colItem.FloatPrecision=item.FloatPrecision;    //小数位数
         if (IFrameSplitOperator.IsNumber(item.ColorType))  colItem.ColorType=item.ColorType;        //0=默认 1=(>0, =0, <0) 2=(>=0, <0)
@@ -5362,6 +5370,7 @@ function ChartReport()
         this.ShowSymbol=[];
         this.TooltipRect=[];
         this.ButtonRect=[];
+        this.AryFullSelectedRow=[];
         this.DevicePixelRatio=GetDevicePixelRatio()
         this.LastMouseStatus=lastMouseStatus;
 
@@ -5386,6 +5395,7 @@ function ChartReport()
 
         this.ClipClient();
         this.DrawBorder();
+        this.DrawSelectedRow();
         this.Canvas.restore();
 
         this.DrawDragRow();
@@ -5400,6 +5410,7 @@ function ChartReport()
 
         this.LastMouseStatus=null;
         this.SizeChange=false;
+        this.AryFullSelectedRow=[];
     }
 
     this.DrawDragHeaderBG=function()
@@ -5942,6 +5953,8 @@ function ChartReport()
         var left=this.RectClient.Left;
         var rowWidth=this.RectClient.Right-this.RectClient.Left;
 
+        var arySelectedRow=[];
+
         //固定行
         var textTop=top;
         this.Canvas.font=this.ItemFixedFont;
@@ -6033,8 +6046,16 @@ function ChartReport()
 
             if (bFillRow)
             {
-                this.Canvas.fillStyle=this.SelectedColor;
-                this.Canvas.fillRect(left,textTop,rowWidth,this.RowHeight);   
+                var rtRowBG={ Left:left, Top:textTop, Width:rowWidth, Height:this.RowHeight };
+                rtRowBG.Right=rtRowBG.Left+rtRowBG.Width;
+                rtRowBG.Bottom=rtRowBG.Top+rtRowBG.Height;
+                this.AryFullSelectedRow.push(rtRowBG);
+
+                if (this.SelectedStyle===1)
+                {
+                    this.Canvas.fillStyle=this.SelectedColor;
+                    this.Canvas.fillRect(rtRowBG.Left,rtRowBG.Top,rtRowBG.Width,rtRowBG.Height);   
+                }
             }
 
             this.DrawRow(symbol, textTop, i);
@@ -6042,6 +6063,22 @@ function ChartReport()
             this.ShowSymbol.push( { Index:i, Symbol:symbol } );
 
             textTop+=this.RowHeight;
+        }
+
+        
+    }
+
+    this.DrawSelectedRow=function()
+    {
+        if (this.SelectedStyle===2 && IFrameSplitOperator.IsNonEmptyArray(this.AryFullSelectedRow))
+        {
+            this.Canvas.fillStyle=this.SelectedLineConfig.Color;
+            var lineWidth=this.SelectedLineConfig.Width;
+            for(var i=0;i<this.AryFullSelectedRow.length;++i)
+            {
+                var rtBG=this.AryFullSelectedRow[i];
+                this.Canvas.fillRect(rtBG.Left,rtBG.Bottom-lineWidth,rtBG.Width,lineWidth); 
+            }
         }
     }
 
@@ -6562,10 +6599,12 @@ function ChartReport()
         else if (this.IsReserveNumber(column.Type))
         {
             this.FormatReserveNumber(column, stock, drawInfo);
+            this.FormatDrawInfoEvent(stock, data, column, drawInfo);
         }
         else if (this.IsReserveString(column.Type))
         {
             this.FormatReserveString(column, stock, drawInfo);
+            this.FormatDrawInfoEvent(stock, data, column, drawInfo);
         }
         else if (this.IsReserveProgressBarColumn(column.Type))
         {
@@ -6670,8 +6709,22 @@ function ChartReport()
             var buttonData={ Stock:stock, Index:index, ColumnIndex:columnIndex, Column:column, Rect:drawInfo.Botton.Rect, Type:drawInfo.Botton.Type, Data:drawInfo.Data };
             this.ButtonRect.push(buttonData);
         }
+    }
 
-       
+    this.FormatDrawInfoEvent=function(stock, data, column, drawInfo)
+    {
+        if (!column.EnableFormatDrawInfoEvent) return;
+
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_REPORT_FORMAT_DRAW_INFO);
+        if (!event || !event.Callback) return;
+
+        var sendData=
+        {
+            Stock:stock, Column:column, Data:data,
+            DrawInfo:drawInfo
+        };
+
+        event.Callback(event, sendData, this);
     }
 
     this.IsReserveProgressBarColumn=function(value)
@@ -7331,9 +7384,13 @@ function ChartReport()
 
     this.DrawItemBG=function(drawInfo)
     {
-        if (drawInfo.BGColor && drawInfo.Rect)//绘制背景色
+        if (!drawInfo.BGColor) return;
+
+        var rtItem=drawInfo.Rect;   //绘制背景色
+        if (drawInfo.RectBG) rtItem=drawInfo.RectBG;
+
+        if (rtItem)
         {
-            var rtItem=drawInfo.Rect;
             this.Canvas.fillStyle=drawInfo.BGColor;
             this.Canvas.fillRect(rtItem.Left,rtItem.Top,rtItem.Width,rtItem.Height);   //画一个背景色, 不然是一个黑的背景
         }

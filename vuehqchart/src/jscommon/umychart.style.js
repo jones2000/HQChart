@@ -88,6 +88,14 @@ function GetBlackStyle()
                 Font:`${12*GetDevicePixelRatio()}px 微软雅黑`,
                 Day: { Color:"rgb(153,153,153)", BGColor:"rgb(51,51,51)", BorderColor:"rgb(51,51,51)", Margin:{ Left:5, Top:2, Bottom:2, Right:5 } },
                 Night: { Color:"rgb(153,153,153)", BGColor:"rgb(51,51,51)", BorderColor:"rgb(51,51,51)", Margin:{ Left:5, Top:2, Bottom:2, Right:5 } },
+            },
+
+            BuySellBar:
+            {
+                BuyColor:"rgb(102, 33, 33)",
+                SellColor:"rgb(20, 63, 31)",
+                Font:`${12*GetDevicePixelRatio()}px 微软雅黑`,
+                TextColor:"rgb(220,220,220)",
             }
         },
 
@@ -702,6 +710,7 @@ function GetBlackStyle()
         {
             BorderColor:'rgb(38,38,41)',    //边框线
             SelectedColor:"rgb(49,48,56)",  //选中行
+            SelectedLine:{ Color:"rgb(250,250,250)" },
             Header:
             {
                 Color:"RGB(245,245,245)",

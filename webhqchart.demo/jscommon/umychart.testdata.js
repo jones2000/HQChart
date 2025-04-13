@@ -197,6 +197,7 @@ HQData.Minute_RequestMinuteData=function(data, callback)
     data.PreventDefault=true;
     var symbol=data.Request.Data.symbol[0];             //请求的股票代码
     var callcation=data.Request.Data.callcation;        //集合竞价
+    var bBuySellBar=data.Request.Data.IsShowBuySellBar;
     console.log(`[HQData::RequestMinuteData] Symbol=${symbol}`);
 
     setTimeout(()=>{
@@ -225,6 +226,29 @@ HQData.Minute_RequestMinuteData=function(data, callback)
 
             stockItem.before=before;
             stockItem.beforeinfo=beforeinfo;
+        }
+
+        var lastPrice=stockItem.minute[stockItem.minute.length-1].price;
+
+
+        if (bBuySellBar)    //盘口分析
+        {
+            var aryBuy=[];
+            var value=lastPrice+0.01;
+            for(var i=0;i<10;++i)
+            {
+                aryBuy.push({Price:value, Type:1, Vol:HQData.GetRandomTestData(1000,10000) });
+                value+=0.02;
+            }
+    
+            var arySell=[];
+            for(var i=0;i<10;++i)
+            {
+                arySell.push({Price:value, Type:2, Vol:HQData.GetRandomTestData(1000,10000) });
+                value+=0.02;
+            }
+
+            stockItem.BuySellData={ AryBuy:aryBuy, ArySell:arySell };
         }
 
         //测试用 这里可以修改数据
@@ -336,6 +360,7 @@ HQData.Minute_RequestHistoryMinuteData=function(data, callback)
     var symbol=data.Request.Data.symbol;                //请求的股票代码
     var dayCount=data.Request.Data.daycount;
     var callcation=data.Request.Data.callcation;        //集合竞价
+    var bBuySellBar=data.Request.Data.IsShowBuySellBar;
   
     console.log(`[HQData::Minute_RequestHistoryMinuteData] Symbol=${symbol}`);
 
@@ -371,6 +396,29 @@ HQData.Minute_RequestHistoryMinuteData=function(data, callback)
             item.before=before;
             item.beforeinfo=beforeinfo;
         }
+    }
+
+    if (bBuySellBar)    //盘口分析
+    {
+        var dayItem=aryDay[0];
+        var lastPrice=dayItem.minute[dayItem.minute.length-1][4];
+
+        var aryBuy=[];
+        var value=lastPrice+0.01;
+        for(var i=0;i<10;++i)
+        {
+            aryBuy.push({Price:value, Type:1, Vol:HQData.GetRandomTestData(1000,10000) });
+            value+=0.02;
+        }
+
+        var arySell=[];
+        for(var i=0;i<10;++i)
+        {
+            arySell.push({Price:value, Type:2, Vol:HQData.GetRandomTestData(1000,10000) });
+            value+=0.02;
+        }
+
+        dayItem.BuySellData={ AryBuy:aryBuy, ArySell:arySell };
     }
    
     var hqchartData={code:0, data:aryDay, name:symbol, symbol: symbol};
