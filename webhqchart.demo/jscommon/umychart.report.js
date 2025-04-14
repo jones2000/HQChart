@@ -6521,10 +6521,12 @@ function ChartReport()
         else if (column.Type==REPORT_COLUMN_ID.CUSTOM_NUMBER_TEXT_ID)
         {
             this.GetCustomNumberDrawInfo(data, column, drawInfo);
+            this.FormatDrawInfoEvent(stock, data, column, drawInfo);
         }
         else if (column.Type==REPORT_COLUMN_ID.CUSTOM_DATETIME_TEXT_ID)
         {
             this.GetCustomDateTimeDrawInfo(data, column, drawInfo);
+            this.FormatDrawInfoEvent(stock, data, column, drawInfo);
         }
         else if (column.Type==REPORT_COLUMN_ID.CUSTOM_ICON_ID)
         {
@@ -6547,10 +6549,12 @@ function ChartReport()
         else if (column.Type==REPORT_COLUMN_ID.TIME_ID)
         {
             this.FormaTimeDrawInfo(column, stock, drawInfo, data);
+            this.FormatDrawInfoEvent(stock, data, column, drawInfo);
         }
         else if (column.Type==REPORT_COLUMN_ID.DATE_ID)
         {
             this.FormaDateDrawInfo(column, stock, drawInfo, data);
+            this.FormatDrawInfoEvent(stock, data, column, drawInfo);
         }
         else if (column.Type==REPORT_COLUMN_ID.CHECKBOX_ID)
         {
@@ -7010,12 +7014,6 @@ function ChartReport()
     this.GetCustomStringDrawInfo=function(data, column, drawInfo)
     {
         var value=this.GetExtendData(data, column);
-        if (column.IsDrawCallback)  //外部处理输出格式
-        {
-            this.GetCustomTextDrawInfo(column, data.Symbol, value, drawInfo, data);
-            return;
-        }
-
         if (!IFrameSplitOperator.IsString(value)) return;
         drawInfo.Text=value;
     }
@@ -7023,12 +7021,6 @@ function ChartReport()
     this.GetCustomNumberDrawInfo=function(data, column, drawInfo)
     {
         var value=this.GetExtendData(data, column);
-        if (column.IsDrawCallback)  //外部处理输出格式
-        {
-            this.GetCustomTextDrawInfo(column, data.Symbol, value, drawInfo, data);
-            return;
-        }
-
         if (!IFrameSplitOperator.IsNumber(value)) return;
 
         //格式化输出
@@ -7069,12 +7061,6 @@ function ChartReport()
     {
         var value=this.GetExtendData(data, column);
         if (!IFrameSplitOperator.IsNumber(value)) return;
-
-        if (column.IsDrawCallback)  //外部处理输出格式
-        {
-            this.GetCustomTextDrawInfo(column, data.Symbol, value, drawInfo, data);
-            return;
-        }
 
         if (column.ValueType==0)
         {
@@ -8211,42 +8197,9 @@ function ChartReport()
         }
     }
 
-    //外部配置显示格式 颜色 对齐方式
-    this.GetCustomTextDrawInfo=function(columnInfo, symbol, value, drawInfo, data)
-    {
-        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DRAW_CUSTOM_TEXT);
-        if (!event || !event.Callback) return false;
-
-        var sendData=
-        { 
-            Symbol:symbol, Column:columnInfo, Value:value, Data:data,
-            Out:{ Text:null, TextColor:null, TextAlign:null } 
-        };
-
-        event.Callback(event,sendData,this);
-
-        if (sendData.Out.Text) drawInfo.Text=sendData.Out.Text;
-        if (sendData.Out.TextColor) drawInfo.TextColor=sendData.Out.TextColor;
-        if (sendData.Out.TextAlign) drawInfo.TextAlign=sendData.Out.TextAlign;
-        if (sendData.Out.BGColor) drawInfo.BGColor=sendData.Out.BGColor;
-
-        return true;
-    }
-
     this.FormatDrawInfo=function(column, stock, drawInfo, data)
     {
-        if (!column.IsDrawCallback) return false;
-
-        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_REPORT_FORMAT_DRAW_INFO);
-        if (!event || !event.Callback) return false;
-
-        var sendData=
-        {
-            Stock:stock, Column:column, Data:data,
-            DrawInfo:drawInfo
-        };
-
-        event.Callback(event,sendData,this);
+        this.FormatDrawInfoEvent(stock, data, column, drawInfo);
     }
 
     this.GetFixedRowTextDrawInfo=function(rowIndex, colIndex, columnInfo, drawInfo)

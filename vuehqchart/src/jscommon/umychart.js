@@ -2596,7 +2596,7 @@ var JSCHART_EVENT_ID=
     ON_RCLICK_REPORT_HEADER:52,             //右键点击表头
     ON_REPORT_LOCAL_SORT:53,                //报价列表本地排序
     ON_DRAW_REPORT_NAME_COLOR:54,           //报价列表股票名称列颜色
-    ON_DRAW_CUSTOM_TEXT:55,                 //报价列表自定义列
+    ON_DRAW_CUSTOM_TEXT:55,                 //报价列表自定义列（废弃)
     ON_CLICK_REPORT_TAB:56,                 //报价列表标签点击
     ON_CLICK_REPORT_TABMENU:57,             //报价列表标签菜单点击
     ON_DRAW_REPORT_FIXEDROW_TEXT:58,        //报价列表固定行绘制

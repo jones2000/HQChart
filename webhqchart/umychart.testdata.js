@@ -262,7 +262,7 @@ HQData.Minute_RequestMinuteData=function(data, callback)
         }
         */
 
-        //stockItem.minute.length=50;
+        stockItem.minute.length=50;
 
         var hqchartData={code:0, stock:[stockItem] };
     
