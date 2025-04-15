@@ -2738,6 +2738,8 @@ var JSCHART_EVENT_ID=
     ON_DBCLICK_DEAL_ROW:167,
 
     ON_FORMAT_OVERLAY_INDEX_OUT_TEXT:168,       //格式化叠指标标题
+
+    ON_TOUCH_FAST_SLIDE:169                    //快速滑动
 }
 
 var JSCHART_OPERATOR_ID=
@@ -3111,6 +3113,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     this.mapEvent=new Map();   //通知外部调用 key:JSCHART_EVENT_ID value:{Callback:回调,}
 
     this.PhonePinch=null;       //手机双指操作信息
+    this.TouchDrag=null;        //手势拖动操作信息
     this.IsOnTouch = false;     //是否再操作数据
     this.TouchDrawCount = 0;    //手势绘制次数
     this.DisableMouse=false;    //禁止鼠标事件
@@ -3196,6 +3199,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
                         //SecondKeyID 1=shiftKey 2=ctrlKey 3=altKey
     this.AryHotKey=[];  //热键 { KeyID:87, SecondKeyID:1, CMD:JSCHART_MENU_ID.CMD_FULLSCREEN_SUMMARY_ID, Args:null, Description:"Alt+W	全屏区间统计" },
+
+    this.FastSlideConfig={ MinDistance:500, MinSpeed:3, MaxTime:250 };       //快速滑动配置 MinDistance=最小的距离 MinSpeed=最小速度 MaxTime=最大间隔时间(ms)
 
     this.RestoreFocus=function(delay)
     {
@@ -5314,6 +5319,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         this.IsOnTouch=true;
         this.TouchDrawCount=0;
         this.PhonePinch=null;
+        this.TouchDrag=null;
         this.StopDragTimer();
 
         var isSingleTouch=this.IsSingleTouch(e);
@@ -5359,11 +5365,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
             if (this.EnableClickModel && this.ClickModel.IsShowCorssCursor==true) bStartTimer=false;
 
-            var drag=
-            {
-                "Click":{},
-                "LastMove":{}  //最后移动的位置
-            };
+            var drag= { Click:{}, LastMove:{}, StartTime:Date.now() }; //LastMove 最后移动的位置 
+            var touchDrag={ Click:{}, LastMove:{}, StartTime:Date.now() };
 
             //var touches=this.GetToucheData(e,this.IsForceLandscape);
 
@@ -5371,8 +5374,14 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             drag.Click.Y=touches[0].clientY;
             drag.LastMove.X=touches[0].clientX;
             drag.LastMove.Y=touches[0].clientY;
-
             this.MouseDrag=drag;
+
+            touchDrag.Click.X=touches[0].clientX;
+            touchDrag.Click.Y=touches[0].clientY;
+            touchDrag.LastMove.X=touches[0].clientX;
+            touchDrag.LastMove.Y=touches[0].clientY;
+            this.TouchDrag=touchDrag;
+
             var drawPictureActive=this.GetActiveDrawPicture();  //上一次选中的
             var selectedChart={ Chart:this.SelectedChart.Selected.Chart, Identify:this.SelectedChart.Selected.Identify };   //上一次选中的图形
             this.PhoneTouchInfo={ Start:{X:touches[0].clientX, Y:touches[0].clientY }, End:{ X:touches[0].clientX, Y:touches[0].clientY } };
@@ -5494,11 +5503,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         }
         else if (this.IsPhonePinching(e))
         {
-            var phonePinch=
-            {
-                "Start":{},
-                "Last":{}
-            };
+            var phonePinch={ Start:{}, Last:{}, StartTime:Date.now() };
 
             var touches=this.GetToucheData(e,this.IsForceLandscape);
 
@@ -5633,6 +5638,13 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 this.PhoneTouchInfo.End.X=touches[0].clientX;
                 this.PhoneTouchInfo.End.Y=touches[0].clientY;
             }
+
+            if (this.TouchDrag)
+            {
+                var touchDrag=this.TouchDrag;
+                touchDrag.LastMove.X=touches[0].clientX;
+                touchDrag.LastMove.Y=touches[0].clientY;
+            }
         }
         else if (this.IsPhonePinching(e))
         {
@@ -5699,6 +5711,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         JSConsole.Chart.Log('[KLineChartContainer:OnTouchEnd]',e);
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
 
+        this.FastSlideEvent();
+
         var bClearDrawPicture=true;
         if (this.CurrentChartDrawPicture)
         {
@@ -5737,6 +5751,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         this.OnTouchFinished();
         this.TouchDrawCount=0;
         this.PhonePinch=null;
+        this.TouchDrag=null;
     }
 
     this.OnTouchDBClick=function(points)
@@ -11547,6 +11562,41 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
         var e={ data:data };
         if (this.DialogSelectRect) this.DrawSelectRectDialog(e);
+
+        return true;
+    }
+
+    //快速滑动
+    this.FastSlideEvent=function()
+    {
+        if (!this.TouchDrag) return false;
+        if (!this.FastSlideConfig) return false;
+
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_TOUCH_FAST_SLIDE);
+        if (!event || !event.Callback) return false;
+
+        var config=this.FastSlideConfig;
+        var drag=this.TouchDrag;
+        var time=Date.now();
+        var spanTime=time-drag.StartTime;
+        if (spanTime>config.MaxTime) return false;
+
+        if (!drag.Click || !drag.LastMove) return false;
+
+        var xStart=drag.Click.X;
+        var xEnd=drag.LastMove.X;
+
+        if (!IFrameSplitOperator.IsNumber(xStart) || !IFrameSplitOperator.IsNumber(xEnd)) return false;
+
+        var distance=xEnd-xStart;
+        var speed=Math.abs(distance)/spanTime;
+        JSConsole.Chart.Log(`[JSChartContainer:FastSlideEvent] speed=${speed}, distance=${distance}, spanTime=${spanTime}`);
+
+        if (Math.abs(distance)<config.MinDistance) return false;
+        if (speed<config.MinSpeed) return false;
+
+        var sendData={ Speed:speed, Distance:distance, IsLeft:distance<0?true:false }
+        event.Callback(event, sendData, this);
 
         return true;
     }
@@ -87596,13 +87646,15 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         this.IsOnTouch=true;
         this.TouchDrawCount=0;
         this.PhonePinch=null;
+        this.TouchDrag=null;
         this.StopDragTimer();
 
         if (this.EnableScrollUpDown==false) e.preventDefault();  //上下拖动图形不能阻止事件
 
         if (this.IsPhoneDragging(e))
         {
-            var drag= { Click:{}, LastMove:{} };//LastMove=最后移动的位置
+            var drag= { Click:{}, LastMove:{}, StartTime:Date.now() };//LastMove=最后移动的位置  StartTime=开始时间
+            var touchDrag={ Click:{}, LastMove:{}, StartTime:Date.now() };
             var touches=this.GetToucheData(e,this.IsForceLandscape);
             var pt=this.PointAbsoluteToRelative(touches[0].clientX, touches[0].clientY, true);
 
@@ -87628,6 +87680,12 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             drag.Click.Y=touches[0].clientY;
             drag.LastMove.X=touches[0].clientX;
             drag.LastMove.Y=touches[0].clientY;
+
+            touchDrag.Click.X=touches[0].clientX;
+            touchDrag.Click.Y=touches[0].clientY;
+            touchDrag.LastMove.X=touches[0].clientX;
+            touchDrag.LastMove.Y=touches[0].clientY;
+
             var self=this;
 
             var T_ShowCorssCursor=function() //临时函数(Temp_) T_开头
@@ -87708,6 +87766,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                 }
     
                 this.MouseDrag=drag;
+                this.TouchDrag=touchDrag;
                 this.PhoneTouchInfo={ Start:{X:touches[0].clientX, Y:touches[0].clientY }, End:{ X:touches[0].clientX, Y:touches[0].clientY } };
                 this.SelectChartDrawPicture=null;
 
@@ -87754,11 +87813,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         }
         else if (this.IsPhonePinching(e))
         {
-            var phonePinch=
-            {
-                "Start":{},
-                "Last":{}
-            };
+            var phonePinch= { Start:{}, Last:{}, StartTime:Date.now() };
 
             var touches=this.GetToucheData(e,this.IsForceLandscape);
 
@@ -87850,6 +87905,13 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                 this.PhoneTouchInfo.End.X=touches[0].clientX;
                 this.PhoneTouchInfo.End.Y=touches[0].clientY;
             }
+
+            if (this.TouchDrag)
+            {
+                var touchDrag=this.TouchDrag;
+                touchDrag.LastMove.X=touches[0].clientX;
+                touchDrag.LastMove.Y=touches[0].clientY;
+            }
         }
         else if (this.IsPhonePinching(e))
         {
@@ -87907,6 +87969,8 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         JSConsole.Chart.Log('[MinuteChartContainer::OnTouchEnd]',e);
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
 
+        this.FastSlideEvent();
+
         var bClearDrawPicture=true;
         if (this.CurrentChartDrawPicture)
         {
@@ -87942,9 +88006,10 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         this.TouchEvent({ EventID:JSCHART_EVENT_ID.ON_PHONE_TOUCH, FunctionName:"OnTouchEnd"}, e);
         this.OnTouchFinished();
         this.TouchDrawCount=0;
+        this.TouchDrag=null;
     }
 
-    
+
     //键盘左右移动十字光标
     this.OnKeyDown=function(e)
     {
@@ -93872,7 +93937,7 @@ function KLineChartHScreenContainer(uielement)
 
             if (this.VerticalDrag) bStartTimer=false;
 
-            var drag= {  Click:{}, LastMove:{}  }; //LastMove=最后移动的位置
+            var drag= {  Click:{}, LastMove:{}, StartTime:Date.now()  }; //LastMove=最后移动的位置
            
 
             //var touches=this.GetToucheData(e,false);
@@ -93969,11 +94034,7 @@ function KLineChartHScreenContainer(uielement)
         }
         else if (this.IsPhonePinching(e))
         {
-            var phonePinch=
-            {
-                "Start":{},
-                "Last":{}
-            };
+            var phonePinch={ Start:{}, Last:{}, StartTime:Date.now() };
 
             var touches=this.GetToucheData(e,false);
 
