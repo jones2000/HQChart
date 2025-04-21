@@ -429,6 +429,15 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             }
         }
 
+        if (option.FastSlide)
+        {
+            var item=option.FastSlide;
+            if (IFrameSplitOperator.IsNumber(item.MinDistance)) chart.FastSlideConfig.MinDistance=item.MinDistance;
+            if (IFrameSplitOperator.IsNumber(item.MinSpeed)) chart.FastSlideConfig.MinSpeed=item.MinSpeed;
+            if (IFrameSplitOperator.IsNumber(item.MaxTime)) chart.FastSlideConfig.MaxTime=item.MaxTime;
+            if (IFrameSplitOperator.IsBool(item.Enable)) chart.FastSlideConfig.Enable=item.Enable;
+        }
+
         if (chart.ClassName=="KLineChartContainer")
         {
             if (!option.DragSelectRect)
@@ -495,6 +504,12 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (item.RightButton)
             {
                 if (IFrameSplitOperator.IsBool(item.RightButton.Enable)) chart.ChartCorssCursor.RightButton.Enable=item.RightButton.Enable;
+            }
+
+            if (item.BottomButton)
+            {
+                var subItem=item.BottomButton;
+                if (IFrameSplitOperator.IsBool(subItem.Enable)) chart.ChartCorssCursor.BottomButton.Enable=subItem.Enable;
             }
 
             if (IFrameSplitOperator.IsNumber(item.PriceFormatType)) chart.ChartCorssCursor.StringFormatY.PriceFormatType=item.PriceFormatType;
@@ -981,6 +996,15 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (IFrameSplitOperator.IsNumber(item.WheelYMove)) chart.EnableYDrag.WheelYMove=item.WheelYMove;
         }
 
+        if (option.FastSlide)
+        {
+            var item=option.FastSlide;
+            if (IFrameSplitOperator.IsNumber(item.MinDistance)) chart.FastSlideConfig.MinDistance=item.MinDistance;
+            if (IFrameSplitOperator.IsNumber(item.MinSpeed)) chart.FastSlideConfig.MinSpeed=item.MinSpeed;
+            if (IFrameSplitOperator.IsNumber(item.MaxTime)) chart.FastSlideConfig.MaxTime=item.MaxTime;
+            if (IFrameSplitOperator.IsBool(item.Enable)) chart.FastSlideConfig.Enable=item.Enable;
+        }
+
         //分页
         if (option.PageInfo) chart.SetPageInfo(option.PageInfo);
 
@@ -1001,6 +1025,12 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             {
                 if (IFrameSplitOperator.IsBool(item.RightButton.Enable)) chart.ChartCorssCursor.RightButton.Enable=item.RightButton.Enable;
             } 
+
+            if (item.BottomButton)
+            {
+                var subItem=item.BottomButton;
+                if (IFrameSplitOperator.IsBool(subItem.Enable)) chart.ChartCorssCursor.BottomButton.Enable=subItem.Enable;
+            }
 
             if (IFrameSplitOperator.IsNumber(item.PriceFormatType)) chart.ChartCorssCursor.StringFormatY.PriceFormatType=item.PriceFormatType;
             if (IFrameSplitOperator.IsNumber(item.DataFormatType)) chart.ChartCorssCursor.StringFormatY.DataFormatType=item.DataFormatType;
@@ -2739,7 +2769,9 @@ var JSCHART_EVENT_ID=
 
     ON_FORMAT_OVERLAY_INDEX_OUT_TEXT:168,       //格式化叠指标标题
 
-    ON_TOUCH_FAST_SLIDE:169                    //快速滑动
+    ON_TOUCH_FAST_SLIDE:169,                    //快速滑动
+
+    ON_CLICK_CROSSCURSOR_BOTTOM:170,            //十字光标底部文字点击     
 }
 
 var JSCHART_OPERATOR_ID=
@@ -2768,6 +2800,8 @@ var JSCHART_OPERATOR_ID=
 
     OP_GOTO:16,     //移动到某一个天或某一个分钟
     OP_GOTO_BY_DATAINDEX:17,   //的移动到某一个数据起始位置
+
+    OP_MOVE_CORSSCURSOR:18,       //移动十字光标 { Step, Start:{ Date:, Time: } }
 }
 
 var JSCHART_DRAG_ID=
@@ -3169,7 +3203,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     this.EnableVerticalDrag=false;
 
     //十字光标长留(手势才有)
-    this.ClickModel={ IsShowCorssCursor:false };
+    this.ClickModel={ IsShowCorssCursor:false, PreventHide:false }; //PreventHide 阻止隐藏十字光标
     this.EnableClickModel=false;
 
     //标题栏显示最新数据
@@ -3200,7 +3234,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                         //SecondKeyID 1=shiftKey 2=ctrlKey 3=altKey
     this.AryHotKey=[];  //热键 { KeyID:87, SecondKeyID:1, CMD:JSCHART_MENU_ID.CMD_FULLSCREEN_SUMMARY_ID, Args:null, Description:"Alt+W	全屏区间统计" },
 
-    this.FastSlideConfig={ MinDistance:500, MinSpeed:3, MaxTime:250 };       //快速滑动配置 MinDistance=最小的距离 MinSpeed=最小速度 MaxTime=最大间隔时间(ms)
+    this.FastSlideConfig={ MinDistance:500, MinSpeed:3, MaxTime:250, Enable:false };       //快速滑动配置 MinDistance=最小的距离 MinSpeed=最小速度 MaxTime=最大间隔时间(ms)
 
     this.RestoreFocus=function(delay)
     {
@@ -3794,11 +3828,23 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         var button=this.ChartCorssCursor.PtInButton(x,y);
         if (!button) return false;
 
-        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_CROSSCURSOR_RIGHT);
-        if (event && event.Callback)
+        if (button.Type==1)
         {
-            var sendData={ Button:button, e };
-            event.Callback(event,sendData,this);
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_CROSSCURSOR_RIGHT);
+            if (event && event.Callback)
+            {
+                var sendData={ Button:button, e };
+                event.Callback(event,sendData,this);
+            }
+        }
+        else if (button.Type==2)
+        {
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_CROSSCURSOR_BOTTOM);
+            if (event && event.Callback)
+            {
+                var sendData={ Button:button, e };
+                event.Callback(event,sendData,this);
+            }
         }
 
         return true;
@@ -5308,6 +5354,11 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             return true;
         }
 
+        if (this.TryClickCrossCursor(x,y))
+        {
+            return true;
+        }
+
         return false;
     }
 
@@ -5320,6 +5371,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         this.TouchDrawCount=0;
         this.PhonePinch=null;
         this.TouchDrag=null;
+        if (this.ClickModel) this.ClickModel.PreventHide=false;
         this.StopDragTimer();
 
         var isSingleTouch=this.IsSingleTouch(e);
@@ -5334,7 +5386,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             var touches = this.GetToucheData(e, this.IsForceLandscape);
             var pt=this.PointAbsoluteToRelative(touches[0].clientX, touches[0].clientY, true);
 
-            if (this.TryPhoneClickButton(pt.X, pt.Y, e)) return;
+            if (this.TryPhoneClickButton(pt.X, pt.Y, e)) 
+                return;
 
             if (this.EnableVerticalDrag )
             {
@@ -6705,6 +6758,10 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             else if (this.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID)
             {
                 if (this.TouchStatus.CorssCursorShow==true) this.ChartCorssCursor.Draw();
+            }
+            else if (this.EnableClickModel)
+            {
+                if (this.ClickModel.IsShowCorssCursor===true) this.ChartCorssCursor.Draw();
             }
             else if (this.IsOnTouch===false && this.CurrentChartDrawPicture && this.CurrentChartDrawPicture.IsShowCorssCursor===true)    //开始绘图
             {
@@ -11571,11 +11628,13 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     {
         if (!this.TouchDrag) return false;
         if (!this.FastSlideConfig) return false;
+        var config=this.FastSlideConfig;
+        if (!config.Enable) return false;
 
         var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_TOUCH_FAST_SLIDE);
         if (!event || !event.Callback) return false;
 
-        var config=this.FastSlideConfig;
+        
         var drag=this.TouchDrag;
         var time=Date.now();
         var spanTime=time-drag.StartTime;
@@ -40158,7 +40217,7 @@ function ChartMinuteBuySellBar()
     this.BuyColor=g_JSChartResource.Minute.BuySellBar.BuyColor;
     this.SellColor=g_JSChartResource.Minute.BuySellBar.SellColor;
     this.BarWidth=g_JSChartResource.Minute.BuySellBar.BarWidth;
-    this.MaxBarWidth=g_JSChartResource.Minute.BuySellBar.MaxBarWidth;
+    this.AryBarRange=g_JSChartResource.Minute.BuySellBar.AryBarRange;
     this.YOffset=g_JSChartResource.Minute.BuySellBar.YOffset;
     this.Font=g_JSChartResource.Minute.BuySellBar.Font;
     this.TextColor=g_JSChartResource.Minute.BuySellBar.TextColor;
@@ -40173,7 +40232,7 @@ function ChartMinuteBuySellBar()
         this.BuyColor=g_JSChartResource.Minute.BuySellBar.BuyColor;
         this.SellColor=g_JSChartResource.Minute.BuySellBar.SellColor;
         this.BarWidth=g_JSChartResource.Minute.BuySellBar.BarWidth;
-        this.MaxBarWidth=g_JSChartResource.Minute.BuySellBar.MaxBarWidth;
+        this.AryBarRange=g_JSChartResource.Minute.BuySellBar.AryBarRange;
         this.YOffset=g_JSChartResource.Minute.BuySellBar.YOffset;
         this.Font=g_JSChartResource.Minute.BuySellBar.Font;
         this.TextColor=g_JSChartResource.Minute.BuySellBar.TextColor;
@@ -40189,11 +40248,29 @@ function ChartMinuteBuySellBar()
         var volRange=this.GetVolRange();
         if (!volRange) return;
 
+        var minData=this.HQChart.GetKData();
+        if (!minData || !IFrameSplitOperator.IsNonEmptyArray(minData.Data)) return;
+
         var bHScreen=(this.ChartFrame.IsHScreen===true);
         var xPointCount=this.ChartFrame.XPointCount;
+        var minuteCount=this.ChartFrame.MinuteCount;
+        var minIndex=(minData.Data.length-1)%minuteCount;
 
-        var xStart=this.ChartFrame.GetXFromIndex(xPointCount-this.MaxBarWidth);
-        var xEnd=this.ChartFrame.GetXFromIndex(xPointCount-1);
+        var startIndex=xPointCount-1-120;
+        var endIndex=xPointCount-1;
+        for(var i=0;i<this.AryBarRange.length;++i)
+        {
+            var item=this.AryBarRange[i];
+            if (minIndex<(minuteCount-1-item.End))
+            {
+                startIndex=xPointCount-1-item.Start;
+                endIndex=xPointCount-1-item.End;
+                break;
+            }
+        }
+
+        var xStart=this.ChartFrame.GetXFromIndex(startIndex);
+        var xEnd=this.ChartFrame.GetXFromIndex(endIndex);
 
         function _Temp_GetXFromData(value)
         {
@@ -55789,6 +55866,12 @@ function ChartCorssCursor()
         Icon:g_JSChartResource.CorssCursor.RightButton.Icon
     };
 
+    //底部按钮
+    this.BottomButton=
+    {
+        Enable:false, Rect:null, 
+    }
+
     this.RightMargin=CloneData(g_JSChartResource.CorssCursor.RightMargin);
     this.BottomConfig=CloneData(g_JSChartResource.CorssCursor.BottomText);     //底部输出配置
     this.LeftConfig=CloneData(g_JSChartResource.CorssCursor.LeftText);
@@ -55992,6 +56075,7 @@ function ChartCorssCursor()
     {
         this.Status=0;
         this.RightButton.Rect=null;
+        this.BottomButton.Rect=null;
         this.LastValue=null;
 
         if (!this.LastPoint) return;
@@ -56397,6 +56481,11 @@ function ChartCorssCursor()
                 this.Canvas.textBaseline="bottom";
                 this.Canvas.fillStyle=this.TextColor;
                 this.Canvas.fillText(text,rtBG.Left+textOffset.X,rtBG.Bottom+textOffset.Y,textWidth);
+
+                var buttonData={X:x, Y:y, XValue:xValue, FrameID:yValueExtend.FrameID };
+                if (this.StringFormatX.KItem) buttonData.KItem=this.StringFormatX.KItem;
+                this.BottomButton.Rect=rtBG;
+                this.BottomButton.Data=buttonData;
             }
         }
 
@@ -56617,16 +56706,41 @@ function ChartCorssCursor()
 
     this.PtInButton=function(x,y)
     {
+        var item=this.PtInRightButton(x,y);
+        if (item) return item;
+
+        item=this.PtInButtomButton(x,y);
+        if (item) return item;
+
+        return null;
+    }
+
+    this.PtInRightButton=function(x,y)
+    {
         if (!this.RightButton.Enable) return null;
         if (!this.RightButton.Rect) return null;
 
         var rect=this.RightButton.Rect;
-        this.Canvas.beginPath();
-        this.Canvas.rect(rect.Left,rect.Top,rect.Width,rect.Height);
-        if (this.Canvas.isPointInPath(x,y))
+        if (x>=rect.Left && x<=rect.Right && y>=rect.Top && y<=rect.Bottom)
         {
-            return { Data:this.RightButton.Data, Rect:rect };
+            return { Data:this.RightButton.Data, Rect:rect, Type:1 };   //Type:1=右侧  2=底部
         }
+
+        return null;
+    }
+    
+    this.PtInButtomButton=function(x,y)
+    {
+        if (!this.BottomButton.Enable) return null;
+        if (!this.BottomButton.Rect) return null;
+
+        var rect=this.BottomButton.Rect;
+        if (x>=rect.Left && x<=rect.Right && y>=rect.Top && y<=rect.Bottom)
+        {
+            return { Data:this.BottomButton.Data, Rect:rect , Type:2 }; //Type:1=右侧  2=底部
+        }
+
+        return null;
     }
 
     this.DrawTextBGRect=function(x,y, height, width)
@@ -57674,9 +57788,11 @@ function HQDateStringFormat()
 
     this.DateFormatType=0;  //0=YYYY-MM-DD 1=YYYY/MM/DD  2=YYYY/MM/DD/W 3=DD/MM/YYYY
     this.LanguageID=0;
+    this.KItem=null;        //缓存当前的K线
 
     this.Operator=function()
     {
+        this.KItem=null;
         if (!IFrameSplitOperator.IsNumber(this.Value)) return false;
         if (!this.Data) return false;
 
@@ -57684,6 +57800,7 @@ function HQDateStringFormat()
         index=parseInt(index.toFixed(0));
         if (this.Data.DataOffset+index>=this.Data.Data.length) return false;
         var currentData = this.Data.Data[this.Data.DataOffset+index];
+        this.KItem=currentData;
         var dateFormatString="YYYY-MM-DD";
         if (this.DateFormatType==1) dateFormatString="YYYY/MM/DD";
         else if (this.DateFormatType==2) dateFormatString="YYYY/MM/DD/W";
@@ -73863,6 +73980,8 @@ function JSChartResource()
         YOffset:1,
         Font:`${12*GetDevicePixelRatio()}px 微软雅黑`,
         TextColor:"rgb(128,128,128)",
+
+        AryBarRange:[{ Start:240, End:120 }, { Start:120, End:0}],
     }
 
     this.DefaultTextColor="rgb(43,54,69)";                          //图形中默认的字体颜色
@@ -75413,7 +75532,7 @@ function JSChartResource()
                 if (item.Font) dest.Font=item.Font;
                 if (item.TextColor) dest.TextColor=item.TextColor;
                 if (IFrameSplitOperator.IsNumber(item.BarWidth)) dest.BarWidth=item.BarWidth;
-                if (IFrameSplitOperator.IsNumber(item.MaxBarWidth)) dest.MaxBarWidth=item.MaxBarWidth;
+                if (IFrameSplitOperator.IsNonEmptyArray(item.AryBarRange)) dest.AryBarRange=item.AryBarRange;
                 if (IFrameSplitOperator.IsNumber(item.YOffset)) dest.YOffset=item.YOffset;
             }
         }
@@ -78626,31 +78745,177 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                 return;
             }
 
-            if (!this.Frame || !this.Frame.SubFrame[0] || !this.Frame.SubFrame[0].Frame) return false;
-            var frame=this.Frame.SubFrame[0].Frame;
-
-            var x=frame.GetXFromIndex(findIndex);
-            var y=frame.GetYFromData(item.Close);
-
-            //保存最后一次鼠标移动信息
-            var MoveStatus={ X:x, Y:y, IsInClient: this.IsMouseOnClient(x,y) };
-            this.LastMouseStatus.OnMouseMove=MoveStatus;
-            this.LastMouseStatus.MoveOnPoint={X:x, Y:y};    //鼠标移动的位置
-
-            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_MOUSE_MOVE);
-            var titleChart=this.TitlePaint[0];
-            if (event && titleChart) titleChart.OnMouseMoveEvent=event;
-
-            var pixelTatio = GetDevicePixelRatio(); 
-
-            var e={};
-            e.clientX=(x/pixelTatio)+this.UIElement.getBoundingClientRect().left;
-            e.clientY=(y/pixelTatio)+this.UIElement.getBoundingClientRect().top;
-            this.MoveOnPoint={X:x, Y:y};
-            this.OnMouseMove(x,y,e);
-            this.LastMouseStatus.MoveOnPoint=null;
-            if (titleChart) titleChart.OnMouseMoveEvent=null;
+            return this.ChartOperator_Temp_SetChartCorssCursor(findIndex, item);
         }
+        else if (id==JSCHART_OPERATOR_ID.OP_MOVE_CORSSCURSOR) //移动十字光标 { Step, Start:{ Date, Time }}
+        {
+            if (!IFrameSplitOperator.IsNumber(obj.Step)) return false;
+            if (obj.Step==0) return false;
+            var step=obj.Step;
+
+            if (!this.Frame || !this.Frame.SubFrame[0] || !this.Frame.SubFrame[0].Frame) return false;
+            var showCount=this.Frame.SubFrame[0].Frame.XPointCount; //一屏显示个数
+
+            var kData=this.GetKData();
+            if (!kData || !IFrameSplitOperator.IsNonEmptyArray(kData.Data)) return false;  //数据还没有到达
+
+            var start=kData.DataOffset;
+            var bDayPeriod=ChartData.IsDayPeriod(this.Period,true);
+            var findItem=null, dataIndex=-1;
+            for(var i=0; i<kData.Data.length; ++i)
+            {
+                var item=kData.Data[i];
+                if (!item) continue;
+
+                if (bDayPeriod)
+                {
+                    if (item.Date==obj.Start.Date)
+                    {
+                        findItem=item;
+                        dataIndex=i;
+                        break;
+                    }
+                }
+                else
+                {
+                    if (item.Date==obj.Start.Date && item.Time==obj.Start.Time)
+                    {
+                        findItem=item;
+                        dataIndex=i;
+                        break;
+                    }
+                }
+            }
+
+            if (!findItem) return false;
+
+            var index=-1;
+            var dataOffset=kData.DataOffset;
+            if (dataIndex>=start && dataIndex<=start+(showCount-1))
+            {
+                index=dataIndex-start;
+            }
+            else    //需要调整当前屏范围
+            {
+                if (step>0) 
+                {
+                    if (dataIndex+showCount>=kData.Data.length)
+                    {
+                        dataOffset=kData.Data.length-showCount;
+                        index=dataIndex-dataOffset;
+                    }
+                    else
+                    {
+                        index=0;
+                        dataOffset=dataIndex;
+                    }
+                }
+                else 
+                {
+                    if (dataIndex-showCount<0)
+                    {
+                        dataOffset=0;
+                        index=dataIndex;
+                    }
+                    else if (dataIndex+showCount>=kData.Data.length)
+                    {
+                        dataOffset=kData.Data.length-showCount;
+                        index=dataIndex-dataOffset;
+                    }
+                    else
+                    {
+                        index=showCount;
+                        dataOffset=dataIndex-showCount;
+                    }
+                }
+            }
+
+            var kItem=findItem;
+            if (step>0)
+            {
+                for(var i=dataIndex+1, j=0; i<kData.Data.length && j<step; ++i, ++j)
+                {
+                    ++index;
+                    dataIndex=i;
+                    if (index>=(showCount-1))
+                    {
+                        index=showCount-1;
+                        dataOffset+=1;
+                    }
+
+                    var item=kData.Data[i];
+                    if (!item) continue;
+
+                    var kItem=item;
+                }
+            }
+            else if (step<0)
+            {
+                for(var i=dataIndex-1, j=0;i>=0 && j<Math.abs(step);--i, ++j)
+                {
+                    --index
+                    dataIndex=i;
+                    if (index<=0)
+                    {
+                        index=0;
+                        dataOffset-=1;
+                    }
+
+                    var item=kData.Data[i];
+                    if (!item) continue;
+                    var kItem=item;
+                }
+            }
+
+            if (!kItem) return false;
+
+            obj.KItem=kItem;
+            if (kData.DataOffset==dataOffset)
+            {
+                return this.ChartOperator_Temp_SetChartCorssCursor(index, kItem);
+            }
+            else
+            {
+                kData.DataOffset=dataOffset
+                this.UpdataDataoffset();           //更新数据偏移
+                this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+                this.ResetFrameXSplit();
+                this.Frame.SetSizeChage(true);
+                this.Draw();
+                this.ChartOperator_Temp_SetChartCorssCursor(index, kItem);
+                return true;
+            }
+        }
+    }
+
+    
+    this.ChartOperator_Temp_SetChartCorssCursor=function(index, kItem)
+    {
+        if (!this.Frame || !this.Frame.SubFrame[0] || !this.Frame.SubFrame[0].Frame) return false;
+        var frame=this.Frame.SubFrame[0].Frame;
+
+        var x=frame.GetXFromIndex(index);
+        var y=frame.GetYFromData(kItem.Close);
+
+        //保存最后一次鼠标移动信息
+        var MoveStatus={ X:x, Y:y, IsInClient: this.IsMouseOnClient(x,y) };
+        this.LastMouseStatus.OnMouseMove=MoveStatus;
+        this.LastMouseStatus.MoveOnPoint={X:x, Y:y};    //鼠标移动的位置
+
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_MOUSE_MOVE);
+        var titleChart=this.TitlePaint[0];
+        if (event && titleChart) titleChart.OnMouseMoveEvent=event;
+
+        var pixelTatio = GetDevicePixelRatio(); 
+        var e={ };
+        e.clientX=(x/pixelTatio)+this.UIElement.getBoundingClientRect().left;
+        e.clientY=(y/pixelTatio)+this.UIElement.getBoundingClientRect().top;
+        this.MoveOnPoint={X:x, Y:y};
+        this.OnMouseMove(x,y,e);
+        this.LastMouseStatus.MoveOnPoint=null;
+        if (titleChart) titleChart.OnMouseMoveEvent=null;
+
+        return true;
     }
 
     //内部函数
@@ -82836,7 +83101,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
     {
         if (this.DragMode==JSCHART_DRAG_ID.CLICK_TOUCH_MODE_ID)
         {
-            if (this.TouchStatus.CorssCursorShow==true && this.TouchDrawCount>0) return;
+            if (this.ClickModel.IsShowCorssCursor==true && this.ClickModel.PreventHide) return;
+            if (this.ClickModel.IsShowCorssCursor==true && this.TouchDrawCount>0 ) return;
 
             this.TouchStatus.CorssCursorShow=false;
             this.DrawDynamicInfo();
@@ -82845,7 +83111,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
         if (this.EnableClickModel===true)
         {
-            if (this.ClickModel.IsShowCorssCursor==true && this.TouchDrawCount>0) return;
+            if (this.ClickModel.IsShowCorssCursor==true && this.ClickModel.PreventHide) return; //阻止隐藏
+            if (this.ClickModel.IsShowCorssCursor==true && this.TouchDrawCount>0 ) return;
 
             this.ClickModel.IsShowCorssCursor=false;
             this.DrawDynamicInfo();
@@ -87647,6 +87914,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         this.TouchDrawCount=0;
         this.PhonePinch=null;
         this.TouchDrag=null;
+        if (this.ClickModel) this.ClickModel.PreventHide=false;
         this.StopDragTimer();
 
         if (this.EnableScrollUpDown==false) e.preventDefault();  //上下拖动图形不能阻止事件
@@ -89115,6 +89383,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         buySellBar.Name="Minute-BuySell-Bar";
         buySellBar.Identify="Minute-BuySell-Bar";
         buySellBar.BuySellData=this.BuySellData;
+        buySellBar.HQChart=this;
         this.ChartPaint[3]=buySellBar;
         
 
@@ -91715,6 +91984,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
     {
         if (this.EnableClickModel===true)
         {
+            if (this.ClickModel.IsShowCorssCursor==true && this.ClickModel.PreventHide) return; //阻止隐藏
             if (this.ClickModel.IsShowCorssCursor==true && this.TouchDrawCount>0) return;
 
             this.ClickModel.IsShowCorssCursor=false;
