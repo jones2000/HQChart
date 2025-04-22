@@ -126,6 +126,7 @@ function DynamicKLineTitlePainting()
 
     this.IsShowName = true;           //是否显示股票名称
     this.IsShowSettingInfo = true;    //是否显示设置信息(周期 复权)
+    this.IsShowDateTime=true;
     this.HQChart;
 
     this.GetVolUnit=function()
@@ -521,30 +522,33 @@ function DynamicKLineTitlePainting()
             aryText.push({Text:text, Color:this.SettingColor, LeftSpace:this.PeriodSpace});
         }
 
-        var text = IFrameSplitOperator.FormatDateString(item.Date); //日期
-        if (ChartData.IsDayPeriod(this.Period, true))
+        if (this.IsShowDateTime)    //日期 时间
         {
-            aryText.push({Text:text, Color:this.DateTimeColor, LeftSpace:this.DateTimeSpace});
-        }
-        else if (ChartData.IsMinutePeriod(this.Period, true))
-        {
-            if (IFrameSplitOperator.IsNumber(item.Time))
+            var text = IFrameSplitOperator.FormatDateString(item.Date); //日期
+            if (ChartData.IsDayPeriod(this.Period, true))
             {
-                var timeText = IFrameSplitOperator.FormatTimeString(item.Time,"HH:MM");
-                text=`${text} ${timeText}`;
+                aryText.push({Text:text, Color:this.DateTimeColor, LeftSpace:this.DateTimeSpace});
             }
-            
-            aryText.push({Text:text, Color:this.DateTimeColor, LeftSpace:this.DateTimeSpace});
-        }
-        else if (ChartData.IsSecondPeriod(this.Period) )
-        {
-            if (IFrameSplitOperator.IsNumber(item.Time))
+            else if (ChartData.IsMinutePeriod(this.Period, true))
             {
-                var timeText = IFrameSplitOperator.FormatTimeString(item.Time, "HH:MM:SS");
-                text=`${text} ${timeText}`;
+                if (IFrameSplitOperator.IsNumber(item.Time))
+                {
+                    var timeText = IFrameSplitOperator.FormatTimeString(item.Time,"HH:MM");
+                    text=`${text} ${timeText}`;
+                }
+                
+                aryText.push({Text:text, Color:this.DateTimeColor, LeftSpace:this.DateTimeSpace});
             }
-            
-            aryText.push({Text:text, Color:this.DateTimeColor, LeftSpace:this.DateTimeSpace});
+            else if (ChartData.IsSecondPeriod(this.Period) )
+            {
+                if (IFrameSplitOperator.IsNumber(item.Time))
+                {
+                    var timeText = IFrameSplitOperator.FormatTimeString(item.Time, "HH:MM:SS");
+                    text=`${text} ${timeText}`;
+                }
+                
+                aryText.push({Text:text, Color:this.DateTimeColor, LeftSpace:this.DateTimeSpace});
+            }
         }
 
         //开

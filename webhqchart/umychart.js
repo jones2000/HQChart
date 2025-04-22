@@ -613,7 +613,8 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if(option.KLineTitle.IsShowName==false) chart.TitlePaint[0].IsShowName=false;
             if(option.KLineTitle.IsShowSettingInfo==false) chart.TitlePaint[0].IsShowSettingInfo=false;
             if(option.KLineTitle.IsShow == false) chart.TitlePaint[0].IsShow = false;
-            if(IFrameSplitOperator.IsBool(item.IsTitleShowLatestData)) chart.IsTitleShowLatestData=item.IsTitleShowLatestData;
+            if (IFrameSplitOperator.IsBool(item.IsShowDateTime)) chartTitle.IsShowDateTime=item.IsShowDateTime;
+            if (IFrameSplitOperator.IsBool(item.IsTitleShowLatestData)) chart.IsTitleShowLatestData=item.IsTitleShowLatestData;
 
             if (item.ShowPosition || item.ShowPostion)   //显示位置高级配置
             {
@@ -9768,6 +9769,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         titlePaint.Canvas=this.Canvas;
         titlePaint.LanguageID=this.LanguageID;
         titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+        titlePaint.HQChart=this;
         this.TitlePaint[index+1]=titlePaint;
 
         this.SetSubFrameOption(subFrame,option);
@@ -10261,6 +10263,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         titlePaint.LanguageID=this.LanguageID;
         titlePaint.SelectedChart=this.SelectedChart;
         titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+        titlePaint.HQChart=this;
         this.TitlePaint[index+1]=titlePaint;
 
         this.SetSubFrameOption(subFrame, option);
@@ -59357,7 +59360,14 @@ function DynamicKLineTitlePainting()
 
     this.IsShowLastData=function()
     {
+        if (this.HQChart && this.HQChart.EnableClickModel && this.HQChart.ClickModel)
+        {
+            var clickModel=this.HQChart.ClickModel;
+            if (clickModel.IsShowCorssCursor) return false;
+        }  
+
         var isShow=false;
+        
         if (this.DrawStatus && this.DrawStatus.IsTitleShowLatestData)
         {
             var status=this.DrawStatus;
@@ -60134,6 +60144,7 @@ function DynamicChartTitlePainting()
     this.MerginLeft=g_JSChartResource.IndexTitleMerginLeft;          //标题输出左边间距
 
     this.Buttons=[];  //按钮
+    this.NameButtonHeight=0;    //指标名字按钮高度
 
     this.UpDownArrowConfig=
     {
@@ -60702,6 +60713,12 @@ function DynamicChartTitlePainting()
 
     this.IsShowLastData=function()
     {
+        if (this.HQChart && this.HQChart.EnableClickModel && this.HQChart.ClickModel)
+        {
+            var clickModel=this.HQChart.ClickModel;
+            if (clickModel.IsShowCorssCursor) return false;
+        }  
+
         var isShowLastData=false;
         if (this.DrawStatus && this.DrawStatus.IsTitleShowLatestData)
         {
@@ -60760,6 +60777,7 @@ function DynamicChartTitlePainting()
     this.Draw=function(moveonPoint, mouseStatus)
     {
         this.Buttons=[];
+        this.NameButtonHeight=0;
         if (this.Frame.IsMinSize) return;
 
         this.IsKLineFrame= this.Frame.IsKLineFrame(false);
@@ -60822,6 +60840,7 @@ function DynamicChartTitlePainting()
                 this.DrawNameButton(rtButton, moveonPoint, mouseStatus);
 
                 this.Buttons.push({ ID:JSCHART_BUTTON_ID.INDEX_NAME_BUTTON, Rect:rtButton, FrameID:this.Frame.Identify, Type:2 });  //Type 0=主图按钮 1=附图按钮 2=主图指标名字按钮
+                this.NameButtonHeight=rtButton.Height;
 
                 if (this.IsSelectedChart(this.Identify)) 
                     this.DrawSelectedLine(left, bottom, textWidth);
@@ -61110,6 +61129,7 @@ function DynamicChartTitlePainting()
         var bottom=positionInfo.Bottom;
         var pixelRatio=GetDevicePixelRatio();
         var lineHeight=this.Canvas.measureText("擎").width+2;
+        if (lineHeight<this.NameButtonHeight) lineHeight=this.NameButtonHeight;
         for(var i=0; i<this.Data.length; ++i)
         {
             var item=this.Data[i];
@@ -79165,7 +79185,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             titlePaint.LanguageID=this.LanguageID;
             titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
             titlePaint.SelectedChart=this.SelectedChart;
-
+            titlePaint.HQChart=this;
             this.TitlePaint.push(titlePaint);
         }
 
@@ -82653,6 +82673,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                 titlePaint.LanguageID=this.LanguageID;
                 titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
                 titlePaint.SelectedChart=this.SelectedChart;
+                titlePaint.HQChart=this;
                 this.TitlePaint[i+1]=titlePaint;
             }
 
@@ -82797,6 +82818,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                 titlePaint.LanguageID=this.LanguageID;
                 titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
                 titlePaint.SelectedChart=this.SelectedChart;
+                titlePaint.HQChart=this;
                 this.TitlePaint[i+1]=titlePaint;
             } 
         }
@@ -89034,6 +89056,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
             titlePaint.SelectedChart=this.SelectedChart;
             titlePaint.MainTitlePaint=this.TitlePaint[0];
+            titlePaint.HQChart=this;
             this.TitlePaint.push(titlePaint);
         }
 
@@ -89245,6 +89268,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         titlePaint.LanguageID=this.LanguageID;
         titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); };
         titlePaint.MainTitlePaint=this.TitlePaint[0];
+        titlePaint.HQChart=this;
         this.TitlePaint[index+1]=titlePaint;
 
         this.SetSubFrameOption(subFrame,option);
@@ -89495,6 +89519,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                 titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
                 titlePaint.SelectedChart=this.SelectedChart;
                 titlePaint.MainTitlePaint=this.TitlePaint[0];
+                titlePaint.HQChart=this;
                 this.TitlePaint[i+1]=titlePaint;
             }
 
@@ -89582,6 +89607,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                 titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
                 titlePaint.SelectedChart=this.SelectedChart;
                 titlePaint.MainTitlePaint=this.TitlePaint[0];
+                titlePaint.HQChart=this;
                 this.TitlePaint[i+1]=titlePaint;
             } 
         }
@@ -94544,6 +94570,7 @@ function KLineChartHScreenContainer(uielement)
             titlePaint.LanguageID=this.LanguageID;
             titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
             titlePaint.SelectedChart=this.SelectedChart;
+            titlePaint.HQChart=this;
             this.TitlePaint.push(titlePaint);
         }
 
@@ -94725,6 +94752,7 @@ function MinuteChartHScreenContainer(uielement)
             titlePaint.LanguageID=this.LanguageID;
             titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
             titlePaint.SelectedChart=this.SelectedChart;
+            titlePaint.HQChart=this;
             this.TitlePaint.push(titlePaint);
         }
         

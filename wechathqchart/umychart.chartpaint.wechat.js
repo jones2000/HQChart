@@ -9250,6 +9250,8 @@ function ChartCorssCursor()
     this.BottomConfig=CloneData(g_JSChartResource.CorssCursor.BottomText);     //底部输出配置
     this.LeftConfig=CloneData(g_JSChartResource.CorssCursor.LeftText);
 
+    this.BottomButton={ Enable:false, Rect:null };  //底部按钮
+
     //内部使用
     this.Close = null;     //收盘价格
 
@@ -9307,6 +9309,8 @@ function ChartCorssCursor()
 
     this.Draw = function () 
     {
+        this.BottomButton.Rect=null;
+        
         if (!this.LastPoint) return;
 
         var x = this.LastPoint.X;
@@ -9577,6 +9581,11 @@ function ChartCorssCursor()
                 this.Canvas.textBaseline="bottom";
                 this.Canvas.fillStyle=this.TextColor;
                 this.Canvas.fillText(text,rtBG.Left+textOffset.X,rtBG.Bottom+textOffset.Y,textWidth);
+
+                var buttonData={X:x, Y:y, XValue:xValue, FrameID:yValueExtend.FrameID };
+                if (this.StringFormatX.KItem) buttonData.KItem=this.StringFormatX.KItem;
+                this.BottomButton.Rect=rtBG;
+                this.BottomButton.Data=buttonData;
             }
         }
     }
@@ -9983,6 +9992,28 @@ function ChartCorssCursor()
             if (IFrameSplitOperator.IsNumber(config.Border.Width)) this.Canvas.lineWidth=config.Border.Width;
             this.Canvas.stroke();
         }
+    }
+
+    this.PtInButton=function(x,y)
+    {
+        var item=this.PtInButtomButton(x,y);
+        if (item) return item;
+
+        return null;
+    }
+
+    this.PtInButtomButton=function(x,y)
+    {
+        if (!this.BottomButton.Enable) return null;
+        if (!this.BottomButton.Rect) return null;
+
+        var rect=this.BottomButton.Rect;
+        if (x>=rect.Left && x<=rect.Right && y>=rect.Top && y<=rect.Bottom)
+        {
+            return { Data:this.BottomButton.Data, Rect:rect , Type:2 }; //Type:1=右侧  2=底部
+        }
+
+        return null;
     }
 }
 

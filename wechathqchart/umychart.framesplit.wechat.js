@@ -2288,9 +2288,11 @@ function HQDateStringFormat()
 
     this.DateFormatType=0;  //0=YYYY-MM-DD 1=YYYY/MM/DD  2=YYYY/MM/DD/W 3=DD/MM/YYYY
     this.LanguageID=0;
+    this.KItem=null;        //缓存当前的K线
 
     this.Operator = function () 
     {
+        this.KItem=null;
         if (!IFrameSplitOperator.IsNumber(this.Value) || this.Value<0) return false;
         if (!this.Data) return false;
 
@@ -2301,6 +2303,7 @@ function HQDateStringFormat()
         var currentData = this.Data.Data[this.Data.DataOffset + index];
         var date = currentData.Date;
         var dateFormatString="YYYY-MM-DD";
+        this.KItem=currentData;
         if (this.DateFormatType==1) dateFormatString="YYYY/MM/DD";
         else if (this.DateFormatType==2) dateFormatString="YYYY/MM/DD/W";
         else if (this.DateFormatType==3) dateFormatString="DD/MM/YYYY";

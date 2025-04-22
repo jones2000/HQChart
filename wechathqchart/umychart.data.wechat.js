@@ -2267,6 +2267,7 @@ var JSCHART_EVENT_ID =
     ON_SPLIT_XCOORDINATE:31,             //分割X轴及格式化刻度文字
     
     ON_DRAW_KLINE_LAST_POINT:35,          //K线图绘制回调事件,返回最后一个点的坐标
+    ON_CLICK_CROSSCURSOR_RIGHT:36,        //十字光标右边按钮
 
     ON_DRAW_COUNTDOWN:41,                 //K线倒计时
     ON_BIND_DRAWICON:42,                  //绑定DRAWICON回调
@@ -2318,6 +2319,8 @@ var JSCHART_EVENT_ID =
     ON_CUSTOM_MINUTE_NIGHT_DAY_X_INDEX:156,   //日盘夜盘的分界线
 
     ON_CALCULATE_CHIP_DATA:164,                //计算筹码数据 (筹码图用)
+    
+    ON_CLICK_CROSSCURSOR_BOTTOM:170,            //十字光标底部文字点击   
 }
 
 var JSCHART_DATA_FIELD_ID=

@@ -413,6 +413,7 @@ function JSChart(element)
             if (option.KLineTitle.IsShowName == false) chart.TitlePaint[0].IsShowName = false;
             if (option.KLineTitle.IsShowSettingInfo == false) chart.TitlePaint[0].IsShowSettingInfo = false;
             if (option.KLineTitle.IsShow == false) chart.TitlePaint[0].IsShow = false;
+            if (IFrameSplitOperator.IsBool(item.IsShowDateTime)) chartTitle.IsShowDateTime=item.IsShowDateTime;
             if (option.KLineTitle.UpdateUICallback) chart.TitlePaint[0].UpdateUICallback = option.KLineTitle.UpdateUICallback
             if (IFrameSplitOperator.IsPlusNumber(item.LineCount)) chartTitle.LineCount = item.LineCount;
             if (IFrameSplitOperator.IsPlusNumber(item.ColumnCount)) chartTitle.ColumnCount = item.ColumnCount;
@@ -1566,7 +1567,7 @@ function JSChartContainer(uielement)
     this.PhoneDBClick=new PhoneDBClick();
 
     //十字光标长留(手势才有)
-    this.ClickModel={ IsShowCorssCursor:false };
+    this.ClickModel={ IsShowCorssCursor:false, PreventHide:false };     //PreventHide 阻止隐藏十字光标
     this.EnableClickModel=false;
 
     //全局配置
@@ -1692,7 +1693,41 @@ function JSChartContainer(uielement)
             return true;
         }
 
+        if (this.TryClickCrossCursor(x,y))
+        {
+            return true;
+        }
+
         return false;
+    }
+
+    this.TryClickCrossCursor=function(x,y,e)
+    {
+        if (!this.ChartCorssCursor) return;
+
+        var button=this.ChartCorssCursor.PtInButton(x,y);
+        if (!button) return false;
+
+        if (button.Type==1)
+        {
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_CROSSCURSOR_RIGHT);
+            if (event && event.Callback)
+            {
+                var sendData={ Button:button, e };
+                event.Callback(event,sendData,this);
+            }
+        }
+        else if (button.Type==2)
+        {
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_CROSSCURSOR_BOTTOM);
+            if (event && event.Callback)
+            {
+                var sendData={ Button:button, e };
+                event.Callback(event,sendData,this);
+            }
+        }
+
+        return true;
     }
 
     this.ClickExtendChartButton=function(button, e)
@@ -1718,24 +1753,13 @@ function JSChartContainer(uielement)
         this.IsPress=false;
         this.PhonePinch = null;
         this.TouchDrawCount=0; 
+        if (this.ClickModel) this.ClickModel.PreventHide=false;
 
         if (this.IsPhoneDragging(e)) 
         {
-            /* 统一到TryPhoneClickButton里面了
-            if (jsChart.TryClickLock || this.TryClickIndexTitle) 
-            {
-                var touches = this.GetToucheData(e, jsChart.IsForceLandscape);
-                var x = touches[0].clientX;
-                var y = touches[0].clientY;
-                if (jsChart.TryClickLock && jsChart.TryClickLock(x, y)) return;
-                if (jsChart.TryClickIndexTitle && jsChart.TryClickIndexTitle(x, y)) return;
-            }
-            */
-
             var touches = this.GetToucheData(e, jsChart.IsForceLandscape);
             var pt={ X:touches[0].clientX, Y:touches[0].clientY };
             if (this.TryPhoneClickButton(pt.X,pt.Y,e)) return;
-
 
             //长按2秒,十字光标
             if (this.TouchTimer != null) clearTimeout(this.TouchTimer);
@@ -2094,6 +2118,7 @@ function JSChartContainer(uielement)
     {
         if (this.EnableClickModel===true)
         {
+            if (this.ClickModel.IsShowCorssCursor==true && this.ClickModel.PreventHide) return;
             if (this.ClickModel.IsShowCorssCursor==true && this.TouchDrawCount>0) return;
 
             this.ClickModel.IsShowCorssCursor=false;
@@ -9424,6 +9449,7 @@ function MinuteChartContainer(uielement)
         this.IsPress=false;
         this.IsOnTouch = true;
         this.TouchDrawCount=0;
+        if (this.ClickModel) this.ClickModel.PreventHide=false;
         var jsChart = this;
         if (jsChart.DragMode == 0) return;
 
