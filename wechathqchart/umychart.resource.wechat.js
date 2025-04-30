@@ -152,15 +152,15 @@ function JSChartResource()
 
     this.CorssCursor=
     {
-        RightMargin: { Left:2, Right:2, Top:2, Bottom:1 },
         CorssPoint:
         {
             Center:{ Radius:5, Color:"rgb(50,171,205)"},
-             Border:{ Color:'rgb(255,255,255)', Width:1} 
+            Border:{ Color:'rgb(255,255,255)', Width:1} 
         },
 
         BottomText:{ Margin: { Left:4, Right:4, Top:2, Bottom:2 }, TextOffset:{X:4, Y:0 } },
         LeftText:{ Margin: { Left:4, Right:4, Top:2, Bottom:2 }, TextOffset:{X:4, Y:0 } },
+        RightText:{ Margin: { Left:4, Right:4, Top:2, Bottom:2 }, TextOffset:{X:4, Y:0 } },
     }
 
     //指标锁

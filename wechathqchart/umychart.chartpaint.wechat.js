@@ -337,6 +337,7 @@ function ChartKLine()
     };
     this.AryPriceGapCache=[];   //缺口数据 { }
     this.OneLimitBarType=0;    //一字板颜色类型 4个价格全部都在同一个价位上 0=使用平盘颜色 1=跟昨收比较
+    this.EnableColorBar=false;  //K线柱子是否支持自定义颜色
 
     this.DrawAKLine = function ()  //美国线
     {
@@ -815,7 +816,7 @@ function ChartKLine()
 
                 this.DrawKBar_Custom(data, dataWidth, barColor, drawType, kLineOption, x, y, left, right, yLow, yHigh, yOpen, yClose, border, isHScreen);
             }
-            else if (this.DrawType==9 && data.ColorData)
+            else if ((this.DrawType==9 || this.EnableColorBar) && data.ColorData)
             {
                 this.DrawColorKBar(data, data.ColorData, dataWidth, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen);
             }
@@ -9236,9 +9237,6 @@ function ChartCorssCursor()
     this.IsOnlyDrawMinute=false;  //是否只能画在走势图价格线上
     this.IsFixXLastTime=false;    //是否修正X轴,超出当前时间的,X轴调整到当前最后的时间.
 
-    this.RightMargin={ Left:2, Right:2, Top:2, Bottom:1 };
-    JSChartResource.CopyMargin(this.RightMargin, g_JSChartResource.CorssCursor.RightMargin);
-
     this.CorssPointConfig=
     { 
         Enable:false, 
@@ -9246,9 +9244,9 @@ function ChartCorssCursor()
         Border:CloneData(g_JSChartResource.CorssCursor.CorssPoint.Border)
     }
 
-    this.RightMargin=CloneData(g_JSChartResource.CorssCursor.RightMargin);
     this.BottomConfig=CloneData(g_JSChartResource.CorssCursor.BottomText);     //底部输出配置
     this.LeftConfig=CloneData(g_JSChartResource.CorssCursor.LeftText);
+    this.RightConfig=CloneData(g_JSChartResource.CorssCursor.RightText);        //右侧输出配置
 
     this.BottomButton={ Enable:false, Rect:null };  //底部按钮
 
@@ -9474,7 +9472,7 @@ function ChartCorssCursor()
             { 
                 ShowType:0, //0=单行(默认)  1=多行 
                 Font:this.Font, Color:this.TextColor,
-                Text:[ { Text:text, Margin:this.RightMargin } ],
+                Text:[ { Text:text, Margin:this.RightConfig.Margin, TextOffset:this.RightConfig.TextOffset } ],
             };
             var yTop=y-this.TextHeight/2;
             var textSize={ Width:0, Height:0, Text:[] };
@@ -9503,26 +9501,52 @@ function ChartCorssCursor()
                 
             this.CalculateComplexTextSize(complexText, textSize);
 
+            //计算右侧文本输出顶部位置
+            function _Temp_CalculateRightTextBGTop(rtBG, complexText, defatulTextHeight)
+            {
+                if (complexText.ShowType==1)
+                {
+                    var yValue=defatulTextHeight/2;
+                    if (IFrameSplitOperator.IsNonEmptyArray(textSize.Text) && textSize.Text[0])
+                    {
+                        var itemSize=textSize.Text[0];
+                        if (IFrameSplitOperator.IsNumber(itemSize.Height)) yValue=itemSize.Height/2;
+                    }  
+
+                    rtBG.Top=rtBG.YCenter-yValue;
+                    rtBG.Bottom=rtBG.Top+rtBG.Height;
+                }
+                else
+                {
+                    rtBG.Top=rtBG.YCenter-rtBG.Height/2;
+                    rtBG.Bottom=rtBG.Top+rtBG.Height;
+                }
+            }
+
             if (this.Frame.ChartBorder.Right >= 30 && this.ShowTextMode.Right == 1) 
             {
-                if (rightWidth > textSize.Width)               //右边不够就不画
+                var rtBG={ Left:right+1, Width:textSize.Width, YCenter:y, Height:textSize.Height };
+                rtBG.Right=rtBG.Left+rtBG.Width;
+                _Temp_CalculateRightTextBGTop(rtBG, complexText, this.TextHeight);
+                
+                if (rtBG.Right>chartRight) 
                 {
-                    var itemLeft=right+2;
-                    this.DrawTextBGRect(itemLeft, yTop, textSize.Width, textSize.Height);
-                    this.DrawComplexTextV2(itemLeft,yTop,complexText,textSize);
+                    rtBG.Right=chartRight;
+                    rtBG.Left=rtBG.Right-rtBG.Width;
                 }
-                else 
-                {
-                    var itemLeft=chartRight-2-textSize.Width;
-                    this.DrawTextBGRect(itemLeft, yTop, textSize.Width, textSize.Height);
-                    this.DrawComplexTextV2(itemLeft,yTop,complexText,textSize);
-                }
+
+                this.DrawTextBGRect(rtBG.Left,rtBG.Top,rtBG.Width,rtBG.Height);
+                this.DrawComplexRightText(rtBG,complexText,textSize);
             }
             else if (this.ShowTextMode.Right == 2) 
             {
-                var showLeft = right - textSize.Width;
-                this.DrawTextBGRect(showLeft,yTop,textSize.Width,textSize.Height);
-                this.DrawComplexTextV2(showLeft,yTop,complexText,textSize);
+                var rtBG={ Right:right, Width:textSize.Width, YCenter:y, Height:textSize.Height };
+                rtBG.Left=rtBG.Right-rtBG.Width;
+                _Temp_CalculateRightTextBGTop(rtBG, complexText, this.TextHeight);
+
+                this.Canvas.fillStyle=this.TextBGColor;
+                this.DrawTextBGRect(rtBG.Left,rtBG.Top,rtBG.Width,rtBG.Height);
+                this.DrawComplexRightText(rtBG,complexText,textSize);
             }
         }
 
@@ -9619,7 +9643,7 @@ function ChartCorssCursor()
                 if (item.Font) this.Canvas.font=item.Font;
                 else this.Canvas.font=complexText.Font;
                 var itemWidth=this.Canvas.measureText(item.Text).width;    //前后各空2个像素
-                var itemHeight=this.Canvas.measureText("擎").width;
+                var itemHeight=this.GetFontHeight();
                 if (item.Margin)
                 {
                     var margin=item.Margin;
@@ -9640,7 +9664,7 @@ function ChartCorssCursor()
         }
         else    //水平 单行
         {
-            var textWidth=0, textHeight=0;
+            var textWidth=0, textHeight=this.GetFontHeight();
             for(var i=0; i<complexText.Text.length; ++i)
             {
                 var item=complexText.Text[i];
@@ -9728,6 +9752,74 @@ function ChartCorssCursor()
                     if (IFrameSplitOperator.IsNumber(margin.Left)) x+=margin.Left;
                 }
 
+                this.Canvas.fillText(item.Text,x,y,itemSize.Width);
+                
+                xText+=itemSize.Width;
+            }
+        }
+    }
+
+    this.DrawComplexRightText=function(rtBG, complexText, size)
+    {
+        this.Canvas.textAlign="left";
+        this.Canvas.textBaseline="bottom";
+        var showType=0;
+        if (complexText.ShowType==1) showType=complexText.ShowType;
+        if (showType==1)    //多行
+        {
+            var xLeft=rtBG.Left;
+            var yTop=rtBG.Top;    //顶
+            for(var i=0; i<complexText.Text.length; ++i)
+            {
+                var item=complexText.Text[i];
+                var itemSize=size.Text[i];
+
+                if (item.Font) this.Canvas.font=item.Font;
+                else this.Canvas.font=complexText.Font;
+                
+                if (item.Color) this.Canvas.fillStyle=item.Color;
+                else this.Canvas.fillStyle=complexText.Color;
+
+                var y=yTop+itemSize.Height;
+                var x=xLeft;
+
+                if (item.TextOffset)
+                {
+                    var textOffset=item.TextOffset;
+                    if (IFrameSplitOperator.IsNumber(textOffset.X)) x+=textOffset.X;
+                    if (IFrameSplitOperator.IsNumber(textOffset.Y)) y+=textOffset.Y;
+                }
+
+                this.Canvas.fillText(item.Text,x,y,itemSize.Width);
+                
+                yTop+=itemSize.Height;
+            }
+        }
+        else    //水平 单行
+        {
+            var xText=rtBG.Left;
+            var yBottom=rtBG.Bottom;
+            for(var i=0; i<complexText.Text.length; ++i)
+            {
+                var item=complexText.Text[i];
+                var itemSize=size.Text[i];
+
+                if (item.Font) this.Canvas.font=item.Font;
+                else this.Canvas.font=complexText.Font;
+                
+                if (item.Color) this.Canvas.fillStyle=item.Color;
+                else this.Canvas.fillStyle=complexText.Color;
+
+                var x=xText;
+                var y=yBottom;
+
+                if (item.TextOffset)
+                {
+                    var textOffset=item.TextOffset;
+                    if (IFrameSplitOperator.IsNumber(textOffset.X)) x+=textOffset.X;
+                    if (IFrameSplitOperator.IsNumber(textOffset.Y)) y+=textOffset.Y;
+                }
+               
                 this.Canvas.fillText(item.Text,x,y,itemSize.Width);
                 
                 xText+=itemSize.Width;

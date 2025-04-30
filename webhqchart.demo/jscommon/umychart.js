@@ -2773,6 +2773,8 @@ var JSCHART_EVENT_ID=
     ON_TOUCH_FAST_SLIDE:169,                    //快速滑动
 
     ON_CLICK_CROSSCURSOR_BOTTOM:170,            //十字光标底部文字点击     
+
+    ON_CLICK_CHART_CELL:171,                    //点击图形单元
 }
 
 var JSCHART_OPERATOR_ID=
@@ -3204,7 +3206,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     this.EnableVerticalDrag=false;
 
     //十字光标长留(手势才有)
-    this.ClickModel={ IsShowCorssCursor:false, PreventHide:false }; //PreventHide 阻止隐藏十字光标
+    this.ClickModel={ IsShowCorssCursor:false, PreventHide:false, IsClickButton:false }; //PreventHide 阻止隐藏十字光标
     this.EnableClickModel=false;
 
     //标题栏显示最新数据
@@ -3686,6 +3688,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         if (this.IndexChartDrag) return;
         if (this.CustomChartDrag) return;
         //if (this.RectSelectDrag) return;
+        if (this.EnableClickModel && this.ClickModel.IsClickButton) return;
 
         /*
         if (this.CurrentChartDrawPicture)
@@ -3902,7 +3905,11 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             if (item.IsHideScriptIndex()) continue;
             
             result=item.ClickCell(x,y,e);
-            if (result) return result;
+            if (result) 
+            {
+                result.Chart=item;
+                return result;
+            }
         }
 
         for(var i=0;i<this.OverlayChartPaint.length;++i)
@@ -3911,7 +3918,12 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             if (!item.ClickCell) continue;
 
             result=item.ClickCell(x,y,e);
-            if (result) return result;
+            if (result) 
+            {
+                result.Chart=item;
+                result.IsOverlayChart=true;
+                return result;
+            }
         }
 
         for(var i=0,j=0,k=0;i<this.Frame.SubFrame.length;++i)
@@ -3932,7 +3944,12 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                     if (chart.ClickCell) 
                     {
                         result=chart.ClickCell(x,y,e);
-                        if (result) return result;
+                        if (result) 
+                        {
+                            result.Chart=chart;
+                            result.IsOverlayIndex=true;
+                            return result;
+                        }
                     }
                 }
             }
@@ -4256,6 +4273,13 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
                 if (clickCellData)
                 {
+                    var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_CHART_CELL);  //点击图形单个元素
+                    if (event && event.Callback)
+                    {
+                        var data={ Event:e, CellData:clickCellData };
+                        event.Callback(event,data,this);
+                    }
+
                     if (clickCellData.Redraw===true) bRedraw=true;
                 }
                 else
@@ -4953,6 +4977,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     this.UIOnMounseOut=function(e)
     {
         JSConsole.Chart.Log('[KLineChartContainer::UIOnMounseOut]',e);
+        if (this.EnableClickModel && this.ClickModel.IsShowCorssCursor==true) return;   //点击模式 十字光标显示下 不需要处理
+
         if (!this.IsLockCorssCursor()) this.UIOnMouseMove(e);   //锁十字光标时， 始终显示十字光标
     }
 
@@ -5372,7 +5398,10 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         this.TouchDrawCount=0;
         this.PhonePinch=null;
         this.TouchDrag=null;
-        if (this.ClickModel) this.ClickModel.PreventHide=false;
+        this.ClickModel.IsClickButton=false;
+        this.ClickModel.PreventHide=false;
+
+
         this.StopDragTimer();
 
         var isSingleTouch=this.IsSingleTouch(e);
@@ -5388,8 +5417,11 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             var pt=this.PointAbsoluteToRelative(touches[0].clientX, touches[0].clientY, true);
 
             if (this.TryPhoneClickButton(pt.X, pt.Y, e)) 
+            {
+                this.ClickModel.IsClickButton=true;
                 return;
-
+            }
+                
             if (this.EnableVerticalDrag )
             {
                 this.VerticalDrag={ IsDrag:false };
@@ -5574,6 +5606,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
 
         var touches=this.GetToucheData(e,this.IsForceLandscape);
+        this.ClickModel.IsClickButton=false;
 
         if (this.IsPhoneDragging(e))
         {
@@ -26618,6 +26651,7 @@ function ChartKLine()
     this.IsThinAKBar=true;      //美国线 柱子是否是线段 (false=柱子)
     this.OneLimitBarType=0;     //一字板颜色类型 4个价格全部都在同一个价位上 0=使用平盘颜色 1=跟昨收比较
     this.UnchangeBarType=0;     //0=使用unchange color 1=和昨收比较
+    this.EnableColorBar=false;  //K线柱子是否支持自定义颜色
 
     this.HighLowBarColor=g_JSChartResource.HighLowBarColor;
     this.HighLowTextConfig=
@@ -27550,7 +27584,7 @@ function ChartKLine()
 
                 this.DrawKBar_Custom(data, dataWidth, barColor, drawType, kLineOption, x, y, left, right, yLow, yHigh, yOpen, yClose, border, isHScreen);
             }
-            else if (this.DrawType==9 && data.ColorData)
+            else if ((this.DrawType==9 || this.EnableColorBar) && data.ColorData)
             {
                 this.DrawColorKBar(data, data.ColorData, dataWidth, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen);
             }
@@ -55866,7 +55900,7 @@ function ChartCorssCursor()
         Enable:false, Rect:null, 
         BGColor:g_JSChartResource.CorssCursor.RightButton.BGColor , 
         PenColor:g_JSChartResource.CorssCursor.RightButton.PenColor, 
-        Icon:g_JSChartResource.CorssCursor.RightButton.Icon
+        Icon:CloneData(g_JSChartResource.CorssCursor.RightButton.Icon)
     };
 
     //底部按钮
@@ -55875,9 +55909,11 @@ function ChartCorssCursor()
         Enable:false, Rect:null, 
     }
 
-    this.RightMargin=CloneData(g_JSChartResource.CorssCursor.RightMargin);
-    this.BottomConfig=CloneData(g_JSChartResource.CorssCursor.BottomText);     //底部输出配置
-    this.LeftConfig=CloneData(g_JSChartResource.CorssCursor.LeftText);
+    this.BottomConfig=CloneData(g_JSChartResource.CorssCursor.BottomText);      //底部输出配置
+    this.LeftConfig=CloneData(g_JSChartResource.CorssCursor.LeftText);          //左侧输出配置
+    this.RightConfig=CloneData(g_JSChartResource.CorssCursor.RightText);        //右侧输出配置
+    this.RightOverlayConfig=CloneData(g_JSChartResource.CorssCursor.RightOverlayText);        //右侧叠加指标输出配置
+    
 
     //内部使用
     this.Close=null;     //收盘价格
@@ -55895,6 +55931,10 @@ function ChartCorssCursor()
         this.XRangeBGColor=g_JSChartResource.CorssCursorXRangeBGColor;
         this.LineDash=g_JSChartResource.CorssCursorLineDash.slice();    //虚线
 
+        this.RightButton.BGColor=g_JSChartResource.CorssCursor.RightButton.BGColor;
+        this.RightButton.PenColor=g_JSChartResource.CorssCursor.RightButton.PenColor;
+        this.RightButton.Icon=CloneData(g_JSChartResource.CorssCursor.RightButton.Icon);
+        this.RightOverlayConfig=CloneData(g_JSChartResource.CorssCursor.RightOverlayText);
 
         this.CorssPointConfig.Center=CloneData(g_JSChartResource.CorssCursor.CorssPoint.Center);
         this.CorssPointConfig.Border=CloneData(g_JSChartResource.CorssCursor.CorssPoint.Border);
@@ -56300,7 +56340,7 @@ function ChartCorssCursor()
             { 
                 ShowType:0, //0=单行(默认)  1=多行 
                 Font:this.Font, Color:this.TextColor,
-                Text:[ { Text:text, Margin:this.RightMargin } ],
+                Text:[ { Text:text, Margin:this.RightConfig.Margin, TextOffset:this.RightConfig.TextOffset } ],
             };
 
             var yTop=y-this.TextHeight/2;
@@ -56331,6 +56371,28 @@ function ChartCorssCursor()
 
             this.CalculateComplexTextSize(complexText, textSize);
 
+            //计算右侧文本输出顶部位置
+            function _Temp_CalculateRightTextBGTop(rtBG, complexText, defaultTextHeight)
+            {
+                if (complexText.ShowType==1)
+                {
+                    var yValue=defaultTextHeight/2;
+                    if (IFrameSplitOperator.IsNonEmptyArray(textSize.Text) && textSize.Text[0])
+                    {
+                        var itemSize=textSize.Text[0];
+                        if (IFrameSplitOperator.IsNumber(itemSize.Height)) yValue=itemSize.Height/2;
+                    }  
+
+                    rtBG.Top=rtBG.YCenter-yValue;
+                    rtBG.Bottom=rtBG.Top+rtBG.Height;
+                }
+                else
+                {
+                    rtBG.Top=rtBG.YCenter-rtBG.Height/2;
+                    rtBG.Bottom=rtBG.Top+rtBG.Height;
+                }
+            }
+
             if (this.Frame.ChartBorder.Right>=30 && this.ShowTextMode.Right==1)
             {
                 var isOverlayIndex=false;       //是否有叠加子坐标
@@ -56359,74 +56421,53 @@ function ChartCorssCursor()
                 //叠加坐标
                 if (isOverlayIndex && textSize.Width>overlayIndexInterval && overlayIndexInterval>0)   //大于子坐标宽度
                 {
+                    var rtBG={ Right:right+overlayIndexInterval, Width:textSize.Width, YCenter:y, Height:textSize.Height };
+                    rtBG.Left=rtBG.Right-rtBG.Width;
+                    _Temp_CalculateRightTextBGTop(rtBG,complexText,this.TextHeight);
+                    
+                    if (rtBG.Right>chartRight) 
+                    {
+                        rtBG.Right=chartRight;
+                        rtBG.Left=rtBG.Right-rtBG.Width;
+                    }
+
                     var drawRight=right+overlayIndexInterval;
                     if (drawRight>chartRight) drawRight=chartRight;
 
-                    var itemLeft=drawRight-2-textSize.Width;
-                    this.DrawTextBGRect(itemLeft,yTop,textSize.Width,textSize.Height);
-                    this.DrawComplexTextV2(itemLeft, yTop, complexText, textSize);
+                    this.DrawTextBGRect(rtBG.Left,rtBG.Top,rtBG.Width,rtBG.Height);
+                    this.DrawComplexRightText(rtBG,complexText,textSize);
 
-                    if (this.RightButton.Enable) this.DrawRightButton(yTop, itemLeft,this.TextHeight,this.TextHeight,buttonData);
-                }
-                else if (rightWidth<textSize.Width)   //右边空白显示不下, 
-                {
-                    var itemLeft=chartRight-2-textSize.Width;
-                    this.DrawTextBGRect(itemLeft,yTop,textSize.Width,textSize.Height);
-                    this.DrawComplexTextV2(itemLeft, yTop ,complexText, textSize);
-                    
-                    if (this.RightButton.Enable) this.DrawRightButton(yTop, chartRight-2-textSize.Width,this.TextHeight,this.TextHeight,buttonData);
+                    if (this.RightButton.Enable) this.DrawRightButtonV2(rtBG, complexText, textSize, buttonData);
                 }
                 else
                 {
-                    var itemLeft=right+2;
-                    this.DrawTextBGRect(itemLeft,yTop,textSize.Width,textSize.Height);
-                    this.DrawComplexTextV2(itemLeft,yTop,complexText,textSize);
-
-                    if (this.RightButton.Enable) this.DrawRightButton(yTop, right+2,this.TextHeight,this.TextHeight,buttonData);
-                }
-
-                /*
-                if (this.StringFormatY.RExtendText && this.StringFormatY.RExtendText.length>0)
-                {
-                    var yOffset=0;
-                    for(var i in this.StringFormatY.RExtendText)
+                    var rtBG={ Left:right+1, Width:textSize.Width, YCenter:y, Height:textSize.Height };
+                    rtBG.Right=rtBG.Left+rtBG.Width;
+                    _Temp_CalculateRightTextBGTop(rtBG,complexText,this.TextHeight);
+                    
+                    if (rtBG.Right>chartRight) 
                     {
-                        var item=this.StringFormatY.RExtendText[i];
-                        var rText='--.--'
-                        if (item.YText) rText=item.YText;
-                        else if (IFrameSplitOperator.IsNumber(item.Y)) rText=item.Y.toFixed(0);
-                        var rTextWidth=this.Canvas.measureText(rText).width+4;    //前后各空2个像素
-                        
-                        if (rightWidth<rTextWidth)
-                        {
-                            this.DrawTextBGRect(chartRight-2-rTextWidth,y+yOffset+this.TextHeight/2,rTextWidth,this.TextHeight);
-                            this.Canvas.textAlign="right";
-                            this.Canvas.textBaseline="middle";
-                            this.Canvas.fillStyle=item.TextColor;
-                            this.Canvas.fillText(rText,chartRight-4,y+yOffset+this.TextHeight,rTextWidth);
-                        }
-                        else
-                        {
-                            this.DrawTextBGRect(right+2,y+yOffset+this.TextHeight/2,rTextWidth,this.TextHeight);
-                            this.Canvas.textAlign="left";
-                            this.Canvas.textBaseline="middle";
-                            this.Canvas.fillStyle=item.TextColor;
-                            this.Canvas.fillText(rText,right+4,y+yOffset+this.TextHeight,rTextWidth);
-                        }
-
-                        yOffset+=this.TextHeight;
+                        rtBG.Right=chartRight;
+                        rtBG.Left=rtBG.Right-rtBG.Width;
                     }
-                }
-                */
-            }
-            else if (this.ShowTextMode.Right==2)
-            {
-                this.Canvas.fillStyle=this.TextBGColor;
-                var showLeft=right-textSize.Width;
-                this.DrawTextBGRect(showLeft,yTop,textSize.Width,textSize.Height);
-                this.DrawComplexTextV2(showLeft,yTop,complexText,textSize);
 
-                if (this.RightButton.Enable) this.DrawRightButton(yTop, showLeft,this.TextHeight,this.TextHeight,buttonData);
+                    this.DrawTextBGRect(rtBG.Left,rtBG.Top,rtBG.Width,rtBG.Height);
+                    this.DrawComplexRightText(rtBG,complexText,textSize);
+
+                    if (this.RightButton.Enable) this.DrawRightButtonV2(rtBG, complexText, textSize, buttonData);
+                }
+            }
+            else if (this.ShowTextMode.Right==2)    //框架内侧显示
+            {
+                var rtBG={ Right:right, Width:textSize.Width, YCenter:y, Height:textSize.Height };
+                rtBG.Left=rtBG.Right-rtBG.Width;
+                _Temp_CalculateRightTextBGTop(rtBG,complexText,this.TextHeight);
+                
+                this.Canvas.fillStyle=this.TextBGColor;
+                this.DrawTextBGRect(rtBG.Left,rtBG.Top,rtBG.Width,rtBG.Height);
+                this.DrawComplexRightText(rtBG,complexText,textSize);
+
+                if (this.RightButton.Enable) this.DrawRightButtonV2(rtBG, complexText, textSize, buttonData);
             }
         }
 
@@ -56509,8 +56550,19 @@ function ChartCorssCursor()
                 //if (overlayLeft+30>chartRight) break;
                 var yValue=item.Frame.GetYData(y);
                 var text=IFrameSplitOperator.FormatValueString(yValue,2);
-                var textWidth=this.Canvas.measureText(text).width+4;    //前后各空2个像素
+                var textWidth=this.Canvas.measureText(text).width;    //前后各空2个像素
+
+
+                var margin=this.RightOverlayConfig.Margin;
+                var textOffset=this.RightOverlayConfig.TextOffset;
+
+                var rtBG={ Left:overlayLeft+1, Width:textWidth+margin.Left+margin.Right, YCenter:y, Height:textHeight+margin.Top+margin.Bottom };
+                rtBG.Right=rtBG.Left-rtBG.Width;
+                rtBG.Top=rtBG.YCenter-rtBG.Height/2;
+                rtBG.Bottom=rtBG.Top+rtBG.Height;
                 
+                this.DrawTextBGRect(rtBG.Left,rtBG.Top,rtBG.Width,rtBG.Height);
+
                 /*
                 for(var j=2;j>=0;--j)
                 {
@@ -56520,19 +56572,17 @@ function ChartCorssCursor()
                 }
                 */
 
-                this.Canvas.fillStyle=this.TextBGColor;
-                this.Canvas.fillRect(overlayLeft+1,y-this.TextHeight/2,textWidth,this.TextHeight);
                 this.Canvas.textAlign="left";
-                this.Canvas.textBaseline="middle";
+                this.Canvas.textBaseline="bottom";
                 this.Canvas.fillStyle=this.TextColor;
-                this.Canvas.fillText(text,overlayLeft+4,y,textWidth);
+                this.Canvas.fillText(text,rtBG.Left+textOffset.X, rtBG.Bottom+textOffset.Y);
             }
         }
 
         this.Status=1;
     }
 
-    this.DrawComplexTextV2=function(left, yTop, complexText, size)
+    this.DrawComplexRightText=function(rtBG, complexText, size)
     {
         this.Canvas.textAlign="left";
         this.Canvas.textBaseline="bottom";
@@ -56540,8 +56590,8 @@ function ChartCorssCursor()
         if (complexText.ShowType==1) showType=complexText.ShowType;
         if (showType==1)    //多行
         {
-            var xLeft=left;
-            var yText=yTop;    //顶
+            var xLeft=rtBG.Left;
+            var yTop=rtBG.Top;    //顶
             for(var i=0; i<complexText.Text.length; ++i)
             {
                 var item=complexText.Text[i];
@@ -56553,24 +56603,25 @@ function ChartCorssCursor()
                 if (item.Color) this.Canvas.fillStyle=item.Color;
                 else this.Canvas.fillStyle=complexText.Color;
 
-                var y=yText+itemSize.Height;
+                var y=yTop+itemSize.Height;
                 var x=xLeft;
-                if (item.Margin)
+
+                if (item.TextOffset)
                 {
-                    var margin=item.Margin;
-                    if (IFrameSplitOperator.IsNumber(margin.Bottom)) y-=margin.Bottom;
-                    if (IFrameSplitOperator.IsNumber(margin.Left)) x+=margin.Left;
+                    var textOffset=item.TextOffset;
+                    if (IFrameSplitOperator.IsNumber(textOffset.X)) x+=textOffset.X;
+                    if (IFrameSplitOperator.IsNumber(textOffset.Y)) y+=textOffset.Y;
                 }
 
                 this.Canvas.fillText(item.Text,x,y,itemSize.Width);
                 
-                yText+=itemSize.Height;
+                yTop+=itemSize.Height;
             }
         }
         else    //水平 单行
         {
-            var xText=left;
-            var yBottom=yTop+size.Height;
+            var xText=rtBG.Left;
+            var yBottom=rtBG.Bottom;
             for(var i=0; i<complexText.Text.length; ++i)
             {
                 var item=complexText.Text[i];
@@ -56582,15 +56633,16 @@ function ChartCorssCursor()
                 if (item.Color) this.Canvas.fillStyle=item.Color;
                 else this.Canvas.fillStyle=complexText.Color;
 
-                var y=yBottom;
                 var x=xText;
-                if (item.Margin)
-                {
-                    var margin=item.Margin;
-                    if (IFrameSplitOperator.IsNumber(margin.Bottom)) y-=margin.Bottom;
-                    if (IFrameSplitOperator.IsNumber(margin.Left)) x+=margin.Left;
-                }
+                var y=yBottom;
 
+                if (item.TextOffset)
+                {
+                    var textOffset=item.TextOffset;
+                    if (IFrameSplitOperator.IsNumber(textOffset.X)) x+=textOffset.X;
+                    if (IFrameSplitOperator.IsNumber(textOffset.Y)) y+=textOffset.Y;
+                }
+               
                 this.Canvas.fillText(item.Text,x,y,itemSize.Width);
                 
                 xText+=itemSize.Width;
@@ -56613,7 +56665,7 @@ function ChartCorssCursor()
                 if (item.Font) this.Canvas.font=item.Font;
                 else this.Canvas.font=complexText.Font;
                 var itemWidth=this.Canvas.measureText(item.Text).width;    //前后各空2个像素
-                var itemHeight=this.Canvas.measureText("擎").width;
+                var itemHeight=this.GetFontHeight();
                 if (item.Margin)
                 {
                     var margin=item.Margin;
@@ -56634,7 +56686,7 @@ function ChartCorssCursor()
         }
         else    //水平 单行
         {
-            var textWidth=0, textHeight=0;
+            var textWidth=0, textHeight=this.GetFontHeight();
             for(var i=0; i<complexText.Text.length; ++i)
             {
                 var item=complexText.Text[i];
@@ -56660,6 +56712,61 @@ function ChartCorssCursor()
 
             size.Width=textWidth;
             size.Height=textHeight;
+        }
+    }
+
+
+    this.DrawRightButtonV2=function(rtTextBG, complexText, textSize, data)
+    {
+        this.Canvas.fillStyle=this.RightButton.BGColor;
+        var drawHeight=rtTextBG.Height;
+        var drawWidth=rtTextBG.Height;
+
+        if (complexText.ShowType==1)    //多行 取第1行高度
+        {
+            var itemSize=textSize.Text[0];
+            drawHeight=itemSize.Height;
+            drawWidth=itemSize.Height;
+        }
+        
+        var rtButton={Left:rtTextBG.Left-drawHeight, Top:rtTextBG.Top, Width:drawWidth, Height:drawHeight };
+        rtButton.Right=rtButton.Left+rtButton.Width;
+        rtButton.Bottom=rtButton.Top+rtButton.Height;
+        this.RightButton.Rect=rtButton;
+        this.RightButton.Data=data;
+        this.Canvas.fillRect(ToFixedPoint(rtButton.Left+1),ToFixedPoint(rtButton.Top),ToFixedRect(rtButton.Width),ToFixedRect(rtButton.Height));
+
+        var pixelRatio=GetDevicePixelRatio();
+        var spaceWidth=3;
+        var yCenter=(rtButton.Top+spaceWidth)+(rtButton.Height-spaceWidth*2)/2;
+        var xCenter=(rtButton.Left+spaceWidth)+(rtButton.Width-spaceWidth*2)/2;
+
+        if (this.RightButton.Icon)
+        {
+            var icon=this.RightButton.Icon;
+            this.Canvas.font=`${icon.Size*pixelRatio}px ${icon.Family}`;
+            this.Canvas.textAlign="center";
+            this.Canvas.textBaseline="middle";
+            this.Canvas.fillStyle=icon.Color;
+            this.Canvas.fillText("\ue6a3",xCenter,yCenter);
+        }
+        else
+        {
+            //画加号
+            this.Canvas.strokeStyle=this.RightButton.PenColor;
+            var x=rtButtom.Left+spaceWidth;
+            var y=rtButtom.Top+spaceWidth;
+            this.Canvas.save();
+            this.Canvas.linewidth=1*pixelRatio;
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(ToFixedPoint(x), ToFixedPoint(yCenter));
+            this.Canvas.lineTo(ToFixedPoint(x+rtButton.Width-spaceWidth*2), ToFixedPoint(yCenter));
+
+            this.Canvas.moveTo(ToFixedPoint(xCenter),ToFixedPoint(y));
+            this.Canvas.lineTo(ToFixedPoint(xCenter), ToFixedPoint(y+rtButton.Height-spaceWidth*2));
+
+            this.Canvas.stroke();
+            this.Canvas.restore();
         }
     }
 
@@ -74151,13 +74258,13 @@ function JSChartResource()
         { 
             BGColor:'rgb(43,54,69)', 
             PenColor:'rgb(255,255,255)',
-            Icon: { Text:'\ue6a3', Color:'rgb(255,255,255)', Family:"iconfont", Size:18 }
+            Icon: { Text:'\ue6a3', Color:'rgb(255,255,255)', Family:"iconfont", Size:14 }
         },
-
-        RightMargin: { Left:2, Right:2, Top:5, Bottom:3 },
 
         BottomText:{ Margin: { Left:4, Right:4, Top:0, Bottom:0 }, TextOffset:{X:4, Y:-1 } },
         LeftText:{ Margin: { Left:4, Right:4, Top:0, Bottom:0 }, TextOffset:{X:4, Y:-1 } },
+        RightText:{ Margin: { Left:4, Right:4, Top:0, Bottom:0 }, TextOffset:{X:4, Y:-1 } },
+        RightOverlayText:{ Margin: { Left:2, Right:2, Top:0, Bottom:0 }, TextOffset:{X:2, Y:-1 } }, //右侧叠加坐标
 
         CorssPoint:{ Center:{ Radius:5*GetDevicePixelRatio(), Color:"rgb(50,171,205)"}, Border:{ Color:'rgb(255,255,255)', Width:1*GetDevicePixelRatio() } }
     };
