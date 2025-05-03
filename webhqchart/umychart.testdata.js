@@ -230,7 +230,6 @@ HQData.Minute_RequestMinuteData=function(data, callback)
 
         var lastPrice=stockItem.minute[stockItem.minute.length-1].price;
 
-
         if (bBuySellBar)    //盘口分析
         {
             var aryBuy=[];
@@ -267,6 +266,95 @@ HQData.Minute_RequestMinuteData=function(data, callback)
         var hqchartData={code:0, stock:[stockItem] };
     
 
+        callback(hqchartData);
+    }, 50);
+}
+
+HQData.Minute_RequestMinuteDataV2=function(data, callback)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Data.symbol[0];             //请求的股票代码
+    var callcation=data.Request.Data.callcation;        //集合竞价
+    console.log(`[HQData::Minute_RequestMinuteDataV2] Symbol=${symbol}`);
+
+    setTimeout(()=>
+    {
+        var fullData=HQData.GetDayMinuteDataBySymbol(symbol);
+        var srcStock=fullData[0];
+        var stockItem={ date:srcStock.date, minute:srcStock.minute, yclose:srcStock.yclose, symbol:symbol, name:symbol };
+
+        if (callcation.Before)
+        {
+            var TEST_BEFORE_DATA=
+            [
+                [8.52, 50000, 30000, 1, 200000],
+                [8.53, 55000, 40000, 0, 80000],
+                [8.52, 40000, 60000, 1, 80000],
+                [8.55, 30000, 21000, 2, 44000],
+                [8.51, 21000, 25000, 2, 40000],
+                [8.50, 36000, 55000, 2, 60000],
+                [8.49, 10000, 20000, 2, 33000],
+            ];
+
+            var date=new Date(parseInt(stockItem.date/10000),(stockItem.date/100%100-1),stockItem.date%100, 9, 15, 0);
+            var count=10*60;    //9:15-9:25
+            var before=[];
+            for(var i=0;i<count;++i)
+            {
+                var time=date.getHours()*10000+date.getMinutes()*100+date.getSeconds();
+                var testIndex=Math.floor(Math.random()*10)%TEST_BEFORE_DATA.length;
+                var testData=TEST_BEFORE_DATA[testIndex];
+                var item=[ time, null, null, null, null, null ];
+                if (i%20==0 || i==count-1) 
+                {
+                    item=[ time, testData[0], testData[1], testData[2], testData[3], (testData[1]+testData[2])*1.5 ];
+                }
+                before.push(item);
+                date.setSeconds(date.getSeconds()+1);
+            }
+
+            //before.length=200;
+            var beforeinfo={ totalcount:count, ver:2.0 };
+
+            stockItem.before=before;
+            stockItem.beforeinfo=beforeinfo;
+
+            var TEST_AFTER_DATA=
+            [
+                [8.51, 40000, 30000, 1, 80000],
+                [8.51, 55000, 60000, 0, 150000],
+                [8.51, 30000, 60000, 1, 160000],
+                [8.51, 35000, 21000, 2, 50000],
+                [8.51, 21000, 35000, 2, 70000],
+                [8.51, 26000, 55000, 2, 100000],
+                [8.51, 30000, 10000, 2, 50000],
+            ];
+
+            var date=new Date(parseInt(stockItem.date/10000),(stockItem.date/100%100-1),stockItem.date%100, 14, 57, 0);
+            var count=3*60;    //14:57-15:00
+            var after=[];
+            for(var i=0;i<count;++i)
+            {
+                var time=date.getHours()*10000+date.getMinutes()*100+date.getSeconds();
+                var testIndex=Math.floor(Math.random()*10)%TEST_AFTER_DATA.length;
+                var testData=TEST_AFTER_DATA[testIndex];
+                var item=[ time, null, null, null, null, null ];
+                if (i%10==0 || i==count-1) 
+                {
+                    item=[ time, testData[0], testData[1], testData[2], testData[3], (testData[1]+testData[2])*1.5 ];
+                }
+                after.push(item);
+                date.setSeconds(date.getSeconds()+1);
+            }
+
+            var afterinfo={ totalcount:count, ver:2.0 };
+            stockItem.after=after;
+            stockItem.afterinfo=afterinfo;
+        }
+
+        //stockItem.minute.length=0;
+
+        var hqchartData={code:0, stock:[stockItem] };
         callback(hqchartData);
     }, 50);
 }
