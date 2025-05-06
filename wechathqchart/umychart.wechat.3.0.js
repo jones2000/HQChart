@@ -2238,6 +2238,7 @@ function JSChartContainer(uielement)
     this.FullDraw=function(drawType)
     {
         var self = this;
+        if (this.ChartCorssCursor) this.ChartCorssCursor.Status=0;
         this.Canvas.clearRect(0, 0, this.UIElement.Width, this.UIElement.Height);
 
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash)  //动画

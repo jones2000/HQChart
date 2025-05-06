@@ -6248,7 +6248,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         
         var bDrawDialogTooltip=false;
         var ptPosition=null;    //鼠标位置 null 无效 -1 在外面 >=0 对应的指标窗口中ID
-        var corssCursorPos=this.GetCorssCursorPosition()
+        var corssCursorPos=this.GetCorssCursorPosition();
         if (corssCursorPos.LastPoint.X!=null || corssCursorPos.LastPoint.Y!=null)
         {
             if (this.ChartCorssCursor)
@@ -6702,6 +6702,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     this.DrawDynamicInfo=function(option)
     {
         this.LastMouseStatus.MouseOnToolbar=null;   //鼠标在工具栏按钮上
+        if (this.ChartCorssCursor) this.ChartCorssCursor.Status=0;
 
         var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_BEFORE_DRAW_DYNAMIC_INFO);
         if (event && event.Callback)
@@ -12996,7 +12997,7 @@ function AverageWidthFrame()
         }
         else
         {
-            var right=border.Right-3;
+            var right=border.RightEx-3;
             var left=border.Left;
             var yButton=border.Top+this.ChartBorder.TitleHeight/2;
 
@@ -60558,6 +60559,7 @@ function DynamicChartTitlePainting()
     this.IsShowIndexTitle=true;    //是否显示指标标题信息
     this.IsShowNameArrow=false;
     this.NameArrowConfig=CloneData(g_JSChartResource.IndexTitle.NameArrow);
+    this.CustomLocation;    //自定义位置 { IsShow:, Top:， TitleHeight: }
 
     this.TradeIndex;    //专家系统名字{Name:'名字', Param:'参数'}
     this.IsShowTradeIndexTitle=true;
@@ -61247,7 +61249,16 @@ function DynamicChartTitlePainting()
         if (this.Frame.IsShowIndexTitle==false) return;
         if (g_JSChartResource.IsDOMFrameTitle===true) return;
         if (!this.Data) return;
-        if (this.Frame.ChartBorder.TitleHeight<5) return;
+        if (this.CustomLocation)
+        {
+            if (!this.CustomLocation.IsShow) return;
+            if (!IFrameSplitOperator.IsNumber(this.CustomLocation.Top) || !IFrameSplitOperator.IsNumber(this.CustomLocation.TitleHeight)) return;
+        }
+        else
+        {
+            if (this.Frame.ChartBorder.TitleHeight<5) return;
+        }
+        
         if (this.CursorIndex==null && !(this.GlobalOption && this.GlobalOption.IsDisplayLatest)) return;
 
         if (this.Frame.IsHScreen===true)
@@ -61269,6 +61280,11 @@ function DynamicChartTitlePainting()
 
         var left=this.Frame.ChartBorder.GetLeft()+this.MerginLeft;
         var bottom=this.Frame.ChartBorder.GetTop()+this.Frame.ChartBorder.TitleHeight/2;    //上下居中显示
+        if (this.CustomLocation)    //自定义标题位置
+        {
+            bottom=this.Frame.ChartBorder.GetTop()+this.CustomLocation.Top+this.CustomLocation.TitleHeight/2;
+        }
+
         var right=this.Frame.ChartBorder.GetRight();
 
         var toolbarInfo={ Width:0, YCenter:bottom };

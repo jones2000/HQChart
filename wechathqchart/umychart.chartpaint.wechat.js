@@ -9252,6 +9252,7 @@ function ChartCorssCursor()
 
     //内部使用
     this.Close = null;     //收盘价格
+    this.Status=0;         //当前状态 0=隐藏 1=显示
 
     this.GetCloseYPoint = function (index) 
     {
@@ -9307,6 +9308,7 @@ function ChartCorssCursor()
 
     this.Draw = function () 
     {
+        this.Status=0;
         this.BottomButton.Rect=null;
         
         if (!this.LastPoint) return;
@@ -9612,6 +9614,8 @@ function ChartCorssCursor()
                 this.BottomButton.Data=buttonData;
             }
         }
+
+        this.Status=1;
     }
 
     this.GetFontHeight=function(font)
