@@ -1501,8 +1501,6 @@ function JSReportChartContainer(uielement)
 
     this.UpdateStockData=function()
     {
-        if (!IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return;
-
         var chart=this.ChartPaint[0];
         if (!chart) return;
 
@@ -1512,6 +1510,7 @@ function JSReportChartContainer(uielement)
             return;
         }
 
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return;
         if (this.SortInfo && this.SortInfo.Field>=0 && this.SortInfo.Sort>0)
         {
             var column=chart.Column[this.SortInfo.Field];

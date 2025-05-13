@@ -48458,7 +48458,7 @@ function StockChip()
         var right=this.ClientRect.Left+this.ClientRect.Width;
         
         var key='Toolbar-'+mouseOnToolbar.Item.ID;
-        text=g_JSChartLocalization.GetText(key,0);
+        var text=g_JSChartLocalization.GetText(key,0);
         
         if (!text) return;
         
