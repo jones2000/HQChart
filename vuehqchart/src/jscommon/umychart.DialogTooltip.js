@@ -38,13 +38,29 @@ function JSDialogTooltip()
     this.PositionColor=g_JSChartResource.DialogTooltip.PositionColor;
     this.DateTimeColor=g_JSChartResource.DialogTooltip.DateTimeColor;
     this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
-    this.MaxRowCount=25;
+    this.MaxRowCount=35;
+
+
+    this.ValueAlign=
+    {
+        Right:"UMyChart_Tooltip_Text_Span",
+    };
+
+    this.TitleAlign=
+    {
+        Right:"UMyChart_Tooltip_Title_Span",
+        Left:"UMyChart_Tooltip_Title_Left_Span",
+        Center:"UMyChart_Tooltip_Title_Center_Span",
+    };
 
     this.AryData=[];
     this.AryText=[];
 
     this.KItemCache=null;
+    this.KItemCache2=null;  //{ DataIndex:k线索引 }
     this.KItemCacheID=null;
+    this.IndexTitle={ Enable:false, MaxCount:3 };    //是否显示指标标题
+
     this.LastValueCache=null;       //最后的鼠标位置对应的数值
     this.LastValueCacheID=null;     //鼠标信息
     this.DataID=null;               //当前显示的数据时间{ Symbol:, Date:, Time: }
@@ -57,6 +73,13 @@ function JSDialogTooltip()
         if (option)
         {
             if (IFrameSplitOperator.IsNumber(option.Style)) this.Style=option.Style;
+            if (IFrameSplitOperator.IsPlusNumber(option.MaxRowCount)) this.MaxRowCount=option.MaxRowCount;
+            if (option.IndexTitle)
+            {
+                var item=option.IndexTitle;
+                if (IFrameSplitOperator.IsBool(item.Enable)) this.IndexTitle.Enable=item.Enable;
+                if (IFrameSplitOperator.IsPlusNumber(item.MaxCount)) this.IndexTitle.MaxCount=item.MaxCount;
+            }
         }
     }
 
@@ -65,6 +88,7 @@ function JSDialogTooltip()
         this.AryData=[];
         this.AryText=[];
         this.KItemCache=null;
+        this.KItemCache2=null;
         this.KItemCacheID=null;
 
         if (this.DivDialog) 
@@ -179,7 +203,7 @@ function JSDialogTooltip()
         {
             for(var i=0;i<this.MaxRowCount;++i)
             {
-                var rowItem={ Tr:null, TitleSpan:null, TextSpan:null };
+                var rowItem={ Tr:null, TitleSpan:null, TextSpan:null, TitleTd:null, TextTd:null  };
 
                 var trDom=document.createElement("tr");
                 trDom.className='UMyChart_Tooltip_Group_Tr';
@@ -189,6 +213,7 @@ function JSDialogTooltip()
                 var tdDom=document.createElement("td");
                 tdDom.className="UMyChart_Tooltip_Title_Td";   //标题
                 trDom.appendChild(tdDom);
+                rowItem.TitleTd=tdDom;
 
                 var spanDom=document.createElement("span");
                 spanDom.className='UMyChart_Tooltip_Title_Span';
@@ -199,6 +224,7 @@ function JSDialogTooltip()
                 var tdDom=document.createElement("td");
                 tdDom.className="UMyChart_Tooltip_Text_Td";    //数值
                 trDom.appendChild(tdDom);
+                rowItem.TextTd=tdDom;
 
                 var spanDom=document.createElement("span");
                 spanDom.className='UMyChart_Tooltip_Text_Span';
@@ -234,6 +260,7 @@ function JSDialogTooltip()
             if (this.KItemCacheID!=strKItem)    //数据变动的才更新
             {
                 this.KItemCache= JSON.parse(strKItem);
+                this.KItemCache2={ DataIndex:data.DataIndex };
                 this.KItemCacheID=strKItem;
                 bUpdata=true;
             }
@@ -298,6 +325,7 @@ function JSDialogTooltip()
             if (this.KItemCacheID!=strKItem)    //数据变动的才更新
             {
                 this.KItemCache= JSON.parse(strKItem);
+                this.KItemCache2={ DataIndex:data.DataIndex };
                 this.KItemCacheID=strKItem;
                 bUpdata=true;
             }
@@ -358,9 +386,18 @@ function JSDialogTooltip()
         if (!this.KItemCache) return;
 
         if (this.HQChart.ClassName=='KLineChartContainer')
+        {
             this.AryText=this.GetFormatKLineTooltipText(this.KItemCache);
+            if (this.IndexTitle.Enable)
+            {
+                var aryIndexTitle=this.GetIndexTitleTooltipText(this.KItemCache,this.KItemCache2);
+                if (IFrameSplitOperator.IsNonEmptyArray(aryIndexTitle)) this.AryText.push(...aryIndexTitle);
+            }
+        }
         else if (this.HQChart.ClassName=='MinuteChartContainer')
+        {
             this.AryText=this.GetFormatMinuteTooltipText(this.KItemCache);
+        }
         else
             return;
 
@@ -371,9 +408,53 @@ function JSDialogTooltip()
             var item=this.AryData[index];
 
             item.TitleSpan.innerText=outItem.Title;
-            item.TitleSpan.style.color=this.TextColor;
+            if (outItem.TitleColor)  item.TitleSpan.style.color=outItem.TitleColor;
+            else item.TitleSpan.style.color=this.TextColor;
+
             item.TextSpan.innerText=outItem.Text;
             item.TextSpan.style.color=outItem.Color;
+
+            //修改右侧数值样式
+            if (outItem.ClassName) 
+            {
+                item.TextSpan.className=outItem.ClassName;
+            }
+            else
+            {
+                if (item.TextSpan.className!=this.ValueAlign.Right) item.TextSpan.className=this.ValueAlign.Right;
+            }
+
+            //修改左侧标题样式
+            if (outItem.TitleClassName)
+            {
+                item.TitleSpan.className=outItem.TitleClassName;
+            }
+            else
+            {
+                if (this.Style==0)
+                {
+                    if (item.TitleSpan.className!=this.TitleAlign.Right) item.TitleSpan.className=this.TitleAlign.Right;
+                }
+                else if (this.Style==1)
+                {
+                    if (item.TitleSpan.className!=this.TitleAlign.Left) item.TitleSpan.className=this.TitleAlign.Left;
+                }
+            }
+
+            if (item.TitleTd)
+            {
+                if (outItem.IsMergeCell)    //合并单元格
+                {
+                    item.TitleTd.colSpan=2;
+                    item.TextTd.style.display="none";
+                }
+                else
+                {
+                    if (item.TitleTd.colSpan!=1) item.TitleTd.colSpan=1;
+                    item.TextTd.style.display="";
+                }
+            }
+            
             item.Tr.style.display="";
             if (item.Tr2) item.Tr2.style.display="";
         }
@@ -564,6 +645,57 @@ function JSDialogTooltip()
         {
             var sendData={ AryText:aryText, Data:data, Symbol:this.HQChart.Symbol, HQChart:this.HQChart, IsKLine:true };
             event.Callback(event, sendData, this);
+        }
+
+        return aryText;
+    }
+
+    this.GetIndexTitleTooltipText=function(kItem, data)
+    {
+        if (!(this.Style===0)) return null;
+
+        if (!this.HQChart) return null;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.HQChart.TitlePaint)) return null;
+        if (!IFrameSplitOperator.IsNumber(data.DataIndex) || data.DataIndex<0) return null;
+
+        var aryText=[];
+        var dataIndex=data.DataIndex;
+        for(var i=0,j=0,k=0; i<this.HQChart.TitlePaint.length && k<this.IndexTitle.MaxCount; ++i)
+        {
+            var titleChart=this.HQChart.TitlePaint[i];
+            if (titleChart.ClassName!="DynamicChartTitlePainting") continue;
+            if (!IFrameSplitOperator.IsNonEmptyArray(titleChart.Data)) continue;
+
+            var indexName=titleChart.Title;
+            //if (titleChart.ArgumentsText) indexName+=titleChart.ArgumentsText;
+            aryText.push({ Title:indexName, IsMergeCell:true, TitleClassName:this.TitleAlign.Center });
+            for(j=0;j<titleChart.Data.length;++j)
+            {
+                var item=titleChart.Data[j];
+                if (!item || !item.Data || !IFrameSplitOperator.IsNonEmptyArray(item.Data.Data)) continue;
+                if (item.IsShow===false) continue;
+                if (item.IsVisible===false) continue;
+                if (item.DataType) continue;    //定制类型暂时不支持
+
+                value=item.Data.Data[dataIndex];
+                var text="--";
+                if (value)  text=titleChart.FormatValue(value, item);
+
+                var title=item.Name;
+                var dyTitle=titleChart.GetDynamicOutName(item.Name);  //动态标题
+                if (dyTitle) title=dyTitle;
+
+                var tooltipItem=
+                { 
+                    Title:title,
+                    Text:text,
+                    Color:item.Color
+                };
+
+                aryText.push(tooltipItem);
+            }
+
+            ++k;
         }
 
         return aryText;

@@ -1759,6 +1759,12 @@ input[type="color"] {
     float: right;
 }
 
+.UMyChart_Tooltip_Title_Center_Span
+{
+    text-align: center;
+    display: block;
+}
+
 .UMyChart_Tooltip_Text_Sinlge_Td
 {
     min-width:80px;
@@ -1774,8 +1780,6 @@ input[type="color"] {
     float: right;
     margin-right: 1px;
 }
-
-
 
 /*
     Copyright (c) 2018 jones

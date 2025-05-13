@@ -518,6 +518,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (IFrameSplitOperator.IsBool(item.EnableDBClick)) chart.ChartCorssCursor.EnableDBClick=item.EnableDBClick;
 
             if (IFrameSplitOperator.IsBool(item.IsShowCorssPoint)) chart.ChartCorssCursor.CorssPointConfig.Enable=item.IsShowCorssPoint;
+            if (IFrameSplitOperator.IsBool(item.IsShowIncrease)) chart.ChartCorssCursor.StringFormatX.IsShowIncrease=item.IsShowIncrease;
            
         }
 
@@ -2973,7 +2974,8 @@ var JSCHART_MENU_ID=
     CMD_CORSS_DBCLICK_ID:57,                //双击显示隐藏十字光标
     CMD_ENABLE_KLINE_DAY_SUMMARY_ID:58,     //K线底部显示走完剩余时间
     CMD_SHOW_BUYSELL_BAR_ID:59,             //盘口分析(右侧显示买卖盘柱子) 分时图
-
+    CMD_CORSS_SHOW_INCREASE_ID:60,          //十字光标 底部显示"至今涨幅"
+    CMD_CORSS_X_TEXTALIGN_ID:61,            //十字光标 底部文字对齐方式
 
 
     CMD_REPORT_CHANGE_BLOCK_ID:100,      //报价列表 切换板块ID
@@ -11013,6 +11015,16 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                     this.ChartCorssCursor.IsOnlyDrawKLine=srcParam;
                     this.ChartCorssCursor.IsShowClose=srcParam;
                 }
+                break;
+            case JSCHART_MENU_ID.CMD_CORSS_SHOW_INCREASE_ID:
+                if (IFrameSplitOperator.IsBool(srcParam) && this.ChartCorssCursor)
+                {
+                    this.ChartCorssCursor.StringFormatX.IsShowIncrease=srcParam;
+                }
+                break;
+            case JSCHART_MENU_ID.CMD_CORSS_X_TEXTALIGN_ID:
+                if (param==null) return false;
+                if (this.ChartCorssCursor) this.ChartCorssCursor.BottomConfig.Align=param;
                 break;
             case JSCHART_MENU_ID.CMD_CORSS_POINT_ID:
                 if (IFrameSplitOperator.IsBool(srcParam) && this.ChartCorssCursor) this.ChartCorssCursor.CorssPointConfig.Enable=srcParam;
@@ -56185,6 +56197,7 @@ function ChartCorssCursor()
 
     this.StringFormatX;
     this.StringFormatY;
+    this.HQChart;
 
     this.ShowTextMode={ Left:1, Right:1, Bottom:1 }; //0=不显示  1=显示在框架外 2=显示在框架内
     this.TextFormat= { Right:0 };               //0=默认 1=价格显示(分时图才有用)
@@ -56784,13 +56797,16 @@ function ChartCorssCursor()
             var textWidth=this.Canvas.measureText(text).width;    //前后各空2个像素
             var margin=this.BottomConfig.Margin;
             var textOffset=this.BottomConfig.TextOffset;
+            var textAlign=this.BottomConfig.Align;
             var rtBG=
             { 
                 Top:bottom, Height:margin.Top+margin.Bottom+textHeight, 
                 XCenter:x, Width:textWidth+margin.Left+margin.Right 
             };
             rtBG.Bottom=rtBG.Top+rtBG.Height;
-            rtBG.Left=rtBG.XCenter-rtBG.Width/2;
+            if (textAlign==1) rtBG.Left=rtBG.XCenter-rtBG.Width/2;
+            else rtBG.Left=rtBG.XCenter;
+
             rtBG.Right=rtBG.Left+rtBG.Width;
 
             if (rtBG.Left<=0)
@@ -58229,7 +58245,8 @@ function HQDateStringFormat()
 
     this.DateFormatType=0;  //0=YYYY-MM-DD 1=YYYY/MM/DD  2=YYYY/MM/DD/W 3=DD/MM/YYYY
     this.LanguageID=0;
-    this.KItem=null;        //缓存当前的K线
+    this.KItem=null;            //缓存当前的K线
+    this.IsShowIncrease=false;   //是否显示"至今涨幅"
 
     this.Operator=function()
     {
@@ -58266,6 +58283,13 @@ function HQDateStringFormat()
         {
             var time = IFrameSplitOperator.FormatTimeString(currentData.Time);
             this.Text = this.Text + "  " + time;
+        }
+
+        if (this.IsShowIncrease && IFrameSplitOperator.IsNonEmptyArray(this.Data.Data))    //计算涨幅
+        {
+            var lastItem=this.Data.Data[this.Data.Data.length-1];   //最后一个数据
+            var value=(lastItem.Close-currentData.YClose)/currentData.YClose*100;
+            this.Text+=` ${g_JSChartLocalization.GetText('至今涨幅',this.LanguageID)}${value.toFixed(2)}%`;
         }
 
         if (this.GetEventCallback)
@@ -74620,7 +74644,7 @@ function JSChartResource()
             Icon: { Text:'\ue6a3', Color:'rgb(255,255,255)', Family:"iconfont", Size:14 }
         },
 
-        BottomText:{ Margin: { Left:4, Right:4, Top:0, Bottom:0 }, TextOffset:{X:4, Y:-1 } },
+        BottomText:{ Margin: { Left:4, Right:4, Top:0, Bottom:0 }, TextOffset:{X:4, Y:-1 }, Align:1 },  //Align 0=左对齐 1=居中
         LeftText:{ Margin: { Left:4, Right:4, Top:0, Bottom:0 }, TextOffset:{X:4, Y:-1 } },
         RightText:{ Margin: { Left:4, Right:4, Top:0, Bottom:0 }, TextOffset:{X:4, Y:-1 } },
         RightOverlayText:{ Margin: { Left:2, Right:2, Top:0, Bottom:0 }, TextOffset:{X:2, Y:-1 } }, //右侧叠加坐标
@@ -77782,6 +77806,8 @@ function JSChartLocalization()
         ["周", {CN:'周', EN:'Week', TC:'周'} ],
         ["月", {CN:'月', EN:'Month', TC:'月'} ],
         ["年", {CN:'年', EN:'Year', TC:'年'} ],
+
+        ["至今涨幅", {CN:'至今涨幅', EN:'increase to date ', TC:'至今涨幅'}]
         
     ]);
 
@@ -79610,6 +79636,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         this.ChartCorssCursor.StringFormatX=g_DivTooltipDataForamt.Create("CorssCursor_XStringFormat");
         this.ChartCorssCursor.StringFormatX.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
         this.ChartCorssCursor.StringFormatX.LanguageID=this.LanguageID;
+        this.ChartCorssCursor.StringFormatX.IsShowIncrease=true;
         this.ChartCorssCursor.StringFormatY=g_DivTooltipDataForamt.Create("CorssCursor_YStringFormat");
         this.ChartCorssCursor.StringFormatY.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
         this.ChartCorssCursor.StringFormatY.LanguageID=this.LanguageID;
@@ -79617,6 +79644,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         this.ChartCorssCursor.StringFormatY.HQChart=this;
         this.ChartCorssCursor.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
         this.ChartCorssCursor.OnChangeStatusCallback=(data, obj)=>{ this.OnChangeCorssCursorStatus(data,obj); }
+        this.ChartCorssCursor.HQChart=this;
 
         //创建等待提示
         this.ChartSplashPaint = new ChartSplashPaint();
@@ -84714,6 +84742,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         var bCorssDrawVaildTime=false;
         var bCorssDrawPoint=false;
         var bCorssBCClick=false;
+        var bCorssShowIncrease=false;
+        var crossXTextAlign=-1;
         if (this.ChartCorssCursor) 
         {
             bShowCorss=this.ChartCorssCursor.IsShowCorss;
@@ -84721,6 +84751,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             bCorssDrawVaildTime=this.ChartCorssCursor.IsFixXLastTime;
             bCorssDrawPoint=this.ChartCorssCursor.CorssPointConfig.Enable;
             bCorssBCClick=this.ChartCorssCursor.EnableDBClick;
+            bCorssShowIncrease=this.ChartCorssCursor.StringFormatX.IsShowIncrease;
+            crossXTextAlign=this.ChartCorssCursor.BottomConfig.Align;
         }
 
         var bPopMinuteChart=false;
@@ -84743,6 +84775,13 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                 var dataIndex=kData.DataOffset+option.CursorIndex;
                 if (dataIndex>=0 && dataIndex<kData.Data.length) kItem=kData.Data[dataIndex];
             }
+        }
+
+        //K线浮框 是否显示指标信息
+        var bTooltipDialogShowIndexTitle=false;
+        if (this.DialogTooltip)
+        {
+            bTooltipDialogShowIndexTitle=this.DialogTooltip.IndexTitle.Enable;
         }
 
         var aryMenu=
@@ -84907,6 +84946,15 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                     { Name:"画在有效X轴上",Data:{ ID:JSCHART_MENU_ID.CMD_CORSS_ON_VAILD_TIME_ID, Args:[!bCorssDrawVaildTime]}, Checked:bCorssDrawVaildTime },
                     { Name:"画圆点",Data:{ ID:JSCHART_MENU_ID.CMD_CORSS_POINT_ID, Args:[!bCorssDrawPoint]}, Checked:bCorssDrawPoint },
                     { Name:"双击显示/隐藏", Data:{ ID:JSCHART_MENU_ID.CMD_CORSS_DBCLICK_ID, Args:[!bCorssBCClick]}, Checked:bCorssBCClick },
+                    { Name:"至今涨幅显示/隐藏", Data:{ ID:JSCHART_MENU_ID.CMD_CORSS_SHOW_INCREASE_ID, Args:[!bCorssShowIncrease]}, Checked:bCorssShowIncrease },
+                    { 
+                        Name:"底部文字对齐", 
+                        SubMenu:
+                        [
+                            { Name:"居中", Data:{ ID:JSCHART_MENU_ID.CMD_CORSS_X_TEXTALIGN_ID, Args:[1]}, Checked:crossXTextAlign===1 },
+                            { Name:"左对齐", Data:{ ID:JSCHART_MENU_ID.CMD_CORSS_X_TEXTALIGN_ID, Args:[0]}, Checked:crossXTextAlign===0 },
+                        ]
+                    },
                 ]
             },
             {
@@ -84961,6 +85009,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                         [
                             { Name:"禁用", Data:{ ID:JSCHART_MENU_ID.CMD_DIALOG_TOOLTIP_ATTRIBUTE, Args:[{Enable:false}]}, Checked:!this.DialogTooltip },
                             { Name:"样式1", Data:{ ID:JSCHART_MENU_ID.CMD_DIALOG_TOOLTIP_ATTRIBUTE, Args:[{Enable:true, Style:0}]}, Checked:(this.DialogTooltip && this.DialogTooltip.Style===0) },
+                            { Name:"样式1-指标显示", Data:{ ID:JSCHART_MENU_ID.CMD_DIALOG_TOOLTIP_ATTRIBUTE, Args:[{Enable:true, IndexTitle:{Enable:!bTooltipDialogShowIndexTitle}} ]}, Checked:bTooltipDialogShowIndexTitle },
                             { Name:"样式2", Data:{ ID:JSCHART_MENU_ID.CMD_DIALOG_TOOLTIP_ATTRIBUTE, Args:[{Enable:true, Style:1}]}, Checked:(this.DialogTooltip && this.DialogTooltip.Style===1) },
                         ]
                     },
@@ -86564,13 +86613,14 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
         var dataType=0;
         var kItem=null;
+        var dataIndex=-1;
         if (this.ChartCorssCursor.ClientPos>=0)
         {
             var hisData=this.ChartOperator_Temp_GetHistoryData();;
             if (!hisData) return false;  //数据还没有到达
             if (!IFrameSplitOperator.IsNonEmptyArray(hisData.Data)) return false;
     
-            var dataIndex=hisData.DataOffset+this.ChartCorssCursor.CursorIndex;
+            dataIndex=hisData.DataOffset+this.ChartCorssCursor.CursorIndex;
             if (dataIndex>=hisData.Data.length) dataIndex=hisData.Data.length-1;
             var kItem=hisData.Data[dataIndex];
         }
@@ -86584,6 +86634,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             if (IFrameSplitOperator.IsNumber(kItem.Time)) dataID.Time=kItem.Time;
             if (!this.DialogTooltip.IsEqualDataID(dataID)) return false;
 
+            dataIndex=hisData.Data.length-1
             dataType=1;
         }
 
@@ -86595,6 +86646,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             KItem:kItem, 
             Symbol:this.Symbol, Name:this.Name,
             LastValue:this.ChartCorssCursor.LastValue,
+            DataIndex:dataIndex,                    //K先索引位置
         };
 
         this.DialogTooltip.Update(sendData);
@@ -89486,6 +89538,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         this.ChartCorssCursor.CallAcutionXOperator=new CallAcutionXOperator();
         this.ChartCorssCursor.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
         this.ChartCorssCursor.OnChangeStatusCallback=(data, obj)=>{ this.OnChangeCorssCursorStatus(data,obj); }
+        this.ChartCorssCursor.HQChart=this;
 
         //创建等待提示
         this.ChartSplashPaint = new ChartSplashPaint();
@@ -95048,6 +95101,7 @@ function KLineChartHScreenContainer(uielement)
         this.ChartCorssCursor.StringFormatY.ExtendChartPaint=this.ExtendChartPaint;
         this.ChartCorssCursor.StringFormatY.HQChart=this;
         this.ChartCorssCursor.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+        this.ChartCorssCursor.HQChart=this;
 
         //创建等待提示
         this.ChartSplashPaint = new ChartSplashPaint();
@@ -95230,7 +95284,8 @@ function MinuteChartHScreenContainer(uielement)
         this.ChartCorssCursor.StringFormatY.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
         this.ChartCorssCursor.StringFormatY.HQChart=this;
         this.ChartCorssCursor.CallAcutionXOperator=new CallAcutionXOperator();
-        this.ChartCorssCursor.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+        this.ChartCorssCursor.GetEventCallback=(id)=> { return this.GetEventCallback(id); };
+        this.ChartCorssCursor.HQChart=this;
 
          //创建等待提示
          this.ChartSplashPaint = new ChartSplashPaint();
