@@ -62,7 +62,7 @@ function JSDialogSelectRect()
 
         if (this.DivDialog) 
         {
-            document.body.removeChild(this.DivDialog);
+            if (document && document.body && document.body.removeChild) document.body.removeChild(this.DivDialog);
             this.DivDialog=null;
         }
     }

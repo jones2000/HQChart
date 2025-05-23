@@ -403,6 +403,12 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (option.DrawTool.StorageKey && chart.ChartDrawStorage) chart.ChartDrawStorage.Load(option.DrawTool.StorageKey);
         }
 
+        if (option.KeyboardMove)
+        {
+            var item=option.KeyboardMove;
+            if (IFrameSplitOperator.IsPlusNumber(item.Delay)) chart.KeyboardMove.Delay=item.Delay;
+        }
+
         if (IFrameSplitOperator.IsNumber(option.StepPixel)) chart.StepPixel=option.StepPixel;
         if (option.ZoomStepPixel>0) chart.ZoomStepPixel=option.ZoomStepPixel;
         if (option.IsApiPeriod==true) chart.IsApiPeriod=option.IsApiPeriod;
@@ -518,7 +524,15 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (IFrameSplitOperator.IsBool(item.EnableDBClick)) chart.ChartCorssCursor.EnableDBClick=item.EnableDBClick;
 
             if (IFrameSplitOperator.IsBool(item.IsShowCorssPoint)) chart.ChartCorssCursor.CorssPointConfig.Enable=item.IsShowCorssPoint;
-            if (IFrameSplitOperator.IsBool(item.IsShowIncrease)) chart.ChartCorssCursor.StringFormatX.IsShowIncrease=item.IsShowIncrease;
+
+            if (item.RangeIncrease)
+            {
+                var subItem=item.RangeIncrease;
+                if (IFrameSplitOperator.IsBool(subItem.IsShow)) chart.ChartCorssCursor.StringFormatX.RangeIncrease.IsShow=subItem.IsShow;
+                if (IFrameSplitOperator.IsNumber(subItem.Formula)) chart.ChartCorssCursor.StringFormatX.RangeIncrease.Formula=subItem.Formula;
+
+            }
+           
            
         }
 
@@ -2776,6 +2790,8 @@ var JSCHART_EVENT_ID=
     ON_CLICK_CROSSCURSOR_BOTTOM:170,            //十字光标底部文字点击     
 
     ON_CLICK_CHART_CELL:171,                    //点击图形单元
+
+    GET_DEFAULT_INDEX_PARAM:172,                //获取指标默认参数
 }
 
 var JSCHART_OPERATOR_ID=
@@ -3170,7 +3186,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     this.DisableMouse=false;    //禁止鼠标事件
     this.LanguageID=JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
     this.PressTime=500;
-    this.IsPress=false;         //是否长按
+    this.IsPress=false;             //是否长按
+    this.IsPressKeyboard=false;     //是否键盘按键
 
     this.NetworkFilter;         //网络请求回调 function(data, callback);
     this.LastMouseStatus={ MouseOnToolbar:null }; // MouseOnToolbar={ Rect:{}, Title: }
@@ -3254,6 +3271,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     this.AryHotKey=[];  //热键 { KeyID:87, SecondKeyID:1, CMD:JSCHART_MENU_ID.CMD_FULLSCREEN_SUMMARY_ID, Args:null, Description:"Alt+W	全屏区间统计" },
 
     this.FastSlideConfig={ MinDistance:500, MinSpeed:3, MaxTime:250, Enable:false };       //快速滑动配置 MinDistance=最小的距离 MinSpeed=最小速度 MaxTime=最大间隔时间(ms)
+    this.KeyboardMove={ Timer:null, Delay:100 , Enable:false, Event:null };   //键盘左右移动
 
     this.RestoreFocus=function(delay)
     {
@@ -7423,6 +7441,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
 
         var keyID = e.keyCode ? e.keyCode :e.which;
+        this.IsPressKeyboard=true;
 
         //回调事件
         var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_KEYDOWN);
@@ -7457,6 +7476,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         switch(keyID)
         {
             case 37: //left
+                if (this.KeyboardMove.Enable) break;
                 if ((e.ctrlKey||e.shiftKey) && this.OnCustomKeyDown)
                 {
                     if (this.OnCustomKeyDown(keyID, e))
@@ -7496,6 +7516,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 }
                 break;
             case 39: //right
+                if (this.KeyboardMove.Enable) break;
                 if ((e.ctrlKey|| e.shiftKey) && this.OnCustomKeyDown)
                 {
                     if (this.OnCustomKeyDown(keyID, e))
@@ -7630,9 +7651,165 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
         if (draw) this.DrawDynamicInfo();
 
+        if (keyID==37 || keyID==39)
+            this.StartKeyboardMoveTimer(e);
+
         //不让滚动条滚动
         if(e.preventDefault) e.preventDefault();
         else e.returnValue = false;
+    }
+
+
+    this.ClearKeyboardMoveTimer=function()
+    {
+        if (!this.KeyboardMove) return;
+
+        this.KeyboardMove.Event=null;
+
+        if (this.KeyboardMove.Timer)
+        {
+            clearTimeout(this.KeyboardMove.Timer);
+            this.KeyboardMove.Timer=null;
+            JSConsole.Chart.Log(`[JSChartContainer::ClearKeyboardMoveTimer] Stop` );
+        }
+
+        this.KeyboardMove.Enable=false;
+    }
+
+    this.StartKeyboardMoveTimer=function(e)
+    {
+        if (!this.KeyboardMove) return;
+        if (this.KeyboardMove.Enable) return;   //已启动
+
+        this.KeyboardMove.Event=e;
+        this.KeyboardMove.Enable=true;
+
+        JSConsole.Chart.Log(`[JSChartContainer::StartKeyboardMoveTimer] Start` );
+
+        this.AutoKeyboardMove();
+    }
+
+    this.AutoKeyboardMove=function()
+    {
+        if (!this.KeyboardMove) return false;
+        if (!this.KeyboardMove.Enable) return false;
+        if (!this.KeyboardMove.Event) return false;
+
+        this.KeyboardMove.Timer=setTimeout(()=> 
+        { 
+            this.OnKeyboardMoveTimerProc(); 
+        },this.KeyboardMove.Delay);
+    }
+
+
+    this.OnKeyboardMoveTimerProc=function()
+    {
+        if (!this.KeyboardMove) return false;
+        if (!this.KeyboardMove.Enable) return false;
+        if (!this.KeyboardMove.Event) return false;
+
+        var e=this.KeyboardMove.Event;
+        var keyID = e.keyCode ? e.keyCode :e.which;
+        var bStop=false;
+        switch(keyID)
+        {
+            case 37: //left
+                if ((e.ctrlKey||e.shiftKey) && this.OnCustomKeyDown)
+                {
+                    if (this.OnCustomKeyDown(keyID, e))
+                        break;
+                }
+
+                //K线 如果超出K线数据了 调整到最后一个数据
+                if (this.FixCursorIndexValid && this.FixCursorIndexValid())
+                {
+                    this.UpdatePointByCursorIndex();
+                    this.DrawDynamicInfo();
+                    this.ShowTooltipByKeyDown();
+                    break;
+                }
+               
+                if (this.CursorIndex<=0.99999)
+                {
+                    if (!this.DataMoveLeft()) 
+                    {   //左移数据到头了 触发下载新数据
+                        if (this.DragDownloadData) this.DragDownloadData();
+                        break;
+                    }
+                    this.UpdataDataoffset();
+                    this.UpdatePointByCursorIndex();
+                    this.UpdateFrameMaxMin();
+                    this.ResetFrameXSplit();
+                    this.Draw();
+                    this.ShowTooltipByKeyDown();
+                    this.OnKLinePageChange("keydown");
+                }
+                else
+                {
+                    --this.CursorIndex;
+                    this.UpdatePointByCursorIndex();
+                    this.DrawDynamicInfo();
+                    this.ShowTooltipByKeyDown();
+                }
+                break;
+
+            case 39: //right
+                if ((e.ctrlKey|| e.shiftKey) && this.OnCustomKeyDown)
+                {
+                    if (this.OnCustomKeyDown(keyID, e))
+                        break;
+                }
+
+                //K线 如果超出K线数据了 调整到最后一个数据
+                if (this.FixCursorIndexValid && this.FixCursorIndexValid())
+                {
+                    this.UpdatePointByCursorIndex();
+                    this.DrawDynamicInfo();
+                    this.ShowTooltipByKeyDown();
+                    break;
+                }
+
+                var xPointcount=0;
+                if (this.Frame.XPointCount) xPointcount=this.Frame.XPointCount;
+                else xPointcount=this.Frame.SubFrame[0].Frame.XPointCount;
+                if (this.CursorIndex+1>=xPointcount)
+                {
+                    if (!this.DataMoveRight()) break;
+                    this.UpdataDataoffset();
+                    this.UpdatePointByCursorIndex();
+                    this.UpdateFrameMaxMin();
+                    this.ResetFrameXSplit();
+                    this.Draw();
+                    this.ShowTooltipByKeyDown();
+                    this.OnKLinePageChange("keydown");
+                }
+                else
+                {
+                    //判断是否在最后一个数据上
+                    var data=null;
+                    if (this.Frame.Data) data=this.Frame.Data;
+                    else data=this.Frame.SubFrame[0].Frame.Data;
+                    if (!data) break;
+                    if (this.CursorIndex+data.DataOffset+1>=data.Data.length) break;
+
+                    ++this.CursorIndex;
+                    this.UpdatePointByCursorIndex();
+                    this.DrawDynamicInfo();
+                    this.ShowTooltipByKeyDown();
+                }
+                break;
+        }
+        
+
+        if (!bStop) this.AutoKeyboardMove();
+        return true;
+    }
+
+
+    this.OnKeyUp=function(e)
+    {
+        this.IsPressKeyboard=false;
+        this.ClearKeyboardMoveTimer();
     }
 
     this.OnDoubleClick=function(x,y,e)
@@ -11019,7 +11196,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             case JSCHART_MENU_ID.CMD_CORSS_SHOW_INCREASE_ID:
                 if (IFrameSplitOperator.IsBool(srcParam) && this.ChartCorssCursor)
                 {
-                    this.ChartCorssCursor.StringFormatX.IsShowIncrease=srcParam;
+                    this.ChartCorssCursor.StringFormatX.RangeIncrease.IsShow=srcParam;
                 }
                 break;
             case JSCHART_MENU_ID.CMD_CORSS_X_TEXTALIGN_ID:
@@ -11809,6 +11986,12 @@ function OnKeyDown(e)   //键盘事件
 {
     if(this.JSChartContainer && this.JSChartContainer.OnKeyDown)
         this.JSChartContainer.OnKeyDown(e);
+}
+
+function OnKeyUp(e)     //键盘事件
+{
+    if(this.JSChartContainer && this.JSChartContainer.OnKeyUp)
+        this.JSChartContainer.OnKeyUp(e);
 }
 
 function OnWheel(e)    //上下滚动事件
@@ -53177,6 +53360,37 @@ IFrameSplitOperator.FormatDateTimeString=function(value,isShowDate,isShowTime)
     return result;
 }
 
+IFrameSplitOperator.FormatDateTimeStringV2=function(datetime, format, languageID)
+{
+    if (!datetime) return null;
+
+    switch(format)
+    {
+        case "YYYY-MM-DD":
+            return `${datetime.getFullYear()}-${IFrameSplitOperator.NumberToString(datetime.getMonth()+1)}-${IFrameSplitOperator.NumberToString(datetime.getDate())}`;
+        case 'MM-DD':
+            return `${IFrameSplitOperator.NumberToString(datetime.getMonth()+1)}-${IFrameSplitOperator.NumberToString(datetime.getDate())}`;
+        case "MM/DD":
+            return `${IFrameSplitOperator.NumberToString(datetime.getMonth()+1)}/${IFrameSplitOperator.NumberToString(datetime.getDate())}`;
+        case "YYYY-MM":
+            return `${datetime.getFullYear()}-${IFrameSplitOperator.NumberToString(datetime.getMonth()+1)}`;
+        case "YYYY/MM/DD":
+            return `${datetime.getFullYear()}/${IFrameSplitOperator.NumberToString(datetime.getMonth()+1)}/${IFrameSplitOperator.NumberToString(datetime.getDate())}`;
+        case "DD/MM/YYYY":
+            return `${IFrameSplitOperator.NumberToString(datetime.getDate())}/${IFrameSplitOperator.NumberToString(datetime.getMonth()+1)}/${datetime.getFullYear()}`;
+
+
+        case "HH:MM:SS":
+            return `${IFrameSplitOperator.NumberToString(datetime.getHours())}:${IFrameSplitOperator.NumberToString(datetime.getMinutes())}:${IFrameSplitOperator.NumberToString(datetime.getSeconds())}`;
+        case "HH:MM":
+            return `${IFrameSplitOperator.NumberToString(datetime.getHours())}:${IFrameSplitOperator.NumberToString(datetime.getMinutes())}`;
+        case "HH:MM:SS.fff":
+             return `${IFrameSplitOperator.NumberToString(datetime.getHours())}:${IFrameSplitOperator.NumberToString(datetime.getMinutes())}:${IFrameSplitOperator.NumberToString(datetime.getSeconds())}.${IFrameSplitOperator.MillisecondToString(datetime.getMilliseconds())}`;
+        default:
+            return null;
+    }
+}
+
 //字段颜色格式化
 IFrameSplitOperator.FormatValueColor = function (value, value2) 
 {
@@ -58246,7 +58460,7 @@ function HQDateStringFormat()
     this.DateFormatType=0;  //0=YYYY-MM-DD 1=YYYY/MM/DD  2=YYYY/MM/DD/W 3=DD/MM/YYYY
     this.LanguageID=0;
     this.KItem=null;            //缓存当前的K线
-    this.IsShowIncrease=false;   //是否显示"至今涨幅"
+    this.RangeIncrease={ IsShow:false, Formula:0 };   //是否显示"至今涨幅" Formula=0 (最新-起始昨收)/起始昨收  1= (最新-起始价格)/起始价格
 
     this.Operator=function()
     {
@@ -58285,10 +58499,18 @@ function HQDateStringFormat()
             this.Text = this.Text + "  " + time;
         }
 
-        if (this.IsShowIncrease && IFrameSplitOperator.IsNonEmptyArray(this.Data.Data))    //计算涨幅
+        if (this.RangeIncrease.IsShow && IFrameSplitOperator.IsNonEmptyArray(this.Data.Data))    //计算涨幅
         {
             var lastItem=this.Data.Data[this.Data.Data.length-1];   //最后一个数据
-            var value=(lastItem.Close-currentData.YClose)/currentData.YClose*100;
+            if (this.RangeIncrease.Formula==1)
+            {
+                var value=(lastItem.Close-currentData.Close)/currentData.Close*100;
+            }
+            else
+            {
+                var value=(lastItem.Close-currentData.YClose)/currentData.YClose*100;
+            }
+            
             this.Text+=` ${g_JSChartLocalization.GetText('至今涨幅',this.LanguageID)}${value.toFixed(2)}%`;
         }
 
@@ -75601,6 +75823,8 @@ function JSChartResource()
         Selected:
         {
             BGColor:"rgb(180,240,240)",
+            LineColor:"rgb(128,128,128)",
+            LineWidth:2,
         }
     },
 
@@ -76720,6 +76944,8 @@ function JSChartResource()
             {
                 var subItem=item.Selected;
                 if (subItem.BGColor) this.DealList.Selected.BGColor=subItem.BGColor;
+                if (subItem.LineColor) this.DealList.Selected.LineColor=subItem.LineColor;
+                if (IFrameSplitOperator.IsPlusNumber(subItem.LineWidth)) this.DealList.Selected.LineWidth=subItem.LineWidth;
             }
         }
 
@@ -76734,7 +76960,7 @@ function JSChartResource()
             if (IFrameSplitOperator.IsNumber(item.Radius)) this.SelectedChart.Radius=item.Radius;
             if (IFrameSplitOperator.IsNumber(item.MinSpace)) this.SelectedChart.MinSpace=item.MinSpace;
             if (item.LineColor) this.SelectedChart.LineColor=item.LineColor;
-            if (item.LineColor) this.SelectedChart.BGColor=item.BGColor;
+            if (item.BGColor) this.SelectedChart.BGColor=item.BGColor;
         }
 
         if (style.DragMovePaint)
@@ -79706,7 +79932,12 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             }
         }
 
-        if (bRegisterKeydown) this.UIElement.addEventListener("keydown", (e)=>{ this.OnKeyDown(e); }, true);            //键盘消息
+        if (bRegisterKeydown) 
+        {
+            this.UIElement.addEventListener("keydown", (e)=>{ this.OnKeyDown(e); }, true);            //键盘消息
+            this.UIElement.addEventListener("keyup", (e)=>{ this.OnKeyUp(e);}, true);
+        }
+
         if (bRegisterWheel) this.UIElement.addEventListener("wheel", (e)=>{ this.OnWheel(e); }, true);                  //上下滚动消息
 
         this.InitalPopMinuteChart(option);
@@ -81486,7 +81717,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
     this.RecvRealtimeData=function(data)
     {
-        if (this.IsOnTouch==true) return;   //正在操作中不更新数据
+        if (this.IsOnTouch==true) return;           //正在操作手势不更新数据
+        if (this.IsPressKeyboard==true) return;     //正在操作键盘不更新数据
 
         if (data.Ver==3.0)
         {
@@ -81826,6 +82058,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
     this.RecvMinuteRealtimeDataV2=function(data)    //新版本的
     {
         if (this.IsOnTouch==true) return;   //正在操作中不更新数据
+        if (this.IsPressKeyboard==true) return;     //正在操作键盘不更新数据
+
         if (this.EnableVerifyRecvData && data.symbol!=this.Symbol)
         {
             JSConsole.Chart.Warn(`[KLineChartContainer::RecvMinuteRealtimeDataV2] recv data symbol not match. HQChart[${this.Symbol}] , Recv[${data.symbol}]`);
@@ -84751,7 +84985,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             bCorssDrawVaildTime=this.ChartCorssCursor.IsFixXLastTime;
             bCorssDrawPoint=this.ChartCorssCursor.CorssPointConfig.Enable;
             bCorssBCClick=this.ChartCorssCursor.EnableDBClick;
-            bCorssShowIncrease=this.ChartCorssCursor.StringFormatX.IsShowIncrease;
+            bCorssShowIncrease=this.ChartCorssCursor.StringFormatX.RangeIncrease.IsShow;
             crossXTextAlign=this.ChartCorssCursor.BottomConfig.Align;
         }
 
@@ -89605,7 +89839,11 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             }
         }
 
-        if (bRegisterKeydown) this.UIElement.addEventListener("keydown", (e)=>{ this.OnKeyDown(e);} , true);              //键盘消息
+        if (bRegisterKeydown) 
+        {
+            this.UIElement.addEventListener("keydown", (e)=>{ this.OnKeyDown(e);} , true);              //键盘消息
+            this.UIElement.addEventListener("keyup", (e)=>{ this.OnKeyUp(e);}, true);
+        }
         if (bRegisterWheel) this.UIElement.addEventListener("wheel", (e)=>{ this.OnWheel(e); }, true);                  //上下滚动消息
     }
 
@@ -91502,7 +91740,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             return;
         }
 
-        if (this.IsOnTouch==true)   //正在操作中不更新数据
+        if (this.IsOnTouch==true || this.IsPressKeyboard==true)   //正在操作中不更新数据
         {
             if (this.SourceData && IFrameSplitOperator.IsNonEmptyArray(this.SourceData.Data))
             {
@@ -95136,6 +95374,7 @@ function KLineChartHScreenContainer(uielement)
         }
 
         this.UIElement.addEventListener("keydown", OnKeyDown, true);    //键盘消息
+        this.UIElement.addEventListener("keyup", OnKeyUp, true);
     }
 
     //创建子窗口
@@ -95324,6 +95563,7 @@ function MinuteChartHScreenContainer(uielement)
         this.ChartCorssCursor.CallAcutionXOperator.Frame=this.Frame.SubFrame[0].Frame;
 
         this.UIElement.addEventListener("keydown", OnKeyDown, true);    //键盘消息
+        this.UIElement.addEventListener("keyup", OnKeyUp, true);
     }
 
     //创建子窗口
@@ -95492,7 +95732,11 @@ function DepthChartContainer(uielement)
             }
         }
 
-        if (bRegisterKeydown) this.UIElement.addEventListener("keydown", (e)=>{ this.OnKeyDown(e); }, true);            //键盘消息
+        if (bRegisterKeydown) 
+        {
+            this.UIElement.addEventListener("keydown", (e)=>{ this.OnKeyDown(e); }, true);            //键盘消息
+            this.UIElement.addEventListener("keyup", (e)=>{ this.OnKeyUp(e);}, true);
+        }
         if (bRegisterWheel) this.UIElement.addEventListener("wheel", (e)=>{ this.OnWheel(e); }, true);                //上下滚动消息
     }
 
@@ -98630,6 +98874,11 @@ var MARKET_SUFFIX_NAME=
         return 2;
     },
 
+    GetSHSZCustomIndexDecimal:function(symbol)
+    {
+        return 3;
+    },
+
     GetFHKDecimal:function(symbol)  //港股指数期货 小数位数
     {
         return 0;
@@ -98853,6 +99102,12 @@ function MinuteTimeStringData()
     {
         if (!this.BJ) this.BJ=this.CreateBJData();
         return this.BJ;
+    }
+
+    this.GetSHSZCustomIndex=function(upperSymbol)
+    {
+        if (!this.SHSZ) this.SHSZ=this.CreateSHSZData();
+        return this.SHSZ;
     }
 
     this.GetSHO=function(upperSymbol)
@@ -99144,6 +99399,7 @@ function MinuteTimeStringData()
         if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol)) return this.GetSHO();
         if (MARKET_SUFFIX_NAME.IsSZO(upperSymbol)) return this.GetSZO();
         if (MARKET_SUFFIX_NAME.IsSH(upperSymbol) || MARKET_SUFFIX_NAME.IsSZ(upperSymbol)) return this.GetSHSZ(upperSymbol);
+        if (MARKET_SUFFIX_NAME.IsSHSZCustomIndex(upperSymbol)) return this.GetSHSZCustomIndex(upperSymbol);
         if (MARKET_SUFFIX_NAME.IsBJ(upperSymbol)) return this.GetBJ(upperSymbol);
         if (MARKET_SUFFIX_NAME.IsHK(upperSymbol)) return this.GetHK(upperSymbol);
         if (MARKET_SUFFIX_NAME.IsTW(upperSymbol)) return this.GetTW(upperSymbol);
@@ -102022,6 +102278,7 @@ function GetfloatPrecision(symbol)  //获取小数位数
 
     else if (MARKET_SUFFIX_NAME.IsSZ(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetSZDecimal(upperSymbol);
     else if (MARKET_SUFFIX_NAME.IsSH(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetSHDecimal(upperSymbol);
+    else if (MARKET_SUFFIX_NAME.IsSHSZCustomIndex(upperSymbol)) defaultfloatPrecision=MARKET_SUFFIX_NAME.GetSHSZCustomIndexDecimal(upperSymbol);
     
     else defaultfloatPrecision=MARKET_SUFFIX_NAME.GetDefaultDecimal(upperSymbol);
 

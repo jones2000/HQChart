@@ -490,6 +490,7 @@ function JSReportChartContainer(uielement)
     //
     this.TooltipMinuteChart;    //分时图
     this.TooltipKLineChart;     //分时图
+    this.FloatTooltip;          //提示浮框
 
     //MouseOnStatus:{ RowIndex:行, ColumnIndex:列} 
     this.LastMouseStatus={ MoveStatus:null, TooltipStatus:null, MouseOnStatus:null };
@@ -1627,10 +1628,12 @@ function JSReportChartContainer(uielement)
     this.ReadStockJsonData=function(stock, item)
     {
         //0=证券代码 1=股票名称 2=昨收 3=开 4=高 5=低 6=收 7=成交量 8=成交金额, 9=买价 10=买量 11=卖价 12=卖量 13=均价 14=流通股 15=总股本 16=涨停价 17=跌停价
-        //18=内盘 19=外盘 20=现量 21=涨幅% 22=涨跌 23=换手率% 24=振幅% 25=流通市值 26=总市值
-        //30=全局扩展数据  31=当前板块扩展数据 36=日期字段
-
-        //88=价格颜色类型
+        //18=内盘 19=外盘 20=现量 21=涨幅% 22=涨跌 23=换手率% 24=振幅% 25=流通市值 26=总市值 27=扩展名字
+        //30=全局扩展数据  31=当前板块扩展数据 
+        //32=收盘价线 33=K线  35=时间 36=日期字段 38=持仓量 39=结算价 40=昨结算价 41=开仓量 42=平仓量
+        //43=1m涨速% 44=3m涨速% 45=5m涨速% 46=10m涨速%  47=15m涨速%
+        //80=整行背景色
+        //101-199=数值型  201-299=字符型 301-350=进度条 351-400=按钮 401-499=日期时间
 
         if (IFrameSplitOperator.IsString(item[1])) stock.Name=item[1];
         if (IFrameSplitOperator.IsNumber(item[2])) stock.YClose=item[2];
@@ -1727,6 +1730,8 @@ function JSReportChartContainer(uielement)
         if (IFrameSplitOperator.IsNumber(item[46])) stock.RSpeed10M=item[46]; 
         if (IFrameSplitOperator.IsNumber(item[47])) stock.RSpeed15M=item[47]; 
 
+        if (item[80] || item[80]===null) stock.BGColor=item[80];       //整行背景色
+
         //10个数值型 101-199
         if (IFrameSplitOperator.IsNumber(item[101])) stock.ReserveNumber1=item[101];
         if (IFrameSplitOperator.IsNumber(item[102])) stock.ReserveNumber2=item[102];
@@ -1740,16 +1745,16 @@ function JSReportChartContainer(uielement)
         if (IFrameSplitOperator.IsNumber(item[110])) stock.ReserveNumber10=item[110];
 
         //10个字符型 201-299
-        if (IFrameSplitOperator.IsString(item[201])) stock.ReserveString1=item[201];
-        if (IFrameSplitOperator.IsString(item[202])) stock.ReserveString2=item[202];
-        if (IFrameSplitOperator.IsString(item[203])) stock.ReserveString3=item[203];
-        if (IFrameSplitOperator.IsString(item[204])) stock.ReserveString4=item[204];
-        if (IFrameSplitOperator.IsString(item[205])) stock.ReserveString5=item[205];
-        if (IFrameSplitOperator.IsString(item[206])) stock.ReserveString6=item[206];
-        if (IFrameSplitOperator.IsString(item[207])) stock.ReserveString7=item[207];
-        if (IFrameSplitOperator.IsString(item[208])) stock.ReserveString8=item[208];
-        if (IFrameSplitOperator.IsString(item[209])) stock.ReserveString9=item[209];
-        if (IFrameSplitOperator.IsString(item[210])) stock.ReserveString10=item[210];
+        if (IFrameSplitOperator.IsString(item[201]) || IFrameSplitOperator.IsObject(item[201])) stock.ReserveString1=item[201];
+        if (IFrameSplitOperator.IsString(item[202]) || IFrameSplitOperator.IsObject(item[202])) stock.ReserveString2=item[202];
+        if (IFrameSplitOperator.IsString(item[203]) || IFrameSplitOperator.IsObject(item[203])) stock.ReserveString3=item[203];
+        if (IFrameSplitOperator.IsString(item[204]) || IFrameSplitOperator.IsObject(item[204])) stock.ReserveString4=item[204];
+        if (IFrameSplitOperator.IsString(item[205]) || IFrameSplitOperator.IsObject(item[205])) stock.ReserveString5=item[205];
+        if (IFrameSplitOperator.IsString(item[206]) || IFrameSplitOperator.IsObject(item[206])) stock.ReserveString6=item[206];
+        if (IFrameSplitOperator.IsString(item[207]) || IFrameSplitOperator.IsObject(item[207])) stock.ReserveString7=item[207];
+        if (IFrameSplitOperator.IsString(item[208]) || IFrameSplitOperator.IsObject(item[208])) stock.ReserveString8=item[208];
+        if (IFrameSplitOperator.IsString(item[209]) || IFrameSplitOperator.IsObject(item[209])) stock.ReserveString9=item[209];
+        if (IFrameSplitOperator.IsString(item[210]) || IFrameSplitOperator.IsObject(item[210])) stock.ReserveString10=item[210];
 
         //10个进度条 301-350  { Value:, BGColor: }
         if (IFrameSplitOperator.IsNumber(item[301]) || IFrameSplitOperator.IsObject(item[301])) stock.ReserveProgressBar1=item[301];
@@ -1774,7 +1779,18 @@ function JSReportChartContainer(uielement)
         if (IFrameSplitOperator.IsObject(item[358])) stock.ReserveButton8=item[358];
         if (IFrameSplitOperator.IsObject(item[359])) stock.ReserveButton9=item[359];
         if (IFrameSplitOperator.IsObject(item[360])) stock.ReserveButton10=item[360];
-        
+
+        //10个日期时间类型 401-499 { Value:Date, BGColor }
+        if (IFrameSplitOperator.IsObject(item[401])) stock.ReserveDateTime1=item[401];
+        if (IFrameSplitOperator.IsObject(item[402])) stock.ReserveDateTime2=item[402];
+        if (IFrameSplitOperator.IsObject(item[403])) stock.ReserveDateTime3=item[403];
+        if (IFrameSplitOperator.IsObject(item[404])) stock.ReserveDateTime4=item[404];
+        if (IFrameSplitOperator.IsObject(item[405])) stock.ReserveDateTime5=item[405];
+        if (IFrameSplitOperator.IsObject(item[406])) stock.ReserveDateTime6=item[406];
+        if (IFrameSplitOperator.IsObject(item[407])) stock.ReserveDateTime7=item[407];
+        if (IFrameSplitOperator.IsObject(item[408])) stock.ReserveDateTime8=item[408];
+        if (IFrameSplitOperator.IsObject(item[409])) stock.ReserveDateTime9=item[409];
+        if (IFrameSplitOperator.IsObject(item[410])) stock.ReserveDateTime10=item[410];
     }
 
 
@@ -4273,6 +4289,11 @@ function JSReportChartContainer(uielement)
 
     this.RecvStockSortData=function(data)
     {
+        var chart=this.ChartPaint[0];
+        if (!chart) return;
+
+        var selectedSymbol=chart.GetSelectedSingleSymbol();
+
         //更新股票数据
         var arySymbol=[];
         if (IFrameSplitOperator.IsNonEmptyArray(data.data))
@@ -4320,8 +4341,16 @@ function JSReportChartContainer(uielement)
             if (IFrameSplitOperator.IsNumber(item.Count)) this.Data.Virtual.Count=item.Count;
         }
 
-        var chart=this.ChartPaint[0];
-        if (!chart) return;
+        //更新选中行
+        if (data.SelectedRow)
+        {
+            var item=data.SelectedRow;
+            if (item.Symbol) chart.SetSelectedRow({Symbol:item.Symbol});
+        }
+        else
+        {
+            if (selectedSymbol) chart.SetSelectedRow({Symbol:selectedSymbol});
+        }
 
         //更新的股票在当前页面,需要重绘
         var bUpdate=true;
@@ -4608,6 +4637,18 @@ var REPORT_COLUMN_ID=
     RESERVE_BUTTON9_ID:459,    //ReserveButton9:
     RESERVE_BUTTON10_ID:460,   //ReserveButton10:
 
+
+    //预留日期时间类型 10个 501-599
+    RESERVE_DATETIME1_ID:501,   //ReserveDateTime1;
+    RESERVE_DATETIME2_ID:502,
+    RESERVE_DATETIME3_ID:503,
+    RESERVE_DATETIME4_ID:504,
+    RESERVE_DATETIME5_ID:505,
+    RESERVE_DATETIME6_ID:506,
+    RESERVE_DATETIME7_ID:507,
+    RESERVE_DATETIME8_ID:508,
+    RESERVE_DATETIME9_ID:509,
+    RESERVE_DATETIME10_ID:510,
 }
 
 
@@ -4704,6 +4745,17 @@ var MAP_COLUMN_FIELD=new Map([
     [REPORT_COLUMN_ID.RESERVE_BUTTON8_ID,"ReserveButton8"],
     [REPORT_COLUMN_ID.RESERVE_BUTTON9_ID,"ReserveButton9"],
     [REPORT_COLUMN_ID.RESERVE_BUTTON10_ID,"ReserveButton10"],
+
+    [REPORT_COLUMN_ID.RESERVE_DATETIME1_ID,"ReserveDateTime1"],
+    [REPORT_COLUMN_ID.RESERVE_DATETIME2_ID,"ReserveDateTime2"],
+    [REPORT_COLUMN_ID.RESERVE_DATETIME3_ID,"ReserveDateTime3"],
+    [REPORT_COLUMN_ID.RESERVE_DATETIME4_ID,"ReserveDateTime4"],
+    [REPORT_COLUMN_ID.RESERVE_DATETIME5_ID,"ReserveDateTime5"],
+    [REPORT_COLUMN_ID.RESERVE_DATETIME6_ID,"ReserveDateTime6"],
+    [REPORT_COLUMN_ID.RESERVE_DATETIME7_ID,"ReserveDateTime7"],
+    [REPORT_COLUMN_ID.RESERVE_DATETIME8_ID,"ReserveDateTime8"],
+    [REPORT_COLUMN_ID.RESERVE_DATETIME9_ID,"ReserveDateTime9"],
+    [REPORT_COLUMN_ID.RESERVE_DATETIME10_ID,"ReserveDateTime10"],
 ]);
 
 function ChartReport()
@@ -5030,7 +5082,7 @@ function ChartReport()
         if (IFrameSplitOperator.IsBool(item.EnableFormatDrawInfoEvent)) colItem.EnableFormatDrawInfoEvent=item.EnableFormatDrawInfoEvent;
 
         if (IFrameSplitOperator.IsNumber(item.FloatPrecision)) colItem.FloatPrecision=item.FloatPrecision;    //小数位数
-        if (IFrameSplitOperator.IsNumber(item.ColorType))  colItem.ColorType=item.ColorType;        //0=默认 1=(>0, =0, <0) 2=(>=0, <0)
+        if (IFrameSplitOperator.IsNumber(item.ColorType))  colItem.ColorType=item.ColorType;        //0=默认 1=(>0, =0, <0) 2=(>=0, <0) 3=(>YClose =YClose <YClose)
         if (item.Icon) colItem.Icon=item.Icon;
         if (IFrameSplitOperator.IsBool(item.EnableChartTooltip)) colItem.ChartTooltip={ Enable:item.EnableChartTooltip, Type:20 };
         if (item.ChartTooltip) colItem.ChartTooltip={ Enable:item.ChartTooltip.Enable, Type:item.ChartTooltip.Type };
@@ -5099,6 +5151,11 @@ function ChartReport()
         else if (this.IsReserveNumber(item.Type))
         {
             if (item.Format) colItem.Format=item.Format;    //数据格式化设置{ Type:1=原始 2=千分位分割 3=万亿转换, ExFloatPrecision:万亿转换以后的小数位数 }
+            if (item.StringFormat) colItem.StringFormat=item.StringFormat;      //"{0}%" 输出增加固定字符
+        }
+        else if (this.IsReserveDateTime(item.Type))
+        {
+            if (item.DateTimeFormat) colItem.DateTimeFormat=item.DateTimeFormat;    //日期格式化
         }
         else if (item.Type==REPORT_COLUMN_ID.CUSTOM_PROGRESS_ID)
         {
@@ -5343,6 +5400,18 @@ function ChartReport()
             { Type:REPORT_COLUMN_ID.RESERVE_BUTTON8_ID, Title:"按钮8", TextAlign:"center", FixedWidth:50*GetDevicePixelRatio() },
             { Type:REPORT_COLUMN_ID.RESERVE_BUTTON9_ID, Title:"按钮9", TextAlign:"center", FixedWidth:50*GetDevicePixelRatio() },
             { Type:REPORT_COLUMN_ID.RESERVE_BUTTON10_ID, Title:"按钮10", TextAlign:"center", FixedWidth:50*GetDevicePixelRatio() },
+
+
+            { Type:REPORT_COLUMN_ID.RESERVE_DATETIME1_ID, Title:"日期1", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"9999-99-99", DateTimeFormat:"YYYY-MM-DD" },
+            { Type:REPORT_COLUMN_ID.RESERVE_DATETIME2_ID, Title:"日期2", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"9999-99-99", DateTimeFormat:"YYYY-MM-DD" },
+            { Type:REPORT_COLUMN_ID.RESERVE_DATETIME3_ID, Title:"日期3", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"9999-99-99", DateTimeFormat:"YYYY-MM-DD" },
+            { Type:REPORT_COLUMN_ID.RESERVE_DATETIME4_ID, Title:"日期4", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"9999-99-99", DateTimeFormat:"YYYY-MM-DD" },
+            { Type:REPORT_COLUMN_ID.RESERVE_DATETIME5_ID, Title:"日期5", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"9999-99-99", DateTimeFormat:"YYYY-MM-DD" },
+            { Type:REPORT_COLUMN_ID.RESERVE_DATETIME6_ID, Title:"日期6", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"9999-99-99", DateTimeFormat:"YYYY-MM-DD" },
+            { Type:REPORT_COLUMN_ID.RESERVE_DATETIME7_ID, Title:"日期7", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"9999-99-99", DateTimeFormat:"YYYY-MM-DD" },
+            { Type:REPORT_COLUMN_ID.RESERVE_DATETIME8_ID, Title:"日期8", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"9999-99-99", DateTimeFormat:"YYYY-MM-DD" },
+            { Type:REPORT_COLUMN_ID.RESERVE_DATETIME9_ID, Title:"日期9", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"9999-99-99", DateTimeFormat:"YYYY-MM-DD" },
+            { Type:REPORT_COLUMN_ID.RESERVE_DATETIME10_ID, Title:"日期10", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"9999-99-99", DateTimeFormat:"YYYY-MM-DD" },
             
         ];
 
@@ -5548,6 +5617,8 @@ function ChartReport()
         for(var i=0;i<this.Column.length;++i)
         {
             var item=this.Column[i];
+            this.Canvas.font=this.ItemFont;
+
             if (item.Type==REPORT_COLUMN_ID.SYMBOL_NAME_ID)
             {
                 this.Canvas.font=this.ItemNameFont;
@@ -5987,6 +6058,9 @@ function ChartReport()
         for(var i=this.Data.YOffset, j=0; i<dataCount && j<this.RowCount ;++i, ++j)
         {
             var symbol=this.Data.Data[i];
+            var rtRowBG={ Left:left, Top:textTop, Width:rowWidth, Height:this.RowHeight };
+            rtRowBG.Right=rtRowBG.Left+rtRowBG.Width;
+            rtRowBG.Bottom=rtRowBG.Top+rtRowBG.Height;
 
             var bFillRow=false;
             if (this.MultiSelectModel==1)
@@ -6031,23 +6105,11 @@ function ChartReport()
                 bFillRow=false;
             }
 
-            if (eventDrawBG && eventDrawBG.Callback)
-            {
-                //Out:{ BGColor: } 
-                var sendData={ RowIndex:i, Symbol:symbol, Out:null, Selected:selectedSymbol, MultiSelectModel:this.MultiSelectModel };
-                eventDrawBG.Callback(eventDrawBG,sendData,this);
-                if (sendData.Out && sendData.Out.BGColor)
-                {
-                    this.Canvas.fillStyle=sendData.Out.BGColor;
-                    this.Canvas.fillRect(left,textTop,rowWidth,this.RowHeight);   
-                }
-            }
+            this.DrawFullRowBGColor(symbol, eventDrawBG, i, rtRowBG, { Selected:selectedSymbol } );
+            this.DrawFlashFullRowBGColor(symbol, rtRowBG);
 
             if (bFillRow)
             {
-                var rtRowBG={ Left:left, Top:textTop, Width:rowWidth, Height:this.RowHeight };
-                rtRowBG.Right=rtRowBG.Left+rtRowBG.Width;
-                rtRowBG.Bottom=rtRowBG.Top+rtRowBG.Height;
                 this.AryFullSelectedRow.push(rtRowBG);
 
                 if (this.SelectedStyle===1)
@@ -6063,8 +6125,56 @@ function ChartReport()
 
             textTop+=this.RowHeight;
         }
+    }
 
-        
+    //绘制整行背景色
+    this.DrawFullRowBGColor=function(symbol, event, index, rtBG, option)
+    {
+        var data= { Symbol:symbol , Stock:null };
+        if (this.GetStockDataCallback) data.Stock=this.GetStockDataCallback(symbol);
+        if (data.Stock && data.Stock.BGColor)
+        {
+            this.Canvas.fillStyle=data.Stock.BGColor;
+            this.Canvas.fillRect(rtBG.Left,rtBG.Top,rtBG.Width,rtBG.Height); 
+        }
+
+        if (event && event.Callback)
+        {
+            //Out:{ BGColor: } 
+            var sendData={ RowIndex:index, Symbol:symbol, Out:null, MultiSelectModel:this.MultiSelectModel };
+            if (option)
+            {
+                if (option.Selected) sendData.Selected=option.Selected;
+            }
+
+            event.Callback(event,sendData,this);
+            if (sendData.Out && sendData.Out.BGColor)
+            {
+                this.Canvas.fillStyle=sendData.Out.BGColor;
+                this.Canvas.fillRect(rtBG.Left,rtBG.Top,rtBG.Width,rtBG.Height);   
+            }
+        }
+    }
+
+    this.DrawFlashFullRowBGColor=function(symbol, rtBG)
+    {
+        var data= { Symbol:symbol, FlashBG:null };
+        if (this.GetFlashBGDataCallback) data.FlashBG=this.GetFlashBGDataCallback(symbol, Date.now());
+        if (!data.FlashBG) return;
+
+        var id=-1;
+        if (!data.FlashBG.Data.has(id)) return;
+
+        var flashItem=data.FlashBG.Data.get(id);
+        if (flashItem && flashItem.Count)
+        {
+            this.Canvas.fillStyle=flashItem.Color;
+            this.Canvas.fillRect(rtBG.Left,rtBG.Top,rtBG.Width,rtBG.Height); 
+        }
+
+        --flashItem.Count;
+
+        if (this.GlobalOption) ++this.GlobalOption.FlashBGCount;
     }
 
     this.DrawSelectedRow=function()
@@ -6109,6 +6219,17 @@ function ChartReport()
             var symbol=this.Data.Data[index];
             return [symbol];
         }
+    }
+
+    //单行选中模式选中股票
+    this.GetSelectedSingleSymbol=function()
+    {
+        if (this.MultiSelectModel==1) return null;  //多选
+        if (this.SelectedModel==0) return null;     //当前屏选中
+        if (this.SelectedRow<0) return null;
+
+        var symbol=this.Data.Data[this.SelectedRow];
+        return symbol;
     }
 
 
@@ -6609,6 +6730,11 @@ function ChartReport()
             this.FormatReserveString(column, stock, drawInfo);
             this.FormatDrawInfoEvent(stock, data, column, drawInfo);
         }
+        else if (this.IsReserveDateTime(column.Type))
+        {
+            this.FormatReserveDateTime(column, stock, drawInfo);
+            this.FormatDrawInfoEvent(stock, data, column, drawInfo);
+        }
         else if (this.IsReserveProgressBarColumn(column.Type))
         {
             this.FormatReserveProgressBar(column, stock, drawInfo);
@@ -6775,6 +6901,18 @@ function ChartReport()
             REPORT_COLUMN_ID.RESERVE_STRING9_ID,REPORT_COLUMN_ID.RESERVE_STRING10_ID
         ];
 
+        return ARARY_TYPE.includes(value);
+    }
+
+    this.IsReserveDateTime=function(value)
+    {
+        var ARARY_TYPE=
+        [
+            REPORT_COLUMN_ID.RESERVE_DATETIME1_ID,REPORT_COLUMN_ID.RESERVE_DATETIME2_ID,REPORT_COLUMN_ID.RESERVE_DATETIME3_ID,REPORT_COLUMN_ID.RESERVE_DATETIME4_ID,
+            REPORT_COLUMN_ID.RESERVE_DATETIME5_ID,REPORT_COLUMN_ID.RESERVE_DATETIME6_ID,REPORT_COLUMN_ID.RESERVE_DATETIME7_ID,REPORT_COLUMN_ID.RESERVE_DATETIME8_ID,
+            REPORT_COLUMN_ID.RESERVE_DATETIME9_ID,REPORT_COLUMN_ID.RESERVE_DATETIME10_ID
+        ];
+        
         return ARARY_TYPE.includes(value);
     }
 
@@ -7156,6 +7294,10 @@ function ChartReport()
             {
                 drawInfo.TextColor=this.GetUpDownColorV2(value,0);
             }
+            else if (column.ColorType==3)
+            {
+                drawInfo.TextColor=this.GetUpDownColor(value,data.YClose);
+            }
         }
 
         var text=value.toFixed(column.FloatPrecision);
@@ -7176,6 +7318,11 @@ function ChartReport()
                     text=IFrameSplitOperator.FormatValueStringV2(value, column.FloatPrecision,exfloatPrecision);
                     break;
             }
+        }
+
+        if (column.StringFormat && text)
+        {
+            text=column.StringFormat.replace("{0}", text);
         }
         
         drawInfo.Text=text;
@@ -7199,6 +7346,21 @@ function ChartReport()
         {
             drawInfo.Text=item;
         }
+    }
+
+    this.FormatReserveDateTime=function(column, data, drawInfo)
+    {
+        if (column.DefaultText) drawInfo.Text=column.DefaultText;
+
+        var fieldName=MAP_COLUMN_FIELD.get(column.Type);
+        if (!data || !fieldName) return;
+
+        var item=data[fieldName];
+        if (!IFrameSplitOperator.IsObject(item)) return;
+        
+        if (item.DateTime) drawInfo.Text=IFrameSplitOperator.FormatDateTimeStringV2(item.DateTime,column.DateTimeFormat);
+        if (item.TextColor) drawInfo.TextColor=item.TextColor;
+        if (item.BGColor) drawInfo.BGColor=item.BGColor;
     }
 
     this.FormatReserveProgressBar=function(column, data, drawInfo)
@@ -7654,6 +7816,8 @@ function ChartReport()
         {
             drawInfo.Botton={ Rect:rtBG, Type:1 };
         }
+
+        this.Canvas.font=this.ItemFont;
     }
 
     this.DrawProgressBar=function(drawInfo, left, top, width)
@@ -8880,19 +9044,30 @@ function ChartReport()
     {
         if (!option) return false;
         if (this.SelectedModel===0) return false;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return false;
 
         if (option.Symbol)
         {
             var symbol=option.Symbol;
             var bFinder=false;
-            for(var i=0;i<this.Data.Data.length;++i)
+            
+            if (this.SelectedRow>=0)
             {
-                var item=this.Data.Data[i];
-                if (symbol==item)
+                var item=this.Data.Data[this.SelectedRow];
+                if (symbol==item) bFinder=true;
+            }
+
+            if (!bFinder)
+            {
+                for(var i=0;i<this.Data.Data.length;++i)
                 {
-                    this.SelectedRow=i;
-                    bFinder=true;
-                    break;
+                    var item=this.Data.Data[i];
+                    if (symbol==item)
+                    {
+                        this.SelectedRow=i;
+                        bFinder=true;
+                        break;
+                    }
                 }
             }
 

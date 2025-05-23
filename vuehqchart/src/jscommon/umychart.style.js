@@ -701,7 +701,8 @@ function GetBlackStyle()
 
             Selected:
             {
-                BGColor:"rgb(49,48,56)",
+                BGColor:"rgba(49,48,56,0.7)",
+                LineColor:"rgb(220,220,220)",
             }
         },
     

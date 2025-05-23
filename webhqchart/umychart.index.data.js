@@ -581,7 +581,7 @@ JSIndexScript.prototype.MACD=function()
 {
     let data=
     {
-        Name:'MACD', Description:'平滑异同平均', IsMainIndex:false,
+        Name:'MACD', Description:'平滑异同平均', IsMainIndex:false,FloatPrecision:3,
         Args:[ { Name:'SHORT', Value:12}, { Name:'LONG', Value:26}, { Name:'MID', Value:9} ],
         Script: //脚本
 'DIF:EMA(CLOSE,SHORT)-EMA(CLOSE,LONG);\n\

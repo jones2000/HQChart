@@ -226,7 +226,11 @@ function JSDialogDrawTool()
     this.Destroy=function()
     {
         this.AryDivChart=[];
-        if (this.DivDialog) document.body.removeChild(this.DivDialog);
+        if (this.DivDialog) 
+        {
+            if (document && document.body && document.body.removeChild)
+                document.body.removeChild(this.DivDialog);
+        }
         this.DivDialog=null;
     }
 

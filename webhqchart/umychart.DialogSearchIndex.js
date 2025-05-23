@@ -64,7 +64,7 @@ function JSDialogSearchIndex()
 
         if (this.DivDialog) 
         {
-            document.body.removeChild(this.DivDialog);
+            if (document && document.body && document.body.removeChild) document.body.removeChild(this.DivDialog);
             this.DivDialog=null;
         }
     }
@@ -875,7 +875,8 @@ function JSDialogModifyIndexParam()
 
     this.AryData=[];
     this.IndexData=null;    //指标数据 { WindowsIndex:, Type:1=主图 2=叠加, Identify, IndexScript: }
-    this.Arguments=[];           //参数备份
+    this.Arguments=[];      //默认参数
+    this.EnableRestoreParam=true;   //是否允许“恢复默认"
 
     this.RestoreFocusDelay=800;
 
@@ -886,6 +887,7 @@ function JSDialogModifyIndexParam()
         {
             if (IFrameSplitOperator.IsNumber(option.Style)) this.Style=option.Style;
             if (IFrameSplitOperator.IsNumber(option.MaxRowCount)) this.MaxRowCount=option.MaxRowCount;
+            if (IFrameSplitOperator.IsBool(option.EnableRestoreParam)) this.EnableRestoreParam=option.EnableRestoreParam;
         }
     }
 
@@ -926,7 +928,7 @@ function JSDialogModifyIndexParam()
 
     this.OnClickColseButton=function(e)
     {
-        this.RestoreParam();    //还原参数
+        //this.RestoreParam();    //还原参数
         this.Close(e);
     }
 
@@ -957,7 +959,8 @@ function JSDialogModifyIndexParam()
     this.SetIndexData=function(data)
     {
         this.IndexData=data;
-        this.BackupParam();
+        this.GetDefaultParam();
+        //this.BackupParam();
     }
 
     this.OnMouseDownTitle=function(e)
@@ -1035,31 +1038,6 @@ function JSDialogModifyIndexParam()
         table.className="UMyChart_ModifyIndexParam_Table";
         divTable.appendChild(table);
 
-        /*
-        var thead=document.createElement("thead");
-        table.appendChild(thead);
-
-        var trDom=document.createElement("tr");
-        trDom.className='UMyChart_ModifyIndexParam_head_Tr';
-        thead.appendChild(trDom);
-
-        var thDom=document.createElement("th");
-        thDom.className="UMyChart_ModifyIndexParam_Th"; 
-        thDom.innerText="变量";
-        trDom.appendChild(thDom);
-
-        var thDom=document.createElement("th");
-        thDom.className="UMyChart_ModifyIndexParam_Th"; 
-        thDom.innerText="数值";
-        trDom.appendChild(thDom);
-
-        var thDom=document.createElement("th");
-        thDom.className="UMyChart_ModifyIndexParam_Th"; 
-        thDom.innerText="说明";
-        trDom.appendChild(thDom);
-        */
-
-
         var tbody=document.createElement("tbody");
         tbody.className="UMyChart_ModifyIndexParam_Tbody";
         table.appendChild(tbody);
@@ -1076,16 +1054,28 @@ function JSDialogModifyIndexParam()
         divButton.className='UMyChart_ModifyIndexParam_Button_Div';
         divFrame.appendChild(divButton);
 
-        var btnRestore=document.createElement("button");
-        //btnRestore.className="UMyChart_ModifyIndexParam_button";
-        btnRestore.innerText="恢复默认";
-        btnRestore.addEventListener("mousedown", (e)=>{ this.OnClickRestoreButton(e); });
-        divButton.appendChild(btnRestore);
+        if (this.EnableRestoreParam)
+        {
+            var btnRestore=document.createElement("button");
+            //btnRestore.className="UMyChart_ModifyIndexParam_button";
+            btnRestore.innerText="恢复默认";
+            btnRestore.addEventListener("mousedown", (e)=>{ this.OnClickRestoreButton(e); });
+            divButton.appendChild(btnRestore);
+        }
+        
 
+        /*
         var btnOk=document.createElement("button");
         //btnOk.className="UMyChart_ModifyIndexParam_button";
         btnOk.innerText="确认";
         btnOk.addEventListener("mousedown", (e)=>{ this.OnClickOkButton(e); })
+        divButton.appendChild(btnOk);
+        */
+
+        var btnOk=document.createElement("button");
+        //btnOk.className="UMyChart_ModifyIndexParam_button";
+        btnOk.innerText="关闭";
+        btnOk.addEventListener("mousedown", (e)=>{ this.Close(e); })
         divButton.appendChild(btnOk);
         
         document.body.appendChild(divDom);
@@ -1223,6 +1213,41 @@ function JSDialogModifyIndexParam()
             for(var i=0;i<indexScript.Arguments.length;++i)
             {
                 var item=indexScript.Arguments[i];
+                this.Arguments.push({Name:item.Name, Value:item.Value, Index:i});
+            }
+        }
+    }
+
+    this.GetDefaultParam=function()
+    {
+        this.Arguments=[];
+        if (!this.IndexData || !this.IndexData.IndexScript) return;
+        var indexScript=this.IndexData.IndexScript;
+
+        var args=[];
+        if (indexScript.ID)
+        {
+            var scriptData = new JSIndexScript();
+            var indexInfo = scriptData.Get(indexScript.ID);
+            if (indexInfo) args=indexInfo.Args;
+        }
+        
+        var event=this.HQChart.GetEventCallback(JSCHART_EVENT_ID.GET_DEFAULT_INDEX_PARAM);
+        if (event && event.Callback)
+        {
+            var sendData={ IndexData:this.IndexData, Args:args.slice(), PreventDefault:false };
+            event.Callback(event, sendData, this);
+
+            if (sendData.PreventDefault) return;
+
+            args=sendData.Args;
+        }
+
+        if (IFrameSplitOperator.IsNonEmptyArray(args))
+        {
+            for(var i=0;i<args.length;++i)
+            {
+                var item=args[i];
                 this.Arguments.push({Name:item.Name, Value:item.Value, Index:i});
             }
         }

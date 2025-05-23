@@ -1,8 +1,8 @@
 @font-face {
   font-family: "iconfont"; /* Project id 1040563 */
-  src: url('iconfont.woff2?t=1734955349527') format('woff2'),
-       url('iconfont.woff?t=1734955349527') format('woff'),
-       url('iconfont.ttf?t=1734955349527') format('truetype');
+  src: url('iconfont.woff2?t=1747303594987') format('woff2'),
+       url('iconfont.woff?t=1747303594987') format('woff'),
+       url('iconfont.ttf?t=1747303594987') format('truetype');
 }
 
 .iconfont {
@@ -11,6 +11,82 @@
   font-style: normal;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-tubiaoBchuang:before {
+  content: "\e6c9";
+}
+
+.icon-H_square_solid:before {
+  content: "\e6b7";
+}
+
+.icon-I_square_solid:before {
+  content: "\e6b8";
+}
+
+.icon-L_square_solid:before {
+  content: "\e6b9";
+}
+
+.icon-R_square_solid:before {
+  content: "\e6ba";
+}
+
+.icon-T_square_solid:before {
+  content: "\e6bb";
+}
+
+.icon-O_square_solid:before {
+  content: "\e6bc";
+}
+
+.icon-Z_square_solid:before {
+  content: "\e6bd";
+}
+
+.icon-Q_square_solid:before {
+  content: "\e6be";
+}
+
+.icon-M_square_solid:before {
+  content: "\e6bf";
+}
+
+.icon-U_square_solid:before {
+  content: "\e6c0";
+}
+
+.icon-W_square_solid:before {
+  content: "\e6c1";
+}
+
+.icon-S_square_solid:before {
+  content: "\e6c2";
+}
+
+.icon-B_square_solid:before {
+  content: "\e6c3";
+}
+
+.icon-E_square_solid:before {
+  content: "\e6c4";
+}
+
+.icon-C_square_solid:before {
+  content: "\e6c5";
+}
+
+.icon-D_square_solid:before {
+  content: "\e6c6";
+}
+
+.icon-F_square_solid:before {
+  content: "\e6c7";
+}
+
+.icon-G_square_solid:before {
+  content: "\e6c8";
 }
 
 .icon-sortup:before {

@@ -93,7 +93,7 @@ function JSDialogTooltip()
 
         if (this.DivDialog) 
         {
-            document.body.removeChild(this.DivDialog);
+            if (document && document.body && document.body.removeChild) document.body.removeChild(this.DivDialog);
             this.DivDialog=null;
         }
     }
@@ -1348,6 +1348,16 @@ function JSFloatTooltip()
                 this.TReportIconTooltip(data);
             }
         }
+        else if (data.DataType==5)  //成交笔数
+        {
+            var tooltipData=data.Tooltip;
+            if (!tooltipData) return;
+
+            if (tooltipData.Type==2)    //提示信息
+            {
+                this.DealItemTooltip(data);
+            }
+        }
     }
 
     this.UpdateRealtimeHQTooltip=function(data)
@@ -1635,6 +1645,18 @@ function JSFloatTooltip()
         if (!tooltipData.Data || !IFrameSplitOperator.IsNonEmptyArray(tooltipData.Data.AryText)) return;
         
         this.AryText=tooltipData.Data.AryText;
+        this.UpdateTableDOM();
+
+        this.ShowTooltip(data);
+    }
+
+    this.DealItemTooltip=function(data)
+    {
+        var tooltipData=data.Tooltip;
+        if (!tooltipData.Data || !IFrameSplitOperator.IsNonEmptyArray(tooltipData.Data.AryText)) return;
+        
+        this.AryText=tooltipData.Data.AryText;
+
         this.UpdateTableDOM();
 
         this.ShowTooltip(data);

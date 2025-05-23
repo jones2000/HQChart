@@ -15,6 +15,7 @@ function JSDealChart(divElement)
 {
     this.DivElement=divElement;
     this.JSChartContainer;              //表格控件
+    this.ResizeListener;                //大小变动监听
 
      //h5 canvas
      this.CanvasElement=document.createElement("canvas");
@@ -71,7 +72,10 @@ function JSDealChart(divElement)
             }
         }
 
+        if (option.EnableResize==true) this.CreateResizeListener();
+
         if (option.MinuteChartTooltip && option.MinuteChartTooltip.Enable) chart.InitalMinuteChartTooltip(option.MinuteChartTooltip);
+        if (option.FloatTooltip && option.FloatTooltip.Enable) chart.InitalFloatTooltip(option.FloatTooltip);   //提示信息
 
         if (!option.Symbol) 
         {
@@ -82,6 +86,19 @@ function JSDealChart(divElement)
             chart.ChangeSymbol(option.Symbol);
         }
     }
+
+    this.CreateResizeListener=function()
+    {
+        this.ResizeListener = new ResizeObserver((entries)=>{ this.OnDivResize(entries); });
+        this.ResizeListener.observe(this.DivElement);
+    }
+
+    this.OnDivResize=function(entries)
+    {
+        JSConsole.Chart.Log("[JSDealChart::OnDivResize] entries=", entries);
+        this.OnSize();
+    }
+
 
     this.CreateJSDealChartContainer=function(option)
     {
@@ -99,6 +116,12 @@ function JSDealChart(divElement)
         if (option.IsAutoUpdate!=null) chart.IsAutoUpdate=option.IsAutoUpdate;
         if (option.AutoUpdateFrequency>0) chart.AutoUpdateFrequency=option.AutoUpdateFrequency;
         if (IFrameSplitOperator.IsBool(option.EnableFilter)) chart.EnableFilter=option.EnableFilter;
+
+         var dealChart=chart.GetDealChart();
+         if (dealChart)
+         {
+            if (IFrameSplitOperator.IsNumber(option.SelectedStyle)) dealChart.SelectedStyle=option.SelectedStyle;
+         }
 
         //注册事件
         if (option.EventCallback)
@@ -215,6 +238,7 @@ function JSDealChartContainer(uielement)
     this.LoadDataSplashTitle="数据加载中";           //下载数据提示信息
 
     this.TooltipMinuteChart;    //分时图
+    this.FloatTooltip;          //提示浮框
     
     this.UIElement=uielement;
     this.LastPoint=new Point();     //鼠标位置
@@ -228,6 +252,9 @@ function JSDealChartContainer(uielement)
     {
         this.IsDestroy=true;
         this.StopAutoUpdate();
+
+        this.DestroyMinuteChartTooltip();
+        this.DestroyFloatTooltip();
     }
 
     this.EnableFilterData=false;    //是否启动筛选
@@ -272,9 +299,55 @@ function JSDealChartContainer(uielement)
         this.TooltipMinuteChart.Hide();
     }
 
+    this.HideFloatTooltip=function()
+    {
+        if (!this.FloatTooltip) return;
+
+        this.FloatTooltip.Hide();
+    }
+
+    this.DestroyFloatTooltip=function()
+    {
+        if (!this.FloatTooltip) return;
+
+        this.FloatTooltip.Destroy();
+        this.FloatTooltip=null;
+    }
+
+    this.InitalFloatTooltip=function(option)
+    {
+        if (this.FloatTooltip) return;
+
+        this.FloatTooltip=new JSFloatTooltip();
+        this.FloatTooltip.Inital(this, option);
+        this.FloatTooltip.Create();
+    }
+
+    this.DrawFloatTooltip=function(point,toolTip)
+    {
+        if (!this.FloatTooltip) return;
+
+        this.UpdateFloatTooltip(point, toolTip)
+    }
+
+    this.UpdateFloatTooltip=function(point, toolTip)
+    {
+        if (!this.FloatTooltip) return;
+
+        var sendData=
+        {
+            Tooltip:toolTip,
+            Point:point,
+            DataType:5,
+        };
+
+        this.FloatTooltip.Update(sendData);
+    }
+
     this.HideAllTooltip=function()
     {
         this.HideMinuteChartTooltip();
+        this.HideFloatTooltip();
     }
 
     //筛选数据
@@ -386,6 +459,8 @@ function JSDealChartContainer(uielement)
         this.UIElement.ondblclick=(e)=>{ this.UIOnDblClick(e); }
         this.UIElement.oncontextmenu=(e)=> { this.UIOnContextMenu(e); }
         this.UIElement.onmousemove=(e)=>{ this.UIOnMouseMove(e);}
+        this.UIElement.onmouseout=(e)=>{ this.UIOnMounseOut(e); }
+        this.UIElement.onmouseleave=(e)=>{ this.UIOnMouseleave(e); }
     }
 
     this.Draw=function()
@@ -523,7 +598,13 @@ function JSDealChartContainer(uielement)
 
     this.RecvDealData=function(data)
     {
+        var chart=this.GetDealChart();
+        if (!chart) return;
+
         var aryDeal=JSDealChartContainer.JsonDataToDealData(data);
+        if (chart.ShowOrder===1 && IFrameSplitOperator.IsNonEmptyArray(aryDeal))  //倒序
+            aryDeal=aryDeal.reverse();
+
         this.SourceData={ DataOffset:0, Data:aryDeal };
         this.Data={ DataOffset:0, Data:this.FilterData(this.CloneArray(aryDeal)) };
         
@@ -543,13 +624,22 @@ function JSDealChartContainer(uielement)
 
     this.SetLastPageDataOffset=function()
     {
-        var chart=this.ChartPaint[0];
-        var dataCount=0;
-        if (IFrameSplitOperator.IsNonEmptyArray(this.SourceData.Data)) dataCount=this.SourceData.Data.length;
-        var pageSize=chart.GetPageSize(true);
-        var offset=dataCount-pageSize;
-        if (offset<0) offset=0;
-        this.Data.DataOffset=offset;
+        var chart=this.GetDealChart();
+        if (!chart) return;
+
+        if (chart.ShowOrder===1) 
+        {
+            this.Data.DataOffset=0;
+        }
+        else
+        {
+            var dataCount=0;
+            if (IFrameSplitOperator.IsNonEmptyArray(this.SourceData.Data)) dataCount=this.SourceData.Data.length;
+            var pageSize=chart.GetPageSize(true);
+            var offset=dataCount-pageSize;
+            if (offset<0) offset=0;
+            this.Data.DataOffset=offset;
+        }
     }
 
     //增量数据下载
@@ -584,17 +674,57 @@ function JSDealChartContainer(uielement)
         }
     }
 
+    this.GetDealChart=function()
+    {
+        return this.ChartPaint[0];
+    }
+
     this.RecvDealUpdateData=function(data)
     {
         var aryDeal=JSDealChartContainer.JsonDataToDealData(data);
         if (!IFrameSplitOperator.IsNonEmptyArray(aryDeal)) return;
 
+        var chart=this.GetDealChart();
+        if (!chart) return;
+
         if (data.UpdateType===1)    //全量更新
         {
-            this.SourceData.Data=aryDeal;
-            this.Data.Data=this.FilterData(this.CloneArray(aryDeal));
-            if (this.Data.DataOffset>= this.Data.Data.length) this.Data.DataOffset=0;
-            if (this.IsShowLastPage) this.SetLastPageDataOffset();   //显示最后一屏
+            if (chart.ShowOrder===1)
+            {
+                if (IFrameSplitOperator.IsNonEmptyArray(aryDeal))
+                    aryDeal=aryDeal.reverse();
+
+                this.SourceData.Data=aryDeal;
+                this.Data.Data=this.FilterData(this.CloneArray(aryDeal));
+            }
+            else
+            {
+                this.SourceData.Data=aryDeal;
+                var oldCount=0, newCount=0;
+                if (IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) oldCount=this.Data.Data.length;
+                this.Data.Data=this.FilterData(this.CloneArray(aryDeal));
+                if (IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) newCount=this.Data.Data.length;
+
+                if (oldCount==0)
+                {
+                    if (this.IsShowLastPage) this.SetLastPageDataOffset();   //显示最后一屏
+                }
+                else if (newCount>oldCount)     //增长 偏移增加
+                {
+                    var pageSize=chart.GetPageSize();
+                    var count=newCount-oldCount;
+                    for(var i=0;i<count;++i)
+                    {
+                        if (this.Data.DataOffset+pageSize<this.Data.Data.length)
+                            ++this.Data.DataOffset;
+                    }
+                }
+                else
+                {
+                    if (this.Data.DataOffset>= this.Data.Data.length) this.Data.DataOffset=0;
+                }
+            }
+            
         }
         else
         {
@@ -602,28 +732,44 @@ function JSDealChartContainer(uielement)
             this.AddDealData(this.Data,this.FilterData(aryDeal));
         }
 
+        if (data.IsShowLastPage===true) this.SetLastPageDataOffset();
+
         this.Draw();
     }
 
     this.AddDealData=function(dealData, aryNewData)
     {
+         var chart=this.GetDealChart();
+         if (!chart) return;
+
         if (!dealData.Data) //原来是空的
         {
+            if (chart.ShowOrder===1 && IFrameSplitOperator.IsNonEmptyArray(aryNewData)) 
+                aryNewData=aryNewData.reverse();
+
             dealData.Data=aryNewData;
         }
         else
         {
-            var pageSize=0;
-            var chart=this.ChartPaint[0];
-            if (chart) pageSize=chart.GetPageSize();
-
-            for(var i=0;i<aryNewData.length;++i)
+            if (chart.ShowOrder===1)
             {
-                dealData.Data.push(aryNewData[i]);
-
-                if (dealData.DataOffset+pageSize<dealData.Data.length)
-                    ++dealData.DataOffset;
+                for(var i=0;i<aryNewData.length;++i)
+                {
+                    dealData.Data.unshift(aryNewData[i]);
+                }
             }
+            else
+            {
+                var pageSize=chart.GetPageSize();
+                for(var i=0;i<aryNewData.length;++i)
+                {
+                    dealData.Data.push(aryNewData[i]);
+
+                    if (dealData.DataOffset+pageSize<dealData.Data.length)
+                        ++dealData.DataOffset;
+                }
+            }
+            
         }
     }
 
@@ -635,7 +781,14 @@ function JSDealChartContainer(uielement)
 
         var self = this;
         var marketStatus=MARKET_SUFFIX_NAME.GetMarketStatus(this.Symbol);
-        if (marketStatus==0 || marketStatus==3) return; //闭市,盘后
+        if (marketStatus==0 || marketStatus==3) //闭市,盘后
+        {
+            this.AutoUpdateTimer=setTimeout(function() 
+            { 
+                self.AutoUpdate(); 
+            },20000);
+            return;
+        } 
 
         var frequency=this.AutoUpdateFrequency;
         if (marketStatus==1) //盘前
@@ -837,19 +990,29 @@ function JSDealChartContainer(uielement)
                         chartTooltipData={ Symbol:tooltipData.Stock.OriginalSymbol, Rect:tooltipData.Rect };
                     }
                 }
+                */
                 else
                 {
                     this.LastMouseStatus.TooltipStatus={ X:x, Y:y, Data:tooltipData, ClientX:e.clientX, ClientY:e.clientY };
                     bDrawTooltip=true;
                 }
-                */
-                
             }
         }
 
         if (mouseStatus) this.UIElement.style.cursor=mouseStatus.Cursor;
 
         if (bDraw) this.Draw();
+
+        if (this.LastMouseStatus.TooltipStatus) 
+        {
+            var xTooltip = e.clientX-this.UIElement.getBoundingClientRect().left;
+            var yTooltip = e.clientY-this.UIElement.getBoundingClientRect().top;
+            this.DrawFloatTooltip({X:xTooltip, Y:yTooltip, YMove:20/pixelTatio},this.LastMouseStatus.TooltipStatus.Data);
+        }
+        else
+        {
+            this.HideFloatTooltip();
+        }
 
         if (!bShowMinuteTooltip) this.HideMinuteChartTooltip();
         if (bShowMinuteTooltip) this.ShowMinuteChartTooltip(null, null, chartTooltipData);
@@ -868,6 +1031,16 @@ function JSDealChartContainer(uielement)
     this.UIOnContextMenu=function(e)
     {
         e.preventDefault();
+    }
+
+    this.UIOnMounseOut=function(e)
+    {
+        this.HideAllTooltip();
+    }
+
+    this.UIOnMouseleave=function(e)
+    {
+        this.HideAllTooltip();
     }
 
     this.GotoNextPage=function()
@@ -969,8 +1142,9 @@ JSDealChartContainer.JsonDataToDealData=function(data)
         if (item[5]) dealItem.StrTime=item[5];
         if (item[6]) dealItem.ID=item[6];
 
-        if (item[11]) dealItem.Symbol=item[11]; //股票代码
-        if (item[12]) dealItem.Name=item[12];   //股票名称
+        if (item[11]) dealItem.Symbol=item[11];     //股票代码
+        if (item[12]) dealItem.Name=item[12];       //股票名称
+        if (item[13]) dealItem.BGColor=item[13];    //整行颜色
 
         if (item[100]) dealItem.Guid=item[100];
 
@@ -1186,7 +1360,8 @@ function ChartDealList()
 
     this.BorderColor=g_JSChartResource.DealList.BorderColor;    //边框线
 
-    this.SelectedConfig={ BGColor:g_JSChartResource.DealList.Selected.BGColor };
+    this.SelectedConfig={ BGColor:g_JSChartResource.DealList.Selected.BGColor, LineColor:g_JSChartResource.DealList.Selected.LineColor, LineWidth:g_JSChartResource.DealList.Selected.LineWidth };
+    this.SelectedStyle=1;               //选中行样式 1=整行填充 2=底部绘制直线
 
     //表头配置
     this.HeaderFontConfig={ Size:g_JSChartResource.DealList.Header.Font.Size, Name:g_JSChartResource.DealList.Header.Font.Name };
@@ -1508,7 +1683,9 @@ function ChartDealList()
         var left=this.RectClient.Left+this.HeaderMergin.Left;
         var dataCount=this.Data.Data.length;
         var index=this.Data.DataOffset;
+        var selectedRowData=null;
 
+        /*
         if (this.ShowOrder==1)
         {
             var index=this.Data.DataOffset+(this.TableCount*this.RowCount);
@@ -1518,19 +1695,40 @@ function ChartDealList()
                 var tableLeft=left+(this.TableWidth*i);
                 var textLeft=tableLeft;
                 var textTop=top;
-
                 for(j=0;j<this.RowCount && index>=0;++j, --index)
                 {
                     var dataItem=this.Data.Data[index];
-                    this.DrawSelectedRow(dataItem, index, rtRow);
-    
+                    var rtRow={ Left:textLeft-this.HeaderMergin.Left, Top:textTop, Height:this.RowHeight, Width:this.TableWidth };
+                    rtRow.Right=rtRow.Left+rtRow.Width;
+                    rtRow.Bottom=rtRow.Top+rtRow.Height;
+
+                    if (dataItem.BGColor)
+                    {
+                        this.Canvas.fillStyle=dataItem.BGColor;
+                        this.Canvas.fillRect(rtRow.Left,rtRow.Top, rtRow.Width, rtRow.Height);
+                    }
+
+                    if (this.DrawSelectedRow(dataItem, index, rtRow))
+                        selectedRowData={ Rect:rtRow };
+                       
                     this.DrawRow(dataItem, textLeft, textTop, index);
+
+                    this.AryCellRect.push({ Rect:rtRow, Type:1, DataIndex:index });
     
                     textTop+=this.RowHeight;
                 }
             }
+
+            if (selectedRowData && this.SelectedStyle===2)
+            {
+                var rtBG=selectedRowData.Rect;
+                this.Canvas.fillStyle=this.SelectedConfig.LineColor;
+                var lineWidth=this.SelectedConfig.LineWidth;
+                this.Canvas.fillRect(rtBG.Left,rtBG.Bottom-lineWidth,rtBG.Width,lineWidth); 
+            }
         }
         else
+        */
         {
             for(var i=0,j=0;i<this.TableCount;++i)
             {
@@ -1544,7 +1742,14 @@ function ChartDealList()
                     rtRow.Right=rtRow.Left+rtRow.Width;
                     rtRow.Bottom=rtRow.Top+rtRow.Height;
 
-                    this.DrawSelectedRow(dataItem, index, rtRow);
+                    if (dataItem.BGColor)
+                    {
+                        this.Canvas.fillStyle=dataItem.BGColor;
+                        this.Canvas.fillRect(rtRow.Left,rtRow.Top, rtRow.Width, rtRow.Height);
+                    }
+
+                    if (this.DrawSelectedRow(dataItem, index, rtRow))
+                        selectedRowData={ Rect:rtRow };
     
                     this.DrawRow(dataItem, textLeft, textTop, index);
 
@@ -1553,6 +1758,14 @@ function ChartDealList()
                     textTop+=this.RowHeight;
                 }
             }
+
+            if (selectedRowData && this.SelectedStyle===2)
+            {
+                var rtBG=selectedRowData.Rect;
+                this.Canvas.fillStyle=this.SelectedConfig.LineColor;
+                var lineWidth=this.SelectedConfig.LineWidth;
+                this.Canvas.fillRect(rtBG.Left,rtBG.Bottom-lineWidth,rtBG.Width,lineWidth); 
+            }
         }
     }
 
@@ -1560,6 +1773,7 @@ function ChartDealList()
     {
         var tableLeft=left;
         var tableRight=left+this.TableWidth;
+        var borderRight=this.RectClient.Right;
         for(var i=0;i<this.Column.length;++i)
         {
             var item=this.Column[i];
@@ -1674,14 +1888,22 @@ function ChartDealList()
             
             if (bDrawV2)
             {
-                this.DrawItemText(drawInfo.Text, drawInfo.TextColor, drawInfo.TextAlign, rtItem.Left, rtItem.Top, rtItem.Width, drawInfo.BGColor);
+                //this.DrawItemText(drawInfo.Text, drawInfo.TextColor, drawInfo.TextAlign, rtItem.Left, rtItem.Top, rtItem.Width, drawInfo.BGColor);
+                this.DrawItemTextV2(drawInfo, rtItem);
             }
             else
             {
                 this.DrawItemText(text, textColor, textAlign, left, top, itemWidth);
             }
 
-            if (item.ChartTooltip && item.ChartTooltip.Enable && IFrameSplitOperator.IsNumber(item.ChartTooltip.Type))   //Type 20分时图 21K线图
+
+            if (drawInfo.Tooltip)
+            {
+                //Type:2=数据提示信息
+                var tooltipData={ Rect:rtItem, Data:data, Index:dataIndex, Column:item, Type:drawInfo.Tooltip.Type, Data:drawInfo.Tooltip.Data };
+                this.TooltipRect.push(tooltipData);
+            }
+            else if (item.ChartTooltip && item.ChartTooltip.Enable && IFrameSplitOperator.IsNumber(item.ChartTooltip.Type))   //Type 20分时图 21K线图
             {
                 var tooltipData={ Rect:rtItem, Data:data, Index:dataIndex, Column:item, Type:item.ChartTooltip.Type };
                 this.TooltipRect.push(tooltipData);
@@ -1754,6 +1976,15 @@ function ChartDealList()
         {
             drawInfo.Text=item;
         }
+
+        if (item && item.Tooltip && IFrameSplitOperator.IsNonEmptyArray(item.Tooltip.AryText))
+        {
+            drawInfo.Tooltip=
+            { 
+                Type:2, 
+                Data:{ AryText:item.Tooltip.AryText }
+            }
+        }
     }
 
     this.GetUpDownColor=function(price, price2)
@@ -1771,12 +2002,17 @@ function ChartDealList()
 
     this.DrawSelectedRow=function(data, index, rtRow)
     {
-        if (!this.SelectedData) return;
-        if (!this.SelectedData.Enable) return;
-        if (!this.SelectedData.Guid || this.SelectedData.Guid!=data.Guid) return; 
+        if (!this.SelectedData) return false;
+        if (!this.SelectedData.Enable) return false;
+        if (!this.SelectedData.Guid || this.SelectedData.Guid!=data.Guid) return false;
 
-        this.Canvas.fillStyle=this.SelectedConfig.BGColor;
-        this.Canvas.fillRect(rtRow.Left,rtRow.Top, rtRow.Width, rtRow.Height);
+        if ( this.SelectedStyle==1)
+        {
+            this.Canvas.fillStyle=this.SelectedConfig.BGColor;
+            this.Canvas.fillRect(rtRow.Left,rtRow.Top, rtRow.Width, rtRow.Height);
+        }
+       
+        return true;
     }
 
     this.DrawItemText=function(text, textColor, textAlign, left, top, width)
@@ -1797,9 +2033,44 @@ function ChartDealList()
             this.Canvas.textAlign="left";
         }
 
-        this.Canvas.textBaseline="middle";
+        this.Canvas.textBaseline="bottom";
         this.Canvas.fillStyle=textColor;
-        if (text) this.Canvas.fillText(text,x,top+this.RowHeight/2);
+        if (text) this.Canvas.fillText(text,x,top+this.RowHeight-2);
+    }
+
+    this.DrawItemTextV2=function(drawInfo, rtItem)
+    {
+        if (drawInfo.BGColor)
+        {
+            this.Canvas.fillStyle=drawInfo.BGColor;
+            this.Canvas.fillRect(rtItem.Left,rtItem.Top,rtItem.Width,rtItem.Height); 
+        }
+
+        if (drawInfo.Text)
+        {
+            var text=drawInfo.Text;
+            var x=rtItem.Left;
+            if (drawInfo.TextAlign=='center')
+            {
+                x=rtItem.Left+rtItem.Width/2;
+                this.Canvas.textAlign="center";
+            }
+            else if (drawInfo.TextAlign=='right')
+            {
+                x=rtItem.Left+rtItem.Width-2;
+                this.Canvas.textAlign="right";
+            }
+            else
+            {
+                x+=2;
+                this.Canvas.textAlign="left";
+            }
+
+            var textWidth=this.Canvas.measureText(text).width+1;
+            this.Canvas.textBaseline="bottom";
+            this.Canvas.fillStyle=drawInfo.TextColor;
+            this.Canvas.fillText(text,x,rtItem.Top+this.RowHeight-2);
+        }
     }
 
     this.DrawMultiBar=function(colunmInfo, data, rtItem)
