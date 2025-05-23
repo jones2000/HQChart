@@ -681,6 +681,10 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 # 赞助
 ![微信二维码](/小程序行情模块用例/image/wx_code.PNG)
 
+# 友情推荐
+* [openctp](https://github.com/openctp/openctp)
+是一个以CTP生态为基础的平台，既提供了华鑫证券奇点、中泰证券XTP、东方财富EMT、东方证券OST等柜台的CTPAPI兼容接口，也提供了一套与上期技术SimNow模拟环境类似的模拟环境，也支持CTPAPI接口，不仅提供国内各期货交易所的期货与期权品种模拟交易，还提供了A股的股票、基金、债券以及股票期权模拟交易，也支持港股、美股等市场模拟交易
+
 # Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=jones2000/HQChart&type=Date)](https://star-history.com/#jones2000/HQChart&Date)
