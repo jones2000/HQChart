@@ -673,7 +673,7 @@ function JSDialogModifyDraw()
         this.ColorButton=null;
         if (this.DivDialog)
         {
-            document.body.remove(this.DivDialog);
+            document.body.removeChild(this.DivDialog);
             this.DivDialog=null;
         }
     }

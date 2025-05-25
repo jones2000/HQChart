@@ -26,6 +26,8 @@ function JSPopMenu()
 
     this.RestoreFocusDelay=1000;
 
+    this.MouseDownlistenerPtr=null;
+
     this.AryTDClassName=
     [
         "UMyChart_MenuItem_Td_Status",      //图标
@@ -37,7 +39,17 @@ function JSPopMenu()
     this.Inital=function(hqchart, option)
     {
         this.HQChart=hqchart;
-        window.addEventListener('mousedown', (e)=>{ this.OnWindowMouseDown(e)});
+        this.MouseDownlistenerPtr=this.OnWindowMouseDown.bind(this);
+        window.addEventListener('mousedown', this.MouseDownlistenerPtr);
+    }
+
+    this.Destroy=function()
+    {
+        if (this.MouseDownlistenerPtr) 
+        {
+            window.removeEventListener('mousedown', this.MouseDownlistenerPtr);
+            this.MouseDownlistenerPtr=null;
+        }
     }
 
     //创建菜单

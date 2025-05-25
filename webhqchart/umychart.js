@@ -3273,6 +3273,73 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     this.FastSlideConfig={ MinDistance:500, MinSpeed:3, MaxTime:250, Enable:false };       //快速滑动配置 MinDistance=最小的距离 MinSpeed=最小速度 MaxTime=最大间隔时间(ms)
     this.KeyboardMove={ Timer:null, Delay:100 , Enable:false, Event:null };   //键盘左右移动
 
+    this.MapEventListenerCache=new Map();   //addEventListener 监听事件 key=type:"keydown|keyup ....", value:{ Callback:, Option: }
+
+    this.AddEventListener=function(eventTarget, type, listener, option)
+    {
+        if (!eventTarget || !type || !listener) return false;
+
+        var callback=listener.bind(this);
+        var item={ Callback:callback, Option:option, Type:type, Element:eventTarget };
+
+        eventTarget.addEventListener(type, callback, option);
+
+        this.MapEventListenerCache.set(item.Type, item);
+
+        return true;
+    }
+
+    this.RemoveEventListener=function(eventTarget, type)
+    {
+        if (!eventTarget || !type) return false;
+        if (!this.MapEventListenerCache.has(type)) return false;
+
+        var item=this.MapEventListenerCache.get(type);
+        if (!item.Element || !item.Callback) return false;
+
+        this.MapEventListenerCache.delete(item.Type);
+        item.Element.removeEventListener(item.Type, item.Callback, item.Option);
+    }
+
+    //option={ KeyDown:, Wheel }
+    this.AddDefaultEventListener=function(option)
+    {
+        var bRegisterKeydown=true;
+        var bRegisterWheel=true;
+
+        if (option)
+        {
+            if (IFrameSplitOperator.IsBool(option.KeyDown)) bRegisterKeydown=option.KeyDown;
+            if (IFrameSplitOperator.IsBool(option.Wheel)) bRegisterWheel=option.Wheel;
+        }
+        
+        if (bRegisterKeydown)
+        {
+            this.AddEventListener(this.UIElement,"keydown", this.OnKeyDown, true);
+            this.AddEventListener(this.UIElement,"keyup", this.OnKeyUp, true);
+        }
+        
+        if (bRegisterWheel)
+        {
+            this.AddEventListener(this.UIElement,"wheel", this.OnWheel, true);
+        }
+
+        JSConsole.Chart.Log(`[JSChartContainer::AddDefaultEventListener] [keydown,keyup]=${bRegisterKeydown}, [wheel]=${bRegisterWheel}`);
+    }
+
+    this.RemoveAllEventListener=function()
+    {
+        for(var mapItem of this.MapEventListenerCache)
+        {
+            var item=mapItem[1];
+            if (!item.Element || !item.Callback) continue;
+
+            item.Element.removeEventListener(item.Type, item.Callback, item.Option);
+        }
+
+        this.MapEventListenerCache.clear();
+    }
+
     this.RestoreFocus=function(delay)
     {
         var value=1000;
@@ -3576,6 +3643,14 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         this.DialogModifyDraw=null;
     }
 
+    this.DestroyPopMenu=function()
+    {
+        if (!this.JSPopMenu) return;
+        
+        this.JSPopMenu.Destroy();
+        this.JSPopMenu=null;
+    }
+
     //隐藏内置的弹框div
     this.HideAllPopDiv=function()
     {
@@ -3651,6 +3726,11 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         this.DestroyDialogModifyDraw();
 
         this.DestroyDialogSelectRect();
+
+        this.DestroyPopMenu();
+
+        document.oncontextmenu=null;
+        this.RemoveAllEventListener();
     }
 
     this.ChartDestory=this.ChartDestroy;    //老版本写错了,需要兼容下
@@ -79913,32 +79993,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         this.ChartCorssCursor.StringFormatX.Frame=this.Frame.SubFrame[0].Frame;
         this.ChartCorssCursor.StringFormatY.Frame=this.Frame;
 
-        var bRegisterKeydown=true;
-        var bRegisterWheel=true;
-
-        if (option && option.Listener)
-        {
-            var item=option.Listener;
-            if (item.KeyDown===false) 
-            {
-                bRegisterKeydown=false;
-                JSConsole.Chart.Log('[KLineChartContainer::Create] not register keydown event.');
-            }
-
-            if (item.Wheel===false) 
-            {
-                bRegisterWheel=false;
-                JSConsole.Chart.Log('[KLineChartContainer::Create] not register wheel event.');
-            }
-        }
-
-        if (bRegisterKeydown) 
-        {
-            this.UIElement.addEventListener("keydown", (e)=>{ this.OnKeyDown(e); }, true);            //键盘消息
-            this.UIElement.addEventListener("keyup", (e)=>{ this.OnKeyUp(e);}, true);
-        }
-
-        if (bRegisterWheel) this.UIElement.addEventListener("wheel", (e)=>{ this.OnWheel(e); }, true);                  //上下滚动消息
+        if (option) this.AddDefaultEventListener(option.Listener);
 
         this.InitalPopMinuteChart(option);
     }
@@ -89820,31 +89875,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         if (this.ChartCorssCursor.CallAcutionXOperator)
             this.ChartCorssCursor.CallAcutionXOperator.Frame=this.Frame.SubFrame[0].Frame;
 
-        var bRegisterKeydown=true;
-        var bRegisterWheel=true;
-
-        if (option && option.Listener)
-        {
-            var item=option.Listener;
-            if (item.KeyDown===false) 
-            {
-                bRegisterKeydown=false;
-                JSConsole.Chart.Log('[MinuteChartContainer::Create] not register keydown event.');
-            }
-
-            if (item.Wheel===false) 
-            {
-                bRegisterWheel=false;
-                JSConsole.Chart.Log('[MinuteChartContainer::Create] not register wheel event.');
-            }
-        }
-
-        if (bRegisterKeydown) 
-        {
-            this.UIElement.addEventListener("keydown", (e)=>{ this.OnKeyDown(e);} , true);              //键盘消息
-            this.UIElement.addEventListener("keyup", (e)=>{ this.OnKeyUp(e);}, true);
-        }
-        if (bRegisterWheel) this.UIElement.addEventListener("wheel", (e)=>{ this.OnWheel(e); }, true);                  //上下滚动消息
+        if (option) this.AddDefaultEventListener(option.Listener);
     }
 
     //创建子窗口
@@ -95373,8 +95404,7 @@ function KLineChartHScreenContainer(uielement)
             this.TitlePaint.push(titlePaint);
         }
 
-        this.UIElement.addEventListener("keydown", OnKeyDown, true);    //键盘消息
-        this.UIElement.addEventListener("keyup", OnKeyUp, true);
+        this.AddDefaultEventListener({ KeyDown:true, Wheel:false });
     }
 
     //创建子窗口
@@ -95562,8 +95592,7 @@ function MinuteChartHScreenContainer(uielement)
         this.ChartCorssCursor.StringFormatY.Frame=this.Frame;
         this.ChartCorssCursor.CallAcutionXOperator.Frame=this.Frame.SubFrame[0].Frame;
 
-        this.UIElement.addEventListener("keydown", OnKeyDown, true);    //键盘消息
-        this.UIElement.addEventListener("keyup", OnKeyUp, true);
+        this.AddDefaultEventListener({ KeyDown:false, Wheel:false });
     }
 
     //创建子窗口
@@ -95721,28 +95750,12 @@ function DepthChartContainer(uielement)
         chartItem.Name="深度图"
         this.ChartPaint.push(chartItem);
 
-        var bRegisterKeydown=true;
-        var bRegisterWheel=true;
-        if (option)
-        {
-            if (option.Wheel===false) 
-            {
-                bRegisterWheel=false;
-                JSConsole.Chart.Log('[DepthChartContainer::Create] not register wheel event.');
-            }
-        }
-
-        if (bRegisterKeydown) 
-        {
-            this.UIElement.addEventListener("keydown", (e)=>{ this.OnKeyDown(e); }, true);            //键盘消息
-            this.UIElement.addEventListener("keyup", (e)=>{ this.OnKeyUp(e);}, true);
-        }
-        if (bRegisterWheel) this.UIElement.addEventListener("wheel", (e)=>{ this.OnWheel(e); }, true);                //上下滚动消息
+        if (option) this.AddDefaultEventListener(option.Listener);
     }
 
     this.OnWheel=function(e)
     {
-        JSConsole.Chart.Log('[KLineChartContainer::OnWheel]',e);
+        JSConsole.Chart.Log('[DepthChartContainer::OnWheel]',e);
         var x = e.clientX-this.UIElement.getBoundingClientRect().left;
         var y = e.clientY-this.UIElement.getBoundingClientRect().top;
 
