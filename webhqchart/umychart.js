@@ -82603,7 +82603,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                 if (IFrameSplitOperator.IsNumber(item.DataWidth)) this.KLineSize={ DataWidth:item.DataWidth };
             }
 
-            if (option.Reload==true) isReload=true;
+            if (IFrameSplitOperator.IsBool(option.Reload)) isReload=option.Reload;
+            if (IFrameSplitOperator.IsBool(option.IsApiPeriod)) this.IsApiPeriod=option.IsApiPeriod;
         };
 
         if (this.Period==period && isReload==false) 
