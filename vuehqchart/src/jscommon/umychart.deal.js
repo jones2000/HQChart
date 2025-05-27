@@ -1144,7 +1144,7 @@ JSDealChartContainer.JsonDataToDealData=function(data)
 
         if (item[11]) dealItem.Symbol=item[11];     //股票代码
         if (item[12]) dealItem.Name=item[12];       //股票名称
-        if (item[13]) dealItem.BGColor=item[13];    //整行颜色
+        if (item[13] || item[13]===null) dealItem.BGColor=item[13];    //整行颜色
 
         if (item[100]) dealItem.Guid=item[100];
 
@@ -1545,10 +1545,21 @@ function ChartDealList()
         else this.UpdateCacheData();
 
         this.DrawBorder();
+        this.ClipClient();
         this.DrawHeader();
         this.DrawBody();
+        this.Canvas.restore();
 
         this.SizeChange=false;
+    }
+
+    this.ClipClient=function()
+    {
+        this.Canvas.save();
+        this.Canvas.beginPath();
+        this.Canvas.rect(this.RectClient.Left,this.RectClient.Top,(this.RectClient.Right-this.RectClient.Left),(this.RectClient.Bottom-this.RectClient.Top));
+        //this.Canvas.stroke(); //调试用
+        this.Canvas.clip();
     }
 
     //更新缓存变量
@@ -1745,7 +1756,7 @@ function ChartDealList()
                     if (dataItem.BGColor)
                     {
                         this.Canvas.fillStyle=dataItem.BGColor;
-                        this.Canvas.fillRect(rtRow.Left,rtRow.Top, rtRow.Width, rtRow.Height);
+                        this.Canvas.fillRect(rtRow.Left+1,rtRow.Top+1, rtRow.Width-2, rtRow.Height-2);
                     }
 
                     if (this.DrawSelectedRow(dataItem, index, rtRow))
@@ -2009,7 +2020,7 @@ function ChartDealList()
         if ( this.SelectedStyle==1)
         {
             this.Canvas.fillStyle=this.SelectedConfig.BGColor;
-            this.Canvas.fillRect(rtRow.Left,rtRow.Top, rtRow.Width, rtRow.Height);
+            this.Canvas.fillRect(rtRow.Left+1,rtRow.Top+1, rtRow.Width-2, rtRow.Height-2);
         }
        
         return true;

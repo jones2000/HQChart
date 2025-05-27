@@ -204,8 +204,11 @@ HQData.Minute_RequestMinuteData=function(data, callback)
         var fullData=HQData.GetDayMinuteDataBySymbol(symbol);
         var srcStock=fullData[0];
         var stockItem={ date:srcStock.date, minute:srcStock.minute, yclose:srcStock.yclose, symbol:symbol, name:symbol };
+
+        //盘前
         if (callcation.Before)
         {
+            /*
             var before=
             [
                 //[交易时间, 价格，成交量， 成交金额, 日期（可选，YYYYMMDD)],
@@ -226,12 +229,72 @@ HQData.Minute_RequestMinuteData=function(data, callback)
 
             stockItem.before=before;
             stockItem.beforeinfo=beforeinfo;
+            */
+
+            var before=[];
+            var beforeinfo={ totalcount:60*10, ver:2.0 };  //9:15-9:25 集合竞价15分钟 1s一个数据 
+            var price=srcStock.yclose+0.01;
+
+            var date=new Date(2021,5,2, 9,15, 0);
+            var mapTest=new Map(
+            [
+                [91505, [91505,price+0.01, 400, 300, 1, 800]],
+                [91550, [91550,price+0.02, 550, 600, 0, 1500]],
+                [91603, [91603,price+0.03, 300, 600, 1, 3600]],
+                [91613, [91613,price+0.03, 150, 320, 1, 3600]],
+                [91623, [91623,price+0.04, 200, 400, 1, 3600]],
+                [91635, [91635,price+0.05, 100, 100, 1, 3600]],
+                [91640, [91640,price+0.03, 350, 210, 2, 1600]],
+                [91711, [91711,price+0.02, 3210, 350, 2, 3700]],
+                [91731, [91731,price+0.04, 110, 450, 1, 3700]],
+                [91825, [91825,price-0.01, 210, 650, 2, 3700]],
+                [91855, [91855,price-0.02, 330, 440, 1, 1000]],
+                [91915, [91915,price-0.03, 630, 640, 1, 1200]],
+                [92022, [92022,price+0.01, 260, 550, 2, 1000]],
+                [92304, [92304,price-0.02, 300, 100, 2, 1000]],
+                [92314, [92314,price-0.03, 550, 150, 2, 1000]],
+                [92344, [92344,price-0.04, 550, 150, 1, 1000]],
+                [92357, [92357,price-0.05, 250, 750, 1, 1500]],
+                [92405, [92405,price-0.07, 450, 50, 2, 1000]],
+                [92435, [92435,price-0.08, 650, 250, 1, 1000]],
+                [92458, [92458,price-0.12, 350, 350, 2, 1000]],
+            ])
+            
+            for(var i=0;i<beforeinfo.totalcount; ++i)  //1s一个数据
+            {
+                var time=date.getHours()*10000+date.getMinutes()*100+date.getSeconds();
+                
+                var item=[ time, null, null, null, null, null ];
+                if (mapTest.has(time))
+                {
+                    item=mapTest.get(time);
+                }
+                   
+                date.setSeconds(date.getSeconds()+1);
+                before.push(item);
+            }
+
+            stockItem.before=before;
+            stockItem.beforeinfo=beforeinfo;
         }
 
-        var lastPrice=stockItem.minute[stockItem.minute.length-1].price;
+        //盘中
+        //stockItem.minute.length=2;
+         //测试用 这里可以修改数据
+        //var lastItem=srcStock.minute[srcStock.minute.length-1];
+        //lastItem.price+=Math.ceil(Math.random()*10)/1000*lastItem.price;
+        /*
+        for(var i=0;i<srcStock.minute.length;++i)
+        {
+            var item=srcStock.minute[i];
+            if (item.amount<1000000) item.amount*=100000;
+        }
+        */
 
         if (bBuySellBar)    //盘口分析
         {
+             var lastPrice=srcStock.yclose;
+            if (stockItem.minute.length>0)  lastPrice=stockItem.minute[stockItem.minute.length-1].price;
             var aryBuy=[];
             var value=lastPrice+0.01;
             for(var i=0;i<10;++i)
@@ -250,20 +313,54 @@ HQData.Minute_RequestMinuteData=function(data, callback)
             stockItem.BuySellData={ AryBuy:aryBuy, ArySell:arySell };
         }
 
-        //测试用 这里可以修改数据
-        //var lastItem=srcStock.minute[srcStock.minute.length-1];
-        //lastItem.price+=Math.ceil(Math.random()*10)/1000*lastItem.price;
-        /*
-        for(var i=0;i<srcStock.minute.length;++i)
+        //盘后
+        if (callcation.After  && stockItem.minute.length>=240)
         {
-            var item=srcStock.minute[i];
-            if (item.amount<1000000) item.amount*=100000;
-        }
-        */
+            var price=stockItem.minute[stockItem.minute.length-1].price;
+            var afterData=[]
+            var afterInfo={ ver:2.0, totalcount:60*3 }     //14:57-15:00
+            var date=new Date(2021,5,2, 14,57, 0);
+            var mapTest=new Map(
+            [
+                [145708, [145708,price+0.01, 400, 300, 1, 800]],
+                [145718, [145718,price+0.02, 550, 600, 0, 1500]],
+                [145738, [145738,price+0.02, 150, 800, 0, 1500]],
+                [145748, [145748,price+0.02, 150, 800, 0, 1500]],
+                [145803, [145803,price+0.03, 300, 600, 1, 3600]],
+                [145815, [145815,price+0.03, 350, 210, 2, 1600]],
+                [145826, [145826,price+0.02, 1210, 350, 2, 2700]],
+                [145833, [145833,price+0.01, 260, 550, 2, 1000]],
+                [145845, [145845,price+0.02, 160, 750, 2, 1000]],
+                [145858, [145858,price-0.01, 460, 650, 2, 1500]],
+                [145905, [145905,price-0.02, 160, 450, 1, 1500]],
+                [145928, [145928,price-0.02, 260, 250, 1, 1500]],
+                [145948, [145948,price-0.02, 860, 150, 1, 1500]],
+            ])
 
-        stockItem.minute.length=50;
+            for(var i=0;i<afterInfo.totalcount; ++i)  //1s一个数据
+            {
+                var time=date.getHours()*10000+date.getMinutes()*100+date.getSeconds();
+                
+                var item=[ time, null, null, null, null, null ];
+
+                if (mapTest.has(time))
+                {
+                    item=mapTest.get(time);
+                }
+                
+                date.setSeconds(date.getSeconds()+1);
+                afterData.push(item);
+            }
+
+            stockItem.after=afterData;
+            stockItem.afterinfo=afterInfo;
+        }
 
         var hqchartData={code:0, stock:[stockItem] };
+
+        var time=new Date();
+        if (time.getSeconds()%3==1)
+            hqchartData.LatestPointFlash={ FlashCount:2 };
     
 
         callback(hqchartData);
@@ -299,15 +396,16 @@ HQData.Minute_RequestMinuteDataV2=function(data, callback)
             var date=new Date(parseInt(stockItem.date/10000),(stockItem.date/100%100-1),stockItem.date%100, 9, 15, 0);
             var count=10*60;    //9:15-9:25
             var before=[];
-            for(var i=0;i<count;++i)
+            for(var i=0, j=0;i<count;++i)
             {
                 var time=date.getHours()*10000+date.getMinutes()*100+date.getSeconds();
-                var testIndex=Math.floor(Math.random()*10)%TEST_BEFORE_DATA.length;
+                var testIndex=j%TEST_BEFORE_DATA.length;
                 var testData=TEST_BEFORE_DATA[testIndex];
                 var item=[ time, null, null, null, null, null ];
                 if (i%20==0 || i==count-1) 
                 {
                     item=[ time, testData[0], testData[1], testData[2], testData[3], (testData[1]+testData[2])*1.5 ];
+                    ++j;
                 }
                 before.push(item);
                 date.setSeconds(date.getSeconds()+1);
@@ -333,15 +431,16 @@ HQData.Minute_RequestMinuteDataV2=function(data, callback)
             var date=new Date(parseInt(stockItem.date/10000),(stockItem.date/100%100-1),stockItem.date%100, 14, 57, 0);
             var count=3*60;    //14:57-15:00
             var after=[];
-            for(var i=0;i<count;++i)
+            for(var i=0,j=0;i<count;++i)
             {
                 var time=date.getHours()*10000+date.getMinutes()*100+date.getSeconds();
-                var testIndex=Math.floor(Math.random()*10)%TEST_AFTER_DATA.length;
+                var testIndex=j%TEST_AFTER_DATA.length;
                 var testData=TEST_AFTER_DATA[testIndex];
                 var item=[ time, null, null, null, null, null ];
                 if (i%10==0 || i==count-1) 
                 {
                     item=[ time, testData[0], testData[1], testData[2], testData[3], (testData[1]+testData[2])*1.5 ];
+                    ++j;
                 }
                 after.push(item);
                 date.setSeconds(date.getSeconds()+1);
@@ -1403,11 +1502,11 @@ HQData.Report_RequestStockData=function(data, callback)
                 //名字字段
                 var symbolEx={ Text:name };
                 if (i%20==5)
-                    symbolEx.Symbol={ Family:'iconfont', Size:16,  Data:[ { Text:'\ue629', Color:'rgb(255,165,0)'}, { Text:'\ue627', Color:'#1c65db'} ] };
+                    symbolEx.Symbol={ Family:'iconfont', Size:14,  Data:[ { Text:'\ue629', Color:'rgb(255,165,0)'}, { Text:'\ue627', Color:'#1c65db'} ] };
                 else if (i%20==9)
-                    symbolEx.Symbol={ Family:'iconfont', Size:16,  Data:[ { Text:'\ue629', Color:'rgb(255,165,0)'}] } ;
+                    symbolEx.Symbol={ Family:'iconfont', Size:14,  Data:[ { Text:'\ue629', Color:'rgb(255,165,0)'}] } ;
                 else if (i%20==18)
-                    symbolEx.Symbol={ Family:'iconfont', Size:16,  Data:[ { Text:'\ue627', Color:'#1c65db'}] } ;
+                    symbolEx.Symbol={ Family:'iconfont', Size:14,  Data:[ { Text:'\ue627', Color:'#1c65db'}] } ;
 
                 newItem[27]=symbolEx;
 
@@ -1518,6 +1617,7 @@ HQData.Report_RequestStockSortData=function(data, callback)
     var column=data.Request.Data.column;        //排序列信息
     var sortType=data.Request.Data.sort;        //排序方向
     var pageSize=data.Request.Data.pageSize;
+    var hqchart=data.Self;
     data.PreventDefault=true;
 
     var start=range.start;
@@ -1642,6 +1742,7 @@ HQData.Report_RequestVirtualStockData=function(data, callback)
     var column=data.Request.Data.column;        //排序列信息
     var sortType=data.Request.Data.sort;        //排序方向
     var pageSize=data.Request.Data.pageSize;
+    var hqchart=data.Self;
     data.PreventDefault=true;
 
     var start=range.start;
@@ -1701,6 +1802,21 @@ HQData.Report_RequestVirtualStockData=function(data, callback)
             //换手率
             newItem[23]=(Math.round(Math.random()*60))/100;
 
+             //行业
+            newItem[201]="行业X";
+            if (i%10==4) newItem[201]={ Text:"金融", TextColor:"rgb(0,206,209)"};
+            else if (i%10==9) newItem[201]={ Text:"航天", TextColor:"rgb(0,0,0)", BGColor:"rgb(45,222,179)"};
+            //地区
+            newItem[202]="地区X";
+
+            newItem[101]=(Math.round(Math.random()*60))/100;
+            newItem[102]=(Math.round(Math.random()*60))/100;
+            newItem[103]=(Math.round(Math.random()*60))/100;
+
+            //日期
+            newItem[401]={ DateTime:new Date() };
+            newItem[402]={ DateTime:new Date() };
+
             //名字字段
             var symbolEx={ Text:name };
             if (i%20==5)
@@ -1717,10 +1833,7 @@ HQData.Report_RequestVirtualStockData=function(data, callback)
             var extendData=[];
             newItem[30]=extendData;
 
-            //行业
-            extendData[0]="行业X";
-            //地区
-            extendData[1]="地区X";
+           
             
             //PE|PB
             extendData[2]=(Math.round(Math.random()*60))/100;
@@ -1738,9 +1851,18 @@ HQData.Report_RequestVirtualStockData=function(data, callback)
             newItem[351]={Title:"启动"};
             newItem[352]={Title:"加入"};
 
+           if (i%20==3) newItem[80]='rgb(132,112,255)';
+           else newItem[80]=null;
+
 
             aryData.push(newItem);
             aryIndex.push(start+i);
+
+
+            if (i==0)
+            {
+                hqchart.SetFlashBGItem(symbol, { ID:-1 , Color:"rgb(200,0,200)" });
+            }
         }
     }
 
@@ -2155,6 +2277,8 @@ HQData.Report_APIIndex=function(data, callback)
         HQData.APIIndex_KLINE_TABLE(data, callback);
     else if (request.Data.indexname=="API_DRAWSVG")
         HQData.APIIndex_DRAWSVG(data, callback); 
+    else if (request.Data.indexname=="API_BASELINE_BAR")
+        HQData.APIIndex_BASELINE_BAR(data, callback);
 }
 
 
@@ -3500,6 +3624,44 @@ HQData.RequestVolumeProfileData=function(data, callback)
     console.log('[HQData.RequestVolumeProfileData] hqchartData=', hqchartData);
 
     callback(hqchartData);
+}
+
+
+HQData.APIIndex_BASELINE_BAR=function(data, callback)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var kData=hqchart.GetKData();
+
+    var pointData=
+    { 
+        name:"BASELINE_BAR", type:1, 
+        Draw:
+        { 
+            Name:"BASELINE_BAR",
+            DrawType:"BASELINE_BAR",
+            DrawData:[],
+            Config:{  UpColor:"rgb(255,0,255)", DownColor:"rgb(255,165,0)"},
+        },
+    };
+
+    for(var i=0;i<kData.Data.length;++i)
+    {
+        var kItem=kData.Data[i];
+        
+        var item={ Date:kItem.Date, Time:kItem.Time, Up:kItem.Vol*0.2, Down:(kItem.Vol*0.35)*-1 };
+        pointData.Draw.DrawData.push(item);
+    }
+
+    var apiData=
+    {
+        code:0, 
+        stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+        outdata: { date:kData.GetDate(), time:kData.GetTime(), outvar:[ pointData] },
+    };
+
+    console.log('[HQData.APIIndex_BASELINE_BAR] apiData ', apiData);
+    callback(apiData);
 }
 
 

@@ -744,17 +744,31 @@ function JSDialogTooltip()
         {
             var item=data.Data.Data;
             if (!item) item={ Vol:[] };
-
-            var timeForamt="HH:MM:SS";
-            if (item.Ver===1) timeForamt="HH:MM"
-            aryText=
-            [
-                this.ForamtDate(item.Date,this.Style==1?"MM/DD/W":"YYYY/MM/DD/W",'DialogTooltip-Date' ),
-                this.FormatTime(item.Time, null, timeForamt, 'DialogTooltip-Time'),
-                this.ForamtPrice(item.Price,item.YClose, defaultfloatPrecision,'DialogTooltip-AC-Price',1),
-                this.FormatIncrease(item.Price,item.YClose,defaultfloatPrecision,'DialogTooltip-AC-Increase',1),
-                this.FormatVol(item.Vol[0]/unit,'DialogTooltip-AC-Vol' ),
-            ];
+            if (data.Data.Ver===1) 
+            {
+                var timeForamt="HH:MM"
+                aryText=
+                [
+                    this.ForamtDate(item.Date,this.Style==1?"MM/DD/W":"YYYY/MM/DD/W",'DialogTooltip-Date' ),
+                    this.FormatTime(item.Time, null, timeForamt, 'DialogTooltip-Time'),
+                    this.ForamtPrice(item.Price,item.YClose, defaultfloatPrecision,'DialogTooltip-AC-Price',1),
+                    this.FormatIncrease(item.Price,item.YClose,defaultfloatPrecision,'DialogTooltip-AC-Increase',1),
+                    this.FormatVol(item.Vol[0]/unit,'DialogTooltip-AC-Vol'),
+                ];
+            }
+            else
+            {
+                var timeForamt="HH:MM:SS";
+                aryText=
+                [
+                    this.ForamtDate(item.Date,this.Style==1?"MM/DD/W":"YYYY/MM/DD/W",'DialogTooltip-Date' ),
+                    this.FormatTime(item.Time, null, timeForamt, 'DialogTooltip-Time'),
+                    this.ForamtPrice(item.Price,item.YClose, defaultfloatPrecision,'DialogTooltip-AC-Price',1),
+                    this.FormatIncrease(item.Price,item.YClose,defaultfloatPrecision,'DialogTooltip-AC-Increase',1),
+                    this.FormatVol(item.Vol[0]/unit,'DialogTooltip-AC-Vol', 2),
+                    this.FormatVol(item.Vol[1]/unit,'DialogTooltip-AC-NotMatchVol', 2),
+                ];
+            }
         }
         else
         {
@@ -875,7 +889,7 @@ function JSDialogTooltip()
         return item;
     }
 
-    this.FormatVol=function(vol, TitleID)
+    this.FormatVol=function(vol, TitleID, floatPrecision)
     {
         var item=
         {
@@ -886,7 +900,10 @@ function JSDialogTooltip()
 
         if (!IFrameSplitOperator.IsNumber(vol)) return item;
 
-        item.Text=IFrameSplitOperator.FormatValueStringV2(vol,0,2,this.LanguageID);
+        var decimal=0;  //小数位数
+        if (IFrameSplitOperator.IsNumber(floatPrecision)) decimal=floatPrecision;
+
+        item.Text=IFrameSplitOperator.FormatValueStringV2(vol,decimal,2,this.LanguageID);
         
         return item;
     }

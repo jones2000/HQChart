@@ -20260,7 +20260,8 @@ var SCRIPT_CHART_NAME=
 
     CLIP_COLOR_STICK:"CLIP_COLOR_STICK",  //上下柱子 裁剪
 
-    DRAW_KLINE:"DRAWKLINE"
+    DRAW_KLINE:"DRAWKLINE",
+    BASELINE_BAR:"BASELINE_BAR"
 }
 
 
@@ -22323,6 +22324,32 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
     }
 
+    this.CreateBaseLineBar=function(hqChart,windowIndex,varItem,id)
+    {
+        var chart=new ChartBaseLineBar();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        chart.HQChart=hqChart;
+        chart.Identify=this.Guid;
+
+        chart.Data=hqChart.GetKData();      //绑定K线
+        chart.AryData=varItem.Draw.DrawData;
+
+        var config=varItem.Draw.Config;
+        if (config)
+        {
+            if (config.UpColor) chart.UpColor=config.UpColor;
+            if (config.DownColor) chart.DownColor=config.DownColor;
+            if (IFrameSplitOperator.IsNumber(config.DefaultMax)) chart.DefaultMax=config.DefaultMax;
+        }
+        
+        chart.BuildCacheData();
+        this.SetChartIndexName(chart);
+        hqChart.ChartPaint.push(chart);
+    }
+
 
     this.CreateClipColorStick=function(hqChart,windowIndex,varItem,id)
     {
@@ -22695,6 +22722,9 @@ function ScriptIndex(name,script,args,option)
                     case SCRIPT_CHART_NAME.CLIP_COLOR_STICK:
                         this.CreateClipColorStick(hqChart,windowIndex,item,i);
                         break;
+                    case SCRIPT_CHART_NAME.BASELINE_BAR:
+                        this.CreateBaseLineBar(hqChart,windowIndex,item,i);
+                        break;
                     default:
                         {
                             var find=g_ScriptIndexChartFactory.Get(item.Draw.DrawType);  //外部挂接
@@ -23047,6 +23077,9 @@ function OverlayScriptIndex(name,script,args,option)
 
                     case SCRIPT_CHART_NAME.OVERLAY_BARS:
                         this.CreateStackedBar(hqChart,windowIndex,item,i);
+                        break;
+                    case SCRIPT_CHART_NAME.BASELINE_BAR:
+                        this.CreateBaseLineBar(hqChart,windowIndex,item,i);
                         break;
                     case "DRAWCOLORKLINE":
                         this.CreateDrawColorKLine(hqChart,windowIndex,item,i);
@@ -23856,6 +23889,33 @@ function OverlayScriptIndex(name,script,args,option)
             chart.Texts= aryData;
         }
 
+        chart.BuildCacheData();
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateBaseLineBar=function(hqChart,windowIndex,varItem,id)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        var chart=new ChartBaseLineBar();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.HQChart=hqChart;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+
+        chart.Data=hqChart.GetKData();      //绑定K线
+        chart.AryData=varItem.Draw.DrawData;
+
+        var config=varItem.Draw.Config;
+        if (config)
+        {
+            if (config.UpColor) chart.UpColor=config.UpColor;
+            if (config.DownColor) chart.DownColor=config.DownColor;
+            if (IFrameSplitOperator.IsNumber(config.DefaultMax)) chart.DefaultMax=config.DefaultMax;
+        }
+        
         chart.BuildCacheData();
         frame.ChartPaint.push(chart);
     }
@@ -25767,6 +25827,17 @@ function APIScriptIndex(name,script,args,option, isOverlay)
 
                     outVarItem.Draw=drawItem;
                     if (draw.Option) outVarItem.Option=draw.Option;
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType==SCRIPT_CHART_NAME.BASELINE_BAR)
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=draw.DrawData;
+                    drawItem.Config=draw.Config;
+
+                    outVarItem.Draw=drawItem;
                     result.push(outVarItem);
                 }
                 else if (draw.DrawType=='MULTI_LINE')
