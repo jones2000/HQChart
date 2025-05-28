@@ -2815,6 +2815,8 @@ var JSCHART_EVENT_ID=
     ON_CLICK_CHART_CELL:171,                    //点击图形单元
 
     GET_DEFAULT_INDEX_PARAM:172,                //获取指标默认参数
+
+    ON_RELOAD_RESOURCE:173,
 }
 
 var JSCHART_OPERATOR_ID=
@@ -9507,6 +9509,13 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         this.ReloadChartCorssCursor(option,option.Resource);
         this.ReloadChartDrawPictureResource(option.Resource);
 
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_RELOAD_RESOURCE); //配色重新加载
+        if (event && event.Callback)
+        {
+            var sendData={ Option:option };
+            event.Callback(event, sendData, this);
+        }
+
         if (option.Update && this.Update) this.Update( {UpdateCursorIndexType:2} );       //是否立即更新并重绘
         else if (option.Draw==true || option.Redraw==true) this.Draw(); //是否立即重绘
 
@@ -14414,103 +14423,214 @@ function AverageWidthFrame()
                 this.DrawDayVertical(item, x, border);
             }
 
-            if (this.VerticalInfo[i].Message[0]!=null && this.ChartBorder.Bottom>5*pixelRatio)
+            if (item.Message[0]!=null && this.ChartBorder.Bottom>5*pixelRatio)
             {
-                if (this.VerticalInfo[i].Font) this.Canvas.font=this.VerticalInfo[i].Font;
-
-                var textLeft=0;
-                
-                this.Canvas.strokeStyle=item.TextColor;
-                var testWidth=this.Canvas.measureText(this.VerticalInfo[i].Message[0]).width;
-                var textHeight=this.Canvas.measureText("擎").width;
-                if (bottomTextExtend && bottomTextExtend.Align==1)
+                if (IFrameSplitOperator.IsObject(item.Message[0]))
                 {
-                    this.Canvas.textAlign="left";
-                    this.Canvas.textBaseline="top";
-                    textLeft=x;
+                    var textObj=item.Message[0];
+                    if (!textObj.Font) textObj.Font=item.Font;
+                    if (!textObj.TextColor) textObj.TextColor=item.TextColor;
+                    var drawInfo=this.GetMultiLineVTextSize(textObj);
+                    if (drawInfo)
+                    {
+                        drawInfo.XCenter=x;
+                        var rtBottom={ Left:0, Right:right, Top:bottom+2*pixelRatio, Bottom:border.Height };
+                        rtBottom.Width=rtBottom.Right-rtBottom.Left;
+                        rtBottom.Height=rtBottom.Bottom-rtBottom.Top;
+                        drawInfo.RectBottom=rtBottom;
+                        drawInfo.TextRightPrev=textRightPrev;
+                        this.DrawMultiLineVText(drawInfo);
+                        if (drawInfo.TextRight) textRightPrev=drawInfo.TextRight;
+                    }
                 }
                 else
                 {
-                    if (x<testWidth/2)
+                    if (item.Font) this.Canvas.font=item.Font;
+                    var textLeft=0;
+                    
+                    this.Canvas.strokeStyle=item.TextColor;
+                    var testWidth=this.Canvas.measureText(item.Message[0]).width;
+                    var textHeight=this.Canvas.measureText("擎").width;
+                    if (bottomTextExtend && bottomTextExtend.Align==1)
                     {
                         this.Canvas.textAlign="left";
                         this.Canvas.textBaseline="top";
                         textLeft=x;
                     }
-                    else if ((x + testWidth / 2) >= this.ChartBorder.GetChartWidth())
-                    {
-                        this.Canvas.textAlign = "right";
-                        this.Canvas.textBaseline="top";
-                        textLeft=x-testWidth;
-                    }
                     else
                     {
-                        this.Canvas.textAlign="center";
-                        this.Canvas.textBaseline="top";
-                        textLeft=x-(testWidth/2);
+                        if (x<testWidth/2)
+                        {
+                            this.Canvas.textAlign="left";
+                            this.Canvas.textBaseline="top";
+                            textLeft=x;
+                        }
+                        else if ((x + testWidth / 2) >= this.ChartBorder.GetChartWidth())
+                        {
+                            this.Canvas.textAlign = "right";
+                            this.Canvas.textBaseline="top";
+                            textLeft=x-testWidth;
+                        }
+                        else
+                        {
+                            this.Canvas.textAlign="center";
+                            this.Canvas.textBaseline="top";
+                            textLeft=x-(testWidth/2);
+                        }
                     }
-                }
                 
-                if (textRightPrev==null || textLeft>textRightPrev)
-                {
-                    var yText=bottom;
-                    if (item.LineType==3)
+                    if (textRightPrev==null || textLeft>textRightPrev)
                     {
-                        var lineLength=this.ShortXLineLength*pixelRatio;
-                        this.Canvas.beginPath();
-                        this.Canvas.moveTo(xFixed,yText);
-                        this.Canvas.lineTo(xFixed,yText+lineLength);
-                        this.Canvas.stroke();
-
-                        yText+=lineLength+2*pixelRatio;
-                    }
-
-                    if (bottomLineExtend)
-                    {
-                        if (bottomLineExtend.Mode===1)
+                        var yText=bottom;
+                        if (item.LineType==3)
                         {
-                            if (item.Value>1)
+                            var lineLength=this.ShortXLineLength*pixelRatio;
+                            this.Canvas.beginPath();
+                            this.Canvas.moveTo(xFixed,yText);
+                            this.Canvas.lineTo(xFixed,yText+lineLength);
+                            this.Canvas.stroke();
+
+                            yText+=lineLength+2*pixelRatio;
+                        }
+
+                        if (bottomLineExtend)
+                        {
+                            if (bottomLineExtend.Mode===1)
                             {
-                                if (bottomLineExtend.Color) this.Canvas.strokeStyle=bottomLineExtend.Color;
-                                this.Canvas.beginPath();
-                                this.Canvas.moveTo(xFixed,bottom);
-                                this.Canvas.lineTo(xFixed,border.ChartHeight);
-                                this.Canvas.stroke();
-                                x+=1;
+                                if (item.Value>1)
+                                {
+                                    if (bottomLineExtend.Color) this.Canvas.strokeStyle=bottomLineExtend.Color;
+                                    this.Canvas.beginPath();
+                                    this.Canvas.moveTo(xFixed,bottom);
+                                    this.Canvas.lineTo(xFixed,border.ChartHeight);
+                                    this.Canvas.stroke();
+                                    x+=1;
+                                }
+                            }
+                            else if (bottomLineExtend.Mode===2)
+                            {
+                                if (bottomLineExtend.Width>=1)
+                                {
+                                    var lineLength=bottomLineExtend.Width;
+                                    if (bottomLineExtend.Color) this.Canvas.strokeStyle=bottomLineExtend.Color;
+                                    this.Canvas.beginPath();
+                                    this.Canvas.moveTo(xFixed,yText);
+                                    this.Canvas.lineTo(xFixed,yText+lineLength);
+                                    this.Canvas.stroke();
+            
+                                    yText+=lineLength+2;
+                                }
                             }
                         }
-                        else if (bottomLineExtend.Mode===2)
+
+                        //item.TextBGColor="rgb(0,255,0)";
+                        if (item.TextBGColor)   //文字背景色
                         {
-                            if (bottomLineExtend.Width>=1)
-                            {
-                                var lineLength=bottomLineExtend.Width;
-                                if (bottomLineExtend.Color) this.Canvas.strokeStyle=bottomLineExtend.Color;
-                                this.Canvas.beginPath();
-                                this.Canvas.moveTo(xFixed,yText);
-                                this.Canvas.lineTo(xFixed,yText+lineLength);
-                                this.Canvas.stroke();
-        
-                                yText+=lineLength+2;
-                            }
+                            var rtText={ Left:textLeft, Top:yText+this.XBottomOffset, Width:testWidth, Height:textHeight };
+                            this.Canvas.fillStyle=item.TextBGColor;
+                            this.Canvas.fillRect(rtText.Left-1, rtText.Top, rtText.Width+2, rtText.Height);
                         }
-                    }
 
-                    //item.TextBGColor="rgb(0,255,0)";
-                    if (item.TextBGColor)   //文字背景色
-                    {
-                        var rtText={ Left:textLeft, Top:yText+this.XBottomOffset, Width:testWidth, Height:textHeight };
-                        this.Canvas.fillStyle=item.TextBGColor;
-                        this.Canvas.fillRect(rtText.Left-1, rtText.Top, rtText.Width+2, rtText.Height);
+                        this.Canvas.fillStyle=item.TextColor;
+                        this.Canvas.fillText(this.VerticalInfo[i].Message[0],x,yText+this.XBottomOffset);
+                        textRightPrev=textLeft+testWidth;
                     }
-
-                    this.Canvas.fillStyle=item.TextColor;
-                    this.Canvas.fillText(this.VerticalInfo[i].Message[0],x,yText+this.XBottomOffset);
-                    textRightPrev=textLeft+testWidth;
                 }
             }
 
             xPrev=x;
         }
+    }
+
+    //{Font:, AryText:[ { AryText:[{ Text:, Color: }], }, ] }
+    this.GetMultiLineVTextSize=function(obj)
+    {
+        if (obj.Font) this.Canvas.font=obj.Font;
+
+        var lineHeight=this.Canvas.measureText('擎').width;
+        var aryLine=[];
+        for(var i=0;i<obj.AryText.length;++i)
+        {
+            var item=obj.AryText[i];
+            var lineInfo={ Width:0, Height:lineHeight, AryText:[], Align:2, Margin:{ Top:1, Bottom:1 } , YOffset:-1 };
+            if (item.Margin)
+            {
+                if (IFrameSplitOperator.IsNumber(item.Margin.Top)) lineInfo.Margin.Top=item.Margin.Top;
+                if (IFrameSplitOperator.IsNumber(item.Margin.Bottom)) lineInfo.Margin.Bottom=item.Margin.Bottom;
+            }
+            if (IFrameSplitOperator.IsNumber(item.YOffset)) lineInfo.YOffset=item.YOffset;
+
+            lineInfo.Height=lineHeight+lineInfo.Margin.Top+lineInfo.Margin.Bottom;
+            
+            for(var j=0; j<item.AryText.length; ++j)
+            {
+                var subItem=item.AryText[j];
+                if (!subItem || !subItem.Text) continue;
+                var width=this.Canvas.measureText(subItem.Text).width;
+                var textItem={ Width: width, Text:subItem.Text, Color:obj.TextColor , Margin:{Left:0, Right:0 }};
+                if (subItem.Color) textItem.Color=subItem.Color;
+                if (subItem.Margin)
+                {
+                    if (IFrameSplitOperator.IsNumber(subItem.Margin.Left)) textItem.Margin.Left=subItem.Margin.Left;
+                    if (IFrameSplitOperator.IsNumber(subItem.Margin.Right)) textItem.Margin.Right=subItem.Margin.Right;
+                }
+                textItem.Width=width+textItem.Margin.Right+textItem.Margin.Left;
+
+                lineInfo.Width+=textItem.Width;
+                
+                lineInfo.AryText.push(textItem);
+            }
+
+            aryLine.push(lineInfo);
+        }
+
+        if (aryLine.length<=0) return null;
+
+        var width=0, height=0;
+        for(var i=0;i<aryLine.length;++i)
+        {
+            var item=aryLine[i];
+            if (width<item.Width) width=item.Width;
+            height+=item.Height;
+        }
+
+        if (width<=0 || height<=0) return null;
+
+        return { Width:width, Height:height, AryLine:aryLine, Align:2 };    //Align 1=left 2=center 3=right
+    }
+
+    //X轴底部文字多行输出
+    this.DrawMultiLineVText=function(drawInfo)
+    {
+        var xLeft=drawInfo.XCenter-drawInfo.Width/2;
+        if (drawInfo.TextRightPrev!=null && drawInfo.TextRightPrev>xLeft)
+            return false;
+
+        this.Canvas.font=drawInfo.Font;
+        this.Canvas.textAlign="left";
+        this.Canvas.textBaseline="bottom";
+        var yText=drawInfo.RectBottom.Top;
+        var textRight=null;
+        for(var i=0, j=0;i<drawInfo.AryLine.length;++i)
+        {
+            var lineItem=drawInfo.AryLine[i];
+            if (lineItem.Align==2)
+            var xLeft=drawInfo.XCenter-lineItem.Width/2;
+            if (xLeft<1) xLeft=1;
+            yText+=lineItem.Height;
+            for(j=0;j<lineItem.AryText.length;++j)
+            {
+                var item=lineItem.AryText[j];    
+                this.Canvas.fillStyle=item.Color;
+                this.Canvas.fillText(item.Text,xLeft+item.Margin.Left,yText+lineItem.YOffset);   
+                xLeft+=item.Width;     
+            }
+
+            if (textRight==null || textRight<xLeft) textRight=xLeft;
+        }
+
+        drawInfo.TextRight=textRight;
+        return true;
     }
 
     //Y坐标转y轴数值
@@ -75131,6 +75251,21 @@ function JSChartResource()
         {
             LineColor:"rgba(255,165,0,0.6)",
             LineWidth:2,
+        },
+
+        Title:
+        {
+            Font:`${12*GetDevicePixelRatio()}px 微软雅黑`,
+        },
+
+        CorssCursor:
+        {
+            Font:`${12*GetDevicePixelRatio()}px 微软雅黑`
+        },
+
+        Frame:
+        {
+            Font:`${12*GetDevicePixelRatio()}px 微软雅黑`,  //刻度坐标
         }
     }
 
@@ -76812,6 +76947,18 @@ function JSChartResource()
             {
                 if (item.Mark.LineColor) dest.Mark.LineColor=item.Mark.LineColor;
                 if (IFrameSplitOperator.IsNumber(item.Mark.LineWidth)) dest.Mark.LineWidth=item.Mark.LineWidth;
+            }
+            if (item.Title)
+            {
+                if (item.Title.Font) dest.Title.Font=item.Title.Font;
+            }
+            if (item.CorssCursor)
+            {
+                if (item.CorssCursor.Font) dest.CorssCursor.Font=item.CorssCursor.Font;
+            }
+            if (item.Frame)
+            {
+                if (item.Frame.Font) dest.Frame.Font=item.Frame.Font;
             }
         }
 

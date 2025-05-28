@@ -732,6 +732,10 @@ HQData.RequestRealtimeData=function(data, callback)
 
     var hqchartData={ code:0, stock:aryStock };
 
+    var time=new Date();
+    //if (time.getSeconds()%3==1) 
+        hqchartData.LatestPointFlash={ FlashCount:2 };
+
    
     callback(hqchartData);
     
@@ -2279,6 +2283,8 @@ HQData.Report_APIIndex=function(data, callback)
         HQData.APIIndex_DRAWSVG(data, callback); 
     else if (request.Data.indexname=="API_BASELINE_BAR")
         HQData.APIIndex_BASELINE_BAR(data, callback);
+    else if (request.Data.indexname=="API_VERTLINE")
+        HQData.APIIndex_VERTLINE(data, callback);
 }
 
 
@@ -3649,7 +3655,7 @@ HQData.APIIndex_BASELINE_BAR=function(data, callback)
     {
         var kItem=kData.Data[i];
         
-        var item={ Date:kItem.Date, Time:kItem.Time, Up:kItem.Vol*0.2, Down:(kItem.Vol*0.35)*-1 };
+        var item={ Date:kItem.Date, Time:kItem.Time, Up:kItem.Vol*0.2, Down:(kItem.Vol*0.35) };
         pointData.Draw.DrawData.push(item);
     }
 
@@ -3661,6 +3667,44 @@ HQData.APIIndex_BASELINE_BAR=function(data, callback)
     };
 
     console.log('[HQData.APIIndex_BASELINE_BAR] apiData ', apiData);
+    callback(apiData);
+}
+
+
+HQData.APIIndex_VERTLINE=function(data, callback)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var kData=hqchart.GetKData();
+
+    var lineData=
+    { 
+        name:"VERTLINE", type:1, 
+        Draw:
+        { 
+            Name:"VERTLINE",
+            DrawType:"VERTLINE",
+            DrawData:{ Data:[] },
+        },
+    };
+
+    for(var i=0;i<kData.Data.length;++i)
+    {
+        var kItem=kData.Data[i];
+        
+        var value=0;
+        if (i%5==1) value=1;
+        lineData.Draw.DrawData.Data[i]=value;
+    }
+
+    var apiData=
+    {
+        code:0, 
+        stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+        outdata: { date:kData.GetDate(), time:kData.GetTime(), outvar:[ lineData] },
+    };
+
+    console.log('[HQData.APIIndex_VERTLINE] apiData ', apiData);
     callback(apiData);
 }
 

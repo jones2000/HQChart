@@ -159,7 +159,7 @@ function GetBlackStyle()
         MultiDayBorderPen:"rgba(236,236,236,0.5)",
         FrameSplitPen: "rgba(236,236,236,0.13)",          //分割线
         FrameSplitTextColor: "rgb(220,220,220)",     //刻度文字颜色
-        FrameSplitTextFont: 12*GetDevicePixelRatio() +"px 微软雅黑",        //坐标刻度文字字体
+        FrameSplitTextFont: 14*GetDevicePixelRatio() +"px 微软雅黑",        //坐标刻度文字字体
         FrameTitleBGColor: "rgb(0,0,0)",      //标题栏背景色
         OverlayIndexTitleBGColor:'rgba(0,0,0,0.7)', //叠加指标背景色
     
@@ -195,7 +195,7 @@ function GetBlackStyle()
     
         CorssCursorBGColor: "rgb(43,54,69)",            //十字光标背景
         CorssCursorTextColor: "rgb(255,255,255)",
-        CorssCursorTextFont: 12*GetDevicePixelRatio() +"px 微软雅黑",
+        CorssCursorTextFont: 14*GetDevicePixelRatio() +"px 微软雅黑",
         CorssCursorHPenColor: "rgb(130,130,130)",           //十字光标线段颜色
         CorssCursorVPenColor: "rgb(130,130,130)",           //十字光标线段颜色
     

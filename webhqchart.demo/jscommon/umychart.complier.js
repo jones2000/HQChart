@@ -20261,7 +20261,7 @@ var SCRIPT_CHART_NAME=
     CLIP_COLOR_STICK:"CLIP_COLOR_STICK",  //上下柱子 裁剪
 
     DRAW_KLINE:"DRAWKLINE",
-    BASELINE_BAR:"BASELINE_BAR"
+    BASELINE_BAR:"BASELINE_BAR",
 }
 
 
@@ -25217,6 +25217,24 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     drawItem.DrawType=draw.DrawType;
                     drawItem.DrawData=this.FittingArray(draw.DrawData,date,time,hqChart);
                     outVarItem.Draw=drawItem;
+
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType=="VERTLINE") //竖线
+                {
+                    drawItem.Text=draw.Text;
+                    drawItem.Name=draw.Name;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData={ Data:this.FittingArray(draw.DrawData.Data,date,time,hqChart) };
+                    
+                    outVarItem.Draw=drawItem;
+                    if (draw.Config)
+                    {
+                        var config=draw.Config;
+                        if (IFrameSplitOperator.IsString(config.LineWidth)) outVarItem.LineWidth=config.LineWidth;
+                        if (IFrameSplitOperator.IsNumber(config.LineType)) drawItem.DrawData.LineType=config.LineType;
+                        if (config.Color) outVarItem.Color=config.Color;
+                    }
 
                     result.push(outVarItem);
                 }

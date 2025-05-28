@@ -25,6 +25,10 @@ function JSPopMinuteChart()
     this.BGColor=g_JSChartResource.PopMinuteChart.BGColor;
     this.BorderColor=g_JSChartResource.PopMinuteChart.BorderColor;
 
+    this.TitleFont=g_JSChartResource.PopMinuteChart.Title.Font;                 //指标标题字体
+    this.CorssCursorFont=g_JSChartResource.PopMinuteChart.CorssCursor.Font;     //十字光标
+    this.FrameSplitTextFont=g_JSChartResource.PopMinuteChart.Frame.Font;        //刻度文字
+
     this.Minute=
     {
         Option:JSPopMinuteChart.GetMinuteOption(),
@@ -106,13 +110,31 @@ function JSPopMinuteChart()
             callback:(event, data, obj)=>{ this.OnKeyDown(event, data, obj); }
         };
 
+        var reloadResourceEvent=
+        {
+            event:JSCHART_EVENT_ID.ON_RELOAD_RESOURCE,
+            callback:(event, data, obj)=>{ this.LoadChartResource(obj); }
+        }
+
+        var splitXEvent=
+        {
+            event:JSCHART_EVENT_ID.ON_SPLIT_XCOORDINATE,
+            callback:(event, data, obj)=>{ this.OnSplitXCoordinate(event, data, obj); }
+        };
+
+        var splitYEvent=
+        {
+            event:JSCHART_EVENT_ID.ON_SPLIT_YCOORDINATE,
+            callback:(event, data, obj)=>{ this.OnSplitYCoordinate(event, data, obj); }
+        }
+
         if (Array.isArray(this.Minute.Option.EventCallback))
         {
-            this.Minute.Option.EventCallback.push(keyDownEvent);
+            this.Minute.Option.EventCallback.unshift(keyDownEvent,reloadResourceEvent,splitYEvent,splitYEvent);
         }
         else
         {
-            this.Minute.Option.EventCallback=[keyDownEvent];
+            this.Minute.Option.EventCallback=[keyDownEvent,reloadResourceEvent,splitXEvent,splitYEvent];
         }
         
         chart.SetOption(this.Minute.Option);  //设置K线配置
@@ -151,7 +173,7 @@ function JSPopMinuteChart()
 
     this.OnCreateHQChart=function(chart)
     {
-
+        this.LoadChartResource(chart);
     }
 
     this.Destroy=function()
@@ -272,11 +294,44 @@ function JSPopMinuteChart()
         this.BGColor=g_JSChartResource.PopMinuteChart.BGColor;
         this.BorderColor=g_JSChartResource.PopMinuteChart.BorderColor;
 
+        this.TitleFont=g_JSChartResource.PopMinuteChart.Title.Font; 
+        this.CorssCursorFont=g_JSChartResource.PopMinuteChart.CorssCursor.Font; //十字光标
+        this.FrameSplitTextFont=g_JSChartResource.PopMinuteChart.Frame.Font
+
         if (!this.DivDialog) return;
 
         this.UpdateStyle();
 
         if (this.Minute.JSChart) this.Minute.JSChart.ReloadResource(option);
+    }
+
+    this.LoadChartResource=function(chart)
+    {
+        if (IFrameSplitOperator.IsNonEmptyArray(chart.TitlePaint))
+        {
+            for(var i=0;i<chart.TitlePaint.length;++i)
+            {
+                var item=chart.TitlePaint[i];
+                if (!item) continue;
+
+                item.Font=this.TitleFont;
+            }
+        }
+
+        if (IFrameSplitOperator.IsNonEmptyArray(chart.WindowIndex))
+        {
+            for(var i=0;i<chart.WindowIndex.length;++i) //去掉指标里面的字体
+            {
+                var item=chart.WindowIndex[i];
+                if (!item) continue;
+                item.TitleFont=null;
+            }
+        }
+
+        if (chart.ChartCorssCursor)
+        {
+            chart.ChartCorssCursor.Font=this.CorssCursorFont;
+        }
     }
 
     this.SetLanguage=function(language)
@@ -405,6 +460,34 @@ function JSPopMinuteChart()
         finder.Chart.ClearData();
         this.HQChart.Draw();
     }
+
+    this.OnSplitXCoordinate=function(event, data, obj)
+    {
+        var frame=data.Frame;
+        if (IFrameSplitOperator.IsNonEmptyArray(frame.VerticalInfo))
+        {
+            for(var i=0;i<frame.VerticalInfo.length;++i)
+            {
+                var item=frame.VerticalInfo[i];
+                if (!item) continue;
+                if (item.Font) item.Font=this.FrameSplitTextFont;
+            }
+        }
+    }
+
+    this.OnSplitYCoordinate=function(event, data, obj)
+    {
+        var frame=data.Frame;
+        if (IFrameSplitOperator.IsNonEmptyArray(frame.HorizontalInfo))
+        {
+            for(var i=0;i<frame.HorizontalInfo.length;++i)
+            {
+                var item=frame.HorizontalInfo[i];
+                if (!item) continue;
+                if (item.Font) item.Font=this.FrameSplitTextFont;
+            }
+        }
+    }
 }
 
 
@@ -432,7 +515,7 @@ JSPopMinuteChart.GetMinuteOption=function()
         //BeforeOpen:{IsShow:true, Width:120, IsShowMultiDay:true, MulitiDayWidth:100, },
         //AfterClose:{IsShow:true, Width:100, IsShowMultiDay:true, MulitiDayWidth:50,  ShareVol:2 }, //ShareVol:0=盘后成交量独立坐标, 1==盘后成交量主图共用 2==盘后成交量盘前共用
 
-        CorssCursorInfo:{ Left:2, Right:1, Bottom:1 },
+        CorssCursorInfo:{ Left:1, Right:1, Bottom:1 },
                 
         MinuteLine:
         {
@@ -460,8 +543,8 @@ JSPopMinuteChart.GetMinuteOption=function()
         {
             Left:20,    //左边间距
             Right:20,     //右边间距
-            Top:25,
-            Bottom:25,
+            Top:20,
+            Bottom:20,
 
             AutoLeft:{ Blank:10, MinWidth:60 },
             AutoRight:{ Blank:10, MinWidth:60 },
@@ -492,6 +575,11 @@ function JSTooltipMinuteChart()
 
     this.BGColor=g_JSChartResource.PopMinuteChart.BGColor;
     this.BorderColor=g_JSChartResource.PopMinuteChart.BorderColor;
+
+    this.TitleFont=g_JSChartResource.PopMinuteChart.Title.Font;                 //指标标题字体
+    this.CorssCursorFont=g_JSChartResource.PopMinuteChart.CorssCursor.Font;     //十字光标
+    this.FrameSplitTextFont=g_JSChartResource.PopMinuteChart.Frame.Font;        //刻度文字
+
     this.OnCreatedCallback;
 
     this.Minute=
@@ -539,6 +627,35 @@ function JSTooltipMinuteChart()
         if (this.HQChart) this.Minute.Option.Language=g_JSChartLocalization.GetLanguageName(this.HQChart.LanguageID);
         this.Minute.Option.OnCreatedCallback=(chart)=>{ this.OnCreateHQChart(chart); }
         this.Minute.Option.NetworkFilter=(data, callback)=>{ this.NetworkFilter(data, callback); }
+
+
+        var reloadResourceEvent=
+        {
+            event:JSCHART_EVENT_ID.ON_RELOAD_RESOURCE,
+            callback:(event, data, obj)=>{ this.LoadChartResource(obj); }
+        }
+
+        var splitXEvent=
+        {
+            event:JSCHART_EVENT_ID.ON_SPLIT_XCOORDINATE,
+            callback:(event, data, obj)=>{ this.OnSplitXCoordinate(event, data, obj); }
+        };
+
+        var splitYEvent=
+        {
+            event:JSCHART_EVENT_ID.ON_SPLIT_YCOORDINATE,
+            callback:(event, data, obj)=>{ this.OnSplitYCoordinate(event, data, obj); }
+        }
+
+        if (Array.isArray(this.Minute.Option.EventCallback))
+        {
+            this.Minute.Option.EventCallback.unshift(reloadResourceEvent,splitYEvent,splitYEvent);
+        }
+        else
+        {
+            this.Minute.Option.EventCallback=[reloadResourceEvent,splitXEvent,splitYEvent];
+        }
+
         chart.SetOption(this.Minute.Option);  //设置K线配置
 
         document.body.appendChild(divDom);
@@ -579,6 +696,8 @@ function JSTooltipMinuteChart()
 
     this.OnCreateHQChart=function(chart)
     {
+        this.LoadChartResource(chart);
+
         if (this.OnCreatedCallback) this.OnCreatedCallback(chart);
     }
 
@@ -659,11 +778,72 @@ function JSTooltipMinuteChart()
         this.BGColor=g_JSChartResource.PopMinuteChart.BGColor;
         this.BorderColor=g_JSChartResource.PopMinuteChart.BorderColor;
 
+        this.TitleFont=g_JSChartResource.PopMinuteChart.Title.Font;                 //指标标题字体
+        this.CorssCursorFont=g_JSChartResource.PopMinuteChart.CorssCursor.Font;     //十字光标
+        this.FrameSplitTextFont=g_JSChartResource.PopMinuteChart.Frame.Font;        //刻度文字
+
         if (!this.DivDialog) return;
 
         this.UpdateStyle();
 
         if (this.Minute.JSChart) this.Minute.JSChart.ReloadResource(option);
+    }
+
+    this.LoadChartResource=function(chart)
+    {
+        if (IFrameSplitOperator.IsNonEmptyArray(chart.TitlePaint))
+        {
+            for(var i=0;i<chart.TitlePaint.length;++i)
+            {
+                var item=chart.TitlePaint[i];
+                if (!item) continue;
+
+                item.Font=this.TitleFont;
+            }
+        }
+
+        if (IFrameSplitOperator.IsNonEmptyArray(chart.WindowIndex))
+        {
+            for(var i=0;i<chart.WindowIndex.length;++i) //去掉指标里面的字体
+            {
+                var item=chart.WindowIndex[i];
+                if (!item) continue;
+                item.TitleFont=null;
+            }
+        }
+
+        if (chart.ChartCorssCursor)
+        {
+            chart.ChartCorssCursor.Font=this.CorssCursorFont;
+        }
+    }
+
+    this.OnSplitXCoordinate=function(event, data, obj)
+    {
+        var frame=data.Frame;
+        if (IFrameSplitOperator.IsNonEmptyArray(frame.VerticalInfo))
+        {
+            for(var i=0;i<frame.VerticalInfo.length;++i)
+            {
+                var item=frame.VerticalInfo[i];
+                if (!item) continue;
+                if (item.Font) item.Font=this.FrameSplitTextFont;
+            }
+        }
+    }
+
+    this.OnSplitYCoordinate=function(event, data, obj)
+    {
+        var frame=data.Frame;
+        if (IFrameSplitOperator.IsNonEmptyArray(frame.HorizontalInfo))
+        {
+            for(var i=0;i<frame.HorizontalInfo.length;++i)
+            {
+                var item=frame.HorizontalInfo[i];
+                if (!item) continue;
+                if (item.Font) item.Font=this.FrameSplitTextFont;
+            }
+        }
     }
 
 }
@@ -692,7 +872,7 @@ JSTooltipMinuteChart.GetMinuteOption=function()
         //BeforeOpen:{IsShow:true, Width:120, IsShowMultiDay:true, MulitiDayWidth:100, },
         //AfterClose:{IsShow:true, Width:100, IsShowMultiDay:true, MulitiDayWidth:50,  ShareVol:2 }, //ShareVol:0=盘后成交量独立坐标, 1==盘后成交量主图共用 2==盘后成交量盘前共用
 
-        CorssCursorInfo:{ Left:2, Right:1, Bottom:1 },
+        CorssCursorInfo:{ Left:1, Right:1, Bottom:1 },
                 
         MinuteLine:
         {
@@ -722,8 +902,8 @@ JSTooltipMinuteChart.GetMinuteOption=function()
         {
             Left:20,    //左边间距
             Right:120,     //右边间距
-            Top:25,
-            Bottom:25,
+            Top:20,
+            Bottom:20,
 
             AutoLeft:{ Blank:10, MinWidth:40 },
             AutoRight:{ Blank:10, MinWidth:40 },
