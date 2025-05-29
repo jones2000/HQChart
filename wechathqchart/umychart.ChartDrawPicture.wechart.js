@@ -17,6 +17,8 @@ import
 
 import { JSConsole } from "./umychart.console.wechat.js";
 
+import { Path2DHelper } from "./umychart.data.wechat.js"
+
 function Guid() 
 {
     function S4() 
@@ -952,8 +954,8 @@ function IChartDrawPicture()
         }
     }
 
-    //坐标是否在点上 返回在第几个点上
-    this.IsPointInXYValue=function(x, y, option)
+    //坐标是否在点上 返回在第几个点上   ptSrc=原始的坐标
+    this.IsPointInXYValue=function(x, y, option, ptSrc)
     {
         if (!this.Frame) return -1;
 
@@ -980,16 +982,26 @@ function IChartDrawPicture()
                 pt.X=this.Frame.GetXFromIndex(item.XValue-data.DataOffset);
                 pt.Y=this.Frame.GetYFromData(item.YValue);
             }
-            this.Canvas.beginPath();
-            this.Canvas.arc(pt.X,pt.Y,radius,0,360);
-            if (this.Canvas.isPointInPath(x,y))  return i;
+
+
+            if (ptSrc)
+            {
+                if (Path2DHelper.PtInPoint(ptSrc.X,ptSrc.Y,pt,radius)) 
+                    return i;
+            }
+            else
+            {
+                this.Canvas.beginPath();
+                this.Canvas.arc(pt.X,pt.Y,radius,0,360);
+                if (this.Canvas.isPointInPath(x,y))  return i;
+            }
         }
 
         return -1;
     }
 
     //坐标是否在线段上 返回在第几个线段上
-    this.IsPointInLine=function(x, y, option)
+    this.IsPointInLine=function(x, y, option, ptSrc)
     {
         if (!this.LinePoint) return -1;
         
@@ -1001,42 +1013,51 @@ function IChartDrawPicture()
             var item=this.LinePoint[i];
             var ptStart=item.Start;
             var ptEnd=item.End;
-            this.Canvas.beginPath();
-            if (ptStart.X==ptEnd.X) //竖线
+
+            if (ptSrc)
             {
-                this.Canvas.moveTo(ptStart.X-lineWidth,ptStart.Y);
-                this.Canvas.lineTo(ptStart.X+lineWidth,ptStart.Y);
-                this.Canvas.lineTo(ptEnd.X+lineWidth,ptEnd.Y);
-                this.Canvas.lineTo(ptEnd.X-lineWidth,ptEnd.Y);
+                if (Path2DHelper.PtInLine(ptSrc.X, ptSrc.Y, ptStart, ptEnd, lineWidth))
+                    return i;
             }
             else
             {
-                this.Canvas.moveTo(ptStart.X,ptStart.Y+lineWidth);
-                this.Canvas.lineTo(ptStart.X,ptStart.Y-lineWidth);
-                this.Canvas.lineTo(ptEnd.X,ptEnd.Y-lineWidth);
-                this.Canvas.lineTo(ptEnd.X,ptEnd.Y+lineWidth);
-            }
-            this.Canvas.closePath();
+                this.Canvas.beginPath();
+                if (ptStart.X==ptEnd.X) //竖线
+                {
+                    this.Canvas.moveTo(ptStart.X-lineWidth,ptStart.Y);
+                    this.Canvas.lineTo(ptStart.X+lineWidth,ptStart.Y);
+                    this.Canvas.lineTo(ptEnd.X+lineWidth,ptEnd.Y);
+                    this.Canvas.lineTo(ptEnd.X-lineWidth,ptEnd.Y);
+                }
+                else
+                {
+                    this.Canvas.moveTo(ptStart.X,ptStart.Y+lineWidth);
+                    this.Canvas.lineTo(ptStart.X,ptStart.Y-lineWidth);
+                    this.Canvas.lineTo(ptEnd.X,ptEnd.Y-lineWidth);
+                    this.Canvas.lineTo(ptEnd.X,ptEnd.Y+lineWidth);
+                }
+                this.Canvas.closePath();
 
-            //for debug
-            //this.Canvas.fillStyle='RGB(22,100,100)';
-            //this.Canvas.fill();
-            if (this.Canvas.isPointInPath(x,y))
-                return i;
+                //for debug
+                //this.Canvas.fillStyle='RGB(22,100,100)';
+                //this.Canvas.fill();
+                if (this.Canvas.isPointInPath(x,y))
+                    return i;
+            }
         }
 
         return -1;
     }
 
-    //0-10 鼠标对应的点索引   100=鼠标在正个图形上  -1 鼠标不在图形上
-    this.IsPointIn_XYValue_Line=function(x, y, option)
+    //0-10 鼠标对应的点索引   100=鼠标在正个图形上  -1 鼠标不在图形上 ptSrc=原始坐标
+    this.IsPointIn_XYValue_Line=function(x, y, option, ptSrc)
     {
         if (this.Status!=10) return -1;
 
-        var value=this.IsPointInXYValue(x,y,option);
+        var value=this.IsPointInXYValue(x,y,option,ptSrc);
         if (value>=0) return value;
 
-        value=this.IsPointInLine(x,y,option);
+        value=this.IsPointInLine(x,y,option,ptSrc);
         if (value>=0) return 100;
 
         return -1;
@@ -1379,6 +1400,77 @@ function IChartDrawPicture()
     //this.PtInButtons=function(x, y) { }
 }
 
+IChartDrawPicture.ColorToRGBA=function(color,opacity)
+{
+    var reg = /^(rgb|RGB)/;
+    if (reg.test(color)) 
+    {
+        var strHex = "#";
+        var colorArr = color.replace(/(?:\(|\)|rgb|RGB)*/g, "").split(",");    // 把RGB的3个数值变成数组
+        // 转成16进制
+        for (var i = 0; i < colorArr.length; i++) 
+        {
+            var hex = Number(colorArr[i]).toString(16);
+            if (hex === "0")  hex += hex;
+            strHex += hex;
+        }
+
+        color=strHex;
+    }
+    
+    return "rgba(" + parseInt("0x" + color.slice(1, 3)) + "," + parseInt("0x" + color.slice(3, 5)) + "," + parseInt("0x" + color.slice(5, 7)) + "," + opacity + ")";
+}
+
+IChartDrawPicture.RGBToHex=function(rgb) 
+{
+    // Choose correct separator
+    let sep = rgb.indexOf(",") > -1 ? "," : " ";
+    // Turn "rgb(r,g,b)" into [r,g,b]
+    rgb = rgb.substr(4).split(")")[0].split(sep);
+  
+    let r = (+rgb[0]).toString(16),
+        g = (+rgb[1]).toString(16),
+        b = (+rgb[2]).toString(16);
+  
+    if (r.length == 1)
+      r = "0" + r;
+    if (g.length == 1)
+      g = "0" + g;
+    if (b.length == 1)
+      b = "0" + b;
+  
+    return "#" + r + g + b;
+}
+
+//16进制颜色转rgb
+IChartDrawPicture.HexToRGB=function(color)
+{
+    color = color.toLowerCase();
+    var reg = /^#([0-9a-fA-f]{3}|[0-9a-fA-f]{6})$/;
+    if (color && reg.test(color)) 
+    {
+        if (color.length === 4) 
+        {
+            var sColorNew = "#";
+            for (var i=1; i<4; i+=1) 
+            {
+                sColorNew += color.slice(i, i+1).concat(color.slice(i, i+1));    
+            }
+            color = sColorNew;
+        }
+
+        //处理六位的颜色值
+        var sColorChange = [];
+        for (var i=1; i<7; i+=2) 
+        {
+            sColorChange.push(parseInt("0x"+color.slice(i, i+2)));    
+        }
+
+        return "rgb(" + sColorChange.join(",") + ")";
+    }
+
+    return null;
+}
 
 IChartDrawPicture.ArrayDrawPricture=
 [
@@ -1387,6 +1479,7 @@ IChartDrawPicture.ArrayDrawPricture=
     { Name:"箭头", ClassName:"ChartDrawArrowLine", Create:function() { return new ChartDrawArrowLine(); } },
     { Name:"水平线", ClassName:'ChartDrawPictureHorizontalLine',  Create:function() { return new ChartDrawPictureHorizontalLine(); }},
     { Name:"标价线2", ClassName:"ChartDrawPriceLineV2", Create:function() { return new ChartDrawPriceLineV2(); } },
+    { Name:"矩形", ClassName:'ChartDrawPictureRect', Create:function() { return new ChartDrawPictureRect(); }},
 ];
 
 IChartDrawPicture.GetDrawPictureByName=function(value)
@@ -2067,6 +2160,96 @@ function ChartDrawPriceLineV2()
     }
 }
 
+//画图工具-矩形
+function ChartDrawPictureRect()
+{
+    this.newMethod=IChartDrawPicture;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ChartDrawPictureRect';
+    this.GetXYCoordinate=this.GetXYCoordinate_default;
+    this.OnlyMoveXIndex=true;
+    this.IsSupportMagnet=true;
+
+    this.Draw=function()
+    {
+        if (this.IsFrameMinSize()) return;
+        if (!this.IsShow) return;
+
+        var drawPoint=this.CalculateDrawPoint({IsCheckX:true, IsCheckY:true});
+        if (!drawPoint || drawPoint.length!=2) return;
+
+        this.AreaColor=IChartDrawPicture.ColorToRGBA(this.LineColor,0.3);
+        this.ClipFrame();
+
+        this.Canvas.strokeStyle=this.LineColor;
+        this.SetLineWidth();
+        this.Canvas.beginPath();
+        this.Canvas.rect(drawPoint[0].X,drawPoint[0].Y,drawPoint[1].X-drawPoint[0].X,drawPoint[1].Y-drawPoint[0].Y);
+        this.Canvas.stroke();
+        this.RestoreLineWidth();
+        
+        //透明背景
+        this.Canvas.fillStyle=this.AreaColor;
+        this.Canvas.beginPath();
+        this.Canvas.fillRect(drawPoint[0].X,drawPoint[0].Y,drawPoint[1].X-drawPoint[0].X,drawPoint[1].Y-drawPoint[0].Y);
+        this.Canvas.restore();
+
+        //画点
+        this.DrawPoint(drawPoint);
+    }
+
+    //0-10 鼠标对应的点索引   100=鼠标在正个图形上  -1 鼠标不在图形上
+    this.IsPointIn=function(x,y,option, ptSrc)
+    {
+        if (this.IsFrameMinSize()) return -1;
+        if (!this.Frame || this.Status!=10) return -1;
+        if (!ptSrc) return -1;
+
+        var data=this.Frame.Data;
+        if (!data) return -1;
+
+        var nIndex=this.IsPointInXYValue(x,y,option,ptSrc);
+        if (nIndex>=0) return nIndex;
+
+        var aryPoint=this.CalculateDrawPoint({IsCheckX:true, IsCheckY:true});
+        if (!aryPoint || aryPoint.length!=2) return -1;
+
+        //是否在矩形边框上
+        var linePoint=[ {X:aryPoint[0].X,Y:aryPoint[0].Y},{X:aryPoint[1].X,Y:aryPoint[0].Y}];
+        if (this.IsPointInLineV2(linePoint,ptSrc,option))
+            return 100;
+
+        linePoint=[ {X:aryPoint[1].X,Y:aryPoint[0].Y},{X:aryPoint[1].X,Y:aryPoint[1].Y}];
+        if (this.IsPointInLineV2(linePoint,ptSrc,option))
+            return 100;
+
+        linePoint=[ {X:aryPoint[1].X,Y:aryPoint[1].Y},{X:aryPoint[0].X,Y:aryPoint[1].Y}];
+        if (this.IsPointInLineV2(linePoint,ptSrc,option))
+            return 100;
+
+        linePoint=[ {X:aryPoint[0].X,Y:aryPoint[1].Y},{X:aryPoint[0].X,Y:aryPoint[0].Y}];
+        if (this.IsPointInLineV2(linePoint,ptSrc,option))
+            return 100;
+
+        return -1;
+    }
+
+    //点是否在线段上 水平线段
+    this.IsPointInLineV2=function(aryPoint,pt,option)
+    {
+        var lineWidth=5;
+        if (IFrameSplitOperator.IsPlusNumber(this.LineWidth) && this.LineWidth>lineWidth) lineWidth=this.LineWidth;
+        if (option && IFrameSplitOperator.IsNumber(option.Zoom)) lineWidth+=option.Zoom;
+        else if (this.Option && IFrameSplitOperator.IsNumber(this.Option.Zoom)) lineWidth+=this.Option.Zoom;
+        if (Path2DHelper.PtInLine(pt.X,pt.Y,aryPoint[0], aryPoint[1], lineWidth))
+            return true;
+
+        return false;
+    }
+}
+
 export
 {
     IChartDrawPicture,
@@ -2076,4 +2259,5 @@ export
     ChartDrawArrowLine,
     ChartDrawPictureHorizontalLine,
     ChartDrawPriceLineV2,
+    ChartDrawPictureRect,
 }

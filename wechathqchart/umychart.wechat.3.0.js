@@ -3726,7 +3726,7 @@ function JSChartContainer(uielement)
         for(var i=0;i<this.ChartDrawPicture.length; ++i)
         {
             var item =this.ChartDrawPicture[i];
-            var pointIndex=item.IsPointIn(x, y, this.ChartDrawOption);
+            var pointIndex=item.IsPointIn(x, y, this.ChartDrawOption, { X:data.X, Y:data.Y });
             if (pointIndex===false) continue;
 
             if (pointIndex>=0)

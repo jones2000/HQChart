@@ -14559,6 +14559,7 @@ function AverageWidthFrame()
                 if (IFrameSplitOperator.IsNumber(item.Margin.Bottom)) lineInfo.Margin.Bottom=item.Margin.Bottom;
             }
             if (IFrameSplitOperator.IsNumber(item.YOffset)) lineInfo.YOffset=item.YOffset;
+            if (IFrameSplitOperator.IsNumber(item.Align)) lineInfo.Align=item.Align;
 
             lineInfo.Height=lineHeight+lineInfo.Margin.Top+lineInfo.Margin.Bottom;
             
@@ -14596,13 +14597,17 @@ function AverageWidthFrame()
 
         if (width<=0 || height<=0) return null;
 
-        return { Width:width, Height:height, AryLine:aryLine, Align:2 };    //Align 1=left 2=center 3=right
+        var drawInfo={ Width:width, Height:height, AryLine:aryLine, Align:2 };    //Align 1=left 2=center 3=right
+        if (IFrameSplitOperator.IsNumber(obj.Align)) drawInfo.Align=obj.Align;
+
+        return drawInfo;
     }
 
     //X轴底部文字多行输出
     this.DrawMultiLineVText=function(drawInfo)
     {
         var xLeft=drawInfo.XCenter-drawInfo.Width/2;
+        if (drawInfo.Align==1) xLeft=drawInfo.XCenter;
         if (drawInfo.TextRightPrev!=null && drawInfo.TextRightPrev>xLeft)
             return false;
 
@@ -14614,8 +14619,19 @@ function AverageWidthFrame()
         for(var i=0, j=0;i<drawInfo.AryLine.length;++i)
         {
             var lineItem=drawInfo.AryLine[i];
-            if (lineItem.Align==2)
-            var xLeft=drawInfo.XCenter-lineItem.Width/2;
+            if (drawInfo.Align==1)
+            {
+                var xLeft=drawInfo.XCenter-drawInfo.Width/2;
+                if (lineItem.Align==1) xLeft=drawInfo.XCenter;
+                else if (lineItem.Align==2) xLeft=drawInfo.XCenter+drawInfo.Width-lineItem.Width;
+            }
+            else
+            {
+                var xLeft=drawInfo.XCenter-lineItem.Width/2;
+                if (lineItem.Align==1) xLeft=drawInfo.XCenter-drawInfo.Width/2;
+                else if (lineItem.Align==2) xLeft=drawInfo.XCenter+drawInfo.Width/2-lineItem.Width;
+            }
+
             if (xLeft<1) xLeft=1;
             yText+=lineItem.Height;
             for(j=0;j<lineItem.AryText.length;++j)
@@ -19927,7 +19943,7 @@ function OverlayKLineFrame()
 
                 var text=item.Message[1];
                 if (Array.isArray(item.Message[1])) text=item.Message[1][0];
-
+                this.Canvas.fillStyle=item.TextColor;
                 if (rightExtendText && rightExtendText.Align)
                 {
                     var textWidth=rightWidth;
@@ -19939,7 +19955,6 @@ function OverlayKLineFrame()
                 {
                     var xText=right+2;
                     if (rightLine && rightLine.Width>0) xText+=rightLine.Width;
-                    this.Canvas.fillStyle=item.TextColor;
                     this.Canvas.textAlign="left";
                     this.Canvas.fillText(text,xText,y);
                 }
@@ -64303,9 +64318,14 @@ function IChartDrawPicture()
                 pt.X=this.Frame.GetXFromIndex(item.XValue-data.DataOffset);
                 pt.Y=this.Frame.GetYFromData(item.YValue);
             }
+
+            if (Path2DHelper.PtInPoint(x,y,pt,radius)) 
+                return i;
+            /*
             this.Canvas.beginPath();
             this.Canvas.arc(pt.X,pt.Y,radius,0,360);
             if (this.Canvas.isPointInPath(x,y))  return i;
+            */
         }
 
         return -1;
@@ -64322,6 +64342,20 @@ function IChartDrawPicture()
 
         var pixel=GetDevicePixelRatio();
         lineWidth*=pixel;
+        for(var i=0;i<this.LinePoint.length; ++i)
+        {
+            var item=this.LinePoint[i];
+            var ptStart=item.Start;
+            var ptEnd=item.End;
+
+            if (Path2DHelper.PtInLine(x, y, ptStart, ptEnd, lineWidth))
+            {
+                return i;
+            }
+        }
+        return -1;
+
+        /*
         for(var i=0;i<this.LinePoint.length; ++i)
         {
             var item=this.LinePoint[i];
@@ -64351,6 +64385,7 @@ function IChartDrawPicture()
         }
 
         return -1;
+        */
     }
 
     //0-10 鼠标对应的点索引   100=鼠标在正个图形上  -1 鼠标不在图形上
@@ -67044,6 +67079,18 @@ function ChartDrawPictureRect()
     //点是否在线段上 水平线段
     this.IsPointInLine=function(aryPoint,x,y,option)
     {
+        var lineWidth=5;
+        var pixel=GetDevicePixelRatio();
+        if (IFrameSplitOperator.IsPlusNumber(this.LineWidth) && this.LineWidth>lineWidth) lineWidth=this.LineWidth;
+        if (option && IFrameSplitOperator.IsNumber(option.Zoom)) lineWidth+=option.Zoom;
+        else if (this.Option && IFrameSplitOperator.IsNumber(this.Option.Zoom)) lineWidth+=this.Option.Zoom;
+        lineWidth*=pixel;
+        if (Path2DHelper.PtInLine(x,y,aryPoint[0], aryPoint[1], lineWidth))
+            return true;
+
+        return false;
+
+        /*
         var radius=5;
         if (option && IFrameSplitOperator.IsNumber(option.Zoom)) radius+=option.Zoom;
         else if (this.Option && IFrameSplitOperator.IsNumber(this.Option.Zoom)) radius+=this.Option.Zoom;
@@ -67058,11 +67105,14 @@ function ChartDrawPictureRect()
         this.Canvas.closePath();
         if (this.Canvas.isPointInPath(x,y))
             return true;
+        */
     }
 
     //垂直线段
     this.IsPointInLine2=function(aryPoint,x,y,option)
     {
+        return this.IsPointInLine(aryPoint,x,y,option);
+        /*
         var radius=5;
         if (option && IFrameSplitOperator.IsNumber(option.Zoom)) radius+=option.Zoom;
         else if (this.Option && IFrameSplitOperator.IsNumber(this.Option.Zoom)) radius+=this.Option.Zoom;
@@ -67077,6 +67127,7 @@ function ChartDrawPictureRect()
         this.Canvas.closePath();
         if (this.Canvas.isPointInPath(x,y))
             return true;
+        */
     }
 }
 
@@ -103113,6 +103164,117 @@ function GetLocalTime(i)    //得到标准时区的时间的函数
     //得到现在的格林尼治时间
     var utcTime = len + offset;
     return new Date(utcTime + 3600000 * i);
+}
+
+//图形路径方法
+function Path2DHelper() { }
+const PI2 = Math.PI * 2;
+
+//点是否在线段上
+Path2DHelper.PtInLine=function(x, y, pt, pt2, lineWidth)
+{
+    if (lineWidth<=0) return false;
+
+    var x0=pt.X, y0=pt.Y;
+    var x1=pt2.X, y1=pt2.Y;
+
+    const _l = lineWidth;
+    let _a = 0;
+    let _b = x0;
+
+    // Quick reject
+    if (
+        (y > y0 + _l && y > y1 + _l)
+        || (y < y0 - _l && y < y1 - _l)
+        || (x > x0 + _l && x > x1 + _l)
+        || (x < x0 - _l && x < x1 - _l)
+    ) 
+    {
+        return false;
+    }
+
+    if (x0 !== x1) 
+        {
+        _a = (y0 - y1) / (x0 - x1);
+        _b = (x0 * y1 - x1 * y0) / (x0 - x1);
+    }
+    else 
+    {
+        return Math.abs(x - x0) <= _l / 2;
+    }
+
+    const tmp = _a * x - y + _b;
+    const _s = tmp * tmp / (_a * _a + 1);
+    return _s <= _l / 2 * _l / 2;
+}
+
+//点是否在圆点上
+Path2DHelper.PtInPoint=function(x,y, ptCenter, radius)
+{
+    if (radius<=0) return false;
+
+    var cx=ptCenter.X;
+    var cy=ptCenter.Y;
+
+    x -= cx;
+    y -= cy;
+    const d = Math.sqrt(x * x + y * y); //到圆心的距离
+
+    if (d>radius) return false;
+
+    return true;
+}
+
+Path2DHelper.PtInArc=function(x, y, ptCenter, radius, startAngle, endAngle,lineWidth, anticlockwise)
+{
+    if (lineWidth<=0) return false;
+
+    const _l = lineWidth;
+    var cx=ptCenter.X;
+    var cy=ptCenter.Y;
+
+    x -= cx;
+    y -= cy;
+    const d = Math.sqrt(x * x + y * y);
+
+    if ((d - _l > r) || (d + _l < r)) 
+        return false;
+    
+    // TODO
+    if (Math.abs(startAngle - endAngle) % PI2 < 1e-4) 
+    {
+        // Is a circle
+        return true;
+    }
+
+    if (anticlockwise) 
+    {
+        const tmp = startAngle;
+        startAngle = Path2DHelper.FormatRadian(endAngle);
+        endAngle = Path2DHelper.FormatRadian(tmp);
+    }
+    else 
+    {
+        startAngle = Path2DHelper.FormatRadian(startAngle);
+        endAngle = Path2DHelper.FormatRadian(endAngle);
+    }
+
+    if (startAngle > endAngle) 
+        endAngle += PI2;
+    
+    var angle = Math.atan2(y, x);
+    if (angle < 0) 
+        angle += PI2;
+    
+    return (angle >= startAngle && angle <= endAngle) || (angle + PI2 >= startAngle && angle + PI2 <= endAngle);
+}
+
+//统一弧度方向
+Path2DHelper.FormatRadian=function(angle)
+{
+    angle%= PI2;
+    if (angle<0) angle += PI2;
+    return angle;
 }
 
 

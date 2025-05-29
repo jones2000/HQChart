@@ -2415,6 +2415,118 @@ function PhoneDBClick()
     }
 }
 
+//图形路径方法
+function Path2DHelper() { }
+const PI2 = Math.PI * 2;
+
+//点是否在线段上
+Path2DHelper.PtInLine=function(x, y, pt, pt2, lineWidth)
+{
+    if (lineWidth<=0) return false;
+
+    var x0=pt.X, y0=pt.Y;
+    var x1=pt2.X, y1=pt2.Y;
+
+    const _l = lineWidth;
+    let _a = 0;
+    let _b = x0;
+
+    // Quick reject
+    if (
+        (y > y0 + _l && y > y1 + _l)
+        || (y < y0 - _l && y < y1 - _l)
+        || (x > x0 + _l && x > x1 + _l)
+        || (x < x0 - _l && x < x1 - _l)
+    ) 
+    {
+        return false;
+    }
+
+    if (x0 !== x1) 
+        {
+        _a = (y0 - y1) / (x0 - x1);
+        _b = (x0 * y1 - x1 * y0) / (x0 - x1);
+    }
+    else 
+    {
+        return Math.abs(x - x0) <= _l / 2;
+    }
+
+    const tmp = _a * x - y + _b;
+    const _s = tmp * tmp / (_a * _a + 1);
+    return _s <= _l / 2 * _l / 2;
+}
+
+//点是否在圆点上
+Path2DHelper.PtInPoint=function(x,y, ptCenter, radius)
+{
+    if (radius<=0) return false;
+
+    var cx=ptCenter.X;
+    var cy=ptCenter.Y;
+
+    x -= cx;
+    y -= cy;
+    const d = Math.sqrt(x * x + y * y); //到圆心的距离
+
+    if (d>radius) return false;
+
+    return true;
+}
+
+Path2DHelper.PtInArc=function(x, y, ptCenter, radius, startAngle, endAngle,lineWidth, anticlockwise)
+{
+    if (lineWidth<=0) return false;
+
+    const _l = lineWidth;
+    var cx=ptCenter.X;
+    var cy=ptCenter.Y;
+
+    x -= cx;
+    y -= cy;
+    const d = Math.sqrt(x * x + y * y);
+
+    if ((d - _l > r) || (d + _l < r)) 
+        return false;
+    
+    // TODO
+    if (Math.abs(startAngle - endAngle) % PI2 < 1e-4) 
+    {
+        // Is a circle
+        return true;
+    }
+
+    if (anticlockwise) 
+    {
+        const tmp = startAngle;
+        startAngle = Path2DHelper.FormatRadian(endAngle);
+        endAngle = Path2DHelper.FormatRadian(tmp);
+    }
+    else 
+    {
+        startAngle = Path2DHelper.FormatRadian(startAngle);
+        endAngle = Path2DHelper.FormatRadian(endAngle);
+    }
+
+    if (startAngle > endAngle) 
+        endAngle += PI2;
+    
+    var angle = Math.atan2(y, x);
+    if (angle < 0) 
+        angle += PI2;
+    
+    return (angle >= startAngle && angle <= endAngle) || (angle + PI2 >= startAngle && angle + PI2 <= endAngle);
+}
+
+//统一弧度方向
+Path2DHelper.FormatRadian=function(angle)
+{
+    angle%= PI2;
+    if (angle<0) angle += PI2;
+    return angle;
+}
+
+
 //导出统一使用JSCommon命名空间名
 var JSCommonData=
 {
@@ -2459,6 +2571,7 @@ export
     HQ_DATA_TYPE,
     OVERLAY_STATUS_ID,
     CloneData,
+    Path2DHelper,
 };
 
 /*
