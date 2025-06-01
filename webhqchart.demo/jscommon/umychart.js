@@ -261,6 +261,28 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         }
     }
 
+    /////////////////////////////////////////////////////////////////////////////////
+    //属性设置
+    //
+
+    this.SetPressKeyboardConfig=function(chart, option)
+    {
+        if (!chart || !option) return;
+        if (IFrameSplitOperator.IsBool(option.PauseUpdate)) chart.PressKeyboardConfig.PauseUpdate=option.PauseUpdate;
+    }
+
+    //缺口设置 KLine:{ PriceGap:{ Enable, Count } }
+    this.SetPriceGapConfig=function(chart, option)
+    {
+        if (!option || !option.PriceGap) return;
+        var klineChart=chart.ChartPaint[0];
+        if (!klineChart) return;
+
+        var item=option.PriceGap;
+        if (IFrameSplitOperator.IsBool(item.Enable)) klineChart.PriceGap.Enable=item.Enable;
+        if (IFrameSplitOperator.IsNumber(item.Count)) klineChart.PriceGap.Count=item.Count;
+    }
+
     //历史K线图
     this.CreateKLineChartContainer=function(option)
     {
@@ -420,6 +442,8 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (IFrameSplitOperator.IsBool(item.EnableSelected)) chart.SelectedChart.EnableSelected=item.EnableSelected;
             if (IFrameSplitOperator.IsBool(item.EnableMoveOn)) chart.SelectedChart.EnableMoveOn=item.EnableMoveOn;
         }
+
+        if (option.PressKeyboardConfig) this.SetPressKeyboardConfig(chart, option.PressKeyboardConfig);
 
         if (!option.Windows || option.Windows.length<=0) return null;
 
@@ -611,14 +635,10 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (IFrameSplitOperator.IsBool(item.IsShowMaxMinPrice)) klineChart.IsShowMaxMinPrice=item.IsShowMaxMinPrice;
             if (IFrameSplitOperator.IsNumber(item.OneLimitBarType)) klineChart.OneLimitBarType=item.OneLimitBarType;
             if (IFrameSplitOperator.IsNumber(item.UnchangeBarType)) klineChart.UnchangeBarType=item.UnchangeBarType;
-            if (item.PriceGap)
-            {
-                if (IFrameSplitOperator.IsBool(item.PriceGap.Enable)) klineChart.PriceGap.Enable=item.PriceGap.Enable;
-                if (IFrameSplitOperator.IsNumber(item.PriceGap.Count)) klineChart.PriceGap.Count=item.PriceGap.Count;
-            }
-
             if (IFrameSplitOperator.IsBool(item.EnablePrediction)) klineChart.PredictionConfig.Enable=item.EnablePrediction;
             if (IFrameSplitOperator.IsBool(item.EnableDaySummary)) klineChart.DaySummary.Enable=item.EnableDaySummary;
+
+            this.SetPriceGapConfig(chart, option.KLine);
         }
 
         if(option.KLineTitle)
@@ -997,6 +1017,8 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (IFrameSplitOperator.IsBool(item.EnableSelected)) chart.SelectedChart.EnableSelected=item.EnableSelected;
             if (IFrameSplitOperator.IsBool(item.EnableMoveOn)) chart.SelectedChart.EnableMoveOn=item.EnableMoveOn;
         }
+
+        if (option.PressKeyboardConfig) this.SetPressKeyboardConfig(chart, option.PressKeyboardConfig);
 
         if (chart.ClassName=="MinuteChartContainer")
         {
@@ -1632,6 +1654,8 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (option.KLine.ShowKLine == false) chart.ChartPaint[0].IsShow = false;
             if (option.KLine.InfoPosition>0) chart.ChartPaint[0].InfoPosition=option.KLine.InfoPosition;
             if (option.KLine.IsShowMaxMinPrice == false) chart.ChartPaint[0].IsShowMaxMinPrice=option.KLine.IsShowMaxMinPrice;
+
+            this.SetPriceGapConfig(chart, option.KLine);
         }
 
         if(option.KLineTitle)    //股票名称 日期 周期
@@ -1900,18 +1924,6 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         JSConsole.Chart.Log("[JSChart::OnDivResize] entries=", entries);
 
         this.OnSize( {Type:1} );
-    }
-
-    //创建工具条
-    this.CreateToolbar=function(option)
-    {
-
-    }
-
-    //创建设置div窗口
-    this.CreateSettingDiv=function(option)
-    {
-
     }
 
     this.Focus=function()
@@ -3219,6 +3231,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     this.PressTime=500;
     this.IsPress=false;             //是否长按
     this.IsPressKeyboard=false;     //是否键盘按键
+    this.PressKeyboardConfig={ PauseUpdate:false, }; //按键以后 是否涨停数据更新
 
     this.NetworkFilter;         //网络请求回调 function(data, callback);
     this.LastMouseStatus={ MouseOnToolbar:null }; // MouseOnToolbar={ Rect:{}, Title: }
@@ -3805,6 +3818,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         this.DestroyDialogSelectRect();
 
         this.DestroyPopMenu();
+
+        if (this.DestroyPopMinuteChart) this.DestroyPopMinuteChart();
 
         this.StopLatestPointFlash();
 
@@ -12114,6 +12129,16 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         }
 
         return false;
+    }
+
+    //键盘下按暂停更新
+    this.IsPauseUpdateByKeyboard=function()
+    {
+        if (!this.IsPressKeyboard) return false;
+        if (!this.PressKeyboardConfig) return false;
+        if (!this.PressKeyboardConfig.PauseUpdate) return false;
+
+        return true;
     }
 }
 
@@ -33785,6 +33810,7 @@ function ChartKLineTable()
 
     this.TextFont;
     this.TextColor='rgb(0,0,0)';
+    this.Style=0;   //0=全部窗口模式  1=顶部指定行数  2=底部指定行数；
 
     this.AryTableData=[];
     this.MapCache=null; //key=date/date-time  value={ Date:, Time:, Data:[ ] }
@@ -33810,9 +33836,15 @@ function ChartKLineTable()
     {
         if (!this.BGColor) return;
 
-        if (this.BGColor)
+        this.Canvas.fillStyle=this.BGColor;
+        if ((this.Style===1 || this.Style===2) && this.RowHeightType==1)
         {
-            this.Canvas.fillStyle=this.BGColor;
+            var height=this.RowCount*this.RowHeight;
+            height=Math.min(rtBG.Height,height);
+            this.Canvas.fillRect(rtBG.Left+1, rtBG.Top, rtBG.Width-2, height);
+        }
+        else
+        {
             this.Canvas.fillRect(rtBG.Left+1, rtBG.Top, rtBG.Width-1, rtBG.Height);
         }
     }
@@ -33821,8 +33853,11 @@ function ChartKLineTable()
     {
         if (!this.BorderColor) return;
 
+        var lineCount=30;
+        if (this.Style===1 || this.Style===2) lineCount=this.RowCount+1;
+
         var yLine=rtBG.Top;
-        for(var i=0;i<30;++i)
+        for(var i=0;i<lineCount;++i)
         {
             this.Canvas.beginPath();
             this.Canvas.moveTo(rtBG.Left,ToFixedPoint(yLine));
@@ -33872,12 +33907,29 @@ function ChartKLineTable()
         var bottom=border.Bottom;
 
         //绘制背景
-        var rtBG={ Left:border.LeftEx, Top:top, Right:border.RightEx, Bottom:bottom };
-        rtBG.Width=rtBG.Right-rtBG.Left;
-        rtBG.Height=rtBG.Bottom-rtBG.Top;
-        this.DrawBG(rtBG);
-
+        if (this.Style===1)
+        {
+            var rtBG={ Left:border.LeftEx, Top:border.TopTitle, Right:border.RightEx, Bottom:border.TopEx };
+            rtBG.Width=rtBG.Right-rtBG.Left;
+            rtBG.Height=rtBG.Bottom-rtBG.Top;
+        }
+        else if (this.Style===2)
+        {
+            var rtBG={ Left:border.LeftEx, Top:border.BottomEx, Right:border.RightEx, Bottom:border.Bottom };
+            rtBG.Width=rtBG.Right-rtBG.Left;
+            rtBG.Height=rtBG.Bottom-rtBG.Top;
+            top=rtBG.Top;
+        }
+        else
+        {
+            var rtBG={ Left:border.LeftEx, Top:top, Right:border.RightEx, Bottom:bottom };
+            rtBG.Width=rtBG.Right-rtBG.Left;
+            rtBG.Height=rtBG.Bottom-rtBG.Top;
+        }
+        
         this.CalculateRowHeight(rtBG);
+
+        this.DrawBG(rtBG);
         
         var itemHeight=this.RowHeight;
         var itemWidth=dataWidth+distanceWidth;
@@ -33910,7 +33962,7 @@ function ChartKLineTable()
             if (!bDrawName) this.DrawRow(mapItem, top, bottom, left, right);    //绘制一列
         }
 
-        if (this.RowNamePosition==3) this.DrawRightRowName();
+        if (this.RowNamePosition==3) this.DrawRightRowName(rtBG);
 
         this.DrawBorder(rtBG);
     }
@@ -33957,20 +34009,51 @@ function ChartKLineTable()
     }
 
     //绘制右侧行名
-    this.DrawRightRowName=function()
+    this.DrawRightRowName=function(rtBG)
     {
         var border=this.ChartFrame.GetBorder();
 
         if (this.BGColor)
         {
-            var rtRightBG={Left:border.RightEx, Top:border.Top, Right:border.ChartWidth, Bottom:border.Bottom };
-            rtRightBG.Width=rtRightBG.Right-rtRightBG.Left;
-            rtRightBG.Height=rtRightBG.Bottom-rtRightBG.Top;
-            this.Canvas.fillStyle=this.BGColor;
-            this.Canvas.fillRect(rtRightBG.Left+1, rtRightBG.Top, rtRightBG.Width-1, rtRightBG.Height);
+            if (this.Style===1)
+            {
+                var height=this.RowCount*this.RowHeight;
+                height=Math.min(rtBG.Height,height);
+                var width=border.ChartWidth-rtBG.Right-2;
+                var maxTextWidth=0;
+                for(var i=0;i<this.RowName.length;++i)
+                {
+                    var item=this.RowName[i];
+                    if (!item || !item.Name) continue;
+
+                    var textWidth=this.Canvas.measureText(item.Name).width;
+                    if (textWidth>maxTextWidth) maxTextWidth=textWidth;
+                }
+                if (maxTextWidth>0)
+                {
+                    maxTextWidth+=4;
+                    width=Math.min(width, maxTextWidth);
+                }
+
+                var rtRightBG={Left:rtBG.Right+1, Top:rtBG.Top+1, Width:width, Height:height };
+                rtRightBG.Right=rtRightBG.Left+rtRightBG.Width;
+                rtRightBG.Bottom=rtRightBG.Top+rtRightBG.Height;
+                
+
+                this.Canvas.fillStyle=this.BGColor;
+                this.Canvas.fillRect(rtRightBG.Left, rtRightBG.Top, rtRightBG.Width, rtRightBG.Height);
+            }
+            else
+            {
+                var rtRightBG={Left:border.RightEx, Top:border.Top, Right:border.ChartWidth, Bottom:border.Bottom };
+                rtRightBG.Width=rtRightBG.Right-rtRightBG.Left;
+                rtRightBG.Height=rtRightBG.Bottom-rtRightBG.Top;
+                this.Canvas.fillStyle=this.BGColor;
+                this.Canvas.fillRect(rtRightBG.Left+1, rtRightBG.Top, rtRightBG.Width-2, rtRightBG.Height);
+            }
         }
         
-        var x=border.RightEx, y=border.TopTitle;
+        var x=rtBG.Right, y=rtBG.Top;
         var yOffset=3;
         if (this.ItemMergin.YOffset) yOffset=this.ItemMergin.YOffset;
         for(var i=0;i<this.RowName.length;++i)
@@ -80772,6 +80855,13 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         this.PopMinuteChart=null;
     }
 
+    this.ClosePopMinuteChart=function()
+    {
+        if (!this.PopMinuteChart) return;
+
+        this.PopMinuteChart.Close();
+    }
+
     this.ShowMinuteChartDialog=function(data, x,y)
     {
         if (!this.PopMinuteChart) return;
@@ -82538,7 +82628,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
     this.RecvRealtimeData=function(data)
     {
         if (this.IsOnTouch==true) return;           //正在操作手势不更新数据
-        if (this.IsPressKeyboard==true) return;     //正在操作键盘不更新数据
+        if (this.IsPauseUpdateByKeyboard()) return;     //正在操作键盘不更新数据
 
         if (data.Ver==3.0)
         {
@@ -82885,7 +82975,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
     this.RecvMinuteRealtimeDataV2=function(data)    //新版本的
     {
         if (this.IsOnTouch==true) return;   //正在操作中不更新数据
-        if (this.IsPressKeyboard==true) return;     //正在操作键盘不更新数据
+        if (this.IsPauseUpdateByKeyboard()) return;     //正在操作键盘不更新数据
 
         if (this.EnableVerifyRecvData && data.symbol!=this.Symbol)
         {
@@ -83360,6 +83450,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
     //周期切换
     this.ChangePeriod=function(period,option)
     {
+        this.ClosePopMinuteChart();
+
         var oldData={ Period:this.Period, Right:this.Right, KLineDrawType:this.KLineDrawType, Symbol:this.Symbol};
 
         var isChangeKLineDrawType=false;
@@ -84918,6 +85010,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         this.ClearIndexRunCount();
         this.UnlockCorssCursor();
         this.Frame.ClearYCoordinateMaxMin();
+        this.ClosePopMinuteChart();
         
         
         this.Symbol=symbol;
@@ -92556,7 +92649,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             return;
         }
 
-        if (this.IsOnTouch==true || this.IsPressKeyboard==true)   //正在操作中不更新数据
+        if (this.IsOnTouch==true || this.IsPauseUpdateByKeyboard())   //正在操作中不更新数据
         {
             if (this.SourceData && IFrameSplitOperator.IsNonEmptyArray(this.SourceData.Data))
             {

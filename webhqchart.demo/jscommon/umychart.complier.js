@@ -23081,6 +23081,9 @@ function OverlayScriptIndex(name,script,args,option)
                     case SCRIPT_CHART_NAME.BASELINE_BAR:
                         this.CreateBaseLineBar(hqChart,windowIndex,item,i);
                         break;
+                    case SCRIPT_CHART_NAME.KLINE_TABLE:
+                        this.CreateKLineTable(hqChart,windowIndex,item,i);
+                        break;
                     case "DRAWCOLORKLINE":
                         this.CreateDrawColorKLine(hqChart,windowIndex,item,i);
                         break;
@@ -23890,6 +23893,7 @@ function OverlayScriptIndex(name,script,args,option)
         }
 
         chart.BuildCacheData();
+        this.SetChartIndexName(chart);
         frame.ChartPaint.push(chart);
     }
 
@@ -23918,6 +23922,61 @@ function OverlayScriptIndex(name,script,args,option)
         
         chart.BuildCacheData();
         frame.ChartPaint.push(chart);
+    }
+
+    this.CreateKLineTable=function(hqChart,windowIndex,varItem,id)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        var chart=new ChartKLineTable();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.HQChart=hqChart;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+
+        chart.Data=hqChart.GetKData();      //绑定K线
+        chart.AryTableData=varItem.Draw.DrawData;
+        if (IFrameSplitOperator.IsNumber(varItem.Draw.RowCount)) chart.RowCount=varItem.Draw.RowCount;
+        if (IFrameSplitOperator.IsNonEmptyArray(varItem.Draw.RowName)) chart.RowName=varItem.Draw.RowName;
+
+        var config=varItem.Draw.Config;
+        if (config)
+        {
+            if (config.BGColor) chart.BGColor=config.BGColor;
+            if (config.TextColor) chart.TextColor=config.TextColor;
+            if (config.BorderColor) chart.BorderColor=config.BorderColor;
+            if (IFrameSplitOperator.IsNumber(config.RowNamePosition)) chart.RowNamePosition=config.RowNamePosition;
+            if (IFrameSplitOperator.IsNumber(config.RowHeightType)) chart.RowHeightType=config.RowHeightType;
+            if (IFrameSplitOperator.IsNumber(config.Style)) chart.Style=config.Style;
+
+            if (config.ItemMergin)
+            {
+                var subItem=config.ItemMergin;
+                if (IFrameSplitOperator.IsNumber(subItem.Left)) chart.ItemMergin.Left=subItem.Left;
+                if (IFrameSplitOperator.IsNumber(subItem.Top)) chart.ItemMergin.Top=subItem.Top;
+                if (IFrameSplitOperator.IsNumber(subItem.Bottom)) chart.ItemMergin.Bottom=subItem.Bottom;
+                if (IFrameSplitOperator.IsNumber(subItem.Right)) chart.ItemMergin.Right=subItem.Right;
+                if (IFrameSplitOperator.IsNumber(subItem.YOffset)) chart.ItemMergin.YOffset=subItem.YOffset;
+            }
+           
+            if (config.TextFont)
+            {
+                var subItem=config.TextFont;
+                if (IFrameSplitOperator.IsNumber(subItem.FontMaxSize)) chart.TextFontConfig.FontMaxSize=subItem.FontMaxSize;
+                if (subItem.Family) chart.TextFontConfig.Family=subItem.Family;
+            }
+        }
+        
+        chart.BuildCacheData();
+        frame.ChartPaint.push(chart);
+
+        var titleIndex=windowIndex+1;
+        var titlePaint=hqChart.TitlePaint[titleIndex];
+        var titleData=new DynamicTitleData(chart.Data,chart.BarName,chart.BarColor);
+        titleData.DataType="ChartKLineTable";
+        titlePaint.OverlayIndex.get(overlayIndex.Identify).Data[id]=titleData;
     }
 
 

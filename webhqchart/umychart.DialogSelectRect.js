@@ -386,8 +386,8 @@ function JSDialogSelectRect()
     this.DocOnMouseUpTitle=function(e)
     {
         this.DragTitle=null;
-        this.onmousemove = null;
-        this.onmouseup = null;
+        document.onmousemove = null;
+        document.onmouseup = null;
     }
 
 

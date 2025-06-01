@@ -263,6 +263,18 @@ function JSChart(element)
         }
     }
 
+    //缺口设置 KLine:{ PriceGap:{ Enable, Count } }
+    this.SetPriceGapConfig=function(chart, option)
+    {
+        if (!option || !option.PriceGap) return;
+        var klineChart=chart.ChartPaint[0];
+        if (!klineChart) return;
+
+        var item=option.PriceGap;
+        if (IFrameSplitOperator.IsBool(item.Enable)) klineChart.PriceGap.Enable=item.Enable;
+        if (IFrameSplitOperator.IsNumber(item.Count)) klineChart.PriceGap.Count=item.Count;
+    }
+
     //历史K线图
     this.CreateKLineChartContainer = function (option) 
     {
@@ -399,11 +411,8 @@ function JSChart(element)
             var klineChart=chart.ChartPaint[0];
             if (IFrameSplitOperator.IsBool(item.ShowKLine)) klineChart.IsShow = item.ShowKLine;
             if (IFrameSplitOperator.IsBool(item.IsShowMaxMinPrice)) klineChart.IsShowMaxMinPrice = item.IsShowMaxMinPrice;
-            if (item.PriceGap)
-            {
-                if (IFrameSplitOperator.IsBool(item.PriceGap.Enable)) klineChart.PriceGap.Enable=item.PriceGap.Enable;
-                if (IFrameSplitOperator.IsNumber(item.PriceGap.Count)) klineChart.PriceGap.Count=item.PriceGap.Count;
-            }
+
+            this.SetPriceGapConfig(chart, option.KLine);
         }
 
         if (option.KLineTitle) 
@@ -930,6 +939,7 @@ function JSChart(element)
         {
             if (IFrameSplitOperator.IsBool(option.KLine.ShowKLine)) chart.ChartPaint[0].IsShow = option.KLine.ShowKLine;
             if (IFrameSplitOperator.IsBool(option.KLine.IsShowMaxMinPrice)) chart.ChartPaint[0].IsShowMaxMinPrice = option.KLine.IsShowMaxMinPrice;
+            this.SetPriceGapConfig(chart, option.KLine);
         }
 
         //股票名称 日期 周期都不显示

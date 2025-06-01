@@ -559,8 +559,8 @@ function JSDialogDrawTool()
     this.DocOnMouseUpTitle=function(e)
     {
         this.DragTitle=null;
-        this.onmousemove = null;
-        this.onmouseup = null;
+        document.onmousemove = null;
+        document.onmouseup = null;
     }
 
     this.ChartInfoLine_FormatLabelText=function(labelInfo)
@@ -1195,8 +1195,8 @@ function JSDialogModifyDraw()
     this.DocOnMouseUpTitle=function(e)
     {
         this.DragTitle=null;
-        this.onmousemove = null;
-        this.onmouseup = null;
+        document.onmousemove = null;
+        document.onmouseup = null;
     }
 }
 
