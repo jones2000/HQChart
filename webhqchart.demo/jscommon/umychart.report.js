@@ -1584,27 +1584,44 @@ function JSReportChartContainer(uielement)
             }
         }
 
+        //重新更新板块成员
+        if (IFrameSplitOperator.IsNonEmptyArray(data.members))
+        {
+            this.SourceData.Data=[];
+            this.Data.Data=[];
+            var aryMember=data.members;
+            for(var i=0;i<aryMember.length;++i)
+            {
+                var value=aryMember[i];
+                this.Data.Data.push(value);
+                this.SourceData.Data.push(value);
+            }
+        }
+
         var chart=this.ChartPaint[0];
         if (!chart) return;
 
         var bUpdate=false;
         //实时本地数据排序
         var chart=this.ChartPaint[0];
-        if (chart && this.SortInfo.Sort==1 && IFrameSplitOperator.IsNumber(this.SortInfo.Field) && this.SortInfo.Field>=0)
+        if (chart && (this.SortInfo.Sort==1 || this.SortInfo.Sort==2) && IFrameSplitOperator.IsNumber(this.SortInfo.Field) && this.SortInfo.Field>=0)
         {
             var column=chart.Column[this.SortInfo.Field];
             var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_REPORT_LOCAL_SORT);
+            var bLocalSrot=true;
             if (event && event.Callback)
             {
-                var sendData={ Column:column, SortInfo:this.SortInfo, SymbolList:this.Data.Data, Result:null };
+                var sendData={ Column:column, SortInfo:this.SortInfo, SymbolList:this.Data.Data, Result:null, PreventDefault:false };
                 event.Callback (event, sendData, this);
-                if (Array.isArray(sendData.Result)) this.Data.Data=sendData.Result;
+                if (event.PreventDefault)
+                {
+                    bLocalSrot=false;
+                    if (Array.isArray(sendData.Result)) this.Data.Data=sendData.Result;
+                }
             }
-            else
-            {
-                this.Data.Data.sort((left, right)=> { return this.LocalSort(left, right, column, this.SortInfo.Sort); });
-            }
-
+            
+            if (bLocalSrot) this.Data.Data.sort((left, right)=> { return this.LocalSort(left, right, column, this.SortInfo.Sort); });
+            
             bUpdate=true;   //排序暂时每次都刷新
         }
         else
@@ -3582,16 +3599,20 @@ function JSReportChartContainer(uielement)
             if (column.Sort==1)  //本地排序
             {
                 var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_REPORT_LOCAL_SORT);
+                var bLocalSort=true;
                 if (event && event.Callback)
                 {
-                    var sendData={ Column:column, SortInfo:sortInfo, SymbolList:this.Data.Data, Result:null };
+                    var sendData={ Column:column, SortInfo:sortInfo, SymbolList:this.Data.Data, Result:null, PreventDefault:false };
                     event.Callback (event, sendData, this);
-                    if (Array.isArray(sendData.Result)) this.Data.Data=sendData.Result;
+                    if (sendData.PreventDefault)
+                    {
+                        if (Array.isArray(sendData.Result)) this.Data.Data=sendData.Result;
+                        bLocalSort=false;
+                    }
                 }
-                else
-                {
-                    this.Data.Data.sort((left, right)=> { return this.LocalSort(left, right, column, sortInfo.Sort); });
-                }
+                
+                
+                if (bLocalSort) this.Data.Data.sort((left, right)=> { return this.LocalSort(left, right, column, sortInfo.Sort); });
             }
             else if (column.Sort==2) //远程排序
             {
@@ -3669,16 +3690,22 @@ function JSReportChartContainer(uielement)
                     if (header.Column.Sort==1)  //本地排序
                     {
                         var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_REPORT_LOCAL_SORT);
+                        var bLocalSort=true;
                         if (event && event.Callback)
                         {
-                            var sendData={ Column:header.Column, SortInfo:sortInfo, SymbolList:this.Data.Data, Result:null };
+                            var sendData={ Column:header.Column, SortInfo:sortInfo, SymbolList:this.Data.Data, Result:null, PreventDefault:false};
                             event.Callback (event, sendData, this);
-                            if (Array.isArray(sendData.Result)) this.Data.Data=sendData.Result;
+                            if (sendData.PreventDefault)
+                            {
+                                if (Array.isArray(sendData.Result)) this.Data.Data=sendData.Result;
+                                bLocalSort=false;
+                            }
+                            
                         }
-                        else
-                        {
-                            this.Data.Data.sort((left, right)=> { return this.LocalSort(left, right, header.Column, sortInfo.Sort); });
-                        }
+                        
+                        
+                        if (bLocalSort) this.Data.Data.sort((left, right)=> { return this.LocalSort(left, right, header.Column, sortInfo.Sort); });
+                        
                     }
                     else if (header.Column.Sort==2) //远程排序
                     {
@@ -4035,6 +4062,32 @@ function JSReportChartContainer(uielement)
             case REPORT_COLUMN_ID.RESERVE_NUMBER10_ID:
             
                 return this.LocalNumberSort(left, right, column, sortType);
+
+            case REPORT_COLUMN_ID.RESERVE_DATETIME1_ID:
+            case REPORT_COLUMN_ID.RESERVE_DATETIME2_ID:
+            case REPORT_COLUMN_ID.RESERVE_DATETIME3_ID:
+            case REPORT_COLUMN_ID.RESERVE_DATETIME4_ID:
+            case REPORT_COLUMN_ID.RESERVE_DATETIME5_ID:
+            case REPORT_COLUMN_ID.RESERVE_DATETIME6_ID:
+            case REPORT_COLUMN_ID.RESERVE_DATETIME7_ID:
+            case REPORT_COLUMN_ID.RESERVE_DATETIME8_ID:
+            case REPORT_COLUMN_ID.RESERVE_DATETIME9_ID:
+            case REPORT_COLUMN_ID.RESERVE_DATETIME10_ID:
+                return this.LocalReserveDateTimeSort(left, right, column, sortType);
+
+            case REPORT_COLUMN_ID.RESERVE_STRING1_ID:
+            case REPORT_COLUMN_ID.RESERVE_STRING2_ID:
+            case REPORT_COLUMN_ID.RESERVE_STRING3_ID:
+            case REPORT_COLUMN_ID.RESERVE_STRING4_ID:
+            case REPORT_COLUMN_ID.RESERVE_STRING5_ID:
+            case REPORT_COLUMN_ID.RESERVE_STRING6_ID:
+            case REPORT_COLUMN_ID.RESERVE_STRING7_ID:
+            case REPORT_COLUMN_ID.RESERVE_STRING8_ID:
+            case REPORT_COLUMN_ID.RESERVE_STRING9_ID:
+            case REPORT_COLUMN_ID.RESERVE_STRING10_ID:
+                return this.LocalReserveStringSort(left, right, column, sortType);
+
+
             case REPORT_COLUMN_ID.CUSTOM_NUMBER_TEXT_ID:    //自定义数值字段
                 return this.LoacCustomNumberSort(left, right, column, sortType);
             case REPORT_COLUMN_ID.CUSTOM_STRING_TEXT_ID:    //自定义字符串字段
@@ -4118,7 +4171,49 @@ function JSReportChartContainer(uielement)
         if (sortType==1)
         {
             if (rightValue<leftValue) return -1;
-            else if (rightValue<leftValue) return 1;
+            else if (rightValue>leftValue) return 1;
+            else return 0;
+        }
+        else
+        {
+            if (leftValue<rightValue) return -1;
+            else if (leftValue>rightValue) return 1;
+            else return 0;
+        }
+    }
+
+    
+    this.LocalReserveStringSort=function(left, right, column, sortType)
+    {
+        var leftStock=this.GetStockData(left);
+        var rightStock=this.GetStockData(right);
+
+        var leftValue="", rightValue="";
+        if (sortType==2)
+        {
+            leftValue="啊啊啊啊啊";
+            rightValue="啊啊啊啊啊";
+        }
+
+        var filedName=MAP_COLUMN_FIELD.get(column.Type);
+        if (leftStock && leftStock[filedName]) 
+        {
+            var value=leftStock[filedName];
+            if (IFrameSplitOperator.IsObject(value)) leftValue=value.Text;
+            else leftValue=value;
+        }
+
+        if (rightStock && rightStock[filedName])
+        {
+            var value=rightStock[filedName];
+            if (IFrameSplitOperator.IsObject(value)) rightValue=value.Text;
+            else rightValue=value;
+        } 
+        
+        if (sortType==1)
+        {
+            if (rightValue<leftValue) return -1;
+            else if (rightValue>leftValue) return 1;
             else return 0;
         }
         else
@@ -4141,12 +4236,46 @@ function JSReportChartContainer(uielement)
         if (leftStock && IFrameSplitOperator.IsNumber(leftStock[filedName])) leftValue=leftStock[filedName];
         if (rightStock && IFrameSplitOperator.IsNumber(rightStock[filedName])) rightValue=rightStock[filedName];
         
-      
 
         if (sortType==1)
         {
             if (rightValue<leftValue) return -1;
-            else if (rightValue<leftValue) return 1;
+            else if (rightValue>leftValue) return 1;
+            else return 0;
+        }
+        else
+        {
+            if (leftValue<rightValue) return -1;
+            else if (leftValue>rightValue) return 1;
+            else return 0;
+        }
+    }
+
+    //Date数据排序
+    this.LocalReserveDateTimeSort=function(left, right, column, sortType)
+    {
+        var leftStock=this.GetStockData(left);
+        var rightStock=this.GetStockData(right);
+
+        var leftValue=new Date(0), rightValue=new Date(0);
+        if (sortType==2) leftValue=rightValue=Date(2999, 12, 30);
+
+        var filedName=MAP_COLUMN_FIELD.get(column.Type);
+        if (leftStock && leftStock[filedName]) 
+        {
+            var value=leftStock[filedName];
+            if (value.DateTime) leftValue=value.DateTime;
+        }
+        if (rightStock && rightStock[filedName]) 
+        {
+            var value=rightStock[filedName];
+            if (value.DateTime) rightValue=value.DateTime;
+        }
+
+        if (sortType==1)
+        {
+            if (rightValue<leftValue) return -1;
+            else if (rightValue>leftValue) return 1;
             else return 0;
         }
         else
@@ -4171,7 +4300,7 @@ function JSReportChartContainer(uielement)
         if (sortType==1)
         {
             if (rightValue<leftValue) return -1;
-            else if (rightValue<leftValue) return 1;
+            else if (rightValue>leftValue) return 1;
             else return 0;
         }
         else
@@ -4196,7 +4325,7 @@ function JSReportChartContainer(uielement)
         if (sortType==1)
         {
             if (rightValue<leftValue) return -1;
-            else if (rightValue<leftValue) return 1;
+            else if (rightValue>leftValue) return 1;
             else return 0;
         }
         else
@@ -4221,7 +4350,7 @@ function JSReportChartContainer(uielement)
         if (sortType==1)
         {
             if (rightValue<leftValue) return -1;
-            else if (rightValue<leftValue) return 1;
+            else if (rightValue>leftValue) return 1;
             else return 0;
         }
         else
