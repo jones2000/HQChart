@@ -24,6 +24,10 @@ function JSTooltipKLineChart()
 
     this.BGColor=g_JSChartResource.PopMinuteChart.BGColor;
     this.BorderColor=g_JSChartResource.PopMinuteChart.BorderColor;
+    this.TitleFont=g_JSChartResource.PopMinuteChart.Title.Font;                 //指标标题字体
+    this.CorssCursorFont=g_JSChartResource.PopMinuteChart.CorssCursor.Font;     //十字光标
+    this.FrameSplitTextFont=g_JSChartResource.PopMinuteChart.Frame.Font;        //刻度文字
+
     this.OnCreatedCallback=null;
 
     this.KLine=
@@ -69,6 +73,35 @@ function JSTooltipKLineChart()
         if (this.HQChart) this.KLine.Option.Language=g_JSChartLocalization.GetLanguageName(this.HQChart.LanguageID);
         this.KLine.Option.OnCreatedCallback=(chart)=>{ this.OnCreateHQChart(chart); }
         this.KLine.Option.NetworkFilter=(data, callback)=>{ this.NetworkFilter(data, callback); }
+
+        var reloadResourceEvent=
+        {
+            event:JSCHART_EVENT_ID.ON_RELOAD_RESOURCE,
+            callback:(event, data, obj)=>{ this.LoadChartResource(obj); }
+        }
+
+        var splitXEvent=
+        {
+            event:JSCHART_EVENT_ID.ON_SPLIT_XCOORDINATE,
+            callback:(event, data, obj)=>{ this.OnSplitXCoordinate(event, data, obj); }
+        };
+
+        var splitYEvent=
+        {
+            event:JSCHART_EVENT_ID.ON_SPLIT_YCOORDINATE,
+            callback:(event, data, obj)=>{ this.OnSplitYCoordinate(event, data, obj); }
+        }
+
+        if (Array.isArray(this.KLine.Option.EventCallback))
+        {
+            this.KLine.Option.EventCallback.unshift(reloadResourceEvent,splitYEvent,splitYEvent);
+        }
+        else
+        {
+            this.KLine.Option.EventCallback=[reloadResourceEvent,splitXEvent,splitYEvent];
+        }
+
+
         chart.SetOption(this.KLine.Option);  //设置K线配置
 
         document.body.appendChild(divDom);
@@ -98,6 +131,8 @@ function JSTooltipKLineChart()
 
     this.OnCreateHQChart=function(chart)
     {
+        this.LoadChartResource(chart);
+
         if (this.OnCreatedCallback) this.OnCreatedCallback(chart);
     }
 
@@ -179,11 +214,72 @@ function JSTooltipKLineChart()
         this.BGColor=g_JSChartResource.PopMinuteChart.BGColor;
         this.BorderColor=g_JSChartResource.PopMinuteChart.BorderColor;
 
+        this.TitleFont=g_JSChartResource.PopMinuteChart.Title.Font;                 //指标标题字体
+        this.CorssCursorFont=g_JSChartResource.PopMinuteChart.CorssCursor.Font;     //十字光标
+        this.FrameSplitTextFont=g_JSChartResource.PopMinuteChart.Frame.Font;        //刻度文字
+
         if (!this.DivDialog) return;
 
         this.UpdateStyle();
 
         if (this.KLine.JSChart) this.KLine.JSChart.ReloadResource(option);
+    }
+
+    this.LoadChartResource=function(chart)
+    {
+        if (IFrameSplitOperator.IsNonEmptyArray(chart.TitlePaint))
+        {
+            for(var i=0;i<chart.TitlePaint.length;++i)
+            {
+                var item=chart.TitlePaint[i];
+                if (!item) continue;
+
+                item.Font=this.TitleFont;
+            }
+        }
+
+        if (IFrameSplitOperator.IsNonEmptyArray(chart.WindowIndex))
+        {
+            for(var i=0;i<chart.WindowIndex.length;++i) //去掉指标里面的字体
+            {
+                var item=chart.WindowIndex[i];
+                if (!item) continue;
+                item.TitleFont=null;
+            }
+        }
+
+        if (chart.ChartCorssCursor)
+        {
+            chart.ChartCorssCursor.Font=this.CorssCursorFont;
+        }
+    }
+
+    this.OnSplitXCoordinate=function(event, data, obj)
+    {
+        var frame=data.Frame;
+        if (IFrameSplitOperator.IsNonEmptyArray(frame.VerticalInfo))
+        {
+            for(var i=0;i<frame.VerticalInfo.length;++i)
+            {
+                var item=frame.VerticalInfo[i];
+                if (!item) continue;
+                if (item.Font) item.Font=this.FrameSplitTextFont;
+            }
+        }
+    }
+
+    this.OnSplitYCoordinate=function(event, data, obj)
+    {
+        var frame=data.Frame;
+        if (IFrameSplitOperator.IsNonEmptyArray(frame.HorizontalInfo))
+        {
+            for(var i=0;i<frame.HorizontalInfo.length;++i)
+            {
+                var item=frame.HorizontalInfo[i];
+                if (!item) continue;
+                if (item.Font) item.Font=this.FrameSplitTextFont;
+            }
+        }
     }
 
 }

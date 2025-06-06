@@ -1125,6 +1125,13 @@ function JSFloatTooltip()
         Left:"UMyChart_Tooltip_Float_Text2_Span",       //左对齐
         MarginLeft:'UMyChart_Tooltip_Float_Text3_Span',
         Right:"UMyChart_Tooltip_Float_Text_Span",
+
+        
+    }
+
+    this.TitleAlign=
+    {
+        Default:"UMyChart_Tooltip_Float_Title_Span",   //标题默认
     }
 
     this.AryData=[];    //输出文字信息
@@ -1223,7 +1230,7 @@ function JSFloatTooltip()
             rowItem.TitleTd=tdDom;
 
             var spanDom=document.createElement("span");
-            spanDom.className='UMyChart_Tooltip_Float_Title_Span';
+            spanDom.className=this.TitleAlign.Default;
             spanDom.innerText='标题';
             tdDom.appendChild(spanDom);
             rowItem.TitleSpan=spanDom;
@@ -1353,6 +1360,10 @@ function JSFloatTooltip()
             else if (tooltipData.Type==1)   //单元格截断内容
             {
                 this.ReportCellTruncateTooltip(data);
+            }
+            else if (tooltipData.Type==4)   //单元格提示信息
+            {
+                this.ReportCellTooltip(data);
             }
         }
         else if (data.DataType==4)  //T型报价
@@ -1640,6 +1651,18 @@ function JSFloatTooltip()
         this.ShowTooltip(data);
     }
 
+    //单元格提示信息
+    this.ReportCellTooltip=function(data)
+    {
+        var tooltipData=data.Tooltip;
+        if (!tooltipData.Data || !IFrameSplitOperator.IsNonEmptyArray(tooltipData.Data.AryText)) return;
+        
+        this.AryText=tooltipData.Data.AryText;
+        this.UpdateTableDOM();
+
+        this.ShowTooltip(data);
+    }
+
     //表格单元格截断内容
     this.ReportCellTruncateTooltip=function(data)
     {
@@ -1690,7 +1713,8 @@ function JSFloatTooltip()
             if (outItem.HTMLTitle) item.TitleSpan.innerHTML=outItem.HTMLTitle
             else item.TitleSpan.innerText=outItem.Title;
 
-            item.TitleSpan.style.color=this.TextColor;
+            if (outItem.TitleColor) item.TitleSpan.style.color=outItem.TitleColor;
+            else item.TitleSpan.style.color=this.TextColor;
 
             if (outItem.HTMLText) item.TextSpan.innerHTML=outItem.HTMLText
             else item.TextSpan.innerText=outItem.Text;
@@ -1705,6 +1729,15 @@ function JSFloatTooltip()
             else
             {
                 if (item.TextSpan.className!=this.ValueAlign.Right) item.TextSpan.className=this.ValueAlign.Right;
+            }
+
+            if (outItem.TitleClassName)
+            {
+                item.TitleSpan.className=outItem.TitleClassName;
+            }
+            else
+            {
+                if (item.TitleSpan.className!=this.TitleAlign.Default) item.TitleSpan.className=this.TitleAlign.Default;
             }
 
             if (outItem.IsMergeCell)    //合并单元格

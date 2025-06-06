@@ -22324,7 +22324,7 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chart);
     }
 
-    this.CreateBaseLineBar=function(hqChart,windowIndex,varItem,id)
+    this.CreateBaseLineBar=function(hqChart,windowIndex,varItem,i)
     {
         var chart=new ChartBaseLineBar();
         chart.Canvas=hqChart.Canvas;
@@ -22336,6 +22336,7 @@ function ScriptIndex(name,script,args,option)
 
         chart.Data=hqChart.GetKData();      //绑定K线
         chart.AryData=varItem.Draw.DrawData;
+        chart.Style=1;                     //主图使用独立坐标模式
 
         var config=varItem.Draw.Config;
         if (config)
@@ -22343,11 +22344,20 @@ function ScriptIndex(name,script,args,option)
             if (config.UpColor) chart.UpColor=config.UpColor;
             if (config.DownColor) chart.DownColor=config.DownColor;
             if (IFrameSplitOperator.IsNumber(config.DefaultMax)) chart.DefaultMax=config.DefaultMax;
+            if (IFrameSplitOperator.IsNumber(config.Style)) chart.Style=config.Style;
+            if (config.UpName) chart.UpName=config.UpName;
+            if (config.DownName) chart.DownName=config.DownName;
         }
         
         chart.BuildCacheData();
         this.SetChartIndexName(chart);
         hqChart.ChartPaint.push(chart);
+
+        var titleIndex=windowIndex+1;
+        var titleData=new DynamicTitleData(chart.Data,null,chart.Color);
+        titleData.DataType="ChartBaseLineBar";
+        titleData.Chart=chart;
+        hqChart.TitlePaint[titleIndex].Data[i]=titleData;
     }
 
 
@@ -23918,6 +23928,7 @@ function OverlayScriptIndex(name,script,args,option)
             if (config.UpColor) chart.UpColor=config.UpColor;
             if (config.DownColor) chart.DownColor=config.DownColor;
             if (IFrameSplitOperator.IsNumber(config.DefaultMax)) chart.DefaultMax=config.DefaultMax;
+            if (IFrameSplitOperator.IsNumber(config.Style)) chart.Style=config.Style;
         }
         
         chart.BuildCacheData();

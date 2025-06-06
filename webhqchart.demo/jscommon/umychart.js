@@ -2829,6 +2829,8 @@ var JSCHART_EVENT_ID=
     GET_DEFAULT_INDEX_PARAM:172,                //获取指标默认参数
 
     ON_RELOAD_RESOURCE:173,
+
+    ON_REPORT_DATA_FILTER:174,                  //数据筛选
 }
 
 var JSCHART_OPERATOR_ID=
@@ -41727,7 +41729,10 @@ function ChartBaseLineBar()
     this.ClassName="ChartBaseLineBar";
     this.UpColor=g_JSChartResource.ChartBaseLineBar.UpColor;
     this.DownColor=g_JSChartResource.ChartBaseLineBar.DownColor;
+    this.UpName;
+    this.DownName;
     this.LineWidth=1;
+    this.Style=0;   //0=坐标使用主图坐标  1=独立坐标
     this.IsDrawFirst=true;
     this.AryData=[];    //{ Date, Time, Up, Down }
     this.DefaultMax;    //默认最大值
@@ -41735,6 +41740,74 @@ function ChartBaseLineBar()
     this.MaxValue;
     this.YBaseLine;
     this.BarMaxHeight; //{ Up:, Down: }
+
+    this.DrawStyle2=function()
+    {
+        var bHScreen=(this.ChartFrame.IsHScreen===true);
+        var bMinute=this.IsMinuteFrame();
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xPointCount=this.ChartFrame.XPointCount;
+        var border=this.ChartFrame.GetBorder();
+
+        if (bHScreen)
+        {
+            var chartright=border.BottomEx;
+            var xOffset=border.TopEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        }
+        else
+        {
+            var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.RightEx;
+        }
+
+        this.Canvas.save();
+        this.ClipClient(bHScreen);
+
+        this.YBaseLine=this.ChartFrame.GetYFromData(0, false);
+        var aryUpBar=[], aryDownBar=[];
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var kItem=this.Data.Data[i];
+            if (!kItem) continue;
+            var key=this.BuildKey(kItem);
+            if (!this.MapCache.has(key)) continue;
+
+            var item=this.MapCache.get(key);
+
+            if (bMinute)
+            {
+                var x=this.ChartFrame.GetXFromIndex(j);
+            }
+            else
+            {
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                if (right>chartright) break;
+                var x=left+(right-left)/2;
+            }
+
+            if (IFrameSplitOperator.IsNumber(item.Up))
+            {
+                var value=Math.abs(item.Up);
+                var y=this.ChartFrame.GetYFromData(value, false);
+                
+                aryUpBar.push({ X:x, Y:y});
+            }
+            
+            if (IFrameSplitOperator.IsNumber(item.Down))
+            {
+                var value=Math.abs(item.Down)*-1;
+                var y=this.ChartFrame.GetYFromData(value, false);
+                aryDownBar.push({X:x, Y:y});
+            }
+        }
+
+        this.DrawBars(aryUpBar, this.UpColor);
+        this.DrawBars(aryDownBar,this.DownColor);
+
+        this.Canvas.restore();
+    }
 
     this.Draw=function()
     {
@@ -41746,6 +41819,14 @@ function ChartBaseLineBar()
         if (!this.HQChart) return;
         if(!this.Data || !IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return;
         if (!IFrameSplitOperator.IsNumber(this.MaxValue)) return;
+
+        if (this.Style==1)
+        {
+            this.DrawStyle2();
+            return;
+        }
+
+
         this.CalculateBaseLine();
 
         if (!IFrameSplitOperator.IsNumber(this.YBaseLine)) return;
@@ -41913,7 +41994,39 @@ function ChartBaseLineBar()
 
     this.GetMaxMin=function()
     {
-        return {Min:null, Max:null};
+        var range={Min:null, Max:null};
+
+        if (this.Style==1)  //独立坐标
+        {
+            if (IFrameSplitOperator.IsNumber(this.DefaultMax)) range.Max=this.DefaultMax;
+            range.Min=0;
+
+            var xPointCount=this.ChartFrame.XPointCount;
+            for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+            {
+                var kItem=this.Data.Data[i];
+                if (!kItem) continue;
+                var key=this.BuildKey(kItem);
+                if (!this.MapCache.has(key)) continue;
+
+                var item=this.MapCache.get(key);
+                var value=Math.abs(item.Up);
+                if (range.Max==null || range.Max<value) range.Max=value;
+                var value=Math.abs(item.Down)*-1;
+                if (range.Min>value) range.Min=value;
+            }
+        }
+        
+        return range;
+    }
+
+    this.GetItem=function(kItem)
+    {
+        if (!this.MapCache || this.MapCache.size<=0) return null;
+        var key=this.BuildKey(kItem);
+        if (!this.MapCache.has(key)) return null;
+
+        return this.MapCache.get(key);
     }
 }
 
@@ -54211,6 +54324,14 @@ IFrameSplitOperator.IsNonEmptyArray=function(ary)
     return ary.length>0;
 }
 
+IFrameSplitOperator.IsArray=function(ary)
+{
+    if (!ary) return false;
+    if (!Array.isArray(ary)) return false;
+
+    return true;
+}
+
 IFrameSplitOperator.IsFloat=function(value)
 {
     if (value===undefined) return false;
@@ -61748,7 +61869,7 @@ function DynamicChartTitlePainting()
     this.FormatValue=function(value,item)
     {
         if (item.StringFormat==STRING_FORMAT_TYPE.DEFAULT)
-            return IFrameSplitOperator.FormatValueString(value,item.FloatPrecision,this.LanguageID);
+            return IFrameSplitOperator.FormatValueStringV2(value,item.FloatPrecision,2,this.LanguageID);
         else if (item.StringFormat==STRING_FORMAT_TYPE.THOUSANDS)
             return IFrameSplitOperator.FormatValueThousandsString(value,item.FloatPrecision);
         else if (item.StringFormat==STRING_FORMAT_TYPE.ORIGINAL) 
@@ -61846,6 +61967,45 @@ function DynamicChartTitlePainting()
         if (aryText.length<=0) return null;
 
         return aryText;
+    }
+
+    this.FormatBaseLineBarTitle=function(kItem, dataInfo)
+    {
+        var result=null;
+        var aryText=[];
+
+        if (!kItem) return result;
+        if (!dataInfo.Chart) return result;
+
+        var chart=dataInfo.Chart;
+        var item=chart.GetItem(kItem);
+        if (!item) return result;
+        if (!IFrameSplitOperator.IsNumber(item.Up) && !IFrameSplitOperator.IsNumber(item.Down)) return result;
+
+        result={ Text:null, ArrayText:aryText };
+        if (IFrameSplitOperator.IsNumber(item.Up))
+        {
+            var textItem={ Name:null, Text:null };
+            textItem.Text=this.FormatValue(item.Up, dataInfo);
+            
+            if (chart.UpName) textItem.Name=chart.UpName;
+            if (chart.UpColor) textItem.Color=chart.UpColor;
+            aryText.push(textItem);
+        }
+
+        if (IFrameSplitOperator.IsNumber(item.Down))
+        {
+            var textItem={ Name:null, Text:null };
+            textItem.Text=this.FormatValue(item.Down,dataInfo);
+            if (chart.DownName) textItem.Name=chart.DownName;
+            if (chart.DownColor) textItem.Color=chart.DownColor;
+
+            if (aryText.length>0)  textItem.LeftSpace=3;
+
+            aryText.push(textItem);
+        }
+
+        return result;
     }
 
     this.FormatKLineTitle=function(item, dataInfo)
@@ -62492,6 +62652,11 @@ function DynamicChartTitlePainting()
             else if (item.DataType=="ChartBand")
             {
                 return null;
+            }
+            else if (item.DataType=="ChartBaseLineBar")
+            {
+                var outTitle=this.FormatBaseLineBarTitle(value, item);
+                return outTitle;
             }
             else if (g_ScriptIndexChartFactory.Has(item.DataType)) //外部挂接
             {
@@ -80183,7 +80348,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                 this.ChartOperator_Temp_Update();
             }
         }
-        else if (id==JSCHART_OPERATOR_ID.OP_GOTO) //{ Date:日期, Time:, PageSize:可选, Position:0=left 1=center }
+        else if (id==JSCHART_OPERATOR_ID.OP_GOTO) //{ Date:日期, Time:, PageSize:可选, Position:0=left 1=center, CursorIndex:标题数据索引 }
         {
             if (!IFrameSplitOperator.IsNumber(obj.Date)) return;
 
@@ -80226,6 +80391,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
             hisData.DataOffset=index;
             this.CursorIndex=0;
+            if (IFrameSplitOperator.IsNumber(obj.CursorIndex)) this.CursorIndex=obj.CursorIndex;
             this.LastPoint.X=null;
             this.LastPoint.Y=null;
 
@@ -83670,6 +83836,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         if (IFrameSplitOperator.IsNumber(obj.Time)) option.Time=obj.Time;
         if (IFrameSplitOperator.IsNumber(obj.PageSize)) option.PageSize=obj.PageSize;
         if (IFrameSplitOperator.IsNumber(obj.Position)) option.Position=obj.Position;
+        if (IFrameSplitOperator.IsNumber(obj.CursorIndex)) option.CursorIndex=obj.CursorIndex;
 
         this.ChartOperator(option);
     }
