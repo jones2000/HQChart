@@ -1658,8 +1658,20 @@ function JSFloatTooltip()
         if (!tooltipData.Data || !IFrameSplitOperator.IsNonEmptyArray(tooltipData.Data.AryText)) return;
         
         this.AryText=tooltipData.Data.AryText;
-        this.UpdateTableDOM();
 
+        if (tooltipData.Data.Callback)
+        {
+            var callback=tooltipData.Data.Callback;
+            var sendData={ AryText:null, Data:data, PreventDefault:false };
+            callback(sendData, this);
+            if (sendData.PreventDefault)
+            {
+                if (!IFrameSplitOperator.IsNonEmptyArray(sendData.AryText)) return;
+                this.AryText=sendData.AryText;
+            }
+        }
+
+        this.UpdateTableDOM();
         this.ShowTooltip(data);
     }
 

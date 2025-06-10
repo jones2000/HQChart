@@ -2409,7 +2409,7 @@ function JSReportChartContainer(uielement)
                         if (tooltipData.Stock && tooltipData.Stock.Symbol)
                         {
                             bShowMinuteTooltip=true;
-                            chartTooltipData={ Symbol:tooltipData.Stock.OriginalSymbol, Rect:tooltipData.Rect };
+                            chartTooltipData={ Symbol:tooltipData.Stock.OriginalSymbol, Rect:tooltipData.Rect, RowData:tooltipData.Stock };
                         }
                     }
                     else if (tooltipData.Type==21)
@@ -2417,7 +2417,7 @@ function JSReportChartContainer(uielement)
                         if (tooltipData.Stock && tooltipData.Stock.Symbol)
                         {
                             bShowKLineTooltip=true;
-                            chartTooltipData={ Symbol:tooltipData.Stock.OriginalSymbol, Rect:tooltipData.Rect };
+                            chartTooltipData={ Symbol:tooltipData.Stock.OriginalSymbol, Rect:tooltipData.Rect, RowData:tooltipData.Stock };
                         }
                     }
                     else
@@ -7573,8 +7573,8 @@ function ChartReport()
                 drawInfo.Tooltip=
                 { 
                     Type:4, 
-                    Data:{ AryText:item.Tooltip.AryText }
-                }
+                    Data:{ AryText:item.Tooltip.AryText , Callback:item.Tooltip.Callback },
+                };
             }
         }
         else if (IFrameSplitOperator.IsString(item))

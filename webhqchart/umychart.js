@@ -2984,7 +2984,7 @@ var JSCHART_MENU_ID=
 
     CMD_XXXXXX_NONE_ID:22,          //未用!!!!
     CMD_CHANGE_DAY_COUNT_ID:23,     //切换天数
-    CMD_SHOW_BEFORE_DATA_ID:24,     //显示|隐藏集合竞价
+    CMD_SHOW_CALLCATION_ID:24,     //显示|隐藏集合竞价 { Left:, Right: }    //单日
 
     CMD_SELECTED_ZOOM_ID:25,        //选中放大
     CMD_SELECTED_SUMMARY_ID:26,     //区间统计
@@ -11191,9 +11191,15 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 if (this.ChangeDayCount && param!=null)
                     this.ChangeDayCount(param);
                 break;
-            case JSCHART_MENU_ID.CMD_SHOW_BEFORE_DATA_ID:
-                if (this.ShowCallAuctionData && IFrameSplitOperator.IsBool(srcParam))
-                    this.ShowCallAuctionData({ Left:srcParam, MultiDay:{ Left:srcParam }});
+            case JSCHART_MENU_ID.CMD_SHOW_CALLCATION_ID:
+                if (this.ShowCallAuctionData && srcParam)
+                {
+                    var left=null,right=null;
+                    if (IFrameSplitOperator.IsBool(srcParam.Left)) left=srcParam.Left;
+                    if (IFrameSplitOperator.IsBool(srcParam.Right)) right=srcParam.Right;
+                    this.ShowCallAuctionData({ Left:left, Right:right });
+                }
+                    
                 break;
             case JSCHART_MENU_ID.CMD_CHANGE_BASELINE_ID:
                 if (this.ChangeBaselineType && IFrameSplitOperator.IsNumber(param))
@@ -55437,7 +55443,7 @@ function FrameSplitY()
             else
             {
                 var floatPrecision=this.GetFloatPrecision(absValue,this.FloatPrecision);                //数据比小数位数还小, 调整小数位数
-                text = IFrameSplitOperator.FormatValueString(value, floatPrecision,this.LanguageID);
+                text = IFrameSplitOperator.FormatValueStringV2(value, floatPrecision,2, this.LanguageID);
             }
         }
 
@@ -88856,84 +88862,84 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             this.SendPageChangedEvent();
             return true;
         }
-        else if (id==JSCHART_OPERATOR_ID.OP_CORSSCURSOR_GOTO) //{ Type:1 如果不存在 就隐藏十字光标}
+        else if (id==JSCHART_OPERATOR_ID.OP_CORSSCURSOR_GOTO) //{ Type:1 如果不存在 就隐藏十字光标, Time:, Date:-1=忽略日期 }
         {
-            if (!this.SourceData) return false;
-            if (!this.Frame || !this.Frame.SubFrame[0] || !this.Frame.SubFrame[0].Frame) return false;
-            var frame=this.Frame.SubFrame[0].Frame;
-            if (!IFrameSplitOperator.IsNonEmptyArray(this.SourceData.Data)) return false;
-            if (IFrameSplitOperator.IsNumber(obj.Time) && IFrameSplitOperator.IsNumber(obj.Date))
+            var kData=this.GetKData();
+            if (!kData || !IFrameSplitOperator.IsNonEmptyArray(kData.Data)) return false;  //数据还没有到达
+            if (!IFrameSplitOperator.IsNumber(obj.Time) || !IFrameSplitOperator.IsNumber(obj.Date)) return false;
+            var findIndex=-1, findItem=null;
+            for(var i=0;i<this.SourceData.Data.length;++i)
             {
-                var findIndex=-1, value=null, lastPrice=null;
-                for(var i=0;i<this.SourceData.Data.length;++i)
-                {
-                    var item=this.SourceData.Data[i];
-                    if (IFrameSplitOperator.IsNumber(item.Close)) lastPrice=item.Close;
-                    if (item.Time==obj.Time && item.Date==obj.Date)
-                    {
-                        findIndex=i;
-                        value=item.Close;
-                        break;
-                    }
-                }
+                var item=this.SourceData.Data[i];
+                if (!IFrameSplitOperator.IsNumber(item.Close)) continue;
 
-                if (findIndex<0 && this.DayCount==1 && !(IFrameSplitOperator.IsNumber(obj.Type) && obj.Type>0))
-                {
-                    var timeData = g_MinuteTimeStringData.GetTimeData(this.Symbol);
-                    for(var i=0;i<timeData.length;++i)
-                    {
-                        if (timeData[i]==obj.Time)
-                        {
-                            findIndex=i;
-                            value=lastPrice;
-                            break;
-                        }
-                    }
-                }
+                var bFind=false;
+                if (obj.Date==-1 && item.Time==obj.Time)
+                   bFind=true;
+                else if (item.Time==obj.Time && item.Date==obj.Date)
+                    bFind=true;
 
-                if (findIndex<0) 
+                if (bFind)
                 {
-                    if (obj.Type==1)    // 如果不存在 就隐藏十字光标
-                    {
-                        var x=-1,y=-1;
-                        var MoveStatus={ X:x, Y:y, IsInClient: this.IsMouseOnClient(x,y) };
-                        this.LastMouseStatus.OnMouseMove=MoveStatus;
-                        this.LastMouseStatus.MoveOnPoint={X:x, Y:y};    //鼠标移动的位置
-    
-                        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_MOUSE_MOVE);
-                        var titleChart=this.TitlePaint[0];
-                        if (event && titleChart) titleChart.OnMouseMoveEvent=event;
-    
-                        var e={clientX:x, clientY:y};
-                        this.MoveOnPoint={X:x, Y:y};
-                        this.OnMouseMove(x,y,e);
-                        this.LastMouseStatus.MoveOnPoint=null;
-                        if (titleChart) titleChart.OnMouseMoveEvent=null;
-                    }
-
-                    return;
+                    findIndex=i;
+                    findItem=item;
+                    break;
                 }
             }
 
-            var x=frame.GetXFromIndex(findIndex);
-            var y=frame.GetYFromData(value);
+            this.ChartOperator_Temp_SetChartCorssCursor(findIndex, findItem);
+            return true;
+        }
+        else if (id==JSCHART_OPERATOR_ID.OP_CORSSCURSOR_PAGE_START)     //当前屏第1条数据
+        {
+            var kData=this.GetKData();
+            if (!kData || !IFrameSplitOperator.IsNonEmptyArray(kData.Data)) return false;  //数据还没有到达
 
-            //保存最后一次鼠标移动信息
-            var MoveStatus={ X:x, Y:y, IsInClient: this.IsMouseOnClient(x,y) };
-            this.LastMouseStatus.OnMouseMove=MoveStatus;
-            this.LastMouseStatus.MoveOnPoint={X:x, Y:y};    //鼠标移动的位置
-
-            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_MOUSE_MOVE);
-            var titleChart=this.TitlePaint[0];
-            if (event && titleChart) titleChart.OnMouseMoveEvent=event;
-            
-            this.MoveOnPoint={X:x, Y:y};
-            this.OnMouseMove(x,y,{});
-            
-            this.LastMouseStatus.MoveOnPoint=null;
-            if (titleChart) titleChart.OnMouseMoveEvent=null;
+            var startIndex=kData.DataOffset;
+            var kItem=kData.Data[startIndex];
+            this.ChartOperator_Temp_SetChartCorssCursor(0, kItem);
+            return true;
             
         }
+        else if (id==JSCHART_OPERATOR_ID.OP_CORSSCURSOR_PAGE_END)   //当前屏最后1条数据
+        {
+            var kData=this.GetKData();
+            if (!kData || !IFrameSplitOperator.IsNonEmptyArray(kData.Data)) return false;  //数据还没有到达
+
+            var index=kData.Data.length-1;
+            var kItem=kData.Data[index];
+            this.ChartOperator_Temp_SetChartCorssCursor(index, kItem);
+            return true;
+        }
+
+    }
+
+    //index=-1 隐藏十字光标
+    this.ChartOperator_Temp_SetChartCorssCursor=function(index, kItem)
+    {
+        if (!this.Frame || !this.Frame.SubFrame[0] || !this.Frame.SubFrame[0].Frame) return false;
+        var frame=this.Frame.SubFrame[0].Frame;
+
+        var x=-1,y=-1;
+        if (IFrameSplitOperator.IsNumber(index) && index>=0) x=frame.GetXFromIndex(index);
+        if (kItem && IFrameSplitOperator.IsNumber(kItem.Close)) y=frame.GetYFromData(kItem.Close);
+
+        //保存最后一次鼠标移动信息
+        var MoveStatus={ X:x, Y:y, IsInClient: this.IsMouseOnClient(x,y) };
+        this.LastMouseStatus.OnMouseMove=MoveStatus;
+        this.LastMouseStatus.MoveOnPoint={X:x, Y:y};    //鼠标移动的位置
+
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_MOUSE_MOVE);
+        var titleChart=this.TitlePaint[0];
+        if (event && titleChart) titleChart.OnMouseMoveEvent=event;
+        
+        this.MoveOnPoint={X:x, Y:y};
+        this.OnMouseMove(x,y,{});
+        
+        this.LastMouseStatus.MoveOnPoint=null;
+        if (titleChart) titleChart.OnMouseMoveEvent=null;
+
+        return true;
     }
 
     this.SendPageChangedEvent=function()
@@ -90289,10 +90295,14 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                         this.CurrentChartDrawPicture=null;
                 }
                 break;
-            case 38:
-            case 40:
+            case 38:    //up
+            case 40:    //down
                 if ((e.ctrlKey||e.shiftKey) && this.OnCustomKeyDown)
                     this.OnCustomKeyDown(keyID, e)
+                break;
+            case 35:    //END
+            case 36:    //HOME
+                if (this.OnCustomKeyDown) this.OnCustomKeyDown(keyID, e);
                 break;
             default:
                 return;
@@ -90316,6 +90326,16 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         {
             this.MoveCorssCursorDown(this.ShiftUpDownStepPixel);
             return true;
+        }
+        else if (keyID==36) //HOME  第1条
+        {
+            var option={ ID:JSCHART_OPERATOR_ID.OP_CORSSCURSOR_PAGE_START };
+            return this.ChartOperator(option);
+        }
+        else if (keyID==35) //END   最后一条
+        {
+            var option={ ID:JSCHART_OPERATOR_ID.OP_CORSSCURSOR_PAGE_END };
+            return this.ChartOperator(option);
         }
         else
         {
@@ -90588,10 +90608,27 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
         if (MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol))
         {
-            var item={ Name:"集合竞价",Data:{ ID: JSCHART_MENU_ID.CMD_SHOW_BEFORE_DATA_ID, Args:[!this.IsShowBeforeData] }, Checked:this.IsShowBeforeData };
+            var item=
+            {
+                Name:"集合竞价",
+                SubMenu:
+                [
+
+                ]
+            };
+
+            var bShow=(this.IsShowAfterData && this.IsShowBeforeData);
+            var subItem={ Name:"盘后盘前(单日)",Data:{ ID: JSCHART_MENU_ID.CMD_SHOW_CALLCATION_ID, Args:[{ Left:!bShow, Right:!bShow } ] }, Checked:bShow };
+             item.SubMenu.push(subItem);
+
+            var subItem={ Name:"盘前(单日)",Data:{ ID: JSCHART_MENU_ID.CMD_SHOW_CALLCATION_ID, Args:[{ Left:!this.IsShowBeforeData} ] }, Checked:this.IsShowBeforeData };
+            item.SubMenu.push(subItem);
+
+            var subItem={ Name:"盘后(单日)",Data:{ ID: JSCHART_MENU_ID.CMD_SHOW_CALLCATION_ID, Args:[{ Right:!this.IsShowBeforeData} ] }, Checked:this.IsShowAfterData };
+            item.SubMenu.push(subItem);
+
             aryMenu.splice(4,0,item);
         }
-        
         
         for(var i=0;i<aryMenu.length;++i)
         {

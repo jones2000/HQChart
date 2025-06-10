@@ -588,6 +588,7 @@ function JSTooltipMinuteChart()
         JSChart:null,
         Symbol:null,
         Date:null,
+        PopData:null,
     }
 
     this.Inital=function(hqchart, option)
@@ -691,6 +692,11 @@ function JSTooltipMinuteChart()
         };
         */
 
+        if (data.Name== 'MinuteChartContainer::RequestMinuteData')  //分时图数据对接
+        {
+            data.PopData=this.Minute.PopData;
+        }
+
         this.HQChart.NetworkFilter(data, callback);       
     }
 
@@ -732,6 +738,7 @@ function JSTooltipMinuteChart()
             {
                 this.Minute.Symbol=symbol;
                 this.Minute.Date=date;
+                this.Minute.PopData=data;
                 this.Minute.JSChart.ChangeSymbol(symbol);
             }
         }
