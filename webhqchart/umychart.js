@@ -92227,6 +92227,11 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             if (option.ClearYCoordinateMaxMin===true) this.Frame.ClearYCoordinateMaxMin();
         }
 
+        this.ResetDataStatus();
+        this.ClearIndexPaint(); 
+        this.ClearIndexRunCount();
+        this.ClearStockCache();    
+
         if (this.DayCount<=1) this.RequestMinuteData();               
         else this.RequestHistoryMinuteData();
     }
@@ -92840,6 +92845,12 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             var item=data.LatestPointFlash;
             if (IFrameSplitOperator.IsNumber(item.FlashCount))
                 this.SetLatestPointFlash(item.FlashCount)
+        }
+
+        if (IFrameSplitOperator.IsNonEmptyArray(data.stock) && data.stock[0])
+        {
+            this.DataStatus.LatestDate=data.stock[0].date; //保存下最后一天的日期
+            this.RecvBuySellData(data.stock[0].BuySellData);
         }
 
         if (this.DayCount>1)    //多日走势图
@@ -94795,6 +94806,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
     //获取最新的一条盘后数据
     this.GetLatestAfterCloseItem=function()
     {
+        var lastItem=null;
         if (this.DayCount>1)
         {
             if (!IFrameSplitOperator.IsNonEmptyArray(this.MultiDayAfterCloseData)) return null;

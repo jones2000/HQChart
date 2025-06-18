@@ -450,6 +450,7 @@ HQData.Minute_RequestMinuteUpdateData=function(data, callback)
         var srcStock=fullData[0];
         var stockItem={ date:srcStock.date, minute:[], yclose:srcStock.yclose, symbol:symbol, name:symbol };
 
+        var lastItem=null;
         for(var i=0;i<srcStock.minute.length;++i)
         {
             var item=srcStock.minute[i];
@@ -458,6 +459,7 @@ HQData.Minute_RequestMinuteUpdateData=function(data, callback)
                 //0=日期 1=时间 2=开 3=高 4=低 5=收 6=均价 7=量 8=金额 9=涨幅 10=涨跌
                 var minItem=[srcStock.date, item.time, item.open, item.high, item.low, item.price, item.avprice , item.vol, item.amount ];
                 stockItem.minute.push(minItem);
+                lastItem=minItem;
                 if (stockItem.minute.length>3) break;
             }
         }
@@ -483,26 +485,52 @@ HQData.Minute_RequestMinuteUpdateData=function(data, callback)
         if (callcation.After)
         {
             var afterInfo={ totalcount:60*10, ver:2.0, TimeConfig:{ AryTime:[{ Start:145700, End:145959, Date:srcStock.date }]} };  //9:15-9:25 集合竞价15分钟 1s一个数据 
+            var afterData=[];
 
-            var afterData=
-            [
-                [145708,price+0.01, 400, 300, 1, 800],
-                [145718,price+0.02, 550, 600, 0, 1500],
-                [145738,price+0.02, 150, 800, 0, 1500],
-                [145748,price+0.02, 150, 800, 0, 1500],
-                [145803,price+0.03, 300, 600, 1, 3600],
-                [145815,price+0.03, 350, 210, 2, 1600],
-                [145826,price+0.02, 1210, 350, 2, 2700],
-                [145833,price+0.01, 260, 550, 2, 1000],
-                [145845,price+0.02, 160, 750, 2, 1000],
-                [145858,price-0.01, 460, 650, 2, 1500],
-                [145905,price-0.02, 160, 450, 1, 1500],
-                [145928,price-0.02, 260, 250, 1, 1500],
-                [145948,price-0.02, 860, 150, 1, 1500],
-            ];
+            if (IFrameSplitOperator.IsNonEmptyArray(lastItem) && lastItem[1]>=1457)
+            {
+                var price=lastItem[5];
+                afterData=
+                [
+                    [145708,price+0.01, 400, 300, 1, 800],
+                    [145718,price+0.02, 550, 600, 0, 1500],
+                    [145738,price+0.02, 150, 800, 0, 1500],
+                    [145748,price+0.02, 150, 800, 0, 1500],
+                    [145803,price+0.03, 300, 600, 1, 3600],
+                    [145815,price+0.03, 350, 210, 2, 1600],
+                    [145826,price+0.02, 1210, 350, 2, 2700],
+                    [145833,price+0.01, 260, 550, 2, 1000],
+                    [145845,price+0.02, 160, 750, 2, 1000],
+                    [145858,price-0.01, 460, 650, 2, 1500],
+                    [145905,price-0.02, 160, 450, 1, 1500],
+                    [145928,price-0.02, 260, 250, 1, 1500],
+                    [145948,price-0.02, 860, 150, 1, 1500],
+                ];
+            }
 
             stockItem.after=afterData;
             stockItem.afterinfo=afterInfo;
+        }
+
+        if (bBuySellBar && lastItem)    //盘口分析
+        {
+            var lastPrice=lastItem[4];
+            var aryBuy=[];
+            var value=lastPrice+0.01;
+            for(var i=0;i<10;++i)
+            {
+                aryBuy.push({Price:value, Type:1, Vol:HQData.GetRandomTestData(1000,10000) });
+                value+=0.02;
+            }
+    
+            var arySell=[];
+            for(var i=0;i<10;++i)
+            {
+                arySell.push({Price:value, Type:2, Vol:HQData.GetRandomTestData(1000,10000) });
+                value+=0.02;
+            }
+
+            stockItem.BuySellData={ AryBuy:aryBuy, ArySell:arySell };
         }
 
         var hqchartData={code:0, stock:[stockItem], dataType:1 };
