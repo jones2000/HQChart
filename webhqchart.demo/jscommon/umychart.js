@@ -2831,6 +2831,7 @@ var JSCHART_EVENT_ID=
     ON_RELOAD_RESOURCE:173,
 
     ON_REPORT_DATA_FILTER:174,                  //数据筛选
+    ON_REPORT_SHOW_TOOLTIP:175,                 //报价列表 提示信息
 }
 
 var JSCHART_OPERATOR_ID=
@@ -11197,7 +11198,16 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                     var left=null,right=null;
                     if (IFrameSplitOperator.IsBool(srcParam.Left)) left=srcParam.Left;
                     if (IFrameSplitOperator.IsBool(srcParam.Right)) right=srcParam.Right;
-                    this.ShowCallAuctionData({ Left:left, Right:right });
+
+                    var multiDay=null;
+                    if (srcParam.MultiDay)
+                    {
+                        var item=srcParam.MultiDay;
+                        multiDay={ };
+                        if (IFrameSplitOperator.IsBool(item.Left)) multiDay.Left=item.Left;
+                         if (IFrameSplitOperator.IsBool(item.Right)) multiDay.Right=item.Right;
+                    }
+                    this.ShowCallAuctionData({ Left:left, Right:right, MultiDay:multiDay });
                 }
                     
                 break;
@@ -11771,8 +11781,23 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         {
             if (!data.IsShowCorss)  //十字光标隐藏
             {
+                //清空当前鼠标坐标
+                this.LastPoint.X=null;
+                this.LastPoint.Y=null;
                 this.HideTooltip();
                 this.CloseTooltipDialog();
+            }
+            else
+            {
+                if (IFrameSplitOperator.IsNumber(data.X) && IFrameSplitOperator.IsNumber(data.Y))
+                {
+                    //设置鼠标位置
+                    if (this.LastPoint && (!IFrameSplitOperator.IsNumber(this.LastPoint.X) || !IFrameSplitOperator.IsNumber(this.LastPoint.Y)))
+                    {
+                        this.LastPoint.X=data.X;
+                        this.LastPoint.Y=data.Y;
+                    }
+                }
             }
         }
     }
@@ -35308,10 +35333,10 @@ function ChartMinuteVolumBar()
         var unit=this.GetVolUnit();
         if (callAutionData.Ver==1.0)
         {
-            for(var i in callAutionData.Data)
+            for(var i=0;i<callAutionData.Data.length;++i)
             {
                 var item=callAutionData.Data[i];
-                if (!item || !IFrameSplitOperator.IsNumber(item.Vol[0])) continue;
+                if (!item || !IFrameSplitOperator.IsNonEmptyArray(item.Vol) || !IFrameSplitOperator.IsNumber(item.Vol[0])) continue;
 
                 if (isBeforeOpen)
                 {
@@ -35345,11 +35370,11 @@ function ChartMinuteVolumBar()
         {
             var range={ Max: callAutionData.VolMax, Min:callAutionData.VolMin }
             
-            for(var i in callAutionData.Data)
+            for(var i=0; i<callAutionData.Data.length; ++i)
             {
                 var item=callAutionData.Data[i];
                 if (!item) continue;
-                if (IFrameSplitOperator.IsPlusNumber(item.Vol[0])) 
+                if (item.Vol && IFrameSplitOperator.IsPlusNumber(item.Vol[0])) 
                 {
                     if (isBeforeOpen)
                     {
@@ -35379,7 +35404,7 @@ function ChartMinuteVolumBar()
                     this.Canvas.stroke();
                 }
 
-                if (IFrameSplitOperator.IsPlusNumber(item.Vol[1])) 
+                if (item.Vol && IFrameSplitOperator.IsPlusNumber(item.Vol[1])) 
                 {
                     if (isBeforeOpen)
                     {
@@ -40359,16 +40384,23 @@ function ChartMinutePriceLine()
             var item=callAutionData.Data[i];
             if (!item || !IFrameSplitOperator.IsNumber(item.Price)) 
             {
-                if (i==0 && isBeforeOpen && IFrameSplitOperator.IsNumber(this.YClose))
+                if (i==0 && isBeforeOpen)
                 {
-                    var x=this.ChartFrame.GetLeftExtendXFromIndex(i,callAutionData);
-                    var y=this.ChartFrame.GetLeftExtendYFromData(this.YClose);
+                    //盘前集合竞价起始点为昨收或昨结算
+                    var price=callAutionData.YClose;
+                    if (IFrameSplitOperator.IsNumber(callAutionData.YClearing)) price=callAutionData.YClearing;
 
-                    this.Canvas.strokeStyle=this.BeforeLineColor;
-                    this.Canvas.beginPath();
-                    if (isHScreen) this.Canvas.moveTo(y,x);
-                    else this.Canvas.moveTo(x,y);
-                    bFirstPoint=false;
+                    if (IFrameSplitOperator.IsNumber(price))
+                    {
+                        var x=this.ChartFrame.GetLeftExtendXFromIndex(i,callAutionData);
+                        var y=this.ChartFrame.GetLeftExtendYFromData(price);
+
+                        this.Canvas.strokeStyle=this.BeforeLineColor;
+                        this.Canvas.beginPath();
+                        if (isHScreen) this.Canvas.moveTo(y,x);
+                        else this.Canvas.moveTo(x,y);
+                        bFirstPoint=false;
+                    }
                 }
 
                 continue;
@@ -57512,6 +57544,7 @@ function ChartCorssCursor()
         this.LastValue=null;
 
         if (!this.LastPoint) return;
+        if (!this.IsShow) return;
 
         this.Close=null;
         var x=this.LastPoint.X;
@@ -58634,8 +58667,7 @@ function ChartCorssCursor()
         {
             this.IsShowCorss=!this.IsShowCorss
             data.Draw=true;
-    
-            if (this.OnChangeStatusCallback) this.OnChangeStatusCallback({ Type:1, IsShowCorss:this.IsShowCorss }, this);
+            if (this.OnChangeStatusCallback) this.OnChangeStatusCallback({ Type:1, IsShowCorss:this.IsShowCorss, X:x, Y:y }, this);
         }
     }
 
@@ -60427,6 +60459,14 @@ function DynamicKLineTitlePainting()
     this.OnMouseMoveEvent;
     this.HQChart;
 
+    //十字线是否显示
+    this.IsShowCorssLine=function()
+    {
+        if (!this.HQChart || !this.HQChart.ChartCorssCursor) return false;
+
+        return this.HQChart.ChartCorssCursor.IsShowCorss;
+    }
+
     this.ReloadResource=function()
     {
         this.Font=g_JSChartResource.TitleFont;
@@ -60917,6 +60957,8 @@ function DynamicKLineTitlePainting()
             if (!IFrameSplitOperator.IsNumber(status.FrameID) || status.FrameID<0)
                 isShow=true;
             else if (status.CorssCursorTouchEnd && status.IsOnTouch==false)
+                isShow=true;
+            else if (!this.IsShowCorssLine())
                 isShow=true;
         }
 
@@ -61517,6 +61559,8 @@ function DynamicMinuteTitlePainting()
                 isShowLastData=true;
             else if (status.CorssCursorTouchEnd && status.IsOnTouch==false)
                 isShowLastData=true;
+            else if (!this.IsShowCorssLine())
+                isShowLastData=true;
         }
         else if (this.GlobalOption && this.GlobalOption.IsDisplayLatest)
         {
@@ -61728,6 +61772,14 @@ function DynamicChartTitlePainting()
 
     this.IsShowMainIndexTitle=true; //是否显示主图指标标题
     this.MainTitlePaint=null;       //主标题
+
+    //十字线是否显示
+    this.IsShowCorssLine=function()
+    {
+        if (!this.HQChart || !this.HQChart.ChartCorssCursor) return false;
+
+        return this.HQChart.ChartCorssCursor.IsShowCorss;
+    }
 
     this.ReloadResource=function()
     {
@@ -62319,6 +62371,8 @@ function DynamicChartTitlePainting()
             if (!IFrameSplitOperator.IsNumber(status.FrameID) || status.FrameID<0)
                 isShowLastData=true;
             else if (status.CorssCursorTouchEnd && status.IsOnTouch==false)
+                isShowLastData=true;
+            else if (!this.IsShowCorssLine())
                 isShowLastData=true;
         }
         else if (this.GlobalOption && this.GlobalOption.IsDisplayLatest)
@@ -90619,12 +90673,22 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
             var bShow=(this.IsShowAfterData && this.IsShowBeforeData);
             var subItem={ Name:"盘后盘前(单日)",Data:{ ID: JSCHART_MENU_ID.CMD_SHOW_CALLCATION_ID, Args:[{ Left:!bShow, Right:!bShow } ] }, Checked:bShow };
-             item.SubMenu.push(subItem);
+            item.SubMenu.push(subItem);
 
             var subItem={ Name:"盘前(单日)",Data:{ ID: JSCHART_MENU_ID.CMD_SHOW_CALLCATION_ID, Args:[{ Left:!this.IsShowBeforeData} ] }, Checked:this.IsShowBeforeData };
             item.SubMenu.push(subItem);
 
-            var subItem={ Name:"盘后(单日)",Data:{ ID: JSCHART_MENU_ID.CMD_SHOW_CALLCATION_ID, Args:[{ Right:!this.IsShowBeforeData} ] }, Checked:this.IsShowAfterData };
+            var subItem={ Name:"盘后(单日)",Data:{ ID: JSCHART_MENU_ID.CMD_SHOW_CALLCATION_ID, Args:[{ Right:!this.IsShowAfterData} ] }, Checked:this.IsShowAfterData };
+            item.SubMenu.push(subItem);
+
+            var bShow=(this.IsShowMultiDayBeforeData && this.IsShowMultiDayAfterData);
+            var subItem={ Name:"盘后盘前(多日)",Data:{ ID: JSCHART_MENU_ID.CMD_SHOW_CALLCATION_ID, Args:[{ MultiDay:{ Left:!bShow, Right:!bShow} } ] }, Checked:bShow };
+            item.SubMenu.push(subItem);
+
+            var subItem={ Name:"盘前(多日)",Data:{ ID: JSCHART_MENU_ID.CMD_SHOW_CALLCATION_ID, Args:[{ MultiDay:{ Left:!this.IsShowMultiDayBeforeData } } ] }, Checked:this.IsShowMultiDayBeforeData };
+            item.SubMenu.push(subItem);
+
+            var subItem={ Name:"盘后(多日)",Data:{ ID: JSCHART_MENU_ID.CMD_SHOW_CALLCATION_ID, Args:[{ MultiDay:{ Right:!this.IsShowMultiDayAfterData } } ] }, Checked:this.IsShowMultiDayAfterData };
             item.SubMenu.push(subItem);
 
             aryMenu.splice(4,0,item);
@@ -92515,6 +92579,8 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
     //更新最新的几条数据
     this.UpdateLatestMinuteDataV2=function(minuteData)
     {
+        if (!minuteData || !IFrameSplitOperator.IsNonEmptyArray(minuteData.Data)) return;
+
         if (this.DayCount>1)
         {
             if (!this.DayData) return;
@@ -92523,7 +92589,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             for(var i=0; i<this.DayData.length; ++i)
             {
                 var item=this.DayData[i];
-                if (item.Date===date)  
+                if (item.Date===minuteData.Date)  
                 {
                     findItem=item;
                     break;
@@ -92634,6 +92700,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
             var callCation={ Before:this.IsShowBeforeData, After:this.IsShowAfterData }   //集合竞价
             if (this.DayCount>1) callCation={ Before:this.IsShowMultiDayBeforeData, After:this.IsShowMultiDayAfterData }   //多日集合竞价
+            callCation.Latest={ Before:this.GetLatestBeforeOpenItem(), After:this.GetLatestAfterCloseItem() };  //最新一条的盘前盘后数据
            
             var obj=
             {
@@ -92709,24 +92776,50 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         this.ColorLineData=aryColorLineData;
     }
 
-    this.UpdateCallCationData=function(beforeOpenData,afterCloseData)
+    this.UpdateCallCationData=function(beforeOpenData,afterCloseData,option)
     {
-        if (beforeOpenData && IFrameSplitOperator.IsNonEmptyArray(this.MultiDayBeforeOpenData))
-        {
-            var lastItem=this.MultiDayBeforeOpenData[this.MultiDayBeforeOpenData.length-1];
-            if (lastItem.Date==beforeOpenData.Date) //存在更新
-                this.MultiDayBeforeOpenData[this.MultiDayBeforeOpenData.length-1]=beforeOpenData;
-            else if (lastItem.Date<beforeOpenData.Date) //新的一天插入
-                this.MultiDayBeforeOpenData.push(beforeOpenData);
-        }
+        var dataType=0;
+        if (option && IFrameSplitOperator.IsNumber(option.DataType)) dataType=option.DataType;
 
-        if (afterCloseData && IFrameSplitOperator.IsNonEmptyArray(this.MultiDayAfterCloseData))
+        if (dataType==1)
         {
-            var lastItem=this.MultiDayAfterCloseData[this.MultiDayAfterCloseData.length-1];
-            if (lastItem.Date==afterCloseData.Date)
-                this.MultiDayAfterCloseData[this.MultiDayAfterCloseData.length-1]=afterCloseData;
-            else if (lastItem.Date<afterCloseData.Date)
-                this.MultiDayAfterCloseData.push(afterCloseData);
+            if (beforeOpenData && IFrameSplitOperator.IsNonEmptyArray(this.MultiDayBeforeOpenData))
+            {
+                var lastItem=this.MultiDayBeforeOpenData[this.MultiDayBeforeOpenData.length-1];
+                if (lastItem.Date==beforeOpenData.Date) //增量更新
+                {
+                    this.UpdateLatestCallCationData(lastItem, beforeOpenData);
+                }
+            }
+
+            if (afterCloseData && IFrameSplitOperator.IsNonEmptyArray(this.MultiDayAfterCloseData))
+            {
+                var lastItem=this.MultiDayAfterCloseData[this.MultiDayAfterCloseData.length-1];
+                if (lastItem.Date==afterCloseData.Date) //增量更新
+                {
+                    this.UpdateLatestCallCationData(lastItem, afterCloseData);
+                }
+            }
+        }
+        else
+        {
+            if (beforeOpenData && IFrameSplitOperator.IsNonEmptyArray(this.MultiDayBeforeOpenData))
+            {
+                var lastItem=this.MultiDayBeforeOpenData[this.MultiDayBeforeOpenData.length-1];
+                if (lastItem.Date==beforeOpenData.Date) //存在更新
+                    this.MultiDayBeforeOpenData[this.MultiDayBeforeOpenData.length-1]=beforeOpenData;
+                else if (lastItem.Date<beforeOpenData.Date) //新的一天插入
+                    this.MultiDayBeforeOpenData.push(beforeOpenData);
+            }
+
+            if (afterCloseData && IFrameSplitOperator.IsNonEmptyArray(this.MultiDayAfterCloseData))
+            {
+                var lastItem=this.MultiDayAfterCloseData[this.MultiDayAfterCloseData.length-1];
+                if (lastItem.Date==afterCloseData.Date)
+                    this.MultiDayAfterCloseData[this.MultiDayAfterCloseData.length-1]=afterCloseData;
+                else if (lastItem.Date<afterCloseData.Date)
+                    this.MultiDayAfterCloseData.push(afterCloseData);
+            }
         }
 
         this.CaclutateCallCationYRange();
@@ -92742,9 +92835,16 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         var afterCloseData=MinuteChartContainer.JsonDataToAfterCloseData(data);
         var updateTime=MinuteChartContainer.JsonDataToMinuteLastUpdateTime(data);   //数据最后的更新时间
 
+        if (data.LatestPointFlash)  //最新数据闪烁
+        {
+            var item=data.LatestPointFlash;
+            if (IFrameSplitOperator.IsNumber(item.FlashCount))
+                this.SetLatestPointFlash(item.FlashCount)
+        }
+
         if (this.DayCount>1)    //多日走势图
         {
-            this.UpdateCallCationData(beforeOpenData,afterCloseData);
+            this.UpdateCallCationData(beforeOpenData,afterCloseData,  { DataType:1});
             this.UpdateLineColorData(aryColorData,minuteData.date);
             this.UpdateLatestMinuteDataV2(minuteData);
             this.UpdateHistoryMinuteUI(updateTime);
@@ -92756,10 +92856,13 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             return;
         }
 
-        if (this.IsBeforeData && beforeOpenData) this.BeforeOpenData=beforeOpenData;
-        if (this.IsAfterData && afterCloseData) this.AfterCloseData=afterCloseData;
+        //if (this.IsBeforeData && beforeOpenData) this.BeforeOpenData=beforeOpenData;
+        //if (this.IsAfterData && afterCloseData) this.AfterCloseData=afterCloseData;
 
-        //原始数据
+        //盘前盘后数据更新
+        if (this.IsBeforeData && beforeOpenData) this.UpdateLatestCallCationData(this.BeforeOpenData, beforeOpenData);
+        if (this.IsAfterData && afterCloseData) this.UpdateLatestCallCationData(this.AfterCloseData, afterCloseData);
+
         this.UpdateLatestMinuteDataV2(minuteData);
         this.UpdateMinuteUI(data.stock[0], {FunctionName:"RecvUpdateMinuteData"});
 
@@ -92772,6 +92875,45 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             this.AutoUpdateEvent(true, "MinuteChartContainer::RecvUpdateMinuteData");
             this.AutoUpdate();
         }
+    }
+
+    this.UpdateLatestCallCationData=function(destData, updateData)
+    {
+        if (!destData) return;
+        if (!updateData || !IFrameSplitOperator.IsNonEmptyArray(updateData.Data)) return;
+
+        if (destData.Data.length==0)
+        {
+            destData.Data=updateData.Data;
+            destData.VolMax=updateData.VolMax;
+            destData.VolMin=updateData.VolMin;
+            return;
+        }
+
+        //覆盖历史数据
+        var mapData=new Map(updateData.Data.map((obj) => [obj.Time, obj]));
+        var lastTime=null;  //最后的时间
+        for(var i=0;i<destData.Data.length;++i)
+        {
+            var item=destData.Data[i];
+            lastTime=item.Time;
+            if (!mapData.has(item.Time)) continue;
+            var newItem=mapData.get(item.Time);
+            if (!newItem || !IFrameSplitOperator.IsNumber(newItem.Price)) continue;    //只覆盖有效数据
+
+            destData.Data[i]=newItem;
+        }
+
+        //新数据往后插
+        for(var i=0;i<updateData.Data.length;++i)
+        {
+            var item=updateData.Data[i];
+            if (item.Time<=lastTime) continue;
+            destData.Data.push(item);
+        }
+
+        if (destData.VolMax<updateData.VolMax) destData.VolMax=updateData.VolMax;
+        if (IFrameSplitOperator.IsNumber(updateData.TotalCount) && updateData.TotalCount>destData.TotalCount) updateData.TotalCount=destData.TotalCount;
     }
 
     this.RecvBuySellData=function(data)
@@ -92840,7 +92982,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             
         if (this.DayCount>1)    //多日走势图
         {
-            this.UpdateCallCationData(beforeOpenData,afterCloseData);
+            this.UpdateCallCationData(beforeOpenData,afterCloseData, { DataType:0});
             this.UpdateLineColorData(aryColorData,data.stock[0].date);
             this.UpdateLatestMinuteData(aryMinuteData, data.stock[0].date, data.stock[0]);
             this.UpdateTradeStatusData(data.TradeStatus);
@@ -94626,6 +94768,54 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         return data;
     }
 
+    //获取最新的一条盘前数据
+    this.GetLatestBeforeOpenItem=function()
+    {
+        var lastItem=null;
+        if (this.DayCount>1)
+        {
+            if (!IFrameSplitOperator.IsNonEmptyArray(this.MultiDayBeforeOpenData)) return null;
+            var dayItem=this.MultiDayBeforeOpenData[this.MultiDayBeforeOpenData.length-1];
+            if (!dayItem || !IFrameSplitOperator.IsNonEmptyArray(dayItem.Data)) return null;
+
+            var finder = dayItem.Data.findLast((element) => { return element && IFrameSplitOperator.IsNumber(element.Price); });
+            if (finder) lastItem=finder;
+        }
+        else
+        {
+            if (!this.BeforeOpenData || !IFrameSplitOperator.IsNonEmptyArray(this.BeforeOpenData.Data)) return null;
+
+            var finder = this.BeforeOpenData.Data.findLast((element) => { return element && IFrameSplitOperator.IsNumber(element.Price); });
+            if (finder) lastItem=finder;
+        }
+
+        return lastItem;
+    }
+
+    //获取最新的一条盘后数据
+    this.GetLatestAfterCloseItem=function()
+    {
+        if (this.DayCount>1)
+        {
+            if (!IFrameSplitOperator.IsNonEmptyArray(this.MultiDayAfterCloseData)) return null;
+            var dayItem=this.MultiDayAfterCloseData[this.MultiDayAfterCloseData.length-1];
+            if (!dayItem || !IFrameSplitOperator.IsNonEmptyArray(dayItem.Data)) return null;
+
+            var finder = dayItem.Data.findLast((element) => { return element && IFrameSplitOperator.IsNumber(element.Price); });
+            if (finder) lastItem=finder;
+        }
+        else
+        {
+            if (!this.AfterCloseData || !IFrameSplitOperator.IsNonEmptyArray(this.AfterCloseData.Data)) return null;
+
+            var finder = this.AfterCloseData.Data.findLast((element) => { return element && IFrameSplitOperator.IsNumber(element.Price); });
+            if (finder) lastItem=finder;
+        }
+
+        return lastItem;
+    }
+
+
     this.IsCallAuctionFrame=function(frameID)
     {
         if (!IFrameSplitOperator.IsNonEmptyArray(this.ChartPaintEx)) return false;
@@ -94657,7 +94847,7 @@ MinuteChartContainer.JsonDataToBeforeOpenData=function(data)
     var preClose=data.stock[0].yclose;      //前一个数据价格
     var stockData=data.stock[0];
     var date=stockData.date;                //日期
-    var beforeOpenData={ Data:[], TotalCount:15, Ver:1.0, Date:date };
+    var beforeOpenData={ Data:[], TotalCount:15, Ver:1.0, Date:date, YClose:stockData.yclose, YClearing:stockData.yclearing };
     var extendDataIndex=JSCHART_DATA_FIELD_ID.MINUTE_BEFOREOPEN_EXTENDDATA;  //扩展数据序号
     if (stockData.beforeinfo)
     {
@@ -94693,7 +94883,7 @@ MinuteChartContainer.JsonDataToBeforeOpenData=function(data)
     else if (beforeOpenData.Ver==2.0)
     {
         var max=0;
-        for(var i in stockData.before)
+        for(var i=0;i<stockData.before.length;++i)
         {
             var item=new BeforeOpenData();
             var jsData=stockData.before[i];
@@ -94705,7 +94895,6 @@ MinuteChartContainer.JsonDataToBeforeOpenData=function(data)
             item.Vol[1]=jsData[3];  //未匹配量
             item.ColorID=jsData[4]; //柱子颜色ID
             if (IFrameSplitOperator.IsNumber(jsData[6])) item.Date=jsData[6]    //日期
-            item.DateTime=`${item.Date} ${item.Time})`;
 
             var totalVol=item.Vol[0]+item.Vol[1];
             if (IFrameSplitOperator.IsNumber(jsData[5])) totalVol=jsData[5];
@@ -94717,12 +94906,14 @@ MinuteChartContainer.JsonDataToBeforeOpenData=function(data)
 
         beforeOpenData.VolMax=max/unit;
         beforeOpenData.VolMin=0;
+
+        if (stockData.beforeinfo && stockData.beforeinfo.TimeConfig)    //固定时间
+            MinuteChartContainer.CompleteCallAuctionData(stockData.beforeinfo.TimeConfig, beforeOpenData);
     }
     else if (beforeOpenData.Ver==3.0)
     {
         var max=0;
-        
-        for(var i in stockData.before)
+        for(var i=0; i<stockData.before.length; ++i)
         {
             var item=new BeforeOpenData();
             var jsData=stockData.before[i];
@@ -94733,7 +94924,6 @@ MinuteChartContainer.JsonDataToBeforeOpenData=function(data)
             item.AvPrice=jsData[2]; //均价
             item.Vol[0]=jsData[3];  //匹配量
             item.ColorID=jsData[4]; //柱子颜色ID
-            item.DateTime=date.toString()+" "+item.Time.toString();
 
             var totalVol=item.Vol[0];
             if (IFrameSplitOperator.IsNumber(jsData[5])) totalVol=jsData[5];
@@ -94745,9 +94935,70 @@ MinuteChartContainer.JsonDataToBeforeOpenData=function(data)
 
         beforeOpenData.VolMax=max/unit;
         beforeOpenData.VolMin=0;
+
+        if (stockData.beforeinfo && stockData.beforeinfo.TimeConfig)    //固定时间
+            MinuteChartContainer.CompleteCallAuctionData(stockData.beforeinfo.TimeConfig, beforeOpenData);
     }
     
     return beforeOpenData;
+}
+
+
+MinuteChartContainer.CompleteCallAuctionData=function(timeConfig, callAuctionData)
+{
+    var aryData=MinuteChartContainer.CreateCallAuctionTimeData(timeConfig);
+    if (!IFrameSplitOperator.IsNonEmptyArray(aryData)) return false;
+    
+    var mapData=new Map(callAuctionData.Data.map((obj) => [obj.Time, obj]));
+    for(var i=0;i<aryData.length;++i)
+    {
+        var time=aryData[i].Time;
+        if (!mapData.has(time)) continue;
+
+        var item=mapData.get(time);
+        aryData[i]=item;
+    }
+
+    callAuctionData.Data=aryData;
+    callAuctionData.TotalCount=aryData.length;
+
+    return true;
+}
+
+//创建集合竞价秒级时间 { AryTime:[ { Start:92500, End:92459, Date:20250101 } ] }  hhmmss
+MinuteChartContainer.CreateCallAuctionTimeData=function(config)
+{
+    if (!config || !IFrameSplitOperator.IsNonEmptyArray(config.AryTime)) return null;
+
+    var step=1; //1s
+    if (IFrameSplitOperator.IsPlusNumber(config.Step)) step=config.Step;
+    var aryData=[];
+    for(var i=0;i<config.AryTime.length;++i)
+    {
+        var item=config.AryTime[i];
+
+        var value=item.Start;
+        var hour=parseInt(value/10000);
+        var minute=parseInt((value%10000)/100);
+        var second=value%100;
+        var startTime=new Date(2021,5,2, hour,minute, second);
+
+        value=item.End;
+        var hour=parseInt(value/10000);
+        var minute=parseInt((value%10000)/100);
+        var second=value%100;
+        var endTime=new Date(2021,5,2, hour,minute, second);
+
+        for(var j=0; j<5000 && startTime<=endTime; ++j)
+        {
+            var time=startTime.getHours()*10000+startTime.getMinutes()*100+startTime.getSeconds();
+            var secItem={ Time:time, Date:item.Date };
+            aryData.push(secItem);
+            startTime.setSeconds(startTime.getSeconds()+step);
+        }
+    }
+
+    return aryData;
 }
 
 //收盘集合竞价
@@ -94760,7 +95011,7 @@ MinuteChartContainer.JsonDataToAfterCloseData=function(data)
     if (!stockData.afterinfo) return null;
     var symbol=data.stock[0].symbol;
     var upperSymbol=symbol.toUpperCase();
-    var afterCloseData={ Data:[], TotalCount:3*60, Ver:2.0, Date:date };
+    var afterCloseData={ Data:[], TotalCount:3*60, Ver:2.0, Date:date, YClose:stockData.yclose, YClearing:stockData.yclearing };
     var item=stockData.afterinfo;
     if (IFrameSplitOperator.IsNumber(item.totalcount)) afterCloseData.TotalCount=item.totalcount;
     if (IFrameSplitOperator.IsNumber(item.ver)) afterCloseData.Ver=item.ver;
@@ -94790,7 +95041,7 @@ MinuteChartContainer.JsonDataToAfterCloseData=function(data)
     else if (afterCloseData.Ver==2.0)
     {
         var max=0;
-        for(var i in stockData.after)
+        for(var i=0; i<stockData.after.length; ++i)
         {
             var item=new AfterCloseData();
             var jsData=stockData.after[i];
@@ -94813,6 +95064,9 @@ MinuteChartContainer.JsonDataToAfterCloseData=function(data)
 
         afterCloseData.VolMax=max/unit;
         afterCloseData.VolMin=0;
+
+        if (stockData.afterinfo && stockData.afterinfo.TimeConfig)    //固定时间
+            MinuteChartContainer.CompleteCallAuctionData(stockData.afterinfo.TimeConfig, afterCloseData);
     }
     else if (afterCloseData.Ver==3.0)
     {
@@ -94840,6 +95094,9 @@ MinuteChartContainer.JsonDataToAfterCloseData=function(data)
 
         afterCloseData.VolMax=max/unit;
         afterCloseData.VolMin=0;
+
+        if (stockData.afterinfo && stockData.afterinfo.TimeConfig)    //固定时间
+            MinuteChartContainer.CompleteCallAuctionData(stockData.afterinfo.TimeConfig, afterCloseData);
     }
     
     return afterCloseData;
@@ -94961,12 +95218,13 @@ MinuteChartContainer.JsonDataToUpdateMinuteData=function(data)
 
             item.DateTime=`${item.Date} ${item.Time}`;
 
-            if (IFrameSplitOperator.IsNumber(minuteData.YClose) && item.Close) 
-                item.Increase=(item.Close-minuteData.YClose)/minuteData.YClose*100;     //涨幅 (最新价格-昨收)/昨收*100;
-    
-            if (isFutures && minuteData.YClearing && item.Close) 
-                item.Increase=(item.Close-minuteData.YClearing)/minuteData.YClearing*100; //涨幅 (最新价格-昨结算价)/昨结算价*100;
-
+            if (!IFrameSplitOperator.IsNumber(item.Increase) && IFrameSplitOperator.IsNumber(minuteData.YClose) && item.Close)
+            {
+                if (isFutures && minuteData.YClearing && item.Close) 
+                    item.Increase=(item.Close-minuteData.YClearing)/minuteData.YClearing*100;   //涨幅 (最新价格-昨结算价)/昨结算价*100;
+                else 
+                    item.Increase=(item.Close-minuteData.YClose)/minuteData.YClose*100;         //涨幅 (最新价格-昨收)/昨收*100;
+            } 
                 
             minuteData.Data.push(item);
         }
@@ -95130,8 +95388,9 @@ MinuteChartContainer.JsonDataToHistoryMinuteLineColorData=function(data)
 }
 
 
-MinuteChartContainer.JsonDataToCallAuctionItem=function(data, callAuctionData, isBeforeOpen, symbol)
+MinuteChartContainer.JsonDataToCallAuctionItem=function(data, callAuctionData, isBeforeOpen, symbol, dataInfo)
 {
+    if (!IFrameSplitOperator.IsNonEmptyArray(data)) return;
     var upperSymbol=symbol?symbol.toUpperCase():null;
     var unit=MARKET_SUFFIX_NAME.GetVolUnit(upperSymbol);
     
@@ -95142,7 +95401,7 @@ MinuteChartContainer.JsonDataToCallAuctionItem=function(data, callAuctionData, i
     if (callAuctionData.Ver==1.0)
     {
         var preClose=null;
-        for(var i in data)
+        for(var i=0; i<data.length; ++i)
         {
             var item=isBeforeOpen? new BeforeOpenData() : new AfterCloseData();
             var jsData=data[i];
@@ -95166,7 +95425,7 @@ MinuteChartContainer.JsonDataToCallAuctionItem=function(data, callAuctionData, i
     else if (callAuctionData.Ver==2.0)
     {
         var max=0;
-        for(var i in data)
+        for(var i=0; i<data.length; ++i)
         {
             var item=isBeforeOpen? new BeforeOpenData() : new AfterCloseData();
             var jsData=data[i];
@@ -95178,7 +95437,6 @@ MinuteChartContainer.JsonDataToCallAuctionItem=function(data, callAuctionData, i
             item.Vol[0]=jsData[2];  //匹配量
             item.Vol[1]=jsData[3];  //未匹配量
             item.ColorID=jsData[4]; //柱子颜色ID
-            item.DateTime=date.toString()+" "+item.Time.toString();
 
             var totalVol=item.Vol[0]+item.Vol[1];
             if (IFrameSplitOperator.IsNumber(jsData[5])) totalVol=jsData[5];
@@ -95190,6 +95448,9 @@ MinuteChartContainer.JsonDataToCallAuctionItem=function(data, callAuctionData, i
 
         callAuctionData.VolMax=max/unit;
         callAuctionData.VolMin=0;
+
+        if (dataInfo && dataInfo.TimeConfig)    //固定时间
+            MinuteChartContainer.CompleteCallAuctionData(dataInfo.TimeConfig, callAuctionData);
     }
     else if (beforeOpenData.Ver==3.0)
     {
@@ -95206,7 +95467,6 @@ MinuteChartContainer.JsonDataToCallAuctionItem=function(data, callAuctionData, i
             item.AvPrice=jsData[2]; //均价
             item.Vol[0]=jsData[3];  //匹配量
             item.ColorID=jsData[4]; //柱子颜色ID
-            item.DateTime=date.toString()+" "+item.Time.toString();
 
             var totalVol=item.Vol[0];
             if (IFrameSplitOperator.IsNumber(jsData[5])) totalVol=jsData[5];
@@ -95218,6 +95478,9 @@ MinuteChartContainer.JsonDataToCallAuctionItem=function(data, callAuctionData, i
 
         callAuctionData.VolMax=max/unit;
         callAuctionData.VolMin=0;
+
+        if (dataInfo && dataInfo.TimeConfig)    //固定时间
+            MinuteChartContainer.CompleteCallAuctionData(dataInfo.TimeConfig, callAuctionData);
     }
 }
 
@@ -95226,7 +95489,7 @@ MinuteChartContainer.JosnDataToBeforeOpenDataArray=function(data)
     if (!data || !data.data) return null;
 
     var aryDay=[];
-    for(var i in data.data)
+    for(var i=0; i<data.data.length; ++i)
     {
         var dayItem=data.data[i];
         var beforeOpenData={ Data:[], TotalCount:15, Ver:1.0, Date:dayItem.date, YClose:dayItem.yclose, YClearing:dayItem.YClearing };
@@ -95236,7 +95499,7 @@ MinuteChartContainer.JosnDataToBeforeOpenDataArray=function(data)
             if (IFrameSplitOperator.IsNumber(dayItem.beforeinfo.ver)) beforeOpenData.Ver=dayItem.beforeinfo.ver;
         }
 
-        MinuteChartContainer.JsonDataToCallAuctionItem(dayItem.before, beforeOpenData, true, data.symbol);
+        MinuteChartContainer.JsonDataToCallAuctionItem(dayItem.before, beforeOpenData, true, data.symbol, dayItem.beforeinfo);
 
         aryDay.push(beforeOpenData);
     }
@@ -95251,7 +95514,7 @@ MinuteChartContainer.JosnDataToAfterCloseDataArray=function(data)
     if (!data || !data.data) return null;
 
     var aryDay=[];
-    for(var i in data.data)
+    for(var i=0; i<data.data.length; ++i)
     {
         var dayItem=data.data[i];
         var afterCloseData={ Data:[], TotalCount:15, Ver:1.0, Date:dayItem.date, YClose:dayItem.yclose, YClearing:dayItem.YClearing };
@@ -95262,7 +95525,7 @@ MinuteChartContainer.JosnDataToAfterCloseDataArray=function(data)
             if (IFrameSplitOperator.IsNumber(dayItem.afterinfo.ver)) afterCloseData.Ver=dayItem.afterinfo.ver;
         }
 
-        MinuteChartContainer.JsonDataToCallAuctionItem(dayItem.after, afterCloseData, false, data.symbol);
+        MinuteChartContainer.JsonDataToCallAuctionItem(dayItem.after, afterCloseData, false, data.symbol, dayItem.afterinfo);
 
         aryDay.push(afterCloseData);
     }

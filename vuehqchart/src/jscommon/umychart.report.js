@@ -7573,7 +7573,7 @@ function ChartReport()
                 drawInfo.Tooltip=
                 { 
                     Type:4, 
-                    Data:{ AryText:item.Tooltip.AryText , Callback:item.Tooltip.Callback },
+                    Data:{ AryText:item.Tooltip.AryText , EnableCallback:item.Tooltip.EnableCallback },
                 };
             }
         }

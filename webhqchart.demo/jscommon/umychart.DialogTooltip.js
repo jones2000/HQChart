@@ -1658,21 +1658,28 @@ function JSFloatTooltip()
         if (!tooltipData.Data || !IFrameSplitOperator.IsNonEmptyArray(tooltipData.Data.AryText)) return;
         
         this.AryText=tooltipData.Data.AryText;
-
-        if (tooltipData.Data.Callback)
-        {
-            var callback=tooltipData.Data.Callback;
-            var sendData={ AryText:null, Data:data, PreventDefault:false };
-            callback(sendData, this);
-            if (sendData.PreventDefault)
-            {
-                if (!IFrameSplitOperator.IsNonEmptyArray(sendData.AryText)) return;
-                this.AryText=sendData.AryText;
-            }
-        }
-
+        this.OnShowTooltipEvent(data, "ReportCellTooltip");
+        
         this.UpdateTableDOM();
         this.ShowTooltip(data);
+    }
+
+    this.OnShowTooltipEvent=function(data, funcName)
+    {
+        if (!this.HQChart) return false;
+        if (!data || !data.Tooltip || !data.Tooltip.Data) return false;
+        if (!(data.Tooltip.Data.EnableCallback===true)) return false;
+        
+        var event=this.HQChart.GetEventCallback(JSCHART_EVENT_ID.ON_REPORT_SHOW_TOOLTIP);
+        if (!event || !event.Callback) return false;
+
+        var sendData={ AryText:[], Data:data, PreventDefault:false, FunctionName:funcName };
+        event.Callback(event, sendData, this);
+        if (!sendData.PreventDefault) return false;
+
+        this.AryText=sendData.AryText;
+
+        return true;
     }
 
     //表格单元格截断内容
