@@ -2549,8 +2549,7 @@ HQData.Report_APIIndex=function(data, callback)
         HQData.APIIndex_MULTI_TEXT(data, callback);
     else if (request.Data.indexname=="API_PARTLINE")
         HQData.APIIndex_PARTLINE(data, callback);
-    else if (request.Data.indexname=="API_CHANNELV2")
-        HQData.APIIndex_CHANNEL_V2(data, callback);
+  
     else if (request.Data.indexname=="API_DRAWKLINE")
         HQData.APIIndex_DRAWKLINE(data, callback);
     else if (request.Data.indexname=="API_TITLE")
@@ -2565,6 +2564,13 @@ HQData.Report_APIIndex=function(data, callback)
         HQData.APIIndex_BASELINE_BAR(data, callback);
     else if (request.Data.indexname=="API_VERTLINE")
         HQData.APIIndex_VERTLINE(data, callback);
+
+
+    //付费图形
+    else if (request.Data.indexname=="API_MARK_AREA_V2")
+        HQData.APIIndex_MARK_AREA_V2(data, callback);
+    else if (request.Data.indexname=="API_CHANNELV2")
+        HQData.APIIndex_CHANNEL_V2(data, callback);
 }
 
 
@@ -3987,6 +3993,74 @@ HQData.APIIndex_VERTLINE=function(data, callback)
     };
 
     console.log('[HQData.APIIndex_VERTLINE] apiData ', apiData);
+    callback(apiData);
+}
+
+
+HQData.APIIndex_MARK_AREA_V2=function(data, callback)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var kData=hqchart.GetKData();
+
+    var markData= 
+    { 
+        name:'区域标注', type:1, 
+        Draw: 
+        { 
+            DrawType:'JS_CHART_MARK_AREA_V2', 
+            DrawData:
+            {
+                AryData:[],  //[ { Start:{ }, End:{ }, AreaColor:, Text:"", BarColor:, TextColor:, ID: }]
+            },
+
+            Config:{ },
+        } 
+    };
+
+    var markItem=null;
+    for(var i=20;i<kData.Data.length;++i)
+    {
+        var kItem=kData.Data[i];
+        if (!markItem)
+        {
+            markItem=
+            {
+                Start:{ Date:kItem.Date, Time:kItem.Time },  //Value: 字符串 大写 
+                End:{ Date:kItem.Date, Time:kItem.Time },
+                AreaColor:"rgba(186,85,211,0.5)",
+                TextColor:"rgb(255,215,0)",
+                BarColor:"rgb(160,82,45)",
+                ID:i,
+                Text:`测试${i}`,
+                Count:1,
+                Value:"L",
+                YOffset:5,
+            }
+        }
+        else
+        {
+            markItem.End.Date=kItem.Date;
+            markItem.End.Date.Time=kItem.Time;
+            markItem.Count++;
+
+            if (markItem.Count>5) 
+            {
+                markData.Draw.DrawData.AryData.push(markItem);
+                markItem=null;
+            }
+        }
+
+    }
+
+    var apiData=
+    {
+        code:0, 
+        stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+        outdata: { date:kData.GetDate(), time:kData.GetTime(), outvar:[markData] } 
+    };
+
+    console.log('[HQData.APIIndex_MARK_AREA_V2] apiData ', apiData);
     callback(apiData);
 }
 

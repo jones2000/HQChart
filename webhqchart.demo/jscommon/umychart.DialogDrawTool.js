@@ -78,6 +78,9 @@ function JSDialogDrawTool()
                 { Title: "线形回归线", ClassName:'hqchart_drawtool icon-linear_3',  Type:0, Data:{ ID:"线形回归线" }  },
                 { Title: "线形回归带", ClassName:'hqchart_drawtool icon-linear_1',  Type:0, Data:{ ID:"线形回归带" }  },
                 { Title: "延长线形回归带", ClassName:'hqchart_drawtool icon-linear_2',  Type:0, Data:{ ID:"延长线形回归带" }  },
+
+                { Title: "Long Position", ClassName:'hqchart_drawtool icon-chart-long-position',  Type:0, Data:{ ID:"TVLongPosition" }  },
+                { Title: "Short Position", ClassName:'hqchart_drawtool icon-chart-short-position',  Type:0, Data:{ ID:"TVShortPosition" }  },
             ]
         },
         { 

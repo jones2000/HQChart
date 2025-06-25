@@ -206,6 +206,7 @@ function JSReportChart(divElement)
         if (option.SortInfo)
         {
             var item=option.SortInfo;
+            if (item.Search) chart.SortInfo.Field=chart.FindFiledIndex(item.Search);
             if (IFrameSplitOperator.IsNumber(item.Field)) chart.SortInfo.Field=item.Field;
             if (IFrameSplitOperator.IsNumber(item.Sort)) chart.SortInfo.Sort=item.Sort;
         }
@@ -1027,6 +1028,7 @@ function JSReportChartContainer(uielement)
             if (option.SortInfo)
             {
                 var item=option.SortInfo;
+                if (item.Search) this.SortInfo.Field=this.FindFiledIndex(item.Search);
                 if (IFrameSplitOperator.IsNumber(item.Field)) this.SortInfo.Field=item.Field;
                 if (IFrameSplitOperator.IsNumber(item.Sort)) this.SortInfo.Sort=item.Sort;
             }
@@ -3039,6 +3041,53 @@ function JSReportChartContainer(uielement)
     {
         var chart=this.ChartPaint[0];
         return chart;
+    }
+
+    //获取列索引
+    this.FindFiledIndex=function(search)
+    {
+        if (!search) return -1;
+        var chart=this.GetReportChart();
+        if (!chart) return -1;
+        if (!IFrameSplitOperator.IsNonEmptyArray(chart.Column)) return -1;
+
+        if (search.ID)
+        {
+            for(var i=0;i<chart.Column.length;++i)
+            {
+                var item=chart.Column[i];
+                if (!item) continue;
+                if (item.ID==search.ID) return i;
+            }
+
+            return -1;
+        }
+
+        if (search.Title)
+        {
+            for(var i=0;i<chart.Column.length;++i)
+            {
+                var item=chart.Column[i];
+                if (!item) continue;
+                if (item.Title==search.Title) return i;
+            }
+
+            return -1;
+        }
+
+        if (search.Type)
+        {
+            for(var i=0;i<chart.Column.length;++i)
+            {
+                var item=chart.Column[i];
+                if (!item) continue;
+                if (item.Type==search.Type) return i;
+            }
+
+            return -1;
+        }
+
+        return -1;
     }
 
     this.GotoNextItem=function(step)

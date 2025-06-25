@@ -2716,7 +2716,7 @@ function ChartTReport()
             }
 
             this.GetMarkBorderData(drawInfo, exePriceData.ExePrice, column.Type, cellType);
-            this.GetFlashBGData(drawInfo, exePriceData, column.Type, cellType);
+            this.GetFlashBGData(drawInfo, exePriceData, column.ID, cellType);
         }
 
         this.DrawCell(drawInfo, exePriceData, column.Type, cellType);
@@ -2774,9 +2774,10 @@ function ChartTReport()
         }
     }
 
-    this.GetFlashBGData=function(drawInfo, exePriceData, columnType, cellType)
+    this.GetFlashBGData=function(drawInfo, exePriceData, id, cellType)
     {
         if (!exePriceData.TData) return;
+        if (!id) return;
 
         var data=null;
         if (cellType==1) data=exePriceData.TData.LeftFlashBG;
@@ -2784,9 +2785,9 @@ function ChartTReport()
 
         if (!data || !data.Data) return;
 
-        if (data.Data.has(columnType))
+        if (data.Data.has(id))
         {
-            var item=data.Data.get(columnType);
+            var item=data.Data.get(id);
             drawInfo.FlashBGColor=item.Color;
             --item.Count;
 

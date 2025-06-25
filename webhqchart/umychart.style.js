@@ -629,6 +629,31 @@ function GetBlackStyle()
     
             Text:{ Color: "rgb(0,0,0)" , Family:'Arial', FontMaxSize:18, FontMinSize:6 },  //文字
         },
+
+        ChartDrawTVLongPosition:
+        {
+            TopArea:
+            {
+                AreaColor:"rgba(34, 52, 48,0.8)",
+                SelectedAreaColor:"rgba(34, 52, 48,0.55)",
+                TextBGColor:"rgb(80, 150, 130)",
+                TextColor:"rgb(255,255,255)"
+            },
+
+            BottomArea:
+            {
+                AreaColor:"rgb(63, 35, 37,0.8)",
+                SelectedAreaColor:"rgba(63, 35, 37,0.55)",
+                TextBGColor:"rgb(214, 75, 75)",
+                TextColor:"rgb(255,255,255)"
+            },
+
+            Label:
+            {
+                Font:`${12*GetDevicePixelRatio()}px 微软雅黑`,
+                Margin:{ Left:2, Top:2, Bottom:2, Right:2 },
+            }
+        },
     
         //区间选择
         RectSelect:

@@ -6,6 +6,20 @@
   "description": "hqchart画图工具",
   "glyphs": [
     {
+      "icon_id": "40997128",
+      "name": "chart-long-position",
+      "font_class": "chart-long-position",
+      "unicode": "e73a",
+      "unicode_decimal": 59194
+    },
+    {
+      "icon_id": "40997131",
+      "name": "chart-short-position",
+      "font_class": "chart-short-position",
+      "unicode": "e73b",
+      "unicode_decimal": 59195
+    },
+    {
       "icon_id": "37944372",
       "name": "图标_固定范围成交量分布图",
       "font_class": "tubiao_gudingfanweichengjiaoliangfenbutu",
