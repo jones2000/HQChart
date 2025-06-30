@@ -1236,7 +1236,7 @@ LONG := SUM(RC,0);\n\
 DIFF := SMA(LONG,10,1);\n\
 DEA := SMA(LONG,20,1);\n\
 LON : DIFF-DEA;\n\
-LONMA : MA(LON,10);\n\
+LONMA : MA(LON,N);\n\
 LONT : LON, COLORSTICK;'
 
     };

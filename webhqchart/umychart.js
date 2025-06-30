@@ -7365,6 +7365,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         var mouseStatus=null;   //鼠标状态
         var button=null;        //当前鼠标所在按钮
         var frameID=this.Frame.PtInFrame(x,y);
+        this.LastPoint.FrameID=frameID;
         if (IFrameSplitOperator.IsNumber(frameID) && frameID>=0)    //在K线内部移动,调整K线索引
             this.CursorIndex=this.Frame.GetXData(x);
         
@@ -8260,42 +8261,47 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
     this.UpdatePointByCursorIndex=function(type)    //type 1=根据十字光标更新 2=强制取消十字光标
     {
-        var pt={X:null, Y:null};
-        pt.X=this.Frame.GetXFromIndex(this.CursorIndex);
-        var index=Math.abs(this.CursorIndex-0.5);
-        if (this.IsKLineContainer()) index=this.CursorIndex;
+        if (type==1)    //根据十字光标更新
+        {           
+            if (this.LastPoint.FrameID<0) return;
 
-        var data=this.Frame.Data;
-        if (data.DataOffset+index<data.Data.length)
-        {
-            var close=data.Data[data.DataOffset+index].Close;
-            pt.Y=this.Frame.GetYFromData(close);
-        }
-       
-        if (type==1 && this.ChartCorssCursor)
-        {
-            if (this.ChartCorssCursor.Status==1)    //十字光标显示中, 不调整位置
+            var pt={ X:null, Y:this.LastPoint.Y };
+            pt.X=this.Frame.GetXFromIndex(this.CursorIndex);    //X轴动态变的
+            if (this.ChartCorssCursor)
             {
+                if (this.ChartCorssCursor.Status==1)
+                {
 
+                }
+                else
+                {
+                    pt.Y=null;
+                    pt.X=null;
+                }
             }
-            else
-            {
-                this.LastPoint.X=this.Frame.GetXFromIndex(this.CursorIndex);
-                var index=Math.abs(this.CursorIndex-0.5);
-                index=parseInt(index.toFixed(0));
-                if (this.IsKLineContainer()) index=this.CursorIndex;
-                this.LastPoint.Y=null;
-            }
+            this.LastPoint.X=pt.X;
+            this.LastPoint.Y=pt.Y;
         }
-        else if (type==2 && this.ChartCorssCursor)  //取消鼠标位置，十字光标就不显示了
+        else if (type==2)
         {
             this.LastPoint.Y=null;
             this.LastPoint.X=null;
+            this.LastPoint.FrameID=-1;
         }
         else
         {
+            var pt={X:null, Y:null};
+            pt.X=this.Frame.GetXFromIndex(this.CursorIndex);
+            var index=this.CursorIndex;
+            var data=this.GetKData();
+            if (data.DataOffset+index<data.Data.length)
+            {
+                var close=data.Data[data.DataOffset+index].Close;
+                pt.Y=this.Frame.GetYFromData(close);
+            }
             this.LastPoint.X=pt.X;
             this.LastPoint.Y=pt.Y;
+            this.LastPoint.FrameID=0;
         }
     }
 
@@ -75393,20 +75399,20 @@ function ChartDrawTVLongPosition()
         if (!this.GetActiveDrawPicture) return false;
 
         var active=this.GetActiveDrawPicture();
-        if (active.Select.Guid==this.Guid) return true;
+        //console.log(`[IsSelected] Select=${active.Select.Guid} MoveOn=${active.MoveOn.Guid}`);
+        if (active.Select.Guid==this.Guid || active.MoveOn.Guid==this.Guid) return true;
 
         return false;
     }
 
+    //未选中 作为背景色绘制
     this.MainDraw=function()
     {
-        this.Draw();
-    }
-
-
-    this.MainPartDraw=function()
-    {
+        this.AryRectArea=[]
         if (this.IsFrameMinSize()) return;
+
+        //0=开始画 1=完成第1个点  2=完成第2个点 3=完成第3个点  10=完成 20=移动)
+        if (this.Status!=10 && this.Status!=20) return;
 
         var drawPoint=this.CalculateDrawPoint( {IsCheckX:true, IsCheckY:true} );
         if (!drawPoint) return;
@@ -75415,13 +75421,30 @@ function ChartDrawTVLongPosition()
         if (this.IsHScreen) return;
 
         this.ClipFrame();
-        this.ChartBorder=this.Frame.ChartBorder;
 
-        if (this.Status==10 || this.Status==20)
-        {
-            this.DrawLabel(drawPoint);
-            this.DrawPoint(drawPoint);
-        }
+        this.ChartBorder=this.Frame.ChartBorder;
+        this.DrawArea(drawPoint);
+
+        this.Canvas.restore();
+    }
+
+    //鼠标在上面 动态绘制点和文字信息
+    this.MainPartDraw=function()
+    {
+        if (this.IsFrameMinSize()) return;
+        if (this.Status!=10 && this.Status!=20) return;
+
+        var drawPoint=this.CalculateDrawPoint( {IsCheckX:true, IsCheckY:true} );
+        if (!drawPoint) return;
+        if (drawPoint.length<2) return;
+        this.IsHScreen=this.Frame.IsHScreen;
+        if (this.IsHScreen) return;
+
+        this.ClipFrame();
+
+        this.ChartBorder=this.Frame.ChartBorder;
+        this.DrawLabel(drawPoint);
+        this.DrawPoint(drawPoint);
 
         this.Canvas.restore();
     }
@@ -91511,7 +91534,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
         var index=this.CursorIndex;
         index=parseInt(index.toFixed(0));
-        var data=this.Frame.SourceData;
+        var data=this.GetKData();
         if (data.DataOffset+index>=data.Data.length)
         {
             return;
@@ -91522,6 +91545,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         else close=item.Close
 
         this.LastPoint.Y=this.Frame.GetYFromData(close);
+        this.LastPoint.FrameID=0;
     }
 
 
