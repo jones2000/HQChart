@@ -1844,6 +1844,10 @@ HQData.Report_RequestStockData=function(data, callback)
 
                 newItem[301]=HQData.GetRandomTestData(0,100)/100;
                 newItem[302]=HQData.GetRandomTestData(0,100)/100;
+
+                var testDate=new Date();
+                testDate.setHours(testDate.getHours() + i*2)
+                newItem[401]={ DateTime:testDate } ;
                 
 
                 item.Data=newItem;
@@ -1999,6 +2003,9 @@ HQData.Report_RequestStockSortData=function(data, callback)
             extendData[7]=(Math.round(Math.random()*60))/100;
             extendData[8]=(Math.round(Math.random()*60))/100;
                 
+            var testDate=new Date();
+            testDate.setHours(testDate.getHours() + i*2)
+            newItem[401]={ DateTime:testDate } ;
 
             item.Data=newItem;
         }
@@ -2571,6 +2578,8 @@ HQData.Report_APIIndex=function(data, callback)
         HQData.APIIndex_MARK_AREA_V2(data, callback);
     else if (request.Data.indexname=="API_CHANNELV2")
         HQData.APIIndex_CHANNEL_V2(data, callback);
+    else if (request.Data.indexname=="API_CHART_AREA_TEXT")
+        HQData.API_CHART_AREA_TEXT(data, callback);
 }
 
 
@@ -4061,6 +4070,87 @@ HQData.APIIndex_MARK_AREA_V2=function(data, callback)
     };
 
     console.log('[HQData.APIIndex_MARK_AREA_V2] apiData ', apiData);
+    callback(apiData);
+}
+
+
+HQData.API_CHART_AREA_TEXT=function(data, callback)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var kData=hqchart.GetKData();
+
+    var markData= 
+    { 
+        name:'区域文字', type:1, 
+        Draw: 
+        { 
+            DrawType:'JS_CHART_AREA_TEXT', 
+            DrawData:
+            {
+                AryData:[],  //[ { Start:{ }, End:{ }, AreaColor:, Text:"", BarColor:, TextColor:, ID: }]
+            },
+
+            Config:{ },
+        } 
+    };
+
+    var markItem=null;
+    for(var i=0;i<kData.Data.length;++i)
+    {
+        var kItem=kData.Data[i];
+        if (!markItem)
+        {
+            markItem=
+            {
+                Start:{ Date:kItem.Date, Time:kItem.Time },
+                End:{ Date:kItem.Date, Time:kItem.Time },
+                BGColor:"rgba(186,85,211,0.5)",
+                TextColor:"rgb(255,215,0)",
+                ID:i,
+                Count:1,
+                AryText:
+                [
+                    { 
+                        AryText:
+                        [ 
+                            { Text:`日期: ${kItem.Date} `, Color:"rgb(220,220,220)"},  
+                            { Text:`ID: ${i} `, Color:"rgb(255,165,0)" } 
+                        ], 
+                    },
+                    { 
+                        AryText:
+                        [ 
+                            { Text:`数据1: -- `, Color:"rgb(30,144,255)"},  
+                            { Text:`数据2: -- `, Color:"rgb(255,0,255)" } 
+                        ], 
+                    }
+                ]
+            }
+        }
+        else
+        {
+            markItem.End.Date=kItem.Date;
+            markItem.End.Time=kItem.Time;
+            markItem.Count++;
+
+            if (markItem.Count>150) 
+            {
+                markData.Draw.DrawData.AryData.push(markItem);
+                markItem=null;
+            }
+        }
+
+    }
+
+    var apiData=
+    {
+        code:0, 
+        stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+        outdata: { date:kData.GetDate(), time:kData.GetTime(), outvar:[markData] } 
+    };
+
+    console.log('[HQData.API_CHART_AREA_TEXT] apiData ', apiData);
     callback(apiData);
 }
 

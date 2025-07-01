@@ -8290,18 +8290,18 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         }
         else
         {
-            var pt={X:null, Y:null};
+            var pt={ X:null, Y:null };
             pt.X=this.Frame.GetXFromIndex(this.CursorIndex);
             var index=this.CursorIndex;
             var data=this.GetKData();
-            if (data.DataOffset+index<data.Data.length)
+            if (IFrameSplitOperator.IsGTEZero(index) && data.DataOffset+index<data.Data.length)
             {
                 var close=data.Data[data.DataOffset+index].Close;
                 pt.Y=this.Frame.GetYFromData(close);
+                this.LastPoint.FrameID=0;
             }
             this.LastPoint.X=pt.X;
             this.LastPoint.Y=pt.Y;
-            this.LastPoint.FrameID=0;
         }
     }
 
@@ -54295,6 +54295,12 @@ IFrameSplitOperator.FormatDateTimeStringV2=function(datetime, format, languageID
             return `${IFrameSplitOperator.NumberToString(datetime.getHours())}:${IFrameSplitOperator.NumberToString(datetime.getMinutes())}`;
         case "HH:MM:SS.fff":
              return `${IFrameSplitOperator.NumberToString(datetime.getHours())}:${IFrameSplitOperator.NumberToString(datetime.getMinutes())}:${IFrameSplitOperator.NumberToString(datetime.getSeconds())}.${IFrameSplitOperator.MillisecondToString(datetime.getMilliseconds())}`;
+
+        case "YYYY-MM-DD HH:MM":
+            return `${datetime.getFullYear()}-${IFrameSplitOperator.NumberToString(datetime.getMonth()+1)}-${IFrameSplitOperator.NumberToString(datetime.getDate())} ${IFrameSplitOperator.NumberToString(datetime.getHours())}:${IFrameSplitOperator.NumberToString(datetime.getMinutes())}`;
+        case "MM-DD HH:MM":
+            return `${IFrameSplitOperator.NumberToString(datetime.getMonth()+1)}-${IFrameSplitOperator.NumberToString(datetime.getDate())} ${IFrameSplitOperator.NumberToString(datetime.getHours())}:${IFrameSplitOperator.NumberToString(datetime.getMinutes())}`;
+            
         default:
             return null;
     }
@@ -54348,6 +54354,15 @@ IFrameSplitOperator.IsPlusNumber=function(value)
     if (isNaN(value)) return false;
 
     return value>0;
+}
+
+//>=0
+IFrameSplitOperator.IsGTEZero=function(value)
+{
+    if (value==null) return false;
+    if (isNaN(value)) return false;
+
+    return value>=0;
 }
 
 //是否是整形
