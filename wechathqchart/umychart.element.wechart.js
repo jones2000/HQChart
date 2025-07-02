@@ -73,6 +73,13 @@ function JSCanvasElement()
             canvas.draw = (bDraw, callback) => { if (callback) callback(); };
             canvas.DomNode = node;
         }
+        else if (this.IsUniApp)
+		{
+			if (this.ComponentObject)   //小程序自定义组件
+			    canvas=uni.createCanvasContext(this.ID,this.ComponentObject);
+			else
+			    canvas=uni.createCanvasContext(this.ID);
+		}
         else 
         {
             if (this.ComponentObject)   //小程序自定义组件
