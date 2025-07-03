@@ -17,7 +17,8 @@
         <span id='button_3'>窗口个数</span>
         <span id='button_4'>叠加指标</span>
         <span id='button_5'>切换指标</span>
-        <span id='button_6'>切换自定义指标</span>
+        <span id='button_6'>自定义通达信指标(窗口1)</span>
+        <span id='button_7'>后台指标(窗口2)</span>
     </div>
 
     <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
@@ -28,6 +29,17 @@
     <script src="../jscommon/umychart.complier.js"></script>    <!-- 麦语言解析执行器 -->
     <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
     <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+    <script src="../jscommon/umychart.popMenu.js"></script>
+    <script src="../jscommon/umychart.DialogDrawTool.js"></script>
+    <script src="../jscommon/umychart.PopMinuteChart.js"></script>
+    <script src="../jscommon/umychart.report.js"></script>
+    <script src="../jscommon/umychart.keyboard.js"></script>
+    <script src="../jscommon/umychart.PopKeyboard.js"></script>
+    <script src="../jscommon/umychart.DialogTooltip.js"></script>
+    <script src="../jscommon/umychart.DialogSelectRect.js"></script>
+    <script src="../jscommon/umychart.DialogSearchIndex.js"></script>
+    <script src="../jscommon/umychart.version.js"></script>
+
 
     <script src="../jscommon/umychart.NetworkFilterTest.js"></script>
     
@@ -105,6 +117,14 @@
                     Left:true,
                 },
 
+                //TooltipDialog:{ Enable:true, Style:0, IndexTitle:{ Enable:true }, MaxRowCount:50 },
+                SelectRectDialog:{ Enable:true },
+                KLineTooltip:{ Enable:true, EnableKeyDown:true },
+                FloatTooltip:{ Enable:true, },
+                SearchIndexDialog:{ Enable:true },
+                ModifyIndexParamDialog:{ Enable:true, EnableRestoreParam:false },
+
+
                 
                 Symbol:'600000.sh',
                 IsAutoUpdate:true,       //是自动更新数据
@@ -117,14 +137,14 @@
                 //CorssCursorTouchEnd:true,
                 IsCorssOnlyDrawKLine:true,
 
-                CorssCursorInfo: { DateFormatType:2, HPenType:1, VPenType:1 },
+                CorssCursorInfo: { DateFormatType:2, HPenType:1, VPenType:1, },
     
                 KLine:  //K线设置
                 {
                     DragMode:1,                 //拖拽模式 0 禁止拖拽 1 数据拖拽 2 区间选择
                     Right:1,                    //复权 0 不复权 1 前复权 2 后复权
                     Period:0,                   //周期 0 日线 1 周线 2 月线 3 年线 
-                    MaxReqeustDataCount:200,   //数据个数
+                    MaxReqeustDataCount:2000,   //数据个数
                     MaxRequestMinuteDayCount:5, //分钟数据获取几天数据  默认取5天数据
                     PageSize:50,               //一屏显示多少数据
                     //Info:["互动易","大宗交易",'龙虎榜',"调研","业绩预告","公告"],       //信息地雷
@@ -256,6 +276,9 @@
 
                 //MARKET_SUFFIX_NAME.GetCustomDecimal=(symbol)=>{ return 4; }
                 //MARKET_SUFFIX_NAME.GetDefaultDecimal=(symbol)=>{ return 3;}
+
+                var resource=JSChart.GetResource();
+                resource.ToolbarButtonStyle=1;
                 
                 this.OnSize();  //让K线全屏
                 this.Option.NetworkFilter=(data, callback)=>{ this.NetworkFilter(data, callback); }
@@ -433,10 +456,13 @@
             $('#button_6').click(()=>{
 
                 klineControl.ChangeScriptIndex();
-                return;
+            });
+
+            $('#button_7').click(()=>
+            {
                 var indexData=
                 {
-                    API:{Name:'多线段指标',Script:null,Args:null, Url:'http://127.0.0.1:18080/api/jsindex' },
+                    API: { ID:"API-DRAWTEXTREL", Name:'收盘线(后台)',Args:null, Url:'local'},
                     Window:{ Close:false, Change:false, Overlay:true, Close:true}
                 };
                 klineControl.ChangeIndex(1,"指标1",indexData);
