@@ -7209,7 +7209,7 @@ function ChartReport()
             this.DrawItemBG(drawInfo);
 
             if (column.Type==REPORT_COLUMN_ID.CUSTOM_STRING_TEXT_ID || this.IsReserveString(column.Type)) 
-                this.DrawCustomText(drawInfo,column, x, top, textWidth);
+                this.DrawReserveString(drawInfo,column, x, top, textWidth);
             else
                 this.DrawItemText(drawInfo.Text, drawInfo.TextColor, drawInfo.TextAlign, x, top, textWidth, drawInfo.BGColor);
         }
@@ -7318,10 +7318,100 @@ function ChartReport()
         return ARARY_TYPE.includes(value);
     }
 
-   
-
-    this.DrawCustomText=function(drawInfo, column, left, top, cellWidth)
+    //AryText=[ { Text:, Color,}, .... ]
+    this.DrawComplexText=function(drawInfo, column, left, top, cellWidth)
     {
+        //计算大小
+        var aryText=[];
+        var textWidth=0;
+        for(var i=0;i<drawInfo.AryText.length;++i)
+        {
+            var item=drawInfo.AryText[i];
+            if (!item || !item.Text) continue;
+            var itemWidth=this.Canvas.measureText(item.Text).width;
+
+            var newItem={ Text:item.Text, Margin:{ Left:0, Right:0 }, TextColor:drawInfo.TextColor };
+            if (item.Color) newItem.TextColor=item.Color;
+            if (item.Margin)
+            {
+                var margin=item.Margin;
+                if (IFrameSplitOperator.IsNumber(margin.Left))
+                {
+                    itemWidth+=margin.Left;
+                    newItem.Left=margin.Left;
+                } 
+                if (IFrameSplitOperator.IsNumber(margin.Right)) 
+                {
+                    itemWidth+=margin.Right;
+                    newItem.Right=margin.Right;;
+                }
+            }
+            newItem.Width=itemWidth;
+
+            aryText.push(newItem)
+
+            textWidth+=itemWidth;
+        }
+
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryText)) return;
+
+        var x=left;
+        var y=top+this.RowHeight-this.ItemMergin.Bottom;
+        if (drawInfo.TextAlign=='center')
+        {
+            x=left+cellWidth/2-textWidth/2;
+        }
+        else if (drawInfo.TextAlign=='right')
+        {
+            x=left+cellWidth-textWidth;
+        }
+        
+        var bClip=false;
+        if (textWidth>=cellWidth)   //长度超过单元格 裁剪
+        {
+            this.Canvas.save();
+            bClip=true;
+
+            var rtCell={ Left:left, Top:top+this.ItemMergin.Top, Width:cellWidth, Height:this.RowHeight };
+            this.Canvas.beginPath();
+            this.Canvas.rect(rtCell.Left, rtCell.Top, rtCell.Width, rtCell.Height);
+            //this.Canvas.stroke(); //调试用
+            this.Canvas.clip();
+
+            //数据截断提示信息
+            if (!drawInfo.Tooltip && drawInfo.Text)
+            {
+                drawInfo.Tooltip=
+                { 
+                    Type:1, 
+                    Data:{ AryText:[ {Text:drawInfo.Text} ] }
+                }
+            }
+        }
+
+        this.Canvas.textBaseline="bottom";
+        this.Canvas.textAlign="left";
+        for(var i=0;i<aryText.length;++i)
+        {
+            var item=aryText[i];
+            this.Canvas.fillStyle=item.TextColor;
+
+            this.Canvas.fillText(item.Text,x+item.Margin.Left,y);
+            x+=item.Width;
+        }
+
+
+        if (bClip) this.Canvas.restore();
+    }
+
+    this.DrawReserveString=function(drawInfo, column, left, top, cellWidth)
+    {
+        if (IFrameSplitOperator.IsNonEmptyArray(drawInfo.AryText))
+        {
+            this.DrawComplexText(drawInfo, column, left, top, cellWidth);
+            return;
+        }
+
         if (!drawInfo.Text) return;
 
         var text=drawInfo.Text;
@@ -7746,6 +7836,7 @@ function ChartReport()
             if (item.Text) drawInfo.Text=item.Text;
             if (item.TextColor) drawInfo.TextColor=item.TextColor;
             if (item.BGColor) drawInfo.BGColor=item.BGColor;
+            if (IFrameSplitOperator.IsNonEmptyArray(item.AryText)) drawInfo.AryText=item.AryText;
 
             if (item.Tooltip && IFrameSplitOperator.IsNonEmptyArray(item.Tooltip.AryText))
             {

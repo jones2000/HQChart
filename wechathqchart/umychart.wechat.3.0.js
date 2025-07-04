@@ -7619,7 +7619,7 @@ function KLineChartContainer(uielement)
 
     this.TryClickLock = function (x, y) 
     {
-        for (let i in this.Frame.SubFrame) 
+        for (var i=0; i<this.Frame.SubFrame.length; ++i) 
         {
             var item = this.Frame.SubFrame[i];
             if (!item.Frame.IsLocked) continue;
@@ -10435,7 +10435,7 @@ function MinuteChartContainer(uielement)
 
     this.TryClickLock = function (x, y) 
     {
-        for (let i in this.Frame.SubFrame) 
+        for (var i=0; i<this.Frame.SubFrame.length; ++i) 
         {
             var item = this.Frame.SubFrame[i];
             if (!item.Frame.IsLocked) continue;

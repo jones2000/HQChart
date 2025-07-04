@@ -13122,7 +13122,7 @@ function IChartFramePainting()
         if (this.IsLocked)
         {
             if (this.LockPaint == null)
-                this.LockPaint = new ChartLock();
+                this.LockPaint = g_ChartPaintFactory.Create("ChartLock");//new ChartLock();
             this.LockPaint.Canvas=this.Canvas;
             this.LockPaint.ChartBorder=this.ChartBorder;
             this.LockPaint.ChartFrame=this;
@@ -13188,7 +13188,7 @@ function IChartFramePainting()
         if (this.IsLocked)
         {
             if (this.LockPaint == null)
-                this.LockPaint = new ChartLock();
+                this.LockPaint = g_ChartPaintFactory.Create("ChartLock"); // new ChartLock();
             this.LockPaint.Canvas=this.Canvas;
             this.LockPaint.ChartBorder=this.ChartBorder;
             this.LockPaint.ChartFrame=this;
@@ -13206,7 +13206,7 @@ function IChartFramePainting()
         }
 
         this.IsLocked=true;
-        if (!this.LockPaint) this.LockPaint=new ChartLock();    //创建锁
+        if (!this.LockPaint) this.LockPaint=g_ChartPaintFactory.Create("ChartLock"); //new ChartLock();    //创建锁
 
         if (lockData.Callback) this.LockPaint.Callback=lockData.Callback;       //回调
         if (lockData.IndexName) this.LockPaint.IndexName=lockData.IndexName;    //指标名字
@@ -26393,7 +26393,8 @@ function ChartPaintFactory()
         ["ChartMinuteVolumBar",{ Create:function(option) { return new ChartMinuteVolumBar(); } }],   //分时成交量柱子
         ["ChartMinutePriceLine",{ Create:function(option) { return new ChartMinutePriceLine();} }],
         ["ChartMinuteBuySellBar", { Create:function(option){ return new ChartMinuteBuySellBar(); }}],
-        ["ChartMinuteBarCallAuction", { Create:function(option){ return new ChartMinuteBarCallAuction(); }}]
+        ["ChartMinuteBarCallAuction", { Create:function(option){ return new ChartMinuteBarCallAuction(); }}],
+        ["ChartLock",{ Create:function(option){ return new ChartLock(); }}]
     ]); 
 
     this.Create=function(name, option)
@@ -95465,6 +95466,25 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             var item=this.ChartPaintEx[i];
             if (item.ChartFrame && item.ChartFrame.Guid==subFrame.Guid) 
                 return true;
+        }
+
+        return false;
+    }
+
+    this.TryClickLock=function(x,y)
+    {
+        for(var i=0;i<this.Frame.SubFrame.length; ++i)
+        {
+            var item=this.Frame.SubFrame[i];
+            if (!item.Frame.IsLocked) continue;
+            if (!item.Frame.LockPaint) continue;
+
+            var tooltip=new TooltipData();
+            if (!item.Frame.LockPaint.GetTooltipData(x,y,tooltip)) continue;
+
+            tooltip.HQChart=this;
+            if (tooltip.Data.Callback) tooltip.Data.Callback(tooltip);
+            return true;
         }
 
         return false;
