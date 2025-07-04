@@ -756,6 +756,18 @@ function JSDialogTooltip()
                     this.FormatVol(item.Vol[0]/unit,'DialogTooltip-AC-Vol'),
                 ];
             }
+            else if (data.Data.Ver===3)
+            {
+                var timeForamt="HH:MM:SS";
+                aryText=
+                [
+                    this.ForamtDate(item.Date,this.Style==1?"MM/DD/W":"YYYY/MM/DD/W",'DialogTooltip-Date' ),
+                    this.FormatTime(item.Time, null, timeForamt, 'DialogTooltip-Time'),
+                    this.ForamtPrice(item.Price,item.YClose, defaultfloatPrecision,'DialogTooltip-AC-Price',1),
+                    this.FormatIncrease(item.Price,item.YClose,defaultfloatPrecision,'DialogTooltip-AC-Increase',1),
+                    this.FormatVol(item.Vol[0]/unit,'DialogTooltip-AC-Vol', 2),
+                ];
+            }
             else
             {
                 var timeForamt="HH:MM:SS";

@@ -13937,7 +13937,7 @@ function AverageWidthFrame()
         if (isDrawRight && this.IsDrawRightBorder && this.YRightTextInfo)
         {  
             var xRight=this.YRightTextInfo.MainTextWidth+right; 
-            xLine=ToFixedPoint(xRight);
+            var xLine=ToFixedPoint(xRight);
             this.Canvas.strokeStyle=this.PenBorder;
             this.Canvas.beginPath();
             this.Canvas.moveTo(xLine,top);
@@ -48958,6 +48958,7 @@ function MinuteLeftTooltipPaint()
         {
             var item=drawData.Data.Data;
             if (!item) return;
+            var version=drawData.Data.Ver;
             
             this.YClose=item.YClose;
             if (isFutures && IFrameSplitOperator.IsNumber(item.YClearing)) this.YClose=item.YClearing;
@@ -48965,7 +48966,7 @@ function MinuteLeftTooltipPaint()
             if (titleItem) aryText.push(titleItem);
 
             var timeForamt="HH:MM:SS";
-            if (item.Ver===1) timeForamt="HH:MM"
+            if (version===1) timeForamt="HH:MM"
             
             var titleItem=this.ForamtTime(item.Time,timeForamt,'PCTooltip-Time');
             if (titleItem) aryText.push(titleItem);
@@ -91283,7 +91284,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
         ];
 
-        if (MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol))
+        if (MARKET_SUFFIX_NAME.IsEnableCallAuction(this.Symbol))
         {
             var item=
             {
@@ -93295,16 +93296,17 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
         //  盘前数据(A股)
         this.IsBeforeData=false;
-        if (this.IsShowBeforeData && this.DayCount===1 && MARKET_SUFFIX_NAME.IsSHSZStockA(self.Symbol)) 
+        if (this.IsShowBeforeData && this.DayCount===1 && MARKET_SUFFIX_NAME.IsEnableCallAuction(self.Symbol)) 
         {
             this.IsBeforeData=true;
             fields.push('before');
         }
 
         this.IsAfterData=false;
-        if (this.IsShowAfterData && this.DayCount===1 && MARKET_SUFFIX_NAME.IsSHSZStockA(self.Symbol))
+        if (this.IsShowAfterData && this.DayCount===1 && MARKET_SUFFIX_NAME.IsEnableCallAuction(self.Symbol))
         {
             this.IsAfterData=true;
+            fields.push('after');
         }
 
         //5档买卖盘
@@ -101076,6 +101078,15 @@ var MARKET_SUFFIX_NAME=
         if (ChartData.IsMinutePeriod(period,true)) return false;                //内置分钟K线不支持复权
 
         return true;
+    },
+
+    IsEnableCallAuction:function(symbol)  //是否支持集合竞价
+    {
+        if (MARKET_SUFFIX_NAME.IsSHSZStockA(symbol)) return true;   //A股
+        if (MARKET_SUFFIX_NAME.IsBJStock(symbol)) return true;      //北交所
+        if (MARKET_SUFFIX_NAME.IsSHSZIndex(symbol)) return true;    //指数
+
+        return false;
     },
 
     //获取成交量单位
