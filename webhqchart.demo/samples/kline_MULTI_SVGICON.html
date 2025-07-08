@@ -27,6 +27,16 @@
     <script src="../jscommon/umychart.complier.js"></script>    <!-- 麦语言解析执行器 -->
     <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
     <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+    <script src="../jscommon/umychart.popMenu.js"></script>
+    <script src="../jscommon/umychart.DialogDrawTool.js"></script>
+    <script src="../jscommon/umychart.PopMinuteChart.js"></script>
+    <script src="../jscommon/umychart.report.js"></script>
+    <script src="../jscommon/umychart.keyboard.js"></script>
+    <script src="../jscommon/umychart.PopKeyboard.js"></script>
+    <script src="../jscommon/umychart.DialogTooltip.js"></script>
+    <script src="../jscommon/umychart.DialogSelectRect.js"></script>
+    <script src="../jscommon/umychart.DialogSearchIndex.js"></script>
+    <script src="../jscommon/umychart.version.js"></script>
 
     <script src="../jscommon/umychart.NetworkFilterTest.js"></script>
     
@@ -93,6 +103,8 @@
 
                 CorssCursorInfo: { Right:2, DateFormatType:3, HPenType:1, VPenType:1 ,VLineType:0,RightButton:{ Enable:true }, IsShowCorss:true, PriceFormatType:0, DataFormatType:0 },
                 EnableZoomIndexWindow:true,
+
+                FloatTooltip:{ Enable:true, },
 
                 KLine:  //K线设置
                 {
@@ -236,6 +248,23 @@
                         Baseline:2,
                         YMove:-5,
                     };
+
+                    if (j%2==1)
+                    {
+                        iconItem.Text=
+                        { 
+                            AryText:
+                            [
+                                { Title:"类型",  Text: "多行提示信息", Align:"Left", Color:"rgb(250,250,250)" },
+                                { Title:"日期:", Text:`${item.Date}`, Color:"rgb(230,230,230)", Align:"Left"},
+                                { Title:"提示:", Text:`提示信息${i}`, Color:"rgb(250,0,0)",Align:"Left"}
+                            ] 
+                        };
+                    }
+                    else
+                    {
+                        iconItem.Text=`单行提示信息: ${item.Date}`;
+                    }
 
                     iconData.Draw.DrawData.Icon.push(iconItem);
                     ++j;
