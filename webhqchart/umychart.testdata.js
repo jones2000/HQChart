@@ -282,35 +282,69 @@ HQData.Minute_RequestMinuteData=function(data, callback)
             }
             */
 
-            var before=[];
-            var beforeinfo={ totalcount:60*10, ver:2.0, TimeConfig:{ AryTime:[{ Start:91500, End:92459, Date:srcStock.date }]} };  //9:15-9:25 集合竞价15分钟 1s一个数据 
-            var price=srcStock.yclose+0.01;
+            if (symbol=="000001.sh")    //指数
+            {
+                var before=[];
+                var beforeinfo={ totalcount:60*10, ver:3.0, TimeConfig:{ AryTime:[{ Start:91500, End:92459, Date:srcStock.date }]} };  //9:15-9:25 集合竞价15分钟 1s一个数据 
+                var price=srcStock.yclose+0.01;
+                var vol=0;
 
-            var date=new Date(2021,5,2, 9,15, 0);
-            before=
-            [
-                [91505,price+0.01, 400, 300, 1, 800],
-                [91550,price+0.02, 550, 600, 0, 1500],
-                [91603,price+0.03, 300, 600, 1, 3600],
-                [91613,price+0.03, 150, 320, 1, 3600],
-                [91623,price+0.04, 200, 400, 1, 3600],
-                [91635,price+0.05, 100, 100, 1, 3600],
-                [91640,price+0.03, 350, 210, 2, 1600],
-                [91711,price+0.02, 3210, 350, 2, 3700],
-                [91731,price+0.04, 110, 450, 1, 3700],
-                [91825,price-0.01, 210, 650, 2, 3700],
-                [91855,price-0.02, 330, 440, 1, 1000],
-                [91915,price-0.03, 630, 640, 1, 1200],
-                [92022,price+0.01, 260, 550, 2, 1000],
-                [92304,price-0.02, 300, 100, 2, 1000],
-                [92314,price-0.03, 550, 150, 2, 1000],
-                [92344,price-0.04, 550, 150, 1, 1000],
-                [92357,price-0.05, 250, 750, 1, 1500],
-                [92405,price-0.07, 450, 50, 2, 1000],
-                [92435,price-0.08, 650, 250, 1, 1000],
-                [92458,price-0.12, 350, 350, 2, 1000],
-            ];
-           
+                var date=new Date(2021,5,2, 9,15, 0);
+                var testData={ Up:1, Max:srcStock.yclose*1.02, Min:srcStock.yclose*0.98 };
+
+                for(var i=0;i<beforeinfo.totalcount; ++i)  //3s一个数据
+                {
+                    var time=date.getHours()*10000+date.getMinutes()*100+date.getSeconds();
+                    vol=HQData.GetRandomTestData(100,500)*1000;
+                    var item=[ time, price, price+0.04, vol, 3, vol*1.3 ];
+                    before.push(item);
+
+                    if (price>testData.Max && testData.Up===1)
+                        testData.Up=0;
+                    else if (price<testData.Min && testData.Up===0)
+                        testData.Up=1;
+
+                    var value=HQData.GetRandomTestData(1,10)/100;
+                    if (testData.Up==1) price+=value;
+                    else price-=value;
+
+                    date.setSeconds(date.getSeconds()+3);
+                    time=date.getHours()*10000+date.getMinutes()*100+date.getSeconds();
+                    if (time>92500) break;
+                }
+
+            }
+            else    //股票
+            {
+                var before=[];
+                var beforeinfo={ totalcount:60*10, ver:2.0, TimeConfig:{ AryTime:[{ Start:91500, End:92459, Date:srcStock.date }]} };  //9:15-9:25 集合竞价15分钟 1s一个数据 
+                var price=srcStock.yclose+0.01;
+
+                var date=new Date(2021,5,2, 9,15, 0);
+                before=
+                [
+                    [91505,price+0.01, 400, 300, 1, 800],
+                    [91550,price+0.02, 550, 600, 0, 1500],
+                    [91603,price+0.03, 300, 600, 1, 3600],
+                    [91613,price+0.03, 150, 320, 1, 3600],
+                    [91623,price+0.04, 200, 400, 1, 3600],
+                    [91635,price+0.05, 100, 100, 1, 3600],
+                    [91640,price+0.03, 350, 210, 2, 1600],
+                    [91711,price+0.02, 3210, 350, 2, 3700],
+                    [91731,price+0.04, 110, 450, 1, 3700],
+                    [91825,price-0.01, 210, 650, 2, 3700],
+                    [91855,price-0.02, 330, 440, 1, 1000],
+                    [91915,price-0.03, 630, 640, 1, 1200],
+                    [92022,price+0.01, 260, 550, 2, 1000],
+                    [92304,price-0.02, 300, 100, 2, 1000],
+                    [92314,price-0.03, 550, 150, 2, 1000],
+                    [92344,price-0.04, 550, 150, 1, 1000],
+                    [92357,price-0.05, 250, 750, 1, 1500],
+                    [92405,price-0.07, 450, 50, 2, 1000],
+                    [92435,price-0.08, 650, 250, 1, 1000],
+                    [92458,price-0.12, 350, 350, 2, 1000],
+                ];
+            }
 
             stockItem.before=before;
             stockItem.beforeinfo=beforeinfo;
@@ -393,27 +427,51 @@ HQData.Minute_RequestMinuteData=function(data, callback)
             }
             */
 
-            var afterData=[]
-            var afterInfo={ ver:2.0, totalcount:60*3, TimeConfig:{ AryTime:[{ Start:145700, End:145959, Date:srcStock.date }]}  }     //14:57-15:00
-            if (stockItem.minute.length>=240)
+            if (symbol=="000001.sh")    //指数
             {
-                afterData=
-                [
-                    [145708,price+0.01, 400, 300, 1, 800],
-                    [145718,price+0.02, 550, 600, 0, 1500],
-                    [145738,price+0.02, 150, 800, 0, 1500],
-                    [145748,price+0.02, 150, 800, 0, 1500],
-                    [145803,price+0.03, 300, 600, 1, 3600],
-                    [145815,price+0.03, 350, 210, 2, 1600],
-                    [145826,price+0.02, 1210, 350, 2, 2700],
-                    [145833,price+0.01, 260, 550, 2, 1000],
-                    [145845,price+0.02, 160, 750, 2, 1000],
-                    [145858,price-0.01, 460, 650, 2, 1500],
-                    [145905,price-0.02, 160, 450, 1, 1500],
-                    [145928,price-0.02, 260, 250, 1, 1500],
-                    [145948,price-0.02, 860, 150, 1, 1500],
-                ];
+                var afterData=[]
+                var afterInfo={ ver:3.0, totalcount:60*3, TimeConfig:{ AryTime:[{ Start:145700, End:145959, Date:srcStock.date }]}  }     //14:57-15:00
+                var date=new Date(2021,5,2, 14,57, 0);
+                var vol=0;
+                for(var i=0;i<afterInfo.totalcount; ++i)  //1s一个数据
+                {
+                    var time=date.getHours()*10000+date.getMinutes()*100+date.getSeconds();
+                    
+                    vol=HQData.GetRandomTestData(100,500)*1000;
+                    var item=[ time, price, price+0.04, vol, 3, vol*1.3 ];
+                    
+                    afterData.push(item);
+
+                    date.setSeconds(date.getSeconds()+3);
+                    var time=date.getHours()*10000+date.getMinutes()*100+date.getSeconds();
+                    if (time>145959) break;
+                }
             }
+            else
+            {
+                var afterData=[]
+                var afterInfo={ ver:2.0, totalcount:60*3, TimeConfig:{ AryTime:[{ Start:145700, End:145959, Date:srcStock.date }]}  }     //14:57-15:00
+                if (stockItem.minute.length>=240)
+                {
+                    afterData=
+                    [
+                        [145708,price+0.01, 400, 300, 1, 800],
+                        [145718,price+0.02, 550, 600, 0, 1500],
+                        [145738,price+0.02, 150, 800, 0, 1500],
+                        [145748,price+0.02, 150, 800, 0, 1500],
+                        [145803,price+0.03, 300, 600, 1, 3600],
+                        [145815,price+0.03, 350, 210, 2, 1600],
+                        [145826,price+0.02, 1210, 350, 2, 2700],
+                        [145833,price+0.01, 260, 550, 2, 1000],
+                        [145845,price+0.02, 160, 750, 2, 1000],
+                        [145858,price-0.01, 460, 650, 2, 1500],
+                        [145905,price-0.02, 160, 450, 1, 1500],
+                        [145928,price-0.02, 260, 250, 1, 1500],
+                        [145948,price-0.02, 860, 150, 1, 1500],
+                    ];
+                }
+            }
+           
             stockItem.after=afterData;
             stockItem.afterinfo=afterInfo;
         }
@@ -467,16 +525,50 @@ HQData.Minute_RequestMinuteUpdateData=function(data, callback)
 
         if (callcation.Before)
         {
-            var beforeinfo={ totalcount:60*10, ver:2.0, TimeConfig:{ AryTime:[{ Start:91500, End:92459, Date:srcStock.date }]} };  //9:15-9:25 集合竞价15分钟 1s一个数据 
-            var price=srcStock.yclose-0.01;
-            var before=
-            [
-                [92344,price-0.03, 150, 150, 2, 1000],
-                [92357,price-0.04, 250, 250, 2, 1500],
-                [92405,price-0.05, 350, 350, 1, 1000],
-                [92435,price-0.06, 450, 450, 1, 1000],
-                [92458,price-0.07, 550, 550, 2, 1000],
-            ];
+            if (symbol=="000001.sh")    //指数
+            {
+                var before=[];
+                var beforeinfo={ totalcount:60*10, ver:3.0, TimeConfig:{ AryTime:[{ Start:91500, End:92459, Date:srcStock.date }]} };  //9:15-9:25 集合竞价15分钟 1s一个数据 
+                var price=srcStock.yclose+0.01;
+                var vol=0;
+
+                var date=new Date(2021,5,2, 9,15, 0);
+                var testData={ Value:0.01, Up:1, Max:srcStock.yclose*1.02, Min:srcStock.yclose*0.98 };
+
+                for(var i=0;i<beforeinfo.totalcount; ++i)  //3s一个数据
+                {
+                    vol=HQData.GetRandomTestData(100,500)*1000;
+                    var time=date.getHours()*10000+date.getMinutes()*100+date.getSeconds();
+                    var item=[ time, price, price+0.04, vol, 3, vol*1.3 ];
+                    before.push(item);
+
+                    if (price>testData.Max && testData.Up===1)
+                        testData.Up=0;
+                    else if (price<testData.Min && testData.Up===0)
+                        testData.Up=1;
+
+                    var value=HQData.GetRandomTestData(1,10)/100;
+                    if (testData.Up==1) price+=value;
+                    else price-=value;
+
+                    date.setSeconds(date.getSeconds()+3);
+                    time=date.getHours()*10000+date.getMinutes()*100+date.getSeconds();
+                    if (time>92500) break;
+                }
+            }
+            else
+            {
+                var beforeinfo={ totalcount:60*10, ver:2.0, TimeConfig:{ AryTime:[{ Start:91500, End:92459, Date:srcStock.date }]} };  //9:15-9:25 集合竞价15分钟 1s一个数据 
+                var price=srcStock.yclose-0.01;
+                var before=
+                [
+                    [92344,price-0.03, 150, 150, 2, 1000],
+                    [92357,price-0.04, 250, 250, 2, 1500],
+                    [92405,price-0.05, 350, 350, 1, 1000],
+                    [92435,price-0.06, 450, 450, 1, 1000],
+                    [92458,price-0.07, 550, 550, 2, 1000],
+                ];
+            }
 
             stockItem.before=before;
             stockItem.beforeinfo=beforeinfo;
@@ -484,30 +576,57 @@ HQData.Minute_RequestMinuteUpdateData=function(data, callback)
 
         if (callcation.After)
         {
-            var afterInfo={ totalcount:60*10, ver:2.0, TimeConfig:{ AryTime:[{ Start:145700, End:145959, Date:srcStock.date }]} };  //9:15-9:25 集合竞价15分钟 1s一个数据 
-            var afterData=[];
-
-            if (IFrameSplitOperator.IsNonEmptyArray(lastItem) && lastItem[1]>=1457)
+            if (symbol=="000001.sh")    //指数
             {
-                var price=lastItem[5];
-                afterData=
-                [
-                    [145708,price+0.01, 400, 300, 1, 800],
-                    [145718,price+0.02, 550, 600, 0, 1500],
-                    [145738,price+0.02, 150, 800, 0, 1500],
-                    [145748,price+0.02, 150, 800, 0, 1500],
-                    [145803,price+0.03, 300, 600, 1, 3600],
-                    [145815,price+0.03, 350, 210, 2, 1600],
-                    [145826,price+0.02, 1210, 350, 2, 2700],
-                    [145833,price+0.01, 260, 550, 2, 1000],
-                    [145845,price+0.02, 160, 750, 2, 1000],
-                    [145858,price-0.01, 460, 650, 2, 1500],
-                    [145905,price-0.02, 160, 450, 1, 1500],
-                    [145928,price-0.02, 260, 250, 1, 1500],
-                    [145948,price-0.02, 860, 150, 1, 1500],
-                ];
-            }
+                var afterData=[]
+                var afterInfo={ ver:3.0, totalcount:60*3, TimeConfig:{ AryTime:[{ Start:145700, End:145959, Date:srcStock.date }]}  }     //14:57-15:00
+                if (IFrameSplitOperator.IsNonEmptyArray(lastItem) && lastItem[1]>=1457)
+                {
+                    var price=lastItem[5];
+                    var date=new Date(2021,5,2, 14,57, 0);
+                    var vol=0;
+                    for(var i=0;i<afterInfo.totalcount; ++i)  //1s一个数据
+                    {
+                        var time=date.getHours()*10000+date.getMinutes()*100+date.getSeconds();
+                        
+                        vol=HQData.GetRandomTestData(100,500)*1000;
+                        var item=[ time, price, price+0.04, vol, 3, vol*1.3 ];
+                        
+                        afterData.push(item);
 
+                        date.setSeconds(date.getSeconds()+3);
+                        var time=date.getHours()*10000+date.getMinutes()*100+date.getSeconds();
+                        if (time>145959) break;
+                    }
+                }
+            }
+            else
+            {
+                var afterInfo={ totalcount:60*10, ver:2.0, TimeConfig:{ AryTime:[{ Start:145700, End:145959, Date:srcStock.date }]} };  //9:15-9:25 集合竞价15分钟 1s一个数据 
+                var afterData=[];
+
+                if (IFrameSplitOperator.IsNonEmptyArray(lastItem) && lastItem[1]>=1457)
+                {
+                    var price=lastItem[5];
+                    afterData=
+                    [
+                        [145708,price+0.01, 400, 300, 1, 800],
+                        [145718,price+0.02, 550, 600, 0, 1500],
+                        [145738,price+0.02, 150, 800, 0, 1500],
+                        [145748,price+0.02, 150, 800, 0, 1500],
+                        [145803,price+0.03, 300, 600, 1, 3600],
+                        [145815,price+0.03, 350, 210, 2, 1600],
+                        [145826,price+0.02, 1210, 350, 2, 2700],
+                        [145833,price+0.01, 260, 550, 2, 1000],
+                        [145845,price+0.02, 160, 750, 2, 1000],
+                        [145858,price-0.01, 460, 650, 2, 1500],
+                        [145905,price-0.02, 160, 450, 1, 1500],
+                        [145928,price-0.02, 260, 250, 1, 1500],
+                        [145948,price-0.02, 860, 150, 1, 1500],
+                    ];
+                }
+            }
+            
             stockItem.after=afterData;
             stockItem.afterinfo=afterInfo;
         }

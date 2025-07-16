@@ -9309,6 +9309,55 @@ function JSDraw(errorHandler,symbolData)
     this.ErrorHandler=errorHandler;
     this.SymbolData=symbolData;
 
+    //绘制随光标移动的浮动文字。
+    //用法: DRAWFLAGTEXT(COND,PRICE,TEXT),光标处当COND条件满足时,在PRICE位置用半透明窗口显示文字TEXT,随光标移动而移动。将\\n插入TEXT内容中可实现文字换行。
+    //例如：DRAWFLAGTEXT(CLOSE/OPEN>1.08,LOW,'大阳线')表示当光标移动到涨幅大于8%的地方,在最低价位置显示'大阳线'字样的浮动窗口。
+    this.DRAWFLAGTEXT=function(condition,price,text)
+    {
+        var drawData=[];
+        var result={ DrawData:drawData, DrawType:'DRAWFLAGTEXT' };
+        if (!text) return result;
+
+        if (Array.isArray(condition))
+        {
+            if (condition.length<=0) return result;
+
+            var bSinglePrice=IFrameSplitOperator.IsNumber(price);
+            for(var i=0; i<condition.length; ++i)
+            {
+                drawData[i]=null;
+    
+                if (isNaN(condition[i]) || !condition[i]) continue;
+    
+                if (bSinglePrice) 
+                {
+                    drawData[i]={ YValue:price, Text:text };
+                }
+                else 
+                {
+                    if (IFrameSplitOperator.IsNumber(price[i])) drawData[i]={ YValue:price[i], Text:text };
+                }
+            }
+        }
+        else if (IFrameSplitOperator.IsPlusNumber(condition))
+        {
+            var bSinglePrice=IFrameSplitOperator.IsNumber(price);
+            for(var i=0;i<this.SymbolData.Data.Data.length;++i)
+            {
+                if (bSinglePrice) 
+                {
+                    drawData[i]={ YValue:price, Text:text };
+                }
+                else 
+                {
+                    if (IFrameSplitOperator.IsNumber(price[i])) drawData[i]={ YValue:price[i], Text:text };
+                }
+            }
+        }
+
+        return result;
+    }
+
     this.DRAWTEXT=function(condition,price,text)
     {
         let drawData=[];
@@ -11689,6 +11738,7 @@ JSDraw.prototype.IsDrawFunction=function(name)
         "VERTLINE","HORLINE","TIPICON",
         "BUY","SELL","SELLSHORT","BUYSHORT",
         "DRAWLASTBARICON","DRAWLASTBARNUMBER", "DRAWLASTBARTEXT","DRAWTABLE","DRAWPIE","DRAWRADAR","DRAWDOUGHNUT",
+        "DRAWFLAGTEXT"
     ]);
     if (setFunctionName.has(name)) return true;
 
@@ -18254,6 +18304,10 @@ function JSExecute(ast,option)
                 node.Draw=this.Draw.DRAWTEXT_FIX(args[0],args[1],args[2],args[3],args[4]);
                 node.Out=[];
                 break;
+            case "DRAWFLAGTEXT":
+                node.Draw=this.Draw.DRAWFLAGTEXT(args[0],args[1],args[2]);
+                node.Out=[];
+                break;
             case 'SUPERDRAWTEXT':
                 node.Draw=this.Draw.SUPERDRAWTEXT(args[0],args[1],args[2],args[3],args[4]);
                 node.Out=[];
@@ -21079,6 +21133,22 @@ function ScriptIndex(name,script,args,option)
         hqChart.ChartPaint.push(chartText);
     }
 
+    this.CreateDrawFlagText=function(hqChart,windowIndex,varItem,id)
+    {
+        var chart=new ChartDrawFlagText();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        if (chart.ReloadResource) chart.ReloadResource();
+
+        chart.Data=hqChart.GetKData();
+        if (varItem.Draw.DrawData) chart.AryData=varItem.Draw.DrawData;
+        chart.BuildCacheData();
+       
+        hqChart.ChartPaint.push(chart);
+    }
+
     //COLORSTICK 
     this.CreateMACD=function(hqChart,windowIndex,varItem,id)
     {
@@ -22244,31 +22314,7 @@ function ScriptIndex(name,script,args,option)
         if (IFrameSplitOperator.IsNonEmptyArray(varItem.Draw.RowName)) chart.RowName=varItem.Draw.RowName;
 
         var config=varItem.Draw.Config;
-        if (config)
-        {
-            if (config.BGColor) chart.BGColor=config.BGColor;
-            if (config.TextColor) chart.TextColor=config.TextColor;
-            if (config.BorderColor) chart.BorderColor=config.BorderColor;
-            if (IFrameSplitOperator.IsNumber(config.RowNamePosition)) chart.RowNamePosition=config.RowNamePosition;
-            if (IFrameSplitOperator.IsNumber(config.RowHeightType)) chart.RowHeightType=config.RowHeightType;
-
-            if (config.ItemMergin)
-            {
-                var subItem=config.ItemMergin;
-                if (IFrameSplitOperator.IsNumber(subItem.Left)) chart.ItemMergin.Left=subItem.Left;
-                if (IFrameSplitOperator.IsNumber(subItem.Top)) chart.ItemMergin.Top=subItem.Top;
-                if (IFrameSplitOperator.IsNumber(subItem.Bottom)) chart.ItemMergin.Bottom=subItem.Bottom;
-                if (IFrameSplitOperator.IsNumber(subItem.Right)) chart.ItemMergin.Right=subItem.Right;
-                if (IFrameSplitOperator.IsNumber(subItem.YOffset)) chart.ItemMergin.YOffset=subItem.YOffset;
-            }
-           
-            if (config.TextFont)
-            {
-                var subItem=config.TextFont;
-                if (IFrameSplitOperator.IsNumber(subItem.FontMaxSize)) chart.TextFontConfig.FontMaxSize=subItem.FontMaxSize;
-                if (subItem.Family) chart.TextFontConfig.Family=subItem.Family;
-            }
-        }
+        chart.SetOption(config);
         
         chart.BuildCacheData();
         this.SetChartIndexName(chart);
@@ -22568,6 +22614,9 @@ function ScriptIndex(name,script,args,option)
                         break;
                     case 'DRAWTEXT':
                         this.CreateDrawTextV2(hqChart,windowIndex,item,i);
+                        break;
+                    case "DRAWFLAGTEXT":
+                        this.CreateDrawFlagText(hqChart,windowIndex,item,i);
                         break;
                     case 'SUPERDRAWTEXT':
                         this.CreateText(hqChart,windowIndex,item,i);
@@ -22990,6 +23039,8 @@ function OverlayScriptIndex(name,script,args,option)
                     case 'DRAWTEXT':
                         this.CreateDrawTextV2(hqChart,windowIndex,item,i);
                         break;
+                    case "DRAWFLAGTEXT":
+                        this.CreateDrawFlagText(hqChart,windowIndex,item,i);
                     case 'SUPERDRAWTEXT':
                         this.CreateText(hqChart,windowIndex,item,i);
                         break;
@@ -23352,6 +23403,25 @@ function OverlayScriptIndex(name,script,args,option)
         
         //let titleIndex=windowIndex+1;
         frame.ChartPaint.push(chartText);
+    }
+
+    this.CreateDrawFlagText=function(hqChart,windowIndex,varItem,id)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        var chart=new ChartDrawFlagText();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+        if (chart.ReloadResource) chart.ReloadResource();
+
+        chart.Data=hqChart.GetKData();
+        if (varItem.Draw.DrawData) chart.AryData=varItem.Draw.DrawData;
+        chart.BuildCacheData();
+
+        frame.ChartPaint.push(chart);
     }
 
     //创建文本
@@ -23953,33 +24023,7 @@ function OverlayScriptIndex(name,script,args,option)
         if (IFrameSplitOperator.IsNonEmptyArray(varItem.Draw.RowName)) chart.RowName=varItem.Draw.RowName;
 
         var config=varItem.Draw.Config;
-        if (config)
-        {
-            if (config.BGColor) chart.BGColor=config.BGColor;
-            if (config.TextColor) chart.TextColor=config.TextColor;
-            if (config.BorderColor) chart.BorderColor=config.BorderColor;
-            if (IFrameSplitOperator.IsNumber(config.RowNamePosition)) chart.RowNamePosition=config.RowNamePosition;
-            if (IFrameSplitOperator.IsNumber(config.RowHeightType)) chart.RowHeightType=config.RowHeightType;
-            if (IFrameSplitOperator.IsNumber(config.Style)) chart.Style=config.Style;
-
-            if (config.ItemMergin)
-            {
-                var subItem=config.ItemMergin;
-                if (IFrameSplitOperator.IsNumber(subItem.Left)) chart.ItemMergin.Left=subItem.Left;
-                if (IFrameSplitOperator.IsNumber(subItem.Top)) chart.ItemMergin.Top=subItem.Top;
-                if (IFrameSplitOperator.IsNumber(subItem.Bottom)) chart.ItemMergin.Bottom=subItem.Bottom;
-                if (IFrameSplitOperator.IsNumber(subItem.Right)) chart.ItemMergin.Right=subItem.Right;
-                if (IFrameSplitOperator.IsNumber(subItem.YOffset)) chart.ItemMergin.YOffset=subItem.YOffset;
-            }
-           
-            if (config.TextFont)
-            {
-                var subItem=config.TextFont;
-                if (IFrameSplitOperator.IsNumber(subItem.FontMaxSize)) chart.TextFontConfig.FontMaxSize=subItem.FontMaxSize;
-                if (subItem.Family) chart.TextFontConfig.Family=subItem.Family;
-            }
-        }
-        
+        chart.SetOption(config);
         chart.BuildCacheData();
         frame.ChartPaint.push(chart);
 
@@ -26046,6 +26090,18 @@ function APIScriptIndex(name,script,args,option, isOverlay)
 
                     outVarItem.Draw=drawItem;
                     
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType==SCRIPT_CHART_NAME.KLINE_TABLE)
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=draw.DrawData;
+                    drawItem.RowCount=draw.RowCount;
+                    drawItem.RowName=draw.RowName;
+                    drawItem.Config=draw.Config;
+                    outVarItem.Draw=drawItem;
                     result.push(outVarItem);
                 }
                 else

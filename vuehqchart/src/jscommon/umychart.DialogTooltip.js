@@ -1137,8 +1137,6 @@ function JSFloatTooltip()
         Left:"UMyChart_Tooltip_Float_Text2_Span",       //左对齐
         MarginLeft:'UMyChart_Tooltip_Float_Text3_Span',
         Right:"UMyChart_Tooltip_Float_Text_Span",
-
-        
     }
 
     this.TitleAlign=
@@ -2352,5 +2350,163 @@ function JSFloatTooltip()
         if (!this.DivDialog) return;
 
         this.UpdateStyle();
+    }
+}
+
+function JSSmallFloatTooltip()
+{
+    this.DivDialog=null;
+    this.DivContent=null;
+    this.HQChart=null;
+
+    this.Destroy=function()
+    {
+        if (this.DivDialog) 
+        {
+            document.body.removeChild(this.DivDialog);
+            this.DivDialog=null;
+            this.DivContent=null;
+        }
+
+        this.HQChart=null;
+    }
+
+    this.Hide=function()
+    {
+        if (!this.DivDialog) return;
+        if (this.DivDialog.style.visibility!='hidden') this.DivDialog.style.visibility='hidden';
+    }
+
+    this.Create=function()
+    {
+        var divDom=document.createElement("div");
+        divDom.className='UMyChart_Small_Tooltip_Div';
+
+        var divContent=document.createElement("div");
+        divContent.className='UMyChart_Small_Tooltip_Content_Div';
+        divDom.appendChild(divContent);
+
+        document.body.appendChild(divDom);
+
+        this.DivContent=divContent;
+        this.DivDialog=divDom;
+    }
+
+    this.IsShow=function()
+    {
+        if (!this.DivDialog) return false;
+        
+        return this.DivDialog.style.visibility==='visible';
+    }
+
+    this.ShowTooltip=function(data)
+    {
+        if (!data.Point) return;
+
+        var x=data.Point.X;
+        var y=data.Point.Y;
+        this.Show(x, y, { YMove:data.Point.YMove });
+    }
+
+    this.Show=function(x, y, option)
+    {
+        if (!this.DivDialog) return;
+        if (!this.HQChart) return;
+
+        var rtClient=this.HQChart.UIElement.getBoundingClientRect();
+        var yMove=0;
+        if (option && IFrameSplitOperator.IsNumber(option.YMove)) yMove=option.YMove;
+
+        var left=x+rtClient.left,top=y+rtClient.top+yMove;
+        var right=left+this.DivDialog.offsetWidth;
+        var bottom=top+this.DivDialog.offsetHeight;
+        
+        if ((right+5)>=window.innerWidth) left=left-this.DivDialog.offsetWidth;
+        if ((bottom+5)>=window.innerHeight) 
+        {
+            top=(y+rtClient.top)-this.DivDialog.offsetHeight;
+        }
+       
+        this.DivDialog.style.top = top + "px";
+        this.DivDialog.style.left = left + "px";
+        
+        if (this.DivDialog.style.visibility!='visible')
+            this.DivDialog.style.visibility='visible';
+    }
+
+    this.Update=function(data)
+    {
+        var text=data.Data.Data.Text;
+        if (!this.DivContent) return false;
+
+        this.DivContent.innerText=text;
+
+        this.ShowTooltip(data);
+    }
+}
+
+function JSSmallFloatTooltipGroup()
+{
+    this.AryTooltip=[];
+    this.HQChart=null;
+    this.MaxCount=5;
+
+    this.Inital=function(hqchart, option)
+    {
+        this.HQChart=hqchart;
+    }
+
+    this.Create=function()
+    {
+        for(var i=0;i<this.MaxCount;++i)
+        {
+            var item=new JSSmallFloatTooltip();
+            item.HQChart=this.HQChart;
+            item.Create();
+            this.AryTooltip.push(item);
+        }
+    }
+
+    this.Destroy=function()
+    {
+        for(var i=0;i<this.AryTooltip.length;++i)
+        {
+            var item=this.AryTooltip[i];
+            item.Destroy();
+        }
+
+        this.AryTooltip=[];
+    }
+
+    this.Update=function(data)
+    {
+        var tooltipData=data.Tooltip;
+        var pixelTatio = GetDevicePixelRatio();
+        if (pixelTatio===0) pixelTatio=1;   
+        for(var i=0; i<tooltipData.AryData.length && i<this.AryTooltip.length; ++i)
+        {
+            var item=tooltipData.AryData[i];
+            var tooltipItem=this.AryTooltip[i];
+
+            //去掉分辨率倍数
+            var x=tooltipData.X/pixelTatio;
+            var y=item.Y/pixelTatio;
+            tooltipItem.Update({ Data:item, Point:{ X:x, Y:y} });
+        }
+
+        for(var i=tooltipData.AryData.length; i<this.AryTooltip.length; ++i)
+        {
+            var item=this.AryTooltip[i];
+            item.Hide();
+        }
+    }
+
+    this.Hide=function()
+    {
+        for(var i=0;i<this.AryTooltip.length;++i)
+        {
+            var item=this.AryTooltip[i];
+            item.Hide();
+        }
     }
 }

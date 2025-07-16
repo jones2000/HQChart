@@ -190,9 +190,17 @@ function JSReportChart(divElement)
         if (IFrameSplitOperator.IsBool(option.EnableDragRow)) chart.EnableDragRow=option.EnableDragRow;
         if (IFrameSplitOperator.IsNumber(option.DragRowType)) chart.DragRowType=option.DragRowType;
         if (IFrameSplitOperator.IsBool(option.EnableDragHeader)) chart.EnableDragHeader=option.EnableDragHeader;
-        if (IFrameSplitOperator.IsNumber(option.WheelPageType)) chart.WheelPageType=option.WheelPageType;
+        if (IFrameSplitOperator.IsNumber(option.WheelPageType)) chart.WheelPageConfig.Type=option.WheelPageType;
         if (IFrameSplitOperator.IsBool(option.PageUpDownCycle)) chart.PageUpDownCycle=option.PageUpDownCycle;
         if (IFrameSplitOperator.IsBool(option.EnablePageUpdate)) chart.EnablePageUpdate=option.EnablePageUpdate;
+
+        if (option.WheelPage)
+        {
+            var item=option.WheelPage;
+            if (IFrameSplitOperator.IsNumber(item.Type)) chart.WheelPageConfig.Type=item.Type;
+            if (IFrameSplitOperator.IsPlusNumber(item.RowStep)) chart.WheelPageConfig.RowStep=item.RowStep;
+            if (IFrameSplitOperator.IsBool(item.EnableCtrlTurn)) chart.WheelPageConfig.EnableCtrlTurn=item.EnableCtrlTurn;
+        }
 
         //数据下载提示信息
         if (IFrameSplitOperator.IsObject(option.SplashTitle)) 
@@ -484,7 +492,13 @@ function JSReportChartContainer(uielement)
     
     this.PageUpDownCycle=true;  //翻页循环
     this.DragPageCycle=true;    //手机翻页循环
-    this.WheelPageType=0;       //鼠标滚轴翻页模式 0=一页一页翻  1=一条一条翻
+    //this.WheelPageType=0;       //鼠标滚轴翻页模式 0=一页一页翻  1=一条一条翻
+
+    //鼠标滚轴配置  
+    // Type:0=一页一页翻  1=一条一条翻, 
+    // RowStep:单条数据滚动步长
+    // EnableCtrlTurn Ctrl+滚轴翻页
+    this.WheelPageConfig={ Type:0, RowStep:1, EnableCtrlTurn:false }    
 
     //拖拽滚动条
     this.DragXScroll=null;  //{Start:{x,y}, End:{x, y}}
@@ -1791,6 +1805,7 @@ function JSReportChartContainer(uielement)
         if (IFrameSplitOperator.IsNumber(item[47])) stock.RSpeed15M=item[47]; 
 
         if (item[80] || item[80]===null) stock.BGColor=item[80];       //整行背景色
+        if (item[JSCHART_DATA_FIELD_ID.REPORT_EXTENDDATA]) stock.ExtendDataV2=item[JSCHART_DATA_FIELD_ID.REPORT_EXTENDDATA];  //扩展数据2
 
         //10个数值型 101-199
         if (IFrameSplitOperator.IsNumber(item[101])) stock.ReserveNumber1=item[101];
@@ -1999,14 +2014,17 @@ function JSReportChartContainer(uielement)
         if (!IFrameSplitOperator.IsObjectExist(e.wheelDelta))
             wheelValue=e.deltaY* -0.01;
 
-        if (this.WheelPageType==1)
+        var type=this.WheelPageConfig.Type;
+        if (this.WheelPageConfig.EnableCtrlTurn && e && e.ctrlKey) type=0;  //ctrl 翻页
+
+        if (type)
         {
-            console.log(`[OnWheel] wheelValue=${wheelValue}`);
+            var step=this.WheelPageConfig.RowStep;
             if (wheelValue<0)   //下
             {
                 this.LastMouseStatus.TooltipStatus=null;
                 this.HideAllTooltip();
-                if (this.GotoNextItem(1))
+                if (this.GotoNextItem(step))
                 {
                     this.Draw();
                     this.DelayUpdateStockData();
@@ -2016,7 +2034,7 @@ function JSReportChartContainer(uielement)
             {
                 this.LastMouseStatus.TooltipStatus=null;
                 this.HideAllTooltip();
-                if (this.GotoNextItem(-1))
+                if (this.GotoNextItem(step*-1))
                 {
                     this.Draw();
                     this.DelayUpdateStockData();

@@ -691,6 +691,13 @@ function GetBlackStyle()
             BGColor:[null, "rgb(42,46,57)"],
             SplitLine:{ Color:'rgb(73,133,231)', Width:1*GetDevicePixelRatio(), Dash:[5*GetDevicePixelRatio(),5*GetDevicePixelRatio()] }
         },
+
+        KLineCountDownPaint:
+        {
+            Unchange:{ BGColor:"rgb(190, 190 ,190)", PriceColor:"rgb(0,0,0)", TimeColor:"rgb(50,50,50)" },
+            Up:{ BGColor:"rgb(238,21,21)", PriceColor:"rgb(250,250,250)", TimeColor:"rgb(190,190,190)" },
+            Down:{ BGColor:"rgb(25,158,0)", PriceColor:"rgb(250,250,250)", TimeColor:"rgb(190,190,190)" },
+        },
     
         //成交明细
         DealList:

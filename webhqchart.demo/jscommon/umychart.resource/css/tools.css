@@ -2000,6 +2000,31 @@ input[type="color"] {
 
 
 /*
+    小浮窗
+*/
+.UMyChart_Small_Tooltip_Div
+{
+    font-family: "微软雅黑";
+    /*display: flex;*/
+    border: 1px solid; 
+    width:fit-content;
+    border-color: rgb(204,204,204);
+    visibility:hidden;
+    position: absolute;
+    background-color: rgba(20,20,20,1);
+    left:1px;
+    top:1px;
+    pointer-events:none;
+    z-index: 99;
+}
+
+.UMyChart_Small_Tooltip_Content_Div
+{
+    color: rgb(230,230,230);
+    margin: 5px 5px 5px 5px;
+}
+
+/*
     Copyright (c) 2018 jones
  
     http://www.apache.org/licenses/LICENSE-2.0
