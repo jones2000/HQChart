@@ -194,6 +194,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![筹码图](/小程序行情模块用例/image/phone_chip2.gif)   
 * 多股同列 十字光标联动
 ![多股同列](/小程序行情模块用例/image/Multi_Kline.gif)  
+[https://jones2000.github.io/HQChart/webhqchart.demo/PaySamples/chart_Multi_Kline.html](https://jones2000.github.io/HQChart/webhqchart.demo/PaySamples/chart_Multi_Kline.html)  
 
 # 2. 走势图
 * 支持指标 <br>
@@ -213,6 +214,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ![美股](/小程序行情模块用例/image/minute_usa.gif)
 * 多股同列 十字光标联动
 ![多股同列](/小程序行情模块用例/image/Multi_minute.gif)  
+[https://jones2000.github.io/HQChart/webhqchart.demo/PaySamples/chart_Multi_minute.html](https://jones2000.github.io/HQChart/webhqchart.demo/PaySamples/chart_Multi_minute.html)  
 * 预测线
 ![预测线](/小程序行情模块用例/image/minute_PredictLine.png)  
 
