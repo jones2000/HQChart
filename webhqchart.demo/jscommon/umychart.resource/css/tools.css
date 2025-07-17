@@ -2000,7 +2000,7 @@ input[type="color"] {
 
 
 /*
-    小浮窗
+    十字光标小浮窗
 */
 .UMyChart_Small_Tooltip_Div
 {
@@ -2022,6 +2022,76 @@ input[type="color"] {
 {
     color: rgb(230,230,230);
     margin: 5px 5px 5px 5px;
+}
+
+/*
+    十字光标小浮窗V2
+*/
+.UMyChart_Small_Tooltip_V2_Div
+{
+    font-family: "微软雅黑";
+    /*display: flex;*/
+    border: 1px solid; 
+    width:fit-content;
+    border-color: rgb(204,204,204);
+    visibility:hidden;
+    position: absolute;
+    background-color: rgba(20,20,20,1);
+    left:1px;
+    top:1px;
+    pointer-events:none;
+    z-index: 98;
+}
+
+
+.UMyChart_Small_Tooltip_V2_Table
+{
+    border-spacing: 3px;
+    user-select: none;
+    font-size:12px;
+}
+
+.UMyChart_Small_Tooltip_V2_Group_Tr
+{
+    
+}
+
+.UMyChart_Small_Tooltip_V2_Title_Td
+{
+    min-width: 40px;
+}
+
+.UMyChart_Small_Tooltip_V2_Text_Td
+{
+    min-width:80px;
+    max-width: 500px;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.UMyChart_Tooltip_Float_Title_Span
+{
+    color: rgb(230,230,230);
+}
+
+.UMyChart_Small_Tooltip_V2_Text_Span
+{
+    float: right;
+    margin-right: 1px;
+    color: rgb(230,230,230);
+}
+
+.UMyChart_Tooltip_Float_Text2_Span
+{
+    margin-left: 1px;
+}
+
+.UMyChart_Tooltip_Float_Text3_Span
+{
+    margin-left: 5px;
+    
 }
 
 /*

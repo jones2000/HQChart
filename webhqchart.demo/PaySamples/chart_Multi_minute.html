@@ -1,0 +1,116 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>多股同列(分时图)</title>  
+    <!-- 加载资源 -->
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/drawtool/iconfont.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
+    <!--<link rel='stylesheet' href="//at.alicdn.com/t/font_1196214_0bk7uvfe17nq.css"/> -->
+</head>  
+<body>
+    <div class="KLineContainer">
+        <div class="KLineCtrl" id="klineCtrl"><div id="kline" class="KLine"></div></div>
+        <div class="KLineCtrl" id="klineCtrl2"><div id="kline2" class="KLine"></div></div>
+    </div>
+
+    <div class="KLineContainer">
+        <div class="KLineCtrl" id="klineCtrl3"><div id="kline3" class="KLine"></div></div>
+        <div class="KLineCtrl" id="klineCtrl4"><div id="kline4" class="KLine"></div></div>
+    </div>
+
+    <div>
+        <span id="button_1" class="btn-style">1日</span>
+        <span id="button_2" class="btn-style">5日</span>
+    </div>
+
+    
+    <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
+    <script src="../jscommon/umychart.resource/js/webfont.js"></script>
+    <script src="../jscommon/umychart.network.js"></script>
+    <script src="../jscommon/umychart.js"></script>             <!-- K线图形 -->
+    <script src="../jscommon/umychart.complier.js"></script>    <!-- 麦语言解析执行器 -->
+    <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
+    <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+    <script src="../jscommon/umychart.popMenu.js"></script>
+    <script src="../jscommon/umychart.DialogDrawTool.js"></script>
+
+    <!-- 单日分时图 -->
+    <script src="../jscommon/umychart.testdata/DayMinute/000001.sz.1day.minute.js"></script>
+    <script src="../jscommon/umychart.testdata/DayMinute/600000.sh.1day.minute.js"></script>
+    <script src="../jscommon/umychart.testdata/DayMinute/000151.sz.1day.minute.js"></script>
+
+    <!-- 多日分时数据 -->
+    <script src="../jscommon/umychart.testdata/Day5Minute/600000.sh.5day.minute.js"></script>
+    <script src="../jscommon/umychart.testdata/Day5Minute/000001.sz.5day.minute.js"></script>
+    <script src="../jscommon/umychart.testdata/Day5Minute/000151.sz.5day.minute.js"></script>
+
+    <script src="../jscommon/umychart.testdata.js"></script>
+
+    <script src="./chart_Multi_minute.js"></script>
+    
+    <script>
+       
+        $(function () 
+        {
+            WebFont.load({ custom: { families: ['iconfont'] } });   //预加载下iconfont资源
+           
+
+            var container=new MinuteContainer();
+
+            container.AddMinute(new MinuteChart(document.getElementById('klineCtrl'), document.getElementById('kline')));
+            container.AddMinute(new MinuteChart(document.getElementById('klineCtrl2'),document.getElementById('kline2')));
+            container.AddMinute(new MinuteChart(document.getElementById('klineCtrl3'),document.getElementById('kline3')));
+            container.AddMinute(new MinuteChart(document.getElementById('klineCtrl4'),document.getElementById('kline4')));
+
+
+            container.Inital();
+
+
+            $("#button_1").click(function() { container.ChangeDayCount(1); } );
+            $("#button_2").click(function() { container.ChangeDayCount(5); } );
+           
+        })
+
+    </script>  
+</body>  
+</html>
+
+
+
+<style>
+
+    .KLine
+    {
+        width: 100%;
+        height:100%;
+        position: relative;
+        /*margin-top: 100px;*/
+    }
+
+    .KLineContainer
+    {
+        display: flex;
+    }
+
+    .KLineCtrl
+    {
+        width:700px;
+        height:500px;
+        border:1px solid rgb(250,0,0)
+    }
+    
+    .btn-style
+    {
+        border: 1px solid #ececec;
+        background-color: #f5f5f5;
+        cursor: pointer;
+        display:inline-block;
+        width:50px;
+        text-align: center;
+    }
+    
+        
+    </style>

@@ -2358,6 +2358,7 @@ function JSSmallFloatTooltip()
     this.DivDialog=null;
     this.DivContent=null;
     this.HQChart=null;
+    this.ClassName="JSSmallFloatTooltip";
 
     this.Destroy=function()
     {
@@ -2445,23 +2446,242 @@ function JSSmallFloatTooltip()
     }
 }
 
+
+function JSSmallFloatTooltipV2()
+{
+    this.newMethod=JSSmallFloatTooltip;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName="JSSmallFloatTooltipV2";
+
+    this.AryData=[];    //输出文字信息
+    this.AryText=[];    //表格tr
+    this.MaxRowCount=25;
+
+    this.BGColor=g_JSChartResource.SmallFloatTooltipV2.BGColor;
+    this.BorderColor=g_JSChartResource.SmallFloatTooltipV2.BorderColor;
+
+    this.TextColor=g_JSChartResource.SmallFloatTooltipV2.TextColor;
+    this.ValueColor=g_JSChartResource.SmallFloatTooltipV2.ValueColor;
+
+    this.ValueAlign=
+    {
+        Left:"UMyChart_Small_Tooltip_V2_Text2_Span",       //左对齐
+        MarginLeft:'UMyChart_Small_Tooltip_V2_Text3_Span',
+        Right:"UMyChart_Small_Tooltip_V2_Text_Span",
+    }
+
+    this.TitleAlign=
+    {
+        Default:"UMyChart_Small_Tooltip_V2_Title_Span",   //标题默认
+    }
+
+    this.Destroy=function()
+    {
+        this.AryData=[];
+        this.AryText=[];
+        this.HQChart=null;
+
+        if (this.DivDialog) 
+        {
+            document.body.removeChild(this.DivDialog);
+            this.DivDialog=null;
+        }
+    }
+
+    this.Create=function()
+    {
+        var divDom=document.createElement("div");
+        divDom.className='UMyChart_Small_Tooltip_V2_Div';
+
+        var table=document.createElement("table");
+        table.className="UMyChart_Small_Tooltip_V2_Table";
+        divDom.appendChild(table);
+
+        var tbody=document.createElement("tbody");
+        tbody.className="UMyChart_Small_Tooltip_V2_Tbody";
+        table.appendChild(tbody);
+
+        this.AryData=[];
+        
+        for(var i=0;i<this.MaxRowCount;++i)
+        {
+            var rowItem={ Tr:null, TitleSpan:null, TextSpan:null, TitleTd:null, TextTd:null };
+
+            var trDom=document.createElement("tr");
+            trDom.className='UMyChart_Small_Tooltip_V2_Group_Tr';
+            tbody.appendChild(trDom);
+            rowItem.Tr=trDom;
+
+            var tdDom=document.createElement("td");
+            tdDom.className="UMyChart_Small_Tooltip_V2_Title_Td";   //标题
+            trDom.appendChild(tdDom);
+            rowItem.TitleTd=tdDom;
+
+            var spanDom=document.createElement("span");
+            spanDom.className=this.TitleAlign.Default;
+            spanDom.innerText='标题';
+            tdDom.appendChild(spanDom);
+            rowItem.TitleSpan=spanDom;
+
+            var tdDom=document.createElement("td");
+            tdDom.className="UMyChart_Small_Tooltip_V2_Text_Td";    //数值
+            trDom.appendChild(tdDom);
+            rowItem.TextTd=tdDom;
+
+            var spanDom=document.createElement("span");
+            spanDom.className='UMyChart_Small_Tooltip_V2_Text_Span';
+            spanDom.innerText='数值';
+            tdDom.appendChild(spanDom);
+            rowItem.TextSpan=spanDom;
+
+            this.AryData.push(rowItem);
+        }
+        
+        document.body.appendChild(divDom);
+
+        this.DivDialog=divDom;
+        
+        this.UpdateStyle();
+    }
+
+    this.UpdateStyle=function()
+    {
+        if (!this.DivDialog) return;
+
+        if (this.BGColor) this.DivDialog.style['background-color']=this.BGColor;
+        if (this.BorderColor) this.DivDialog.style['border-color']=this.BorderColor;
+    }
+
+    this.Update=function(data)
+    {
+        if (!this.DivDialog) return;
+
+        this.AryText=[];
+        for(var i=0;i<data.AryData.length;++i)
+        {
+            var item=data.AryData[i];
+            if (item.Type==1) this.UpdateDefaultTooltip(item);
+            //else if (item.Type==2) this.Updateddd();
+        }
+
+        this.UpdateTableDOM();
+        this.ShowTooltip(data);
+    }
+
+    this.UpdateDefaultTooltip=function(data)
+    {
+        var text=data.Data.Text;
+        var rowItem={ Text:"", HTMLTitle:text, Color:this.ValueColor, IsMergeCell:true };
+        this.AryText.push(rowItem);
+    }
+
+    this.UpdateTableDOM=function()
+    {
+        var index=0;
+        for(index=0;index<this.AryText.length && index<this.MaxRowCount;++index)
+        {
+            var outItem=this.AryText[index];
+            var item=this.AryData[index];
+
+            if (outItem.HTMLTitle) item.TitleSpan.innerHTML=outItem.HTMLTitle
+            else item.TitleSpan.innerText=outItem.Title;
+
+            if (outItem.TitleColor) item.TitleSpan.style.color=outItem.TitleColor;
+            else item.TitleSpan.style.color=this.TextColor;
+
+            if (outItem.HTMLText) item.TextSpan.innerHTML=outItem.HTMLText
+            else item.TextSpan.innerText=outItem.Text;
+
+            item.TextSpan.style.color=outItem.Color;
+            item.TextTd.style.color=outItem.Color;
+
+            if (outItem.ClassName) 
+            {
+                item.TextSpan.className=outItem.ClassName;
+            }
+            else
+            {
+                if (item.TextSpan.className!=this.ValueAlign.Right) item.TextSpan.className=this.ValueAlign.Right;
+            }
+
+            if (outItem.TitleClassName)
+            {
+                item.TitleSpan.className=outItem.TitleClassName;
+            }
+            else
+            {
+                if (item.TitleSpan.className!=this.TitleAlign.Default) item.TitleSpan.className=this.TitleAlign.Default;
+            }
+
+            if (outItem.IsMergeCell)    //合并单元格
+            {
+                item.TitleTd.colspan=2;
+                item.TextTd.style.display="none";
+            }
+            else
+            {
+                if (item.TitleTd.colspan!=1) item.TitleTd.colspan=1;
+                item.TextTd.style.display="";
+            }
+           
+            item.Tr.style.display="";
+            if (item.Tr2) item.Tr2.style.display="none";
+
+        }
+
+        for( ; index<this.MaxRowCount; ++index)
+        {
+            var item=this.AryData[index];
+            item.Tr.style.display="none";
+            if (item.Tr2) item.Tr2.style.display="none";
+        }
+    }
+}
+
 function JSSmallFloatTooltipGroup()
 {
     this.AryTooltip=[];
     this.HQChart=null;
     this.MaxCount=5;
+    this.MaxRowCount=15;
+    this.Style=0;
 
     this.Inital=function(hqchart, option)
     {
         this.HQChart=hqchart;
+        if (option)
+        {
+            if (IFrameSplitOperator.IsNumber(option.Style)) this.Style=option.Style;
+            if (IFrameSplitOperator.IsNumber(option.MaxRowCount)) this.Style=option.MaxRowCount;
+            if (IFrameSplitOperator.IsNumber(option.MaxCount)) this.Style=option.MaxCount;
+        }
+    }
+
+    this.CreateTooltipDom=function()
+    {
+        var item=null;
+        if (this.Style==1)
+        {
+            item=new JSSmallFloatTooltipV2();
+            item.MaxRowCount=this.MaxRowCount;
+        }
+        else 
+        {
+            item=new JSSmallFloatTooltip();
+        }
+
+        item.HQChart=this.HQChart;
+        return item;
     }
 
     this.Create=function()
     {
         for(var i=0;i<this.MaxCount;++i)
         {
-            var item=new JSSmallFloatTooltip();
-            item.HQChart=this.HQChart;
+            var item=this.CreateTooltipDom();
+            
             item.Create();
             this.AryTooltip.push(item);
         }
@@ -2480,6 +2700,12 @@ function JSSmallFloatTooltipGroup()
 
     this.Update=function(data)
     {
+        if (this.Style==1)
+        {
+            this.UpdateV2(data);
+            return;
+        }
+
         var tooltipData=data.Tooltip;
         var pixelTatio = GetDevicePixelRatio();
         if (pixelTatio===0) pixelTatio=1;   
@@ -2492,6 +2718,47 @@ function JSSmallFloatTooltipGroup()
             var x=tooltipData.X/pixelTatio;
             var y=item.Y/pixelTatio;
             tooltipItem.Update({ Data:item, Point:{ X:x, Y:y} });
+        }
+
+        for(var i=tooltipData.AryData.length; i<this.AryTooltip.length; ++i)
+        {
+            var item=this.AryTooltip[i];
+            item.Hide();
+        }
+    }
+
+    //Style==1 同价格合并输出
+    this.UpdateV2=function(data)
+    {
+        var tooltipData=data.Tooltip;
+        var pixelTatio = GetDevicePixelRatio();
+        if (pixelTatio===0) pixelTatio=1;
+        
+        var x=tooltipData.X/pixelTatio;
+        var mapTooltip=new Map();   //根据Y轴 归类
+        for(var i=0; i<tooltipData.AryData.length;++i)
+        {
+            var item=tooltipData.AryData[i];
+            var key=parseInt(item.Y);
+            if (mapTooltip.has(key))
+            {
+                var mapItem=mapTooltip.get(key);
+                mapItem.AryData.push(item);
+            }
+            else
+            {
+                mapTooltip.set(key, { Key:key, Point:{ X:x, Y:item.Y/pixelTatio }, AryData:[ item ] });
+            }
+        }
+
+        var aryData=[];
+        for(var mapItem of mapTooltip) aryData.push(mapItem[1]);
+
+        for(var i=0; i<aryData.length && i<this.AryTooltip.length; ++i)
+        {
+            var item=aryData[i];
+            var tooltipItem=this.AryTooltip[i];
+            tooltipItem.Update(item);
         }
 
         for(var i=tooltipData.AryData.length; i<this.AryTooltip.length; ++i)

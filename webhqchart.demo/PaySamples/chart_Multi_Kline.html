@@ -1,0 +1,155 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+
+<title>多股同列(K线图)</title>  
+    <!-- 加载资源 -->
+    <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
+</head>  
+<body>
+
+    <div class="KLineContainer">
+        <div class="KLineCtrl" id="klineCtrl"><div id="kline" class="KLine"></div></div>
+        <div class="KLineCtrl" id="klineCtrl2"><div id="kline2" class="KLine"></div></div>
+    </div>
+
+    <div class="KLineContainer">
+        <div class="KLineCtrl" id="klineCtrl3"><div id="kline3" class="KLine"></div></div>
+        <div class="KLineCtrl" id="klineCtrl4"><div id="kline4" class="KLine"></div></div>
+    </div>
+
+    <div>
+        <span id="button_1" class="btn-style">日</span>
+        <span id="button_2" class="btn-style">周</span>
+        <span id="button_3" class="btn-style">1分钟</span>
+        <span id="button_4" class="btn-style">5分钟</span>
+    </div>
+
+    <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
+    <script src="../jscommon/umychart.resource/js/webfont.js"></script>
+    <script src='../jscommon/umychart.console.js'></script>     <!-- 日志输出 -->
+    <script src="../jscommon/umychart.network.js"></script>     <!-- 网络请求分装 -->
+    <script src="../jscommon/umychart.js"></script>             <!-- K线图形 -->
+    <script src="../jscommon/umychart.complier.js"></script>    <!-- 麦语言解析执行器 -->
+    <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
+    <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+    <script src="../jscommon/umychart.popMenu.js"></script>
+    <script src="../jscommon/umychart.PopKeyboard.js"></script>
+    <script src="../jscommon/umychart.DialogTooltip.js"></script>
+    <script src="../jscommon/umychart.DialogSelectRect.js"></script>
+    <script src="../jscommon/umychart.DialogSearchIndex.js"></script>
+    <script src="../jscommon/umychart.version.js"></script>
+    
+
+    <!-- 测试数据-->
+    <script src="../jscommon/umychart.testdata/60000.sh.capital.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/60000.sh.NewsInteract.js"></script>
+    <script src="../jscommon/umychart.testdata/60000.sh.BlockTrading.js"></script>
+    <script src="../jscommon/umychart.testdata/60000.sh.TradeDetal.js"></script>
+    <script src="../jscommon/umychart.testdata/60000.sh.finance_7.js"></script>
+
+    <!-- 分钟K线 -->
+    <script src="../jscommon/umychart.testdata/M1KLine/600000.sh.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/000001.sh.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/000300.sh.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/399001.sz.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/000001.sz.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/399006.sz.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/399005.sz.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/000151.sz.minute.kline.js"></script>
+
+    <script src="../jscommon/umychart.testdata/M1KLine/ICL8.cfe.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/IML8.cfe.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/IFL8.cfe.minute.kline.js"></script>
+
+    <!--日K -->
+    <script src="../jscommon/umychart.testdata/DayKLine/600000.sh.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/000001.sh.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/000300.sh.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/399001.sz.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/000001.sz.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/399006.sz.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/399005.sz.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/000151.sz.day.kline.js"></script>
+
+    <script src="../jscommon/umychart.testdata/DayKLine/ICL8.cfe.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/IML8.cfe.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/IFL8.cfe.day.kline.js"></script>
+
+    <!-- 单日分时图 -->
+    <script src="../jscommon/umychart.testdata/DayMinute/000001.sz.1day.minute.js"></script>
+    <script src="../jscommon/umychart.testdata/DayMinute/600000.sh.1day.minute.js"></script>
+    <script src="../jscommon/umychart.testdata/DayMinute/000151.sz.1day.minute.js"></script>
+
+    <script src="../jscommon/umychart.testdata.js"></script>
+    <script src="./chart_Multi_Kline.js"></script>
+   
+    <script>
+
+        $(function () 
+        {
+            WebFont.load({ custom: { families: ['iconfont'] } });   //预加载下iconfont资源
+           
+
+            var container=new KLineContainer();
+
+            container.AddKLine(new KLineChart(document.getElementById('klineCtrl'), document.getElementById('kline')));
+            container.AddKLine(new KLineChart(document.getElementById('klineCtrl2'),document.getElementById('kline2')));
+            container.AddKLine(new KLineChart(document.getElementById('klineCtrl3'),document.getElementById('kline3')));
+            container.AddKLine(new KLineChart(document.getElementById('klineCtrl4'),document.getElementById('kline4')));
+
+
+            container.Inital();
+
+
+            $("#button_1").click(function() { container.ChangePeriod(0); } );
+            $("#button_2").click(function() { container.ChangePeriod(1); } );
+            $("#button_3").click(function() { container.ChangePeriod(4); } );
+            $("#button_4").click(function() { container.ChangePeriod(5); } );
+           
+        })
+
+      
+    </script>  
+</body>  
+</html>
+
+
+
+<style>
+
+.KLine
+{
+    width: 100%;
+    height:100%;
+    position: relative;
+    /*margin-top: 100px;*/
+}
+
+.KLineContainer
+{
+    display: flex;
+}
+
+.KLineCtrl
+{
+    width:700px;
+    height:500px;
+    border:1px solid rgb(250,0,0)
+}
+
+.btn-style
+{
+    border: 1px solid #ececec;
+    background-color: #f5f5f5;
+    cursor: pointer;
+    display:inline-block;
+    width:50px;
+    text-align: center;
+}
+
+    
+</style>

@@ -483,6 +483,15 @@ function GetBlackStyle()
             ValueColor:"rgb(210,210,210)",            //数值
         },
 
+        SmallFloatTooltipV2:
+        {
+            BGColor:'rgb(20,20,20)',            //背景色
+            BorderColor:'rgb(170,170,170)',     //边框颜色
+
+            TextColor:"rgb(210,210,210)",             //数值名称
+            ValueColor:"rgb(210,210,210)",            //数值
+        },
+
         DialogSelectRect:
         {
             BGColor:'rgb(20,20,20)',            //背景色

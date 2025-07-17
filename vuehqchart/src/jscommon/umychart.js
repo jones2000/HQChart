@@ -6372,12 +6372,20 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         canvas.clearRect(0,0,this.UIElement.width,this.UIElement.height);
     }
 
+    this.ClearCorssCursorCanvas=function()
+    {
+        if (!this.CorssCursorCanvas) return;
+
+        this.CorssCursorCanvas.clearRect(0,0,this.CorssCursorElement.width,this.CorssCursorElement.height);
+    }
+
     this.Draw=function()
     {
         if (this.ChartCorssCursor) this.ChartCorssCursor.Status=0;
         if (this.UIElement.width<=0 || this.UIElement.height<=0) return; 
 
         this.StopDrawDynamicInfo();
+        this.ClearCorssCursorCanvas();
 
         var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_BEFORE_DRAW);
         if (event && event.Callback)
@@ -6551,7 +6559,6 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 if (this.CorssCursorCanvas) //独立的十字光标层
                 {
                     this.ChartCorssCursor.Canvas=this.CorssCursorCanvas;
-                    this.ChartCorssCursor.Canvas.clearRect(0,0,this.CorssCursorElement.width,this.CorssCursorElement.height)
                     bRestoreCanvas=true;
                 }
 
@@ -7355,6 +7362,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     {
         if (!this.ChartCorssCursor) return null;
         if (this.ChartCorssCursor.Status===0) return null;
+        if (!this.ChartCorssCursor.IsShowCorss) return null;
 
         var kItem=this.ChartCorssCursor.StringFormatX.KItem;
         if (!kItem) return null;
@@ -54793,6 +54801,8 @@ IFrameSplitOperator.FormatDateTimeStringV2=function(datetime, format, languageID
 
         case "HH:MM:SS":
             return `${IFrameSplitOperator.NumberToString(datetime.getHours())}:${IFrameSplitOperator.NumberToString(datetime.getMinutes())}:${IFrameSplitOperator.NumberToString(datetime.getSeconds())}`;
+        case "MM:SS":
+            return `${IFrameSplitOperator.NumberToString(datetime.getMinutes())}:${IFrameSplitOperator.NumberToString(datetime.getSeconds())}`;
         case "HH:MM":
             return `${IFrameSplitOperator.NumberToString(datetime.getHours())}:${IFrameSplitOperator.NumberToString(datetime.getMinutes())}`;
         case "HH:MM:SS.fff":
@@ -57882,7 +57892,7 @@ function ChartCorssCursor()
 
     //内部使用
     this.Close=null;     //收盘价格
-    this.Status=0;       //当前状态 0=隐藏 1=显示
+    this.Status=0;       //当前状态 0=隐藏 1=显示底部  2=十字线
 
     this.ReloadResource=function(resource)
     {
@@ -77453,6 +77463,15 @@ function JSChartResource()
         ValueColor:"rgb(0,0,0)",            //数值
     };
 
+    this.SmallFloatTooltipV2=
+    {
+        BGColor:'rgb(250,250,250)',         //背景色
+        BorderColor:'rgb(20,20,20)',        //边框颜色
+
+        TextColor:"rgb(0,0,0)",             //数值名称
+        ValueColor:"rgb(0,0,0)",            //数值
+    };
+
     //区间统计
     this.DialogSelectRect=
     {
@@ -79238,8 +79257,20 @@ function JSChartResource()
 
         if (style.ChartDrawTVLongPosition) this.SetChartDrawTVLongPosition(style.ChartDrawTVLongPosition);
         if (style.KLineCountDownPaint) this.SetKLineCountDownPaint(style.KLineCountDownPaint);
+
+        if (style.SmallFloatTooltipV2) this.SetSmallFloatTooltipV2(style.SmallFloatTooltipV2);
     }
 
+    this.SetSmallFloatTooltipV2=function(style)
+    {
+        var dest=this.SmallFloatTooltipV2;
+
+        if (style.BGColor) dest.BGColor=style.BGColor;
+        if (style.BorderColor) dest.BorderColor=style.BorderColor;
+
+        if (style.TextColor) dest.TextColor=style.TextColor;
+        if (style.ValueColor) dest.ValueColor=style.ValueColor;
+    }
 
     this.SetKLineCountDownPaint=function(style)
     {
