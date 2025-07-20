@@ -195,6 +195,9 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 * 多股同列 十字光标联动
 ![多股同列](/小程序行情模块用例/image/Multi_Kline.gif)  
 [https://jones2000.github.io/HQChart/webhqchart.demo/PaySamples/chart_Multi_Kline.html](https://jones2000.github.io/HQChart/webhqchart.demo/PaySamples/chart_Multi_Kline.html)  
+* K线倒计时  
+![K线倒计时](/小程序行情模块用例/image/kline_countdonw.png)  
+[https://jones2000.github.io/HQChart/webhqchart.demo/PaySamples/chart_kline_countdown.html](https://jones2000.github.io/HQChart/webhqchart.demo/PaySamples/chart_kline_countdown.html)  
 
 # 2. 走势图
 * 支持指标 <br>
