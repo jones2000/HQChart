@@ -78183,7 +78183,8 @@ function JSChartResource()
         {
             TextColor:"rgb(60,60,83)",
             BaseTextColor:"rgb(60,60,83)",
-            BGColor:"rgb(180,180,180)"
+            BGColor:"rgb(180,180,180)",
+            MatchTextColor:"rgb(60,60,83)",
         },
 
         FieldColor:
@@ -79805,6 +79806,7 @@ function JSChartResource()
             if (cell.TextColor) dest.CenterItem.TextColor=cell.TextColor;
             if (cell.BaseTextColor) dest.CenterItem.BaseTextColor=cell.BaseTextColor;
             if (cell.BGColor) dest.CenterItem.BGColor=cell.BGColor;
+            if (cell.MatchTextColor) dest.CenterItem.MatchTextColor=cell.MatchTextColor;
         }
 
         if (item.Item)
@@ -85787,7 +85789,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                 else item.XSplitOperator.ShowText=false;
             }
 
-            this.Frame.SetSizeChage(true);
+            this.SetSizeChange(true);
             this.ResetFrameXYSplit();
             this.UpdateFrameMaxMin();          //调整坐标最大 最小值
             this.Draw();
@@ -85803,57 +85805,16 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                 var item=indexName[i%indexName.length];
                 var name=item.Index;
                 let indexInfo = scriptData.Get(name);
-                var args=indexInfo.Args;
-                if (item.Args) args=item.Args;
-                let indexData = 
-                { 
-                    Name:indexInfo.Name, Script:indexInfo.Script, Args: args, ID:item.Index,
-                    //扩展属性 可以是空
-                    KLineType:indexInfo.KLineType,  YSpecificMaxMin:indexInfo.YSpecificMaxMin,  YSplitScale:indexInfo.YSplitScale,
-                    FloatPrecision:indexInfo.FloatPrecision, Condition:indexInfo.Condition,
-                    OutName:indexInfo.OutName
-                };
-    
-                this.WindowIndex[i]=new ScriptIndex(indexData.Name,indexData.Script,indexData.Args,indexData);    //脚本执行
+                if (indexInfo)
+                {
+                    JSIndexScript.ModifyAttribute(indexInfo,item);
+                    this.WindowIndex[i]=new ScriptIndex(indexInfo.Name,indexInfo.Script,indexInfo.Args,indexInfo);    //脚本执行
+                }
 
                 var subFrame=this.Frame.SubFrame[i];
-                if (item.Modify!=null) this.Frame.SubFrame[i].Frame.ModifyIndex=item.Modify;
-                if (item.Change!=null) this.Frame.SubFrame[i].Frame.ChangeIndex=item.Change;
-                if (item.Close!=null) this.Frame.SubFrame[i].Frame.CloseIndex=item.Close;
-                if (item.Overlay!=null) chart.Frame.SubFrame[i].Frame.OverlayIndex=item.Overlay;
-                if (item.IsDrawTitleBG==true)  this.Frame.SubFrame[i].Frame.IsDrawTitleBG=item.IsDrawTitleBG;
-                if (IFrameSplitOperator.IsBool(item.IsShowNameArrow)) this.Frame.SubFrame[i].Frame.IsShowNameArrow=item.IsShowNameArrow;
-
-                if (IFrameSplitOperator.IsNumber(item.TitleHeight)) this.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight=item.TitleHeight;
-                else item.TitleHeight=this.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight;
-                if (IFrameSplitOperator.IsBool(item.IsShowTitleArrow)) subFrame.Frame.IsShowTitleArrow=item.IsShowTitleArrow;
-                if (IFrameSplitOperator.IsNumber(item.TitleArrowType)) subFrame.Frame.TitleArrowType=item.TitleArrowType;
-                if (item.IsShowIndexName==false) this.Frame.SubFrame[i].Frame.IsShowIndexName=false;
-                if (item.IsShowOverlayIndexName==false) this.Frame.SubFrame[i].Frame.IsShowOverlayIndexName=false;
-                if (IFrameSplitOperator.IsNumber(item.IndexParamSpace)) this.Frame.SubFrame[i].Frame.IndexParamSpace=item.IndexParamSpace;
-                if (IFrameSplitOperator.IsNumber(item.IndexTitleSpace)) this.Frame.SubFrame[i].Frame.IndexTitleSpace=item.IndexTitleSpace;
-                
-                if (item.IsShowXLine==false) this.Frame.SubFrame[i].Frame.IsShowXLine=false;
-                if (item.IsShowYLine==false) this.Frame.SubFrame[i].Frame.IsShowYLine=false;
-                if (IFrameSplitOperator.IsBool(item.IsShowIndexTitle)) this.Frame.SubFrame[i].Frame.IsShowIndexTitle=item.IsShowIndexTitle;
-                
-
-                if (IFrameSplitOperator.IsBool(item.IsShowLeftText)) 
-                {
-                    subFrame.Frame.IsShowYText[0]=item.IsShowLeftText;
-                    subFrame.Frame.YSplitOperator.IsShowLeftText=item.IsShowLeftText;            //显示左边刻度
-                }
-                if (IFrameSplitOperator.IsBool(item.IsShowRightText)) 
-                {
-                    subFrame.Frame.IsShowYText[1]=item.IsShowRightText;
-                    subFrame.Frame.YSplitOperator.IsShowRightText=item.IsShowRightText;         //显示右边刻度
-                }
-
-                if (item.OverlayIndexType)
-                {
-                    if (IFrameSplitOperator.IsNumber(item.OverlayIndexType.Position)) subFrame.Frame.OverlayIndexType.Position=item.OverlayIndexType.Position;
-                    if (IFrameSplitOperator.IsNumber(item.OverlayIndexType.LineSpace)) subFrame.Frame.OverlayIndexType.LineSpace=item.OverlayIndexType.LineSpace;
-                }
+                var frameItem=null;
+                if(option && option.Frame && option.Frame.length>i) frameItem=option.Frame[i];
+                this.SetSubFrameAttribute(subFrame, item, frameItem);
 
                 var bindData=this.ChartPaint[0].Data;
                 this.BindIndexData(i,bindData);   //执行脚本
@@ -92631,7 +92592,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
     }
 
     //设置指标窗口个数
-    this.ChangeIndexWindowCount=function(count)
+    this.ChangeIndexWindowCount=function(count, option)
     {
         if (count<2) return;   //1,2个窗口固定的不能动
         if (this.Frame.SubFrame.length==count) return;
@@ -92678,12 +92639,13 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             }
 
             //创建指标
-            const indexName=["RSI","MACD","DMA","DMI","KDJ","WR"];
+            const indexName=[{Index:"RSI"},{Index:"MACD"},{Index:"DMA"},{Index:"DMI"},{Index:"KDJ"},{Index:"WR"} ];
             let scriptData = new JSIndexScript();
             for(var i=currentLength;i<count;++i)
             {
-                var name=indexName[i%indexName.length];
-                let indexInfo = scriptData.Get(name);
+                var item=indexName[i%indexName.length];
+                var indexInfo = scriptData.Get(item.Index);
+                JSIndexScript.ModifyAttribute(indexInfo,item);
                 this.WindowIndex[i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args,indexInfo);    //脚本执行
                 var bindData=this.SourceData;
                 this.BindIndexData(i,bindData);   //执行脚本
@@ -92701,7 +92663,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         }
 
         this.UpdateXShowText();
-        this.Frame.SetSizeChage(true);
+        this.SetSizeChange(true);
         this.ResetFrameXYSplit();
         this.UpdateFrameMaxMin();          //调整坐标最大 最小值
         this.Draw();

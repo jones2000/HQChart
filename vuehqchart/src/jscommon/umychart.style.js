@@ -922,7 +922,8 @@ function GetBlackStyle()
             {
                 TextColor:"rgb(16,226,217)",
                 BaseTextColor:"rgb(60,60,83)",
-                BGColor:"rgb(65,65,65)"
+                BGColor:"rgb(65,65,65)",
+                MatchTextColor:"rgb(210,210,210)"
             },
 
             FieldColor:

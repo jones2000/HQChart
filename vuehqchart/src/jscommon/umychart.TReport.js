@@ -291,7 +291,7 @@ function JSTReportChartContainer(uielement)
     this.Symbol;    //期权对应的品种代码
     this.Name;      //期权对应的品种名称
     this.NetworkFilter;                                 //数据回调接口
-    this.Data={ XOffset:0, YOffset:0, Data:[], Price:null };        //股票列表 Price=标的物市场价格
+    this.Data={ XOffset:0, YOffset:0, Data:[], Price:null, MatchExePrice:null };        //股票列表 Price=标的物市场价格  MatchExePrice=标的物市场价格匹配的行权价格
     this.BorderData={ MapData:null }; //key=Field Value:[null, {ExePrice} ,{ExePrice} ]
     this.SourceData={ Data:[] } ;                       //原始股票顺序(排序还原用) {ExePrice=行权价格 LeftData:, RightData}
 
@@ -841,7 +841,11 @@ function JSTReportChartContainer(uielement)
             }
         }
 
-        if (IFrameSplitOperator.IsNumber(data.price)) this.Data.Price=data.price;
+        if (IFrameSplitOperator.IsNumber(data.price)) 
+        {
+            this.Data.Price=data.price;
+            this.Data.MatchExePrice=null;
+        }
 
         if (IFrameSplitOperator.IsNonEmptyArray(data.fixedRowData))
         {
@@ -880,11 +884,13 @@ function JSTReportChartContainer(uielement)
     //计算统计数据
     this.CalculateData=function()
     {
+        this.Data.MatchExePrice=null;
         if (!this.MapExePriceData || this.MapExePriceData.size<=0) return;
 
         var leftMaxPosition={ Max:null, ExePrice:null, CellType:1 };
         var rightMaxPosition={ Max:null,ExePrice:null, CellType:2 };
         this.BorderData.MapData=new Map();
+        var aryPrice=[];
         for(var mapItem of this.MapExePriceData)
         {
             var item=mapItem[1];
@@ -907,6 +913,8 @@ function JSTReportChartContainer(uielement)
                     rightMaxPosition.ExePrice=mapItem[0];
                 }
             }
+
+            aryPrice.push(item.ExePrice);
         }
 
         var aryData=[null, null, null];
@@ -914,6 +922,24 @@ function JSTReportChartContainer(uielement)
         if (rightMaxPosition.ExePrice) aryData[2]=rightMaxPosition;
         
         this.BorderData.MapData.set(TREPORT_COLUMN_ID.POSITION_ID, { Data:aryData });
+
+        if (IFrameSplitOperator.IsNumber(this.Data.Price))
+        {
+            aryPrice.sort((left, right)=>{ return left-right;});
+            var prePrice=null;
+            for(var i=0;i<aryPrice.length;++i)
+            {
+                var value=aryPrice[i];
+                if (value>this.Data.Price)
+                {
+                    this.Data.MatchExePrice=prePrice
+                    break;
+                }
+
+                prePrice=value;
+            }
+        }
+        
     }
 
     //读取单条股票json数据
@@ -1968,7 +1994,8 @@ function ChartTReport()
     { 
         TextColor:g_JSChartResource.TReport.CenterItem.TextColor, 
         BaseTextColor:g_JSChartResource.TReport.CenterItem.BaseTextColor, 
-        BGColor: g_JSChartResource.TReport.CenterItem.BGColor
+        BGColor: g_JSChartResource.TReport.CenterItem.BGColor,
+        MatchTextColor:g_JSChartResource.TReport.CenterItem.MatchTextColor,
     };
     
     //缓存
@@ -2487,13 +2514,13 @@ function ChartTReport()
             var leftBGColor=null, rightBGColor=null;
             if (exePrice>this.Data.Price)
             {
-                leftBGColor=this.UpBGColor;
-                rightBGColor=this.DownBGColor;
+                leftBGColor=this.DownBGColor;
+                rightBGColor=this.UpBGColor;
             }
             else
             {
-                leftBGColor=this.DownBGColor;
-                rightBGColor=this.UpBGColor;
+                leftBGColor=this.UpBGColor;
+                rightBGColor=this.DownBGColor;
             }
 
             if (leftBGColor)
@@ -2611,6 +2638,11 @@ function ChartTReport()
 
         var drawInfo={ Text:null, TextColor:this.CenterItemConfig.TextColor, BGColor:this.CenterItemConfig.BGColor, TextAlign:column.TextAlign, Rect:rtItem, RectText:rtText };
         drawInfo.Text=`${data.ExePrice.toFixed(data.Decimal)}`;
+
+        if (IFrameSplitOperator.IsNumber(this.Data.MatchExePrice) && this.Data.MatchExePrice==data.ExePrice)
+        {
+            drawInfo.TextColor=this.CenterItemConfig.MatchTextColor;
+        }
 
         this.FormatCenterItem(data,drawInfo);
 

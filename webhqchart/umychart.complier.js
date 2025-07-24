@@ -3292,7 +3292,7 @@ function JSAlgorithm(errorHandler,symbolData)
     this.EMA=function(data,dayCount)
     {
         var result = [];
-        if (data.length<=0) return result;
+        if (!data || data.length<=0) return result;
 
         if (Array.isArray(dayCount))
         {

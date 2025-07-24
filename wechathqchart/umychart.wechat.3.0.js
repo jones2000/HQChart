@@ -1208,6 +1208,12 @@ function JSChart(element)
         }
     }
 
+    this.ChangeIndexWindowCount=function(count, option)
+    {
+        if (this.JSChartContainer && typeof (this.JSChartContainer.ChangeIndexWindowCount) == 'function') 
+            this.JSChartContainer.ChangeIndexWindowCount(count, option);
+    }
+
     this.CreateChartDrawPicture=function(name,option)
     {
         if(this.JSChartContainer && typeof(this.JSChartContainer.CreateChartDrawPicture)=='function')
@@ -7469,6 +7475,103 @@ function KLineChartContainer(uielement)
         }
     }
 
+    this.ChangeIndexWindowCount=function(count,option)
+    {
+        if (count<=0) return;
+        if (this.Frame.SubFrame.length==count) return;
+
+        this.Frame.RestoreIndexWindows();
+
+        var currentLength=this.Frame.SubFrame.length;
+        if (currentLength>count)
+        {
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DELETE_FRAME);
+            for(var i=currentLength-1;i>=count;--i)
+            {
+                this.DeleteIndexPaint(i);
+                //this.DeleteChartPaintExtend({WindowIndex:i});
+                if (event && event.Callback)
+                {
+                    var sendData={ SubFrame:this.Frame.SubFrame[i], WindowIndex:i };
+                    event.Callback(event, sendData, this);
+                }
+            }
+
+            this.Frame.SubFrame.splice(count,currentLength-count);
+            this.WindowIndex.splice(count,currentLength-count);
+            this.TitlePaint.splice(count+1,currentLength-count);
+
+            //最后一个显示X轴坐标
+            for(var i=0;i<this.Frame.SubFrame.length;++i)
+            {
+                var item=this.Frame.SubFrame[i].Frame;
+                if (i==this.Frame.SubFrame.length-1) item.XSplitOperator.ShowText=true;
+                else item.XSplitOperator.ShowText=false;
+            }
+
+            this.Frame.SetSizeChange(true);
+            this.ResetFrameXYSplit();
+            this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+            this.Draw();
+        }
+        else
+        {
+            //创建新的指标窗口
+            for(var i=currentLength;i<count;++i)
+            {
+                var subFrame=this.CreateSubFrameItem(i);
+                this.Frame.SubFrame[i]=subFrame;
+                var titlePaint=new DynamicChartTitlePainting();
+                titlePaint.Frame=this.Frame.SubFrame[i].Frame;
+                titlePaint.Canvas=this.Canvas;
+                titlePaint.LanguageID=this.LanguageID;
+                titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+                titlePaint.SelectedChart=this.SelectedChart;
+                titlePaint.HQChart=this;
+                this.TitlePaint[i+1]=titlePaint;
+            }
+            //最后一个显示X轴坐标
+            for(var i=0;i<this.Frame.SubFrame.length;++i)
+            {
+                var item=this.Frame.SubFrame[i].Frame;
+                if (i==this.Frame.SubFrame.length-1) item.XSplitOperator.ShowText=true;
+                else item.XSplitOperator.ShowText=false;
+            }
+
+            this.Frame.SetSizeChange(true);
+            this.ResetFrameXYSplit();
+            this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+            this.Draw();
+
+            //创建指标
+            var indexName= [ {Index:"RSI"}, {Index:"MACD"}, {Index:"VOL"}, {Index:"UOS"}, {Index:"CHO"}, {Index:"BRAR"} ];  //增加的指标名字
+            if (option && option.Windows.length>0)
+                indexName=option.Windows;   //外部设置增加窗口的默认指标
+
+            let scriptData = new JSIndexScript();
+            for(var i=currentLength;i<count;++i)
+            {
+                var item=indexName[i%indexName.length];
+                var name=item.Index;
+                var indexInfo = scriptData.Get(name);
+                if (indexInfo)
+                {
+                    JSIndexScript.ModifyAttribute(indexInfo,item);
+                    this.WindowIndex[i]=new ScriptIndex(indexInfo.Name,indexInfo.Script,indexInfo.Args,indexInfo);    //脚本执行
+                }
+
+                var subFrame=this.Frame.SubFrame[i];
+                var frameItem=null;
+                if(option && option.Frame && option.Frame.length>i) frameItem=option.Frame[i];
+                this.SetSubFrameAttribute(subFrame, item, frameItem);
+                var bindData=this.ChartPaint[0].Data;
+                this.BindIndexData(i,bindData);   //执行脚本
+            }
+
+            //this.UpdataDataoffset();           //更新数据偏移
+        }
+    }
+
     this.RemoveIndexWindow=function(id)
     {
         JSConsole.Chart.Log('[KLineChartContainer::RemoveIndexWindow] remove id', id);
@@ -10258,6 +10361,83 @@ function MinuteChartContainer(uielement)
             //this.Frame.SetSizeChange(true);
             if (dayCount!=null) this.ChangeDayCount(dayCount);
         }
+    }
+
+    //设置指标窗口个数
+    this.ChangeIndexWindowCount=function(count, option)
+    {
+        if (count<2) return;   //1,2个窗口固定的不能动
+        if (this.Frame.SubFrame.length==count) return;
+
+        var currentLength=this.Frame.SubFrame.length;
+        if (currentLength>count)
+        {
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DELETE_FRAME);
+            for(var i=currentLength-1;i>=count;--i)
+            {
+                this.DeleteIndexPaint(i);
+                //this.DeleteChartPaintExtend({WindowIndex:i});
+                var item=this.Frame.SubFrame[i].Frame;
+
+                if (event && event.Callback)
+                {
+                    var sendData={ SubFrame:this.Frame.SubFrame[i], WindowIndex:i };
+                    event.Callback(event, sendData, this);
+                }
+            }
+
+            this.Frame.SubFrame.splice(count,currentLength-count);
+            this.WindowIndex.splice(count,currentLength-count);
+            this.TitlePaint.splice(count+1,currentLength-count);
+        }
+        else
+        {
+            //创建新的指标窗口
+            var mainFrame=this.Frame.SubFrame[0].Frame;
+            for(var i=currentLength;i<count;++i)
+            {
+                var subFrame=this.CreateSubFrameItem(i, mainFrame);
+                this.Frame.SubFrame[i]=subFrame;
+                var titlePaint=new DynamicChartTitlePainting();
+                titlePaint.Frame=this.Frame.SubFrame[i].Frame;
+                titlePaint.Canvas=this.Canvas;
+                titlePaint.LanguageID=this.LanguageID;
+                titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+                titlePaint.SelectedChart=this.SelectedChart;
+                titlePaint.MainTitlePaint=this.TitlePaint[0];
+                titlePaint.HQChart=this;
+                this.TitlePaint[i+1]=titlePaint;
+            }
+
+            //创建指标
+            const indexName=[{Index:"RSI"},{Index:"MACD"},{Index:"DMA"},{Index:"DMI"},{Index:"KDJ"},{Index:"WR"} ];
+            let scriptData = new JSIndexScript();
+            for(var i=currentLength;i<count;++i)
+            {
+                var item=indexName[i%indexName.length];
+                var indexInfo = scriptData.Get(item.Index);
+                JSIndexScript.ModifyAttribute(indexInfo,item);
+                this.WindowIndex[i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args,indexInfo);    //脚本执行
+                var bindData=this.SourceData;
+                this.BindIndexData(i,bindData);   //执行脚本
+            }
+
+            //最后一个显示X轴坐标
+            for(var i=0;i<this.Frame.SubFrame.length;++i)
+            {
+                var item=this.Frame.SubFrame[i].Frame;
+                if (i==this.Frame.SubFrame.length-1) item.XSplitOperator.ShowText=true;
+                else item.XSplitOperator.ShowText=false;
+            }
+            
+            this.UpdataDataoffset();           //更新数据偏移
+        }
+
+        this.UpdateXShowText();
+        this.SetSizeChange(true);
+        this.ResetFrameXYSplit();
+        this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        this.Draw();
     }
 
     this.RemoveIndexWindow=function(id)
