@@ -29,6 +29,8 @@ var JS_DRAWTOOL_MENU_ID=
     CMD_ZOOM_OUT_FONT_ID:12, //字体缩小
     CMD_MODIFY_TEXT_ID:13,  //随机生成文字内容
     CMD_ADVANCED_SETTING_ID:14, //高级设置
+
+    CMD_CROSS_PERIOD_ID:15, //跨周期
 };
 
 function JSDialogDrawTool()
@@ -151,6 +153,7 @@ function JSDialogDrawTool()
         AryTool:
         [
             { Title:"选中", ClassName:'hqchart_drawtool icon-arrow', Type:1, Data:{ID:JS_DRAWTOOL_MENU_ID.CMD_SELECTED_ID} },
+            { Title:"跨周期", ClassName: 'hqchart_drawtool icon-kuazhouqi', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_CROSS_PERIOD_ID }},
             { Title:'尺子', ClassName: 'hqchart_drawtool icon-ruler', Type:0, Data:{ ID:"尺子" } },
             { Title:"磁铁", ClassName:'hqchart_drawtool icon-xifu', Type:2, Data:{ID:JS_DRAWTOOL_MENU_ID.CMD_ENABLE_MAGNET_ID} },
             { Title:"点击切换颜色", ClassName: 'hqchart_drawtool icon-fangkuai', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_CHANGE_LINE_COLOR_ID }},
@@ -310,12 +313,15 @@ function JSDialogDrawTool()
             this.ClearCurrnetDrawPicture();
             this.EnableEraseChart(false);
         }
+        else if (type==2 && id==JS_DRAWTOOL_MENU_ID.CMD_CROSS_PERIOD_ID)
+        {
+            this.EnableCrossPeriod(data);
+        }
         else if (type==2 && id==JS_DRAWTOOL_MENU_ID.CMD_ENABLE_MAGNET_ID)
         {
             this.ChangeMagnet(data);
         }
         else if (type==0)
-    
         {
             this.ClearAllSelectedChart();
             this.EnableEraseChart(false);
@@ -335,6 +341,26 @@ function JSDialogDrawTool()
 
             item.Span.classList.remove("UMyChart_DrawTool_Span_Selected");
             item.Span.classList.add("UMyChart_DrawTool_Span");
+        }
+    }
+
+    this.EnableCrossPeriod=function(data)
+    {
+        if (!this.HQChart) return;
+        if (!this.HQChart.ChartDrawStorage) return;
+
+        this.HQChart.ChartDrawStorage.EnableCrossPeriod=!this.HQChart.ChartDrawStorage.EnableCrossPeriod;
+        var enable=this.HQChart.ChartDrawStorage.EnableCrossPeriod;
+
+        if (enable) 
+        {
+            data.Span.classList.remove("UMyChart_DrawTool_Span");
+            data.Span.classList.add("UMyChart_DrawTool_Span_Selected");
+        }
+        else 
+        {
+            data.Span.classList.remove("UMyChart_DrawTool_Span_Selected");
+            data.Span.classList.add("UMyChart_DrawTool_Span");
         }
     }
 
@@ -382,6 +408,14 @@ function JSDialogDrawTool()
         if (item.Type==2 && item.Data.ID==JS_DRAWTOOL_MENU_ID.CMD_CHANGE_LINE_COLOR_ID)   //颜色
         {
             spanDom.style['color']=this.LineColor;
+        }
+        else if (item.Type==2 && item.Data.ID==JS_DRAWTOOL_MENU_ID.CMD_CROSS_PERIOD_ID)
+        {
+            if (this.HQChart && this.HQChart.ChartDrawStorage && this.HQChart.ChartDrawStorage.EnableCrossPeriod)
+            {
+                data.Span.classList.remove("UMyChart_DrawTool_Span");
+                data.Span.classList.add("UMyChart_DrawTool_Span_Selected");
+            }
         }
         
         tdDom.onmousedown=(e)=> { this.OnClickItem(e, data); };   //点击

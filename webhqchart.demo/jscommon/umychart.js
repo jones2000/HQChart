@@ -422,7 +422,13 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
 
         if (option.DrawTool)    //画图工具
         {
-            if (option.DrawTool.StorageKey && chart.ChartDrawStorage) chart.ChartDrawStorage.Load(option.DrawTool.StorageKey);
+            var item=option.DrawTool;
+            if (chart.ChartDrawStorage)
+            {
+                if (item.StorageKey) chart.ChartDrawStorage.Load(item.StorageKey);
+                if (IFrameSplitOperator.IsBool(item.EnableCrossPeriod)) chart.ChartDrawStorage.EnableCrossPeriod=item.EnableCrossPeriod;
+            }
+            
         }
 
         if (option.KeyboardMove)
@@ -3316,7 +3322,11 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     this.EnableVerticalDrag=false;
 
     //十字光标长留(手势才有)
-    this.ClickModel={ IsShowCorssCursor:false, PreventHide:false, IsClickButton:false }; //PreventHide 阻止隐藏十字光标
+    this.ClickModel=
+    { 
+        IsShowCorssCursor:false, PreventHide:false, IsClickButton:false, 
+        AutoClose:{ Enable:false, Timer:null, DelayTime:3000 },
+    }; //PreventHide 阻止隐藏十字光标 AutoClose=延迟关闭
     this.EnableClickModel=false;
 
     //标题栏显示最新数据
@@ -5703,6 +5713,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
 
         this.StopDragTimer();
+        this.StopAutoCloseCorssCursor();
 
         var isSingleTouch=this.IsSingleTouch(e);
         if (this.EnableScrollUpDown==false ||  !isSingleTouch || //多点触屏
@@ -6218,6 +6229,29 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
         event.Callback(event, data, this);
         return true;
+    }
+
+    this.StopAutoCloseCorssCursor=function()
+    {
+        if (!this.ClickModel.AutoClose.Timer) return;
+
+        clearTimeout(this.ClickModel.AutoClose.Timer);
+        this.ClickModel.AutoClose.Timer=null;
+    }
+
+    //自动关闭十字光标
+    this.DelayAutoCloseCorssCursor=function()
+    {
+        if (!this.ClickModel.AutoClose.Enable) return false;
+
+        this.StopAutoCloseCorssCursor();
+
+        this.ClickModel.AutoClose.Timer=setTimeout(()=>
+        {
+            this.ClickModel.IsShowCorssCursor=false;
+            this.DrawDynamicInfo();
+
+        }, this.ClickModel.AutoClose.DelayTime)
     }
 
     this.MoveCorssCursor=function(point,e)
@@ -9998,6 +10032,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
         drawPicture.PointMagnetKLine();
         drawPicture.Status=10;  //完成
+        drawPicture.Period=this.Period;
         drawPicture.PointToValue();
 
         if (this.ChartDrawStorage) this.ChartDrawStorage.SaveDrawData(drawPicture);
@@ -64602,10 +64637,89 @@ function IChartDrawPicture()
         }
     }
 
+    this.GetkData=function()
+    {
+        if (!this.Frame) return null;
+        var data=this.Frame.Data;
+        if (!data) return null;
+
+        return data;
+    }
+
+    //周期变动 X重新定位
+    this.ChangePeriod=function(period)
+    {
+        var kData=this.GetkData();
+        if (!kData) return;
+
+        var aryDateTime=[];
+        for(var i=0; i<this.Value.length; ++i)
+        {
+            var item=this.Value[i];
+            if (!item.DateTime) break;
+            var dateTime={ Date:item.DateTime.Date, Time:0, Match:null };
+            if (IFrameSplitOperator.IsNumber(item.DateTime.Time)) dateTime.Time=item.DateTime.Time;
+            aryDateTime[i]=dateTime;
+        }
+
+        var findCount=0;
+        var perData=null;
+        var perIndex=-1;
+        for(var i=0, j=0;i<kData.Data.length;++i)
+        {
+            var kItem=kData.Data[i];
+
+            for(j=0;j<aryDateTime.length;++j)
+            {
+                var item=aryDateTime[j];
+                if (item.Match) continue;
+
+                if (ChartData.IsDayPeriod(period, true))
+                {
+                    if (kItem.Date>item.Date)
+                    {
+                        item.Match={ KItem:perData, Index:perIndex };
+                        ++findCount;
+                    } 
+                }
+                else if (ChartData.IsMinutePeriod(period, true))
+                {
+                    if (kItem.Date>item.Date || (kItem.Date==item.Date && kItem.Time>item.Time)) 
+                    {
+                        item.Match={ KItem:perData, Index:perIndex };
+                        ++findCount;
+                    }
+                }
+            }
+
+            perData=kItem;
+            perIndex=i;
+
+            if (findCount>=aryDateTime.length) break;
+        }
+
+        for(var i=0;i<aryDateTime.length;++i)
+        {
+            var item=aryDateTime[i];
+            var valueItem=this.Value[i];
+            if (item.Match && item.Match.KItem)
+            {
+                valueItem.DateTime={ Date:item.Match.Date, Time:item.Match.Time };
+                valueItem.XValue=item.Match.Index;
+            }
+            else
+            {
+                valueItem.DateTime=null;
+                valueItem.XValue=null;
+            }
+        }
+
+        this.Period=period;
+    }
+
     this.UpdateXValue=function()    //通过datetime更新x的索引
     {
-        if (!this.Frame) return false;
-        var data=this.Frame.Data;
+        var data=this.GetkData();
         if (!data) return false;
 
         var aryDateTime=[];
@@ -76315,9 +76429,12 @@ function ChartDrawTVShortPosition()
 
 function ChartDrawStorage()
 {
-    this.DrawData=new Map();    //画图工具数据 key=symbol-Period, value=Map() Key:Guid, Value:{Guid, Symbol, Period, ClassName, Value}
+    //this.DrawData=new Map();        //画图工具数据 key=symbol-Period, value=Map() Key:Guid, Value:{ Guid, Symbol, Period, ClassName, Value }
+    this.DrawDataV2=new Map();        //画图工具数据 key=symbol, value=Map() Key:Guid, Value:{ Guid, Symbol, Period, ClassName, Value }
+
     this.StorageKey;
-    this.GetEventCallback;      //事件回调
+    this.GetEventCallback;              //事件回调
+    this.EnableCrossPeriod=false;       //跨周期
 
     this.Load=function(key)     //从本地读取画图工具
     {
@@ -76330,18 +76447,39 @@ function ChartDrawStorage()
         if (typeof(cacheValue) != "string") return;
 
         var saveData=JSON.parse(cacheValue);
-        for(var i in saveData)
+        if (!saveData) return;
+
+        if (IFrameSplitOperator.IsNonEmptyArray(saveData))  //老版本 key=symbol-Period
         {
-            var item=saveData[i];
-            var drawMap=new Map();
-
-            for(var j in item.Value)
+            for(var i=0;i<saveData.length;++i)
             {
-                var drawItem=item.Value[j];
-                drawMap.set(drawItem.Key, drawItem.Value);    
-            }
+                var item=saveData[i];
+                for(var j=0;j<item.Value.length;++j)
+                {
+                    var drawItem=item.Value[j];
+                    var symbol=drawItem.Value.Symbol;
+                    if (!this.DrawDataV2.has(symbol))
+                        this.DrawDataV2.set(symbol, {Symbol:symbol, MapPicture: new Map() });
 
-            this.DrawData.set(item.Key,drawMap);
+                    var stockItem=this.DrawDataV2.get(symbol);
+                    stockItem.MapPicture.set(drawItem.Value.Guid, drawItem.Value);
+                }
+            }
+        }
+        else if (saveData.Ver==2.0 && IFrameSplitOperator.IsNonEmptyArray(saveData.Data))
+        {
+            for(var i=0;i<saveData.Data.length;++i)
+            {
+                var item=saveData.Data[i];  //{ Symbol:, AryPicture:[ { Guid, Symbol, Period, ClassName, Value },  ] }
+                var stockItem={ Symbol:item.Symbol, MapPicture:new Map() };
+                for(var j=0; j<item.AryPicture.length;++j)
+                {
+                    var drawItem=item.AryPicture[j];
+                    stockItem.MapPicture.set(drawItem.Guid, drawItem);   
+                }
+
+                this.DrawDataV2.set(stockItem.Symbol,stockItem);
+            }
         }
     }
 
@@ -76350,89 +76488,95 @@ function ChartDrawStorage()
         if (!this.StorageKey) return;
         
         var saveData=[];
-        for(var stock of this.DrawData)
+        for(var mapItem of this.DrawDataV2)
         {
-            var key=stock[0];
-            var value=stock[1];
-            var itemData={ Key:key, Value:[]};
+            var symbol=mapItem[0];
+            var stockItem=mapItem[1];
 
-            for(var drawItem of value)
+            var itemData={ Symbol:symbol, AryPicture:[] };
+
+            for(var pictureItem of stockItem.MapPicture)
             {
-                if (drawItem[1] && drawItem[1].EnableSave===false) continue;
+                var drawItem=pictureItem[1];
+                if (drawItem.EnableSave===false) continue;
 
-                itemData.Value.push({Key:drawItem[0], Value:drawItem[1]});
+                itemData.AryPicture.push(drawItem);
             }
 
-            if (IFrameSplitOperator.IsNonEmptyArray(itemData.Value))
+            if (IFrameSplitOperator.IsNonEmptyArray(itemData.AryPicture))
                 saveData.push(itemData);
         }
 
         JSConsole.Chart.Log(`[ChartDrawStorage::Save] save to localStorage, key=${this.StorageKey}`);
-        var strData=JSON.stringify(saveData);
+        var strData=JSON.stringify({Ver:2.0, Data:saveData});
         localStorage[this.StorageKey]=strData;
-    }
-
-    this.GetItemKey=function(obj)   //生成每个画图工具的key
-    {
-        var strKey=`${obj.Symbol}-${obj.Period}`;
-        return strKey;
     }
 
     this.SaveDrawData=function(drawPicture)   //保存一个画图工具
     {
-        var strKey=this.GetItemKey(drawPicture);
+        var symbol=drawPicture.Symbol;
         var data=drawPicture.ExportStorageData();
         if (!data) return;
 
-        if (this.DrawData.has(strKey))  //更新
+        if (this.DrawDataV2.has(symbol))  //更新
         {
-            JSConsole.Chart.Log('[ChartDrawStorage::SaveDrawData] Upate: key, drawPicture, data', strKey, drawPicture,data);
-            this.DrawData.get(strKey).set(data.Guid, data);
+            JSConsole.Chart.Log('[ChartDrawStorage::SaveDrawData] Upate: symbol, drawPicture, data', symbol, drawPicture, data);
+            var stockItem=this.DrawDataV2.get(symbol);
+            stockItem.MapPicture.set(data.Guid, data);
         }
         else    //新增
         {
-            JSConsole.Chart.Log('[ChartDrawStorage::SaveDrawData] Insert: key, drawPicture, data', strKey, drawPicture,data);
-            var newData=new Map();
-            newData.set(data.Guid, data);
-            this.DrawData.set(strKey,newData);
+            JSConsole.Chart.Log('[ChartDrawStorage::SaveDrawData] Insert: symbol, drawPicture, data', symbol, drawPicture,data);
+            var stockItem={ Symbol:symbol,  MapPicture:new Map() } ;
+            stockItem.set(data.Guid, data);
+            this.DrawDataV2.set(symbol,newData);
         }
 
-        JSConsole.Chart.Log('[ChartDrawStorage::SaveDrawData] All draw data： ', this.DrawData);
+        JSConsole.Chart.Log('[ChartDrawStorage::SaveDrawData] All draw data： ', this.DrawDataV2);
 
         this.Save();
     }
 
     this.DeleteDrawData=function(drawPicture)   //删除一个画图工具
     {
-        var strKey=this.GetItemKey(drawPicture);
-        if (!this.DrawData.has(strKey))  return;
+        var symbol=drawPicture.Symbol;
+        if (!this.DrawDataV2.has(symbol)) return;
 
-        var mapDraw=this.DrawData.get(strKey);
-        if (!mapDraw.has(drawPicture.Guid)) return;
+        var stockItem=this.DrawDataV2.get(symbol);
+        if (!stockItem.MapPicture.has(drawPicture.Guid)) return;
 
-        mapDraw.delete(drawPicture.Guid);
+        stockItem.MapPicture.delete(drawPicture.Guid);
         this.Save();
     }
 
     this.Clear=function()
     {
-        this.DrawData=new Map();
+        this.DrawDataV2=new Map();
         this.Save();
     }
 
-    this.GetDrawData=function(obj) //获取已有的画图工具数据{Symbol: , Period:, }
+    this.GetDrawData=function(obj) //获取已有的画图工具数据{ Symbol: , Period:, }
     {
-        var data=[];
-        var strKey=this.GetItemKey(obj);
-        if (!this.DrawData.has(strKey)) return data;
+        var aryData=[];
+        var symbol=obj.Symbol;
 
-        var stockData=this.DrawData.get(strKey);
-        for(var item of stockData)
+        if (!this.DrawDataV2.has(symbol)) return aryData;
+
+        var stockItem=this.DrawDataV2.get(symbol);
+        for(var mapItem of stockItem.MapPicture)
         {
-            data.push(item[1]);
+            var drawItem=mapItem[1];
+            if (this.EnableCrossPeriod)
+            {
+                aryData.push(drawItem);
+            }
+            else
+            {
+                if (drawItem.Period==obj.Period) aryData.push(drawItem);
+            }
         }
 
-        return data;
+        return aryData;
     }
 }
 
@@ -82317,7 +82461,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
     this.ShowMinuteChartDialog=function(data, x,y)
     {
         if (!this.PopMinuteChart) return;
-        if (!ChartData.IsDayPeriod(this.Period,true)) return;   //只支持日K
+        if (this.Period!==0) return;   //只支持日K
         if (!data.Tooltip || !data.Chart) return;
 
         var pixelRatio=GetDevicePixelRatio();
@@ -86196,8 +86340,15 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
         if (this.EnableClickModel===true)
         {
-            if (this.ClickModel.IsShowCorssCursor==true && this.ClickModel.PreventHide) return; //阻止隐藏
-            if (this.ClickModel.IsShowCorssCursor==true && this.TouchDrawCount>0 ) return;
+            var bShowCorssCursor=false;
+            if (this.ClickModel.IsShowCorssCursor==true && this.ClickModel.PreventHide) bShowCorssCursor=true; //阻止隐藏
+            if (this.ClickModel.IsShowCorssCursor==true && this.TouchDrawCount>0 ) bShowCorssCursor=true;
+
+            if (bShowCorssCursor)
+            {
+                this.DelayAutoCloseCorssCursor();   //自动延迟关闭十字光标
+                return;
+            }
 
             this.ClickModel.IsShowCorssCursor=false;
             this.DrawDynamicInfo();
@@ -86210,7 +86361,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             return;
         }
 
-        for(var i in this.ExtendChartPaint)
+        for(var i=0; i<this.ExtendChartPaint.length; ++i)
         {
             var item=this.ExtendChartPaint[i];
             if (item.ClassName==='KLineTooltipPaint')
@@ -87746,7 +87897,16 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             drawPicture.Option=this.ChartDrawOption;
             
             if (drawPicture.ImportStorageData) drawPicture.ImportStorageData(item);
-            drawPicture.UpdateXValue();
+            if (drawPicture.Period!=this.Period) 
+            {
+                drawPicture.ChangePeriod(this.Period);
+            }
+            else
+            {
+                drawPicture.UpdateXValue();
+            }
+
+           
             drawPicture.ValueToPoint();
 
             var self=this;
@@ -95544,7 +95704,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
     {
         if (!this.ChartDrawStorageCache || this.ChartDrawStorageCache.length<=0) return;
 
-        var self=this;
+        var kData=this.GetKData();
         for(var i=0; i<this.ChartDrawStorageCache.length; ++i)
         {
             var item=this.ChartDrawStorageCache[i];

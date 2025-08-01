@@ -258,28 +258,55 @@ function ScriptIndex(name, script, args, option)
 
     if (args) this.Arguments = args;
 
-  this.SetLock = function (lockData) {
-    if (lockData.IsLocked == true) {
-      this.IsLocked = true;  //指标上锁
-      if (lockData.Callback) this.LockCallback = lockData.Callback;    //锁回调
-      if (lockData.ID) this.LockID = lockData.ID;                      //锁ID
-      if (lockData.BG) this.LockBG = lockData.BG;
-      if (lockData.TextColor) this.LockTextColor = lockData.TextColor;
-      if (lockData.Text) this.LockText = lockData.Text;
-      if (lockData.Font) this.LockFont = lockData.Font;
-      if (lockData.Count) this.LockCount = lockData.Count;
+    this.SetLock = function (lockData) 
+    {
+        if (lockData.IsLocked == true) 
+        {
+            this.IsLocked = true;  //指标上锁
+            if (lockData.Callback) this.LockCallback = lockData.Callback;    //锁回调
+            if (lockData.ID) this.LockID = lockData.ID;                      //锁ID
+            if (lockData.BG) this.LockBG = lockData.BG;
+            if (lockData.TextColor) this.LockTextColor = lockData.TextColor;
+            if (lockData.Text) this.LockText = lockData.Text;
+            if (lockData.Font) this.LockFont = lockData.Font;
+            if (lockData.Count) this.LockCount = lockData.Count;
+        }
+        else 
+        {   //清空锁配置信息
+            this.IsLocked = false;    //是否锁住指标
+            this.LockCallback = null;
+            this.LockID = null;
+            this.LockBG = null;       //锁背景色
+            this.LockTextColor = null;
+            this.LockText = null;
+            this.LockFont = null;
+            this.LockCount = 10;
+        }
     }
-    else {   //清空锁配置信息
-      this.IsLocked = false;    //是否锁住指标
-      this.LockCallback = null;
-      this.LockID = null;
-      this.LockBG = null;       //锁背景色
-      this.LockTextColor = null;
-      this.LockText = null;
-      this.LockFont = null;
-      this.LockCount = 10;
+
+    //显示指标不符合条件
+    this.ShowConditionError=function(param,msg)
+    {
+        var hqChart=param.HQChart;
+        var windowIndex=param.WindowIndex;
+
+        hqChart.DeleteIndexPaint(windowIndex);
+        if (windowIndex==0) hqChart.ShowKLine(true);
+
+        var message='指标不支持当前品种或周期';
+        if (msg) message=msg;
+
+        let line=new ChartLine();
+        line.Canvas=hqChart.Canvas;
+        line.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        line.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        line.NotSupportMessage=message;
+        hqChart.ChartPaint.push(line);
+        
+        hqChart.UpdataDataoffset();           //更新数据偏移
+        hqChart.UpdateFrameMaxMin();          //调整坐标最大 最小值
+        hqChart.Draw();
     }
-  }
 
     this.ExecuteScript = function (hqChart, windowIndex, hisData) 
     {
@@ -2772,6 +2799,20 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
         var data=recvData.data;
         JSConsole.Chart.Log('[APIScriptIndex::RecvAPIData] recv data ', this.Name, data);
         if (data.code != 0) return;
+
+        if (data.error && IFrameSplitOperator.IsString(data.error.message))
+        {
+            var param=
+            {
+                HQChart:hqChart,
+                WindowIndex:windowIndex,
+                HistoryData:hisData,
+                Self:this
+            };
+
+            this.ShowConditionError(param, data.error.message);
+            return;
+        }
 
         if (data.outdata && data.outdata.name) this.Name = data.outdata.name;
 

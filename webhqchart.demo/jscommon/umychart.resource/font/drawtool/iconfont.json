@@ -6,6 +6,13 @@
   "description": "hqchart画图工具",
   "glyphs": [
     {
+      "icon_id": "31206185",
+      "name": "跨周期",
+      "font_class": "kuazhouqi",
+      "unicode": "e647",
+      "unicode_decimal": 58951
+    },
+    {
       "icon_id": "40997128",
       "name": "chart-long-position",
       "font_class": "chart-long-position",
