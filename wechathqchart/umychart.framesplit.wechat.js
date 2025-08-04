@@ -1419,6 +1419,8 @@ function FrameSplitMinutePriceY()
     this.LimitPrice;                    //{Max: Min:} 涨跌停价
     this.Custom;
 
+    this.RightTextConfig={ Percentage:{ Dec:3 }, Format:0  }   //Percentage:{ Dec: 百分比小数位数 }, Format: 0=百分比  1=价格
+
     this.Operator = function () 
     {
         this.Frame.HorizontalInfo = [];
@@ -1577,21 +1579,7 @@ function FrameSplitMinutePriceY()
             if (this.YClose && price==this.YClose) continue;
             var coordinate=new CoordinateInfo();
             coordinate.Value=price;
-            var strPrice=price.toFixed(defaultfloatPrecision);  //价格刻度字符串
-            if (this.IsShowLeftText) coordinate.Message[0]=strPrice;
-
-            if (IFrameSplitOperator.IsNumber(this.YClose) && this.YClose!=0)
-            {
-                var per=(price/this.YClose-1)*100;
-                if (per>0) coordinate.TextColor=g_JSChartResource.UpTextColor;
-                else if (per<0) coordinate.TextColor=g_JSChartResource.DownTextColor;
-                if (this.IsShowRightText) 
-                {
-                    if (this.RightTextFormat==1) coordinate.Message[1]=strPrice;
-                    else coordinate.Message[1]=IFrameSplitOperator.FormatValueString(per,2)+'%'; //百分比
-                }
-            }
-
+            this.FormatCoordinate(coordinate,defaultfloatPrecision);
             this.Frame.HorizontalInfo.push(coordinate);
         }
 
@@ -1607,8 +1595,10 @@ function FrameSplitMinutePriceY()
 
             if (this.IsShowRightText) 
             {
+                var value=0;
+                var dec=this.RightTextConfig.Percentage.Dec;
                 if (this.RightTextFormat==1) coordinate.Message[1]=strPrice;
-                else coordinate.Message[1]='0.00%'; //百分比
+                else coordinate.Message[1]=`${value.toFixed(dec)}%`; //百分比
             }
 
             this.Frame.HorizontalInfo.push(coordinate);
@@ -1635,7 +1625,6 @@ function FrameSplitMinutePriceY()
             var distanceValue = Math.max(Math.abs(this.YClose - max), Math.abs(this.YClose - min));
             max = this.YClose + distanceValue;
             min = this.YClose - distanceValue;
-            if (min<0) min=range.Min;
         }
 
         var showCount = this.SplitCount;
@@ -1651,33 +1640,58 @@ function FrameSplitMinutePriceY()
             min = this.YClose - (distance * (showCount - 1) / 2);
         }
 
-        for (var i = 0; i < showCount; ++i) 
+        var aryCoordinate=[];
+        var extendValue=distance*0.5;
+        for(var price=this.YClose, i=0; price<=max+extendValue && i<30; price+=distance, ++i)
         {
-            var price = min + (distance * i);
             var coordinate=new CoordinateInfo();
-            this.Frame.HorizontalInfo[i] = coordinate;
-
-            coordinate.Value = price;
-            coordinate.Message[0] = price.toFixed(defaultfloatPrecision);
-
-            if (IFrameSplitOperator.IsNumber(this.YClose) && this.YClose!=0)
-            {
-                var per = (price / this.YClose - 1) * 100;
-                if (per > 0) coordinate.TextColor = g_JSChartResource.UpTextColor;
-                else if (per < 0) coordinate.TextColor = g_JSChartResource.DownTextColor;
-                coordinate.Message[1] = IFrameSplitOperator.FormatValueString(per, 2) + '%'; //百分比
-
-                if (Math.abs(price-this.YClose) <0.00000000001) //小数有精度问题 使用差值
-                {
-                    coordinate.LineType=2;//中间的线画虚线
-                    coordinate.TextColor=g_JSChartResource.UnchagneTextColor;
-                    if (g_JSChartResource.FrameDotSplitPen) coordinate.LineColor=g_JSChartResource.FrameDotSplitPen;
-                }
-            }
+            coordinate.Value=price;
+            this.FormatCoordinate(coordinate,defaultfloatPrecision);
+            aryCoordinate.push(coordinate);
         }
 
+        for(var price=this.YClose-distance, i=0; price>=min-extendValue && i<30; price-=distance, ++i)
+        {
+            var coordinate=new CoordinateInfo();
+            coordinate.Value=price;
+            this.FormatCoordinate(coordinate,defaultfloatPrecision);
+            aryCoordinate.push(coordinate);
+        }
+
+        aryCoordinate.sort((left,right)=>{ return left.Value-right.Value; })
+
+        this.Frame.HorizontalInfo=aryCoordinate;
         this.Frame.HorizontalMax = max;
         this.Frame.HorizontalMin = min;
+    }
+
+    this.FormatCoordinate=function(coordinate, defaultfloatPrecision)
+    {
+        var price=coordinate.Value;
+        var strPrice=price.toFixed(defaultfloatPrecision);  //价格刻度字符串
+        if (this.IsShowLeftText) coordinate.Message[0]=strPrice;
+
+        if (IFrameSplitOperator.IsNumber(this.YClose) && this.YClose!=0)
+        {
+            var per=(price/this.YClose-1)*100;
+            if (per>0) coordinate.TextColor=g_JSChartResource.UpTextColor;
+            else if (per<0) coordinate.TextColor=g_JSChartResource.DownTextColor;
+
+            var dec=this.RightTextConfig.Percentage.Dec;
+            var strPer=`${IFrameSplitOperator.FormatValueString(per,dec)}%`;
+
+            if (this.IsShowRightText) 
+            {
+                if (this.RightTextConfig.Format==1)  coordinate.Message[1]=strPrice;
+                else coordinate.Message[1]=strPer; //百分比
+            }
+            if (Math.abs(price-this.YClose) <0.00000000001) //小数有精度问题 使用差值
+            {
+                coordinate.LineType=2;//中间的线画虚线
+                coordinate.TextColor=g_JSChartResource.UnchagneTextColor;
+                if (g_JSChartResource.FrameDotSplitPen) coordinate.LineColor=g_JSChartResource.FrameDotSplitPen;
+            }
+        }
     }
 
     this.CustomCoordinate = function ()    //自定义刻度

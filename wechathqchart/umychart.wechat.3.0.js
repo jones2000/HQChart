@@ -716,6 +716,17 @@ function JSChart(element)
                 if (item.TopSpace >= 0) chart.Frame.SubFrame[i].Frame.ChartBorder.TopSpace = item.TopSpace;
                 if (item.BottomSpace >= 0) chart.Frame.SubFrame[i].Frame.ChartBorder.BottomSpace = item.BottomSpace;
                 if (!IFrameSplitOperator.IsUndefined(item.HorizontalReserved)) frame.HorizontalReserved=item.HorizontalReserved;
+
+                if (i==0)
+                {
+                    if (item.RightText) //主图右侧坐标设置
+                    {
+                        var subItem=item.RightText;
+                        if (IFrameSplitOperator.IsNumber(subItem.Format)) frame.YSplitOperator.RightTextConfig.Format=subItem.Format;
+                        if (subItem.Format==2) frame.MultiTextFormat=1;
+                        if (subItem.Percentage && IFrameSplitOperator.IsNumber(subItem.Percentage.Dec)) frame.YSplitOperator.RightTextConfig.Percentage.Dec=subItem.Percentage.Dec;
+                    }
+                }
             }
 
             chart.UpdateXShowText();
@@ -1587,7 +1598,7 @@ function JSChartContainer(uielement)
     this.EnableClickModel=false;
 
     //全局配置
-    this.GlobalOption= { RightHorizontal: { Show:false, } }
+    this.GlobalOption= { RightHorizontal: { Show:true, } }
 
     this.ChartDestroy=function()    //销毁
     {

@@ -1186,10 +1186,18 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
 
                 if (i==0)
                 {
-                    if (IFrameSplitOperator.IsNumber(item.RightTextFormat)) 
+                    if (IFrameSplitOperator.IsNumber(item.RightTextFormat))     //废弃
                     {
-                        subFrame.YSplitOperator.RightTextFormat=item.RightTextFormat;
+                        subFrame.YSplitOperator.RightTextConfig.Format=item.RightTextFormat;
                         if (item.RightTextFormat==2) subFrame.MultiTextFormat=1;
+                    }
+
+                    if (item.RightText) //主图右侧坐标设置
+                    {
+                        var subItem=item.RightText;
+                        if (IFrameSplitOperator.IsNumber(subItem.Format)) subFrame.YSplitOperator.RightTextConfig.Format=subItem.Format;
+                        if (subItem.Format==2) subFrame.MultiTextFormat=1;
+                        if (subItem.Percentage && IFrameSplitOperator.IsNumber(subItem.Percentage.Dec)) subFrame.YSplitOperator.RightTextConfig.Percentage.Dec=subItem.Percentage.Dec;
                     }
                 }
             }
@@ -1442,6 +1450,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             {
                 var item=option.Frame[i];
                 if (!chart.Frame.SubFrame[i]) continue;
+                var subFrame=chart.Frame.SubFrame[i].Frame;
                 if (item.SplitCount) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount=item.SplitCount;
                 if (item.StringFormat) chart.Frame.SubFrame[i].Frame.YSplitOperator.StringFormat=item.StringFormat;
                 if (IFrameSplitOperator.IsNumber(item.SplitType)) 
@@ -1461,7 +1470,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
                 }
                 if (item.Height>=0) chart.Frame.SubFrame[i].Height = item.Height;
                 if (item.Custom) chart.Frame.SubFrame[i].Frame.YSplitOperator.Custom=item.Custom;
-                if (item.RightTextFormat>0) chart.Frame.SubFrame[i].Frame.YSplitOperator.RightTextFormat=item.RightTextFormat;
+               
                 if (IFrameSplitOperator.IsNumber(item.TitleHeight)) chart.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight=item.TitleHeight;
                 if (IFrameSplitOperator.IsNumber(item.BorderLine)) chart.Frame.SubFrame[i].Frame.BorderLine=item.BorderLine;
                 if (IFrameSplitOperator.IsBool(item.EnableRemoveZero)) chart.Frame.SubFrame[i].Frame.YSplitOperator.EnableRemoveZero=item.EnableRemoveZero;
@@ -1469,6 +1478,11 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
                 if (IFrameSplitOperator.IsBool(item.IsShowXLine)) chart.Frame.SubFrame[i].Frame.IsShowXLine=item.IsShowXLine;
                 if (IFrameSplitOperator.IsBool(item.IsShowYLine)) chart.Frame.SubFrame[i].Frame.IsShowYLine=item.IsShowYLine;
                 if (IFrameSplitOperator.IsNumber(item.YTextBaseline)) chart.Frame.SubFrame[i].Frame.YTextBaseline=item.YTextBaseline;
+
+                if (i==0)
+                {
+                    if (IFrameSplitOperator.IsNumber(item.RightTextFormat)) subFrame.YSplitOperator.RightTextConfig.Format=item.RightTextFormat;
+                }
             }
         }
 
@@ -3073,6 +3087,8 @@ var JSCHART_MENU_ID=
     CMD_CORSS_SHOW_INCREASE_ID:60,          //十字光标 底部显示"至今涨幅"
     CMD_CORSS_X_TEXTALIGN_ID:61,            //十字光标 底部文字对齐方式
 
+    CMD_CHANGE_YRIGHT_TEXT_FORMAT:62,       //分时图主图 右侧刻度格式
+
 
     CMD_REPORT_CHANGE_BLOCK_ID:100,      //报价列表 切换板块ID
     CMD_REPORT_COLUMN_SORT_ID:101,       //报价列表 表头排序  Arg[列序号, 排序方向]
@@ -3080,6 +3096,8 @@ var JSCHART_MENU_ID=
     CMD_REPORT_COLUMN_MOVE_ID:103,       //报价列表 列移动
     CMD_REPORT_COLUMN_FILTER_ID:104,     //报价列表 筛选
     CMD_REPORT_CHANGE_COLUMN_ID:105,     //报价列表 切换列  Arg[Column, ]
+
+    
 }
 
 var JSCHART_TRADE_STATUS_ID=
@@ -11662,6 +11680,16 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                     this.RequestData({ ClearYCoordinateMaxMin:true });
                     this.Draw();
                 }
+                break;
+            case JSCHART_MENU_ID.CMD_CHANGE_YRIGHT_TEXT_FORMAT:
+                if (param==null) return false;
+                if (!this.Frame.SubFrame[0] || !this.Frame.SubFrame[0].Frame) return false;
+                var frame=this.Frame.SubFrame[0].Frame;
+                if (!frame.YSplitOperator || !frame.YSplitOperator.RightTextConfig) return false;
+                
+                frame.YSplitOperator.RightTextConfig.Format=param;
+                this.ResetFrameXYSplit();
+                this.Draw();
                 break;
         }
     }
@@ -56782,7 +56810,8 @@ function FrameSplitMinutePriceY()
     this.DefaultSplitType=0;
     this.LimitPrice;                    //{Max: Min:} 涨跌停价
     this.Custom;
-    this.RightTextFormat=0;           //右边刻度显示模式 0=百分比  1=价格 2=价格 | 百分比
+    //this.RightTextFormat=0;           //右边刻度显示模式 0=百分比  1=价格 2=价格 | 百分比  !!! 废弃， 用下面的格式
+    this.RightTextConfig={ Percentage:{ Dec:2 }, Format:0  }   //Percentage:{ Dec: 百分比小数位数 }, Format: 0=百分比  1=价格 2=价格 | 百分比
 
     this.BeforeOpenData;
     this.IsBeforeData=false;
@@ -57244,8 +57273,10 @@ function FrameSplitMinutePriceY()
 
             if (this.IsShowRightText) 
             {
-                if (this.RightTextFormat==1) coordinate.Message[1]=strPrice;
-                else coordinate.Message[1]='0.00%'; //百分比
+                var value=0;
+                var dec=this.RightTextConfig.Percentage.Dec;
+                if (this.RightTextConfig.Format==1) coordinate.Message[1]=strPrice;
+                else coordinate.Message[1]=`${value.toFixed(dec)}%`; //百分比
             }
 
             this.Frame.HorizontalInfo.push(coordinate);
@@ -57331,15 +57362,17 @@ function FrameSplitMinutePriceY()
             var per=(price/this.YClose-1)*100;
             if (per>0) coordinate.TextColor=g_JSChartResource.UpTextColor;
             else if (per<0) coordinate.TextColor=g_JSChartResource.DownTextColor;
-            var strPer=`${IFrameSplitOperator.FormatValueString(per,2)}%`;
+
+            var dec=this.RightTextConfig.Percentage.Dec;
+            var strPer=`${IFrameSplitOperator.FormatValueString(per,dec)}%`;
 
             if (this.IsShowRightText) 
             {
-                if (this.RightTextFormat==1)  
+                if (this.RightTextConfig.Format==1)  
                 {
                     coordinate.Message[1]=strPrice;
                 }
-                else if (this.RightTextFormat==2) //价格/百分比
+                else if (this.RightTextConfig.Format==2) //价格/百分比
                 {
                     coordinate.Message[1]=[ {Text:strPrice}, {Text:"/"}, { Text:strPer} ];
                 }
@@ -64637,7 +64670,7 @@ function IChartDrawPicture()
         }
     }
 
-    this.GetkData=function()
+    this.GetKData=function()
     {
         if (!this.Frame) return null;
         var data=this.Frame.Data;
@@ -64649,7 +64682,7 @@ function IChartDrawPicture()
     //周期变动 X重新定位
     this.ChangePeriod=function(period)
     {
-        var kData=this.GetkData();
+        var kData=this.GetKData();
         if (!kData) return;
 
         var aryDateTime=[];
@@ -64719,7 +64752,7 @@ function IChartDrawPicture()
 
     this.UpdateXValue=function()    //通过datetime更新x的索引
     {
-        var data=this.GetkData();
+        var data=this.GetKData();
         if (!data) return false;
 
         var aryDateTime=[];
@@ -76528,8 +76561,8 @@ function ChartDrawStorage()
         {
             JSConsole.Chart.Log('[ChartDrawStorage::SaveDrawData] Insert: symbol, drawPicture, data', symbol, drawPicture,data);
             var stockItem={ Symbol:symbol,  MapPicture:new Map() } ;
-            stockItem.set(data.Guid, data);
-            this.DrawDataV2.set(symbol,newData);
+            stockItem.MapPicture.set(data.Guid, data);
+            this.DrawDataV2.set(symbol,stockItem);
         }
 
         JSConsole.Chart.Log('[ChartDrawStorage::SaveDrawData] All draw data： ', this.DrawDataV2);
@@ -91883,6 +91916,14 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             }
         }
 
+        var rightTextFormat=0;
+        if (this.Frame.SubFrame[0] && this.Frame.SubFrame[0].Frame && this.Frame.SubFrame[0].Frame.YSplitOperator)
+        {
+            var ySpliter=this.Frame.SubFrame[0].Frame.YSplitOperator;
+            if (ySpliter.RightTextConfig)
+                rightTextFormat=ySpliter.RightTextConfig.Format;
+        }
+
         var aryMenu=
         [
             { 
@@ -91971,6 +92012,16 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                     { Name:"盘口分析", Data:{ ID:JSCHART_MENU_ID.CMD_SHOW_BUYSELL_BAR_ID, Args:[!bShowBuySellBar]}, Checked:bShowBuySellBar },
 
                     { Name:JSPopMenu.SEPARATOR_LINE_NAME },
+
+                    { 
+                        Name:"主图右侧坐标",
+                        SubMenu:
+                        [
+                            { Name:"百分比", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_YRIGHT_TEXT_FORMAT, Args:[0]}, Checked:rightTextFormat===0  },
+                            { Name:"价格", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_YRIGHT_TEXT_FORMAT, Args:[1]}, Checked:rightTextFormat===1 },
+                            { Name:"价格/百分比", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_YRIGHT_TEXT_FORMAT, Args:[2]}, Checked:rightTextFormat===2 },
+                        ]
+                    },
                     
                     { 
                         Name:"语言设置", 
