@@ -417,7 +417,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
 
         if (option.DrawPicture) //画图工具
         {
-            if (option.DrawPicture.StorageKey && chart.ChartDrawStorage) chart.ChartDrawStorage.Load(option.DrawPicture.StorageKey);
+            if (option.DrawPicture.StorageKey && chart.ChartDrawStorage) chart.ChartDrawStorage.SetKey(option.DrawPicture.StorageKey);
         }
 
         if (option.DrawTool)    //画图工具
@@ -425,11 +425,12 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             var item=option.DrawTool;
             if (chart.ChartDrawStorage)
             {
-                if (item.StorageKey) chart.ChartDrawStorage.Load(item.StorageKey);
+                if (item.StorageKey) chart.ChartDrawStorage.SetKey(item.StorageKey);
                 if (IFrameSplitOperator.IsBool(item.EnableCrossPeriod)) chart.ChartDrawStorage.EnableCrossPeriod=item.EnableCrossPeriod;
             }
-            
         }
+
+        if (chart.ChartDrawStorage) chart.ChartDrawStorage.Load();
 
         if (option.KeyboardMove)
         {
@@ -1009,8 +1010,10 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
 
         if (option.DrawTool)    //画图工具
         {
-            if (option.DrawTool.StorageKey && chart.ChartDrawStorage) chart.ChartDrawStorage.Load(option.DrawTool.StorageKey);
+            if (option.DrawTool.StorageKey && chart.ChartDrawStorage) chart.ChartDrawStorage.SetKey(option.DrawTool.StorageKey);
         }
+
+        if (chart.ChartDrawStorage) chart.ChartDrawStorage.Load();
 
         if (option.BeforeOpen)  //集合竞价
         {
@@ -11688,6 +11691,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 if (!frame.YSplitOperator || !frame.YSplitOperator.RightTextConfig) return false;
                 
                 frame.YSplitOperator.RightTextConfig.Format=param;
+                if (param===2) frame.MultiTextFormat=1;
                 this.ResetFrameXYSplit();
                 this.Draw();
                 break;
@@ -76469,10 +76473,15 @@ function ChartDrawStorage()
     this.GetEventCallback;              //事件回调
     this.EnableCrossPeriod=false;       //跨周期
 
-    this.Load=function(key)     //从本地读取画图工具
+
+    this.SetKey=function(key)
     {
-        if (!key) return;
         this.StorageKey=key;
+    }
+
+    this.Load=function()     //从本地读取画图工具
+    {
+        if (!this.StorageKey) return;
         var cacheValue = localStorage[this.StorageKey];
         JSConsole.Chart.Log(`[ChartDrawStorage::Load] Load to localStorage, key=${this.StorageKey}, cache=${cacheValue}`);
 
@@ -76514,6 +76523,12 @@ function ChartDrawStorage()
                 this.DrawDataV2.set(stockItem.Symbol,stockItem);
             }
         }
+    }
+
+    this.Reload=function()  //重新加载
+    {
+        this.DrawDataV2=new Map();
+        this.Load();
     }
 
     this.Save=function()        //把数据保存到本地
