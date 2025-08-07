@@ -3374,6 +3374,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     this.DialogSearchIndex; //指标搜索
     this.DialogModifyIndexParam;    //指标参数修改
     this.SmallFloatTooltipGroup; //小浮框tooltip信息集合
+    this.JSToolbarTooltip;      //指标标题工具栏tooltip信息
 
 
     this.RestoreFocusTimer=null;        //恢复焦点定时器
@@ -9836,6 +9837,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 if (overlayItem.Frame && overlayItem.Frame.ReloadResource) overlayItem.Frame.ReloadResource(resource);
             }
         }
+
+        if (this.JSToolbarTooltip) this.JSToolbarTooltip.ReloadResource(resource); //工具栏提示框
     }
 
     this.ReloadChartPaint=function(resource)
@@ -10305,6 +10308,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         if (!subFrame || !subFrame.Frame) return;
 
         var frame=subFrame.Frame;
+        var pixelRatio=GetDevicePixelRatio();
 
         if (windowItem)
         {
@@ -10352,6 +10356,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             }
 
             if (IFrameSplitOperator.IsNumber(frameItem.Height) && frameItem.Height>=0) subFrame.Height = frameItem.Height;
+            if (IFrameSplitOperator.IsNumber(frameItem.TopSpace)) frame.ChartBorder.TopSpace=frameItem.TopSpace*pixelRatio;
+            if (IFrameSplitOperator.IsNumber(frameItem.BottomSpace)) frame.ChartBorder.BottomSpace=frameItem.BottomSpace*pixelRatio;
         }
 
     }
@@ -10361,6 +10367,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         if (!option) return;
 
         var frame=subFrame.Frame;
+        var pixelRatio=GetDevicePixelRatio();
 
         if (option.Window)
         {
@@ -10400,6 +10407,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         if (IFrameSplitOperator.IsBool(option.IsShowYLine)) subFrame.Frame.IsShowYLine=option.IsShowYLine;
         if (IFrameSplitOperator.IsBool(option.IsShowIndexTitle)) subFrame.Frame.IsShowIndexTitle=option.IsShowIndexTitle;
         if (IFrameSplitOperator.IsNumber(option.Height)) subFrame.Height=option.Height; //高度
+        if (IFrameSplitOperator.IsNumber(option.TopSpace)) frame.ChartBorder.TopSpace=option.TopSpace*pixelRatio;
+        if (IFrameSplitOperator.IsNumber(option.BottomSpace)) frame.ChartBorder.BottomSpace=option.BottomSpace*pixelRatio;
         
 
         if (IFrameSplitOperator.IsBool(option.IsShowLeftText)) 
@@ -13569,6 +13578,8 @@ function AverageWidthFrame()
     this.BeforeDrawXYCallback;      //坐标绘制前回调,绘制深度图
     this.GetEventCallback;          //事件回调
 
+    this.DivFrameToolbar;
+
     //工具栏的按钮样式
     this.ToolbarButtonStyle=g_JSChartResource.ToolbarButtonStyle;
     this.CloseWindowButton=CloneData(g_JSChartResource.Buttons.CloseWindow);
@@ -13618,6 +13629,8 @@ function AverageWidthFrame()
             this.ButtonTooltip=CloneData(g_JSChartResource.Buttons.Tooltip);
             this.AddIndexWindowButton=CloneData(g_JSChartResource.Buttons.AddIndexWindow);
         }
+
+        if (this.DivFrameToolbar) this.DivFrameToolbar.ReloadResource(resource);
     }
 
     this.DrawFrame=function()
@@ -16187,7 +16200,6 @@ function AverageWidthFrame()
             }
         }
 
-        
         if (IFrameSplitOperator.IsNumber(width.Right)) width.Right+=rightExtendWidth;
         if (IFrameSplitOperator.IsNumber(width.Left)) width.Left+=this.YTextPadding[0]+leftExtendLineWidth;
         if (IFrameSplitOperator.IsNumber(width.Right)) width.Right+=this.YTextPadding[1]+rightExtendLineWidth;
@@ -16195,25 +16207,34 @@ function AverageWidthFrame()
         return { TextWidth:width };
     }
 
+    this.CreateDivFrameToolbar=function(hqchart, frameID, divHQChart)
+    {
+        if (this.ToolbarButtonStyle==1) return;
+        if (this.DivFrameToolbar) return;
+
+        if (this.ClassName=="MinuteFrame" || this.ClassName=="KLineFrame")
+        {
+            this.DivFrameToolbar=new JSDivFrameToolbar();
+            this.DivFrameToolbar.HQChart=hqchart;
+            this.DivFrameToolbar.DivHQChart=divHQChart;
+            this.DivFrameToolbar.FrameID=frameID;
+            this.DivFrameToolbar.Create();
+        }
+    }
+
     this.ClearToolbar=function()
     {
-        if (!this.ToolbarID) return;
+        if (!this.DivFrameToolbar) return;
 
-        var divToolbar=document.getElementById(this.ToolbarID);
-        if (!divToolbar) return;
-        this.ChartBorder.UIElement.parentNode.removeChild(divToolbar);
-        this.ToolbarRect=null;
+        this.DivFrameToolbar.Destroy();
+        this.DivFrameToolbar=null;
     }
 
     this.HideToolbar=function()
     {
-        if (!this.ToolbarID) return;
+        if (!this.DivFrameToolbar) return;
 
-        this.ToolbarRect=null;
-        var divToolbar=document.getElementById(this.ToolbarID);
-        if (!divToolbar) return;
-
-        if (divToolbar.style.display!='none') divToolbar.style.display='none';
+        this.DivFrameToolbar.Hide();
     }
 
     this.GetMainOverlayFrame=function()
@@ -16251,7 +16272,6 @@ function MinuteFrame()
     this.MultiDayBorderPen=g_JSChartResource.MultiDayBorderPen;
     this.CustomHorizontalInfo=[];
     this.RightFrame=null;   //右侧多重坐标
-    this.ToolbarID=Guid();  //工具条Div id
     this.ReDrawToolbar=false;
     this.DayCount=1;        //显示天数
 
@@ -16264,7 +16284,6 @@ function MinuteFrame()
     this.OverlayIndex=g_JSChartResource.MinuteToolbar.OverlayIndex;    //是否显示叠加指标
     this.AddIndexWindow=g_JSChartResource.MinuteToolbar.AddIndexWindow;  //是否显示'增加指标窗口'菜单
 
-    this.ToolbarRect=null;   //保存工具条的位置
     this.IsShowPositionTitle=false; //是否显示持仓标题
 
     this.LastCalculateStatus={ Width:0, XPointCount:0 };    //最后一次计算宽度的状态
@@ -16396,112 +16415,8 @@ function MinuteFrame()
         if (this.ToolbarButtonStyle==1) return;
         if (g_JSChartResource.IsDOMFrameToolbar===true) return;
 
-        if (typeof($)=="undefined") return;
-
-        if (this.Identify<2) return;
-        if (!this.ChartBorder.UIElement) return;
-
-        var divToolbar=document.getElementById(this.ToolbarID);
-        if (divToolbar && this.SizeChange==false && this.ReDrawToolbar==false) return;
-
-        if (!divToolbar)
-        {
-            divToolbar=document.createElement("div");
-            divToolbar.className='klineframe-toolbar';
-            divToolbar.id=this.ToolbarID;
-            divToolbar.oncontextmenu = function() { return false;}; //屏蔽右键系统菜单
-            //为divToolbar添加属性identify
-            divToolbar.setAttribute("identify",this.Identify.toString());
-            this.ChartBorder.UIElement.parentNode.appendChild(divToolbar);
-        }
-
-        if (!this.ModifyIndex && !this.ChangeIndex && !this.OverlayIndex && !this.CloseIndex)
-        {
-            if (divToolbar.style.display!='none')
-                divToolbar.style.display='none';
-            return;
-        }
-
-        //使用外城div尺寸 画图尺寸是被放大的
-        var pixelTatio = GetDevicePixelRatio();
-        var chartWidth=parseInt(this.ChartBorder.UIElement.parentElement.style.width.replace("px",""));  
-        var chartHeight=parseInt(this.ChartBorder.UIElement.parentElement.style.height.replace("px",""));
-        //JSConsole.Chart.Log('[KLineFrame::DrawToolbar] ',chartWidth,chartHeight,pixelTatio);
-
-        var toolbarWidth=100;
-        var toolbarHeight=this.ChartBorder.GetTitleHeight();
-        var left=chartWidth-(this.ChartBorder.Right/pixelTatio)-toolbarWidth;
-        var top=this.ChartBorder.GetTop()/pixelTatio;
-
-        if (this.ToolbarRect)
-        {
-            //尺寸变动移动才重新设置DOM
-            if (this.ToolbarRect.Left==left && this.ToolbarRect.Top==top && 
-                this.ToolbarRect.Width==toolbarWidth && this.ToolbarRect.Height==toolbarHeight/pixelTatio)
-            {
-                return;
-            }
-        }
-
-        this.ToolbarRect={ Left:left, Top:top, Width:toolbarWidth, Height:toolbarHeight/pixelTatio };
-
-        const modifyButton=`<span class='index_param icon iconfont icon-index_param' id='modifyindex' style='cursor:pointer;margin-left:2px;margin-right:2px;' title='调整指标参数'></span>`;
-        const changeButton=`<span class='index_change icon iconfont icon-change_index' id='changeindex' style='cursor:pointer;margin-left:2px;margin-right:2px;' title='切换指标'></span>`;
-        const closeButton=`<span class='index_close icon iconfont icon-close' id='closeindex' style='cursor:pointer;margin-left:2px;margin-right:2px;' title='关闭指标窗口'></span>`;
-
-        var spanIcon=modifyButton+changeButton;
-        if (this.CloseIndex)
-        {
-            spanIcon+=closeButton;
-        }
-
-        //var scrollPos=GetScrollPosition();
-        //left = left+scrollPos.Left;
-        //top = top+scrollPos.Top;
-        divToolbar.style.left = left + "px";
-        divToolbar.style.top = top + "px";
-        divToolbar.style.width=toolbarWidth+"px";                   //宽度先不调整吧
-        divToolbar.style.height=(toolbarHeight/pixelTatio)+'px';    //只调整高度
-        divToolbar.innerHTML=spanIcon;
-
-        var chart=this.ChartBorder.UIElement.JSChartContainer;
-        var identify=this.Identify;
-        if (!this.ModifyIndex)  //隐藏'改参数'
-            $("#"+divToolbar.id+" .index_param").hide();
-        else if (typeof(this.ModifyIndexEvent)=='function')  //绑定点击事件
-            $("#"+divToolbar.id+" .index_param").click(
-                {
-                    Chart:this.ChartBorder.UIElement.JSChartContainer,
-                    Identify:this.Identify
-                },this.ModifyIndexEvent);
-
-        if (!this.ChangeIndex)  //隐藏'换指标'
-        {
-            $("#"+divToolbar.id+" .index_change").hide();
-        }  
-        else if (typeof(this.ChangeIndexEvent)=='function')
-        {
-            $("#"+divToolbar.id+" .index_change").click(
-                {
-                    Chart:this.ChartBorder.UIElement.JSChartContainer,
-                    Identify:this.Identify,
-                    IsOverlay:false
-                },this.ChangeIndexEvent);
-        }
-
-        $("#"+divToolbar.id+" .index_close").click(
-            {
-                Chart:this.ChartBorder.UIElement.JSChartContainer,
-                Identify:this.Identify
-            },
-            function(event)
-            {
-                var hqChart=event.data.Chart;
-                var id=event.data.Identify;
-                hqChart.RemoveIndexWindow(id);
-            });
-
-        divToolbar.style.display = "block";
+        if (!this.DivFrameToolbar) return;
+        this.DivFrameToolbar.Show(this.Identify);
     }
 
     //手绘,不用DOM,使用DOM太麻烦了
@@ -18683,7 +18598,6 @@ function KLineFrame()
     delete this.newMethod;
 
     this.ClassName='KLineFrame';
-    this.ToolbarID=Guid();  //工具条Div id
 
     this.ModifyIndex=g_JSChartResource.KLineToolbar.ModifyIndex;      //是否显示'改参数'菜单
     this.ChangeIndex=g_JSChartResource.KLineToolbar.ChangeIndex;      //是否显示'换指标'菜单
@@ -18696,7 +18610,6 @@ function KLineFrame()
 
     this.SelBorderColor=g_JSChartResource.SelFrameBorderColor;
 
-    this.ToolbarRect=null;   //保存工具条的位置
     this.ReDrawToolbar=false;
 
     this.LastCalculateStatus={ Width:0, XPointCount:0 };    //最后一次计算宽度的状态
@@ -18720,6 +18633,11 @@ function KLineFrame()
     {
         if (this.ToolbarButtonStyle==1) return;
         if (g_JSChartResource.IsDOMFrameToolbar===true) return;
+        if (!this.DivFrameToolbar) return;
+
+        this.DivFrameToolbar.Show(this.Identify);
+
+        return;
 
         if (typeof($)=="undefined") return;
         
@@ -53141,6 +53059,10 @@ function KLineCountDownPaint()
             this.CanvasEx.fillStyle=out.BGColor;
             this.CanvasEx.fillRect(rtBG.Left,rtBG.Top,rtBG.Width,rtBG.Height);
         }
+        else
+        {
+            return;
+        }
 
         this.Canvas.textAlign = "left";
         this.Canvas.textBaseline = "bottom";
@@ -77474,6 +77396,12 @@ function JSChartResource()
             Mergin:{ Left:4, Right:4, Top:2, Bottom:3 },
         }
     }
+
+    this.DivFrameToolbar=
+    {
+        Icon:{ Color:"rgb(0,0,0)", HoverColor:"rgb(30,144,255)" },
+        Tooltip:{ BGColor:"rgb(255,255,255)", TextColor:"rgb(71,71,71)", BorderColor:"rgb(0,0,0)" },
+    }
    
     //画图工具
     this.DrawPicture=
@@ -79452,6 +79380,29 @@ function JSChartResource()
         if (style.KLineCountDownPaint) this.SetKLineCountDownPaint(style.KLineCountDownPaint);
 
         if (style.SmallFloatTooltipV2) this.SetSmallFloatTooltipV2(style.SmallFloatTooltipV2);
+
+        if (style.DivFrameToolbar) this.SetDivFrameToolbar(style.DivFrameToolbar);
+    }
+
+    this.SetDivFrameToolbar=function(style)
+    {
+        var dest=this.DivFrameToolbar;
+        if (style.Icon)
+        {
+            var item=style.Icon;
+            var subDest=dest.Icon;
+            if (item.Color) subDest.Color=item.Color;
+            if (item.HoverColor) subDest.HoverColor=item.HoverColor;
+        }
+
+        if (style.Tooltip)
+        {
+            var item=style.Tooltip;
+            var subDest=dest.Tooltip;
+            if (item.TextColor) subDest.TextColor=item.TextColor;
+            if (item.BorderColor) subDest.BorderColor=item.BorderColor;
+            if (item.BGColor) subDest.BGColor=item.BGColor;
+        }
     }
 
     this.SetSmallFloatTooltipV2=function(style)
@@ -82788,6 +82739,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             frame.RightSpaceCount=this.RightSpaceCount; //右边
             frame.GetEventCallback=(id)=> { return this.GetEventCallback(id); };
             frame.GlobalOption=this.GlobalOption;
+            frame.CreateDivFrameToolbar(this, i, this.UIElement.parentNode);
 
             frame.HorizontalMax=20;
             frame.HorizontalMin=10;
@@ -82888,6 +82840,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         frame.YSplitOperator.HQChart=this;
         frame.XSplitOperator.Symbol=this.Symbol;
         frame.XSplitOperator.Period=this.Period;
+        frame.CreateDivFrameToolbar(this, id, this.UIElement.parentNode);
 
         //K线数据绑定
         var xPointCouont=this.Frame.SubFrame[0].Frame.XPointCount;
@@ -85478,7 +85431,6 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         if (bChanged)
         {
             frame.SizeChange=true;
-            frame.ToolbarRect=null; //清空工具栏缓存
             frame.DrawToolbar();
         }
     }
@@ -92449,7 +92401,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
             if (i>=2)
             {
-                
+                frame.CreateDivFrameToolbar(this, i, this.UIElement.parentNode);
             }
 
             var DEFAULT_HORIZONTAL=[9,8,7,6,5,4,3,2,1];
@@ -92556,6 +92508,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         frame.XSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
         frame.YSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
         frame.XSplitOperator.Symbol=this.Symbol;
+        frame.CreateDivFrameToolbar(this, id, this.UIElement.parentNode);
 
         if (this.DayCount>1)
         {
@@ -105299,6 +105252,304 @@ Path2DHelper.PtInRect=function(x, y, rect)
     if (x>=rect.Left && x<=rect.Right && y>=rect.Top && y<=rect.Bottom) return true;
 
     return false;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////
+// 指标窗口顶部工具条
+//
+//
+///////////////////////////////////////////////////////////////////////////////////
+
+
+function JSDivFrameToolbar()
+{
+    this.DivToolbar=null;
+    this.DivHQChart=null;
+    this.HQChart=null;
+    this.FrameID=-1; //指标窗口ID
+    this.ID=Guid();
+    this.Left=-1;
+    this.Top=-1;
+
+    this.IconConfig=
+    { 
+        Color:g_JSChartResource.DivFrameToolbar.Icon.Color, 
+        HoverColor:g_JSChartResource.DivFrameToolbar.Icon.HoverColor
+    }
+
+    this.AryButton=
+    [
+        { 
+            ID:JSCHART_BUTTON_ID.MODIFY_INDEX_PARAM, ClassName:"UMyChart_FrameToolbar_Span_Button icon iconfont icon-index_param", Tooltip:{ Text:"修改参数"},
+            Span:null, Div:null, TooltipSpan:null
+        },
+        { 
+            ID:JSCHART_BUTTON_ID.CHANGE_INDEX, ClassName:"UMyChart_FrameToolbar_Span_Button icon iconfont icon-change_index", Tooltip:{ Text:"切换指标"},
+            Span:null,Div:null,  TooltipSpan:null
+        },
+        { 
+            ID:JSCHART_BUTTON_ID.OVERLAY_INDEX, ClassName:"UMyChart_FrameToolbar_Span_Button icon iconfont icon-overlay_index", Tooltip:{ Text:"叠加指标"},
+            Span:null,Div:null, TooltipSpan:null
+        },
+        { 
+            ID:JSCHART_BUTTON_ID.CLOSE_INDEX_WINDOW, ClassName:"UMyChart_FrameToolbar_Span_Button icon iconfont icon-close", Tooltip:{ Text:"关闭窗口"},
+            Span:null,Div:null, TooltipSpan:null
+        },
+    ];
+
+    this.SetToolbar=function(aryButton)
+    {
+        //清空原来的按钮
+        for(var i=0; i<this.AryButton.length; i++)
+        {
+            var item=this.AryButton[i];
+            if (item.Div && this.DivToolbar) this.DivToolbar.removeChild(item.Div);
+            item.Div=null;
+            item.Span=null;
+            item.TooltipSpan=null;
+        }
+        this.AryButton=[];
+
+        //重新创建
+        for(var i=0;i<aryButton.length; i++)
+        {
+            var item=aryButton[i];
+            if (!item.ID || !item.ClassName) continue;
+            var newItem={ ID:item.ID, ClassName:item.ClassName, Span:null,Div:null, TooltipSpan:null };
+            if (item.Tooltip && item.Tooltip.Text) newItem.Tooltip={ Text:item.Tooltip.Text };
+
+            this.AryButton.push(newItem);
+
+            if (this.DivToolbar) this.CreateButton(newItem, this.DivToolbar);
+        }
+
+        this.UpdateStyle();
+    }
+
+    this.Destroy=function()
+    {
+        if (this.DivToolbar) 
+        {
+            if (this.DivHQChart.removeChild) this.DivHQChart.removeChild(this.DivToolbar);
+            this.DivToolbar=null;
+        }
+
+        this.HQChart=null;
+        this.DivHQChart=null;
+        this.FrameID=-1;
+    }
+
+    this.Create=function()
+    {
+        var divToolbar=document.createElement("div");
+        divToolbar.className='UMyChart_FrameToolbar_Div';
+        divToolbar.id=this.ID;
+        divToolbar.oncontextmenu = function() { return false; }; //屏蔽右键系统菜单
+
+        for(var i=0;i<this.AryButton.length; i++)
+        {
+            var item=this.AryButton[i];
+            if (this.FrameID==0 && item.ID==JSCHART_BUTTON_ID.CLOSE_INDEX_WINDOW) continue; //第一个指标窗口不显示关闭按钮
+            this.CreateButton(item, divToolbar);
+        }
+        
+        this.DivHQChart.appendChild(divToolbar);
+
+        this.DivToolbar=divToolbar;
+
+        this.UpdateStyle();
+
+        if (!this.HQChart.JSToolbarTooltip)
+        {
+            this.HQChart.JSToolbarTooltip=new JSToolbarTooltip();
+            this.HQChart.JSToolbarTooltip.DivHQChart=this.DivHQChart;
+            this.HQChart.JSToolbarTooltip.Create();
+        }
+    }
+
+    this.UpdateStyle=function()
+    {
+        if (!this.DivToolbar) return;
+
+        for(var i=0;i<this.AryButton.length; i++)
+        {
+            var item=this.AryButton[i]
+            if (!item.Span) continue;
+            item.Span.style["color"]=this.IconConfig.Color;     
+        }
+    }
+
+    this.ReloadResource=function(option)
+    {
+        this.IconConfig.Color=g_JSChartResource.DivFrameToolbar.Icon.Color, 
+        this.IconConfig.HoverColor=g_JSChartResource.DivFrameToolbar.Icon.HoverColor;
+
+        this.UpdateStyle();
+    }
+
+    this.CreateButton=function(item, divDom)
+    {
+        var btnDiv=document.createElement("div");
+        btnDiv.className="UMyChart_FrameToolbar_Div_Button";
+        btnDiv.onmouseover=(e)=> { this.OnHoverButton(e, item); }
+        btnDiv.onmouseout=(e)=>{ this.OnLeaveButton(e, item); }
+        item.Div=btnDiv;
+
+        var spanDom=document.createElement("span");
+        spanDom.className=item.ClassName;
+        spanDom.onmousedown=(e)=>{ this.OnClickButton(e, item); };
+        item.Span=spanDom;
+        btnDiv.appendChild(spanDom);
+
+        divDom.appendChild(btnDiv);
+    }
+
+    this.OnClickButton=function(e, item)
+    {
+        if (!this.FrameID<0) return;
+        if (!this.HQChart) return;
+
+        var frame=this.HQChart.Frame.SubFrame[this.FrameID].Frame;
+
+        var button={ ID:item.ID, Frame:frame };
+        this.HQChart.ClickFrameButton(button, e);
+    }
+
+    this.OnHoverButton=function(e, item)
+    {
+        if (!item.Span) return;
+
+        item.Span.style["color"]=this.IconConfig.HoverColor;
+
+        this.ShowTooltip(e, item);
+    }
+
+    this.OnLeaveButton=function(e, item)
+    {
+        if (!item.Span) return;
+        item.Span.style["color"]=this.IconConfig.Color;
+
+        this.HideTooltip();
+    }
+
+    this.Show=function(frameID)
+    {
+        this.FrameID=frameID;
+        if (!this.FrameID<0) return;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.HQChart.Frame.SubFrame)) return;
+        if (!this.HQChart.Frame.SubFrame[this.FrameID]) return;
+
+        var pixelTatio = GetDevicePixelRatio();
+        var frame=this.HQChart.Frame.SubFrame[this.FrameID].Frame;
+        var border=frame.GetBorder();
+
+        var top=border.Top/pixelTatio;
+        var right=border.RightEx/pixelTatio;
+        var left=right-this.DivToolbar.offsetWidth-2;
+
+        if (this.Top!=top || this.Left!=left)
+        {
+            this.DivToolbar.style.top = top + "px";
+            this.DivToolbar.style.left = left + "px";
+            this.DivToolbar.style.height=frame.ChartBorder.TitleHeight/pixelTatio + "px";
+            this.Top=top;
+            this.Left=left;
+        }
+        
+        if (this.DivToolbar.style.visibility!='visible') this.DivToolbar.style.visibility='visible';
+    }
+
+    this.Hide=function()
+    {
+        if (this.DivToolbar) this.DivToolbar.style.visibility="hidden";
+    }
+
+    this.HideTooltip=function()
+    {
+        if (this.HQChart.JSToolbarTooltip) this.HQChart.JSToolbarTooltip.Hide();
+    }
+
+    this.ShowTooltip=function(e, item)
+    {
+        if (!this.HQChart.JSToolbarTooltip) return;
+        if (!item.Div) return;
+
+        var rtButton=item.Div.getBoundingClientRect();
+        var rtHQChart=this.DivHQChart.getBoundingClientRect();
+        var left=rtButton.left-rtHQChart.left;
+        var top=rtButton.bottom-rtHQChart.top+2;
+        this.HQChart.JSToolbarTooltip.Show(top, left, { Text:item.Tooltip.Text });
+    }
+}
+
+
+function JSToolbarTooltip()
+{
+    this.DivTooltip=null;
+    this.DivHQChart=null;
+    this.Text=null;
+    this.Left=-1;
+    this.Top=-1;
+
+    this.BGColor=g_JSChartResource.DivFrameToolbar.Tooltip.BGColor;
+    this.TextColor=g_JSChartResource.DivFrameToolbar.Tooltip.TextColor;
+    this.BorderColor=g_JSChartResource.DivFrameToolbar.Tooltip.BorderColor;
+
+    this.Create=function()
+    {
+        var divDom=document.createElement("div");
+        divDom.className='UMyChart_Toolbar_Tooltip_Div';
+        this.DivHQChart.appendChild(divDom);
+        
+        this.DivTooltip=divDom;
+
+        this.UpdateStyle();
+    }
+
+    this.ReloadResource=function(option)
+    {
+        this.BGColor=g_JSChartResource.DivFrameToolbar.Tooltip.BGColor;
+        this.TextColor=g_JSChartResource.DivFrameToolbar.Tooltip.TextColor;
+        this.BorderColor=g_JSChartResource.DivFrameToolbar.Tooltip.BorderColor;
+
+        this.UpdateStyle();
+    }
+
+    this.UpdateStyle=function()
+    {
+        if (!this.DivTooltip) return;
+
+        this.DivTooltip.style["background-color"]=this.BGColor;
+        this.DivTooltip.style["color"]=this.TextColor;
+        this.DivTooltip.style["border"]="1px solid " + this.BorderColor;
+    }
+
+    this.Show=function(top, left, tooltipData)
+    {
+        if (!this.DivTooltip) return;
+
+        if (this.Text!=tooltipData.Text) this.DivTooltip.innerHTML=tooltipData.Text;
+        var right=left+this.DivTooltip.offsetWidth;
+        if ((right+5)>=window.innerWidth) left=left-this.DivTooltip.offsetWidth;
+
+        if (this.Top!=top || this.Left!=left)
+        {
+             this.DivTooltip.style.top = top + "px";
+            this.DivTooltip.style.left = left + "px";
+            this.Top=top;
+            this.Left=left;
+        }
+        
+        if (this.DivTooltip.style.visibility!='visible') this.DivTooltip.style.visibility='visible';
+    }
+
+    this.Hide=function()
+    {
+        if (!this.DivTooltip) return;
+
+        if (this.DivTooltip.style["visibility"]!='hidden') this.DivTooltip.style["visibility"]="hidden";
+    }
 }
 
 

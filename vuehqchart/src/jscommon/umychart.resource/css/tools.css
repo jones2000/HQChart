@@ -2342,6 +2342,67 @@ input[type="color"] {
 }
 
 
+/*
+
+*/
+.UMyChart_FrameToolbar_Div
+{
+    visibility:hidden;
+    position: absolute;
+    background-color: transparent;
+    z-index: 10;
+    line-height: 24px;
+    left:1px;
+    top:1px;
+    display: flex;
+}
+
+.UMyChart_FrameToolbar_Div_Button
+{
+    padding-left: 2px;
+}
+
+.UMyChart_FrameToolbar_Span_Button
+{
+    font-size: 14px;
+    color: rgb(190,190,190);
+}
+
+.UMyChart_FrameToolbar_Div_Tooltip
+{
+    visibility:hidden;
+   
+    background-color: rgb(220,220,220);
+    color: rgb(0,0,0);
+    text-align: center;
+    border-radius: 2px;
+    padding: 2px;
+    position: absolute;
+    z-index: 50;
+    font-size: 14px;
+    white-space: nowrap;
+    right: 100%;
+}
+
+.UMyChart_Toolbar_Tooltip_Div
+{
+    background-color: rgb(220,220,220);
+    color: rgb(0,0,0);
+    text-align: center;
+    border-radius: 2px;
+    padding: 2px;
+    position: absolute;
+    z-index: 50;
+    font-size: 14px;
+    white-space: nowrap;
+    left:1px;
+    top:1px;
+}
+
+
+
+
+
 
 
 
