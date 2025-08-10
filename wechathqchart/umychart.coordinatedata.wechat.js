@@ -2129,9 +2129,9 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.DCE + '-LH', {Time:0,Decimal:0,Name:'生猪'}],
 
         //上期所
-        [MARKET_SUFFIX_NAME.SHFE + '-CU', {Time:4,Decimal:0,Name:"铜"}],
-        [MARKET_SUFFIX_NAME.SHFE + '-AL', {Time:4,Decimal:0,Name:"铝"}],
-        [MARKET_SUFFIX_NAME.SHFE + '-NI', {Time:4,Decimal:0,Name:"镍"}],
+        [MARKET_SUFFIX_NAME.SHFE + '-CU', {Time:4,Decimal:0,Name:"沪铜"}],
+        [MARKET_SUFFIX_NAME.SHFE + '-AL', {Time:4,Decimal:0,Name:"沪铝"}],
+        [MARKET_SUFFIX_NAME.SHFE + '-NI', {Time:4,Decimal:0,Name:"沪镍"}],
         [MARKET_SUFFIX_NAME.SHFE + '-SN', {Time:4,Decimal:0,Name:'沪锡'}],
         [MARKET_SUFFIX_NAME.SHFE + '-ZN', {Time:4,Decimal:0,Name:"沪锌"}],
         [MARKET_SUFFIX_NAME.SHFE + '-PB', {Time:4,Decimal:0,Name:'沪铅'}],
@@ -2147,6 +2147,7 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.SHFE + '-SS', {Time:4,Decimal:0,Name:'不锈钢'}],
         [MARKET_SUFFIX_NAME.SHFE + '-AO', {Time:4,Decimal:0,Name:'氧化铝'}],
         [MARKET_SUFFIX_NAME.SHFE + '-BR', {Time:6,Decimal:0,Name:'合成橡胶'}],
+        [MARKET_SUFFIX_NAME.SHFE + '-AD', {Time:4,Decimal:0,Name:"铝合金"}],
         
         //上期能源
         [MARKET_SUFFIX_NAME.SHFE + '-NR', {Time:6,Decimal:1,Name:'20号胶'}],

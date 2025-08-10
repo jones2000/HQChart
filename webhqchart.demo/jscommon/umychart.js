@@ -16218,7 +16218,7 @@ function AverageWidthFrame()
             this.DivFrameToolbar.HQChart=hqchart;
             this.DivFrameToolbar.DivHQChart=divHQChart;
             this.DivFrameToolbar.FrameID=frameID;
-            this.DivFrameToolbar.Create();
+            this.DivFrameToolbar.Create(this);
         }
     }
 
@@ -47774,10 +47774,17 @@ function ChartLock()
 
         if (isDraw)
         {
-            this.Canvas.fillStyle = this.BGColor;
-            this.Canvas.fillRect(lLeft, this.ChartBorder.GetTop(), lWidth, lHeight);
-            var xCenter = lLeft + lWidth / 2;
-            var yCenter = this.ChartBorder.GetTop() + lHeight / 2;
+            var rtBG={ Left:lLeft, Top:this.ChartBorder.GetTop(), Width:lWidth, Height:lHeight };
+            rtBG.Right=rtBG.Width+rtBG.Left;
+            rtBG.Bottom=rtBG.Height+rtBG.Top;
+
+            //上下渐变
+            var bgColor=this.SetFillStyle(this.BGColor, rtBG.Left, rtBG.Top, rtBG.Left, rtBG.Bottom);
+            this.Canvas.fillStyle =bgColor;
+            this.Canvas.fillRect(rtBG.Left, rtBG.Top, rtBG.Width, rtBG.Height);
+
+            var xCenter = rtBG.Left + rtBG.Width / 2;
+            var yCenter = rtBG.Top + lHeight / 2;
             this.Canvas.textAlign = 'center';
             this.Canvas.textBaseline = 'middle';
             this.Canvas.fillStyle = this.TextColor;
@@ -47821,6 +47828,7 @@ function ChartLock()
         if (lLeft < this.ChartBorder.GetTop()) lLeft = this.ChartBorder.GetTop();
         var lHeight =  this.ChartBorder.GetRight()-this.ChartBorder.GetLeft();
         var lWidth = this.ChartBorder.GetBottom() - lLeft;
+
         this.Canvas.fillStyle = this.BGColor;
         this.Canvas.fillRect(this.ChartBorder.GetLeft(), lLeft,lHeight,lWidth);
 
@@ -49471,7 +49479,7 @@ function StockChip()
         if (option.ShowType>0) this.ShowType=option.ShowType;
         if (option.IsShowX) this.IsShowX=option.IsShowX;
         if (option.ShowXCount>0) this.ShowXCount=option.ShowXCount;
-        if (option.Width>100) this.Width=option.Width*GetDevicePixelRatio();
+        if (option.Width>50) this.Width=option.Width*GetDevicePixelRatio();
         if (option.CalculateType>0) this.CalculateType=option.CalculateType;
         if (IFrameSplitOperator.IsNumber(option.PriceZoom)) this.PriceZoom=option.PriceZoom;
     }
@@ -65380,7 +65388,7 @@ function IChartDrawPicture()
             Symbol:this.Symbol, Guid:this.Guid, Period:this.Period,Value:[] ,
             FrameID:this.Frame.Identify, LineColor:this.LineColor, AreaColor:this.AreaColor,
             LineWidth:this.LineWidth, Right:this.Right, EnableSave:this.EnableSave,
-            IsShowYCoordinate:this.IsShowYCoordinate
+            IsShowYCoordinate:this.IsShowYCoordinate, EnableCtrlMove:this.EnableCtrlMove
         };
 
         for(var i=0; i<this.Value.length; ++i)
@@ -65404,7 +65412,7 @@ function IChartDrawPicture()
             Symbol:this.Symbol,  Period:this.Period,Right:this.Right,
             LineColor:this.LineColor, 
             LineWidth:this.LineWidth,  
-            EnableSave:this.EnableSave, IsShowYCoordinate:this.IsShowYCoordinate
+            EnableSave:this.EnableSave, IsShowYCoordinate:this.IsShowYCoordinate, EnableCtrlMove:this.EnableCtrlMove,
         };
 
         if (this.AreaColor) data.AreaColor=this.AreaColor;
@@ -66656,7 +66664,7 @@ function ChartDrawPictureHorizontalLine()
     { 
         Left:{ IsShow:true, Margin:{ Left:5, Top:4, Bottom:2, Right:5 } },
         Right:{ IsShow:true, Margin:{ Left:5, Top:4, Bottom:2, Right:5 } },
-        Font:`${12*GetDevicePixelRatio()}px 微软雅黑`, TextColor:"rgb(255,255,255)" 
+        Font:`${12*GetDevicePixelRatio()}px 微软雅黑`, TextColor:"rgb(255,255,255)", BGColor:null
     };
 
     this.InsideLabelConfig=
@@ -66665,7 +66673,8 @@ function ChartDrawPictureHorizontalLine()
         Font:`${14*GetDevicePixelRatio()}px 微软雅黑`,
         Margin:{ Left:5, Top:4, Bottom:2, Right:5 },
         TextColor:"rgb(255,255,255)",
-        BGAlpha:0.8, //背景色透明度
+        BGAlpha:0.8, //背景色透明度,
+        IsShow:true
     }
 
     this.LabelTitle;
@@ -66694,7 +66703,8 @@ function ChartDrawPictureHorizontalLine()
                 }
 
                 if (item.Font) this.LabelConfig.Font=item.Font;
-                if (item.TextColor) this.LabelConfig.FoTextColornt=item.TextColor;
+                if (item.TextColor) this.LabelConfig.TextColor=item.TextColor;
+                if (item.BGColor) this.LabelConfig.BGColor=item.BGColor;
             }
 
             if (option.InsideLabel)
@@ -66704,6 +66714,7 @@ function ChartDrawPictureHorizontalLine()
                 if (item.TextColor) this.InsideLabelConfig.TextColor=item.TextColor;
                 if (IFrameSplitOperator.IsNumber(item.Position)) this.InsideLabelConfig.Position=item.Position;
                 if (IFrameSplitOperator.IsNumber(item.BGAlpha)) this.InsideLabelConfig.BGAlpha=item.BGAlpha;
+                if (IFrameSplitOperator.IsBool(item.IsShow)) this.InsideLabelConfig.IsShow=item.IsShow;
             }
         }
     }
@@ -66715,6 +66726,8 @@ function ChartDrawPictureHorizontalLine()
         {
             storageData=this.Super_ExportStorageData();
             if (this.LabelTitle) storageData.LabelTitle=this.LabelTitle;
+            if (this.LabelConfig) storageData.Label=this.LabelConfig;
+            if (this.InsideLabelConfig) storageData.InsideLabel=this.InsideLabelConfig;
         }
 
         return storageData;
@@ -66821,7 +66834,8 @@ function ChartDrawPictureHorizontalLine()
             rtBG.Bottom=rtBG.Top+rtBG.Height;
             rtBG.Left=rtBG.Right-rtBG.Width;
 
-            this.Canvas.fillStyle=this.LineColor;
+            if (config.BGColor) this.Canvas.fillStyle=config.BGColor;
+            else this.Canvas.fillStyle=this.LineColor;
             this.Canvas.fillRect(rtBG.Left, rtBG.Top, rtBG.Width, rtBG.Height);
 
             this.Canvas.textAlign="left";
@@ -66839,7 +66853,9 @@ function ChartDrawPictureHorizontalLine()
             rtBG.Top=y-textHeight/2-margin.Top;
             rtBG.Bottom=rtBG.Top+rtBG.Height;
             rtBG.Right=rtBG.Left+rtBG.Width;
-            this.Canvas.fillStyle=this.LineColor;
+
+            if (config.BGColor) this.Canvas.fillStyle=config.BGColor;
+            else this.Canvas.fillStyle=this.LineColor;
             this.Canvas.fillRect(rtBG.Left, rtBG.Top, rtBG.Width, rtBG.Height);
 
             this.Canvas.textAlign="left";
@@ -66857,6 +66873,7 @@ function ChartDrawPictureHorizontalLine()
 
         var isHScreen=this.Frame.IsHScreen;
         var config=this.InsideLabelConfig;
+        if (!config.IsShow) return;
         if (config.Position!=0 && config.Position!=1) return;
         var margin=config.Margin;
 
@@ -103502,9 +103519,9 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.DCE + '-LH', {Time:0,Decimal:0,Name:'生猪'}],
 
         //上期所
-        [MARKET_SUFFIX_NAME.SHFE + '-CU', {Time:4,Decimal:0,Name:"铜"}],
-        [MARKET_SUFFIX_NAME.SHFE + '-AL', {Time:4,Decimal:0,Name:"铝"}],
-        [MARKET_SUFFIX_NAME.SHFE + '-NI', {Time:4,Decimal:0,Name:"镍"}],
+        [MARKET_SUFFIX_NAME.SHFE + '-CU', {Time:4,Decimal:0,Name:"沪铜"}],
+        [MARKET_SUFFIX_NAME.SHFE + '-AL', {Time:4,Decimal:0,Name:"沪铝"}],
+        [MARKET_SUFFIX_NAME.SHFE + '-NI', {Time:4,Decimal:0,Name:"沪镍"}],
         [MARKET_SUFFIX_NAME.SHFE + '-SN', {Time:4,Decimal:0,Name:'沪锡'}],
         [MARKET_SUFFIX_NAME.SHFE + '-ZN', {Time:4,Decimal:0,Name:"沪锌"}],
         [MARKET_SUFFIX_NAME.SHFE + '-PB', {Time:4,Decimal:0,Name:'沪铅'}],
@@ -103520,6 +103537,7 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.SHFE + '-SS', {Time:4,Decimal:0,Name:'不锈钢'}],
         [MARKET_SUFFIX_NAME.SHFE + '-AO', {Time:4,Decimal:0,Name:'氧化铝'}],
         [MARKET_SUFFIX_NAME.SHFE + '-BR', {Time:6,Decimal:0,Name:'合成橡胶'}],
+        [MARKET_SUFFIX_NAME.SHFE + '-AD', {Time:4,Decimal:0,Name:"铝合金"}],
 
         //上期所-能源
         [MARKET_SUFFIX_NAME.SHFE + '-NR', {Time:6,Decimal:1,Name:'20号胶'}],
@@ -105278,40 +105296,11 @@ function JSDivFrameToolbar()
         HoverColor:g_JSChartResource.DivFrameToolbar.Icon.HoverColor
     }
 
-    this.AryButton=
-    [
-        { 
-            ID:JSCHART_BUTTON_ID.MODIFY_INDEX_PARAM, ClassName:"UMyChart_FrameToolbar_Span_Button icon iconfont icon-index_param", Tooltip:{ Text:"修改参数"},
-            Span:null, Div:null, TooltipSpan:null
-        },
-        { 
-            ID:JSCHART_BUTTON_ID.CHANGE_INDEX, ClassName:"UMyChart_FrameToolbar_Span_Button icon iconfont icon-change_index", Tooltip:{ Text:"切换指标"},
-            Span:null,Div:null,  TooltipSpan:null
-        },
-        { 
-            ID:JSCHART_BUTTON_ID.OVERLAY_INDEX, ClassName:"UMyChart_FrameToolbar_Span_Button icon iconfont icon-overlay_index", Tooltip:{ Text:"叠加指标"},
-            Span:null,Div:null, TooltipSpan:null
-        },
-        { 
-            ID:JSCHART_BUTTON_ID.CLOSE_INDEX_WINDOW, ClassName:"UMyChart_FrameToolbar_Span_Button icon iconfont icon-close", Tooltip:{ Text:"关闭窗口"},
-            Span:null,Div:null, TooltipSpan:null
-        },
-    ];
+    this.AryButton=[]; //按钮数组
 
-    this.SetToolbar=function(aryButton)
+    //创建按钮
+    this.CreateArrayButton=function(aryButton)
     {
-        //清空原来的按钮
-        for(var i=0; i<this.AryButton.length; i++)
-        {
-            var item=this.AryButton[i];
-            if (item.Div && this.DivToolbar) this.DivToolbar.removeChild(item.Div);
-            item.Div=null;
-            item.Span=null;
-            item.TooltipSpan=null;
-        }
-        this.AryButton=[];
-
-        //重新创建
         for(var i=0;i<aryButton.length; i++)
         {
             var item=aryButton[i];
@@ -105323,9 +105312,88 @@ function JSDivFrameToolbar()
 
             if (this.DivToolbar) this.CreateButton(newItem, this.DivToolbar);
         }
+    }
 
+    //清空原来的按钮
+    this.ClearAllButtons=function()
+    {
+        //清空原来的按钮
+        for(var i=0; i<this.AryButton.length; i++)
+        {
+            var item=this.AryButton[i];
+            if (item.Div && this.DivToolbar) this.DivToolbar.removeChild(item.Div);
+            item.Div=null;
+            item.Span=null;
+            item.TooltipSpan=null;
+        }
+
+        this.AryButton=[];
+    }
+
+    this.GetShowButtons=function(subFrame)
+    {
+        var frame=subFrame;
+        if (!frame && this.FrameID>=0 && this.FrameID<this.HQChart.Frame.SubFrame.length) 
+            frame=this.HQChart.Frame.SubFrame[this.FrameID].Frame;
+
+        var aryDefaultButton=JSDivFrameToolbar.GetDfaultButtons();
+        var aryButton=[];
+        for(var i=0;i<aryDefaultButton.length; i++)
+        {
+            var item=aryDefaultButton[i];
+            if (this.FrameID==0 && item.ID==JSCHART_BUTTON_ID.CLOSE_INDEX_WINDOW) continue; //第一个指标窗口不显示关闭按钮
+
+            if (item.ID==JSCHART_BUTTON_ID.MODIFY_INDEX_PARAM && frame && frame.ModifyIndex===false) continue;
+            if (item.ID==JSCHART_BUTTON_ID.CHANGE_INDEX && frame && frame.ChangeIndex===false) continue;
+            if (item.ID==JSCHART_BUTTON_ID.OVERLAY_INDEX && frame && frame.OverlayIndex===false) continue;
+            if (item.ID==JSCHART_BUTTON_ID.CLOSE_INDEX_WINDOW && frame && frame.CloseIndex===false) continue;
+
+            aryButton.push(item);
+        }
+
+        return aryButton;
+    }
+
+    this.SetToolbar=function(aryButton)
+    {
+        this.ClearAllButtons(); //清空原来的按钮
+        
+        this.CreateArrayButton(aryButton);  //重新创建
+        
         this.UpdateStyle();
     }
+
+    this.UpdateButton=function()
+    {
+        if (!this.DivToolbar) return;
+
+        var aryButton=this.GetShowButtons();
+        var bChange=false;
+        if (aryButton.length!=this.AryButton.length)
+        {
+            bChange=true;
+        } 
+        else
+        {
+            for(var i=0;i<this.AryButton.length;++i)
+            {
+                var leftItem=this.AryButton[i];
+                var rightItem=aryButton[i];
+
+                if (leftItem.ID!=rightItem.ID || leftItem.ClassName!=rightItem.ClassName)
+                {
+                    bChange=true;
+                    break;
+                }
+            }
+        }
+
+        if (!bChange) return;
+
+        this.SetToolbar(aryButton); //重新设置按钮
+    }
+
+    
 
     this.Destroy=function()
     {
@@ -105340,23 +105408,18 @@ function JSDivFrameToolbar()
         this.FrameID=-1;
     }
 
-    this.Create=function()
+    this.Create=function(frame)
     {
         var divToolbar=document.createElement("div");
         divToolbar.className='UMyChart_FrameToolbar_Div';
         divToolbar.id=this.ID;
         divToolbar.oncontextmenu = function() { return false; }; //屏蔽右键系统菜单
+        this.DivToolbar=divToolbar;
 
-        for(var i=0;i<this.AryButton.length; i++)
-        {
-            var item=this.AryButton[i];
-            if (this.FrameID==0 && item.ID==JSCHART_BUTTON_ID.CLOSE_INDEX_WINDOW) continue; //第一个指标窗口不显示关闭按钮
-            this.CreateButton(item, divToolbar);
-        }
+        var aryButtons=this.GetShowButtons(frame);
+        this.CreateArrayButton(aryButtons)
         
         this.DivHQChart.appendChild(divToolbar);
-
-        this.DivToolbar=divToolbar;
 
         this.UpdateStyle();
 
@@ -105481,6 +105544,32 @@ function JSDivFrameToolbar()
         var top=rtButton.bottom-rtHQChart.top+2;
         this.HQChart.JSToolbarTooltip.Show(top, left, { Text:item.Tooltip.Text });
     }
+}
+
+JSDivFrameToolbar.GetDfaultButtons=function()
+{
+    var aryButton=
+    [
+
+        { 
+            ID:JSCHART_BUTTON_ID.MODIFY_INDEX_PARAM, ClassName:"UMyChart_FrameToolbar_Span_Button icon iconfont icon-index_param", Tooltip:{ Text:"修改参数"},
+            Span:null, Div:null, TooltipSpan:null
+        },
+        { 
+            ID:JSCHART_BUTTON_ID.CHANGE_INDEX, ClassName:"UMyChart_FrameToolbar_Span_Button icon iconfont icon-change_index", Tooltip:{ Text:"切换指标"},
+            Span:null,Div:null,  TooltipSpan:null
+        },
+        { 
+            ID:JSCHART_BUTTON_ID.OVERLAY_INDEX, ClassName:"UMyChart_FrameToolbar_Span_Button icon iconfont icon-overlay_index", Tooltip:{ Text:"叠加指标"},
+            Span:null,Div:null, TooltipSpan:null
+        },
+        { 
+            ID:JSCHART_BUTTON_ID.CLOSE_INDEX_WINDOW, ClassName:"UMyChart_FrameToolbar_Span_Button icon iconfont icon-close", Tooltip:{ Text:"关闭窗口"},
+            Span:null,Div:null, TooltipSpan:null
+        },
+    ];
+
+    return aryButton
 }
 
 

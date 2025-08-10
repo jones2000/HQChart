@@ -2386,6 +2386,7 @@ input[type="color"] {
 
 .UMyChart_Toolbar_Tooltip_Div
 {
+    visibility:hidden;
     background-color: rgb(220,220,220);
     color: rgb(0,0,0);
     text-align: center;
