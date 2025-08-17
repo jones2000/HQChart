@@ -2321,6 +2321,8 @@ var JSCHART_EVENT_ID =
     ON_CALCULATE_CHIP_DATA:164,                //计算筹码数据 (筹码图用)
     
     ON_CLICK_CROSSCURSOR_BOTTOM:170,            //十字光标底部文字点击   
+    ON_CLICK_INDEX_LOCK:178,            //点击指标锁
+    ON_CORSSCURSOR_STATUS_CHANGE:179,   //十字光标状态改变
 }
 
 var JSCHART_DATA_FIELD_ID=
@@ -2359,6 +2361,18 @@ var JSCHART_BUTTON_ID=
     CHIP_RECENT:10,
 
     CHIP_CLOSE:45,          //关闭筹码图
+}
+
+//十字光标状态
+var JSCHART_CORSSCURSOR_STATUS_ID=
+{
+    NONE_ID:0,
+    LINE_ID:1,
+    LEFT_TEXT_ID:2,
+    LEFT_INTER_TEXT_ID:4,
+    RIGHT_TEXT_ID:8,
+    RIGHT_INTER_TEXT_ID:16,
+    BOTTOM_TEXT_ID:32,
 }
 
 function PhoneDBClick()
@@ -2518,6 +2532,12 @@ Path2DHelper.PtInArc=function(x, y, ptCenter, radius, startAngle, endAngle,lineW
     return (angle >= startAngle && angle <= endAngle) || (angle + PI2 >= startAngle && angle + PI2 <= endAngle);
 }
 
+Path2DHelper.PtInRect=function(x, y, rect)
+{
+    if (x>=rect.Left && x<=rect.Right && y>=rect.Top && y<=rect.Bottom) return true;
+    return false;
+}
+
 //统一弧度方向
 Path2DHelper.FormatRadian=function(angle)
 {
@@ -2567,6 +2587,7 @@ export
     JSCHART_EVENT_ID,
     JSCHART_DATA_FIELD_ID,
     JSCHART_BUTTON_ID,
+    JSCHART_CORSSCURSOR_STATUS_ID,
     PhoneDBClick,
     HQ_DATA_TYPE,
     OVERLAY_STATUS_ID,

@@ -273,7 +273,8 @@ function IChartFramePainting()
         this.IsLocked = true;
         if (!this.LockPaint) this.LockPaint = new ChartLock();    //创建锁
         if (lockData.Callback) this.LockPaint.Callback = lockData.Callback;       //回调
-        if (lockData.IndexName) this.LockPaint.IndexName = lockData.IndexName;    //指标名字
+        if (lockData.IndexName) this.LockPaint.IndexName = lockData.IndexName;      //指标名字
+        if (lockData.IndexID)  this.LockPaint.IndexID=lockData.IndexID;             //指标ID
         if (lockData.ID) this.LockPaint.LockID = lockData.ID;                     //锁ID
         if (lockData.BG) this.LockPaint.BGColor = lockData.BG;                    //背景色 
         if (lockData.Text) this.LockPaint.Title = lockData.Text;

@@ -401,6 +401,12 @@ function GetBlackStyle()
                 Color:"rgb(156,156,156)"
             },
 
+            IndexHelp:
+            {
+                MoveOnColor:"rgb(255,255,255)",
+                Color:"rgb(156,156,156)"
+            },
+
             Tooltip:
             {
                 //Font:12*GetDevicePixelRatio() +"px 微软雅黑",

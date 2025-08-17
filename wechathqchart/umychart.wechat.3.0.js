@@ -32,6 +32,7 @@ import {
     JSCHART_EVENT_ID,
     JSCHART_DATA_FIELD_ID,
     JSCHART_BUTTON_ID,
+    JSCHART_CORSSCURSOR_STATUS_ID,
     PhoneDBClick,
     OVERLAY_STATUS_ID,
 } from "./umychart.data.wechat.js";
@@ -370,38 +371,13 @@ function JSChart(element)
         if (typeof (option.UpdateUICallback) == 'function') //数据到达回调
         chart.UpdateUICallback = option.UpdateUICallback;
 
-        if (option.Frame) 
+        if (IFrameSplitOperator.IsNonEmptyArray(option.Frame))
         {
-            for (var i in option.Frame) 
+            for (var i=0; i<option.Frame.length;++i) 
             {
                 var item = option.Frame[i];
                 if (!chart.Frame.SubFrame[i]) continue;
-                var subFrame=chart.Frame.SubFrame[i].Frame;
-
-                if (item.SplitCount) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount = item.SplitCount;
-                if (item.StringFormat) chart.Frame.SubFrame[i].Frame.YSplitOperator.StringFormat = item.StringFormat;
-                if (!isNaN(item.Height)) chart.Frame.SubFrame[i].Height = item.Height;
-                if (item.IsShowBorder == false) chart.Frame.SubFrame[i].Frame.IsShowBorder = item.IsShowBorder;
-                if (item.IsShowXLine == false) chart.Frame.SubFrame[i].Frame.IsShowXLine = item.IsShowXLine;
-                if (item.IsShowYLine==false) chart.Frame.SubFrame[i].Frame.IsShowYLine=item.IsShowYLine;
-                if (item.XMessageAlign == 'bottom') chart.Frame.SubFrame[i].Frame.XMessageAlign = item.XMessageAlign;
-                if (item.IsShowTitle == false) chart.Frame.SubFrame[i].Frame.IsShowTitle = false;
-                if (IFrameSplitOperator.IsBool(item.IsShowIndexTitle)) chart.Frame.SubFrame[i].Frame.IsShowTitle=item.IsShowIndexTitle;
-                if (item.UpdateTitleUICallback && chart.Frame.SubFrame[i].Frame.TitlePaint) chart.Frame.SubFrame[i].Frame.TitlePaint.UpdateUICallback = item.UpdateTitleUICallback;
-                if (item.IsShowLeftText === false || item.IsShowLeftText === true) chart.Frame.SubFrame[i].Frame.IsShowYText[0] = item.IsShowLeftText;            //显示左边刻度
-                if (item.IsShowRightText === false || item.IsShowRightText === true) chart.Frame.SubFrame[i].Frame.IsShowYText[1] = item.IsShowRightText;         //显示右边刻度 
-                if (item.TopSpace >= 0) chart.Frame.SubFrame[i].Frame.ChartBorder.TopSpace = item.TopSpace;
-                if (item.BottomSpace >= 0) chart.Frame.SubFrame[i].Frame.ChartBorder.BottomSpace = item.BottomSpace;
-                if (item.Custom) chart.Frame.SubFrame[i].Frame.YSplitOperator.Custom = item.Custom;
-                if (IFrameSplitOperator.IsNumber(item.SplitType)) 
-                {
-                    chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitType = item.SplitType;
-                    chart.Frame.SubFrame[i].Frame.YSplitOperator.DefaultSplitType=item.SplitType;
-                }
-                if (IFrameSplitOperator.IsNumber(item.FilterType)) subFrame.YSplitOperator.FilterType=item.FilterType;
-                if (IFrameSplitOperator.IsNumber(item.FloatPrecision)) chart.Frame.SubFrame[i].Frame.YSplitOperator.FloatPrecision = item.FloatPrecision;   //强制指定小数位数(主图有效)
-                if (IFrameSplitOperator.IsNumber(item.BorderLine)) chart.Frame.SubFrame[i].Frame.BorderLine=item.BorderLine;
-                if (IFrameSplitOperator.IsNumber(item.YTextBaseline)) chart.Frame.SubFrame[i].Frame.YTextBaseline=item.YTextBaseline;
+                chart.SetSubFrameAttribute(chart.Frame.SubFrame[i],null,item);
             }
         }
 
@@ -516,18 +492,7 @@ function JSChart(element)
                 }
             }
 
-            var frame=chart.Frame.SubFrame[i].Frame;
-            if (item.Modify != null) chart.Frame.SubFrame[i].Frame.ModifyIndex = item.Modify;
-            if (item.Change != null) chart.Frame.SubFrame[i].Frame.ChangeIndex = item.Change;
-            if (IFrameSplitOperator.IsBool(item.IsDrawTitleBG))  chart.Frame.SubFrame[i].Frame.IsDrawTitleBG=item.IsDrawTitleBG;
-            if (IFrameSplitOperator.IsBool(item.IsShowNameArrow))  chart.Frame.SubFrame[i].Frame.IsShowNameArrow=item.IsShowNameArrow;
-            if (IFrameSplitOperator.IsBool(item.IsShowTitleArrow)) frame.IsShowTitleArrow=item.IsShowTitleArrow;
-            if (typeof (item.UpdateUICallback) == 'function') chart.WindowIndex[i].UpdateUICallback = item.UpdateUICallback;
-            if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight = item.TitleHeight;
-            if (item.IsShowIndexName == false) chart.Frame.SubFrame[i].Frame.IsShowIndexName = false;
-            if (item.IndexParamSpace >= 0) chart.Frame.SubFrame[i].Frame.IndexParamSpace = item.IndexParamSpace;
-            if (item.IndexTitleSpace >= 0) chart.Frame.SubFrame[i].Frame.IndexTitleSpace = item.IndexTitleSpace;
-            if (!IFrameSplitOperator.IsUndefined(item.HorizontalReserved)) frame.HorizontalReserved=item.HorizontalReserved;
+            chart.SetSubFrameAttribute(chart.Frame.SubFrame[i], item, null);
         }
 
         //叠加指标
@@ -694,39 +659,7 @@ function JSChart(element)
             {
                 var item = option.Frame[i];
                 if (!chart.Frame.SubFrame[i]) continue;
-                var frame=chart.Frame.SubFrame[i].Frame;
-                if (item.SplitCount) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount = item.SplitCount;
-                if (item.StringFormat) chart.Frame.SubFrame[i].Frame.YSplitOperator.StringFormat = item.StringFormat;
-                if (IFrameSplitOperator.IsNumber(item.SplitType)) 
-                {
-                    chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitType=item.SplitType;
-                    chart.Frame.SubFrame[i].Frame.YSplitOperator.DefaultSplitType=item.SplitType;
-                }
-                if (IFrameSplitOperator.IsNumber(item.FilterType)) subFrame.YSplitOperator.FilterType=item.FilterType;
-                if (item.XMessageAlign == 'bottom') chart.Frame.SubFrame[i].Frame.XMessageAlign = item.XMessageAlign;
-                if (item.IsShowLeftText === false || item.IsShowLeftText===true ) chart.Frame.SubFrame[i].Frame.IsShowYText[0] = item.IsShowLeftText;            //显示左边刻度
-                if (item.IsShowRightText === false || item.IsShowRightText===true) chart.Frame.SubFrame[i].Frame.IsShowYText[1] = item.IsShowRightText;         //显示右边刻度
-                if (item.Height >= 0) chart.Frame.SubFrame[i].Height = item.Height; 
-                if (item.Custom) chart.Frame.SubFrame[i].Frame.YSplitOperator.Custom = item.Custom;
-                if (IFrameSplitOperator.IsNumber(item.BorderLine)) chart.Frame.SubFrame[i].Frame.BorderLine=item.BorderLine;
-                if (IFrameSplitOperator.IsNumber(item.YTextBaseline)) chart.Frame.SubFrame[i].Frame.YTextBaseline=item.YTextBaseline;
-                if (IFrameSplitOperator.IsBool(item.IsShowXLine)) chart.Frame.SubFrame[i].Frame.IsShowXLine = item.IsShowXLine;
-                if (IFrameSplitOperator.IsBool(item.IsShowYLine)) chart.Frame.SubFrame[i].Frame.IsShowYLine=item.IsShowYLine;
-
-                if (item.TopSpace >= 0) chart.Frame.SubFrame[i].Frame.ChartBorder.TopSpace = item.TopSpace;
-                if (item.BottomSpace >= 0) chart.Frame.SubFrame[i].Frame.ChartBorder.BottomSpace = item.BottomSpace;
-                if (!IFrameSplitOperator.IsUndefined(item.HorizontalReserved)) frame.HorizontalReserved=item.HorizontalReserved;
-
-                if (i==0)
-                {
-                    if (item.RightText) //主图右侧坐标设置
-                    {
-                        var subItem=item.RightText;
-                        if (IFrameSplitOperator.IsNumber(subItem.Format)) frame.YSplitOperator.RightTextConfig.Format=subItem.Format;
-                        if (subItem.Format==2) frame.MultiTextFormat=1;
-                        if (subItem.Percentage && IFrameSplitOperator.IsNumber(subItem.Percentage.Dec)) frame.YSplitOperator.RightTextConfig.Percentage.Dec=subItem.Percentage.Dec;
-                    }
-                }
+                chart.SetSubFrameAttribute(chart.Frame.SubFrame[i], null, item);
             }
 
             chart.UpdateXShowText();
@@ -836,11 +769,7 @@ function JSChart(element)
                 }
             }
 
-            if (!isNaN(item.TitleHeight)) chart.Frame.SubFrame[index].Frame.ChartBorder.TitleHeight = item.TitleHeight;   //指标标题高度
-            if (IFrameSplitOperator.IsBool(item.IsDrawTitleBG))  chart.Frame.SubFrame[index].Frame.IsDrawTitleBG=item.IsDrawTitleBG;
-            if (IFrameSplitOperator.IsBool(item.IsShowNameArrow))  chart.Frame.SubFrame[index].Frame.IsShowNameArrow=item.IsShowNameArrow;
-            if (IFrameSplitOperator.IsBool(item.IsShowTitleArrow)) chart.Frame.SubFrame[index].Frame.IsShowTitleArrow=item.IsShowTitleArrow;
-            if (IFrameSplitOperator.IsNumber(item.YSplitType)) chart.Frame.SubFrame[index].Frame.YSplitOperator.SplitType=item.YSplitType;
+            chart.SetSubFrameAttribute(chart.Frame.SubFrame[index], item, null);
         }
 
         //叠加指标
@@ -1598,7 +1527,11 @@ function JSChartContainer(uielement)
     this.EnableClickModel=false;
 
     //全局配置
-    this.GlobalOption= { RightHorizontal: { Show:true, } }
+    this.GlobalOption= 
+    { 
+        RightHorizontal: { Show:true, },
+        CorssCursorStatus:{ Value:null },    //十字光标状态 只读
+    }
 
     this.ChartDestroy=function()    //销毁
     {
@@ -1606,7 +1539,6 @@ function JSChartContainer(uielement)
         this.StopAutoUpdate();
     }
     
-
     this.AddEventCallback = function (object) //设置事件回调 {event:事件id, callback:回调函数}
     {
         if (!object || !object.event || !object.callback) return;
@@ -1633,6 +1565,29 @@ function JSChartContainer(uielement)
     this.GetIndexEvent = function () { return this.GetEvent(JSCHART_EVENT_ID.RECV_INDEX_DATA); }    //接收指标数据
     this.GetBarrageEvent=function() { return this.GetEvent(JSCHART_EVENT_ID.BARRAGE_PLAY_END);}     //获取弹幕事件
     this.GetEnableSplashEvent=function() { return this.GetEvent(JSCHART_EVENT_ID.ON_ENABLE_SPLASH_DRAW); }  //开启/关闭文字提示信息事件
+
+    this.UpdateCorssCursorStatus=function()
+    {
+        if (!this.ChartCorssCursor) return false;
+        if (!this.GlobalOption || !this.GlobalOption.CorssCursorStatus) return false;
+        
+        var status=this.ChartCorssCursor.Status;
+       
+        //状态改变了
+        if (this.GlobalOption.CorssCursorStatus.Value!=status)
+        {
+            this.GlobalOption.CorssCursorStatus.Value=status;
+
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CORSSCURSOR_STATUS_CHANGE);
+            if (event && event.Callback)
+            {
+                var sendData={ Status:status, IsShowLine:(status&JSCHART_CORSSCURSOR_STATUS_ID.LINE_ID)>0 };
+                event.Callback(event, sendData, this);
+            }
+        }
+
+        return true;
+    }
 
     //判断是单个手指
     this.IsPhoneDragging = function (e) 
@@ -2275,6 +2230,7 @@ function JSChartContainer(uielement)
             this.ChartSplashPaint.Draw();
             this.LastDrawStatus = 'FullDraw';
             this.Canvas.draw();
+            this.UpdateCorssCursorStatus();
             return;
         }
 
@@ -2386,8 +2342,6 @@ function JSChartContainer(uielement)
             if (item.FullDraw) item.FullDraw();
         }
 
-       
-
         if (bOnTouchDraw)
         {
             for (var i=0; i<this.ExtendChartPaint.length; ++i)    //动态扩展图形   在动态标题以后画
@@ -2418,6 +2372,7 @@ function JSChartContainer(uielement)
 
         this.LastDrawStatus = 'FullDraw';
         this.Canvas.draw(false);
+        this.UpdateCorssCursorStatus();
     }
 
     //窗口高度是否是0
@@ -3338,17 +3293,48 @@ function JSChartContainer(uielement)
             if (IFrameSplitOperator.IsBool(windowItem.IsDrawTitleBG))  frame.IsDrawTitleBG=windowItem.IsDrawTitleBG;
             if (IFrameSplitOperator.IsBool(windowItem.IsShowNameArrow))  frame.IsShowNameArrow=windowItem.IsShowNameArrow;
             if (IFrameSplitOperator.IsBool(windowItem.IsShowTitleArrow)) frame.IsShowTitleArrow=windowItem.IsShowTitleArrow;
+            if (IFrameSplitOperator.IsNumber(windowItem.TitleHeight)) frame.ChartBorder.TitleHeight = windowItem.TitleHeight;
+            if (IFrameSplitOperator.IsBool(windowItem.IsShowIndexName)) frame.IsShowIndexName = windowItem.IsShowIndexName;
+            if (!IFrameSplitOperator.IsUndefined(windowItem.HorizontalReserved)) frame.HorizontalReserved=windowItem.HorizontalReserved;
         }
 
         if (frameItem)
         {
             if (IFrameSplitOperator.IsNumber(frameItem.SplitCount)) frame.YSplitOperator.SplitCount = frameItem.SplitCount;
+            if (frameItem.Custom) frame.YSplitOperator.Custom = frameItem.Custom;
+            if (frameItem.StringFormat) frame.YSplitOperator.StringFormat = frameItem.StringFormat;
+            if (IFrameSplitOperator.IsNumber(frameItem.SplitType)) 
+            {
+                frame.YSplitOperator.SplitType = frameItem.SplitType;
+                frame.YSplitOperator.DefaultSplitType=frameItem.SplitType;
+            }
+            if (IFrameSplitOperator.IsNumber(frameItem.FilterType)) frame.YSplitOperator.FilterType=frameItem.FilterType;
+            if (IFrameSplitOperator.IsNumber(frameItem.FloatPrecision)) frame.YSplitOperator.FloatPrecision = frameItem.FloatPrecision;   //强制指定小数位数(主图有效)
+
             if (IFrameSplitOperator.IsBool(frameItem.IsShowBorder)) frame.IsShowBorder = frameItem.IsShowBorder;
             if (IFrameSplitOperator.IsBool(frameItem.IsShowXLine)) frame.IsShowXLine = frameItem.IsShowXLine;
             if (IFrameSplitOperator.IsBool(frameItem.IsShowYLine)) frame.IsShowYLine=frameItem.IsShowYLine;
-            
+            if (frameItem.XMessageAlign == 'bottom') frame.XMessageAlign = frameItem.XMessageAlign;
+            if (IFrameSplitOperator.IsBool(frameItem.IsShowTitle)) frame.IsShowTitle = frameItem.IsShowTitle;
+            if (IFrameSplitOperator.IsBool(frameItem.IsShowIndexTitle)) frame.IsShowTitle=frameItem.IsShowIndexTitle;
             if (IFrameSplitOperator.IsBool(frameItem.IsShowLeftText)) frame.IsShowYText[0] = frameItem.IsShowLeftText;            //显示左边刻度
             if (IFrameSplitOperator.IsBool(frameItem.IsShowRightText)) frame.IsShowYText[1] = frameItem.IsShowRightText;          //显示右边刻度 
+
+            if (IFrameSplitOperator.IsNumber(frameItem.TopSpace)) frame.ChartBorder.TopSpace = frameItem.TopSpace;
+            if (IFrameSplitOperator.IsNumber(frameItem.BottomSpace)) frame.ChartBorder.BottomSpace = frameItem.BottomSpace;
+            if (IFrameSplitOperator.IsNumber(frameItem.Height)) subFrame.Height = frameItem.Height;
+          
+            if (IFrameSplitOperator.IsNumber(frameItem.BorderLine)) frame.BorderLine=frameItem.BorderLine;
+            if (IFrameSplitOperator.IsNumber(frameItem.YTextBaseline)) frame.YTextBaseline=frameItem.YTextBaseline;
+
+            //分时图
+            if (frameItem.RightText && frame.YSplitOperator.RightTextConfig) //主图右侧坐标设置
+            {
+                var subItem=frameItem.RightText;
+                if (IFrameSplitOperator.IsNumber(subItem.Format)) frame.YSplitOperator.RightTextConfig.Format=subItem.Format;
+                if (subItem.Format==2) frame.MultiTextFormat=1;
+                if (subItem.Percentage && IFrameSplitOperator.IsNumber(subItem.Percentage.Dec)) frame.YSplitOperator.RightTextConfig.Percentage.Dec=subItem.Percentage.Dec;
+            }
         }
     }
 
@@ -7743,6 +7729,13 @@ function KLineChartContainer(uielement)
             if (!item.Frame.LockPaint.GetTooltipData(x, y, tooltip)) continue;
 
             tooltip.HQChart = this;
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_INDEX_LOCK);
+            if (event && event.Callback) 
+            {
+                var sendData={ FrameID:item.Frame.Identify, Data:tooltip };
+                event.Callback(event,sendData,this);
+            }
+            
             if (tooltip.Data.Callback) tooltip.Data.Callback(tooltip);
             return true;
         }

@@ -378,7 +378,7 @@ function ScriptIndex(name, script, args, option)
         {
             let lockData =
             {
-                IsLocked: true, Callback: param.Self.LockCallback, IndexName: param.Self.Name, ID: param.Self.LockID,
+                IsLocked: true, Callback: param.Self.LockCallback, IndexName: param.Self.Name, IndexID:param.Self.ID, ID: param.Self.LockID,
                 BG: param.Self.LockBG, Text: param.Self.LockText, TextColor: param.Self.LockTextColor, Font: param.Self.LockFont,
                 Count: param.Self.LockCount
             };

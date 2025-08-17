@@ -20679,7 +20679,7 @@ function ScriptIndex(name,script,args,option)
         }
         else    //上锁
         {
-            let lockData={ IsLocked:true,Callback:param.Self.LockCallback,IndexName:param.Self.Name ,ID:param.Self.LockID,
+            let lockData={ IsLocked:true,Callback:param.Self.LockCallback,IndexName:param.Self.Name,IndexID:param.Self.ID, ID:param.Self.LockID,
                 BG:param.Self.LockBG,Text:param.Self.LockText,TextColor:param.Self.LockTextColor, Font:param.Self.LockFont, Count:param.Self.LockCount, MinWidth:param.Self.LockMinWidth };
             param.HQChart.Frame.SubFrame[windowIndex].Frame.SetLock(lockData);
         }
