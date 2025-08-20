@@ -147,7 +147,7 @@ function IChartPainting()
         return false;
     }
 
-    this.DrawNotSupportmessage = function () 
+    this.DrawNotSupportmessage=function() 
     {
         this.Canvas.font = this.MessageFont;
         this.Canvas.fillStyle = this.MessageColor;
@@ -160,9 +160,20 @@ function IChartPainting()
         var x = left + width / 2;
         var y = top + height / 2;
 
+        var bHScreen=this.ChartFrame.IsHScreen;
+        if (bHScreen)
+        {
+            this.Canvas.save(); 
+            this.Canvas.translate(x, y);
+            this.Canvas.rotate(90 * Math.PI / 180);
+            x=0,y=0;
+        }
+
         this.Canvas.textAlign = "center";
         this.Canvas.textBaseline = "middle";
         this.Canvas.fillText(this.NotSupportMessage, x, y);
+
+        if (bHScreen)  this.Canvas.restore();
     }
 
     this.GetTooltipData = function (x, y, tooltip) 
@@ -3733,6 +3744,13 @@ function ChartLine()
         if (bHScreen) chartright = this.ChartBorder.GetBottom();
         if (bHScreen) xOffset=this.ChartBorder.GetTop()+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
         var xPointCount = this.ChartFrame.XPointCount;
+
+        var lockRect=this.GetLockRect();
+        if (lockRect)
+        {
+            if (bHScreen) chartright=lockRect.Top;
+            else chartright=lockRect.Left;
+        }
 
         this.Canvas.save();
         if (this.LineWidth > 0) this.Canvas.lineWidth = this.LineWidth;
@@ -7824,34 +7842,79 @@ function ChartLock()
     delete this.newMethod;
 
     this.ClassName="ChartLock";
+    this.AryData=null;
+    this.LockRect=null; //上锁区域
+
     this.LockCount = 20; // 锁最新的几个数据
     this.BGColor = g_JSChartResource.IndexLock.BGColor;
     this.TextColor = g_JSChartResource.IndexLock.TextColor;
     this.Font = g_JSChartResource.IndexLock.Font;
     this.Title = g_JSChartResource.IndexLock.Title;
-    this.LockRect=null; //上锁区域
     this.LockID;        //锁ID
     this.Callback;      //回调
     this.IndexName;     //指标名字
     this.IndexID;       //指标ID
 
+    this.MinWidthText="  付费指标  "
+
+    this.SetData=function(aryData)
+    {
+        this.AryData=aryData;
+
+        if (IFrameSplitOperator.IsNonEmptyArray(this.AryData))
+        {
+            var item=this.AryData[0].Data;   //取第一个锁
+
+            this.LockCount = item.LockCount; 
+            this.BGColor = item.BGColor
+            this.TextColor = item.TextColor
+            this.Font = item.Font
+            this.Title = item.Title
+            this.LockID=item.LockID;            //锁ID
+            this.Callback=item.Callback;        //回调
+            this.IndexName=item.IndexName;      //指标名字
+            this.IndexID=item.IndexID;          //指标ID
+        }
+    }
 
     this.CalculateTextSize=function(aryText, defaultFont, out)
     {
         if (!out || !IFrameSplitOperator.IsNonEmptyArray(aryText)) return false;
 
         this.Canvas.font=defaultFont;
-        var lineHeight=this.Canvas.measureText("擎").width; //行高
+        var defaultLineHeight=this.Canvas.measureText("擎").width; //行高
+        var lineHeight=defaultLineHeight;
         var height=0, width=0;
         out.AryText=[];
         for(var i=0;i<aryText.length;++i)
         {
             var item=aryText[i];
-            if (!item || !item.Text) continue;
-            var textWidth=this.Canvas.measureText(item.Text).width;
+            if (!item || (!item.Text && !item.Image)) continue;
+            if (item.Image)
+            {
+                textWidth=item.Image.Width;
+                lineHeight=item.Image.Height;
+            }
+            else
+            {
+                if (item.Font) 
+                {
+                    this.Canvas.font=item.Font;
+                    lineHeight=this.Canvas.measureText("擎").width;
+                }
+                else 
+                {
+                    this.Canvas.font=defaultFont;
+                    lineHeight=defaultLineHeight;
+                }
+                var textWidth=this.Canvas.measureText(item.Text).width;
+            }
            
             var lineItem={ Text:item.Text, Width:textWidth, Height:lineHeight, Color:item.Color, TextMargin:{ Top:0, Bottom:0, Left:0, Right:0 }, YOffset:0 };
             if (IFrameSplitOperator.IsNumber(item.YOffset)) lineItem.YOffset=item.YOffset;
+            if (item.Font) lineItem.Font=item.Font;
+            if (IFrameSplitOperator.IsNumber(item.Align)) lineItem.Align=item.Align;    //左右对齐 0=左 1=中 2=右
+            if (item.Image) lineItem.Image=item.Image;
             if (item.TextMargin)
             {
                 var margin=item.TextMargin;
@@ -7879,11 +7942,7 @@ function ChartLock()
     this.Draw=function(bDraw)
     {
         this.LockRect=null;
-        if (this.NotSupportMessage)
-        {
-            this.DrawNotSupportmessage();
-            return;
-        }
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.AryData)) return;
 
         var bHScreen=this.ChartFrame.IsHScreen;
         var bMinute=this.IsMinuteFrame();
@@ -7924,35 +7983,58 @@ function ChartLock()
             }
         }
 
-        if (bHScreen)
-        {
-            var rtBG={ Left:border.Left, Right:border.RightEx, Top:left, Bottom:border.Bottom };
-            rtBG.Width=rtBG.Right-rtBG.Left;
-            rtBG.Height=rtBG.Bottom-rtBG.Top;
-
-            var bgColor=this.SetFillStyle(this.BGColor, rtBG.Left, rtBG.Top, rtBG.Right, rtBG.Top);
-            this.Canvas.fillStyle =bgColor;
-            this.Canvas.fillRect(rtBG.Left, rtBG.Top, rtBG.Width, rtBG.Height);
-            this.LockRect=rtBG;    //保存上锁区域
-        }
-        else
-        {
-            var rtBG={ Left:left, Right:border.RightEx, Top:border.TopTitle, Bottom:border.Bottom };
-            rtBG.Width=rtBG.Right-rtBG.Left;
-            rtBG.Height=rtBG.Bottom-rtBG.Top;
-            //上下渐变
-            var bgColor=this.SetFillStyle(this.BGColor, rtBG.Left, rtBG.Top, rtBG.Left, rtBG.Bottom);
-            this.Canvas.fillStyle =bgColor;
-            this.Canvas.fillRect(rtBG.Left, rtBG.Top, rtBG.Width, rtBG.Height);
-            this.LockRect=rtBG;    //保存上锁区域
-        }
+        this.Canvas.font=this.Font;
+        var minWidth=this.Canvas.measureText(this.MinWidthText).width;
 
         var aryText=null;
         if (Array.isArray(this.Title)) aryText=this.Title;
         else aryText=[{Text:this.Title}];
             
         var outSize={ };
-        if (!this.CalculateTextSize(aryText, this.Font, outSize)) return;
+        if (!this.CalculateTextSize(aryText, this.Font, outSize)) outSize=null;;
+        if (outSize && outSize.Width+8>minWidth) minWidth=outSize.Width+4;  //确保文字可以显示
+
+        if (bHScreen)
+        {
+            var rtBG={ Left:border.Left, Right:border.RightEx, Top:left, Bottom:border.Bottom };
+            rtBG.Width=rtBG.Right-rtBG.Left;
+            rtBG.Height=rtBG.Bottom-rtBG.Top;
+            if (rtBG.Height<minWidth)
+            {
+                rtBG.Height=minWidth;
+                rtBG.Top=rtBG.Bottom-rtBG.Height;
+            }
+            this.LockRect=rtBG;    //保存上锁区域
+
+            if (bDraw)
+            {
+                var bgColor=this.SetFillStyle(this.BGColor, rtBG.Left, rtBG.Top, rtBG.Right, rtBG.Top);
+                this.Canvas.fillStyle =bgColor;
+                this.Canvas.fillRect(rtBG.Left, rtBG.Top, rtBG.Width, rtBG.Height);
+            }
+        }
+        else
+        {
+            var rtBG={ Left:left, Right:border.RightEx, Top:border.TopTitle, Bottom:border.Bottom };
+            rtBG.Width=rtBG.Right-rtBG.Left;
+            rtBG.Height=rtBG.Bottom-rtBG.Top;
+            if (rtBG.Width<minWidth)
+            {
+                rtBG.Width=minWidth;
+                rtBG.Left=rtBG.Right-rtBG.Width;
+            }
+            this.LockRect=rtBG;    //保存上锁区域
+
+            if (bDraw)
+            {
+                var bgColor=this.SetFillStyle(this.BGColor, rtBG.Left, rtBG.Top, rtBG.Left, rtBG.Bottom);   //上下渐变
+                this.Canvas.fillStyle =bgColor;
+                this.Canvas.fillRect(rtBG.Left, rtBG.Top, rtBG.Width, rtBG.Height);
+            }
+        }
+
+        if (!bDraw) return;
+        if (!outSize) return;
 
         this.Canvas.textAlign='left';
         this.Canvas.textBaseline='bottom';
@@ -7963,40 +8045,54 @@ function ChartLock()
             var top=rtBG.Top+(rtBG.Height-outSize.Width)/2;
             if (outSize.Width>rtBG.Height) top=rtBG.Bottom-outSize.Width;
             var left=rtBG.Left+(rtBG.Width-outSize.Height)/2;
-
             this.Canvas.save(); 
             this.Canvas.translate(left, top);
             this.Canvas.rotate(90 * Math.PI / 180);
-            var yText=0,xText=0;
-            for(var i=0;i<outSize.AryText.length;++i)
-            {
-                var item=outSize.AryText[i];
-                if (item.Color)  this.Canvas.fillStyle=item.Color;
-                else this.Canvas.fillStyle=this.TextColor;
-
-                yText+=item.Height;
-                this.Canvas.fillText(item.Text, xText, yText+item.YOffset);
-            } 
-
-            this.Canvas.restore();
+            var left=0,top=0;
         }
         else
         {
             var left=rtBG.Left+(rtBG.Width-outSize.Width)/2;
             if (outSize.Width>rtBG.Width) left=rtBG.Right-outSize.Width;
             var top=rtBG.Top+(rtBG.Height-outSize.Height)/2;
-            
-            var yText=top, xText=left;
-            for(var i=0;i<outSize.AryText.length;++i)
+        }
+
+        var yText=top, xText=left;
+        for(var i=0;i<outSize.AryText.length;++i)
+        {
+            var item=outSize.AryText[i];
+            xText=left;
+            if (item.Image)
             {
-                var item=outSize.AryText[i];
+                if (item.Align===1)
+                {
+                    if (outSize.Width>item.Width) xText+=(outSize.Width-item.Width)/2;
+                }
+
+                this.Canvas.drawImage(item.Image.Data, xText, yText, item.Image.Width, item.Image.Height);
+
+                yText+=item.Height;
+            }
+            else
+            {
                 if (item.Color)  this.Canvas.fillStyle=item.Color;
                 else this.Canvas.fillStyle=this.TextColor;
 
+                if (item.Font) this.Canvas.font = item.Font;
+                else this.Canvas.font = this.Font;
+
                 yText+=item.Height;
+               
+                if (item.Align===1)
+                {
+                    if (outSize.Width>item.Width) xText+=(outSize.Width-item.Width)/2;
+                }
+
                 this.Canvas.fillText(item.Text, xText, yText+item.YOffset);
-            } 
+            }
         }
+
+        if (bHScreen)  this.Canvas.restore();
     }
 
     //x,y是否在上锁区域
@@ -8006,7 +8102,7 @@ function ChartLock()
 
         if (Path2DHelper.PtInRect(x,y,this.LockRect))
         {
-            tooltip.Data={ ID:this.LockID, Callback:this.Callback, IndexName:this.IndexName, IndexID:this.IndexID };
+            tooltip.Data={ ID:this.LockID, Callback:this.Callback, IndexName:this.IndexName, IndexID:this.IndexID, Data:this.AryData };
             tooltip.ChartPaint=this;
             return true;
         }

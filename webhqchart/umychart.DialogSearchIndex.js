@@ -35,7 +35,7 @@ function JSDialogSearchIndex()
 
     this.MaxRowCount=30;    //行
     this.ColCount=3;        //列
-    this.MaxGroupCount=10;  //分类最多个数
+    this.MaxGroupCount=20;  //分类最多个数
 
     this.AryData=[];
     this.AryGroup=[];   //分类
@@ -316,12 +316,14 @@ function JSDialogSearchIndex()
             else if (indexItem.Type==1) //自定义脚本指标
             {
                 var indexData={ ID:indexItem.ID, Name:indexItem.Name, Script:indexItem.Script, Args:indexItem.Args };
+                if (indexItem.Lock) indexData.Lock=indexItem.Lock;
                 this.HQChart.ChangeScriptIndex(this.OpData.WindowIndex, indexData);
             }
             else if (indexItem.Type==2) //api指标
             {
-                var indedData={ API: { ID:indexItem.ID, Name:indexItem.Name, Args:indexItem.Args, Url:'local'} };
-                this.HQChart.ChangeAPIIndex(this.OpData.WindowIndex, indedData);
+                var indexData={ API: { ID:indexItem.ID, Name:indexItem.Name, Args:indexItem.Args, Url:'local'} };
+                if (indexItem.Lock) indexData.Lock=indexItem.Lock;
+                this.HQChart.ChangeAPIIndex(this.OpData.WindowIndex, indexData);
             }
             else if (indexItem.Type==3) //指标模板
             {
@@ -341,11 +343,13 @@ function JSDialogSearchIndex()
             else if (indexItem.Type==1) //自定义脚本指标
             {
                 var obj={ WindowIndex:this.OpData.WindowIndex, IndexName:indexItem.ID, Name:indexItem.Name, Script:indexItem.Script, Args:indexItem.Args };
+                if (indexItem.Lock) obj.Lock=indexItem.Lock;
                 this.HQChart.AddOverlayIndex(obj);
             }
             else if (indexItem.Type==2) //api指标
             {
                 var obj={ WindowIndex:this.OpData.WindowIndex, API: { ID:indexItem.ID, Name:indexItem.Name, Args:indexItem.Args, Url:'local'} };
+                if (indexItem.Lock) obj.Lock=indexItem.Lock;
                 this.HQChart.AddOverlayIndex(obj);
             }
             else if (indexItem.Type==3) //指标模板
@@ -372,6 +376,7 @@ function JSDialogSearchIndex()
             else if (indexItem.Type==2) //api指标
             {
                 var indexData={ API: { ID:indexItem.ID, Name:indexItem.Name, Args:indexItem.Args, Url:'local'} };
+                if (indexItem.Lock) indexData.Lock=indexItem.Lock;
                 this.HQChart.AddAPIIndexWindow(indexData, this.OpData);
             }
             else if (indexItem.Type==3) //指标模板
@@ -795,8 +800,21 @@ JSDialogSearchIndex.GetDefaultIndexData=function()
                 Group:{ ID:"自定义", Name:"自定义"} , 
                 AryIndex:
                 [
-                    { Name:"收盘线(后台指标)", ID:"CLOSE_LINE", Type:2, Args:null },
-                    { Name:"高低均价(自定义脚本)", ID:"HIGH_LOW_AV", Type:1, Args:null , Script:"均价:(H+L)/2;高:H;低:L;", Args:[ { Name:'N', Value:20}, { Name:'M', Value:6}]},
+                    { Name:"收盘线(后台指标)", ID:"API-DRAWTEXTREL", Type:2, Args:null },
+                    { Name:"高低均价(自定义脚本)", ID:"HIGH_LOW_AV", Type:1, Script:"均价:(H+L)/2;高:H;低:L;", Args:[ { Name:'N', Value:20}, { Name:'M', Value:6}]},
+                    { Name:"指标异常(后台指标)", ID:"API_ERRORMESSAGE", Type:2, Args:null,}
+                ]
+            },
+            {
+                Group:{ ID:"付费指标", Name:"付费指标"} , 
+                AryIndex:
+                [
+                    { Name:"面积图(后台指标)", ID:"API-DRAWBAND", Type:2, Args:null, Lock:{ IsLocked:true } },
+                    { 
+                        Name:"波段量能跟庄-波段量能", ID:"TEST_INDEX_4AE0_1", Type:1, Args:null,
+                        Script:TEST_INDEX_4AE0_1,
+                        Lock:{ IsLocked:true }
+                    }
                 ]
             },
             {
@@ -1294,6 +1312,25 @@ function JSDialogModifyIndexParam()
         }
     }
 }
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+//测试指标
+
+var TEST_INDEX_4AE0_1=`能量:=SQRT(VOL)*(((C-(H+L)/2))/((H+L)/2));
+平滑能量:=EMA(能量,16);
+能量惯性:EMA(平滑能量,16);
+DRAWICON(能量惯性>0 AND REF(能量惯性,1)<0,0,1);
+STICKLINE(能量惯性>=0,(能量惯性-能量惯性*0.05),(能量惯性-能量惯性*0.15),3,0), COLOR0000CC;
+STICKLINE(能量惯性>=0,(能量惯性-能量惯性*0.2),(能量惯性-能量惯性*0.35),3,0), COLOR0066FF;
+STICKLINE(能量惯性>=0,(能量惯性-能量惯性*0.4),(能量惯性-能量惯性*0.55),3,0),COLOR0099FF;
+STICKLINE(能量惯性>=0,(能量惯性-能量惯性*0.6),(能量惯性-能量惯性*0.75),3,0), COLOR00CCFF;
+STICKLINE(能量惯性>=0,(能量惯性-能量惯性*0.8),(能量惯性-能量惯性*0.95),3,0), COLOR00FFFF;
+STICKLINE(能量惯性<0,(能量惯性-能量惯性*0.05),(能量惯性-能量惯性*0.15),3,0), COLORFF3300;
+STICKLINE(能量惯性<0,(能量惯性-能量惯性*0.2),(能量惯性-能量惯性*0.35),3,0), COLORFF6600;
+STICKLINE(能量惯性<0,(能量惯性-能量惯性*0.4),(能量惯性-能量惯性*0.55),3,0), COLORFF9900;
+STICKLINE(能量惯性<0,(能量惯性-能量惯性*0.6),(能量惯性-能量惯性*0.75),3,0), COLORFFCC00;
+STICKLINE(能量惯性<0,(能量惯性-能量惯性*0.8),(能量惯性-能量惯性*0.95),3,0), COLORFFFF00;`
 
 
 

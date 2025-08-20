@@ -337,7 +337,7 @@ function ScriptIndex(name, script, args, option)
             Symbol: hqChart.Symbol,
             Data: hisData,
             SourceData: hqChart.SourceData, //原始数据
-            Callback: this.RecvResultData, CallbackParam: param,
+            Callback: (arg1, arg2)=>{ this.RecvResultData(arg1, arg2); }, CallbackParam: param,
             Async: true,
             MaxRequestDataCount: hqChart.MaxRequestDataCount,
             MaxRequestMinuteDayCount: hqChart.MaxRequestMinuteDayCount,
@@ -362,7 +362,7 @@ function ScriptIndex(name, script, args, option)
         let run = JSCommonComplier.JSComplier.Execute(code, option, hqChart.ScriptErrorCallback);
     }
 
-    this.RecvResultData = function (outVar, param) 
+    this.RecvResultData=function (outVar, param) 
     {
         let hqChart = param.HQChart;
         let windowIndex = param.WindowIndex;
@@ -1895,6 +1895,18 @@ function OverlayScriptIndex(name,script,args,option)
         param.Self.OutVar=outVar;
         param.Self.BindData(hqChart,windowIndex,hisData);
 
+        var frame=this.OverlayIndex.Frame.Frame;
+        if (this.IsLocked==false) //不上锁
+        {
+            frame.SetLock(null);
+        }
+        else    //上锁
+        {
+            let lockData={ IsLocked:true,Callback:this.LockCallback,IndexName:this.Name ,ID:this.LockID, IndexID:this.ID,
+                BG:this.LockBG,Text:this.LockText,TextColor:this.LockTextColor, Font:this.LockFont, Count:this.LockCount };
+            frame.SetLock(lockData);
+        }
+
         param.HQChart.UpdataDataoffset();           //更新数据偏移
         param.HQChart.UpdateFrameMaxMin();          //调整坐标最大 最小值
         param.HQChart.Draw();
@@ -2837,21 +2849,17 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
         }
         this.BindData(hqChart, windowIndex, hisData);
 
-        if (!this.IsOverlayIndex)
+        var frame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        if (this.IsOverlayIndex) frame=this.OverlayIndex.Frame.Frame;
+        if (this.IsLocked==false) //不上锁
         {
-            if (this.IsLocked == false) //不上锁
-            {
-                hqChart.Frame.SubFrame[windowIndex].Frame.SetLock(null);
-            }
-            else    //上锁
-            {
-                let lockData = 
-                {
-                    IsLocked: true, Callback: this.LockCallback, IndexName: this.Name, ID: this.LockID,
-                    BG: this.LockBG, Text: this.LockText, TextColor: this.LockTextColor, Font: this.LockFont, Count: this.LockCount, MinWidth: this.LockMinWidth
-                };
-                hqChart.Frame.SubFrame[windowIndex].Frame.SetLock(lockData);
-            }
+            frame.SetLock(null);
+        }
+        else    //上锁
+        {
+            let lockData={ IsLocked:true,Callback:this.LockCallback,IndexName:this.Name ,ID:this.LockID,IndexID:this.ID,
+                BG:this.LockBG,Text:this.LockText,TextColor:this.LockTextColor, Font:this.LockFont, Count:this.LockCount };
+            frame.SetLock(lockData);
         }
 
         hqChart.UpdataDataoffset();           //更新数据偏移

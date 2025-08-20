@@ -1200,12 +1200,12 @@ function JSChart(element)
   }
 
     //锁|解锁指标
-    this.LockIndex = function (lockData) 
+    this.EnableLockIndex=function (aryData) 
     {
-        if (this.JSChartContainer && typeof (this.JSChartContainer.LockIndex) == 'function') 
+        if (this.JSChartContainer && typeof (this.JSChartContainer.EnableLockIndex) == 'function') 
         {
-            JSConsole.Chart.Log('[JSChart:LockIndex] lockData', lockData);
-            this.JSChartContainer.LockIndex(lockData);
+            JSConsole.Chart.Log('[JSChart:EnableLockIndex] aryData', aryData);
+            this.JSChartContainer.EnableLockIndex(aryData);
         }
     }
 
@@ -1296,33 +1296,40 @@ function JSChart(element)
         }
     }
 
+    //手动更新指标 aryIndex=[ {ID:主图指标ID, OverlayID:叠加指标ID }] ,option={ Draw:true/false }
+    this.UpdateWindowIndexV2=function(aryIndex, option)
+    {
+        if (this.JSChartContainer && typeof(this.JSChartContainer.UpdateWindowIndexV2)=='function')
+            return this.JSChartContainer.UpdateWindowIndexV2(aryIndex, option);
+    }
+
 }
 
 JSChart.LastVersion=null;   //最新的版本号
 
 //初始化
-JSChart.Init = function (uielement) {
-  JSConsole.Chart.Log('[JSChart.Init] uielement', uielement);
-  var jsChartControl = new JSChart(uielement);
-  jsChartControl.OnSize();
-
-  return jsChartControl;
+JSChart.Init=function (uielement) 
+{
+    JSConsole.Chart.Log('[JSChart.Init] uielement', uielement);
+    var jsChartControl = new JSChart(uielement);
+    jsChartControl.OnSize();
+    return jsChartControl;
 }
 
-JSChart.SetDomain = function (domain, cacheDomain) {
-  if (domain) {
-    g_JSChartResource.Domain = domain;
+JSChart.SetDomain = function (domain, cacheDomain) 
+{
+    if (domain) 
+    {
+        g_JSChartResource.Domain = domain;
+        g_JSChartResource.Index.StockHistoryDayApiUrl = domain + "/API/StockHistoryDay";  //历史数据api
+        g_JSChartResource.Index.MarketLongShortApiUrl = domain + "/API/FactorTiming";     //市场多空
+        g_JSChartResource.Index.MarketAttentionApiUrl = domain + "/API/MarketAttention";  //市场关注度
+        g_JSChartResource.Index.MarketHeatApiUrl = domain + "/API/MarketHeat";            //行业,指数热度
+    }
 
-    g_JSChartResource.Index.StockHistoryDayApiUrl = domain + "/API/StockHistoryDay";  //历史数据api
-    g_JSChartResource.Index.MarketLongShortApiUrl = domain + "/API/FactorTiming";     //市场多空
-    g_JSChartResource.Index.MarketAttentionApiUrl = domain + "/API/MarketAttention";  //市场关注度
-    g_JSChartResource.Index.MarketHeatApiUrl = domain + "/API/MarketHeat";            //行业,指数热度
+    if (cacheDomain) g_JSChartResource.CacheDomain = cacheDomain;
 
-  }
-
-  if (cacheDomain) g_JSChartResource.CacheDomain = cacheDomain;
-
-  JSCommonComplier.JSComplier.SetDomain(domain, cacheDomain);     //编译器数据api域名修改  
+    JSCommonComplier.JSComplier.SetDomain(domain, cacheDomain);     //编译器数据api域名修改  
 }
 
 //自定义风格
@@ -2244,12 +2251,12 @@ function JSChartContainer(uielement)
         });
 
         this.Frame.Draw();  //框架 
-
         if (this.Frame.DrawCustomVertical) 
         {
             var eventCVericalDraw = this.GetEvent(JSCHART_EVENT_ID.ON_CUSTOM_VERTICAL_DRAW);
             this.Frame.DrawCustomVertical(eventCVericalDraw);
         }
+        this.Frame.CalculateLock();
 
         for (var i=0; i<this.ChartPaint.length; ++i) //图形
         {
@@ -4077,6 +4084,84 @@ function JSChartContainer(uielement)
         }
     }
 
+    //手动更新指标 [ {ID:主图指标窗口索引, OverlayID:叠加指标ID }]
+    this.UpdateWindowIndexV2=function(aryIndex, option)
+    {
+        if (!this.Frame || !this.Frame.SubFrame) return false;
+
+        var kData=this.GetKData();
+        if (!kData || !IFrameSplitOperator.IsNonEmptyArray(kData.Data)) return false;
+
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryIndex)) return false;
+
+        var setMainIndex=new Set();         //主图指标
+        var setOverlayIndex=new Set();      //附图指标
+
+        for(var i=0;i<aryIndex.length;++i)
+        {
+            var item=aryIndex[i];
+            if (!item) continue;
+
+            if (IFrameSplitOperator.IsNumber(item.ID)) setMainIndex.add(item.ID);
+            if (item.OverlayID) setOverlayIndex.add(item.OverlayID);
+        }
+
+        if (setMainIndex.size<=0 && setOverlayIndex.size<0) return false;
+
+        //K线数据
+        var bindData=new ChartData();
+        if (kData) bindData.Data=kData.Data;
+        if (this.IsKLineContainer())    //K线
+        {
+            bindData.Period=this.Period;
+            bindData.Right=this.Right;
+        }
+
+        //主图指标
+        if (setMainIndex.size>0)
+        {
+            for(var i=0;i<this.WindowIndex.length;++i)
+            {
+                var item=this.WindowIndex[i];
+                if (!item) continue;
+    
+                if (setMainIndex.has(i)) 
+                {
+                    this.BindIndexData(i,bindData);
+                }
+            }
+        }
+
+        //叠加指标
+        if (setOverlayIndex.size>0)
+        {
+            for(var i=0;i<this.Frame.SubFrame.length;++i)
+            {
+                var item=this.Frame.SubFrame[i];
+                for(var j=0; j<item.OverlayIndex.length; ++j)
+                {
+                    var overlayItem=item.OverlayIndex[j];
+    
+                    if (setOverlayIndex.has(overlayItem.Identify))
+                    {
+                        this.BindOverlayIndexData(overlayItem,i,bindData)
+                    }
+                }
+            }
+        }
+
+        var bDraw=true;
+        if (option && option.Draw===false) bDraw=false;
+        if (bDraw)
+        {
+            this.UpdataDataoffset();           //更新数据偏移
+            this.UpdateFrameMaxMin();          //调整坐标最大 最小值
+            this.Draw();
+        }
+
+        return true;
+    }
+
     this.GetKData=function() { return null; }
 
     this.SetSizeChange=function(bChanged)
@@ -4087,6 +4172,97 @@ function JSChartContainer(uielement)
             var item=this.ExtendChartPaint[i];
             item.SizeChange=bChanged;
         }
+    }
+
+    //启动|关闭锁指标 aryIndex=[{ IndexID:指标ID, LockData:{IsLocked:} } ]
+    this.EnableLockIndex=function(aryIndex)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryIndex)) return false;
+
+        var mapIndex=new Map();
+        for(var i=0;i<aryIndex.length;++i)
+        {
+            var item=aryIndex[i];
+            if (item.IndexID && item.LockData) mapIndex.set(item.IndexID, item);
+        }
+
+        var aryUpdate=[];
+        for(var i=0; i<this.WindowIndex.length; ++i)
+        {
+            var item=this.WindowIndex[i];
+            if (!item) continue;
+            if (mapIndex.has(item.ID)) 
+            {
+                var mapItem=mapIndex.get(item.ID);
+                item.SetLock(mapItem.LockData);  //设置锁
+                aryUpdate.push({ ID:i});
+            }
+        }
+
+        for(var i=0; i<this.Frame.SubFrame.length; ++i)
+        {
+            var item=this.Frame.SubFrame[i];
+            if (!IFrameSplitOperator.IsNonEmptyArray(item.OverlayIndex)) continue;
+
+            for(var j=0; j<item.OverlayIndex.length; ++j)
+            {
+                var overlayItem=item.OverlayIndex[j];
+                var script=overlayItem.Script;
+                if (mapIndex.has(script.ID)) 
+                {
+                    var mapItem=mapIndex.get(script.ID);
+                    script.SetLock(mapItem.LockData);
+                    aryUpdate.push({OverlayID:overlayItem.Identify});
+                }
+            }
+        }
+
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryUpdate)) return false;
+
+        this.UpdateWindowIndexV2(aryUpdate);
+        return true;
+    }
+
+    this.TryClickLock=function (x, y) 
+    {
+        if (!this.Frame || !IFrameSplitOperator.IsNonEmptyArray(this.Frame.SubFrame)) return false;
+
+        for (var i=0; i<this.Frame.SubFrame.length; ++i) 
+        {
+            var item = this.Frame.SubFrame[i];
+            var chartLock=item.Frame.LockPaint;
+            if (!chartLock || !chartLock.LockRect) continue;
+
+            var tooltip = new TooltipData();
+            if (!chartLock.GetTooltipData(x, y, tooltip)) continue;
+
+            tooltip.HQChart = this;
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_INDEX_LOCK);
+            if (event && event.Callback) 
+            {
+                var sendData={ FrameID:item.Frame.Identify, Data:tooltip };
+                event.Callback(event,sendData,this);
+            }
+            
+            if (tooltip.Data.Callback) tooltip.Data.Callback(tooltip);
+            return true;
+        }
+        return false;
+    }
+
+    this.IsKLineContainer=function()
+    {
+        if (this.ClassName=='KLineChartContainer' || this.ClassName=='KLineChartHScreenContainer' ||
+            this.ClassName=="KLineTrainChartContainer" || this.ClassName=="CustomKLineChartContainer" ) return true;
+
+        return false;
+    }
+
+    this.IsMinuteContainer=function()
+    {
+        if (this.ClassName=="MinuteChartContainer" || this.ClassName=="MinuteChartHScreenContainer") return true;
+
+        return false;
     }
 }
 
@@ -4589,12 +4765,32 @@ function HQTradeFrame()
         }
     }
 
-    this.DrawLock = function () 
+    this.DrawLock=function () 
     {
-        for (var i in this.SubFrame) 
+        for (var i=0; i<this.SubFrame.length; ++i)
         {
             var item = this.SubFrame[i];
             item.Frame.DrawLock();
+        }
+    }
+
+    this.CalculateLock=function()
+    {
+        for (var i=0, j=0; i<this.SubFrame.length; ++i)
+        {
+            var item = this.SubFrame[i];
+            var aryLockData=[];
+            if (item.Frame.IndexLock.IsLocked) aryLockData.push({ Data:item.Frame.IndexLock, IsOverlay:false });
+            for(j=0; j<item.OverlayIndex.length; ++j)
+            {
+                var subItem=item.OverlayIndex[j];
+                if (subItem.Frame.IndexLock.IsLocked===true)
+                {
+                    aryLockData.push({ Data:subItem.Frame.IndexLock, IsOverlay:true } );
+                }
+            }
+
+            item.Frame.CalculateLock(aryLockData);
         }
     }
 
@@ -5794,7 +5990,7 @@ function KLineChartContainer(uielement)
             frame.RightSpaceCount = this.RightSpaceCount; //右边
             frame.GetEventCallback=(id)=> { return this.GetEventCallback(id); };
             frame.GlobalOption=this.GlobalOption;
-
+            frame.CreateLockPaint();
             frame.HorizontalMax = 20;
             frame.HorizontalMin = 10;
 
@@ -5862,7 +6058,7 @@ function KLineChartContainer(uielement)
         frame.Identify = id;                   //窗口序号
         frame.GetEventCallback=(id)=> { return this.GetEventCallback(id); };
         frame.GlobalOption=this.GlobalOption;
-
+        frame.CreateLockPaint();
         frame.HorizontalMax = 20;
         frame.HorizontalMin = 10;
         frame.YSplitOperator = new FrameSplitY();
@@ -7077,7 +7273,6 @@ function KLineChartContainer(uielement)
         }
 
         subFrame.YSpecificMaxMin = null;          //清空指定最大最小值
-        subFrame.IsLocked = false;                //解除上锁
         subFrame.YSplitScale = null;              //清空固定刻度
         subFrame.YSplitOperator.SplitType=subFrame.YSplitOperator.DefaultSplitType;  //还原Y坐标分割模式
 
@@ -7336,7 +7531,6 @@ function KLineChartContainer(uielement)
             this.DeleteIndexPaint(i, true);
             var frame = this.Frame.SubFrame[i];
             frame.YSpecificMaxMin = null;
-            frame.IsLocked = false;
             frame.YSplitScale = null;
         }
 
@@ -7699,47 +7893,6 @@ function KLineChartContainer(uielement)
                 this.ExtendChartPaint.push(chart);
                 return chart;
         }
-    }
-
-  //锁|解锁指标 { Index:指标名字,IsLocked:是否要锁上,Callback:回调 }
-  this.LockIndex = function (lockData) {
-    if (!lockData) return;
-    if (!lockData.IndexName) return;
-
-    for (let i in this.WindowIndex) {
-      let item = this.WindowIndex[i];
-      if (!item) conintue;
-      if (item.Name == lockData.IndexName) {
-        item.SetLock(lockData);
-        this.Update();
-        break;
-      }
-    }
-  }
-
-    this.TryClickLock = function (x, y) 
-    {
-        for (var i=0; i<this.Frame.SubFrame.length; ++i) 
-        {
-            var item = this.Frame.SubFrame[i];
-            if (!item.Frame.IsLocked) continue;
-            if (!item.Frame.LockPaint) continue;
-
-            var tooltip = new TooltipData();
-            if (!item.Frame.LockPaint.GetTooltipData(x, y, tooltip)) continue;
-
-            tooltip.HQChart = this;
-            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_INDEX_LOCK);
-            if (event && event.Callback) 
-            {
-                var sendData={ FrameID:item.Frame.Identify, Data:tooltip };
-                event.Callback(event,sendData,this);
-            }
-            
-            if (tooltip.Data.Callback) tooltip.Data.Callback(tooltip);
-            return true;
-        }
-       return false;
     }
 
     this.TryClickIndexTitle=function(x,y)
@@ -9927,6 +10080,7 @@ function MinuteChartContainer(uielement)
             frame.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
             frame.GlobalOption=this.GlobalOption;
             frame.HQChart=this;
+            frame.CreateLockPaint();
 
             var DEFAULT_HORIZONTAL = [9, 8, 7, 6, 5, 4, 3, 2, 1];
             frame.HorizontalMax = DEFAULT_HORIZONTAL[0];
@@ -9995,6 +10149,7 @@ function MinuteChartContainer(uielement)
         frame.GetEventCallback=(id)=> { return this.GetEventCallback(id); };
         frame.GlobalOption=this.GlobalOption;
         frame.HQChart=this;
+        frame.CreateLockPaint();
 
         var DEFAULT_HORIZONTAL=[9,8,7,6,5,4,3,2,1];
         frame.HorizontalMax=DEFAULT_HORIZONTAL[0];
@@ -11490,9 +11645,7 @@ function MinuteChartContainer(uielement)
         subFrame.Interval=this.OverlayIndexFrameWidth;
         var overlayFrame=new OverlayIndexItem();
         if (obj.Identify) overlayFrame.Identify=obj.Identify;   //由外部指定id
-        var frame=null;
-        if (this.ClassName=="MinuteChartContainer") frame=new OverlayMinuteFrame();
-        else frame=new OverlayMinuteHScreenFrame();
+        var frame=this.CreateOverlayFrame();
         frame.Canvas=this.Canvas;
         frame.MainFrame=subFrame.Frame;
         frame.ChartBorder=subFrame.Frame.ChartBorder;
@@ -12458,7 +12611,7 @@ function KLineChartHScreenContainer(uielement)
             frame.RightSpaceCount = this.RightSpaceCount; //右边
             frame.GetEventCallback=(id)=> { return this.GetEventCallback(id); };
             frame.GlobalOption=this.GlobalOption;
-
+            frame.CreateLockPaint();
             frame.HorizontalMax = 20;
             frame.HorizontalMin = 10;
 
@@ -12623,7 +12776,7 @@ function MinuteChartHScreenContainer(uielement)
             frame.HQChart=this;
             frame.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
             frame.GlobalOption=this.GlobalOption;
-
+            frame.CreateLockPaint();
             var DEFAULT_HORIZONTAL = [9, 8, 7, 6, 5, 4, 3, 2, 1];
             frame.HorizontalMax = DEFAULT_HORIZONTAL[0];
             frame.HorizontalMin = DEFAULT_HORIZONTAL[DEFAULT_HORIZONTAL.length - 1];

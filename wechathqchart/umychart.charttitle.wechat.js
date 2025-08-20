@@ -1316,6 +1316,10 @@ function DynamicChartTitlePainting()
 
     this.IsShowMainIndexTitle=true; //是否显示主图指标标题
 
+    this.IsKLineFrame=false;    //是否是K线框架标题
+    this.IsMinuteFrame=false;
+    this.IsLocked=false;        //上锁的指标区域
+
     this.UpDownArrowConfig=
     {
         UpColor:g_JSChartResource.IndexTitle.UpDownArrow.UpColor,
@@ -1559,7 +1563,11 @@ function DynamicChartTitlePainting()
     {
         this.EraseRect = null;
         this.TitleRect=null;
+        this.IsLocked=false;
         if (this.Frame.IsMinSize) return;
+
+        this.IsKLineFrame= this.Frame.IsKLineFrame(false);
+        this.IsMinuteFrame=this.Frame.IsMinuteFrame(false);
 
         this.OnDrawTitleEvent();
 
@@ -1578,7 +1586,7 @@ function DynamicChartTitlePainting()
             var rtText={ };
             this.Canvas.save();
             this.DrawItem(true,true,rtText);
-            this.DrawOverlayIndexSingleLine();
+            if (!this.IsLocked) this.DrawOverlayIndexSingleLine();
             this.Canvas.restore();
 
              /*
@@ -1595,7 +1603,7 @@ function DynamicChartTitlePainting()
 
         var rtText={ };
         this.DrawItem(true,true,rtText);
-        this.DrawOverlayIndexSingleLine(rtText);
+        if (!this.IsLocked) this.DrawOverlayIndexSingleLine(rtText);
     }
 
     this.DrawTitle = function () 
@@ -1751,7 +1759,7 @@ function DynamicChartTitlePainting()
 
     this.DrawItem=function(bDrawTitle, bDrawValue, rtText)
     {
-        var isHScreen=(this.Frame.IsHScreen === true);
+        var bHScreen=(this.Frame.IsHScreen === true);
         var left = this.Frame.ChartBorder.GetLeft() + 1;
         var bottom = this.Frame.ChartBorder.GetTop() + this.Frame.ChartBorder.TitleHeight / 2;    //上下居中显示
         if (this.TitleAlign == 'bottom') bottom = this.Frame.ChartBorder.GetTopEx() - this.TitleBottomDistance;
@@ -1759,7 +1767,7 @@ function DynamicChartTitlePainting()
         var lineHeight=this.Canvas.measureText("擎").width+2;
         var textWidth;
 
-        if (isHScreen)
+        if (bHScreen)
         {
             let xText = this.Frame.ChartBorder.GetRightTitle();
             let yText = this.Frame.ChartBorder.GetTop();
@@ -1825,7 +1833,7 @@ function DynamicChartTitlePainting()
                     var bgWidth=titleWidth;
 
                     this.Canvas.fillStyle=this.BGColor;
-                    if (isHScreen)
+                    if (bHScreen)
                     {
                         this.TitleRect= 
                         {
@@ -1899,6 +1907,24 @@ function DynamicChartTitlePainting()
                 this.Canvas.fillText(item.Text, left, bottom, textWidth);
                 left += textWidth;
             }
+        }
+
+        var lockRect=this.Frame.GetLockRect();
+        if (lockRect)   //指标上锁区域不显示动态标题
+        {
+            var index=Math.abs(this.CursorIndex);
+            if (this.IsKLineFrame) index=this.CursorIndex;
+            var x=this.Frame.GetXFromIndex(index.toFixed(0));
+            if (bHScreen)
+            {
+                if (x>=lockRect.Top) this.IsLocked=true;
+            }
+            else
+            {
+                if (x>=lockRect.Left) this.IsLocked=true;
+            }
+
+            if (this.IsLocked) return;
         }
 
         if (bDrawValue)
@@ -1994,7 +2020,7 @@ function DynamicChartTitlePainting()
     
             if (eraseRight > eraseLeft) 
             {
-                if (isHScreen)
+                if (bHScreen)
                 {
                     this.EraseRect = 
                     { 

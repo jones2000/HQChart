@@ -1052,6 +1052,11 @@ function JSDialogModifyDraw()
         this.HQChart.Draw();
     }
 
+    this.AdvancedSetting=function()
+    {
+        
+    }
+
     this.GetRandomText=function(text)
     {
         var ARY_TEXT=["下跌形态","反转十字星","低位档五阳线","倒V型反转","双顶","持续整理形态"];

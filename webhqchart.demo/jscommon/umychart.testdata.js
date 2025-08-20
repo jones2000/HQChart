@@ -351,7 +351,7 @@ HQData.Minute_RequestMinuteData=function(data, callback)
         }
 
         //盘中
-        stockItem.minute.length=50;
+        //stockItem.minute.length=50;
          //测试用 这里可以修改数据
         //var lastItem=srcStock.minute[srcStock.minute.length-1];
         //lastItem.price+=Math.ceil(Math.random()*10)/1000*lastItem.price;
@@ -1967,6 +1967,9 @@ HQData.Report_RequestStockData=function(data, callback)
                 var testDate=new Date();
                 testDate.setHours(testDate.getHours() + i*2)
                 newItem[401]={ DateTime:testDate } ;
+
+
+                newItem[JSCHART_DATA_FIELD_ID.REPORT_EXTENDDATA]={ Value:"ddddd" };
                 
 
                 item.Data=newItem;
@@ -2684,12 +2687,17 @@ HQData.Report_APIIndex=function(data, callback)
         HQData.APIIndex_SCATTER_PLOT_V2(data, callback);
     else if (request.Data.indexname=="API_KLINE_TABLE")
         HQData.APIIndex_KLINE_TABLE(data, callback);
+    else if (request.Data.indexname=="API_MINUTE_TABLE")
+        HQData.APIIndex_MINUTE_TABLE(data, callback);
     else if (request.Data.indexname=="API_DRAWSVG")
         HQData.APIIndex_DRAWSVG(data, callback); 
     else if (request.Data.indexname=="API_BASELINE_BAR")
         HQData.APIIndex_BASELINE_BAR(data, callback);
     else if (request.Data.indexname=="API_VERTLINE")
         HQData.APIIndex_VERTLINE(data, callback);
+
+    else if (request.Data.indexname=="API_ERRORMESSAGE")
+        HQData.APIIndex_ErrorMessage(data, callback);
 
 
     //付费图形
@@ -3886,6 +3894,114 @@ HQData.APIIndex_KLINE_TABLE=function(data, callback)
 }
 
 
+HQData.APIIndex_MINUTE_TABLE=function(data, callback)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var kData=data.HQChart.GetKData(); //hqchart图形的分钟数据
+
+    var tableData= 
+    { 
+        name:'JS_CHART_MINUTETABLE_9DFC', type:1, 
+        Draw: 
+        { 
+            DrawType:'JS_CHART_MINUTETABLE_9DFC', 
+            DrawData:[ ] ,                                      //数据  [ [ { Text, Color: BGColor }, ...... ], [],]
+
+            Config:
+            {
+                //BGColor:"rgba(238,232,205,0.5)",
+                //BorderColor:"rgb(220,220,220)",
+                TextColor:"rgb(250,250,250)",
+                ItemMergin:{ Left:1, Right:1, Top:0, Bottom:0, YOffset:0 },
+                TextFont:{ Family:'微软雅黑' , FontMaxSize:14*GetDevicePixelRatio(), },
+                Style:1,
+                CellWidth:18*GetDevicePixelRatio(),
+                CellHeight:14*GetDevicePixelRatio(),
+                RowCount:2,
+                LineColor:"rgb(5,105,225)",
+                LineDash:[5*GetDevicePixelRatio(),5*GetDevicePixelRatio()],
+            }
+        },
+        
+    };
+
+    for(var i=0;i<kData.Data.length;++i)   
+    {
+        var kItem=kData.Data[i];
+
+        //一列数据
+        var colItem={ Date:kItem.Date, Time:kItem.Time, Data:[ ] };
+
+        if (kItem.Time==1030 || kItem.Time==1035)
+        {
+            colItem.Data[0]= 
+            {
+                Text:"多", Color:"rgb(250,250,250)", BGColor:'rgb(250,0,0)', TextAlign:"center",
+                Tooltip:
+                {
+                    AryText:
+                    [
+                        {Title:"日期", Text:`${kItem.Date} ${kItem.Time}`},
+                        {Title:"买入价", Text:`${kItem.Close.toFixed(2)}`, TextColor:"rgb(250,0,0)"},
+                        {Title:"数量", Text:`${HQData.GetRandomTestData(100,400).toFixed(0)}`,TextColor:"rgb(255,165,0)" },
+                    ]
+                }
+            };
+        }
+        else if (kItem.Time==1033 || kItem.Time==1025)
+        {
+            colItem.Data[0]= 
+            {
+                Text:"空", Color:"rgb(250,250,250)", BGColor:'rgb(0,128,0)', TextAlign:"center",
+                Tooltip:
+                {
+                    AryText:
+                    [
+                        {Title:"日期", Text:`${kItem.Date} ${kItem.Time}`},
+                        {Title:"买入价", Text:`${kItem.Close.toFixed(2)}`, TextColor:"rgb(250,0,0)"},
+                        {Title:"数量", Text:`${HQData.GetRandomTestData(100,400).toFixed(0)}`,TextColor:"rgb(255,165,0)" },
+                    ]
+                }
+            };
+        }
+        else if (kItem.Time==1028 || kItem.Time==1032 || kItem.Time==1034 )
+        {
+            colItem.Data[1]= 
+            {
+                Text:"平", Color:"rgb(250,250,250)", BGColor:'rgb(255,165,0)', TextAlign:"center",
+                Tooltip:
+                {
+                    AryText:
+                    [
+                        {Title:"日期", Text:`${kItem.Date} ${kItem.Time}`},
+                        {Title:"卖入价", Text:`${kItem.Close.toFixed(2)}`, TextColor:"rgb(34,139,34)"},
+                        {Title:"数量", Text:`${HQData.GetRandomTestData(100,400).toFixed(0)}`,TextColor:"rgb(255,165,0)" },
+                    ]
+                }
+            };
+        }
+        else 
+        {
+            continue;
+        }
+        
+
+        tableData.Draw.DrawData.push(colItem);
+    }
+
+    var apiData=
+    {
+        code:0, 
+        stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+        outdata: { date:kData.GetDate(), time:kData.GetTime(), outvar:[tableData] } 
+    };
+
+    console.log('[KLineChart::APIIndex_KLINE_TABLE2] apiData ', apiData);
+    callback(apiData);
+}
+
+
 HQData.APIIndex_DRAWSVG=function(data, callback)
 {
     data.PreventDefault=true;
@@ -4271,6 +4387,14 @@ HQData.API_CHART_AREA_TEXT=function(data, callback)
 
     console.log('[HQData.API_CHART_AREA_TEXT] apiData ', apiData);
     callback(apiData);
+}
+
+
+HQData.APIIndex_ErrorMessage=function(data, callback)
+{
+    var hqchartData={ outdata:{ date:null, time:null, outvar:[] } , code:0};
+    hqchartData.error={ message:"错误提示信息" };
+    callback(hqchartData);
 }
 
 
