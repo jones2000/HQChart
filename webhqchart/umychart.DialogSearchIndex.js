@@ -307,7 +307,7 @@ function JSDialogSearchIndex()
             var indexItem=cellItem.IndexItem;
             if (indexItem.Type==0 )  //系统指标 
             {
-                this.HQChart.ChangeIndex(this.OpData.WindowIndex, indexItem.ID );
+                this.HQChart.ChangeIndex(this.OpData.WindowIndex, indexItem.ID, indexItem);
             }
             else if(indexItem.Type==4 || indexItem.Type==5) //五彩K线
             {
@@ -338,6 +338,7 @@ function JSDialogSearchIndex()
             if (indexItem.Type==0)  //系统指标
             {
                 var obj={ WindowIndex:this.OpData.WindowIndex, IndexName:indexItem.ID };
+                if (indexItem.Lock) obj.Lock=indexItem.Lock;
                 this.HQChart.AddOverlayIndex(obj);
             }
             else if (indexItem.Type==1) //自定义脚本指标
@@ -810,11 +811,8 @@ JSDialogSearchIndex.GetDefaultIndexData=function()
                 AryIndex:
                 [
                     { Name:"面积图(后台指标)", ID:"API-DRAWBAND", Type:2, Args:null, Lock:{ IsLocked:true } },
-                    { 
-                        Name:"波段量能跟庄-波段量能", ID:"TEST_INDEX_4AE0_1", Type:1, Args:null,
-                        Script:TEST_INDEX_4AE0_1,
-                        Lock:{ IsLocked:true }
-                    }
+                    { Name:"波段量能跟庄-波段量能", ID:"TEST_INDEX_4AE0_1", Type:0, Lock:{ IsLocked:true } },
+                    { Name:"飞龙八级进-主图", ID:"TEST_INDEX_4AE0_2", Type:0, Lock:{ IsLocked:true } }
                 ]
             },
             {
@@ -1317,6 +1315,7 @@ function JSDialogModifyIndexParam()
 /////////////////////////////////////////////////////////////////////////////////////////////
 //测试指标
 
+
 var TEST_INDEX_4AE0_1=`能量:=SQRT(VOL)*(((C-(H+L)/2))/((H+L)/2));
 平滑能量:=EMA(能量,16);
 能量惯性:EMA(平滑能量,16);
@@ -1331,6 +1330,114 @@ STICKLINE(能量惯性<0,(能量惯性-能量惯性*0.2),(能量惯性-能量惯
 STICKLINE(能量惯性<0,(能量惯性-能量惯性*0.4),(能量惯性-能量惯性*0.55),3,0), COLORFF9900;
 STICKLINE(能量惯性<0,(能量惯性-能量惯性*0.6),(能量惯性-能量惯性*0.75),3,0), COLORFFCC00;
 STICKLINE(能量惯性<0,(能量惯性-能量惯性*0.8),(能量惯性-能量惯性*0.95),3,0), COLORFFFF00;`
+
+
+var TEST_INDEX_4AE0_2=`
+MA3:MA(CLOSE,3),COLORWHITE;
+MA17:MA(CLOSE,17),COLORYELLOW;
+QQ:=0,COLORWHITE;
+MA1:=MA(CLOSE,3);
+MA2:=MA(CLOSE,17);
+JG:=CROSS(MA1,MA2);
+VOLUME:=VOL,VOLSTICK;
+MAVOL1:=MA(VOLUME,3);
+MAVOL2:=MA(VOLUME,17);
+NL:=CROSS(MAVOL1,MAVOL2);
+DIF:=EMA(CLOSE,12)-EMA(CLOSE,26);
+DEA:=EMA(DIF,9);
+MACD:=(DIF-DEA)*2,COLORSTICK;
+NA:=CROSS(DIF,DEA);
+RSV:=(CLOSE-LLV(LOW,9))/(HHV(HIGH,9)-LLV(LOW,9))*100;
+K:=SMA(RSV,9,1);
+D:=SMA(K,9,1);
+J:=3*K-2*D;
+KD:=CROSS(K,D) AND CROSS(J,D);
+飞龙八级进:DRAWTEXT((JG AND NL AND NA) OR (JG AND NL AND KD) OR
+(JG AND NA AND KD) OR (NL AND NA AND KD),L*0.95,' 飞龙八级进'),COLORYELLOW;
+X:=LLV(J,2)=LLV(J,8);
+Y:=IF(CROSS(J,REF(J+0.01,1)) AND X AND J<20,30,0);
+DRAWTEXT(CROSS(J,REF(J+0.01,1)) AND X AND J<20,LOW*0.98,''),COLORLIMAGENTA;
+空:=EMA(C,5);
+均衡:=EMA(空,5),COLORWHITE;
+中轨:=HHV(MA(H,13),13),COLORRED,LINETHICK2;
+VAR5:=FILTER(均衡>REF(均衡,1)AND 中轨<REF(中轨,1)AND C>REF(C,1),11);
+DRAWTEXT(VAR5,L*0.98,''),COLORYELLOW;
+PT:=XMA(H,20);
+PAN:=XMA(CLOSE,7),COLORBROWN;
+RUO:=MEMA(CLOSE,3),COLORLIBLUE;
+STICKLINE(CLOSE> REF(CLOSE,1) ,HIGH,LOW,0,1 ),COLORRED;
+STICKLINE(CLOSE> REF(CLOSE,1) ,OPEN,CLOSE,3,0 ),COLOR000055;
+STICKLINE(CLOSE> REF(CLOSE,1) ,OPEN,CLOSE,2.7,0 ),COLOR000077;
+STICKLINE(CLOSE> REF(CLOSE,1) ,OPEN,CLOSE,2.1,0 ),COLOR000099;
+STICKLINE(CLOSE> REF(CLOSE,1) ,OPEN,CLOSE,1.5,0 ),COLOR0000BB;
+STICKLINE(CLOSE> REF(CLOSE,1) ,OPEN,CLOSE,0.9,0 ),COLOR0000DD;
+STICKLINE(CLOSE> REF(CLOSE,1) ,OPEN,CLOSE,0.3,0 ),COLOR0000FF;
+STICKLINE(CLOSE= REF(CLOSE,1) ,HIGH,LOW,0,1 ),COLORWHITE;
+STICKLINE(CLOSE= REF(CLOSE,1) ,OPEN,CLOSE,3,0 ),COLOR555555;
+STICKLINE(CLOSE= REF(CLOSE,1) ,OPEN,CLOSE,2.7,0 ),COLOR777777;
+STICKLINE(CLOSE= REF(CLOSE,1) ,OPEN,CLOSE,2.1,0 ),COLOR999999;
+STICKLINE(CLOSE= REF(CLOSE,1) ,OPEN,CLOSE,1.5,0 ),COLORBBBBBB;
+STICKLINE(CLOSE= REF(CLOSE,1) ,OPEN,CLOSE,0.9,0 ),COLORDDDDDD;
+STICKLINE(CLOSE= REF(CLOSE,1) ,OPEN,CLOSE,0.3,0 ),COLORFFFFFF;
+STICKLINE(CLOSE< REF(CLOSE,1) ,HIGH,LOW,0,1 ),COLORCYAN;
+STICKLINE(CLOSE< REF(CLOSE,1) ,OPEN,CLOSE,3,0 ),COLOR990000;
+STICKLINE(CLOSE< REF(CLOSE,1) ,OPEN,CLOSE,2.7,0 ),COLORCC0000;
+STICKLINE(CLOSE< REF(CLOSE,1) ,OPEN,CLOSE,2.1,0 ),COLORFF4400;
+STICKLINE(CLOSE< REF(CLOSE,1) ,OPEN,CLOSE,1.5,0 ),COLORFF8800;
+STICKLINE(CLOSE< REF(CLOSE,1) ,OPEN,CLOSE,0.9,0 ),COLORFFCC00;
+STICKLINE(CLOSE< REF(CLOSE,1) ,OPEN,CLOSE,0.3,0 ),COLORCYAN;
+高:=REF(HHV(H,80),3);
+低:=REF(LLV(L,80),3);
+H19:=高-(高-低)*0.191;
+H38:=高-(高-低)*0.382;
+H中:=高-(高-低)*0.5;
+H61:=高-(高-低)*0.618;
+H80:=高-(高-低)*0.809;
+顶点:REFDATE(高,DATE),COLORWHITE;
+REFDATE(H19,DATE),COLORYELLOW;
+REFDATE(H38,DATE),COLORMAGENTA;
+REFDATE(H中,DATE),COLORRED;
+REFDATE(H61,DATE),COLORMAGENTA;
+REFDATE(H80,DATE),COLORYELLOW;
+低点:REFDATE(低,DATE),COLORWHITE;
+DRAWTEXT(ISLASTBAR,低点,''),COLORWHITE;
+`
+
+
+//添加测试系统指标
+function AddTestSystemIndex()
+{
+    var aryIndex=[];
+
+    aryIndex.push(
+    { 
+        ID:"TEST_INDEX_4AE0_1",   
+        Name: '波段量能跟庄-波段量能', 
+        Script:TEST_INDEX_4AE0_1,
+        Args: null,
+       
+    });
+
+    
+    aryIndex.push(
+    {   
+        ID:"TEST_INDEX_4AE0_2",              //指标ID                    
+        Name:'飞龙八级进-主图',               //指标名称                    
+        Description:'飞龙八级进',            //描述信息                    
+        IsMainIndex:true,                  //是否是主图指标    
+        Condition: { Period:[CONDITION_PERIOD.KLINE_DAY_ID], Message:"指标(飞龙八级进-主图)只支持日线周期" },                
+        Args:null,                          //指标参数                                      
+        Script:TEST_INDEX_4AE0_2,                
+    });
+
+    JSIndexScript.AddIndex(aryIndex);
+}
+
+
+AddTestSystemIndex();
+
+
+
 
 
 

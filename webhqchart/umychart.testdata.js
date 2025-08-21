@@ -4392,6 +4392,7 @@ HQData.API_CHART_AREA_TEXT=function(data, callback)
 
 HQData.APIIndex_ErrorMessage=function(data, callback)
 {
+    data.PreventDefault=true;
     var hqchartData={ outdata:{ date:null, time:null, outvar:[] } , code:0};
     hqchartData.error={ message:"错误提示信息" };
     callback(hqchartData);

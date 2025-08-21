@@ -75,6 +75,8 @@ export default {
     IChartDrawPicture:IChartDrawPicture,        //画图工具
     DynamicTitleData:DynamicTitleData,          //指标标题数据
 
+    JSDivFrameToolbar:JSDivFrameToolbar,        //div指标工具条
+
     CONDITION_PERIOD:CONDITION_PERIOD,          //指标周期条件枚举
 
     //内部图形导出

@@ -10359,6 +10359,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             if (IFrameSplitOperator.IsBool(windowItem.IsShowTitleArrow)) frame.IsShowTitleArrow=windowItem.IsShowTitleArrow;
             if (IFrameSplitOperator.IsNumber(windowItem.TitleArrowType)) frame.TitleArrowType=windowItem.TitleArrowType;
             if (IFrameSplitOperator.IsBool(windowItem.IsShowIndexName)) frame.IsShowIndexName=windowItem.IsShowIndexName;
+            if (IFrameSplitOperator.IsBool(windowItem.IsSinlgeLine)) frame.IsSinlgeLine=windowItem.IsSinlgeLine;
             if (IFrameSplitOperator.IsBool(windowItem.IsShowOverlayIndexName)) frame.IsShowOverlayIndexName=windowItem.IsShowOverlayIndexName;
             if (IFrameSplitOperator.IsNumber(windowItem.IndexParamSpace)) frame.IndexParamSpace=windowItem.IndexParamSpace;
             if (IFrameSplitOperator.IsNumber(windowItem.IndexTitleSpace)) frame.IndexTitleSpace=windowItem.IndexTitleSpace;
@@ -10482,6 +10483,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         if (IFrameSplitOperator.IsBool(option.IsShowTitleArrow)) subFrame.Frame.IsShowTitleArrow=option.IsShowTitleArrow;
         if (IFrameSplitOperator.IsNumber(option.TitleArrowType)) subFrame.Frame.TitleArrowType=option.TitleArrowType;
         if (IFrameSplitOperator.IsBool(option.IsShowIndexName)) subFrame.Frame.IsShowIndexName=option.IsShowIndexName;
+        if (IFrameSplitOperator.IsBool(option.IsSinlgeLine)) subFrame.Frame.IsSinlgeLine=option.IsSinlgeLine;
         if (IFrameSplitOperator.IsBool(option.IsShowOverlayIndexName)) subFrame.Frame.IsShowOverlayIndexName=option.IsShowOverlayIndexName;
         if (IFrameSplitOperator.IsNumber(option.IndexParamSpace)) subFrame.Frame.IndexParamSpace=option.IndexParamSpace;
         if (IFrameSplitOperator.IsBool(option.IsShowXLine)) subFrame.Frame.IsShowXLine=option.IsShowXLine;
@@ -10590,6 +10592,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             var bindData=this.ChartPaint[0].Data;
 
         this.BindIndexData(index,bindData);     //执行脚本
+
+        if (option && option.Draw===true) this.Draw();
     }
 
     //增加一个自定义指标窗口
@@ -13251,6 +13255,7 @@ function IChartFramePainting()
     this.IsShowBorder = true;          //是否显示边框
     this.IsShowTitleArrow=g_JSChartResource.IndexTitle.EnableIndexArrow;        //是否显示指标信息上涨下跌箭头
     this.TitleArrowType=g_JSChartResource.IndexTitle.ArrowType;             //指标信息上涨下跌箭头类型 0=独立颜色 1=跟指标名字颜色一致
+    this.IsSinlgeLine=g_JSChartResource.IndexTitle.IsSinlgeLine;
     this.IsShowIndexName=true;         //是否显示指标名字
     this.IsShowOverlayIndexName=true;  //是否显示叠加指标名字
     //this.OverlayIndexType= { Position:0, LineSpace:5 };
@@ -62644,6 +62649,7 @@ function DynamicChartTitlePainting()
     this.IsShowIndexName=true;     //是否显示指标名字
     this.IsShowIndexTitle=true;    //是否显示指标标题信息
     this.IsShowNameArrow=false;
+    this.IsSinlgeLine=false;        //主图指标标题是否单行显示
     this.NameArrowConfig=CloneData(g_JSChartResource.IndexTitle.NameArrow);
     this.CustomLocation;    //自定义位置 { IsShow:, Top:， TitleHeight: }
 
@@ -63382,6 +63388,7 @@ function DynamicChartTitlePainting()
         this.IsShowUpDownArrow=this.Frame.IsShowTitleArrow;
         this.TitleArrowType=this.Frame.TitleArrowType;
         this.IsShowIndexName=this.Frame.IsShowIndexName;
+        this.IsSinlgeLine=this.Frame.IsSinlgeLine;
         this.IsShowOverlayIndexName=this.Frame.IsShowOverlayIndexName;
         this.OverlayIndexType.Position=this.Frame.OverlayIndexType.Position;
         this.OverlayIndexType.LineSpace=this.Frame.OverlayIndexType.LineSpace;
@@ -63788,6 +63795,7 @@ function DynamicChartTitlePainting()
 
                     if ((left+textWidth+space)>right) 
                     {
+                        if (this.IsSinlgeLine) break;
                         left=newLineLeft;
                         bottom+=lineHeight;
                         right=this.Frame.ChartBorder.GetRight();    //第2行以后 右侧边框
@@ -63852,6 +63860,7 @@ function DynamicChartTitlePainting()
                 var textWidth=this.Canvas.measureText(text).width+space;
                 if ((left+textWidth)>right) //换行
                 {
+                    if (this.IsSinlgeLine) break;
                     left=newLineLeft;
                     bottom+=lineHeight;
                     right=this.Frame.ChartBorder.GetRight();    //第2行以后 右侧边框
@@ -77339,6 +77348,8 @@ function JSChartResource()
         EnableIndexArrow:true,  //指标数值是否带上涨下跌箭头
 
         NameArrow:{ Color:"rgb(43,54,69)", Space:2, Symbol:'▼' },
+
+        IsSinlgeLine:false, //主图指标是否单行显示 false=多行显示
     }
 
     this.Title={
@@ -79024,6 +79035,7 @@ function JSChartResource()
 
             if (IFrameSplitOperator.IsNumber(item.ArrowType)) this.IndexTitle.ArrowType=item.ArrowType;
             if (IFrameSplitOperator.IsBool(item.EnableIndexArrow)) this.IndexTitle.EnableIndexArrow=item.EnableIndexArrow;
+            if (IFrameSplitOperator.IsBool(item.IsSinlgeLine)) this.IndexTitle.IsSinlgeLine=item.IsSinlgeLine;
 
             if (item.NameArrow)
             {
@@ -105421,7 +105433,7 @@ function JSDivFrameToolbar()
         {
             var item=aryButton[i];
             if (!item.ID || !item.ClassName) continue;
-            var newItem={ ID:item.ID, ClassName:item.ClassName, Span:null,Div:null, TooltipSpan:null };
+            var newItem={ ID:item.ID, ClassName:item.ClassName, Span:null,Div:null, TooltipSpan:null, SpanText:item.SpanText };
             if (item.Tooltip && item.Tooltip.Text) newItem.Tooltip={ Text:item.Tooltip.Text };
 
             this.AryButton.push(newItem);
@@ -105452,7 +105464,7 @@ function JSDivFrameToolbar()
         if (!frame && this.FrameID>=0 && this.FrameID<this.HQChart.Frame.SubFrame.length) 
             frame=this.HQChart.Frame.SubFrame[this.FrameID].Frame;
 
-        var aryDefaultButton=JSDivFrameToolbar.GetDfaultButtons();
+        var aryDefaultButton=JSDivFrameToolbar.GetDfaultButtons(frame);
         var aryButton=[];
         for(var i=0;i<aryDefaultButton.length; i++)
         {
@@ -105464,6 +105476,9 @@ function JSDivFrameToolbar()
             if (item.ID==JSCHART_BUTTON_ID.OVERLAY_INDEX && frame && frame.OverlayIndex===false) continue;
             if (item.ID==JSCHART_BUTTON_ID.CLOSE_INDEX_WINDOW && frame && frame.CloseIndex===false) continue;
             if (item.ID==JSCHART_BUTTON_ID.INDEX_HELP && frame && frame.IndexHelp===false) continue;
+
+            if (item.ID==JSCHART_BUTTON_ID.MAX_MIN_WINDOW && frame && frame.MaxMinWindow===false) continue;
+            if (item.ID==JSCHART_BUTTON_ID.TITLE_WINDOW && frame && frame.TitleWindow===false) continue;
 
             aryButton.push(item);
         }
@@ -105577,6 +105592,7 @@ function JSDivFrameToolbar()
         var spanDom=document.createElement("span");
         spanDom.className=item.ClassName;
         spanDom.onmousedown=(e)=>{ this.OnClickButton(e, item); };
+        if (item.SpanText) spanDom.innerText=item.SpanText;
         item.Span=spanDom;
         btnDiv.appendChild(spanDom);
 
@@ -105590,7 +105606,7 @@ function JSDivFrameToolbar()
 
         var frame=this.HQChart.Frame.SubFrame[this.FrameID].Frame;
 
-        var button={ ID:item.ID, Frame:frame };
+        var button={ ID:item.ID, Frame:frame, FrameID:this.FrameID };
         this.HQChart.ClickFrameButton(button, e);
     }
 
@@ -105661,7 +105677,7 @@ function JSDivFrameToolbar()
     }
 }
 
-JSDivFrameToolbar.GetDfaultButtons=function()
+JSDivFrameToolbar.GetDfaultButtons=function(frame)
 {
     var aryButton=
     [
@@ -105681,10 +105697,26 @@ JSDivFrameToolbar.GetDfaultButtons=function()
             ID:JSCHART_BUTTON_ID.OVERLAY_INDEX, ClassName:"UMyChart_FrameToolbar_Span_Button icon iconfont icon-overlay_index", Tooltip:{ Text:"叠加指标"},
             Span:null,Div:null, TooltipSpan:null
         },
+
+        { 
+            ID:JSCHART_BUTTON_ID.TITLE_WINDOW, ClassName:"UMyChart_FrameToolbar_Span_Button icon iconfont icon-Title", Tooltip:{ Text:"标题模式"},
+            Span:null,Div:null, TooltipSpan:null
+        },
+        { 
+            ID:JSCHART_BUTTON_ID.MAX_MIN_WINDOW, ClassName:"UMyChart_FrameToolbar_Span_Button icon iconfont icon-maxmize-", Tooltip:{ Text:"放大缩小"},
+            Span:null,Div:null, TooltipSpan:null
+        },
         { 
             ID:JSCHART_BUTTON_ID.CLOSE_INDEX_WINDOW, ClassName:"UMyChart_FrameToolbar_Span_Button icon iconfont icon-close", Tooltip:{ Text:"关闭窗口"},
             Span:null,Div:null, TooltipSpan:null
         },
+
+        /*
+        { 
+            ID:"TEST_8889", ClassName:"UMyChart_FrameToolbar_Span_Text", Tooltip:{ Text:"测试按钮提示"}, SpanText:"测试按钮",
+            Span:null, Div:null, TooltipSpan:null
+        },
+        */
     ];
 
     return aryButton
