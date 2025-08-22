@@ -1298,6 +1298,7 @@ function DynamicChartTitlePainting()
 
     this.IsShowIndexName = true;     //是否显示指标名字
     this.IsShowNameArrow=false;
+    this.IsSinlgeLine=false;        //主图指标标题是否单行显示
     this.NameArrowConfig=CloneData(g_JSChartResource.IndexTitle.NameArrow);
     this.ParamSpace = 2;             //参数显示的间距
     this.TitleSpace=2;              //指标名字和参数之间的间距
@@ -1576,6 +1577,7 @@ function DynamicChartTitlePainting()
         this.IsDrawTitleBG=this.Frame.IsDrawTitleBG;
         this.IsShowIndexName = this.Frame.IsShowIndexName;
         this.IsShowNameArrow=this.Frame.IsShowNameArrow;
+        this.IsSinlgeLine=this.Frame.IsSinlgeLine;
         this.ParamSpace = this.Frame.IndexParamSpace;
         this.TitleSpace=this.Frame.IndexTitleSpace;
         this.IsShowUpDownArrow=this.Frame.IsShowTitleArrow;
@@ -1950,6 +1952,7 @@ function DynamicChartTitlePainting()
                         var textWidth=this.Canvas.measureText(text).width 
                         if ((left+textWidth)>right) //换行
                         {
+                            if (this.IsSinlgeLine) break;
                             left=this.Frame.ChartBorder.GetLeft() + 3;
                             bottom+=lineHeight;
                         }
@@ -1988,6 +1991,7 @@ function DynamicChartTitlePainting()
                     textWidth = this.Canvas.measureText(text).width + this.ParamSpace;    //后空2个像素
                     if (textWidth+left>right)   //换行
                     {
+                        if (this.IsSinlgeLine) break;
                         left=this.Frame.ChartBorder.GetLeft() + 3;
                         bottom+=lineHeight;
                     }

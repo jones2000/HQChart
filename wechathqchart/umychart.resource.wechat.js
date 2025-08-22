@@ -74,6 +74,7 @@ function JSChartResource()
         EnableIndexArrow:true,  //指标数值是否带上涨下跌箭头
 
         NameArrow:{ Color:"rgb(43,54,69)", Space:2, Symbol:'▼' },
+        IsSinlgeLine:false, //主图指标是否单行显示 false=多行显示
     }
 
     this.UpTextColor = "rgb(238,21,21)";
@@ -564,6 +565,7 @@ function JSChartResource()
 
             if (IFrameSplitOperator.IsNumber(item.ArrowType)) this.IndexTitle.ArrowType=item.ArrowType;
             if (IFrameSplitOperator.IsBool(item.EnableIndexArrow)) this.IndexTitle.EnableIndexArrow=item.EnableIndexArrow;
+            if (IFrameSplitOperator.IsBool(item.IsSinlgeLine)) this.IndexTitle.IsSinlgeLine=item.IsSinlgeLine;
             
             if (item.NameArrow)
             {

@@ -10441,6 +10441,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             }
         }
 
+        if (frame.DivFrameToolbar) frame.DivFrameToolbar.UpdateButton();    //更新div工具条
     }
 
     this.SetSubFrameOption=function(subFrame, option)
@@ -10504,6 +10505,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             subFrame.Frame.IsShowYText[1]=option.IsShowRightText;
             subFrame.Frame.YSplitOperator.IsShowRightText=option.IsShowRightText;         //显示右边刻度
         }
+
+        if (frame.DivFrameToolbar) frame.DivFrameToolbar.UpdateButton();    //更新div工具条
     }
 
     this.AddNewSubFrame=function(option)
@@ -105479,6 +105482,7 @@ function JSDivFrameToolbar()
 
             if (item.ID==JSCHART_BUTTON_ID.MAX_MIN_WINDOW && frame && frame.MaxMinWindow===false) continue;
             if (item.ID==JSCHART_BUTTON_ID.TITLE_WINDOW && frame && frame.TitleWindow===false) continue;
+            if (item.ID==JSCHART_BUTTON_ID.ADD_INDEX_WINDOW && frame && frame.AddIndexWindow===false) continue;
 
             aryButton.push(item);
         }
@@ -105695,6 +105699,10 @@ JSDivFrameToolbar.GetDfaultButtons=function(frame)
         },
         { 
             ID:JSCHART_BUTTON_ID.OVERLAY_INDEX, ClassName:"UMyChart_FrameToolbar_Span_Button icon iconfont icon-overlay_index", Tooltip:{ Text:"叠加指标"},
+            Span:null,Div:null, TooltipSpan:null
+        },
+        {
+            ID:JSCHART_BUTTON_ID.ADD_INDEX_WINDOW, ClassName:"UMyChart_FrameToolbar_Span_Button icon iconfont icon-add", Tooltip:{ Text:"增加指标窗口"},
             Span:null,Div:null, TooltipSpan:null
         },
 

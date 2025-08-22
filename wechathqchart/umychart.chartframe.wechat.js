@@ -130,7 +130,8 @@ function IChartFramePainting()
 
     this.IsShowTitleArrow=g_JSChartResource.IndexTitle.EnableIndexArrow;        //是否显示指标信息上涨下跌箭头
     this.TitleArrowType=g_JSChartResource.IndexTitle.ArrowType;             //指标信息上涨下跌箭头类型 0=独立颜色 1=跟指标名字颜色一致
-
+    this.IsSinlgeLine=g_JSChartResource.IndexTitle.IsSinlgeLine;
+    
     //上锁信息
     this.IndexLock=new IndexLockData(); //指标锁
     this.LockPaint = null;
