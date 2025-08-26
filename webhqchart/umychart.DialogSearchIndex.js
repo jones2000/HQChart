@@ -25,14 +25,6 @@ function JSDialogSearchIndex()
     //{ WindowIndex:窗口索引, OpType:1=切换主图指标 2=添加叠加指标 3=新增指标窗口,  Title: };  
     this.OpData=null;        
 
-    this.TitleColor=g_JSChartResource.DialogSearchIndex.TitleColor;
-    this.TitleBGColor=g_JSChartResource.DialogSearchIndex.TitleBGColor;
-    this.BGColor=g_JSChartResource.DialogSearchIndex.BGColor;
-    this.BorderColor=g_JSChartResource.DialogSearchIndex.BorderColor;
-    this.IndexNameColor=g_JSChartResource.DialogSearchIndex.IndexNameColor;
-    this.GroupNameColor=g_JSChartResource.DialogSearchIndex.GroupNameColor;
-    this.InputTextColor=g_JSChartResource.DialogSearchIndex.InputTextColor;
-
     this.MaxRowCount=30;    //行
     this.ColCount=3;        //列
     this.MaxGroupCount=20;  //分类最多个数
@@ -399,15 +391,7 @@ function JSDialogSearchIndex()
 
     this.UpdateStyle=function()
     {
-        if (!this.DivDialog) return;
-
-        if (this.BGColor) this.DivDialog.style['background-color']=this.BGColor;
-        if (this.BorderColor) this.DivDialog.style['border-color']=this.BorderColor;
-
-        if (this.TitleBGColor) this.TitleBox.DivTitle.style['background-color']=this.TitleBGColor;
-        if (this.TitleColor) this.TitleBox.DivName.style['color']=this.TitleColor;
-
-        if (this.InputTextColor) this.InputDom.style['color']=this.InputTextColor;
+       
     };
 
     this.ChangeGroup=function(groupID)
@@ -442,7 +426,6 @@ function JSDialogSearchIndex()
             cell.Span.innerText=item.Group.Name;
             cell.Span.dataset.groupid=item.Group.ID;
             cell.Span.dataset.groupname=item.Group.Name;
-            cell.Span.style.color=this.GroupNameColor;
 
             if (cell.Div.style.display=="none") cell.Div.style.display="";
         }
@@ -468,7 +451,6 @@ function JSDialogSearchIndex()
                 {
                     var indexItem=data.AryIndex[index];
                     cell.Span.innerText=indexItem.Name;
-                    cell.Span.style.color=this.IndexNameColor;
                     if (cell.Td.style.display=="none") cell.Td.style.display="";
                     cell.IndexItem=indexItem;
                     ++index;
@@ -557,17 +539,7 @@ function JSDialogSearchIndex()
     //配色修改
     this.ReloadResource=function(option)
     {
-        this.TitleColor=g_JSChartResource.DialogSearchIndex.TitleColor;
-        this.TitleBGColor=g_JSChartResource.DialogSearchIndex.TitleBGColor;
-        this.BGColor=g_JSChartResource.DialogSearchIndex.BGColor;
-        this.BorderColor=g_JSChartResource.DialogSearchIndex.BorderColor;
-        this.IndexNameColor=g_JSChartResource.DialogSearchIndex.IndexNameColor;
-        this.GroupNameColor=g_JSChartResource.DialogSearchIndex.GroupNameColor;
-        this.InputTextColor=g_JSChartResource.DialogSearchIndex.InputTextColor;
-
-        if (!this.DivDialog) return;
-
-        this.UpdateStyle();
+        
     }
 
 }
@@ -878,13 +850,6 @@ function JSDialogModifyIndexParam()
     this.TitleBox=null; //{ DivTitle, DivName, DivName }
     this.Style=0;       //样式 预留
 
-    this.TitleColor=g_JSChartResource.DialogModifyIndexParam.TitleColor;
-    this.TitleBGColor=g_JSChartResource.DialogModifyIndexParam.TitleBGColor;
-    this.BGColor=g_JSChartResource.DialogModifyIndexParam.BGColor;
-    this.BorderColor=g_JSChartResource.DialogModifyIndexParam.BorderColor;
-    this.ParamNameColor=g_JSChartResource.DialogModifyIndexParam.ParamNameColor;
-    this.InputTextColor=g_JSChartResource.DialogModifyIndexParam.InputTextColor;
-
     this.MaxRowCount=30;    //行
 
     this.HQChart=null;
@@ -1142,13 +1107,7 @@ function JSDialogModifyIndexParam()
 
     this.UpdateStyle=function()
     {
-        if (!this.DivDialog) return;
-
-        if (this.BGColor) this.DivDialog.style['background-color']=this.BGColor;
-        if (this.BorderColor) this.DivDialog.style['border-color']=this.BorderColor;
-
-        if (this.TitleBGColor) this.TitleBox.DivTitle.style['background-color']=this.TitleBGColor;
-        if (this.TitleColor) this.TitleBox.DivName.style['color']=this.TitleColor;
+       
     };
 
     this.UpdateParamTable=function(aryText)
@@ -1159,10 +1118,9 @@ function JSDialogModifyIndexParam()
             var item=aryText[index];
             var row=this.AryData[index];
             row.SpanName.innerText=`${item.Name}: `;
-            row.SpanName.style.color=this.ParamNameColor;
+           
 
             row.Input.value=item.Value;
-            row.Input.style.color=this.InputTextColor;
             row.Input.dataset.paramid=item.Index;
 
             if (row.Tr.style.display=="none") row.Tr.style.display="";

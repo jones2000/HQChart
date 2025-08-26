@@ -34,6 +34,17 @@
     <script src="../jscommon/umychart.complier.js"></script>    <!-- 麦语言解析执行器 -->
     <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
     <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+    <script src="../jscommon/umychart.popMenu.js"></script>
+    <script src="../jscommon/umychart.DialogDrawTool.js"></script>
+    <script src="../jscommon/umychart.PopMinuteChart.js"></script>
+    <script src="../jscommon/umychart.report.js"></script>
+    <script src="../jscommon/umychart.keyboard.js"></script>
+    <script src="../jscommon/umychart.PopKeyboard.js"></script>
+    <script src="../jscommon/umychart.DialogTooltip.js"></script>
+    <script src="../jscommon/umychart.DialogSelectRect.js"></script>
+    <script src="../jscommon/umychart.DialogSearchIndex.js"></script>
+    <script src="../jscommon/umychart.version.js"></script>
+
 
     <script src="../jscommon/umychart.NetworkFilterTest.js"></script>
    
@@ -148,6 +159,9 @@
 
                 SelectedChart:{ EnableSelected: true, EnableMoveOn:true },
                 EnableIndexChartDrag:true,
+                SearchIndexDialog:{ Enable:true, },
+                ModifyIndexParamDialog:{ Enable:true, EnableRestoreParam:false },
+                FloatTooltip:{ Enable:true, },
     
                 KLineTitle: //标题设置
                 {
@@ -254,6 +268,7 @@
                 JSChart.SetStyle(blackStyle);
                 this.DivKLine.style.backgroundColor=blackStyle.BGColor; //设置最外面的div背景
                 JSChart.GetResource().ToolbarButtonStyle=1;
+                JSChart.SetCSSStyle(STYLE_TYPE_ID.BLACK_ID);
 
                 this.OnSize();  //让K线全屏
                 this.Option.NetworkFilter=(data, callback)=>{ HQData.NetworkFilter(data, callback); }

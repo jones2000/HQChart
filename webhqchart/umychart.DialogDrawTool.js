@@ -727,7 +727,7 @@ function JSDialogModifyDraw()
 
         var spanDom=document.createElement("span");
         spanDom.className="hqchart_drawtool icon-tuodong";
-        spanDom.classList.add("UMyChart_DrawTool_Span");
+        spanDom.classList.add("UMyChart_Draw_Modify_Dialog_Drag_Span");
         drgDiv.appendChild(spanDom);
 
         for(var i=0;i<this.AryButton.length;++i)
@@ -753,7 +753,7 @@ function JSDialogModifyDraw()
 
         var spanDom=document.createElement("span");
         spanDom.className=item.ClassName;
-        spanDom.classList.add("UMyChart_DrawTool_Span");
+        spanDom.classList.add("UMyChart_Draw_Modify_Dialog_Button_Span");
         divItem.appendChild(spanDom);
        
 
@@ -782,7 +782,6 @@ function JSDialogModifyDraw()
                 break;
             case JS_DRAWTOOL_MENU_ID.CMD_LOCK_DRAW_CHART_ID:
                 this.LockButton=data;
-                this.LockButton.Span.style['color']="rgb(220,220,220)";
                 break;
             case JS_DRAWTOOL_MENU_ID.CMD_ZOOM_FONT_ID:
                 this.FontZoomButton=data;
@@ -987,7 +986,23 @@ function JSDialogModifyDraw()
         if (!this.ChartPicture || !this.HQChart) return;
         this.ChartPicture.EnableMove=!this.ChartPicture.EnableMove;
 
-        if (this.LockButton) this.LockButton.Span.style['color']=this.ChartPicture.EnableMove?"rgb(220,220,220)":"rgb(0,0,0)";
+        return this.UpdateLockButtonStyle();
+    }
+
+    this.UpdateLockButtonStyle=function()
+    {
+        if (!this.LockButton) return;
+
+        if (this.ChartPicture.EnableMove)
+        {
+            this.LockButton.Span.classList.remove("UMyChart_Draw_Modify_Dialog_Button_Span");
+            this.LockButton.Span.classList.add("UMyChart_Draw_Modify_Dialog_Unlock_Button_Span");
+        }
+        else
+        {
+            this.LockButton.Span.classList.remove("UMyChart_Draw_Modify_Dialog_Unlock_Button_Span");
+            this.LockButton.Span.classList.add("UMyChart_Draw_Modify_Dialog_Button_Span");
+        }
     }
 
     this.ModifyBorderColor=function()
@@ -1172,8 +1187,7 @@ function JSDialogModifyDraw()
 
         if (this.LockButton) 
         {
-            var item=this.LockButton;
-            item.Span.style['color']=this.ChartPicture.EnableMove?"rgb(220,220,220)":"rgb(0,0,0)";
+           this.UpdateLockButtonStyle();
         }
 
         if (this.FontZoomButton)

@@ -1349,15 +1349,16 @@ input[type="color"] {
 {
     font-family: "微软雅黑";
     /*display: flex;*/
-    border: 2px solid; 
+    border: 1px solid; 
     width:fit-content;
-    border-color: rgb(204,204,204);
+    border-color: var(--HQChart-DialogDrawTool-BorderColor);
     visibility:hidden;
     position: absolute;
-    background-color: rgba(250,250,250,1);
+    background-color: var(--HQChart-DialogDrawTool-BGColor);
     left:1px;
     top:1px;
     z-index: 99;
+    color:var(--HQChart-DialogDrawTool-Color);
 }
 
 .UMyChart_DrawTool_Title_Div
@@ -1365,11 +1366,12 @@ input[type="color"] {
     padding-left: 2px;
     height:20px;
     border-bottom: 1px solid;
-    border-color: rgb(204,204,204);
+    border-color: var(--HQChart-DialogDrawTool-BorderColor);
     display: flex;
     cursor: default;
     user-select: none;
-    background-color:rgb(222,222,222)
+    color:var(--HQChart-DialogDrawTool-TitleColor);
+    background-color:var(--HQChart-DialogDrawTool-TitleBGColor);
 }
 
 .UMyChart_DrawTool_Close_Div
@@ -1377,6 +1379,7 @@ input[type="color"] {
     margin-left: auto;
     padding-right: 4px;
     cursor:pointer;
+    color:var(--HQChart-DialogDrawTool-CloseColor);
 }
 
 .UMyChart_DrawTool_Table
@@ -1400,9 +1403,9 @@ input[type="color"] {
 {
     font-size:22px;
     border: 1px solid;
-    border-color: rgb(128,128,128);
-    background: rgb(234,85,4);
-    color: rgb(255,255,255);
+    border-color: var(--HQChart-DialogDrawTool-Selected_ButtonBorderColor);
+    background: var(--HQChart-DialogDrawTool-Selected_ButtonBGColor);
+    color: var(--HQChart-DialogDrawTool-Selected_ButtonColor);
 }
 
 .UMyChart_DrawTool_Td
@@ -1414,8 +1417,8 @@ input[type="color"] {
 {
     font-size:22px;
     border: 1px solid;
-    border-color: rgb(128,128,128);
-    color: rgb(77,77,77);
+    border-color: var(--HQChart-DialogDrawTool-ButtonBorderColor);
+    color: var(--HQChart-DialogDrawTool-ButtonColor);
 }
 
 .UMyChart_DrawTool_Group_Tr
@@ -1434,7 +1437,7 @@ input[type="color"] {
 {
     height:5px;
     border-bottom: 1px solid;
-    border-color: rgb(204,204,204);
+    border-color:var(--HQChart-DialogDrawTool-DividingLineColor); 
 }
 
 
@@ -1455,12 +1458,14 @@ input[type="color"] {
 {
     font-family: "微软雅黑";
     /*display: flex;*/
-    border: 2px solid; 
+    border-top: 1px solid; 
+    border-bottom: 1px solid;
+    border-left: 1px solid;
     width:fit-content;
-    border-color: rgb(204,204,204);
+    border-color: var(--HQChart-DialogModifyDraw-BorderColor);
     visibility:hidden;
     position: absolute;
-    background-color: rgba(250,250,250,1);
+    background-color: var(--HQChart-DialogModifyDraw-BGColor);
     left:1px;
     top:1px;
     display: flex;
@@ -1469,13 +1474,35 @@ input[type="color"] {
 
 .UMyChart_Draw_Modify_Dialog_Drag_Div
 {
-    width:24px;
+    width:22px;
     user-select: none;
+    border: 1px solid; 
+    background-color:var(--HQChart-DialogModifyDraw-DragBGColor);
+    border-color: var(--HQChart-DialogModifyDraw-DragBGColor);
+}
+
+.UMyChart_Draw_Modify_Dialog_Drag_Span
+{
+    font-size:22px;
+    color:var(--HQChart-DialogModifyDraw-DragColor);
 }
 
 .UMyChart_Draw_Modify_Dialog_Button_Div
 {
-    
+    border-right: 1px solid; 
+    border-color:var(--HQChart-DialogModifyDraw-ButtonBorderColor);
+}
+
+.UMyChart_Draw_Modify_Dialog_Button_Span
+{
+    font-size:22px;
+    color:var(--HQChart-DialogModifyDraw-ButtonColor);
+}
+
+.UMyChart_Draw_Modify_Dialog_Unlock_Button_Span
+{
+    font-size:22px;
+    color:var(--HQChart-DialogModifyDraw-UnlockButtonColor);
 }
 
 .UMyChart_Draw_Modify_Tooltip
@@ -2113,10 +2140,11 @@ input[type="color"] {
     /*display: flex;*/
     border: 1px solid; 
     width:fit-content;
-    border-color: rgb(204,204,204);
+    border-color: var(--HQChart-DialogSearchIndex-BorderColor);
     visibility:hidden;
     position: absolute;
-    background-color: rgba(20,20,20,1);
+    background-color: var(--HQChart-DialogSearchIndex-BGColor);
+    color:var(--HQChart-DialogSearchIndex-Color);
     left:1px;
     top:1px;
     z-index: 99;
@@ -2131,13 +2159,13 @@ input[type="color"] {
     display: flex;
     cursor: default;
     user-select: none;
-    background-color:rgb(200, 66, 69)
+    background-color:var(--HQChart-DialogSearchIndex-TitleBGColor);
 }
 
 .UMyChart_SearchIndex_Name_Div
 {
     margin-left: 5px;
-    color:rgb(250,250,250)
+    color:var(--HQChart-DialogSearchIndex-TitleColor);
 }
 
 .UMyChart_SearchIndex_Close_Div
@@ -2145,7 +2173,7 @@ input[type="color"] {
     margin-left: auto;
     padding-right: 4px;
     cursor:pointer;
-    color:rgb(180,180,180)
+    color:var(--HQChart-DialogSearchIndex-CloseColor);
 }
 
 .UMyChart_SearchIndex_Table_Div
@@ -2188,6 +2216,7 @@ input[type="color"] {
     background-color: transparent;
     width: 99%;
     margin-left: 10px;
+    color:var(--HQChart-DialogSearchIndex-InputColor);
 }
 
 .UMyChart_SearchIndex_Container_Div
@@ -2236,10 +2265,10 @@ input[type="color"] {
     /*display: flex;*/
     border: 1px solid; 
     width:fit-content;
-    border-color: rgb(204,204,204);
+    border-color: var(--HQChart-DialogModifyIndexParam-BorderColor);
     visibility:hidden;
     position: absolute;
-    background-color: rgba(20,20,20,1);
+    background-color:var(--HQChart-DialogModifyIndexParam-BGColor);
     left:1px;
     top:1px;
     z-index: 99;
@@ -2254,13 +2283,13 @@ input[type="color"] {
     display: flex;
     cursor: default;
     user-select: none;
-    background-color:rgb(200, 66, 69)
+    background-color:var(--HQChart-DialogModifyIndexParam-TitleBGColor);
 }
 
 .UMyChart_ModifyIndexParam_Name_Div
 {
     margin-left: 5px;
-    color:rgb(250,250,250)
+    color:var(--HQChart-DialogModifyIndexParam-TitleColor);
 }
 
 .UMyChart_ModifyIndexParam_Close_Div
@@ -2268,7 +2297,7 @@ input[type="color"] {
     margin-left: auto;
     padding-right: 4px;
     cursor:pointer;
-    color:rgb(180,180,180)
+    color:var(--HQChart-DialogModifyIndexParam-CloseColor);
 }
 
 .UMyChart_ModifyIndexParam_Table_Div
@@ -2306,6 +2335,7 @@ input[type="color"] {
 .UMyChart_ModifyIndexParam_Name_Span
 {
     margin-left: 10px;
+    color:var(--HQChart-DialogModifyIndexParam-ParamNameColor);
 }
 
 .UMyChart_ModifyIndexParam_Value_Td
@@ -2321,6 +2351,7 @@ input[type="color"] {
     line-height: 16px;
     background-color: transparent;
     width: 60px;
+    color:var(--HQChart-DialogModifyIndexParam-InputTextColor);
 }
 
 .UMyChart_ModifyIndexParam_Button_Div
@@ -2401,6 +2432,183 @@ input[type="color"] {
 }
 
 
+
+:root 
+{
+    /*
+        JSDialogDrawTool 配色 画图工具
+    */
+
+    --HQChart-DialogDrawTool-BGColor: rgb(250,250,250);
+    --HQChart-DialogDrawTool-BorderColor: rgb(20,20,20);
+    --HQChart-DialogDrawTool-Color: rgb(20,20,20);
+    --HQChart-DialogDrawTool-TitleColor: rgb(250,250,250);
+    --HQChart-DialogDrawTool-TitleBGColor: rgb(200, 66, 69);
+    --HQChart-DialogDrawTool-CloseColor:rgb(180,180,180);
+    --HQChart-DialogDrawTool-ButtonColor:rgb(77,77,77);
+    --HQChart-DialogDrawTool-ButtonBorderColor:rgb(128,128,128);
+    --HQChart-DialogDrawTool-Selected_ButtonColor:rgb(255,255,255);
+    --HQChart-DialogDrawTool-Selected_ButtonBGColor:rgb(234,85,4);
+    --HQChart-DialogDrawTool-Selected_ButtonBorderColor:rgb(128,128,128);
+    --HQChart-DialogDrawTool-DividingLineColor:rgb(204,204,204);
+
+    /*
+        JSDialogModifyDraw
+    */
+
+    --HQChart-DialogModifyDraw-BGColor: rgb(250,250,250);
+    --HQChart-DialogModifyDraw-BorderColor: rgb(20,20,20);
+    --HQChart-DialogModifyDraw-DragColor: rgb(250,250,250);
+    --HQChart-DialogModifyDraw-DragBGColor: rgb(200, 66, 69);
+    --HQChart-DialogModifyDraw-ButtonColor:rgb(77,77,77);
+    --HQChart-DialogModifyDraw-ButtonBorderColor:rgb(20,20,20);
+    --HQChart-DialogModifyDraw-UnlockButtonColor:rgb(220,220,220);
+
+    /*
+        JSDialogSearchIndex
+    */
+
+    --HQChart-DialogSearchIndex-BGColor: rgb(250,250,250);
+    --HQChart-DialogSearchIndex-BorderColor: rgb(20,20,20);
+    --HQChart-DialogSearchIndex-Color: rgb(20,20,20);
+    --HQChart-DialogSearchIndex-TitleColor: rgb(250,250,250);
+    --HQChart-DialogSearchIndex-TitleBGColor: rgb(200, 66, 69);
+    --HQChart-DialogSearchIndex-CloseColor:rgb(180,180,180);
+    --HQChart-DialogSearchIndex-InputColor:rgb(20,20,20);
+
+
+    /*
+        JSDialogModifyIndexParam
+    */
+    --HQChart-DialogModifyIndexParam-BGColor: rgb(250,250,250);
+    --HQChart-DialogModifyIndexParam-BorderColor: rgb(20,20,20);
+    --HQChart-DialogModifyIndexParam-Color: rgb(20,20,20);
+    --HQChart-DialogModifyIndexParam-TitleColor: rgb(250,250,250);
+    --HQChart-DialogModifyIndexParam-TitleBGColor: rgb(200, 66, 69);
+    --HQChart-DialogModifyIndexParam-CloseColor:rgb(180,180,180);
+    --HQChart-DialogModifyIndexParam-ParamNameColor:rgb(20,20,20);
+    --HQChart-DialogModifyIndexParam-InputTextColor:rgb(20,20,20);
+    
+}
+
+/*
+    白色风格
+*/
+:root[hqchart_style='0'],
+:root[hqchart_style='defined']
+{
+    /*
+        JSDialogDrawTool 配色 画图工具
+    */
+
+    --HQChart-DialogDrawTool-BGColor: rgb(250,250,250);
+    --HQChart-DialogDrawTool-BorderColor: rgb(20,20,20);
+    --HQChart-DialogDrawTool-Color: rgb(20,20,20);
+    --HQChart-DialogDrawTool-TitleColor: rgb(250,250,250);
+    --HQChart-DialogDrawTool-TitleBGColor: rgb(200, 66, 69);
+    --HQChart-DialogDrawTool-ButtonColor:rgb(77,77,77);
+    --HQChart-DialogDrawTool-ButtonBorderColor:rgb(128,128,128);
+    --HQChart-DialogDrawTool-Selected_ButtonColor:rgb(255,255,255);
+    --HQChart-DialogDrawTool-Selected_ButtonBGColor:rgb(234,85,4);
+    --HQChart-DialogDrawTool-Selected_ButtonBorderColor:rgb(128,128,128);
+    --HQChart-DialogDrawTool-DividingLineColor:rgb(204,204,204);
+
+
+    
+    /*
+        JSDialogModifyDraw
+    */
+
+    --HQChart-DialogModifyDraw-BGColor: rgb(250,250,250);
+    --HQChart-DialogModifyDraw-BorderColor: rgb(20,20,20);
+    --HQChart-DialogModifyDraw-DragColor: rgb(250,250,250);
+    --HQChart-DialogModifyDraw-DragBGColor: rgb(200, 66, 69);
+    --HQChart-DialogModifyDraw-ButtonColor:rgb(77,77,77);
+    --HQChart-DialogModifyDraw-ButtonBorderColor:rgb(20,20,20);
+    --HQChart-DialogModifyDraw-UnlockButtonColor:rgb(220,220,220);
+
+
+    /*
+        JSDialogSearchIndex
+    */
+
+    --HQChart-DialogSearchIndex-BGColor: rgb(250,250,250);
+    --HQChart-DialogSearchIndex-BorderColor: rgb(20,20,20);
+    --HQChart-DialogSearchIndex-Color: rgb(20,20,20);
+    --HQChart-DialogSearchIndex-TitleColor: rgb(250,250,250);
+    --HQChart-DialogSearchIndex-TitleBGColor: rgb(200, 66, 69);
+    --HQChart-DialogSearchIndex-CloseColor:rgb(180,180,180);
+    --HQChart-DialogSearchIndex-InputColor:rgb(20,20,20);
+
+
+    /*
+        JSDialogModifyIndexParam
+    */
+    --HQChart-DialogModifyIndexParam-BGColor: rgb(250,250,250);
+    --HQChart-DialogModifyIndexParam-BorderColor: rgb(20,20,20);
+    --HQChart-DialogModifyIndexParam-Color: rgb(20,20,20);
+    --HQChart-DialogModifyIndexParam-TitleColor: rgb(250,250,250);
+    --HQChart-DialogModifyIndexParam-TitleBGColor: rgb(200, 66, 69);
+    --HQChart-DialogModifyIndexParam-CloseColor:rgb(180,180,180);
+    --HQChart-DialogModifyIndexParam-ParamNameColor:rgb(20,20,20);
+    --HQChart-DialogModifyIndexParam-InputTextColor:rgb(20,20,20);
+}
+
+/*
+    黑色风格
+*/
+:root[hqchart_style='1']
+{
+    /*
+        JSDialogDrawTool 配色 画图工具
+    */
+
+    --HQChart-DialogDrawTool-BGColor: rgb(38,38,38);
+    --HQChart-DialogDrawTool-BorderColor: rgb(170,170,170);
+    --HQChart-DialogDrawTool-Color: rgb(210,210,210);
+    --HQChart-DialogDrawTool-TitleColor: rgb(250,250,250);
+    --HQChart-DialogDrawTool-TitleBGColor: rgb(200, 66, 69);
+    --HQChart-DialogDrawTool-ButtonColor:rgb(110,110,110);
+    --HQChart-DialogDrawTool-ButtonBorderColor:rgb(99,99,99);
+    --HQChart-DialogDrawTool-Selected_ButtonColor:rgb(255,255,255);
+    --HQChart-DialogDrawTool-Selected_ButtonBGColor:rgb(234,85,4);
+    --HQChart-DialogDrawTool-Selected_ButtonBorderColor:rgb(128,128,128);
+    --HQChart-DialogDrawTool-DividingLineColor:rgb(150,150,150);
+
+    /*
+        JSDialogModifyDraw
+    */
+
+    --HQChart-DialogModifyDraw-BGColor:rgb(38,38,38);
+    --HQChart-DialogModifyDraw-BorderColor: rgb(170,170,170);
+    --HQChart-DialogModifyDraw-ButtonColor:rgb(110,110,110);
+    --HQChart-DialogModifyDraw-ButtonBorderColor:rgb(170,170,170);
+    --HQChart-DialogModifyDraw-UnlockButtonColor:rgb(60,60,60);
+
+
+     /*
+        JSDialogSearchIndex
+    */
+
+    --HQChart-DialogSearchIndex-BGColor: rgb(38,38,38);
+    --HQChart-DialogSearchIndex-BorderColor: rgb(170,170,170);
+    --HQChart-DialogSearchIndex-Color: rgb(210,210,210);
+    --HQChart-DialogSearchIndex-TitleColor: rgb(250,250,250);
+    --HQChart-DialogSearchIndex-TitleBGColor: rgb(200, 66, 69);
+    --HQChart-DialogSearchIndex-InputColor:rgb(210,210,210);
+
+    /*
+        JSDialogModifyIndexParam
+    */
+
+    --HQChart-DialogModifyIndexParam-BGColor: rgb(38,38,38);
+    --HQChart-DialogModifyIndexParam-BorderColor: rgb(170,170,170);
+    --HQChart-DialogModifyIndexParam-Color: rgb(210,210,210);
+    --HQChart-DialogModifyIndexParam-TitleColor: rgb(250,250,250);
+    --HQChart-DialogModifyIndexParam-TitleBGColor: rgb(200, 66, 69);
+    --HQChart-DialogModifyIndexParam-ParamNameColor:rgb(210,210,210);
+    --HQChart-DialogModifyIndexParam-InputTextColor:rgb(210,210,210);
+}
 
 
 

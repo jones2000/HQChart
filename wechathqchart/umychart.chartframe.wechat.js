@@ -261,6 +261,7 @@ function IChartFramePainting()
 
     this.CalculateLock=function(aryData)
     {
+        if (!this.LockPaint) return;
         this.LockPaint.SetData(aryData);
         this.LockPaint.Draw(false);
     }

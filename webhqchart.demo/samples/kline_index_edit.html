@@ -1072,6 +1072,8 @@
 
                     buttonColor[0]="rgb(156,156,156)";
                     buttonColor[1]="rgb(255,255,255)";
+
+                    JSChart.SetCSSStyle(STYLE_TYPE_ID.BLACK_ID);
                 }
                 else if (styleName=='white') 
                 {
@@ -1080,6 +1082,8 @@
 
                     buttonColor[0]="rgb(156,156,156)";
                     buttonColor[1]="rgb(105,105,105)";
+
+                    JSChart.SetCSSStyle(STYLE_TYPE_ID.WHITE_ID);
                 }
                 else 
                 {
@@ -1607,6 +1611,7 @@
             resource.DOTLINE.LineDash=[10,10];
             //resource.IndexTitle.ArrowType=1;
             resource.IndexTitle.EnableIndexArrow=false;
+            JSChart.SetCSSStyle(STYLE_TYPE_ID.BLACK_ID);
         }
 
         function DeleteLocalIndex(e, name)

@@ -22,13 +22,24 @@
     </div>
 
     <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
+    <script src="../jscommon/umychart.resource/js/webfont.js"></script>
     <script src='../jscommon/umychart.console.js'></script>     <!-- 日志输出 -->
     <script src="../jscommon/umychart.network.js"></script>     <!-- 网络请求分装 -->
     <script src="../jscommon/umychart.js"></script>             <!-- K线图形 -->
     <script src="../jscommon/umychart.complier.js"></script>    <!-- 麦语言解析执行器 -->
     <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
     <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
-    <script src="../jscommon/umychart.scrollbar.js"></script>   <!-- 滚动条 -->
+    <script src="../jscommon/umychart.popMenu.js"></script>
+    <script src="../jscommon/umychart.DialogDrawTool.js"></script>
+    <script src="../jscommon/umychart.PopMinuteChart.js"></script>
+    <script src="../jscommon/umychart.report.js"></script>
+    <script src="../jscommon/umychart.keyboard.js"></script>
+    <script src="../jscommon/umychart.PopKeyboard.js"></script>
+    <script src="../jscommon/umychart.DialogTooltip.js"></script>
+    <script src="../jscommon/umychart.DialogSelectRect.js"></script>
+    <script src="../jscommon/umychart.DialogSearchIndex.js"></script>
+    <script src="../jscommon/umychart.version.js"></script>
+    <script src="../jscommon/umychart.scrollbar.js"></script>
 
     <script src="../jscommon/umychart.testdata/DayKLine/000001.sh.day.kline.js"></script>
     <script src="../jscommon/umychart.testdata/M1KLine/000001.sh.minute.kline.js"></script>
@@ -130,6 +141,9 @@
 
                 SelectedChart:{ EnableSelected: true, EnableMoveOn:true },
                 EnableIndexChartDrag:true,
+                SearchIndexDialog:{ Enable:true, },
+                ModifyIndexParamDialog:{ Enable:true, EnableRestoreParam:false },
+                FloatTooltip:{ Enable:true, },
     
                 KLineTitle: //标题设置
                 {
@@ -252,6 +266,8 @@
 
                 //JSChart.GetResource().FrameLogo.Text=null;
                 JSChart.GetResource().ToolbarButtonStyle=1;
+
+                JSChart.SetCSSStyle(STYLE_TYPE_ID.BLACK_ID);
 
                 this.OnSize();  //让K线全屏
 

@@ -304,6 +304,7 @@
                 JSChart.SetStyle(blackStyle);
                 this.DivKLine.style.backgroundColor=blackStyle.BGColor; //设置最外面的div背景
                 JSChart.GetResource().ToolbarButtonStyle=1;
+                JSChart.SetCSSStyle(STYLE_TYPE_ID.BLACK_ID);
 
                 this.OnSize();  //让K线全屏
                 this.Option.ScriptError=(error)=> { this.ExecuteScriptError(error); }

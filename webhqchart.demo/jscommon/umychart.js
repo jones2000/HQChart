@@ -2475,6 +2475,13 @@ JSChart.SetStyle=function(option)
     if (option) g_JSChartResource.SetStyle(option);
 }
 
+
+//CSS风格
+JSChart.SetCSSStyle=function(styleID)
+{
+    document.documentElement.setAttribute('hqchart_style', styleID);
+}
+
 //value { EN:'', CH:'' }
 JSChart.SetTextResource=function(key,value)
 {
@@ -13584,6 +13591,8 @@ function IChartFramePainting()
 
     this.CalculateLock=function(aryData)
     {
+        if (!this.LockPaint) return;
+
         this.LockPaint.SetData(aryData);
         this.LockPaint.Draw(false);
     }
@@ -13776,7 +13785,14 @@ function AverageWidthFrame()
             this.IndexHelpButton=CloneData(g_JSChartResource.Buttons.IndexHelp);
         }
 
-        if (this.DivFrameToolbar) this.DivFrameToolbar.ReloadResource(resource);
+        if (this.ToolbarButtonStyle==1)
+        {
+            this.ClearToolbar();
+        }
+        else
+        {
+            if (this.DivFrameToolbar) this.DivFrameToolbar.ReloadResource(resource);
+        }
     }
 
     this.DrawFrame=function()
@@ -18799,155 +18815,6 @@ function KLineFrame()
         if (!this.DivFrameToolbar) return;
 
         this.DivFrameToolbar.Show(this.Identify);
-
-        return;
-
-        if (typeof($)=="undefined") return;
-        
-        if (!this.ChartBorder.UIElement || !this.ChartBorder.UIElement.parentNode) return;
-
-        var divToolbar=document.getElementById(this.ToolbarID);
-        if (divToolbar && this.SizeChange==false && this.ReDrawToolbar==false)  return;
-
-        if (!divToolbar)
-        {
-            
-            divToolbar=document.createElement("div");
-            divToolbar.className='klineframe-toolbar';
-            divToolbar.id=this.ToolbarID;
-            divToolbar.oncontextmenu = function() { return false;}; //屏蔽右键系统菜单
-            //为divToolbar添加属性identify
-            divToolbar.setAttribute("identify",this.Identify.toString());
-            this.ChartBorder.UIElement.parentNode.appendChild(divToolbar);
-        }
-
-        if (!this.ModifyIndex && !this.ChangeIndex && !this.OverlayIndex && !this.CloseIndex && !IFrameSplitOperator.IsNonEmptyArray(this.CustomToolbar))
-        {
-            if (divToolbar.style.display!='none')
-                divToolbar.style.display='none';
-            return;
-        }
-
-        //使用外城div尺寸 画图尺寸是被放大的
-        var pixelTatio = GetDevicePixelRatio();
-        var chartWidth=parseInt(this.ChartBorder.UIElement.parentElement.style.width.replace("px",""));  
-        var chartHeight=parseInt(this.ChartBorder.UIElement.parentElement.style.height.replace("px",""));
-        //JSConsole.Chart.Log('[KLineFrame::DrawToolbar] ',chartWidth,chartHeight,pixelTatio);
-
-        var toolbarWidth=100;
-        var toolbarHeight=this.ChartBorder.GetTitleHeight();
-        var left=chartWidth-(this.ChartBorder.Right/pixelTatio)-toolbarWidth;
-        var top=this.ChartBorder.GetTop()/pixelTatio;
-
-        if (this.ToolbarRect)
-        {
-            //尺寸变动移动才重新设置DOM
-            if (this.ToolbarRect.Left==left && this.ToolbarRect.Top==top && 
-                this.ToolbarRect.Width==toolbarWidth && this.ToolbarRect.Height==toolbarHeight/pixelTatio)
-            {
-                return;
-            }
-        }
-
-        this.ToolbarRect={ Left:left, Top:top, Width:toolbarWidth, Height:toolbarHeight/pixelTatio };
-
-        const modifyButton=`<span class='index_param icon iconfont icon-index_param' id='modifyindex' style='cursor:pointer;margin-left:2px;margin-right:2px;' title='调整指标参数'></span>`;
-        const changeButton=`<span class='index_change icon iconfont icon-change_index' id='changeindex' style='cursor:pointer;margin-left:2px;margin-right:2px;' title='切换指标'></span>`;
-        const overlayButton=`<span class='index_overlay icon iconfont icon-overlay_index' id='overlayindex' style='cursor:pointer;margin-left:2px;margin-right:2px;' title='叠加指标'></span>`;
-        const closeButton=`<span class='index_close icon iconfont icon-close' id='closeindex' style='cursor:pointer;margin-left:2px;margin-right:2px;' title='关闭指标窗口'></span>`;
-
-        var spanIcon=modifyButton+changeButton+overlayButton;
-
-        if (this.Identify!==0 && this.CloseIndex)  //第1个窗口不能关闭
-        {
-            spanIcon+=closeButton;
-        }
-
-        if (IFrameSplitOperator.IsNonEmptyArray(this.CustomToolbar))
-        {
-            for(var i=0;i<this.CustomToolbar.length;++i)
-            {
-                var item=this.CustomToolbar[i];
-                spanIcon+=item.Html;
-            }
-        }
-
-        //var scrollPos=GetScrollPosition();
-        //left = left+scrollPos.Left;
-        //top = top+scrollPos.Top;
-        divToolbar.style.left = left + "px";
-        divToolbar.style.top = top + "px";
-        divToolbar.style.width=toolbarWidth+"px";                   //宽度先不调整吧
-        divToolbar.style.height=(toolbarHeight/pixelTatio)+'px';    //只调整高度
-        divToolbar.innerHTML=spanIcon;
-
-        var chart=this.ChartBorder.UIElement.JSChartContainer;
-        var identify=this.Identify;
-        if (!this.ModifyIndex)  //隐藏'改参数'
-            $("#"+divToolbar.id+" .index_param").hide();
-        else if (typeof(this.ModifyIndexEvent)=='function')  //绑定点击事件
-            $("#"+divToolbar.id+" .index_param").click(
-                {
-                    Chart:this.ChartBorder.UIElement.JSChartContainer,
-                    Identify:this.Identify
-                },this.ModifyIndexEvent);
-
-        if (!this.ChangeIndex)  //隐藏'换指标'
-        {
-            $("#"+divToolbar.id+" .index_change").hide();
-        }  
-        else if (typeof(this.ChangeIndexEvent)=='function')
-        {
-            $("#"+divToolbar.id+" .index_change").click(
-                {
-                    Chart:this.ChartBorder.UIElement.JSChartContainer,
-                    Identify:this.Identify,
-                    IsOverlay:false
-                },this.ChangeIndexEvent);
-        }
-
-        if (!this.OverlayIndex)
-        {
-            $("#"+divToolbar.id+" .index_overlay").hide();
-        }
-        else
-        {
-            $("#"+divToolbar.id+" .index_overlay").click(
-                {
-                    Chart:this.ChartBorder.UIElement.JSChartContainer,
-                    Identify:this.Identify,
-                    IsOverlay:true
-                },this.ChangeIndexEvent);
-        }
-        
-        $("#"+divToolbar.id+" .index_close").click(
-            {
-                Chart:this.ChartBorder.UIElement.JSChartContainer,
-                Identify:this.Identify
-            },
-            function(event)
-            {
-                var hqChart=event.data.Chart;
-                var id=event.data.Identify;
-                hqChart.RemoveIndexWindow(id);
-            });
-
-
-        if (IFrameSplitOperator.IsNonEmptyArray(this.CustomToolbar))
-        {
-            for(var i=0;i<this.CustomToolbar.length;++i)
-            {
-                var item=this.CustomToolbar[i];
-                $("#"+item.ID).click(
-                {
-                    Chart:this.ChartBorder.UIElement.JSChartContainer,
-                    Identify:this.Identify,
-                    ID:item.ID
-                },item.Click);
-            }
-        }
-
-        divToolbar.style.display = "block";
     }
 
     //手绘,不用DOM,使用DOM太麻烦了
@@ -78047,30 +77914,6 @@ function JSChartResource()
         }
     };
 
-    //指标搜索
-    this.DialogSearchIndex=
-    {
-        BGColor:'rgb(250,250,250)',         //背景色
-        BorderColor:'rgb(20,20,20)',        //边框颜色
-        TitleColor:'rgb(250,250,250)',       //标题颜色
-        TitleBGColor:"rgb(200, 66, 69)",    //标题背景颜色
-
-        IndexNameColor:"rgb(0,0,0)",             //数值名称
-        GroupNameColor:"rgb(0,0,0)",
-        InputTextColor:"rgb(0,0,0)"
-    };
-
-    this.DialogModifyIndexParam=
-    {
-        BGColor:'rgb(250,250,250)',         //背景色
-        BorderColor:'rgb(20,20,20)',        //边框颜色
-        TitleColor:'rgb(250,250,250)',       //标题颜色
-        TitleBGColor:"rgb(200, 66, 69)",    //标题背景颜色
-
-        ParamNameColor:"rgb(0,0,0)",             //数值名称
-        InputTextColor:"rgb(0,0,0)"
-    };
-
     //弹幕
     this.Barrage= {
         Font:16*GetDevicePixelRatio() +'px 微软雅黑',   //字体
@@ -79293,20 +79136,6 @@ function JSChartResource()
                 if (subItem.BGColor) this.DialogPopKeyboard.Input.BGColor=subItem.BGColor;
                 if (subItem.TextColor) this.DialogPopKeyboard.Input.TextColor=subItem.TextColor;
             }
-        }
-
-        if (style.DialogSearchIndex)
-        {
-            var item=style.DialogSearchIndex;
-
-            if (item.BGColor) this.DialogSearchIndex.BGColor=item.BGColor;
-            if (item.BorderColor) this.DialogSearchIndex.BorderColor=item.BorderColor;
-            if (item.TitleColor) this.DialogSearchIndex.TitleColor=item.TitleColor;
-            if (item.TitleBGColor) this.DialogSearchIndex.TitleBGColor=item.TitleBGColor;
-            
-            if (item.IndexNameColor) this.DialogSearchIndex.IndexNameColor=item.IndexNameColor;
-            if (item.GroupNameColor) this.DialogSearchIndex.GroupNameColor=item.GroupNameColor;
-            if (item.InputTextColor) this.DialogSearchIndex.InputTextColor=item.InputTextColor;
         }
 
         if (style.MinuteInfo)
