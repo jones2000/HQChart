@@ -253,10 +253,20 @@ var Character =
         return (cp >= 0x30 && cp <= 0x39) || (cp >= 0x41 && cp <= 0x46) || (cp >= 0x61 && cp <= 0x66); // a..f
     },
 
-    isOctalDigit: function (cp) 
+    IsOctalDigit: function (cp) 
     {
         return (cp >= 0x30 && cp <= 0x37); // 0..7
     }
+}
+
+function HexValue(ch)
+{
+    return '0123456789abcdef'.indexOf(ch.toLowerCase());
+}
+
+function OctalValue(ch)
+{
+    return '01234567'.indexOf(ch);
 }
 
 var TOKEN_NAME={};
@@ -275,6 +285,7 @@ TOKEN_NAME[10 /* Template */] = 'Template';
 function ErrorHandler()
 {
     this.Error=[];
+    this.IsTolerant=false;
 
     this.RecordError=function(error)
     {
@@ -316,6 +327,13 @@ function ErrorHandler()
         let error=this.CreateError(index,line,col,description);
         throw error;
     }
+
+    this.TolerateError=function(index, line, col, description) 
+    {
+        const error = this.CreateError(index, line, col, description);
+        if (this.IsTolerant)  this.RecordError(error);
+        else throw error;
+    }
 }
 
 //扫描类
@@ -346,6 +364,16 @@ function Scanner(code, ErrorHandler)
         return this.Index>=this.Length;
     }
 
+    this.ThrowUnexpectedToken=function(message=Messages.UnexpectedTokenIllegal)
+    {
+        return this.ErrorHandler.ThrowError(this.Index, this.LineNumber, this.Index - this.LineStart + 1, message);
+    }
+
+    this.TolerateUnexpectedToken=function(message = Messages.UnexpectedTokenIllegal) 
+    {
+        this.ErrorHandler.TolerateError(this.Index, this.LineNumber, this.Index - this.LineStart + 1, message);
+    }
+
     this.IsKeyword=function(id)
     {
         return false;
@@ -363,6 +391,27 @@ function Scanner(code, ErrorHandler)
             }
         }
         return cp;
+    }
+
+    //8进制->10进制
+    this.OctalToDecimal=function(ch) 
+    {
+        // \0 is not octal escape sequence
+        let octal = (ch !== '0');
+        let code = OctalValue(ch);
+
+        if (!this.IsEOF() && Character.IsOctalDigit(this.Source.charCodeAt(this.Index))) 
+        {
+            octal = true;
+            code = code * 8 + OctalValue(this.Source[this.Index++]);
+
+            // 3 digits are only allowed when string starts
+            // with 0, 1, 2, 3
+            if ('0123'.indexOf(ch) >= 0 && !this.IsEOF() && Character.IsOctalDigit(this.Source.charCodeAt(this.Index))) 
+                code = code * 8 + OctalValue(this.Source[this.Index++]);
+        }
+
+        return { Code: code, Octal: octal };
     }
 
     this.Lex=function()
@@ -405,8 +454,9 @@ function Scanner(code, ErrorHandler)
     {
         let type;
         let start=this.Index;
+
         //0x5C 反斜杠
-        let id=(this.Source.charCodeAt(start)=== 0x5C) ? this.GetComplexIdentifier() : this.GetIdentifier();
+        let id=((this.Source.charCodeAt(start)=== 0x5C) ? this.GetComplexIdentifier() : this.GetIdentifier());
 
         if (id.length) type=3;                      //Identifier
         else if (this.IsKeyword(id)) type=4;        //Keyword
@@ -449,6 +499,123 @@ function Scanner(code, ErrorHandler)
         }
 
         return this.Source.slice(start,this.Index);
+    }
+
+    this.GetComplexIdentifier=function()
+    {
+        let cp = this.CodePointAt(this.Index);
+        let id = Character.FromCodePoint(cp);
+        this.Index += id.length;
+
+        // '\u' (U+005C, U+0075) denotes an escaped character.
+        let ch;
+        if (cp === 0x5C) 
+        {
+            if (this.Source.charCodeAt(this.Index) !== 0x75) 
+                this.ThrowUnexpectedToken();
+
+            ++this.Index;
+            if (this.Source[this.Index] === '{') 
+            {
+                ++this.Index;
+                ch = this.ScanUnicodeCodePointEscape();
+            } 
+            else 
+            {
+                ch = this.ScanHexEscape('u');
+                if (ch === null || ch === '\\' || !Character.IsIdentifierStart(ch.charCodeAt(0)))
+                    this.ThrowUnexpectedToken();
+            }
+            id = ch;
+        }
+
+        while (!this.IsEOF())
+        {
+            cp = this.CodePointAt(this.Index);
+            if (!Character.IsIdentifierPart(cp)) 
+                break;
+
+            ch = Character.FromCodePoint(cp);
+            id += ch;
+            this.Index += ch.length;
+
+            // '\u' (U+005C, U+0075) denotes an escaped character.
+            if (cp === 0x5C) 
+            {
+                id = id.substring(0, id.length - 1);
+                if (this.Source.charCodeAt(this.Index) !== 0x75) 
+                    this.ThrowUnexpectedToken();
+
+                ++this.Index;
+                if (this.Source[this.Index] === '{') 
+                {
+                    ++this.Index;
+                    ch = this.ScanUnicodeCodePointEscape();
+                } 
+                else 
+                {
+                    ch = this.ScanHexEscape('u');
+                    if (ch === null || ch === '\\' || !Character.IsIdentifierPart(ch.charCodeAt(0))) 
+                        this.ThrowUnexpectedToken();
+                }
+                id += ch;
+            }
+        }
+
+        return id;
+    }
+
+    this.ScanUnicodeCodePointEscape=function()
+    {
+        const result = this.TryToScanUnicodeCodePointEscape();
+        if (result === null) 
+            return this.ThrowUnexpectedToken();
+        
+        return result;
+    }
+
+    this.TryToScanUnicodeCodePointEscape=function()
+    {
+        let ch = this.Source[this.Index];
+        let code = 0;
+
+        // At least, one hex digit is required.
+        if (ch === '}') 
+            return null;
+
+        while (!this.IsEOF()) 
+        {
+            ch = this.Source[this.Index++];
+            if (!Character.IsHexDigit(ch.charCodeAt(0))) 
+                break;
+            
+            code = code * 16 + HexValue(ch);
+        }
+
+        if (code > 0x10FFFF || ch !== '}') 
+            return null;
+        
+        return Character.FromCodePoint(code);
+    }
+
+    this.ScanHexEscape=function(prefix)
+    {
+        const len = (prefix === 'u') ? 4 : 2;
+        let code = 0;
+
+        for (let i = 0; i < len; ++i) 
+        {
+            if (!this.IsEOF() && Character.IsHexDigit(this.Source.charCodeAt(this.Index))) 
+            {
+                code = code * 16 + HexValue(this.source[this.Index++]);
+            } 
+            else 
+            {
+                return null;
+            }
+        }
+
+        return String.fromCharCode(code);
     }
 
     //操作符 https://tc39.github.io/ecma262/#sec-punctuators
@@ -522,7 +689,71 @@ function Scanner(code, ErrorHandler)
             }
             else if (ch=='\\')  //字符串转义
             {
-                throw "not complete";
+                ch = this.Source[this.Index++];
+                if (!ch || !Character.IsLineTerminator(ch.charCodeAt(0))) 
+                {
+                    switch (ch) 
+                    {
+                        case 'u':
+                            if (this.Source[this.Index] === '{') 
+                            {
+                                ++this.Index;
+                                str += this.ScanUnicodeCodePointEscape();
+                            } 
+                            else 
+                            {
+                                const unescapedChar = this.ScanHexEscape(ch);
+                                if (unescapedChar === null) 
+                                    this.ThrowUnexpectedToken();
+                                
+                                str += unescapedChar;
+                            }
+                            break;
+                         case 'x':  //十六进制 它的转义规则：\x<hex>，\x后跟上2位十六进制数
+                            const unescaped = this.ScanHexEscape(ch);
+                            if (unescaped === null) 
+                                this.ThrowUnexpectedToken(Messages.InvalidHexEscapeSequence);
+                            
+                            str += unescaped;
+                            break;
+                        case 'n':   //换行符
+                            str += '\n';
+                            break;
+                        case 'r':   //回车键
+                            str += '\r';    
+                            break;
+                        case 't':   //制表符
+                            str += '\t';
+                            break;
+                        case 'b':    //后退键
+                            str += '\b';   
+                            break;
+                        case 'f':   //换页符
+                            str += '\f';
+                            break;
+                        case 'v':   //垂直制表符
+                            str += '\x0B';
+                            break;
+                        case '8':
+                        case '9':
+                            str += ch;
+                            this.TolerateUnexpectedToken();
+                            break;
+                        default:
+                            if (ch && Character.IsOctalDigit(ch.charCodeAt(0))) //反斜杠后面跟3位八进制数，就代表一个转义字符
+                            {
+                                const octToDec = this.OctalToDecimal(ch);
+
+                                octal = octToDec.Octal || octal;
+                                str += String.fromCharCode(octToDec.Code);
+                            } 
+                            else 
+                            {
+                                str += ch;
+                            }
+                            break;
+                    }
+                }
             }
             else if (Character.IsLineTerminator(ch.charCodeAt(0))) 
             {

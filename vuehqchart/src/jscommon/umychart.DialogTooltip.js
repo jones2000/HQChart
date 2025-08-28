@@ -666,7 +666,7 @@ function JSDialogTooltip()
             if (titleChart.ClassName!="DynamicChartTitlePainting") continue;
             if (!IFrameSplitOperator.IsNonEmptyArray(titleChart.Data)) continue;
 
-            var indexName=titleChart.Title;
+            var indexName=titleChart.Title || "--";
             //if (titleChart.ArgumentsText) indexName+=titleChart.ArgumentsText;
             aryText.push({ Title:indexName, IsMergeCell:true, TitleClassName:this.TitleAlign.Center });
             for(j=0;j<titleChart.Data.length;++j)

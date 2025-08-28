@@ -1097,8 +1097,9 @@ function JSDialogModifyIndexParam()
         input.className='UMyChart_ModifyIndexParam_Input';
         input.type="number";
         input.step=1;
-        input.addEventListener("mouseup", (e)=>{ this.OnParamMouseUp(e)});
-        input.addEventListener("keyup", (e)=>{ this.OnParamKeyUp(e)})
+        //input.addEventListener("mouseup", (e)=>{ this.OnParamMouseUp(e)});
+        //input.addEventListener("keyup", (e)=>{ this.OnParamKeyUp(e)} );
+        input.addEventListener("input", (e)=>{ this.OnParamInput(e)} );
         tdDom.appendChild(input);
         rowItem.Input=input;
 
@@ -1227,6 +1228,7 @@ function JSDialogModifyIndexParam()
         }
     }
 
+    /*
     this.OnParamMouseUp=function(e)
     {
         var input=e.target;
@@ -1237,6 +1239,16 @@ function JSDialogModifyIndexParam()
     }
 
     this.OnParamKeyUp=function(e)
+    {
+        var input=e.target;
+        var value=input.value;
+        var id=input.dataset.paramid;
+
+        this.ModifyParam(id, parseInt(value));
+    }
+    */
+
+    this.OnParamInput=function(e)
     {
         var input=e.target;
         var value=input.value;

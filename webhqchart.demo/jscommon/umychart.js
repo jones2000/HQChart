@@ -2907,6 +2907,8 @@ var JSCHART_EVENT_ID=
     ON_FORMAT_COUNTDOWN_TEXT:177,       //倒计时
     ON_CLICK_INDEX_LOCK:178,            //点击指标锁
     ON_CORSSCURSOR_STATUS_CHANGE:179,   //十字光标状态改变
+
+    ON_BEFORE_DRAW_HLINE:180,     //画图工具-水平线(ChartDrawPictureHorizontalLine) 绘图前
 }
 
 var JSCHART_OPERATOR_ID=
@@ -6446,6 +6448,11 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                         chartItem.Canvas=canvas;    //叠加图形
                     }
                 }
+
+                if (item.Frame.LockPaint)
+                {
+                    item.Frame.LockPaint.Canvas=canvas;
+                }
             }
         }
 
@@ -8496,7 +8503,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             pt.X=this.Frame.GetXFromIndex(this.CursorIndex);    //X轴动态变的
             if (this.ChartCorssCursor)
             {
-                if (this.ChartCorssCursor.Status==1)
+                if ((this.ChartCorssCursor.Status&JSCHART_CORSSCURSOR_STATUS_ID.LINE_ID)>0)
                 {
 
                 }
@@ -10120,6 +10127,60 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
         return true;
     }
+
+    /*
+    //对比画图
+    this.CompareChartDrawPicture=function(aryData)
+    {
+        var mapData=new Map();
+        if (IFrameSplitOperator.IsNonEmptyArray(aryData))
+        {
+            for(var i=0;i<aryData.length;++i)
+            {
+                var item=aryData[i];
+                if (!item.Guid) continue;
+                mapData.set(item.Guid, item);
+            }
+        }
+
+        var mapChart=new Map();
+        if (IFrameSplitOperator.IsNonEmptyArray(this.ChartDrawPicture))
+        {
+            for(var i=0;i<this.ChartDrawPicture.length;++i)
+            {
+                var item=this.ChartDrawPicture[i];
+                mapChart.set(item.Guid, item);
+            }
+        }
+
+        var aryDelete=[], aryEqual=[], aryNew=[];
+
+        for(var mapItem of mapData)
+        {
+            var item=mapItem[1];
+            if (mapChart.has(item.Guid))    //存在的
+            {
+                var chart=mapChart.get(item.Guid);
+                aryEqual.push({ Chart:chart, Data:item });
+            }
+            else
+            {
+                aryNew.push({ Data:item }); //新建
+            }
+        }
+
+        for(var mapItem of mapChart)
+        {
+            var item=mapItem[1];
+            if (!mapData.has(item.Guid))
+            {
+                aryDelete.push({ Chart:item }); //删除的
+            }
+        }
+        
+        return { AryDelete:aryDelete, AryNew:aryNew, AryEqual:aryEqual };
+    }
+    */
 
     //清空所有的画线工具 option={ Draw:false/true }
     this.ClearChartDrawPicture=function(drawPicture, option)
@@ -15757,7 +15818,8 @@ function AverageWidthFrame()
                                 this.Canvas.fillRect(rectLeft,bgTop,itemText.Width,textHeight);
                             }
                             
-                            this.Canvas.fillStyle = item.TextColor;
+                            if (itemText.TextColor) this.Canvas.fillStyle=itemText.TextColor;
+                            else this.Canvas.fillStyle = item.TextColor;
                             this.Canvas.fillText(itemText.Text, textLeft - 1*pixelTatio, yText);
                         }
                         
@@ -15771,7 +15833,8 @@ function AverageWidthFrame()
                 }
             }
         }
-        else if (item.Message[1])   //右
+
+        if (item.Message[1])   // 右
         {
             if (borderRight<10 || position==1)
             {
@@ -15948,7 +16011,9 @@ function AverageWidthFrame()
                             }
                             else
                             {
-                                this.Canvas.fillStyle=item.LineColor;
+                                var textBGColor=item.LineColor;
+                                if (itemText.BGColor) textBGColor=itemText.BGColor;
+                                this.Canvas.fillStyle=textBGColor;
                                 this.Canvas.fillRect(textLeft,bgTop,itemText.Width,textHeight);
                                 if (itemText.TextColor) this.Canvas.fillStyle=itemText.TextColor;
                                 else this.Canvas.fillStyle = item.TextColor;
@@ -20462,6 +20527,7 @@ function OverlayKLineFrame()
                         else
                         {
                             this.Canvas.fillStyle=item.LineColor;
+                            //if (itemText.BGColor) this.Canvas.fillStyle=itemText.BGColor;
                             this.Canvas.fillRect(rectLeft,bgTop,itemText.Width,textHeight);
                             this.Canvas.fillStyle = item.TextColor;
                             this.Canvas.fillText(itemText.Text, textLeft - 1*pixelTatio, yText);
@@ -22684,7 +22750,7 @@ function HQTradeFrame()
             if (frame.RightFrame) outObject.RightYValue=frame.RightFrame.GetYData(y);    //右侧子坐标
 
             var yValue=frame.GetYData(y);
-            if (frame.YSplitOperator.CoordinateType==1) //百分比坐标 右边显示百分比信息
+            if (frame.YSplitOperator.CoordinateType==1 && frame.YSplitOperator.GetFirstOpenPrice) //百分比坐标 右边显示百分比信息(K线才有)
             {
                 var  firstOpenPrice=frame.YSplitOperator.GetFirstOpenPrice();
                 outObject.RightYValue=((yValue-firstOpenPrice)/firstOpenPrice*100).toFixed(2)+'%';
@@ -62594,6 +62660,7 @@ function DynamicChartTitlePainting()
         if (option)
         {
             if (option.DynamicTitle===true) this.DynamicTitle={ OutName:null, OutValue:null };  //主图胴动态标题
+            if (option.ArgumentsText===true) this.ArgumentsText=null;
         }
     }
 
@@ -64571,7 +64638,7 @@ function IChartDrawPicture()
     this.PointType=g_JSChartResource.DrawPicture.PointType;         // 0=圆点  1=方框 2= 空心圆
     this.IsShowPoint=g_JSChartResource.DrawPicture.IsShowPoint;     //是否始终显示点
     this.LimitFrameID;   //限制在指定窗口绘图
-    
+    this.CacheData;     //数据缓存
 
     //接口函数
     this.SetLastPoint=null; //this.SetLastPoint=function(obj)  obj={X:,Y:}
@@ -64599,6 +64666,10 @@ function IChartDrawPicture()
         if (IFrameSplitOperator.IsNumber(option.LimitFrameID)) this.LimitFrameID=option.LimitFrameID;
         if (IFrameSplitOperator.IsBool(option.EnableCtrlMove)) this.EnableCtrlMove=option.EnableCtrlMove;
         if (IFrameSplitOperator.IsBool(option.IsShowYCoordinate)) this.IsShowYCoordinate=option.IsShowYCoordinate;
+        if (IFrameSplitOperator.IsBool(option.EnableSave)) this.EnableSave=option.EnableSave;
+        if (IFrameSplitOperator.IsBool(option.EnableMove)) this.EnableMove=option.EnableMove;
+        if (option.CacheData) this.CacheData=option.CacheData;
+        
     }
 
     this.ReloadResource=function(resource)
@@ -66261,7 +66332,7 @@ IChartDrawPicture.CreateChartDrawPicture=function(obj)    //创建画图工具
     if (obj.FontOption) chartDraw.FontOption=obj.FontOption;
     if (obj.Label) chartDraw.Label=obj.Label;
     if (obj.LineWidth>0) chartDraw.LineWidth=obj.LineWidth;
-    if (obj.EnableMove===false) chartDraw.EnableMove=obj.EnableMove;
+    if (IFrameSplitOperator.IsBool(obj.EnableMove)) chartDraw.EnableMove=obj.EnableMove;
     if (IFrameSplitOperator.IsBool(obj.EnableSave)) chartDraw.EnableSave=obj.EnableSave;
     if (IFrameSplitOperator.IsNumber(obj.ChannelWidth)) chartDraw.ChannelWidth=obj.ChannelWidth;
     if (IFrameSplitOperator.IsBool(obj.IsShowYCoordinate)) chartDraw.IsShowYCoordinate=obj.IsShowYCoordinate;
@@ -66923,9 +66994,9 @@ function ChartDrawPictureHorizontalLine()
 
     this.LabelConfig=
     { 
-        Left:{ IsShow:true, Margin:{ Left:5, Top:4, Bottom:2, Right:5 } },
-        Right:{ IsShow:true, Margin:{ Left:5, Top:4, Bottom:2, Right:5 } },
-        Font:`${12*GetDevicePixelRatio()}px 微软雅黑`, TextColor:"rgb(255,255,255)", BGColor:null
+        Left:{ IsShow:true, Margin:{ Left:5, Top:4, Bottom:2, Right:5 }, LineOffset:null, Text:null },
+        Right:{ IsShow:true, Margin:{ Left:5, Top:4, Bottom:2, Right:5 }, LineOffset:null, Text:null },
+        Font:`${12*GetDevicePixelRatio()}px 微软雅黑`, TextColor:"rgb(255,255,255)", BGColor:null,
     };
 
     this.InsideLabelConfig=
@@ -67014,7 +67085,7 @@ function ChartDrawPictureHorizontalLine()
         if (!drawPoint || drawPoint.length!=1) return;
         if (!this.Frame) return;
         if (this.Value.length!=1) return;
-        if (!this.IsYValueInFrame(this.Value[0].YValue)) return null;
+        if (!this.IsYValueInFrame(this.Value[0].YValue)) return;
 
         var isHScreen=this.Frame.IsHScreen;
         var left=this.Frame.ChartBorder.GetLeft();
@@ -67024,6 +67095,10 @@ function ChartDrawPictureHorizontalLine()
             left=this.Frame.ChartBorder.GetTop();
             right=this.Frame.ChartBorder.GetBottom();
         }
+
+        var eventData=this.BeforeDrawEvent(drawPoint[0]);
+        if (eventData && !eventData.IsShow) return;
+
         this.ClipFrame();
 
         this.Canvas.strokeStyle=this.LineColor;
@@ -67070,13 +67145,27 @@ function ChartDrawPictureHorizontalLine()
 
         this.DrawValueLabel(drawPoint[0]);
     }
- 
+
+    this.BeforeDrawEvent=function(point)
+    {
+        if (!this.HQChart) return null;
+        var event=this.HQChart.GetEventCallback(JSCHART_EVENT_ID.ON_BEFORE_DRAW_HLINE);
+        if (!event || !event.Callback) return null;
+
+        var sendData={ ID:this.Guid, LabelConfig:this.LabelConfig, InsideLabelConfig:this.InsideLabelConfig, IsShow:true };
+        event.Callback(event, sendData, this);
+
+        return sendData;
+    }
+
     this.DrawValueLabel=function(point)
     {
         if (!point) return;
         if (this.Frame.IsHScreen) return;   //不支持横屏
 
         var y=point.Y;
+        var yFixed=ToFixedPoint2(this.LineWidth,y);
+
         var yValue=this.Frame.GetYData(y);
         var text=yValue.toFixed(2);
 
@@ -67085,12 +67174,27 @@ function ChartDrawPictureHorizontalLine()
 
         this.Canvas.font=config.Font;
         var textHeight=this.Canvas.measureText("擎").width;
-        var textWidth=this.Canvas.measureText(text).width;
 
         if (config.Left.IsShow && this.Frame.ChartBorder.Left>5)
         {
+            var leftText=text;
+            if (config.Left.Text) leftText=config.Left.Text;
+            var textWidth=this.Canvas.measureText(leftText).width;
+            var left=border.Left;
+            if (IFrameSplitOperator.IsNumber(config.Left.LineOffset)&& config.Left.LineOffset!==0)
+            {
+                left-=config.Left.LineOffset;
+                this.Canvas.strokeStyle=this.LineColor;
+                this.SetLineWidth();
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(border.Left,yFixed);
+                this.Canvas.lineTo(left,yFixed);
+                this.Canvas.stroke();
+                this.RestoreLineWidth();
+            }
+
             var margin=config.Left.Margin;
-            var rtBG={ Right:border.Left-1, Height:textHeight+margin.Top+margin.Bottom, Width:textWidth+margin.Left+margin.Right };
+            var rtBG={ Right:left+1, Height:textHeight+margin.Top+margin.Bottom, Width:textWidth+margin.Left+margin.Right };
             rtBG.Top=y-textHeight/2-margin.Top;
             rtBG.Bottom=rtBG.Top+rtBG.Height;
             rtBG.Left=rtBG.Right-rtBG.Width;
@@ -67104,13 +67208,30 @@ function ChartDrawPictureHorizontalLine()
             var xText=rtBG.Left+margin.Left;
             var yText=rtBG.Top+margin.Top;
             this.Canvas.fillStyle=config.TextColor;
-            this.Canvas.fillText(text,xText,yText);
+            this.Canvas.fillText(leftText,xText,yText);
         }
 
         if (config.Right.IsShow && this.Frame.ChartBorder.Right>5)
         {
+            var rightText=text;
+            if (config.Right.Text) rightText=config.Right.Text;
+            var textWidth=this.Canvas.measureText(rightText).width;
+
+            var left=border.Right;
+            if (IFrameSplitOperator.IsNumber(config.Right.LineOffset)&& config.Right.LineOffset!==0)
+            {
+                left+=config.Right.LineOffset;
+                this.Canvas.strokeStyle=this.LineColor;
+                this.SetLineWidth();
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(border.Right,yFixed);
+                this.Canvas.lineTo(left,yFixed);
+                this.Canvas.stroke();
+                this.RestoreLineWidth();
+            }
+
             var margin=config.Right.Margin;
-            var rtBG={ Left:border.Right+1, Height:textHeight+margin.Top+margin.Bottom, Width:textWidth+margin.Left+margin.Right };
+            var rtBG={ Left:left-1, Height:textHeight+margin.Top+margin.Bottom, Width:textWidth+margin.Left+margin.Right };
             rtBG.Top=y-textHeight/2-margin.Top;
             rtBG.Bottom=rtBG.Top+rtBG.Height;
             rtBG.Right=rtBG.Left+rtBG.Width;
@@ -67124,7 +67245,7 @@ function ChartDrawPictureHorizontalLine()
             var xText=rtBG.Left+margin.Left;
             var yText=rtBG.Top+margin.Top;
             this.Canvas.fillStyle=config.TextColor;
-            this.Canvas.fillText(text,xText,yText);
+            this.Canvas.fillText(rightText,xText,yText);
         }
     }
 
@@ -84488,7 +84609,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
     this.RecvRealtimeData=function(data)
     {
-        if (this.IsOnTouch==true) return;           //正在操作手势不更新数据
+        if (this.IsOnTouch==true) return;               //正在操作手势不更新数据
         if (this.IsPauseUpdateByKeyboard()) return;     //正在操作键盘不更新数据
 
         if (data.Ver==3.0)
@@ -85572,7 +85693,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         //清空东条标题
         var titleIndex=windowIndex+1;
         var chartTitle=this.TitlePaint[titleIndex];
-        if (chartTitle) chartTitle.Clear({ DynamicTitle:true });
+        if (chartTitle) chartTitle.Clear({ DynamicTitle:true , ArgumentsText:true});
     }
 
     //显示隐藏主图K线
@@ -87448,7 +87569,6 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         if (item)
         {
             drawPicture=item.Create();
-            drawPicture.HQChart=this;
         }
 
         if (!drawPicture)    //iconfont图标
@@ -87471,6 +87591,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         drawPicture.Period=this.Period;
         drawPicture.Right=this.Right;
         drawPicture.Option=this.ChartDrawOption;
+        drawPicture.HQChart=this;
         
         if (callback) drawPicture.FinishedCallback=callback;    //完成通知上层回调
         if (option) drawPicture.SetOption(option);
@@ -87501,8 +87622,10 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         drawPicture.Period=this.Period;
         drawPicture.Right=this.Right;
         drawPicture.Option=this.ChartDrawOption;
+        drawPicture.HQChart=this;
         if (obj.Value) drawPicture.Value=obj.Value;
         if (obj.Guid) drawPicture.Guid=obj.Guid;
+        if (obj.CacheData) drawPicture.CacheData=obj.CacheData; //缓存数据
 
         if (drawPicture.ImportStorageData) drawPicture.ImportStorageData(obj);
         drawPicture.SetOption(obj);
@@ -88118,6 +88241,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             drawPicture.Status=10;
             drawPicture.Frame=this.Frame.SubFrame[item.FrameID].Frame;  //绑定框架坐标
             drawPicture.Option=this.ChartDrawOption;
+            drawPicture.HQChart=this;
             
             if (drawPicture.ImportStorageData) drawPicture.ImportStorageData(item);
             if (drawPicture.Period!=this.Period) 
@@ -95880,6 +96004,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         drawPicture.Symbol=this.Symbol;
         drawPicture.Period=888888888;
         drawPicture.Option=this.ChartDrawOption;
+        drawPicture.HQChart=this;
         
         if (callback) drawPicture.FinishedCallback=callback;    //完成通知上层回调
         if (option) drawPicture.SetOption(option);
@@ -95910,6 +96035,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         drawPicture.Frame=this.Frame.SubFrame[obj.FrameID].Frame;  //绑定框架坐标
         drawPicture.Symbol=this.Symbol;
         drawPicture.Period=888888888;
+        drawPicture.HQChart=this;
         if (obj.Value) drawPicture.Value=obj.Value;
         if (obj.Guid) drawPicture.Guid=obj.Guid;
 
@@ -95957,6 +96083,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
             drawPicture.Canvas=this.Canvas;
             drawPicture.Status=10;
+            drawPicture.HQChart=this;
             drawPicture.Frame=this.Frame.SubFrame[item.FrameID].Frame;  //绑定框架坐标
             if (drawPicture.ImportStorageData) drawPicture.ImportStorageData(item);
             drawPicture.ResetXValue();

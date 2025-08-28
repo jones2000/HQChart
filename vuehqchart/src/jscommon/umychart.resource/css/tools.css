@@ -2354,6 +2354,12 @@ input[type="color"] {
     color:var(--HQChart-DialogModifyIndexParam-InputTextColor);
 }
 
+.UMyChart_ModifyIndexParam_Input::-webkit-outer-spin-button,
+.UMyChart_ModifyIndexParam_Input::-webkit-inner-spin-button
+{
+    -webkit-appearance: none;
+}
+
 .UMyChart_ModifyIndexParam_Button_Div
 {
     border-top: 1px solid #ccc;
