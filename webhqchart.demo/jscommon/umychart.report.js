@@ -1069,8 +1069,8 @@ function JSReportChartContainer(uielement)
         this.RequestMemberListData();
     }
 
-    //更新数据
-    this.UpdateFullData=function(data)
+    //更新数据 option={ SortInfo:{ Search:, Field:, Sort: } }
+    this.UpdateFullData=function(data, option)
     {
         var arySymbol=[];   
         if (IFrameSplitOperator.IsNonEmptyArray(data.data))
@@ -1112,11 +1112,28 @@ function JSReportChartContainer(uielement)
             }
         }
 
+        if (option && option.SortInfo)
+        {
+            //本地排序
+            var item=option.SortInfo;
+            if (item.Search) this.SortInfo.Field=this.FindFiledIndex(item.Search);
+            if (IFrameSplitOperator.IsNumber(item.Field)) this.SortInfo.Field=item.Field;
+            if (IFrameSplitOperator.IsNumber(item.Sort)) this.SortInfo.Sort=item.Sort;
+        }
+
+        //排序
+        var chart=this.GetReportChart();
+        if (chart && (this.SortInfo.Sort==1 || this.SortInfo.Sort==2) && IFrameSplitOperator.IsNumber(this.SortInfo.Field) && this.SortInfo.Field>=0)
+        {
+            var column=chart.Column[this.SortInfo.Field];
+            this.LocalDataSort(column, this.SortInfo);
+        }
+
         this.Draw();
     }
 
     //设置全部的数据
-    this.SetFullData=function(data)
+    this.SetFullData=function(data, option)
     {
         this.ClearMapStockData();
         this.ClearData();
@@ -1124,7 +1141,7 @@ function JSReportChartContainer(uielement)
         this.ResetSortStatus();
         this.ResetReportSelectStatus();
 
-        this.UpdateFullData(data);
+        this.UpdateFullData(data, option);
 
         /*
         //缓存所有数据

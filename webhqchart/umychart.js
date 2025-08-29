@@ -67075,6 +67075,16 @@ function ChartDrawPictureHorizontalLine()
     }
     */
 
+    //跨周期 X轴索引调整为0
+    this.ChangePeriod=function(period)
+    {
+        var kData=this.GetKData();
+        if (!kData) return;
+
+        var index=0;
+        this.Value[0].XValue=0;
+    }
+
     this.Draw=function()
     {
         this.LinePoint=[];
@@ -67655,6 +67665,16 @@ function ChartDrawHLine()
         return this.PointRange(drawPoint);
     }
     */
+
+    //跨周期 X轴索引调整为0
+    this.ChangePeriod=function(period)
+    {
+        var kData=this.GetKData();
+        if (!kData) return;
+
+        var index=0;
+        this.Value[0].XValue=0;
+    }
 
     this.IsDrawMain=function()  //选中绘制在动态绘图上， 没有选中绘制在背景上
     {
