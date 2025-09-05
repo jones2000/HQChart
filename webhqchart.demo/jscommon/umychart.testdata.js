@@ -351,7 +351,7 @@ HQData.Minute_RequestMinuteData=function(data, callback)
         }
 
         //盘中
-        //stockItem.minute.length=50;
+        stockItem.minute.length=50;
          //测试用 这里可以修改数据
         //var lastItem=srcStock.minute[srcStock.minute.length-1];
         //lastItem.price+=Math.ceil(Math.random()*10)/1000*lastItem.price;
@@ -963,6 +963,7 @@ HQData.Minute_RequestHistoryMinuteData=function(data, callback)
         dayItem.BuySellData={ AryBuy:aryBuy, ArySell:arySell };
     }
    
+    aryDay[0].minute.length=20;
     var hqchartData={code:0, data:aryDay, name:symbol, symbol: symbol};
 
     //hqchartData.data[0].minute.length=45;
@@ -1322,6 +1323,23 @@ HQData.CustomFunction_RequestData=function(data, callback)
             hqchartData.Data.push({ Date:kItem.Date, Time:kItem.Time, Value:kItem.Vol/3 });
         }
     }
+    else if (funcName=="FUNC_ALPHA")
+    {
+        //模拟下载alpha系数序列
+        setTimeout(()=>
+        {
+            var kData=data.Self.Data;
+            var hqchartData={ DataType:2, Data:[] };
+            for(var i=0;i<kData.Data.length;++i)
+            {
+                var kItem=kData.Data[i];
+                hqchartData.Data.push({ Date:kItem.Date, Time:kItem.Time, Value:HQData.GetRandomTestData(0,100)/100 });
+            }
+             callback(hqchartData);
+        },300);
+
+        return;
+    }
     else
     {
         var error= `函数'${funcName}' 没有对接数据. [HQData.CustomFunction_RequestData]`;
@@ -1329,6 +1347,21 @@ HQData.CustomFunction_RequestData=function(data, callback)
     }
     
     callback(hqchartData);
+}
+
+//ALPHA:FUNC_ALPHA(L);
+HQData.FUNC_ALPHA=function(obj)
+{
+    console.log("[HQData::FuncAlpha] obj=", obj);
+    var aryValue=obj.Args[0];           //参数
+    var aryAlpha=obj.DownloadData;      //下载数据
+    var aryData=[];
+    for(var i=0; i<aryValue.length; ++i)
+    {
+        aryData.push(aryValue[i]*aryAlpha[i]);
+    }
+
+    return { Out:aryData };
 }
 
 HQData.CustomVarData_RequestData=function(data, callback)

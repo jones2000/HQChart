@@ -1676,7 +1676,7 @@
             SelectLocalIndex=(e, name)=> { klineControl.SelectLocalIndex(e, name); }
 
             //自定义函数和变量
-            JSComplier.AddFunction({ Name:'FUNC_DEMO',   Description:'自定义函数1', IsDownload:false } );
+            JSComplier.AddFunction({ Name:'FUNC_ALPHA', Description:'自定义Alpha函数', IsDownload:true, Invoke:(obj)=>{ return HQData.FUNC_ALPHA(obj); } } );
             JSComplier.AddVariant({ Name:'VAR_DEMO',   Description:'自定义变量1' } );
 
             
