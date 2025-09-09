@@ -418,12 +418,6 @@ function GetBlackStyle()
             }
         },
 
-        DivFrameToolbar:
-        {
-            Icon:{ Color:"rgb(156,156,156)", HoverColor:"rgb(255,255,255)" },
-            Tooltip:{ BGColor:"rgb(32,32,32)", TextColor:"rgb(204,204,204)", BorderColor:"rgb(69,69,69)" },
-        },
-        
         DrawPicture:  //画图工具
         {
             LineColor: 

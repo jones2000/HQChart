@@ -3693,7 +3693,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             if (!indexScript) return;
 
             data.IndexScript=indexScript;
-            data.Title=`[${indexScript.Name}]参数修改 窗口[${data.WindowIndex+1}]`;
+            data.Title=`[${indexScript.Name || "--"}]参数修改 窗口[${data.WindowIndex+1}]`;
         }
         else if (data.Type==2)
         {
@@ -3702,7 +3702,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             var indexScript=overlayIndex.OverlayItem.Script;
 
             data.IndexScript=indexScript;
-            data.Title=`[${indexScript.Name}]参数修改 叠加窗口[${data.WindowIndex+1}]`;
+            data.Title=`[${indexScript.Name || "--"}]参数修改 叠加窗口[${data.WindowIndex+1}]`;
         }
 
         this.DialogModifyIndexParam.SetIndexData(data);
@@ -66149,16 +66149,13 @@ IChartDrawPicture.ColorToRGBA=function(color,opacity)
     if (reg.test(color)) 
     {
         var strHex = "#";
-        var colorArr = color.replace(/(?:\(|\)|rgb|RGB)*/g, "").split(",");    // 把RGB的3个数值变成数组
-        // 转成16进制
-        for (var i = 0; i < colorArr.length; i++) 
-        {
-            var hex = Number(colorArr[i]).toString(16);
-            if (hex === "0")  hex += hex;
-            strHex += hex;
-        }
+        var aryColor = color.replace(/(?:\(|\)|rgb|RGB)*/g, "").split(",");    // 把RGB的3个数值变成数组
+        var r = parseInt(aryColor[0]);
+        var g = parseInt(aryColor[1]);
+        var b = parseInt(aryColor[2]);
 
-        color=strHex;
+        var value=`rgba(${r},${g},${b},${opacity})`;
+        return value;
     }
     
     return "rgba(" + parseInt("0x" + color.slice(1, 3)) + "," + parseInt("0x" + color.slice(3, 5)) + "," + parseInt("0x" + color.slice(5, 7)) + "," + opacity + ")";
@@ -66169,7 +66166,8 @@ IChartDrawPicture.RGBToHex=function(rgb)
     // Choose correct separator
     let sep = rgb.indexOf(",") > -1 ? "," : " ";
     // Turn "rgb(r,g,b)" into [r,g,b]
-    rgb = rgb.substr(4).split(")")[0].split(sep);
+    if (rgb.includes("rgba(") || rgb.includes("RGBA(")) rgb = rgb.substr(5).split(")")[0].split(sep);
+    else rgb = rgb.substr(4).split(")")[0].split(sep);
   
     let r = (+rgb[0]).toString(16),
         g = (+rgb[1]).toString(16),
@@ -77866,12 +77864,7 @@ function JSChartResource()
         }
     }
 
-    this.DivFrameToolbar=
-    {
-        Icon:{ Color:"rgb(0,0,0)", HoverColor:"rgb(30,144,255)" },
-        Tooltip:{ BGColor:"rgb(255,255,255)", TextColor:"rgb(71,71,71)", BorderColor:"rgb(0,0,0)" },
-    }
-   
+    
     //画图工具
     this.DrawPicture=
     {
@@ -79817,28 +79810,6 @@ function JSChartResource()
 
         if (style.SmallFloatTooltipV2) this.SetSmallFloatTooltipV2(style.SmallFloatTooltipV2);
 
-        if (style.DivFrameToolbar) this.SetDivFrameToolbar(style.DivFrameToolbar);
-    }
-
-    this.SetDivFrameToolbar=function(style)
-    {
-        var dest=this.DivFrameToolbar;
-        if (style.Icon)
-        {
-            var item=style.Icon;
-            var subDest=dest.Icon;
-            if (item.Color) subDest.Color=item.Color;
-            if (item.HoverColor) subDest.HoverColor=item.HoverColor;
-        }
-
-        if (style.Tooltip)
-        {
-            var item=style.Tooltip;
-            var subDest=dest.Tooltip;
-            if (item.TextColor) subDest.TextColor=item.TextColor;
-            if (item.BorderColor) subDest.BorderColor=item.BorderColor;
-            if (item.BGColor) subDest.BGColor=item.BGColor;
-        }
     }
 
     this.SetSmallFloatTooltipV2=function(style)
@@ -88277,12 +88248,13 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         if (this.ChartDrawStorage)
         {
             this.ChartDrawStorageCache=this.ChartDrawStorage.GetDrawData( {Symbol:this.Symbol, Period:this.Period} );
-            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_LOAD_DRAWPICTURE);
-            if (event && event.Callback)
-            {
-                var sendData={ Symbol:this.Symbol, Period:this.Period, DrawStorage:this.ChartDrawStorage, ChartDrawStorageCache:this.ChartDrawStorageCache };
-                event.Callback(event,sendData,this);
-            }
+        }
+
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_LOAD_DRAWPICTURE);
+        if (event && event.Callback)
+        {
+            var sendData={ Symbol:this.Symbol, Period:this.Period, DrawStorage:this.ChartDrawStorage, ChartDrawStorageCache:this.ChartDrawStorageCache };
+            event.Callback(event,sendData,this);
         }
     }
 
@@ -96131,6 +96103,13 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         if (this.ChartDrawStorage)
         {
             this.ChartDrawStorageCache=this.ChartDrawStorage.GetDrawData( { Symbol:this.Symbol, Period:888888888 } );
+        }
+
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_LOAD_DRAWPICTURE);
+        if (event && event.Callback)
+        {
+            var sendData={ Symbol:this.Symbol, Period:888888888, DrawStorage:this.ChartDrawStorage, ChartDrawStorageCache:this.ChartDrawStorageCache };
+            event.Callback(event,sendData,this);
         }
     }
 
@@ -105443,12 +105422,6 @@ function JSDivFrameToolbar()
     this.Left=-1;
     this.Top=-1;
 
-    this.IconConfig=
-    { 
-        Color:g_JSChartResource.DivFrameToolbar.Icon.Color, 
-        HoverColor:g_JSChartResource.DivFrameToolbar.Icon.HoverColor
-    }
-
     this.AryButton=[]; //按钮数组
 
     //创建按钮
@@ -105590,20 +105563,10 @@ function JSDivFrameToolbar()
     this.UpdateStyle=function()
     {
         if (!this.DivToolbar) return;
-
-        for(var i=0;i<this.AryButton.length; i++)
-        {
-            var item=this.AryButton[i]
-            if (!item.Span) continue;
-            item.Span.style["color"]=this.IconConfig.Color;     
-        }
     }
 
     this.ReloadResource=function(option)
     {
-        this.IconConfig.Color=g_JSChartResource.DivFrameToolbar.Icon.Color, 
-        this.IconConfig.HoverColor=g_JSChartResource.DivFrameToolbar.Icon.HoverColor;
-
         this.UpdateStyle();
     }
 
@@ -105640,15 +105603,12 @@ function JSDivFrameToolbar()
     {
         if (!item.Span) return;
 
-        item.Span.style["color"]=this.IconConfig.HoverColor;
-
         this.ShowTooltip(e, item);
     }
 
     this.OnLeaveButton=function(e, item)
     {
         if (!item.Span) return;
-        item.Span.style["color"]=this.IconConfig.Color;
 
         this.HideTooltip();
     }
@@ -105792,10 +105752,6 @@ function JSToolbarTooltip()
     this.Left=-1;
     this.Top=-1;
 
-    this.BGColor=g_JSChartResource.DivFrameToolbar.Tooltip.BGColor;
-    this.TextColor=g_JSChartResource.DivFrameToolbar.Tooltip.TextColor;
-    this.BorderColor=g_JSChartResource.DivFrameToolbar.Tooltip.BorderColor;
-
     this.Create=function()
     {
         var divDom=document.createElement("div");
@@ -105809,20 +105765,12 @@ function JSToolbarTooltip()
 
     this.ReloadResource=function(option)
     {
-        this.BGColor=g_JSChartResource.DivFrameToolbar.Tooltip.BGColor;
-        this.TextColor=g_JSChartResource.DivFrameToolbar.Tooltip.TextColor;
-        this.BorderColor=g_JSChartResource.DivFrameToolbar.Tooltip.BorderColor;
-
         this.UpdateStyle();
     }
 
     this.UpdateStyle=function()
     {
         if (!this.DivTooltip) return;
-
-        this.DivTooltip.style["background-color"]=this.BGColor;
-        this.DivTooltip.style["color"]=this.TextColor;
-        this.DivTooltip.style["border"]="1px solid " + this.BorderColor;
     }
 
     this.Show=function(top, left, tooltipData)
