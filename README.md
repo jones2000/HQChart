@@ -258,6 +258,7 @@ React 例子:[demo-react.md](/教程/demo-react.md) <br>
 ## 公式编辑器
 * [仿通达信公式编辑器](https://jones2000.github.io/HQChart/webhqchart.demo/samples/kline_index_edit.html)  
 * [仿通达信公式编辑器-分时图](https://jones2000.github.io/HQChart/webhqchart.demo/samples/minute_index_edit.html)  
+* [K线+分时](https://jones2000.github.io/HQChart/webhqchart.demo/samples/hqchart_demo.html)  
 
 ## K线图
 * [K线图](https://jones2000.github.io/HQChart/webhqchart.demo/samples/chart_kline.html)   
