@@ -923,6 +923,9 @@
                 JSChart.SetCSSStyle(value);
                 JSChart.SetStyle(style);
 
+                var resource=JSChart.GetResource();
+                resource.ToolbarButtonStyle=1;
+
                 if (this.MinuteCtrl) this.MinuteCtrl.ReloadResource();  //动态更新颜色配置  
                 if (this.KLineCtrl) this.KLineCtrl.ReloadResource();  //动态更新颜色配置  
             }
