@@ -1405,17 +1405,13 @@ IChartDrawPicture.ColorToRGBA=function(color,opacity)
     var reg = /^(rgb|RGB)/;
     if (reg.test(color)) 
     {
-        var strHex = "#";
-        var colorArr = color.replace(/(?:\(|\)|rgb|RGB)*/g, "").split(",");    // 把RGB的3个数值变成数组
-        // 转成16进制
-        for (var i = 0; i < colorArr.length; i++) 
-        {
-            var hex = Number(colorArr[i]).toString(16);
-            if (hex === "0")  hex += hex;
-            strHex += hex;
-        }
+        var aryColor = color.replace(/(?:\(|\)|rgb|RGB)*/g, "").split(",");    // 把RGB的3个数值变成数组
+        var r = parseInt(aryColor[0]);
+        var g = parseInt(aryColor[1]);
+        var b = parseInt(aryColor[2]);
 
-        color=strHex;
+        var value=`rgba(${r},${g},${b},${opacity})`;
+        return value;
     }
     
     return "rgba(" + parseInt("0x" + color.slice(1, 3)) + "," + parseInt("0x" + color.slice(3, 5)) + "," + parseInt("0x" + color.slice(5, 7)) + "," + opacity + ")";

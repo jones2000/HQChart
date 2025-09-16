@@ -104,9 +104,10 @@ function JSDialogSearchIndex()
 
         var right=left+this.DivDialog.offsetWidth;
         var bottom=top+ this.DivDialog.offsetHeight;
-        
+        var scrollPos=GetScrollPosition();
+
         if ((right+5)>=window.innerWidth) left=window.innerWidth-this.DivDialog.offsetWidth-5;
-        if ((bottom+5)>=window.innerHeight) top=window.innerHeight-this.DivDialog.offsetHeight-5;
+        if ((bottom+5)>=window.innerHeight+scrollPos.Top) top=(window.innerHeight-this.DivDialog.offsetHeight-5)+scrollPos.Top;
 
         this.DivDialog.style.left = left + 'px';
         this.DivDialog.style.top = top + 'px';
@@ -137,8 +138,9 @@ function JSDialogSearchIndex()
         if (!IFrameSplitOperator.IsNumber(x) || !IFrameSplitOperator.IsNumber(y))   //默认居中显示
         {
             var rtClient=this.HQChart.UIElement.getBoundingClientRect();
+            var scrollPos=GetScrollPosition();
             x=rtClient.left+(rtClient.right-rtClient.left-this.DivDialog.offsetWidth)/2;
-            y=rtClient.top+(rtClient.bottom-rtClient.top-this.DivDialog.offsetHeight)/2;
+            y=rtClient.top+(rtClient.bottom-rtClient.top-this.DivDialog.offsetHeight)/2+scrollPos.Top;
         }
 
         this.InputDom.value="";
@@ -898,8 +900,9 @@ function JSDialogModifyIndexParam()
         if (!IFrameSplitOperator.IsNumber(x) || !IFrameSplitOperator.IsNumber(y))   //默认居中显示
         {
             var rtClient=this.HQChart.UIElement.getBoundingClientRect();
+            var scrollPos=GetScrollPosition();
             x=rtClient.left+(rtClient.right-rtClient.left-this.DivDialog.offsetWidth)/2;
-            y=rtClient.top+(rtClient.bottom-rtClient.top-this.DivDialog.offsetHeight)/2;
+            y=rtClient.top+(rtClient.bottom-rtClient.top-this.DivDialog.offsetHeight)/2+scrollPos.Top;
         }
 
         this.DivDialog.style.visibility='visible';
@@ -966,9 +969,10 @@ function JSDialogModifyIndexParam()
 
         var right=left+this.DivDialog.offsetWidth;
         var bottom=top+ this.DivDialog.offsetHeight;
-        
+        var scrollPos=GetScrollPosition();
+
         if ((right+5)>=window.innerWidth) left=window.innerWidth-this.DivDialog.offsetWidth-5;
-        if ((bottom+5)>=window.innerHeight) top=window.innerHeight-this.DivDialog.offsetHeight-5;
+        if ((bottom+5)>=window.innerHeight+scrollPos.Top) top=(window.innerHeight-this.DivDialog.offsetHeight-5)+scrollPos.Top;
 
         this.DivDialog.style.left = left + 'px';
         this.DivDialog.style.top = top + 'px';

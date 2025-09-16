@@ -6,6 +6,20 @@
   "description": "hqchart画图工具",
   "glyphs": [
     {
+      "icon_id": "36812847",
+      "name": "画笔",
+      "font_class": "Vector",
+      "unicode": "e624",
+      "unicode_decimal": 58916
+    },
+    {
+      "icon_id": "6337472",
+      "name": "字体颜色",
+      "font_class": "zitiyanse1",
+      "unicode": "ec85",
+      "unicode_decimal": 60549
+    },
+    {
       "icon_id": "31206185",
       "name": "跨周期",
       "font_class": "kuazhouqi",
@@ -116,20 +130,6 @@
       "font_class": "zitibeijingse",
       "unicode": "e656",
       "unicode_decimal": 58966
-    },
-    {
-      "icon_id": "12424469",
-      "name": "字体颜色",
-      "font_class": "zitiyanse",
-      "unicode": "e686",
-      "unicode_decimal": 59014
-    },
-    {
-      "icon_id": "2005644",
-      "name": "画笔",
-      "font_class": "huabi",
-      "unicode": "e663",
-      "unicode_decimal": 58979
     },
     {
       "icon_id": "15272275",

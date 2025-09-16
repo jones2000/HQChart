@@ -276,6 +276,28 @@ function JSChart(element)
         if (IFrameSplitOperator.IsNumber(item.Count)) klineChart.PriceGap.Count=item.Count;
     }
 
+    this.SetFastSlideConfig=function(chart, option)
+    {
+        if (!option.FastSlide) return;
+
+        var item=option.FastSlide;
+        if (IFrameSplitOperator.IsNumber(item.MinDistance)) chart.FastSlideConfig.MinDistance=item.MinDistance;
+        if (IFrameSplitOperator.IsNumber(item.MinSpeed)) chart.FastSlideConfig.MinSpeed=item.MinSpeed;
+        if (IFrameSplitOperator.IsNumber(item.MaxTime)) chart.FastSlideConfig.MaxTime=item.MaxTime;
+        if (IFrameSplitOperator.IsBool(item.Enable)) chart.FastSlideConfig.Enable=item.Enable;
+    }
+
+    this.SetDataMoveConfig=function(chart, option)
+    {
+        if (!option.DataMove) return;
+        var item=option.DataMove;
+        if (item.Touch)
+        {
+            var subItem=item.Touch;
+            if (IFrameSplitOperator.IsBool(subItem.EnableLR)) chart.DataMoveConfig.Touch.EnableLR=subItem.EnableLR;
+        }
+    }
+
     //历史K线图
     this.CreateKLineChartContainer = function (option) 
     {
@@ -319,6 +341,10 @@ function JSChart(element)
         if (option.ZoomStepPixel>0) chart.ZoomStepPixel=option.ZoomStepPixel;
         if (IFrameSplitOperator.IsNumber(option.DrawMoveWaitTime)) chart.DrawMoveWaitTime=option.DrawMoveWaitTime;
         if (IFrameSplitOperator.IsNumber(option.PressTime))  chart.PressTime=option.PressTime;
+
+        this.SetFastSlideConfig(chart, option);
+        this.SetDataMoveConfig(chart, option);
+
         //创建子窗口
         chart.Create(option.Windows.length);
 
@@ -625,6 +651,8 @@ function JSChart(element)
             var value=g_JSChartLocalization.GetLanguageID(option.Language);
             if (IFrameSplitOperator.IsNumber(value)) chart.LanguageID=value;
         }
+
+        this.SetFastSlideConfig(chart, option);
 
         chart.Create(windowsCount);                            //创建子窗口
 
@@ -1500,6 +1528,7 @@ function JSChartContainer(uielement)
     this.UpdateUICallback;      //数据到达通知前端
     this.IsOnTouch = false;     //当前是否正式手势操作
     this.PhonePinch=null;       //双指操作信息
+    this.TouchDrag=null;        //手势拖动操作信息
     this.IsFullDraw=false;       //是否使用重绘模式 (可能会卡)
 
     this.LanguageID = JSCHART_LANGUAGE_ID.LANGUAGE_CHINESE_ID;
@@ -1532,6 +1561,9 @@ function JSChartContainer(uielement)
     //十字光标长留(手势才有)
     this.ClickModel={ IsShowCorssCursor:false, PreventHide:false };     //PreventHide 阻止隐藏十字光标
     this.EnableClickModel=false;
+
+    this.FastSlideConfig={ MinDistance:500, MinSpeed:3, MaxTime:250, Enable:false };       //快速滑动配置 MinDistance=最小的距离 MinSpeed=最小速度 MaxTime=最大间隔时间(ms)
+    this.DataMoveConfig={ Touch:{ EnableLR: true} };                   //数据移动配置
 
     //全局配置
     this.GlobalOption= 
@@ -1742,6 +1774,7 @@ function JSChartContainer(uielement)
         this.IsPress=false;
         this.PhonePinch = null;
         this.TouchDrawCount=0; 
+        this.TouchDrag=null;
         if (this.ClickModel) this.ClickModel.PreventHide=false;
 
         if (this.IsPhoneDragging(e)) 
@@ -1761,11 +1794,8 @@ function JSChartContainer(uielement)
                 else bStartTimer= true;
             } 
 
-            var drag =
-            {
-                "Click": {},
-                "LastMove": {},  //最后移动的位置
-            };
+            var drag ={ Click: {}, LastMove: {}, StartTime:Date.now() }; //LastMove=最后移动的位置
+            var touchDrag={ Click:{}, LastMove:{}, StartTime:Date.now() };
 
             var touches = this.GetToucheData(e, jsChart.IsForceLandscape);
 
@@ -1773,10 +1803,14 @@ function JSChartContainer(uielement)
             drag.Click.Y = touches[0].clientY;
             drag.LastMove.X = touches[0].clientX;
             drag.LastMove.Y = touches[0].clientY;
-
-            if (jsChart.DragMode == 1) jsChart.MouseDrag = drag;
-
             this.MouseDrag=drag;
+
+            touchDrag.Click.X=touches[0].clientX;
+            touchDrag.Click.Y=touches[0].clientY;
+            touchDrag.LastMove.X=touches[0].clientX;
+            touchDrag.LastMove.Y=touches[0].clientY;
+            this.TouchDrag=touchDrag;
+            
             this.PhoneTouchInfo={ Start:{X:touches[0].clientX, Y:touches[0].clientY }, End:{ X:touches[0].clientX, Y:touches[0].clientY } };
 
             if (this.SelectChartDrawPicture) this.SelectChartDrawPicture.IsSelected=false;
@@ -1980,18 +2014,21 @@ function JSChartContainer(uielement)
                     var isLeft = true;
                     if (drag.LastMove.X < touches[0].clientX) isLeft = false;//右移数据
 
-                    if (jsChart.DataMove(moveSetp, isLeft)) 
+                    if (this.DataMoveConfig.Touch.EnableLR)
                     {
-                        jsChart.UpdataDataoffset();
-                        jsChart.UpdatePointByCursorIndex();
-                        jsChart.UpdateFrameMaxMin();
-                        jsChart.ResetFrameXYSplit();
-                        jsChart.Draw();
-                        this.OnKLinePageChange("OnTouchMove");
-                    }
-                    else
-                    {
-                        if (jsChart.DragDownloadData) jsChart.DragDownloadData();
+                        if (jsChart.DataMove(moveSetp, isLeft)) 
+                        {
+                            jsChart.UpdataDataoffset();
+                            jsChart.UpdatePointByCursorIndex();
+                            jsChart.UpdateFrameMaxMin();
+                            jsChart.ResetFrameXYSplit();
+                            jsChart.Draw();
+                            this.OnKLinePageChange("OnTouchMove");
+                        }
+                        else
+                        {
+                            if (jsChart.DragDownloadData) jsChart.DragDownloadData();
+                        }
                     }
 
                     drag.LastMove.X = touches[0].clientX;
@@ -2003,6 +2040,13 @@ function JSChartContainer(uielement)
             {
                 this.PhoneTouchInfo.End.X=touches[0].clientX;
                 this.PhoneTouchInfo.End.Y=touches[0].clientY;
+            }
+
+            if (this.TouchDrag)
+            {
+                var touchDrag=this.TouchDrag;
+                touchDrag.LastMove.X=touches[0].clientX;
+                touchDrag.LastMove.Y=touches[0].clientY;
             }
         }
         else if (this.IsPhonePinching(e))
@@ -2061,6 +2105,8 @@ function JSChartContainer(uielement)
     {
         if (this.ChartSplashPaint && this.ChartSplashPaint.IsEnableSplash == true) return;
 
+        this.FastSlideEvent();
+
         var bClearDrawPicture=true;
         if (this.CurrentChartDrawPicture)
         {
@@ -2101,6 +2147,7 @@ function JSChartContainer(uielement)
         this.OnTouchFinished();
         this.TouchDrawCount=0; 
         this.PhonePinch=null;
+        this.TouchDrag=null;
     }
 
     this.OnTouchFinished=function()
@@ -4266,6 +4313,43 @@ function JSChartContainer(uielement)
 
         return false;
     }
+
+    //快速滑动
+    this.FastSlideEvent=function()
+    {
+        if (!this.TouchDrag) return false;
+        if (!this.FastSlideConfig) return false;
+        var config=this.FastSlideConfig;
+        if (!config.Enable) return false;
+
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_TOUCH_FAST_SLIDE);
+        if (!event || !event.Callback) return false;
+        
+        var drag=this.TouchDrag;
+        var time=Date.now();
+        var spanTime=time-drag.StartTime;
+        if (spanTime>config.MaxTime) return false;
+
+        if (!drag.Click || !drag.LastMove) return false;
+
+        var xStart=drag.Click.X;
+        var xEnd=drag.LastMove.X;
+
+        if (!IFrameSplitOperator.IsNumber(xStart) || !IFrameSplitOperator.IsNumber(xEnd)) return false;
+
+        var distance=xEnd-xStart;
+        var speed=Math.abs(distance)/spanTime;
+        JSConsole.Chart.Log(`[JSChartContainer:FastSlideEvent] speed=${speed}, distance=${distance}, spanTime=${spanTime}`);
+
+        if (Math.abs(distance)<config.MinDistance || speed<config.MinSpeed) 
+            return false;
+
+        var sendData={ Speed:speed, Distance:distance, IsLeft:distance<0?true:false }
+        event.Callback(event, sendData, this);
+
+        return true;
+    }
+
 }
 
 function ToFixed(number, precision) 

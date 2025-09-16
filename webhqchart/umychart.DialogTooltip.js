@@ -518,6 +518,7 @@ function JSDialogTooltip()
     {
         if (!this.DragTitle) return;
 
+        var scrollPos=GetScrollPosition();
         var left = e.clientX - this.DragTitle.YOffset;
         var top = e.clientY - this.DragTitle.XOffset;
 
@@ -525,7 +526,7 @@ function JSDialogTooltip()
         var bottom=top+ this.DivDialog.offsetHeight;
         
         if ((right+5)>=window.innerWidth) left=window.innerWidth-this.DivDialog.offsetWidth-5;
-        if ((bottom+5)>=window.innerHeight) top=window.innerHeight-this.DivDialog.offsetHeight-5;
+        if ((bottom+5)>=(window.innerHeight+scrollPos.Top)) top=(window.innerHeight-this.DivDialog.offsetHeight-5)+scrollPos.Top;
 
         this.DivDialog.style.left = left + 'px';
         this.DivDialog.style.top = top + 'px';
@@ -547,8 +548,8 @@ function JSDialogTooltip()
         if (!this.DivDialog) return;
         if (!this.HQChart) return;
 
-       
-        var top=this.HQChart.Frame.ChartBorder.GetTop();
+        var scrollPos=GetScrollPosition();
+        var top=this.HQChart.Frame.ChartBorder.GetTop()+scrollPos.Top;
         var left=this.HQChart.Frame.ChartBorder.GetLeft();
         var rtClient=this.HQChart.UIElement.getBoundingClientRect();
 
@@ -1180,17 +1181,19 @@ function JSFloatTooltip()
         if (!this.HQChart) return;
 
         var rtClient=this.HQChart.UIElement.getBoundingClientRect();
+        var scrollPos=GetScrollPosition();
         var yMove=0;
         if (option && IFrameSplitOperator.IsNumber(option.YMove)) yMove=option.YMove;
 
-        var left=x+rtClient.left,top=y+rtClient.top+yMove;
+        var left=x+rtClient.left,top=y+rtClient.top+yMove+scrollPos.Top;
         var right=left+this.DivDialog.offsetWidth;
         var bottom=top+this.DivDialog.offsetHeight;
         
         if ((right+5)>=window.innerWidth) left=left-this.DivDialog.offsetWidth;
-        if ((bottom+5)>=window.innerHeight) 
+        if ((bottom+5)>=window.innerHeight+scrollPos.Top) 
         {
             top=(y+rtClient.top)-this.DivDialog.offsetHeight;
+            top+=scrollPos.Top;
         }
        
         this.DivDialog.style.top = top + "px";
@@ -2414,6 +2417,7 @@ function JSSmallFloatTooltip()
         if (!this.DivDialog) return;
         if (!this.HQChart) return;
 
+        var scrollPos=GetScrollPosition();
         var rtClient=this.HQChart.UIElement.getBoundingClientRect();
         var yMove=0;
         if (option && IFrameSplitOperator.IsNumber(option.YMove)) yMove=option.YMove;

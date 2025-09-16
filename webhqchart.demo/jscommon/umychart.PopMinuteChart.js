@@ -218,15 +218,15 @@ function JSPopMinuteChart()
             if (this.Minute.JSChart) this.Minute.JSChart.OnSize();
         }
 
-        
+        var scrollPos=GetScrollPosition();
 
         //超出窗口调整位置
         var height=this.DivDialog.offsetHeight;
         var width=this.DivDialog.offsetWidth;
         var xRight=window.innerWidth-5;
-        var ybottom=window.innerHeight-5;
+        var ybottom=window.innerHeight-5+scrollPos.Top;
         if (x+width>xRight) x=xRight-width;
-        if (y+height>ybottom) y=ybottom-height;
+        if (y+height>ybottom) y=(ybottom-height);
 
         this.DivDialog.style.visibility='visible';
         this.DivDialog.style.top = y + "px";
@@ -265,6 +265,7 @@ function JSPopMinuteChart()
     {
         if (!this.DragTitle) return;
 
+        var scrollPos=GetScrollPosition();
         var left = e.clientX - this.DragTitle.YOffset;
         var top = e.clientY - this.DragTitle.XOffset;
 
@@ -272,7 +273,7 @@ function JSPopMinuteChart()
         var bottom=top+ this.DivDialog.offsetHeight;
         
         if ((right+5)>=window.innerWidth) left=window.innerWidth-this.DivDialog.offsetWidth-5;
-        if ((bottom+5)>=window.innerHeight) top=window.innerHeight-this.DivDialog.offsetHeight-5;
+        if ((bottom+5)>=window.innerHeight+scrollPos.Top) top=(window.innerHeight-this.DivDialog.offsetHeight-5)+scrollPos.Top;
 
         this.DivDialog.style.left = left + 'px';
         this.DivDialog.style.top = top + 'px';

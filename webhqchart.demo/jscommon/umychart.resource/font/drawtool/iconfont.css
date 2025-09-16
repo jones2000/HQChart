@@ -1,8 +1,8 @@
 @font-face {
   font-family: "hqchart_drawtool"; /* Project id 4529603 */
-  src: url('iconfont.woff2?t=1757384014836') format('woff2'),
-       url('iconfont.woff?t=1757384014836') format('woff'),
-       url('iconfont.ttf?t=1757384014836') format('truetype');
+  src: url('iconfont.woff2?t=1757923987174') format('woff2'),
+       url('iconfont.woff?t=1757923987174') format('woff'),
+       url('iconfont.ttf?t=1757923987174') format('truetype');
 }
 
 .hqchart_drawtool {
@@ -11,6 +11,14 @@
   font-style: normal;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-Vector:before {
+  content: "\e624";
+}
+
+.icon-zitiyanse1:before {
+  content: "\ec85";
 }
 
 .icon-kuazhouqi:before {
@@ -75,14 +83,6 @@
 
 .icon-zitibeijingse:before {
   content: "\e656";
-}
-
-.icon-zitiyanse:before {
-  content: "\e686";
-}
-
-.icon-huabi:before {
-  content: "\e663";
 }
 
 .icon-tuodong:before {

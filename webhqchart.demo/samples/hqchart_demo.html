@@ -1,0 +1,1091 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+
+<title>HQChart示例</title>  
+    <!-- 加载资源 -->
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/drawtool/iconfont.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/js/codemirror/codemirror.css" />
+</head> 
+
+<body>
+
+    <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
+    <script src="../jscommon/umychart.resource/js/webfont.js"></script>
+    <script src='../jscommon/umychart.console.js'></script>     <!-- 日志输出 -->
+    <script src="../jscommon/umychart.network.js"></script>     <!-- 网络请求分装 -->
+    <script src="../jscommon/umychart.js"></script>             <!-- K线图形 -->
+    <script src="../jscommon/umychart.complier.js"></script>    <!-- 麦语言解析执行器 -->
+    <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
+    <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+    <script src="../jscommon/umychart.popMenu.js"></script>
+    <script src="../jscommon/umychart.DialogDrawTool.js"></script>
+    <script src="../jscommon/umychart.PopMinuteChart.js"></script>
+    <script src="../jscommon/umychart.report.js"></script>
+    <script src="../jscommon/umychart.keyboard.js"></script>
+    <script src="../jscommon/umychart.PopKeyboard.js"></script>
+    <script src="../jscommon/umychart.DialogTooltip.js"></script>
+    <script src="../jscommon/umychart.DialogSelectRect.js"></script>
+    <script src="../jscommon/umychart.DialogSearchIndex.js"></script>
+    <script src="../jscommon/umychart.version.js"></script>
+
+   
+    <!-- 财务,公告,衍生数据 -->
+    <script src="../jscommon/umychart.testdata/60000.sh.capital.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/60000.sh.NewsInteract.js"></script>
+    <script src="../jscommon/umychart.testdata/60000.sh.BlockTrading.js"></script>
+    <script src="../jscommon/umychart.testdata/60000.sh.TradeDetal.js"></script>
+    <script src="../jscommon/umychart.testdata/60000.sh.finance_7.js"></script>
+
+    <script src="../jscommon/umychart.testdata/symbollist_shsz.js"></script>
+
+    <!-- 分钟K线 -->
+    <script src="../jscommon/umychart.testdata/M1KLine/600000.sh.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/000001.sh.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/000300.sh.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/399001.sz.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/000001.sz.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/399006.sz.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/399005.sz.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/000151.sz.minute.kline.js"></script>
+
+    <script src="../jscommon/umychart.testdata/M1KLine/ICL8.cfe.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/IML8.cfe.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/IFL8.cfe.minute.kline.js"></script>
+
+    <!--日K -->
+    <script src="../jscommon/umychart.testdata/DayKLine/600000.sh.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/000001.sh.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/000300.sh.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/399001.sz.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/000001.sz.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/399006.sz.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/399005.sz.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/000151.sz.day.kline.js"></script>
+
+    <script src="../jscommon/umychart.testdata/DayKLine/ICL8.cfe.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/IML8.cfe.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/IFL8.cfe.day.kline.js"></script>
+
+    <!-- 单日分时数据 -->
+    <script src="../jscommon/umychart.testdata/DayMinute/000151.sz.1day.minute.js"></script>
+    <script src="../jscommon/umychart.testdata/DayMinute/000001.sz.1day.minute.js"></script>
+    <script src="../jscommon/umychart.testdata/DayMinute/600000.sh.1day.minute.js"></script>
+    <script src="../jscommon/umychart.testdata/DayMinute/im2503.cf.1day.minute.js"></script>
+
+
+    <!-- 多日分时数据 -->
+    <script src="../jscommon/umychart.testdata/Day5Minute/600000.sh.5day.minute.js"></script>
+    <script src="../jscommon/umychart.testdata/Day5Minute/000001.sz.5day.minute.js"></script>
+    <script src="../jscommon/umychart.testdata/Day5Minute/000151.sz.5day.minute.js"></script>
+
+    <script src="../jscommon/umychart.testdata.js"></script>
+
+
+    <div id="PeriodTab">
+        <div id="MinuteDay" class="TabItem">分时</div>
+        <div id="Minute5Day" class="TabItem">5日</div>
+        <div id="KLineDay" class="TabItem">日线</div>
+        <div id="KLineWeek" class="TabItem">周线</div>
+        <div id="KLineMonth" class="TabItem">月线</div>
+        <div id="KLineYear" class="TabItem">年线</div>
+
+        <div id="KLineMinute" class="TabItem">1分钟</div>
+        <div id="KLine5Minute" class="TabItem">5分钟</div>
+        <div id="KLine15Minute" class="TabItem">15分钟</div>
+        <div id="KLine30Minute" class="TabItem">50分钟</div>
+       
+        <div class="SpaceItem"></div>
+        <div id="StockChip" class="TabItem">筹码</div>
+        <div id="BeforeOpen" class="TabItem">竞价</div>
+        <div id="DrawTool" class="TabItem">画线</div>
+
+        <div id="WhiteStyle" class="TabItem">白色风格</div>
+        <div id="BlackStyle" class="TabItem">黑色风格</div>
+
+    </div>
+
+    <div id="ChartContainer">
+         <div id="Minute">
+            <div id="MinuteCtrl"></div>
+        </div>
+        <div id="KLine">
+            <div id="KLineCtrl"></div>
+        </div>
+    </div>
+
+    <script>
+       MARKET_SUFFIX_NAME.GetMarketStatus = function (symbol)  { return 2; }
+       
+        //简单的把K线控件封装下
+        function KLineChart(divKLine)
+        {
+            this.DivKLine=divKLine;
+            this.Chart=JSChart.Init(divKLine, false, true);   //把K线图绑定到一个Div上
+           
+            this.JSPopMenu=null;
+            this.JSPopMenu=new JSPopMenu();
+            this.JSPopMenu.Inital();
+          
+            //K线配置信息
+            this.Option= 
+            {
+                Type:'历史K线图',   //创建图形类型
+                //Type:'历史K线图横屏',
+
+                //EnableBorderDrag:false,
+                
+                Windows: //窗口指标
+                [
+                    { Index:"MA", Overlay:true, AddIndexWindow:true, Export:true, IsSync:true,IndexHelp:true },
+                    { Index:"VOL", Overlay:true, Export:true, IsSync:true, IndexHelp:true},
+                    { Index:"MACD", Overlay:true, Export:true, IsSync:true, IndexHelp:true}
+                   
+                ], 
+
+                OverlayIndex:
+                [
+                    
+                ],  //叠加指标
+
+                
+                //OverlayIndexFrameWidth:1,
+                //DragDownload: { Day:{ Enable:true } , Minute:{ Enable:true }}, 
+
+                EnableZoomUpDown:
+                {
+                    //Wheel:false,
+                    //Keyboard:false,
+                    //Touch:false,
+                },
+
+                EnableYDrag:
+                {
+                    Right:true,
+                    Left:true,
+                    Wheel:true,
+                },
+
+                EnableXDrag:{ Bottom:true, LButton:{ Type:1 }, RButton:{ Type:2 }},
+
+                //PressKeyboardConfig:{ PauseUpdate:true },
+
+                //Language:'EN',
+
+                Symbol:"600000.sh",
+                IsAutoUpdate:true,       //是自动更新数据
+                AutoUpdateFrequency:5000,   //数据更新频率
+                //TradeIndex: {Index:'交易系统-BIAS'},    //交易系统
+
+                SplashTitle:'加载数据中......',
+    
+                IsShowRightMenu:true,          //右键菜单
+                //CorssCursorTouchEnd:true,
+                //IsClickShowCorssCursor:true,
+                //IsCorssOnlyDrawKLine:true,
+
+                CtrlMoveStep:10,
+                EnablePopMenuV2:true,
+                EnableDrawToolDialogV2:true,
+                EnableModifyDrawDialogV2:true,
+                EnableResize:true,
+                EnableTooltipDialog:true,
+
+                TooltipDialog:{ Enable:true, Style:0, IndexTitle:{ Enable:false }, MaxRowCount:50 },
+                SelectRectDialog:{ Enable:true },
+                KLineTooltip:{ Enable:true, EnableKeyDown:false },
+                FloatTooltip:{ Enable:true, },
+                SmallFloatTooltip:{ Enable:true, Style:1  },
+                SearchIndexDialog:{ Enable:true, },
+                ModifyIndexParamDialog:{ Enable:true, EnableRestoreParam:false },
+
+                LatestPointFlash:{ Enable:true, Frequency:500 },
+
+                KeyboardMove:{ Delay:50, PressTime:500 },
+
+                //DataMove:{ Mouse:{ EnableLR:false } },
+
+                //双击K线图 弹分时图配置
+                PopMinuteChart:
+                { 
+                    Enable:true, 
+                    EnableMarkBG:true,
+                    Option:
+                    { 
+                        Windows:
+                        [
+                            { Index:"RSI", Overlay:false,MaxMin:false }
+                        ]
+                    }
+                },
+
+                //EnableVerifyRecvData:true,
+
+                CorssCursorInfo: 
+                { 
+                    Right:1, Bottom:1, DateFormatType:3, HPenType:0, VPenType:0, IsShowClose:false, VLineType:0,RightButton:{ Enable:true }, 
+                    IsShowCorss:true, PriceFormatType:0, DataFormatType:0, 
+                    EnableKeyboard:true,
+                    EnableDBClick:true,
+                    RangeIncrease:{ IsShow:true, Formula:1 }
+                    //IsShowIncrease:false,
+                },
+
+                EnableZoomIndexWindow:true,
+
+                DrawTool:       //画图工具
+                {
+                    //StorageKey:'4E7EA133-D6C8-4776-9869-1DDDCC5FA788', EnableCrossPeriod:true,
+                },
+    
+                KLine:  //K线设置
+                {
+                    DragMode:1,                 //拖拽模式 0=禁止拖拽 1=数据拖拽 2=区间选择
+                    Right:1,                    //复权 0 不复权 1 前复权 2 后复权
+                    Period:0,                   //周期 0 日线 1 周线 2 月线 3 年线 
+                    MaxRequestDataCount:8000,   //数据个数
+                    MaxRequestMinuteDayCount:100, //分钟数据获取几天数据  默认取5天数据
+                    
+                    //Info:["互动易","大宗交易",'龙虎榜',"调研","业绩预告","公告"],       //信息地雷
+                    //Info:["公告"], 
+                    //InfoPosition:0,
+                    IsShowTooltip:true,                 //是否显示K线提示信息
+                    DrawType:0,      //K线类型 0=实心K线柱子 1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积图
+                    //FirstShowDate:20161201,
+                    //KLineDoubleClick:true, //禁止双击弹框 (废弃 使用(PopMinuteChart:{ }))
+                    RightSpaceCount:2,
+                    ZoomType:0,
+                    //OneLimitBarType:1,
+                    
+                    //PageSize:30,               //一屏显示多少数据
+                    DataWidth:10,
+
+                    PriceGap:{ Enable:true, Count:3 },
+
+                    //EnablePrediction:true,      //启动预测线,
+                    EnableDaySummary:true,
+                },
+
+                StepPixel:0,
+
+                IsDrawPictureXY:true,
+
+                Listener:
+                {
+                    //KeyDown:false,
+                    //Wheel:false
+                },
+
+                SelectedChart:{ EnableSelected: true, EnableMoveOn:true },
+                EnableIndexChartDrag:true,
+
+                GlobalOption:{ SelectedBorder:{ Mode:1} },
+
+                SelectRect:
+                {
+                    //Mark:{ IsShow:true, Position:{ Top:"TopEx" } },
+                    //PreventClose:true,
+                },
+    
+                KLineTitle: //标题设置
+                {
+                    IsShowName:true,       //不显示股票名称
+                    IsShowSettingInfo:true, //不显示周期/复权
+                    IsTitleShowLatestData:true,
+                    //IsShowDateTime:false,
+                },
+
+                //DragDownload: { Day:{ Enable:true } },   //拖拽下载
+
+                
+                DragSelectRect:
+                {
+                    Enable:true,
+                    ShowMode:2,
+                    EnableRButton:false,    //左键区间选择
+                    EnableLButton:false,     //右键区间选择
+                    //ZIndex:3,
+                },
+
+                KLineCountDown:
+                {
+                    //Enable:true,
+                },
+
+                DragKLine:
+                {
+                    //EnableShfit:false,
+                },
+                
+                Border: //边框
+                {
+                    Left:0,        //左边间距
+                    Right:20,       //右边间距
+                    Bottom:20,      //底部间距
+                    Top:25,         //顶部间距
+
+                    AutoLeft:{ Blank:10, MinWidth:80 },
+                    AutoRight:{ Blank:5, MinWidth:80 },
+                },
+                
+                Frame:  //子框架设置
+                [
+                    {
+                        IsShowLeftText:false,
+                        Custom:
+                        [
+                            { Type:0, Position:'right', LineType:1 }, 
+                        ]
+                    },
+
+                    {  IsShowLeftText:false, },
+                    {  IsShowLeftText:false, }
+                ],
+
+                ExtendChart:    //扩展图形
+                [
+                    
+                ],
+
+
+                Overlay:
+                [
+                    //{ Symbol:'399300.sz', DrawType:1, Color:'rgb(0,0,255)'},
+                    //{ Symbol:'600999.sh' }
+                ],
+            };
+                 
+            this.Create=function()  //创建图形
+            {
+                var self=this;
+                //$(window).resize(function() { self.OnSize(); });    //绑定窗口大小变化事件
+                //$(window).resize(function() { self.OnSize(  ); });    //绑定窗口大小变化事件
+                
+                //自定义函数和变量
+                JSComplier.AddFunction({ Name:'FUNC_ALPHA', Description:'自定义Alpha函数', IsDownload:true, Invoke:(obj)=>{ return HQData.FUNC_ALPHA(obj); } } );
+                JSComplier.AddVariant({ Name:'VAR_DEMO',   Description:'自定义变量1' } );
+
+                this.Option.EventCallback=
+                [
+                    {
+                        event:JSCHART_EVENT_ID.ON_SPLIT_YCOORDINATE, 
+                        callback:(event, data, obj)=>{ this.OnSplitYCoordinate(event, data, obj); }
+                    },
+                    {
+                        event:JSCHART_EVENT_ID.ON_SPLIT_XCOORDINATE, 
+                        callback:(event, data, obj)=>{ this.OnSplitXCoordinate(event, data, obj); }
+                    },
+                    {
+                        event:JSCHART_EVENT_ID.ON_CLICK_CROSSCURSOR_RIGHT, 
+                        callback:(event, data, obj)=>{ this.ClickCrossCursor(event, data, obj); }
+                    },
+                ];
+
+                //this.Chart.CreateExtraCanvasElement(JSChart.CorssCursorCanvasKey, { ZIndex:5 }); //十字光标单独一个图层
+                this.Option.OnCreatedCallback=(chart)=>{ this.OnCreateHQChart(chart); }
+                this.Option.ScriptError=(error)=> { this.ExecuteScriptError(error); }
+                this.Option.NetworkFilter=(data, callback)=>{ this.NetworkFilter(data, callback); }
+                this.Chart.SetOption(this.Option);  //设置K线配置
+                this.Chart.SetFocus();
+            }
+
+            this.OnCreateHQChart=function(chart)
+            {
+               
+            }
+
+            this.NetworkFilter=function(data, callback)
+            {
+                console.log(`[KLineChart::NetworkFilter] ${HQData.Explain}`, data);
+
+                switch(data.Name) 
+                {
+                    default:
+                        HQData.NetworkFilter(data, callback, this);
+                        break;
+                }
+            }
+
+            this.OnSplitYCoordinate=function(event, data ,obj)
+            {
+               
+            }
+
+            this.OnSplitXCoordinate=function(event, data, obj)
+            {
+                
+            }
+
+            this.OnSize=function(option)  //自适应大小调整
+            {
+                var height= $(window).height()-300;
+                var width = $(window).width();
+                
+                this.DivKLine.style.top='0px';
+                this.DivKLine.style.left='0px';
+                //this.DivKLine.style.width=width+'px';
+                this.DivKLine.style.height=height+'px';
+                //this.Chart.OnSize(option);
+            }
+
+            this.ClickCrossCursor=function(event, data, obj)
+            {
+                console.log('[KLineChart::ClickCrossCursor] event, data', event , data); //打印信息
+
+                var button=data.Button;
+                var rtButton=button.Rect;
+                var yValue=button.Data.YValue;
+                var windowIndex=button.Data.FrameID;
+                var e=data.e;
+
+                if (windowIndex==0)
+                {
+                    var menuData=
+                    { 
+                        Menu:
+                        [ 
+                            { Name:`买入 @ ${yValue.toFixed(2)}`,  Data:{ ID: "MENU_BUY_ID",  Args:[yValue] } },
+                            { Name:`卖出 @ ${yValue.toFixed(2)}`,  Data:{ ID: "MENU_SELL_ID", Args:[yValue] } },
+                            { Name:JSPopMenu.SEPARATOR_LINE_NAME },
+                            { Name:`画线 @ ${yValue.toFixed(2)}`,  Data:{ ID: "MENU_DRAW_LINE_ID", Args:[yValue, windowIndex] } },
+                        ],
+
+                        Position:JSPopMenu.POSITION_ID.DROPDOWN_RIGHT_MENU_ID,
+
+                        ClickCallback:(data)=>{ this.OnClickCrossCursorMenu(data); }
+                    };
+                }
+                else
+                { 
+                    var menuData=
+                    { 
+                        Menu:
+                        [ 
+                            { Name:`画线 @ ${yValue.toFixed(5)}`,  Data:{ ID: "MENU_DRAW_LINE_ID", Args:[yValue, windowIndex] } },
+                        ],
+
+                        Position:JSPopMenu.POSITION_ID.DROPDOWN_RIGHT_MENU_ID,
+
+                        ClickCallback:(data)=>{ this.OnClickCrossCursorMenu(data); }
+                    };
+
+                }
+
+                this.Chart.PopupMenuByDrapdown(menuData, rtButton);
+
+                if(e.preventDefault) e.preventDefault();
+                if(e.stopPropagation) e.stopPropagation();
+            }
+
+            this.ColorCount=0;
+            this.OnClickCrossCursorMenu=function(data)
+            {
+                console.log("[KLineChart::OnClickCrossCursorMenu] data=", data);
+
+                if (data.Data.ID=="MENU_DRAW_LINE_ID")
+                {
+                    var ARRAY_COLOR=['rgb(255,140,0)', "rgb(153,50,204)", "rgb(0, 139, 0)"];
+                    var lineColor=ARRAY_COLOR[this.ColorCount%ARRAY_COLOR.length];
+                    ++this.ColorCount;
+
+                    var yValue=data.Data.Args[0];
+                    var frameID=data.Data.Args[1];
+                    var drawPictrue=
+                    { 
+                        ClassName:"ChartDrawHLine",                   
+                        Value:[ {XValue:0, YValue:yValue} ],    
+                        FrameID:frameID,
+                        RightSpaceWidth:2,	 
+                        Button:{ SettingIcon:null },     
+                        ButtonBGColor:lineColor,    
+                        LineColor:lineColor
+                    };
+
+                    this.Chart.AddChartDrawPicture(drawPictrue, { Save:true });
+                    this.Chart.Draw();
+                }
+                else if (data.Data.ID=="MENU_BUY_ID")
+                {
+                    var yValue=data.Data.Args[0];
+                    var text=`买入价:${yValue.toFixed(2)}`;
+                    alert(text);
+                }
+                else if (data.Data.ID=="MENU_SELL_ID")
+                {
+                    var yValue=data.Data.Args[0];
+                    var text=`卖出价:${yValue.toFixed(2)}`;
+                    alert(text);
+                }
+            }
+
+            this.Hide=function()
+            {
+                this.Chart.JSChartContainer.HideAllPopDiv();
+            }
+
+            this.ChangePeriod=function(value)
+            {
+                this.Chart.JSChartContainer.ChangePeriod(value);
+            }
+
+            this.ReloadResource=function()
+            {
+                if (this.Chart) this.Chart.ReloadResource({ Resource:null, Draw:true , Update:true });  //动态更新颜色配置  
+            }
+
+
+            this.EnableStockChip=function()
+            {
+                if (!this.Chart || !this.Chart.JSChartContainer) return;
+
+                var hqchart=this.Chart.JSChartContainer;
+                var bShowStockChip=false;
+                if (hqchart.GetStockChipChart()) bShowStockChip=true;       //筹码
+                var stockChipConfig={Name:'StockChip', ShowType:1, Width:230 };
+
+                if (bShowStockChip)
+                {
+                    hqchart.ExecuteMenuCommand(JSCHART_MENU_ID.CMD_HIDE_STOCKCHIP_ID);
+                }
+                else
+                {
+                    hqchart.ExecuteMenuCommand(JSCHART_MENU_ID.CMD_SHOW_STOCKCHIP_ID, [stockChipConfig.Name, stockChipConfig]);
+                }
+            }
+
+            this.ShowDrawTool=function()
+            {
+                if (!this.Chart || !this.Chart.JSChartContainer) return;
+                var hqchart=this.Chart.JSChartContainer;
+                var bShow=hqchart.IsShowDrawToolDialog();
+                if (!bShow)  hqchart.ExecuteMenuCommand(JSCHART_MENU_ID.CMD_SHOW_DRAWTOOL_ID);
+            }
+
+        }
+
+        //分时图
+        //简单的把K线控件封装下
+        function MinuteChart(divKLine)
+        {
+            this.DivKLine=divKLine;
+            this.Chart=JSChart.Init(divKLine, false, false);   //把K线图绑定到一个Div上
+
+            //分时图配置
+            this.Option= {
+                Type:'分钟走势图',   //创建图形类型
+                //Type:'分钟走势图横屏',
+
+                Windows: //窗口指标
+                [
+                    //{ Index:"AMO", YAxis:{StringFormat:1} },
+                    { Index:"MACD", AddIndexWindow:true,IsSync:true, IndexHelp:true, },
+                 
+                ], 
+
+                OverlayIndex:
+                [
+
+                ],  //叠加指标
+                
+                Symbol:'600000.sh',         // cf1909.czc
+                //Symbol:'HSI.hk',         // cf1909.czc
+                IsAutoUpdate:true,          //是自动更新数据
+                AutoUpdateFrequency:1000,   //数据更新频率
+                DayCount:1,                     //1 最新交易日数据 >1 多日走势图
+                IsShowRightMenu:true,       //是否显示右键菜单
+                //CorssCursorTouchEnd:true,
+                
+                //EnableSelectRect:true,
+
+                LatestPointFlash:{ Enable:true, Frequency:500 },
+
+                //BeforeOpen:{ IsShow:true, Width:120, IsShowMultiDay:true, MulitiDayWidth:100 },
+                //AfterClose:{IsShow:true, Width:100, IsShowMultiDay:true, MulitiDayWidth:50},
+
+                DragSelectRect:
+                {
+                    Enable:true,
+                    EnableLButton:true,
+                },
+
+                EnableZoomIndexWindow:true,
+
+                EnablePopMenuV2:true,
+                EnableDrawToolDialogV2:true,
+                EnableNewIndex:true,
+                TooltipDialog:{ Enable:false, Style:1 },
+                EnableResize:true,
+                Minute:{ DragMode:1, },
+
+                MaxDayCount:5,
+                
+                CorssCursorInfo:
+                {  
+                    HPenType:1,VPenType:1,
+                    Left:1, Right:1, Bottom:1, 
+                    //IsFixXLastTime:true, 
+                    RightButton:{ Enable:true }, 
+                    //IsOnlyDrawMinute:true 
+                    //EnableKeyboard:true,
+                    //IsFixXLastTime:true,
+                    //IsShowCorssPoint:true,
+                    EnableDBClick:true,
+                },
+    
+
+                SelectRect:
+                {
+                    ShowRangeText:{ Enable:true, Position:1 },
+                    //Mark:{ IsShow:true }
+                },
+
+                DragSelectRect:
+                {
+                    Enable:true,
+                    ShowMode:2,
+                    EnableLButton:true,
+                },
+
+                SelectRectDialog:{ Enable:true },
+
+                EnableYDrag:
+                {
+                    Right:true,
+                    Left:true,
+                    Wheel:true,
+                },
+
+                
+                /*
+                DragSelectRect:
+                {
+                    Enable:true
+                },
+                */
+
+                MinuteLine:
+                {
+                    IsDrawAreaPrice:true,      //是否画价格面积图
+                    //IsShowAveragePrice:false,   //不显示均线
+                    //SplitType:2,
+
+                    
+                },
+
+                MinuteTitle:
+                {
+                    IsShowTime:true,
+                    IsShowName:true,
+                    IsShowDate:false,
+                    IsShowVolTitle:true,
+                    //IsAlwaysShowLastData:true,
+                    IsTitleShowLatestData:true,
+
+                    //ShowPostion:{ Type:0, Margin:{ Bottom:10 } }
+                },
+
+                MinuteVol:
+                {
+                    BarColorType:1,
+                },
+
+                //Language:'EN',
+                //EnableBorderDrag:false,
+
+                IsDrawPictureXY:true,
+
+                SelectedChart:{ EnableSelected: true, EnableMoveOn:true },
+                EnableIndexChartDrag:true,
+
+                FloatTooltip:{ Enable:true, },
+                SearchIndexDialog:{ Enable:true },
+                ModifyIndexParamDialog:{ Enable:true },
+
+                
+                EnableNightDayBG:true,
+                //EnableBuySellBar:true,
+    
+                Border: //边框
+                {
+                    Left:20,    //左边间距
+                    Right:20,     //右边间距
+                    Top:25,
+                    Bottom:25,
+
+                    AutoLeft:{ Blank:10, MinWidth:60 },
+                    AutoRight:{ Blank:10, MinWidth:60 },
+                },
+                
+                Frame:  //子框架设置
+                [
+                    { 
+                        Custom:
+                        [
+                            { 
+                                Type:0,  Position:'right',
+                            }
+                        ]
+                    },
+                ],
+
+
+                Overlay:    //叠加股票
+                [
+                    //{Symbol:'603190.sh', OverlayType:1, IsCalcuateMaxMin:true, Color:"rgb(250,0,0)" },
+                    //{Symbol:'000001.sz'},
+                    //{Symbol:'000151.sz'}
+                ],
+
+                ExtendChart:    //扩展图形
+                [
+                    //{Name:'MinuteTooltip' }, //手机端tooltip
+                    {Name:'MinutePCTooltip' }, //PC端tooltip
+                ]
+            };
+              
+
+            this.Create=function()  //创建图形
+            {
+                var self=this;
+               
+                this.Option.ScriptError=(error)=> { this.ExecuteScriptError(error); }
+                this.Option.NetworkFilter=(data, callback)=>{  this.NetworkFilter(data, callback); }
+
+                this.Option.EventCallback=
+                [
+                    
+                ];
+
+                this.Chart.SetOption(this.Option);  //设置K线配置
+            }
+
+
+            this.NetworkFilter=function(data, callback)
+            {
+                console.log(`[MinuteChart::NetworkFilter] ${HQData.Explain}`, data);
+
+                switch(data.Name) 
+                {
+                    default:
+                        HQData.NetworkFilter(data, callback);
+                        break;
+                }
+            }
+
+           
+            this.OnSize=function(option)  //自适应大小调整
+            {
+                var height= $(window).height()-300;
+                var width = $(window).width();
+                
+                this.DivKLine.style.top='0px';
+                this.DivKLine.style.left='0px';
+                this.DivKLine.style.width=width+'px';
+                this.DivKLine.style.height=height+'px';
+                this.Chart.OnSize(option);
+            }
+
+            this.ChangeSymbol=function(symbol)
+            {
+                this.Chart.ChangeSymbol(symbol);
+            }
+
+            this.Hide=function()
+            {
+                this.Chart.JSChartContainer.HideAllPopDiv();
+            }
+
+            this.ChangeDayCount=function(count)
+            {
+                this.Chart.JSChartContainer.ChangeDayCount(count);
+            }
+
+            this.ReloadResource=function()
+            {
+                if (this.Chart) this.Chart.ReloadResource({ Resource:null, Draw:true , Update:true });  //动态更新颜色配置  
+            }
+
+            this.ShowDrawTool=function()
+            {
+                if (!this.Chart || !this.Chart.JSChartContainer) return;
+                var hqchart=this.Chart.JSChartContainer;
+                var bShow=hqchart.IsShowDrawToolDialog();
+                if (!bShow)  hqchart.ExecuteMenuCommand(JSCHART_MENU_ID.CMD_SHOW_DRAWTOOL_ID);
+            }
+
+            this.EnableBeforeOpen=function()
+            {
+                if (!this.Chart || !this.Chart.JSChartContainer) return;
+                var hqchart=this.Chart.JSChartContainer;
+                var bShow=hqchart.IsShowBeforeData && hqchart.IsShowMultiDayBeforeData;
+                var data={ Left:!bShow, MultiDay:{ Left:!bShow }};
+                hqchart.ExecuteMenuCommand(JSCHART_MENU_ID.CMD_SHOW_CALLCATION_ID,[data]);
+            }
+        }
+
+
+        function ChartContainer()
+        {
+            this.KLineCtrl=null;
+            this.MinuteCtrl=null;
+
+            this.Create=function()
+            {
+                var resource=JSChart.GetResource();
+                //resource.BGColor=blackStyle.BGColor;
+                resource.ToolbarButtonStyle=1;
+                resource.FrameLogo.Text+= ` ${HQCHART_VERSION}`;
+
+                this.ChangeStyle(STYLE_TYPE_ID.BLACK_ID);
+
+                this.KLineCtrl=new KLineChart(document.getElementById('KLineCtrl'));
+                this.KLineCtrl.Create();
+
+                this.MinuteCtrl=new MinuteChart(document.getElementById('MinuteCtrl'));
+                this.MinuteCtrl.Create();
+
+                var divKLine=document.getElementById('KLine');
+                divKLine.style["visibility"]="visible";
+                divKLine.style["display"]="block";
+
+                var divMinute=document.getElementById('Minute');
+                divMinute.style["visibility"]="visible";
+                divMinute.style["display"]="none";
+
+                document.getElementById('MinuteDay').onmousedown=(e)=>{  this.Show(1, 1); }
+                document.getElementById('Minute5Day').onmousedown=(e)=>{  this.Show(1, 5); }
+
+                document.getElementById('KLineDay').onmousedown=(e)=>{  this.Show(0, 0); }
+                document.getElementById('KLineWeek').onmousedown=(e)=>{  this.Show(0, 1); }
+                document.getElementById('KLineMonth').onmousedown=(e)=>{  this.Show(0, 2); }
+                document.getElementById('KLineYear').onmousedown=(e)=>{  this.Show(0, 3); }
+                
+
+                document.getElementById('KLineMinute').onmousedown=(e)=>{  this.Show(0, 4); }
+                document.getElementById('KLine5Minute').onmousedown=(e)=>{  this.Show(0, 5); }
+                document.getElementById('KLine15Minute').onmousedown=(e)=>{  this.Show(0, 6); }
+                document.getElementById('KLine30Minute').onmousedown=(e)=>{  this.Show(0, 7); }
+
+
+                document.getElementById('WhiteStyle').onmousedown=(e)=>{  this.ChangeStyle(STYLE_TYPE_ID.WHITE_ID); }
+                document.getElementById('BlackStyle').onmousedown=(e)=>{  this.ChangeStyle(STYLE_TYPE_ID.BLACK_ID); }
+                
+                document.getElementById('StockChip').onmousedown=(e)=>{ this.EnableStockChip(); }
+                document.getElementById('DrawTool').onmousedown=(e)=>{ this.ShowDrawTool(); }
+                document.getElementById('BeforeOpen').onmousedown=(e)=>{ this.EnableBeforeOpen(); }
+                
+
+                this.UpdataToolbar(0);
+            }
+
+            //type 1=分时图     0=K线图
+            this.Show=function(type, period)
+            {
+                if (type===0)
+                {
+                    var divKLine=document.getElementById('KLine');
+                    divKLine.style["visibility"]="visible";
+                    divKLine.style["display"]="block";
+
+                    var divMinute=document.getElementById('Minute');
+                    divMinute.style["visibility"]="visible";
+                    divMinute.style["display"]="none";
+                    this.MinuteCtrl.Hide();
+
+                    this.KLineCtrl.Hide();
+                    this.KLineCtrl.ChangePeriod(period)
+
+                    this.UpdataToolbar(type);
+                }
+                else if (type===1)
+                {
+                    var divMinute=document.getElementById('Minute');
+                    divMinute.style["visibility"]="visible";
+                    divMinute.style["display"]="block";
+
+                    var divKLine=document.getElementById('KLine');
+                    divKLine.style["visibility"]="visible";
+                    divKLine.style["display"]="none";
+                    this.KLineCtrl.Hide();
+
+                    this.MinuteCtrl.ChangeDayCount(period);
+                    this.UpdataToolbar(type);
+                }
+            }
+
+            this.ChangeStyle=function(value)
+            {
+                var style=HQChartStyle.GetStyleConfig(value); //读取风格配置
+                JSChart.SetCSSStyle(value);
+                JSChart.SetStyle(style);
+
+                if (this.MinuteCtrl) this.MinuteCtrl.ReloadResource();  //动态更新颜色配置  
+                if (this.KLineCtrl) this.KLineCtrl.ReloadResource();  //动态更新颜色配置  
+            }
+
+            this.EnableStockChip=function()
+            {
+                if (!this.KLineCtrl) return;
+                this.KLineCtrl.EnableStockChip();
+            }
+
+            this.ShowDrawTool=function()
+            {
+                var divKLine=document.getElementById('KLine');
+                if (divKLine.style["display"]=="block" && this.KLineCtrl)
+                {
+                    this.KLineCtrl.ShowDrawTool();
+                    return;
+                }
+
+                var divMinute=document.getElementById('Minute');
+                if (divMinute.style["display"]=="block" && this.MinuteCtrl)
+                {
+                    this.MinuteCtrl.ShowDrawTool();
+                }
+            }
+
+            this.EnableBeforeOpen=function()
+            {
+                if (this.MinuteCtrl) this.MinuteCtrl.EnableBeforeOpen();
+            }
+
+            this.UpdataToolbar=function(type)
+            {
+                var dom=document.getElementById('StockChip');
+                dom.style["display"]=(type===0?"block":"none");
+
+                dom=document.getElementById('BeforeOpen');
+                dom.style["display"]=(type===1?"block":"none");
+            }
+        }
+
+        $(function () 
+        {
+            var control=new ChartContainer();
+            control.Create();
+        })
+    
+
+    </script>
+</body>
+</html>
+
+
+<style>
+
+html,body
+{
+    height:100%;
+    overflow-x:hidden;
+}
+
+body 
+{
+    margin:0px;
+    font-size:14px;
+    background-color: var(--BGColor);
+}
+
+#PeriodTab
+{
+    display: flex;
+    width: 100%;
+    border-bottom:solid 1px var(--BorderColor);
+    
+    background-color: var(--BGColor);
+    line-height: 30px;
+}
+
+#ChartContainer
+{
+    width: 100%;
+    height: calc(100% - 35px);
+    border-bottom:solid 1px var(--BorderColor);
+    background-color: var(--BGColor);
+    overflow-x:hidden;
+}
+
+#KLine
+{
+    width: 100%;
+    height: 100%;
+}
+
+#KLineCtrl
+{
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+#Minute
+{
+    width: 100%;
+    height: 100%;
+}
+
+#MinuteCtrl
+{
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.TabItem
+{
+    padding-left: 5px;
+    padding-right: 5px;
+    border-right:solid 1px var(--BorderColor);
+    cursor: default;
+    background-color: var(--TabItemBG);
+    color:var(--TabTextColor);
+
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.SpaceItem
+{
+    width: 50px;
+    border-right:solid 1px var(--BorderColor);
+}
+
+:root 
+{
+    --BGColor:rgb(255,255,255);
+    --TabItemBG:rgb(242,242,242);
+    --BorderColor:rgb(206,206,206);
+    --TabTextColor:rgb(90,90,90);
+}
+
+/*
+    白色风格
+*/
+:root[hqchart_style='0'],
+:root[hqchart_style='defined']
+{
+    --BGColor:rgb(255,255,255);
+    --TabItemBG:rgb(242,242,242);
+    --BorderColor:rgb(206,206,206);
+    --TabTextColor:rgb(90,90,90);
+}
+
+/*
+    黑色风格
+*/
+:root[hqchart_style='1']
+{
+    --BGColor:rgb(0,0,0);
+    --TabItemBG:rgb(38,38,38);
+    --BorderColor:rgb(74,74,74);
+    --TabTextColor:rgb(204,204,204);
+}
+
+</style>

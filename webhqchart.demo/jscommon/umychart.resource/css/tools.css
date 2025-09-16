@@ -1129,6 +1129,7 @@ input[type="color"] {
     width:22px;
     user-select: none;
     border: 1px solid; 
+    padding: 1px;
     background-color:var(--HQChart-DialogModifyDraw-DragBGColor);
     border-color: var(--HQChart-DialogModifyDraw-DragBGColor);
 }
@@ -1153,11 +1154,27 @@ input[type="color"] {
     color:var(--HQChart-DialogModifyDraw-ButtonColor);
 }
 
+.UMyChart_Draw_Modify_Dialog_Button_ColorBar_Div
+{
+    margin-top: 2px;
+    height: 3px;
+    width: 22px;
+}
+
+.UMyChart_Draw_Modify_Dialog_Button_Color_Span
+{
+    font-size:17px;
+    margin-left: 2px;
+    color:var(--HQChart-DialogModifyDraw-ButtonColor);
+}
+
+
 .UMyChart_Draw_Modify_Dialog_Unlock_Button_Span
 {
     font-size:22px;
     color:var(--HQChart-DialogModifyDraw-UnlockButtonColor);
 }
+
 
 .UMyChart_Draw_Modify_Tooltip
 {
@@ -1183,7 +1200,7 @@ input[type="color"] {
 {
     visibility:hidden;
     width:22px;
-    height:22px;
+    height:4px;
     position:absolute;
 }
 
@@ -1206,7 +1223,8 @@ input[type="color"] {
 
 .jschart_pop_minute_chart
 {
-    height:480px
+    height:480px;
+    position: relative;
 }
 
 .jschart_pop_minute_chart_Title_Div

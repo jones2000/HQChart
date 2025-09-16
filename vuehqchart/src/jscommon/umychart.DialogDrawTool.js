@@ -687,17 +687,17 @@ function JSDialogModifyDraw()
 
     this.AryButton=
     [
-        { Title:"修改图形颜色", ClassName: 'hqchart_drawtool icon-huabi', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_CHANGE_LINE_COLOR_ID }},
-        { Title:"修改字体颜色", ClassName: 'hqchart_drawtool icon-zitiyanse', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_CHANGE_FONT_COLOR_ID }},
-        { Title:"修改背景颜色", ClassName: 'hqchart_drawtool icon-zitibeijingse', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_CHANGE_BG_COLOR_ID }},
-        { Title:"修改边框颜色", ClassName: 'hqchart_drawtool icon-biankuang', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_CHANGE_BORDER_COLOR_ID }},
-        { Title:"字体放大", ClassName: 'hqchart_drawtool icon-zoomin', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_ZOOM_FONT_ID }},
-        { Title:"字体缩小", ClassName: 'hqchart_drawtool icon-zoomout', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_ZOOM_OUT_FONT_ID }},
-        { Title:"随机生成文字内容", ClassName: 'hqchart_drawtool icon-bianji', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_MODIFY_TEXT_ID }},
-        { Title:"高级设置", ClassName: 'hqchart_drawtool icon-setting', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_ADVANCED_SETTING_ID }},
+        { Title:"修改图形颜色", ClassName: 'hqchart_drawtool icon-Vector UMyChart_Draw_Modify_Dialog_Button_Color_Span', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_CHANGE_LINE_COLOR_ID }},
+        { Title:"修改字体颜色", ClassName: 'hqchart_drawtool icon-zitiyanse1 UMyChart_Draw_Modify_Dialog_Button_Color_Span ', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_CHANGE_FONT_COLOR_ID }},
+        { Title:"修改背景颜色", ClassName: 'hqchart_drawtool icon-zitibeijingse UMyChart_Draw_Modify_Dialog_Button_Color_Span', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_CHANGE_BG_COLOR_ID }},
+        { Title:"修改边框颜色", ClassName: 'hqchart_drawtool icon-biankuang UMyChart_Draw_Modify_Dialog_Button_Color_Span', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_CHANGE_BORDER_COLOR_ID }},
+        { Title:"字体放大", ClassName: 'hqchart_drawtool icon-zoomin UMyChart_Draw_Modify_Dialog_Button_Span', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_ZOOM_FONT_ID }},
+        { Title:"字体缩小", ClassName: 'hqchart_drawtool icon-zoomout UMyChart_Draw_Modify_Dialog_Button_Span', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_ZOOM_OUT_FONT_ID }},
+        { Title:"随机生成文字内容", ClassName: 'hqchart_drawtool icon-bianji UMyChart_Draw_Modify_Dialog_Button_Span', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_MODIFY_TEXT_ID }},
+        { Title:"高级设置", ClassName: 'hqchart_drawtool icon-setting UMyChart_Draw_Modify_Dialog_Button_Span', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_ADVANCED_SETTING_ID }},
 
         { Title:"上锁", ClassName: 'hqchart_drawtool icon-lock', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_LOCK_DRAW_CHART_ID }},
-        { Title:"删除图形", ClassName: 'hqchart_drawtool icon-recycle_bin', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_DELETE_DRAW_CHART_ID }},
+        { Title:"删除图形", ClassName: 'hqchart_drawtool icon-recycle_bin UMyChart_Draw_Modify_Dialog_Button_Span', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_DELETE_DRAW_CHART_ID }},
     ];
 
     this.RestoreFocusDelay=800;
@@ -753,10 +753,9 @@ function JSDialogModifyDraw()
         spanTooltip.innerText=item.Title;
         divItem.appendChild(spanTooltip);
 
-
         var spanDom=document.createElement("span");
         spanDom.className=item.ClassName;
-        spanDom.classList.add("UMyChart_Draw_Modify_Dialog_Button_Span");
+        //spanDom.classList.add("UMyChart_Draw_Modify_Dialog_Button_Span");
         divItem.appendChild(spanDom);
        
 
@@ -770,23 +769,31 @@ function JSDialogModifyDraw()
         {
             case JS_DRAWTOOL_MENU_ID.CMD_CHANGE_LINE_COLOR_ID:
                 this.ColorButton=data;
+                var divColorBar=this.CreateColorBar(data);
+                divItem.appendChild(divColorBar);
                 var inputColor=this.CreateInputColor(data);
                 divItem.appendChild(inputColor);
                 break;
             case JS_DRAWTOOL_MENU_ID.CMD_CHANGE_BG_COLOR_ID:
                 this.BGColorButton=data;
+                var divColorBar=this.CreateColorBar(data);
+                divItem.appendChild(divColorBar);
                 var inputColor=this.CreateInputColor(data);
                 divItem.appendChild(inputColor);
                 divItem.style.display="none";
                 break;
             case JS_DRAWTOOL_MENU_ID.CMD_CHANGE_FONT_COLOR_ID:
                 this.FontColorButton=data;
+                var divColorBar=this.CreateColorBar(data);
+                divItem.appendChild(divColorBar);
                 var inputColor=this.CreateInputColor(data);
                 divItem.appendChild(inputColor);
                 divItem.style.display="none";
                 break;
             case JS_DRAWTOOL_MENU_ID.CMD_CHANGE_BORDER_COLOR_ID:
                 this.BorderColorButton=data;
+                var divColorBar=this.CreateColorBar(data);
+                divItem.appendChild(divColorBar);
                 var inputColor=this.CreateInputColor(data);
                 divItem.appendChild(inputColor);
                 divItem.style.display="none";
@@ -824,6 +831,16 @@ function JSDialogModifyDraw()
         inputColor.oninput=(e)=>{ this.OnChangeColor(e, data) };
        
         return inputColor;
+    }
+
+    //颜色块
+    this.CreateColorBar=function(data)
+    {
+        var divColor=document.createElement("div");
+        divColor.className="UMyChart_Draw_Modify_Dialog_Button_ColorBar_Div";
+        data.DivColorBar=divColor;
+
+        return divColor;
     }
 
     this.OnClickButton=function(e, data)
@@ -934,7 +951,7 @@ function JSDialogModifyDraw()
         if (data.Item.Data.ID==JS_DRAWTOOL_MENU_ID.CMD_CHANGE_LINE_COLOR_ID)
         {
             this.ChartPicture.LineColor=color;
-            if (this.ColorButton) this.ColorButton.Span.style['color']=color;
+            if (this.ColorButton) this.ColorButton.DivColorBar.style['background-color']=color;
             if (this.HQChart.ChartDrawStorage) this.HQChart.ChartDrawStorage.SaveDrawData(this.ChartPicture);   //保存下
 
             this.HQChart.Draw();
@@ -944,7 +961,7 @@ function JSDialogModifyDraw()
             if (this.ChartPicture.ClassName=="ChartDrawNote") this.ChartPicture.NoteBorderColor=color;
             else this.ChartPicture.BorderColor=color;
         
-            if (this.BorderColorButton) this.BorderColorButton.Span.style['color']=color;
+            if (this.BorderColorButton) this.BorderColorButton.DivColorBar.style['background-color']=color;
             if (this.HQChart.ChartDrawStorage) this.HQChart.ChartDrawStorage.SaveDrawData(this.ChartPicture);   //保存下
 
             this.HQChart.Draw();
@@ -954,7 +971,7 @@ function JSDialogModifyDraw()
             if (this.ChartPicture.ClassName=="ChartDrawNote") this.ChartPicture.NoteTextColor=color;
             else this.ChartPicture.TextColor=color;
 
-            if (this.FontColorButton) this.FontColorButton.Span.style['color']=color;
+            if (this.FontColorButton) this.FontColorButton.DivColorBar.style['background-color']=color;
             if (this.HQChart.ChartDrawStorage) this.HQChart.ChartDrawStorage.SaveDrawData(this.ChartPicture);   //保存下
 
             this.HQChart.Draw();
@@ -965,7 +982,7 @@ function JSDialogModifyDraw()
             if (this.ChartPicture.ClassName=="ChartDrawNote") this.ChartPicture.NoteBGColor=color;
             else this.ChartPicture.BGColor=color;
 
-            if (this.BGColorButton) this.BGColorButton.Span.style['color']=color;
+            if (this.BGColorButton) this.BGColorButton.DivColorBar.style['background-color']=color;
             if (this.HQChart.ChartDrawStorage) this.HQChart.ChartDrawStorage.SaveDrawData(this.ChartPicture);   //保存下
 
             this.HQChart.Draw();
@@ -1167,7 +1184,7 @@ function JSDialogModifyDraw()
             this.ShowButton(item.Div, bShowLineColor?"inline":"none");
             if (bShowLineColor)
             {
-                item.Span.style['color']=chart.LineColor;
+                item.DivColorBar.style['background-color']=chart.LineColor;
             }
         }
 
@@ -1177,7 +1194,7 @@ function JSDialogModifyDraw()
             this.ShowButton(item.Div, bShowBGColor?"inline":"none");
             if (bShowBGColor)
             {
-                item.Span.style['color']=bgColor;
+                item.DivColorBar.style['background-color']=bgColor;
             }
         }
 
@@ -1187,7 +1204,7 @@ function JSDialogModifyDraw()
             this.ShowButton(item.Div, bShowFontColor?"inline":"none");
             if (bShowFontColor)
             {
-                item.Span.style['color']=fontColor;
+                item.DivColorBar.style['background-color']=fontColor;
             }
         }
 
@@ -1197,7 +1214,7 @@ function JSDialogModifyDraw()
             this.ShowButton(item.Div, bShowBorderColor?"inline":"none");
             if (bShowBorderColor)
             {
-                item.Span.style['color']=borderColor;
+                item.DivColorBar.style['background-color']=borderColor;
             }
         }
 

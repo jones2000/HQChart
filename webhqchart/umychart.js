@@ -476,6 +476,17 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (IFrameSplitOperator.IsBool(item.Enable)) chart.FastSlideConfig.Enable=item.Enable;
         }
 
+        if (option.DataMove)
+        {
+            var item=option.DataMove;
+
+            var subItem=item.Touch;
+            if (subItem && IFrameSplitOperator.IsBool(subItem.EnableLR)) chart.DataMoveConfig.Touch.EnableLR=subItem.EnableLR;
+
+            var subItem=item.Mouse;
+            if (subItem && IFrameSplitOperator.IsBool(subItem.EnableLR)) chart.DataMoveConfig.Mouse.EnableLR=subItem.EnableLR;
+        }
+
         if (chart.ClassName=="KLineChartContainer")
         {
             if (!option.DragSelectRect)
@@ -3430,8 +3441,9 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                         //SecondKeyID 1=shiftKey 2=ctrlKey 3=altKey
     this.AryHotKey=[];  //热键 { KeyID:87, SecondKeyID:1, CMD:JSCHART_MENU_ID.CMD_FULLSCREEN_SUMMARY_ID, Args:null, Description:"Alt+W	全屏区间统计" },
 
-    this.FastSlideConfig={ MinDistance:500, MinSpeed:3, MaxTime:250, Enable:false };       //快速滑动配置 MinDistance=最小的距离 MinSpeed=最小速度 MaxTime=最大间隔时间(ms)
-    this.KeyboardMove={ Timer:null, Delay:100 , PressTime:500, Enable:false, Event:null };   //键盘左右移动 PressTime=长按时间
+    this.FastSlideConfig={ MinDistance:500, MinSpeed:3, MaxTime:250, Enable:false };            //快速滑动配置 MinDistance=最小的距离 MinSpeed=最小速度 MaxTime=最大间隔时间(ms)
+    this.KeyboardMove={ Timer:null, Delay:100 , PressTime:500, Enable:false, Event:null };      //键盘左右移动 PressTime=长按时间
+    this.DataMoveConfig={ Touch:{ EnableLR: true}, Mouse:{ EnableLR:true } };                   //数据移动配置
 
     this.MapEventListenerCache=new Map();   //addEventListener 监听事件 key=type:"keydown|keyup ....", value:{ Callback:, Option: }
 
@@ -4932,7 +4944,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         }
         else if (this.DragMode==1 || isDragSelectRect || isDragSubSelectRect)  //数据上下左右拖拽 区间选择框左右拖动
         {
-            this.OnDragMode_One({X:moveSetp, Y:moveSetpY}, e);
+            if (this.DataMoveConfig.Mouse.EnableLR)
+                this.OnDragMode_One({X:moveSetp, Y:moveSetpY}, e);
         }
     }
 
@@ -6111,18 +6124,21 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                     var oneStepWidth=this.GetMoveOneStepWidth();
                     if (moveSetp<oneStepWidth) return;
 
-                    if(this.DataMove(moveSetp,isLeft))
+                    if (this.DataMoveConfig.Touch.EnableLR)
                     {
-                        this.UpdataDataoffset();
-                        this.UpdatePointByCursorIndex();
-                        this.UpdateFrameMaxMin();
-                        this.ResetFrameXYSplit();
-                        this.Draw();
-                        this.OnKLinePageChange("OnTouchMove");
-                    }
-                    else
-                    {
-                        if (this.DragDownloadData) this.DragDownloadData();
+                        if(this.DataMove(moveSetp,isLeft))
+                        {
+                            this.UpdataDataoffset();
+                            this.UpdatePointByCursorIndex();
+                            this.UpdateFrameMaxMin();
+                            this.ResetFrameXYSplit();
+                            this.Draw();
+                            this.OnKLinePageChange("OnTouchMove");
+                        }
+                        else
+                        {
+                            if (this.DragDownloadData) this.DragDownloadData();
+                        }
                     }
 
                     drag.LastMove.X=touches[0].clientX;
@@ -10498,6 +10514,12 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             if (IFrameSplitOperator.IsBool(frameItem.IsShowIndexTitle)) frame.IsShowIndexTitle=frameItem.IsShowIndexTitle;
             if (frameItem.ClientBGColor) frame.ClientBGColor=frameItem.ClientBGColor;
 
+            if (frameItem.Toolbar)
+            {
+                var subItem=frameItem.Toolbar.Margin;
+                if (subItem && IFrameSplitOperator.IsNumber(subItem.Right)) frame.ToolbarConfig.Margin.Right=subItem.Right;
+            }
+
             //分时图属性
             if (IFrameSplitOperator.IsBool(frameItem.CloseBeforeButton)) frameItem.IsShowCloseButton=frameItem.CloseBeforeButton;
             if (frame.YSplitOperator.RightTextConfig)   //主图右侧坐标设置
@@ -13824,6 +13846,8 @@ function AverageWidthFrame()
     this.ExportDataButton=CloneData(g_JSChartResource.Buttons.ExportData);
     this.AddIndexWindowButton=CloneData(g_JSChartResource.Buttons.AddIndexWindow);
     this.IndexHelpButton=CloneData(g_JSChartResource.Buttons.IndexHelp);
+    
+    this.ToolbarConfig={ Margin:{ Right:3 } },
 
     this.ButtonTooltip=CloneData(g_JSChartResource.Buttons.Tooltip);
 
@@ -13893,7 +13917,7 @@ function AverageWidthFrame()
         var border=this.GetBorder();
         if (this.IsHScreen)
         {
-            var y=border.Bottom-3;
+            var y=border.Bottom-this.ToolbarConfig.Margin.Right;
             var x=border.RightTitle+this.ChartBorder.TitleHeight/2;
 
             this.ToolbarCacheSize={ RToolbar:{ Right:y, Left:y }};  //相当于额 Top, Bottom
@@ -13932,7 +13956,7 @@ function AverageWidthFrame()
         }
         else
         {
-            var right=border.RightEx-3;
+            var right=border.RightEx-this.ToolbarConfig.Margin.Right;
             var left=border.Left;
             var yButton=border.Top+this.ChartBorder.TitleHeight/2;
 
@@ -66148,7 +66172,6 @@ IChartDrawPicture.ColorToRGBA=function(color,opacity)
     var reg = /^(rgb|RGB)/;
     if (reg.test(color)) 
     {
-        var strHex = "#";
         var aryColor = color.replace(/(?:\(|\)|rgb|RGB)*/g, "").split(",");    // 把RGB的3个数值变成数组
         var r = parseInt(aryColor[0]);
         var g = parseInt(aryColor[1]);
@@ -105623,6 +105646,7 @@ function JSDivFrameToolbar()
         var pixelTatio = GetDevicePixelRatio();
         var frame=this.HQChart.Frame.SubFrame[this.FrameID].Frame;
         var border=frame.GetBorder();
+        var rtClient=this.HQChart.UIElement.getBoundingClientRect();
 
         var top=border.Top/pixelTatio;
         var right=border.RightEx/pixelTatio;
@@ -105655,10 +105679,13 @@ function JSDivFrameToolbar()
         if (!this.HQChart.JSToolbarTooltip) return;
         if (!item.Div) return;
 
+        
         var rtButton=item.Div.getBoundingClientRect();
         var rtHQChart=this.DivHQChart.getBoundingClientRect();
+        var left=rtButton.left;
+        var top=rtButton.bottom+2;
         var left=rtButton.left-rtHQChart.left;
-        var top=rtButton.bottom-rtHQChart.top+2;
+        var top=this.DivToolbar.offsetHeight+this.DivToolbar.offsetTop;
         this.HQChart.JSToolbarTooltip.Show(top, left, { Text:item.Tooltip.Text });
     }
 }

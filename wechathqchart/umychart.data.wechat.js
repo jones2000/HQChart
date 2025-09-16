@@ -2319,7 +2319,7 @@ var JSCHART_EVENT_ID =
     ON_CUSTOM_MINUTE_NIGHT_DAY_X_INDEX:156,   //日盘夜盘的分界线
 
     ON_CALCULATE_CHIP_DATA:164,                //计算筹码数据 (筹码图用)
-    
+    ON_TOUCH_FAST_SLIDE:169,                    //快速滑动
     ON_CLICK_CROSSCURSOR_BOTTOM:170,            //十字光标底部文字点击   
     ON_CLICK_INDEX_LOCK:178,            //点击指标锁
     ON_CORSSCURSOR_STATUS_CHANGE:179,   //十字光标状态改变
