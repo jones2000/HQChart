@@ -4196,9 +4196,24 @@ function JSReportChartContainer(uielement)
     }
 
     //本地排序
-    this.LocalSort=function(left, right, column, sortType)
+    this.LocalSort=function(left, right, srcColumn, sortType)
     {
-        switch(column.Type)
+        var column=srcColumn;
+        var type=column.Type;
+        if (column.Type==REPORT_COLUMN_ID.MULTI_LINE_CONTAINER)
+        {
+            if (IFrameSplitOperator.IsNumber(column.SortSubField) && column.SortSubField>=0 && IFrameSplitOperator.IsNonEmptyArray(column.AryField))
+            {
+                var item=column.AryField[column.SortSubField];
+                if (item && item.Type) 
+                {
+                    type=item.Type;
+                    column=item;
+                }
+            } 
+        }
+
+        switch(type)
         {
             case REPORT_COLUMN_ID.SYMBOL_ID:
             case REPORT_COLUMN_ID.NAME_ID:
@@ -5588,6 +5603,7 @@ function ChartReport()
         else if (item.Type==REPORT_COLUMN_ID.MULTI_LINE_CONTAINER)
         {
             if (IFrameSplitOperator.IsNonEmptyArray(item.AryField)) colItem.AryField=item.AryField.slice();
+            if (IFrameSplitOperator.IsNumber(item.SortSubField)) colItem.SortSubField=item.SortSubField;
         }
 
         return colItem;
