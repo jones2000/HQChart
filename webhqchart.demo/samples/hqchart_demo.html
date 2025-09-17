@@ -895,7 +895,7 @@
                 EnablePopMenuV2:true,
                 EnableDragRow:true,
                 EnableDragHeader:true,
-                ItemBorder:false,
+                CellBorder:{ IsShowVLine:false, IsFullLine:false },
                 EnableResize:true,
 
                 Border: //边框
@@ -917,6 +917,13 @@
                     Enable:true,
                     Option:{ EnableResize:false }
                 },
+
+                VScrollbar:{ Enable:true , Style:1, BarWidth:3 , Margin:{ Left:0, Right:0, Top:1, Bottom:1 }},
+
+                WheelPage:{ Type:1 },
+                SelectedModel:1,
+                PageUpDownCycle:false,
+                BottomTab:{ IsShow:false }
             };
                  
             this.Create=function()  //创建图形
@@ -965,10 +972,7 @@
                     "688330.sh","688337.sh","688395.sh","688597.sh","688611.sh","688616.sh","688681.sh","688698.sh","688777.sh", "300356.sz",
                 ];
 
-                var SELF_STOCK_LIST=
-                [
-                    "600000.sh", "000001.sz","399006.sz", "000151.sz","000001.sh"
-                ]
+                var SELF_STOCK_LIST=["600000.sh", "000001.sz","399006.sz", "000151.sz","000001.sh"];
 
                 var hqchartData={ symbol:symbol , name:symbol, data:SELF_STOCK_LIST };
                

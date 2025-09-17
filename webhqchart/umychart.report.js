@@ -232,6 +232,12 @@ function JSReportChart(divElement)
             if (IFrameSplitOperator.IsNumber(option.TextOverflowStyle)) reportChart.TextOverflowStyle=option.TextOverflowStyle;
             if (IFrameSplitOperator.IsNumber(option.MultiSelectModel)) reportChart.MultiSelectModel=option.MultiSelectModel;
             if (IFrameSplitOperator.IsNumber(option.SelectedStyle)) reportChart.SelectedStyle=option.SelectedStyle;
+
+            if (option.BottomTab)
+            {
+                var item=option.BottomTab;
+                if (IFrameSplitOperator.IsBool(item.IsShow)) reportChart.Tab.IsShow=item.IsShow;
+            }
         }
 
         this.SetChartBorder(chart, option);
@@ -828,7 +834,7 @@ function JSReportChartContainer(uielement)
             if (IFrameSplitOperator.IsNumber(option.BorderLine)) this.Frame.BorderLine=option.BorderLine;   //边框
             if (IFrameSplitOperator.IsBool(option.TabShow)) chart.Tab.IsShow=option.TabShow;
             if (IFrameSplitOperator.IsNumber(option.FixedRowCount)) chart.FixedRowCount=option.FixedRowCount;   //固定行
-            if (IFrameSplitOperator.IsBool(option.ItemBorder)) chart.IsDrawBorder=option.ItemBorder;            //单元格边框
+            
             if (IFrameSplitOperator.IsNumber(option.SelectedModel)) chart.SelectedModel=option.SelectedModel;
             if (IFrameSplitOperator.IsNumber(option.HeaderRowCount)) chart.HeaderRowCount=option.HeaderRowCount;
 
@@ -844,6 +850,14 @@ function JSReportChartContainer(uielement)
                     this.FixedRowData.Symbol.push(item.Symbol);
                     ++chart.FixedRowCount;
                 }
+            }
+
+            if (option.CellBorder)
+            {
+                var item=option.CellBorder;
+                if (IFrameSplitOperator.IsBool(item.IsShowVLine)) chart.CellBorderConfig.IsShowVLine=item.IsShowVLine;
+                if (IFrameSplitOperator.IsBool(item.IsShowHLine)) chart.CellBorderConfig.IsShowHLine=item.IsShowHLine;
+                if (IFrameSplitOperator.IsBool(item.IsFullLine)) chart.CellBorderConfig.IsFullLine=item.IsFullLine;
             }
         }
 
@@ -5185,8 +5199,9 @@ function ChartReport()
     this.SelectedRowData;               //{ DataIndex:, Index:, Symbol: }
     this.SelectedFixedRow=-1;           //选中固定行ID
     this.SelectedStyle=1;               //选中行样式 1=整行填充 2=底部绘制直线
-    this.IsDrawBorder=1;                //是否绘制单元格边框
     this.HeaderRowCount=1;              //表头行数
+
+    this.CellBorderConfig={ IsShowVLine:true, IsShowHLine:true, IsFullLine:true };                //单元格边框 IsShowHLine=横线 IsShowVLine=竖向
 
     //多选模式
     this.MultiSelectModel=0;            //0=禁用 1=开启     
@@ -5873,6 +5888,7 @@ function ChartReport()
         this.AryFullSelectedRow=[];
         this.DevicePixelRatio=GetDevicePixelRatio()
         this.LastMouseStatus=lastMouseStatus;
+        this.DrawRowCount=0;
         this.CreateTempCache();
 
         if (this.GlobalOption) this.GlobalOption.FlashBGCount=0;
@@ -6392,7 +6408,7 @@ function ChartReport()
 
     this.DrawBorder=function()
     {
-        if (!this.IsDrawBorder) return;
+        if (!this.CellBorderConfig.IsShowHLine && !this.CellBorderConfig.IsShowVLine) return;
 
         var left=this.RectClient.Left;
         var right=this.RectClient.Right;
@@ -6401,53 +6417,60 @@ function ChartReport()
 
         this.Canvas.strokeStyle=this.BorderColor;
         this.Canvas.beginPath();
-       
-        this.Canvas.moveTo(left,ToFixedPoint(top+this.HeaderHeight));
-        this.Canvas.lineTo(right,ToFixedPoint(top+this.HeaderHeight));
+        var rowCount=this.RowCount;
+        if (!this.CellBorderConfig.IsFullLine) rowCount=this.DrawRowCount;
 
-        var rowTop=top+this.HeaderHeight+this.RowHeight;
-        var rotBottom=rowTop;
-        for(var i=0;i<this.FixedRowCount;++i)
+        if (this.CellBorderConfig.IsShowHLine)    //横线
         {
-            var drawTop=ToFixedPoint(rowTop);
-            this.Canvas.moveTo(left,drawTop);
-            this.Canvas.lineTo(right,drawTop);
-            rotBottom=rowTop;
-            rowTop+=this.FixedRowHeight;
+            this.Canvas.moveTo(left,ToFixedPoint(top+this.HeaderHeight));
+            this.Canvas.lineTo(right,ToFixedPoint(top+this.HeaderHeight));
+
+            var rowTop=top+this.HeaderHeight+this.RowHeight;
+            var rotBottom=rowTop;
+            for(var i=0;i<this.FixedRowCount;++i)
+            {
+                var drawTop=ToFixedPoint(rowTop);
+                this.Canvas.moveTo(left,drawTop);
+                this.Canvas.lineTo(right,drawTop);
+                rotBottom=rowTop;
+                rowTop+=this.FixedRowHeight;
+            }
+
+            var rowTop=top+this.HeaderHeight+this.RowHeight+this.FixedRowHeight*this.FixedRowCount;
+            var rotBottom=rowTop;
+            //横线
+            for(var i=0;i<rowCount;++i)
+            {
+                var drawTop=ToFixedPoint(rowTop);
+                this.Canvas.moveTo(left,drawTop);
+                this.Canvas.lineTo(right,drawTop);
+                rotBottom=rowTop;
+                rowTop+=this.RowHeight;
+            }
         }
 
-        var rowTop=top+this.HeaderHeight+this.RowHeight+this.FixedRowHeight*this.FixedRowCount;
-        var rotBottom=rowTop;
-        //横线
-        for(var i=0;i<this.RowCount;++i)
+        if (this.CellBorderConfig.IsShowVLine)     //竖线
         {
-            var drawTop=ToFixedPoint(rowTop);
-            this.Canvas.moveTo(left,drawTop);
-            this.Canvas.lineTo(right,drawTop);
-            rotBottom=rowTop;
-            rowTop+=this.RowHeight;
-        }
+            var columnLeft=left;
+            for(var i=0;i<this.FixedColumn && i<this.Column.length; ++i)
+            {
+                var item=this.Column[i];
+                var drawLeft=ToFixedPoint(columnLeft+item.Width);
+                this.Canvas.moveTo(drawLeft,top);
+                this.Canvas.lineTo(drawLeft,rotBottom);
 
-        //竖线
-        var columnLeft=left;
-        for(var i=0;i<this.FixedColumn && i<this.Column.length; ++i)
-        {
-            var item=this.Column[i];
-            var drawLeft=ToFixedPoint(columnLeft+item.Width);
-            this.Canvas.moveTo(drawLeft,top);
-            this.Canvas.lineTo(drawLeft,rotBottom);
+                columnLeft+=item.Width;
+            }
 
-            columnLeft+=item.Width;
-        }
+            for(var i=this.FixedColumn+this.Data.XOffset;i<this.Column.length;++i)
+            {
+                var item=this.Column[i];
+                var drawLeft=ToFixedPoint(columnLeft+item.Width);
+                this.Canvas.moveTo(drawLeft,top);
+                this.Canvas.lineTo(drawLeft,rotBottom);
 
-        for(var i=this.FixedColumn+this.Data.XOffset;i<this.Column.length;++i)
-        {
-            var item=this.Column[i];
-            var drawLeft=ToFixedPoint(columnLeft+item.Width);
-            this.Canvas.moveTo(drawLeft,top);
-            this.Canvas.lineTo(drawLeft,rotBottom);
-
-            columnLeft+=item.Width;
+                columnLeft+=item.Width;
+            }
         }
 
         this.Canvas.stroke();
@@ -6574,6 +6597,7 @@ function ChartReport()
             this.ShowSymbol.push( { Index:i, Symbol:symbol } );
 
             textTop+=this.RowHeight;
+            ++this.DrawRowCount;
         }
     }
 

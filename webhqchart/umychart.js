@@ -9845,8 +9845,15 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             event.Callback(event, sendData, this);
         }
 
-        if (option.Update && this.Update) this.Update( {UpdateCursorIndexType:2} );       //是否立即更新并重绘
-        else if (option.Draw==true || option.Redraw==true) this.Draw(); //是否立即重绘
+        if (option.Update && this.Update) 
+        {
+            this.Update( {UpdateCursorIndexType:2} );       //是否立即更新并重绘
+        }
+        else if (option.Draw==true || option.Redraw==true) 
+        {
+            this.ResetFrameXYSplit();   //重新计算分割线
+            this.Draw(); //是否立即重绘
+        }
 
         if (this.PopMinuteChart) this.PopMinuteChart.ReloadResource(option);
         if (this.DialogTooltip) this.DialogTooltip.ReloadResource(option);
@@ -12991,6 +12998,8 @@ function CoordinateInfo()
     //this.OutRange={ BGColor:"", TextColor:, BorderColor: TopYOffset:, BottomYOffset: }
     //Y轴文字偏移
     //this.YOffset=[{ Offset:5}, { Offset:10} ] //目前只对框子外的刻度文字生效 0=外左 1=外右 2=内左 3=内右
+    //X轴文字
+    //this.XOffset=[{ Position:1} ] //Position:1=线段移动到左侧K线间距 2=线段移动到K线右侧间距
 }
 
 
@@ -14970,6 +14979,22 @@ function AverageWidthFrame()
             var x=null;
             if (mapX && mapX.has(item.Value)) x=mapX.get(item.Value);
             else x=this.GetXFromIndex(item.Value);
+
+            if (item.XOffset && item.XOffset[0])
+            {
+                var subItem=item.XOffset[0];
+                if (subItem.Position===1)
+                {
+                    x-=this.DataWidth/2;
+                    x-=this.DistanceWidth/2;
+                }
+                else if (subItem.Position===2)
+                {
+                    x+=this.DataWidth/2;
+                    x+=this.DistanceWidth/2;
+                }
+            }
+
             if (x>right) break;
             if (xPrev!=null && Math.abs(x-xPrev)<this.MinXDistance) continue;
             
@@ -93576,6 +93601,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         this.Symbol=symbol;
         this.ResetDayOffset();
         this.ResetDataStatus();
+        this.ClearMinuteData();
         this.ClearIndexPaint();             //清空指标
         this.ResetOverlaySymbolStatus();
         this.ReloadChartDrawPicture();
@@ -93583,6 +93609,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         this.ClearStockCache();
         this.UnlockCorssCursor();
         this.Frame.ClearYCoordinateMaxMin();
+        
 
         if (option)
         {
@@ -93706,6 +93733,35 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         this.AfterCloseData=null;
         this.MultiDayBeforeOpenData=null;
         this.MultiDayAfterCloseData=null;
+
+        this.ClearMainChartData();
+    }
+
+    this.ClearMainChartData=function()
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.ChartPaint)) return;
+        
+        var chart=this.ChartPaint[0];       //价格线
+        if (chart)
+        {
+            chart.Data=null;
+            chart.BeforeOpenData=null;
+            chart.AfterCloseData=null;
+            chart.MultiDayBeforeOpenData=null;
+            chart.MultiDayAfterCloseData=null;
+        }
+
+        var chart=this.ChartPaint[1];   //均线
+        if (chart)
+        {
+            chart.Data=null;
+        }
+
+        var chart=this.ChartPaint[2];   //成交量
+        if (chart)
+        {
+            chart.Data=null;
+        }
     }
 
     this.ChangeDayCount=function(count, option)
