@@ -1093,9 +1093,12 @@
                 JSChart.SetCSSStyle(value);
                 JSChart.SetStyle(style);
 
+                var pixelRatio=GetDevicePixelRatio();
                 var resource=JSChart.GetResource();
                 resource.ToolbarButtonStyle=1;
                 resource.Report.Item.Font.Size=12;
+                resource.Report.Item.Mergin.Top=8*pixelRatio;
+                resource.Report.Item.Mergin.Bottom=8*pixelRatio;
 
                 if (this.MinuteCtrl) this.MinuteCtrl.ReloadResource();  //动态更新颜色配置  
                 if (this.KLineCtrl) this.KLineCtrl.ReloadResource();    //动态更新颜色配置  
