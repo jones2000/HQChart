@@ -4913,6 +4913,10 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 {
                     this.DrawDynamicInfo();
                 }
+                else
+                {
+                    return;
+                }
             }
 
             drag.LastMove.X=e.clientX;
@@ -10070,7 +10074,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         var xStep=x*pixelTatio;
         var yStep=y*pixelTatio;
         //JSConsole.Chart.Log("xStep="+xStep+" yStep="+yStep);
-        drawPicture.Move(xStep,yStep,drag);
+        if (!drawPicture.Move(xStep,yStep,drag)) return false;
 
         return true;
     }
@@ -35641,38 +35645,41 @@ function ChartMinuteVolumBar()
         if (bShowColorBar) this.Canvas.strokeStyle=this.CustomColor;
         var unit=this.GetVolUnit();
 
-        for(var i=data.DataOffset,j=0;i<data.Data.length && j<xPointCount;++i,++j)
+        if (data && IFrameSplitOperator.IsNonEmptyArray(data.Data))
         {
-            var item = data.Data[i];
-            var vol=null;
-            if (!item) continue;
-            var price=null;
-
-            vol=item.Vol/unit;
-            price=item.Close;
-            
-            if (!vol) continue;
-
-            var y=this.ChartFrame.GetYFromData(vol);
-            var x=this.ChartFrame.GetXFromIndex(j);
-            if (x>chartright) break;
-
-            //价格>=上一分钟价格 红色 否则绿色
-            if (!bShowColorBar) this.Canvas.strokeStyle = this.GetMinuteBarColor(price, yPrice);
-
-            this.Canvas.beginPath();
-            if (isHScreen)
+            for(var i=data.DataOffset,j=0;i<data.Data.length && j<xPointCount;++i,++j)
             {
-                this.Canvas.moveTo(y,ToFixedPoint(x));
-                this.Canvas.lineTo(yBottom,ToFixedPoint(x));
+                var item = data.Data[i];
+                var vol=null;
+                if (!item) continue;
+                var price=null;
+
+                vol=item.Vol/unit;
+                price=item.Close;
+                
+                if (!vol) continue;
+
+                var y=this.ChartFrame.GetYFromData(vol);
+                var x=this.ChartFrame.GetXFromIndex(j);
+                if (x>chartright) break;
+
+                //价格>=上一分钟价格 红色 否则绿色
+                if (!bShowColorBar) this.Canvas.strokeStyle = this.GetMinuteBarColor(price, yPrice);
+
+                this.Canvas.beginPath();
+                if (isHScreen)
+                {
+                    this.Canvas.moveTo(y,ToFixedPoint(x));
+                    this.Canvas.lineTo(yBottom,ToFixedPoint(x));
+                }
+                else
+                {
+                    this.Canvas.moveTo(ToFixedPoint(x),y);
+                    this.Canvas.lineTo(ToFixedPoint(x),yBottom);
+                }
+                this.Canvas.stroke();
+                if (price) yPrice=price;
             }
-            else
-            {
-                this.Canvas.moveTo(ToFixedPoint(x),y);
-                this.Canvas.lineTo(ToFixedPoint(x),yBottom);
-            }
-            this.Canvas.stroke();
-            if (price) yPrice=price;
         }
 
         this.DrawAfterClose();
@@ -65165,6 +65172,8 @@ function IChartDrawPicture()
         {
             return false;
         }
+
+        return true;
     }
 
     //是否超出边界了
@@ -65193,6 +65202,8 @@ function IChartDrawPicture()
             var offset=data.DataOffset;
             var startIndex=0-offset;
             var endIndex=data.Data.length-offset;
+
+            if (this.ClassName=="ChartDrawHLine") return false;
 
             if (xStep>0)
             {
@@ -67618,7 +67629,7 @@ function ChartDrawHLine()
     this.ButtonSpace=3;
     this.TopOffset=3;
     
-    this.TextMargin={ Left:0, Right:0, Top:0, Bottom:0, YOffset:4*GetDevicePixelRatio() };
+    this.TextMargin={ Left:0, Right:0, Top:0, Bottom:0, YOffset:-1*GetDevicePixelRatio() };
 
     this.AlwaysShowLab=false;        //总是显示标签
 
@@ -68192,7 +68203,7 @@ function ChartDrawHLine()
         }
         
         var xText=rtBG.Left+this.TextMargin.Left;
-        var yText=rtBG.Top+this.TextMargin.Top+this.TextMargin.YOffset;
+        var yText=rtBG.Bottom-this.TextMargin.Bottom+this.TextMargin.YOffset;
 
         if (this.ButtonPosition==1)
         {
@@ -68205,7 +68216,7 @@ function ChartDrawHLine()
 
         this.Canvas.fillStyle=this.ValueTextColor
         this.Canvas.textAlign="left";
-        this.Canvas.textBaseline="top";
+        this.Canvas.textBaseline="bottom";
         this.Canvas.fillText(strValue,xText,yText);
 
         rtDraw.Left=rtBG.Left;
@@ -69672,6 +69683,12 @@ function ChartDrawPictureParallelChannel()
             var yMove=this.ChannelWidth/Math.sin(angle)-yStep;
             this.ChannelWidth=Math.sin(angle)*yMove;
         }
+        else
+        {
+            return false;
+        }
+
+        return true;
     }
 
     //0-10 鼠标对应的点索引   100=鼠标在正个图形上  -1 鼠标不在图形上
@@ -76870,6 +76887,12 @@ function ChartDrawTVLongPosition()
             var item=this.Point[3];
             if (item.Y+yStep>ptCenter.Y) item.Y+=yStep;
         }
+        else
+        {
+            return false;
+        }
+
+        return true;
 
     }
 }
@@ -87813,7 +87836,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         var xStep=x*pixelTatio;
         var yStep=y*pixelTatio;
         //JSConsole.Chart.Log("xStep="+xStep+" yStep="+yStep);
-        drawPicture.Move(xStep,yStep,drag);
+        if (!drawPicture.Move(xStep,yStep,drag)) return false;
 
         return true;
     }

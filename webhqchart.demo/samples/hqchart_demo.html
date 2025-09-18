@@ -501,6 +501,7 @@
 
                 if (data.Data.ID=="MENU_DRAW_LINE_ID")
                 {
+                    var pixelRatio=GetDevicePixelRatio();
                     var ARRAY_COLOR=['rgb(255,140,0)', "rgb(153,50,204)", "rgb(0, 139, 0)"];
                     var lineColor=ARRAY_COLOR[this.ColorCount%ARRAY_COLOR.length];
                     ++this.ColorCount;
@@ -513,9 +514,14 @@
                         Value:[ {XValue:0, YValue:yValue} ],    
                         FrameID:frameID,
                         RightSpaceWidth:2,	 
-                        Button:{ SettingIcon:null },     
-                        ButtonBGColor:lineColor,    
-                        LineColor:lineColor
+                        Button:
+                        { 
+                            SettingIcon:null,
+                            CloseIcon: {  Text:'\ue62b', Color:'rgb(255,255,255)', Family:"iconfont", Size:16, ID:JSCHART_BUTTON_ID.DRAW_PICTURE_DELETE, TooltipText:null, Margin:{ Left:2*pixelRatio, Right:2*pixelRatio } },
+                        },     
+                        ButtonBGColor:"rgb(169,169,169)",    
+                        LineColor:lineColor,
+                        TextMargin:{ Left:2*pixelRatio, Right:2*pixelRatio, Top:0, Bottom:0, YOffset:-1*pixelRatio },
                     };
 
                     this.Chart.AddChartDrawPicture(drawPictrue, { Save:true });
