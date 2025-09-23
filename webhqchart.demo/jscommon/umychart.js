@@ -319,11 +319,14 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         {
             var item=option.GlobalOption;
             if (IFrameSplitOperator.IsBool(item.IsValueFullRange)) chart.GlobalOption.IsValueFullRange=item.IsValueFullRange;
+            if (IFrameSplitOperator.IsBool(item.EnableXShortDate)) chart.GlobalOption.EnableXShortDate=item.EnableXShortDate;
+            
             if (item.SelectedBorder)
             {
                 var subItem=item.SelectedBorder;
                 if (IFrameSplitOperator.IsNumber(subItem.Mode)) chart.GlobalOption.SelectedBorder.Mode=subItem.Mode;
             }
+            
         }
 
         if (option.EnableYDrag)
@@ -3395,6 +3398,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         TradeStatus:null,   //当前交易状态 { Date, Time：数据最后更新的时间, Status: }
 
         LatestPoint:null,   //最新的点位置 { X:, Y: }
+
+        EnableXShortDate:true,
     };  
 
     this.VerticalDrag;              //通过X轴左右拖动数据(手势才有)
@@ -16716,11 +16721,13 @@ function MinuteFrame()
 
     this.DrawToolbar=function()
     {
-        if (this.ToolbarButtonStyle==1) return;
-        if (g_JSChartResource.IsDOMFrameToolbar===true) return;
-
+        var bDraw=true;
+        if (this.ToolbarButtonStyle==1) bDraw=false;
+        if (g_JSChartResource.IsDOMFrameToolbar===true) bDraw=false;
         if (!this.DivFrameToolbar) return;
-        this.DivFrameToolbar.Show(this.Identify);
+
+        if (!bDraw) this.HideToolbar();
+        else this.DivFrameToolbar.Show(this.Identify);
     }
 
     //手绘,不用DOM,使用DOM太麻烦了
@@ -18951,11 +18958,13 @@ function KLineFrame()
 
     this.DrawToolbar=function()
     {
-        if (this.ToolbarButtonStyle==1) return;
-        if (g_JSChartResource.IsDOMFrameToolbar===true) return;
+        var bDraw=true;
+        if (this.ToolbarButtonStyle==1) bDraw=false;
+        if (g_JSChartResource.IsDOMFrameToolbar===true) bDraw=false;
         if (!this.DivFrameToolbar) return;
 
-        this.DivFrameToolbar.Show(this.Identify);
+        if (!bDraw) this.HideToolbar();
+        else this.DivFrameToolbar.Show(this.Identify);
     }
 
     //手绘,不用DOM,使用DOM太麻烦了
@@ -30396,7 +30405,7 @@ function ChartKLine()
         {
             var left=this.ChartBorder.GetLeft();
             var right=this.ChartBorder.GetRight();
-            var top=this.ChartBorder.GetTopEx();
+            var top=this.ChartBorder.GetTop();
             var bottom=this.ChartBorder.GetBottom();
         }
 
@@ -56987,6 +56996,7 @@ function FrameSplitKLineX()
         var lastYear=null, lastMonth=null;
         var minDistance=12;
         var monthCount=0;
+        var globalOption=this.Frame.GlobalOption;
         for(var i=0, index=xOffset, distance=minDistance;i<xPointCount && index<this.Frame.Data.Data.length ;++i,++index)
         {
             var year=parseInt(this.Frame.Data.Data[index].Date/10000);
@@ -57024,12 +57034,14 @@ function FrameSplitKLineX()
             this.Frame.VerticalInfo.push(info);
             distance=0;
         }
-
-        if (this.Period==0 && monthCount<=2)
+                  
+        var bShowShortDate=true;  //日线显示在2个月以下的 显示格式
+        if (globalOption && IFrameSplitOperator.IsBool(globalOption.EnableXShortDate)) bShowShortDate=globalOption.EnableXShortDate;
+        if (bShowShortDate && this.Period==0 && monthCount<=2)
             this.SplitShortDate();
     }
 
-    //分隔在2个月一下的格式
+    //分隔在2个月以内的格式
     this.SplitShortDate=function()
     {
         this.Frame.VerticalInfo=[];

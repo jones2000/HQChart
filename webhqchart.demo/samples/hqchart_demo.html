@@ -396,6 +396,11 @@
                         event:JSCHART_EVENT_ID.ON_CLICK_CROSSCURSOR_RIGHT, 
                         callback:(event, data, obj)=>{ this.ClickCrossCursor(event, data, obj); }
                     },
+                    {
+                        event:JSCHART_EVENT_ID.ON_CLICK_CHART_PAINT, 
+                        callback:(event, data, obj)=>{ this.OnClickChartPaint(event, data, obj); }
+                        
+                    }
                 ];
 
                 //this.Chart.CreateExtraCanvasElement(JSChart.CorssCursorCanvasKey, { ZIndex:5 }); //十字光标单独一个图层
@@ -587,6 +592,11 @@
                 var hqchart=this.Chart.JSChartContainer;
                 var bShow=hqchart.IsShowDrawToolDialog();
                 if (!bShow)  hqchart.ExecuteMenuCommand(JSCHART_MENU_ID.CMD_SHOW_DRAWTOOL_ID);
+            }
+
+            this.OnClickChartPaint=function(event, data, obj)
+            {
+                console.log("[KLineChart::OnClickChartPaint] data=", data);
             }
 
         }
@@ -873,7 +883,14 @@
                 [
                     {Type:REPORT_COLUMN_ID.SYMBOL_NAME_ID ,Sort:1 ,SortType:[0], Title:"名称", ChartTooltip:{ Enable:true, Type:20 }, },
                     //{ Type:REPORT_COLUMN_ID.PRICE_ID, Sort:1, MaxText:"88888.88" },
-                    { Type:REPORT_COLUMN_ID.CLOSE_LINE_ID, IsDrawArea:true, MaxText:"88888.88" },
+                    { 
+                        Type:REPORT_COLUMN_ID.CLOSE_LINE_ID, IsDrawArea:true, MaxText:"88888.88",EnablePopupHeaderMenu:true,
+                        Icon:
+                        { 
+                            Family:"iconfont", Size:14*GetDevicePixelRatio(), Symbol:"\ue620", Color:"rgb(169,169,169)", Margin:{Left:2, Bottom:0 },
+                            //Tooltip:{ Data:{ AryText:[ {Title:"切换字段:", Color:"rgb(255,0,0)", Text:"切换字段"} ] } }
+                        },
+                    },
                     { 
                         Type:REPORT_COLUMN_ID.MULTI_LINE_CONTAINER, Sort:1, SortSubField:0,
                         Title:"涨幅",TextAlign:"center", MaxText:"-1000.88%",TextAlign:"right",
@@ -929,7 +946,8 @@
                 WheelPage:{ Type:1 },
                 SelectedModel:1,
                 PageUpDownCycle:false,
-                BottomTab:{ IsShow:false }
+                BottomTab:{ IsShow:false },
+                FloatTooltip:{ Enable:true },
             };
                  
             this.Create=function()  //创建图形
@@ -942,6 +960,15 @@
                         event:JSCHART_EVENT_ID.ON_CLICK_REPORT_ROW, 
                         callback:(event, data, obj)=>{ this.OnClickRow(event, data, obj); }  
                     },
+                    {   //表头菜单
+                        event:JSCHART_EVENT_ID.ON_CREATE_REPORT_HEADER_MENU, 
+                        callback:(event, data, obj)=>{ this.OnCreateHeaderMenu(event, data, obj); }  
+                        
+                    },
+                    {
+                        event:JSCHART_EVENT_ID.ON_MENU_COMMAND, 
+                        callback:(event, data, obj)=>{ this.OnMenuCommand(event, data, obj); }  
+                    }
                 ];
 
                 this.Chart.SetOption(this.Option);  //设置配置
@@ -990,6 +1017,80 @@
             {
                 console.log("[ReportChart::OnClickRow] data=",data);
                 if (this.OnClickRowCallback) this.OnClickRowCallback(data, obj);
+            }
+
+            this.OnCreateHeaderMenu=function(event, data, obj)
+            {
+                console.log("[ReportChart::OnCreateHeaderMenu] data=",data);
+
+                var e=data.e;
+                var aryTDClassName=
+                [
+                    "UMyChart_MenuItem_Td_Status",      //图标
+                    "UMyChart_MenuItem_Td_Content",     //文字
+                    "UMyChart_MenuItem_Td_None",        //快捷方式
+                    "UMyChart_MenuItem_Td_Arrow"        //箭头
+                ];
+               
+                var Menu=
+                [ 
+                    { Name:"分时简图",  Data:{ ID:"CMD_CHANGE_FILED", Args:[{ Type:REPORT_COLUMN_ID.CLOSE_LINE_ID} ] }, AryTDClassName:aryTDClassName, Checked: data.Column.Type==REPORT_COLUMN_ID.CLOSE_LINE_ID  },  
+                    { Name:"日K简图",  Data:{ ID:"CMD_CHANGE_FILED", Args:[{ Type:REPORT_COLUMN_ID.KLINE_ID}] },  AryTDClassName:aryTDClassName, Checked: data.Column.Type==REPORT_COLUMN_ID.KLINE_ID },  
+                    { Name:"现价",  Data:{ ID:"CMD_CHANGE_FILED", Args:[{ Type:REPORT_COLUMN_ID.PRICE_ID} ]},  AryTDClassName:aryTDClassName, Checked: data.Column.Type==REPORT_COLUMN_ID.PRICE_ID  },  
+                ];
+
+                data.MenuData.Menu=Menu;
+
+                if(e.preventDefault) e.preventDefault();
+                if(e.stopPropagation) e.stopPropagation();
+            }
+
+            this.OnMenuCommand=function(event, data, obj)
+            {
+                console.log("[ReportChart::OnMenuCommand] data=",data);
+                if (data.CommandID=="CMD_CHANGE_FILED")
+                {
+                    var type=data.Args[0].Type;
+                    if (type==REPORT_COLUMN_ID.KLINE_ID)
+                    {
+                        var columnItem=
+                        {
+                            Type:REPORT_COLUMN_ID.KLINE_ID, MaxText:"88888.88",EnablePopupHeaderMenu:true, TitleAlign:"right", FixedWidth:null,
+                            Icon:
+                            { 
+                                Family:"iconfont", Size:14*GetDevicePixelRatio(), Symbol:"\ue620", Color:"rgb(169,169,169)", Margin:{Left:2, Bottom:0 },
+                                //Tooltip:{ Data:{ AryText:[ {Title:"切换字段:", Color:"rgb(255,0,0)", Text:"切换字段"} ] } }
+                            },
+                        };
+                        obj.ChangeColumn(1, columnItem, { Redraw:true });
+                    }
+                    else if (type==REPORT_COLUMN_ID.CLOSE_LINE_ID)
+                    {
+                        var columnItem=
+                        { 
+                            Type:REPORT_COLUMN_ID.CLOSE_LINE_ID, IsDrawArea:true, MaxText:"88888.88",EnablePopupHeaderMenu:true, TitleAlign:"right",
+                            Icon:
+                            { 
+                                Family:"iconfont", Size:14*GetDevicePixelRatio(), Symbol:"\ue620", Color:"rgb(169,169,169)", Margin:{Left:2, Bottom:0 },
+                                //Tooltip:{ Data:{ AryText:[ {Title:"切换字段:", Color:"rgb(255,0,0)", Text:"切换字段"} ] } }
+                            },
+                        };
+                        obj.ChangeColumn(1, columnItem, { Redraw:true });
+                    }
+                    else if (type==REPORT_COLUMN_ID.PRICE_ID)
+                    {
+                        var columnItem=
+                        {
+                            Type:REPORT_COLUMN_ID.PRICE_ID, MaxText:"88888.88",EnablePopupHeaderMenu:true, TextAlign:"right",
+                            Icon:
+                            { 
+                                Family:"iconfont", Size:14*GetDevicePixelRatio(), Symbol:"\ue620", Color:"rgb(169,169,169)", Margin:{Left:2, Bottom:0 },
+                                //Tooltip:{ Data:{ AryText:[ {Title:"切换字段:", Color:"rgb(255,0,0)", Text:"切换字段"} ] } }
+                            },
+                        };
+                        obj.ChangeColumn(1, columnItem, { Redraw:true });
+                    }
+                }
             }
 
             this.ReloadResource=function()

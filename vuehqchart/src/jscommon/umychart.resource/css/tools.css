@@ -939,6 +939,11 @@ input[type="color"] {
     margin-right: 10px;
 }
 
+.UMyChart_MenuItem_Td_None
+{
+    display:none;
+}
+
 
 .UMyChart_MenuItem_Tr:hover
 {

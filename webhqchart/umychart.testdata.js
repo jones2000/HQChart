@@ -1987,6 +1987,16 @@ HQData.Report_RequestStockData=function(data, callback)
 
                 //K线
                 var kData={ Data:[newItem[3], newItem[4], newItem[5], newItem[6]] };
+                //多根K线使用AryData， 单根K线用Data
+                kData.AryData=
+                [
+                    [newItem[3], newItem[4], newItem[5], newItem[6]],
+                    [newItem[3], newItem[4], newItem[5], newItem[6]],
+                    [newItem[3], newItem[4], newItem[5], newItem[6]],
+                    [newItem[3], newItem[4], newItem[5], newItem[6]],
+                    [newItem[3], newItem[4], newItem[5], newItem[6]],
+                    [newItem[3], newItem[4], newItem[5], newItem[6]],
+                ]
                 newItem[33]=kData;
 
 

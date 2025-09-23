@@ -221,15 +221,17 @@ function JSReportChart(element)
         }
     }
 
-    this.ChartDestory=function()
+    this.ChartDestroy=function()
     {
-        if (this.JSChartContainer && typeof (this.JSChartContainer.ChartDestory) == 'function') 
+        if (this.JSChartContainer && typeof (this.JSChartContainer.ChartDestroy) == 'function') 
         {
-            JSConsole.Chart.Log("[JSReportChart::ChartDestory]");
-            this.JSChartContainer.ChartDestory();
+            JSConsole.Chart.Log("[JSReportChart::ChartDestroy]");
+            this.JSChartContainer.ChartDestroy();
         }
     }
 
+    this.ChartDestory=this.ChartDestroy;
+   
     this.OnTouchStart = function (e) 
     {
         if (this.JSChartContainer) this.JSChartContainer.OnTouchStart(e);
@@ -373,7 +375,7 @@ function JSReportChartContainer(uielement)
     this.DragXScroll=null;  //{Start:{x,y}, End:{x, y}}
     this.IsDestroy=false;        //是否已经销毁了
 
-    this.ChartDestory=function()    //销毁
+    this.ChartDestroy=function()    //销毁
     {
         this.IsDestroy=true;
         this.StopAutoUpdate();

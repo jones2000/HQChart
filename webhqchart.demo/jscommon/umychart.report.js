@@ -5494,6 +5494,7 @@ function ChartReport()
         if (item.HeaderBGColor) colItem.HeaderBGColor=item.HeaderBGColor;       //表头背景色
         if (IFrameSplitOperator.IsNumber(item.Sort)) colItem.Sort=item.Sort;
         if (IFrameSplitOperator.IsNumber(item.FixedWidth)) colItem.FixedWidth=item.FixedWidth;
+        else if (item.FixedWidth===null) colItem.FixedWidth=null;
         if (IFrameSplitOperator.IsBool(item.EnableDragWidth)) colItem.EnableDragWidth=item.EnableDragWidth;
 
         colItem.IsDrawCallback=false;
@@ -8841,15 +8842,29 @@ function ChartReport()
         }
 
         if (!klineData) return;
-        if (!IFrameSplitOperator.IsNonEmptyArray(klineData.Data)) return;
+        var aryKLine=[];
+        var high=null, low=null;
+        if (IFrameSplitOperator.IsNonEmptyArray(klineData.AryData))
+        {
+            for(var i=0;i<klineData.AryData.length;++i)
+            {
+                var item=klineData.AryData[i];
+                var kItem={ Open:item[0], High:item[1], Low:item[2], Close:item[3] };
+                if (high==null || high<item[1]) high=item[1];
+                if (low==null || low>item[2]) low=item[2];
+                aryKLine.push(kItem);
+            }
+        }
+        else if (IFrameSplitOperator.IsNonEmptyArray(klineData.Data))
+        {
+            high=klineData.Data[1];
+            low=klineData.Data[2];
+            var kItem={ Open:klineData.Data[0], High:high, Low:low, Close:klineData.Data[3] };
+            aryKLine.push(kItem);
+        }
 
-        var high=klineData.Data[1];
-        var low=klineData.Data[2];
-        var aryKLine=
-        [ 
-            { Open:klineData.Data[0], High:high, Low:low, Close:klineData.Data[3]}, 
-            //{ Open:klineData.Data[0], High:high, Low:low, Close:klineData.Data[3]}  
-        ];
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryKLine)) return;
+       
         this.DrawKLineBar(aryKLine, high, low, rtItem);
     }
 
@@ -9153,7 +9168,7 @@ function ChartReport()
                 eventID=JSCHART_EVENT_ID.ON_CLICK_REPORT_HEADER;
             }
 
-            this.SendClickEvent(eventID, { Data:row, X:x, Y:y , e:e, Inside:insidePoint, UIElement:uiElement});
+            this.SendClickEvent(eventID, { Data:header, X:x, Y:y , e:e, Inside:insidePoint, UIElement:uiElement});
             return { Type:3, Redraw:bRedraw, Header:header };  //表头
         }
 

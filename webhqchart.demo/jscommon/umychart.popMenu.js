@@ -125,10 +125,12 @@ function JSPopMenu()
         if (item.Disable===true) trDom.classList.add('UMyChart_DrawTool_Disable_Tr');
         
         var prtTdDom=null;
-        for(var i=0;i<this.AryTDClassName.length;++i)
+        var aryTDClassName=this.AryTDClassName;
+        if (IFrameSplitOperator.IsNonEmptyArray(item.AryTDClassName)) aryTDClassName=item.AryTDClassName;
+        for(var i=0;i<aryTDClassName.length;++i)
         {
             var tdDom=document.createElement("td");
-            tdDom.className=this.AryTDClassName[i];
+            tdDom.className=aryTDClassName[i];
 
             if (i==0)   //图标
             {
