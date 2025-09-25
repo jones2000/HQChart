@@ -231,7 +231,7 @@ function ScriptIndex(name, script, args, option)
         if (option.YSpecificMaxMin) this.YSpecificMaxMin = option.YSpecificMaxMin;
         if (option.YSplitScale) this.YSplitScale = option.YSplitScale;
         if (option.TitleFont) this.TitleFont=option.TitleFont;
-        if (IFrameSplitOperator.IsNumber(option.IsShortTitle)) this.IsShortTitle=option.IsShortTitle;
+        if (IFrameSplitOperator.IsBool(option.IsShortTitle)) this.IsShortTitle=option.IsShortTitle;
         if (option.OutName) this.OutName=option.OutName;
         if (IFrameSplitOperator.IsNumber(option.YSplitType)) this.YSplitType=option.YSplitType;
     }
