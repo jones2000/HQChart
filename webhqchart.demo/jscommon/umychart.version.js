@@ -5,7 +5,7 @@
 
 
 
-var HQCHART_VERSION="1.1.15254";
+var HQCHART_VERSION="1.1.15257";
 
 function PrintHQChartVersion()
 {

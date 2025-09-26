@@ -613,6 +613,9 @@ function JSExplainer(ast,option)
             ["L2_VOLNUM", { Name:"L2_VOLNUM", Param:{ Count:2 }, ToString:function(args) { return `单数分档`; } }],
             ["L2_VOL", { Name:"L2_VOL", Param:{ Count:2 }, ToString:function(args) { return `成交量分档`; } }],
             ["L2_AMO", { Name:"L2_AMO", Param:{ Count:2 }, ToString:function(args) { return `成交额分档`; } }],
+
+            ["MAX6", { Name:"MAX6", Param:{ Dynamic:true }, ToString:function(args) { return "较大值"} } ],
+            ["MIN6", { Name:"MIN6", Param:{ Dynamic:true }, ToString:function(args) { return "较小值"} } ],
         ]
     );
 

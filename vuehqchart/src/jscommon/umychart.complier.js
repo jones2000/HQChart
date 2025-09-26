@@ -19776,7 +19776,10 @@ function JSExplainer(ast,option)
 
             ["TABLE_CELL", { Name:"TABLE_CELL",Param:{ Dynamic:true }, ToString:function(args) { return `创建表格单元格`; } }],
             ["TABLE_ROW", { Name:"TABLE_ROW",Param:{ Dynamic:true }, ToString:function(args) { return `创建表格行`; } }],
-            ["DRAWTABLE", { Name:"DRAWTABLE",Param:{ Dynamic:true }, ToString:function(args) { return `绘制表格`; } }]
+            ["DRAWTABLE", { Name:"DRAWTABLE",Param:{ Dynamic:true }, ToString:function(args) { return `绘制表格`; } }],
+
+            ["MAX6", { Name:"MAX6", Param:{ Dynamic:true }, ToString:function(args) { return "较大值"} } ],
+            ["MIN6", { Name:"MIN6", Param:{ Dynamic:true }, ToString:function(args) { return "较小值"} } ],
             
         ]
     );
