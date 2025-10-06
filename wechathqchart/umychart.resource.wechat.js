@@ -377,6 +377,9 @@ function JSChartResource()
         YOffset:0   //y坐标向上偏移
     }
 
+    this.DRAWTEXT_FIX={ Font:'14px 微软雅黑' }
+    this.DRAWNUMBER_FIX={ Font:'14px 微软雅黑' }
+
     this.CIRCLEDOT=
     {
         Radius:1.3
@@ -722,6 +725,18 @@ function JSChartResource()
             if (this.IsNumber(item.YOffset)) this.DRAWABOVE.YOffset=item.YOffset;
         }
 
+        if (style.DRAWTEXT_FIX)
+        {
+            var item=style.DRAWTEXT_FIX;
+            if (item.Font) this.DRAWTEXT_FIX.Font=item.Font;
+        }
+
+        if (style.DRAWNUMBER_FIX)
+        {
+            var item=style.DRAWNUMBER_FIX;
+            if (item.Font) this.DRAWNUMBER_FIX.Font=item.Font;
+        }
+
         if (style.StockChip)
         {
             var item=style.StockChip;
@@ -1028,6 +1043,15 @@ JSChartResource.CopyMargin=function(dest,src)
     if (IFrameSplitOperator.IsNumber(src.Bottom)) dest.Bottom=src.Bottom;
 }
 
+JSChartResource.CopyMarginConfig=function(dest,src)
+{
+    if (!src || !dest) return;
+
+    if (IFrameSplitOperator.IsNumber(src.Left)) dest.Left=src.Left;
+    if (IFrameSplitOperator.IsNumber(src.Top)) dest.Top=src.Top;
+    if (IFrameSplitOperator.IsNumber(src.Right)) dest.Right=src.Right;
+    if (IFrameSplitOperator.IsNumber(src.Bottom)) dest.Bottom=src.Bottom;
+}
 
 var g_JSChartResource = new JSChartResource();
 

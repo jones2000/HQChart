@@ -4626,6 +4626,58 @@ function JSAlgorithm(errorHandler, symbolData)
         return result;
     }
 
+    //反向过滤连续出现的信号.
+    //用法:FILTERX(X,N):X满足条件后,将其前N周期内的数据置为0,N为常量.
+    //例如:FILTERX(CLOSE>OPEN,5)查找阳线,前5天内出现过的阳线不被记录在内
+    this.FILTERX=function(data, n, node)
+    {
+        var result=[];
+        if (IFrameSplitOperator.IsNumber(n))
+        {
+            for(var i=data.length-1, j=0; i>=0; --i)
+            {
+                if (data[i])
+                {
+                    result[i]=1;
+                    for(j=0;j<n && i-j-1>=0;++j)
+                    {
+                        result[i-j-1]=0;
+                    }
+                    i-=n;
+                }
+                else
+                {
+                    result[i]=0;
+                }
+            }
+        }
+        else if (Array.isArray(n))
+        {
+            for(var i=data.length-1, j=0; i>=0; --i)
+            {
+                if (data[i])
+                {
+                    result[i]=1;
+                    if (!IFrameSplitOperator.IsNumber(n[i])) continue;
+                    var period=parseInt(n[i]);
+                    if (period<=0) continue;
+                    
+                    for(j=0;j<period && i-j-1>=0;++j)
+                    {
+                        result[i-j-1]=0;
+                    }
+
+                    i-=period;
+                }
+                else
+                {
+                    result[i]=0;
+                }
+            }
+        }
+        return result;
+    }
+
     this.BARSLAST=function(data)
     {
         var result=[];
@@ -8386,9 +8438,7 @@ function JSDraw(errorHandler, symbolData)
             for(var i=0; i<condition.length; ++i)
             {
                 drawData[i]=null;
-    
-                if (isNaN(condition[i]) || !condition[i]) continue;
-    
+                if (condition[i]!==1) continue;
                 if (IsNumber || isFixedPosition) 
                 {
                     drawData[i]=price;
@@ -8399,7 +8449,7 @@ function JSDraw(errorHandler, symbolData)
                 }
             }
         }
-        else if (this.IsNumber(condition) && condition)
+        else if (this.IsNumber(condition) && condition===1)
         {
             var IsNumber=this.IsNumber(price);
             var isFixedPosition=false;
@@ -8425,21 +8475,104 @@ function JSDraw(errorHandler, symbolData)
         return result;
     }
 
+    //1.固定位置显示文字;2.在指标排序中显示字符串栏目.
+    //用法:DRAWTEXT_FIX(COND,X,Y,TYPE,TEXT),COND中一般需要加ISLASTBAR,当COND条件满足时,在当前指标窗口内(X,Y)位置书写文字TEXT,X,Y为书写点在窗口中相对于左上角的百分比,TYPE:0为左对齐,1为右对齐,2=居中.
+    //例如:DRAWTEXT_FIX(ISLASTBAR AND CLOSE/OPEN>1.08,0.5,0.5,0,'大阳线')表示最后一个交易日实体阳线大于8%时在窗口中间位置显示'大阳线'字样.若文字中含有&,则进行折行.最多只能显示250个字符
     this.DRAWTEXT_FIX=function(condition,x,y,type,text)
     {
-        let result={Position:null, DrawType:'DRAWTEXT_FIX',Text:text};
-        if (condition.length<=0) return result;
+        var drawData={ Value:[], Text:[]  };
+        var result={DrawData:drawData, DrawType:'DRAWTEXT_FIX', Text:null, Position:{ X:x, Y:y, Type:type } };
 
-        for(var i in condition)
+        if (Array.isArray(condition))
         {
-            if (isNaN(condition[i]) || !condition[i]) continue;
-
-            result.Position={X:x, Y:y, Type:type};
-            return result;
+            for(var i=0; i<condition.length; ++i)
+            {
+                drawData.Text[i]=null;
+                drawData.Value[i]=0;
+                if (condition[i]!==1) continue;
+    
+                drawData.Value[i]=1;
+                drawData.Text[i]=text;
+            }
         }
-
+        else
+        {
+            if(condition===1) 
+            {
+                for(var i=0;i<this.SymbolData.Data.Data.length;++i)
+                {
+                    drawData.Text[i]=text;
+                    drawData.Value[i]=1;
+                }
+            }
+        }
+        
         return result;
     }
+
+    /*
+    固定位置显示数字.
+    用法: DRAWNUMBER_FIX(COND,X,Y,TYPE,NUMBER,decimal=2),当COND条件满足时,在当前指标窗口内(X,Y)位置书写数字NUMBER,X,Y为书写点在窗口中相对于左上角的百分比,TYPE:0为左对齐,1为右对齐 2=居中
+    例如: DRAWNUMBER_FIX(CURRBARSCOUNT=1 AND CLOSE/OPEN>1.08,0.5,0.5,0,C)表示最后一个交易日实体阳线大于8%时在窗口中间位置显示收盘价.
+    */
+   this.DRAWNUMBER_FIX=function(condition,x,y,align,data, decimal=2)
+   {
+       var drawData={ Value:[], Text:[],  };
+       var result={ DrawData:drawData, DrawType:'DRAWNUMBER_FIX', Position:{ X:x, Y:y, Type:align } };
+       var isNumber=IFrameSplitOperator.IsNumber(data);
+
+       if (Array.isArray(condition))
+       {
+           for(var i=0; i<condition.length; ++i)
+           {
+               drawData.Text[i]=null;
+               drawData.Value[i]=null;
+               if (condition[i]!==1) continue;
+
+               if (isNumber) 
+               {
+                   drawData.Text[i]=data.toFixed(decimal);
+                   drawData.Value[i]=data;
+               }
+               else 
+               {
+                   if (i>=data.length || !IFrameSplitOperator.IsNumber(data[i])) continue;
+
+                   var item=data[i];
+                   drawData.Text[i]=item.toFixed(decimal);
+                   drawData.Value[i]=item;
+               }
+           }
+       }
+       else
+       {
+           if(condition!==1)
+           {
+               
+           }
+           else
+           {
+               for(var i=0;i<this.SymbolData.Data.Data.length;++i)
+               {
+                   if (isNumber) 
+                   {
+                       drawData.Text[i]=data.toFixed(decimal);
+                       drawData.Value[i]=data;
+                   } 
+                   else
+                   {
+                       if (i>=data.length || !IFrameSplitOperator.IsNumber(data[i])) continue;
+
+                       var item=data[i];
+                       drawData.Text[i]=item.toFixed(decimal);
+                       drawData.Value[i]=item;
+                   }
+               }
+           }
+       }
+
+       return result;
+   }
 
     //direction 文字Y轴位置 0=middle 1=价格的顶部 2=价格的底部
     //offset 文字Y轴偏移
@@ -9387,7 +9520,7 @@ JSDraw.prototype.IsDrawFunction=function(name)
     let setFunctionName = new Set(
     [
         "STICKLINE", "DRAWTEXT", 'SUPERDRAWTEXT', "DRAWTEXT_FIX", 'DRAWLINE', 'DRAWBAND', "DRAWKLINE1","DRAWCOLORKLINE",
-        'DRAWKLINE', 'DRAWKLINE_IF', 'PLOYLINE', 'POLYLINE', 'DRAWNUMBER', 'DRAWICON',"ICON","PARTLINE",
+        'DRAWKLINE', 'DRAWKLINE_IF', 'PLOYLINE', 'POLYLINE', 'DRAWNUMBER', 'DRAWNUMBER_FIX', 'DRAWICON', "ICON", "PARTLINE",
         'DRAWRECTREL', "DRAWTEXTABS","DRAWTEXTREL", "DRAWGBK", "DRAWGBK2","DRAWGBK_DIV"
     ]);
     if (setFunctionName.has(name)) return true;
@@ -14091,6 +14224,10 @@ function JSExecute(ast,option)
                 break;
             case 'DRAWTEXT_FIX':
                 node.Draw=this.Draw.DRAWTEXT_FIX(args[0],args[1],args[2],args[3],args[4]);
+                node.Out=[];
+                break;
+            case "DRAWNUMBER_FIX":
+                node.Draw=this.Draw.DRAWNUMBER_FIX(args[0],args[1],args[2],args[3],args[4],args[5]);
                 node.Out=[];
                 break;
             case 'DRAWICON':

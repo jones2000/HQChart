@@ -122,6 +122,7 @@ HQData.NetworkFilter=function(data, callback)
             break;
 
         case "JSSymbolData::GetFinance":    //财务数据
+            //HQChart使用教程30-K线图如何对接第3方数据23- FINANCE函数数据
             HQData.Finance_RequestData(data,callback);
             break;
 
@@ -145,6 +146,7 @@ HQData.NetworkFilter=function(data, callback)
             HQData.BKJYOne_RequestData(data,callback);
             break;
         case "JSSymbolData::GetFinValue":
+            //HQChart使用教程30-K线图如何对接第3方数据22- FINVALUE函数数据
             HQData.FinValue_RequestData(data,callback);
             break;
         case "JSSymbolData::GetFinOne":
@@ -152,8 +154,14 @@ HQData.NetworkFilter=function(data, callback)
             break;
 
         case "JSSymbolData::GetIndexData":
+            //HQChart使用教程30-K线图如何对接第3方数据28-大盘数据[INDEXA,INDEXC......]
             HQData.INDEX_RequestData(data,callback);
             break;
+
+        case 'JSSymbolData::GetSymbolData':   
+            //HQChart使用教程30-K线图如何对接第3方数据38-通达信指标K线数据
+            HQData.RequestSymbolData(data,callback);        //计算指标需要的K线数据
+            break;   
 
         //////////////////////////////////////////////////////
         //报价列表数据
@@ -1800,6 +1808,20 @@ HQData.INDEX_RequestData=function(data,callback)
     var hqchartData={ name:indexSymbol, symbol:indexSymbol, data:aryData, ver:2.0 };
 
     callback(hqchartData);
+}
+
+HQData.RequestSymbolData=function(data,callback)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Data.symbol;
+    var period=data.Request.Data.period;
+    //if (this.Chart.JSChartContainer.Symbol==symbol)
+    {
+        if (ChartData.IsDayPeriod(period, true))
+            HQData.RequestHistoryData(data, callback);
+        else if (ChartData.IsMinutePeriod(peirod, true))
+            HQData.RequestHistoryMinuteData(data, callback);
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////////////////

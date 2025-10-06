@@ -66,6 +66,8 @@ import {
     ChartBackgroundDiv,
     ChartSingleLine,
     ChartPartLine,
+    ChartDrawText_Fix,
+    ChartDrawNumber_Fix
 } from "./umychart.chartpaint.wechat.js";
 
 import 
@@ -774,6 +776,102 @@ function ScriptIndex(name, script, args, option)
         hqChart.ChartPaint.push(chartText);
     }
 
+    this.CreateDrawText_Fix=function(hqChart,windowIndex,varItem,id)
+    {
+        var chartText=new ChartDrawText_Fix();
+        chartText.Canvas=hqChart.Canvas;
+        chartText.Name=varItem.Name;
+        chartText.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chartText.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        chartText.ReloadResource();
+        chartText.HQChart=hqChart;
+        
+        if (varItem.Draw.Position) 
+        {
+            var item=varItem.Draw.Position;
+            chartText.PtPercentage={ X:item.X, Y:item.Y }; //坐标
+           // TYPE:0为左对齐,1为右对齐 2=居中
+            if (item.Type===0) chartText.TextAlign="left";
+            else if (item.Type===1) chartText.TextAlign="right";
+            else if (item.Type===2) chartText.TextAlign="center";
+        }
+
+        //字体
+        if (varItem.DrawFontSize>0) chartText.TextFont=`${varItem.DrawFontSize}px 微软雅黑`;    //临时用下吧
+        if (varItem.Font) chartText.TextFont=varItem.Font;
+        
+        //颜色
+        if (varItem.Color) chartText.Color=this.GetColor(varItem.Color);
+        else chartText.Color=this.GetDefaultColor(id);
+
+        if (varItem.DrawVAlign>=0)  //上下对齐
+        {
+            if (varItem.DrawVAlign==0) chartText.TextBaseline='top';
+            else if (varItem.DrawVAlign==1) chartText.TextBaseline='middle';
+            else if (varItem.DrawVAlign==2) chartText.TextBaseline='bottom';
+        }
+
+        if (varItem.DrawAlign>=0)   // 左右对齐
+        {
+            if (varItem.DrawAlign==0) chartText.TextAlign="left";
+            else if (varItem.DrawAlign==1) chartText.TextAlign="center";
+            else if (varItem.DrawAlign==2) chartText.TextAlign='right';
+        }
+
+        chartText.BuildCacheData(hqChart.GetKData(),varItem.Draw.DrawData);
+
+        this.SetChartIndexName(chartText);
+        hqChart.ChartPaint.push(chartText);
+    }
+
+    this.CreateDrawNumber_Fix=function(hqChart,windowIndex,varItem,id)
+    {
+        var chartText=new ChartDrawNumber_Fix();
+        chartText.Canvas=hqChart.Canvas;
+        chartText.Name=varItem.Name;
+        chartText.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chartText.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        chartText.ReloadResource();
+        chartText.HQChart=hqChart;
+        
+        if (varItem.Draw.Position) 
+        {
+            var item=varItem.Draw.Position;
+            chartText.PtPercentage={ X:item.X, Y:item.Y }; //坐标
+           // TYPE:0为左对齐,1为右对齐 2=居中
+            if (item.Type===0) chartText.TextAlign="left";
+            else if (item.Type===1) chartText.TextAlign="right";
+            else if (item.Type===2) chartText.TextAlign="center";
+        }
+
+        //字体
+        if (varItem.DrawFontSize>0) chartText.TextFont=`${varItem.DrawFontSize}px 微软雅黑`;    //临时用下吧
+        if (varItem.Font) chartText.TextFont=varItem.Font;
+        
+        //颜色
+        if (varItem.Color) chartText.Color=this.GetColor(varItem.Color);
+        else chartText.Color=this.GetDefaultColor(id);
+
+        if (varItem.DrawVAlign>=0)  //上下对齐
+        {
+            if (varItem.DrawVAlign==0) chartText.TextBaseline='top';
+            else if (varItem.DrawVAlign==1) chartText.TextBaseline='middle';
+            else if (varItem.DrawVAlign==2) chartText.TextBaseline='bottom';
+        }
+
+        if (varItem.DrawAlign>=0)   // 左右对齐
+        {
+            if (varItem.DrawAlign==0) chartText.TextAlign="left";
+            else if (varItem.DrawAlign==1) chartText.TextAlign="center";
+            else if (varItem.DrawAlign==2) chartText.TextAlign='right';
+        }
+
+        chartText.BuildCacheData(hqChart.GetKData(),varItem.Draw.DrawData);
+
+        this.SetChartIndexName(chartText);
+        hqChart.ChartPaint.push(chartText);
+    }
+
     //COLORSTICK 
     this.CreateMACD = function (hqChart, windowIndex, varItem, id) 
     {
@@ -1452,8 +1550,13 @@ function ScriptIndex(name, script, args, option)
                     this.CreateDrawTextV2(hqChart, windowIndex, item, i);
                     break;
                 case 'SUPERDRAWTEXT':
-                case 'DRAWTEXT_FIX':
                     this.CreateText(hqChart, windowIndex, item, i);
+                    break;
+                case 'DRAWTEXT_FIX':
+                    this.CreateDrawText_Fix(hqChart,windowIndex,item,i);
+                    break;
+                case "DRAWNUMBER_FIX":
+                    this.CreateDrawNumber_Fix(hqChart,windowIndex,item,i);
                     break;
                 case 'DRAWLINE':
                     this.CreateStraightLine(hqChart, windowIndex, item, i);
@@ -1770,9 +1873,13 @@ function OverlayScriptIndex(name,script,args,option)
                         this.CreatePolyLine(hqChart,windowIndex,item,i);
                         break;
                     case 'DRAWNUMBER':
-                    case "DRAWNUMBER_FIX":  
-                    case 'DRAWTEXT_FIX':  
                         this.CreateNumberText(hqChart,windowIndex,item,i);
+                        break;
+                    case "DRAWNUMBER_FIX":  
+                        this.CreateDrawNumber_Fix(hqChart,windowIndex,item,i);
+                        break;
+                    case 'DRAWTEXT_FIX':  
+                        this.CreateDrawText_Fix(hqChart,windowIndex,item,i);
                         break;
                     case 'DRAWICON':
                         this.CreateIcon(hqChart,windowIndex,item,i);
@@ -2393,6 +2500,110 @@ function OverlayScriptIndex(name,script,args,option)
 
         //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
 
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateDrawText_Fix=function(hqChart,windowIndex,varItem,id)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        var chart=new ChartDrawText_Fix();
+        chart.Canvas=hqChart.Canvas;
+
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+        chart.ReloadResource();
+        chart.HQChart=hqChart;
+
+        if (varItem.Draw.Position) 
+        {
+            var item=varItem.Draw.Position;
+            chart.PtPercentage={ X:item.X, Y:item.Y }; //坐标
+           // TYPE:0为左对齐,1为右对齐 2=居中
+            if (item.Type===0) chart.TextAlign="left";
+            else if (item.Type===1) chart.TextAlign="right";
+            else if (item.Type===2) chart.TextAlign="center";
+        }
+
+        //字体
+        if (varItem.DrawFontSize>0) chart.TextFont=`${varItem.DrawFontSize*GetDevicePixelRatio()}px 微软雅黑`;    //临时用下吧
+        if (varItem.Font) chart.TextFont=varItem.Font;
+        
+        //颜色
+        if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
+        else chart.Color=this.GetDefaultColor(id);
+
+        if (varItem.DrawVAlign>=0)  //上下对齐
+        {
+            if (varItem.DrawVAlign==0) chart.TextBaseline='top';
+            else if (varItem.DrawVAlign==1) chart.TextBaseline='middle';
+            else if (varItem.DrawVAlign==2) chart.TextBaseline='bottom';
+        }
+
+        if (varItem.DrawAlign>=0)   // 左右对齐
+        {
+            if (varItem.DrawAlign==0) chart.TextAlign="left";
+            else if (varItem.DrawAlign==1) chart.TextAlign="center";
+            else if (varItem.DrawAlign==2) chart.TextAlign='right';
+        }
+
+        chart.BuildCacheData(hqChart.GetKData(),varItem.Draw.DrawData);
+
+        this.SetChartIndexName(chart);
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateDrawNumber_Fix=function(hqChart,windowIndex,varItem,id)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        var chart=new ChartDrawNumber_Fix();
+        chart.Canvas=hqChart.Canvas;
+
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+        chart.ReloadResource();
+        chart.HQChart=hqChart;
+
+        if (varItem.Draw.Position) 
+        {
+            var item=varItem.Draw.Position;
+            chart.PtPercentage={ X:item.X, Y:item.Y }; //坐标
+           // TYPE:0为左对齐,1为右对齐 2=居中
+            if (item.Type===0) chart.TextAlign="left";
+            else if (item.Type===1) chart.TextAlign="right";
+            else if (item.Type===2) chart.TextAlign="center";
+        }
+
+        //字体
+        if (varItem.DrawFontSize>0) chart.TextFont=`${varItem.DrawFontSize*GetDevicePixelRatio()}px 微软雅黑`;    //临时用下吧
+        if (varItem.Font) chart.TextFont=varItem.Font;
+        
+        //颜色
+        if (varItem.Color) chart.Color=this.GetColor(varItem.Color);
+        else chart.Color=this.GetDefaultColor(id);
+
+        if (varItem.DrawVAlign>=0)  //上下对齐
+        {
+            if (varItem.DrawVAlign==0) chart.TextBaseline='top';
+            else if (varItem.DrawVAlign==1) chart.TextBaseline='middle';
+            else if (varItem.DrawVAlign==2) chart.TextBaseline='bottom';
+        }
+
+        if (varItem.DrawAlign>=0)   // 左右对齐
+        {
+            if (varItem.DrawAlign==0) chart.TextAlign="left";
+            else if (varItem.DrawAlign==1) chart.TextAlign="center";
+            else if (varItem.DrawAlign==2) chart.TextAlign='right';
+        }
+
+        chart.BuildCacheData(hqChart.GetKData(),varItem.Draw.DrawData);
+
+        this.SetChartIndexName(chart);
         frame.ChartPaint.push(chart);
     }
 
