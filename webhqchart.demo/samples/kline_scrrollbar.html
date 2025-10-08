@@ -39,11 +39,49 @@
     <script src="../jscommon/umychart.DialogSelectRect.js"></script>
     <script src="../jscommon/umychart.DialogSearchIndex.js"></script>
     <script src="../jscommon/umychart.version.js"></script>
-    <script src="../jscommon/umychart.scrollbar.js"></script>
+    <script src="../jscommon/umychart.scrollbar.js"></script>   <!-- 滚动条 -->
 
-    <script src="../jscommon/umychart.testdata/DayKLine/000001.sh.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/60000.sh.capital.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/60000.sh.NewsInteract.js"></script>
+    <script src="../jscommon/umychart.testdata/60000.sh.BlockTrading.js"></script>
+    <script src="../jscommon/umychart.testdata/60000.sh.TradeDetal.js"></script>
+    <script src="../jscommon/umychart.testdata/60000.sh.finance_7.js"></script>
+
+    <!-- 分钟K线 -->
+    <script src="../jscommon/umychart.testdata/M1KLine/600000.sh.minute.kline.js"></script>
     <script src="../jscommon/umychart.testdata/M1KLine/000001.sh.minute.kline.js"></script>
-    <script src="../jscommon/umychart.NetworkFilterTest.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/000300.sh.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/399001.sz.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/000001.sz.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/399006.sz.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/399005.sz.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/000151.sz.minute.kline.js"></script>
+
+    <script src="../jscommon/umychart.testdata/M1KLine/ICL8.cfe.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/IML8.cfe.minute.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/M1KLine/IFL8.cfe.minute.kline.js"></script>
+
+    <!--日K -->
+    <script src="../jscommon/umychart.testdata/DayKLine/600000.sh.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/000001.sh.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/000300.sh.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/399001.sz.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/000001.sz.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/399006.sz.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/399005.sz.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/000151.sz.day.kline.js"></script>
+
+    <script src="../jscommon/umychart.testdata/DayKLine/ICL8.cfe.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/IML8.cfe.day.kline.js"></script>
+    <script src="../jscommon/umychart.testdata/DayKLine/IFL8.cfe.day.kline.js"></script>
+
+    <!-- 单日分时图 -->
+    <script src="../jscommon/umychart.testdata/DayMinute/000001.sz.1day.minute.js"></script>
+    <script src="../jscommon/umychart.testdata/DayMinute/600000.sh.1day.minute.js"></script>
+    <script src="../jscommon/umychart.testdata/DayMinute/000151.sz.1day.minute.js"></script>
+
+
+    <script src="../jscommon/umychart.testdata.js"></script>
     
     <script>
         MARKET_SUFFIX_NAME.GetMarketStatus = function (symbol) { return 2; }
@@ -66,10 +104,10 @@
                 
                 Windows: //窗口指标
                 [
-                    {Index:"MA"},
+                    {Index:"MA" , OverlayIndexType:{ Position:1, LineSpace:3 }, Overlay:true , Export:true, IndexParamSpace:15, IndexTitleSpace:15},
                     //{Index:"OX", Args:[ { Name:'Reversal', Value:3 } ] }, 
-                    {Index:"MACD"},
-                    {Index:"VOL"},
+                    {Index:"MACD",OverlayIndexType:{ Position:1, LineSpace:3 }},
+                    {Index:"VOL", OverlayIndexType:{ Position:1, LineSpace:3 }},
                     
                 ], 
 
@@ -118,8 +156,8 @@
                 {
                     DragMode:1,                 //拖拽模式 0=禁止拖拽 1=数据拖拽 2=区间选择
                     Right:0,                    //复权 0 不复权 1 前复权 2 后复权
-                    Period:4,                   //周期 0 日线 1 周线 2 月线 3 年线 
-                    MaxRequestDataCount:2000,   //数据个数
+                    Period:0,                   //周期 0 日线 1 周线 2 月线 3 年线 
+                    MaxRequestDataCount:200000,   //数据个数
                     MaxRequestMinuteDayCount:5, //分钟数据获取几天数据  默认取5天数据
                     PageSize:30,               //一屏显示多少数据
                     //Info:["互动易","大宗交易",'龙虎榜',"调研","业绩预告","公告"],       //信息地雷
@@ -139,11 +177,10 @@
 
                 IsDrawPictureXY:true,
 
+                KLineTooltip:{ Enable:true, EnableKeyDown:true },
+                FloatTooltip:{ Enable:true, },
                 SelectedChart:{ EnableSelected: true, EnableMoveOn:true },
                 EnableIndexChartDrag:true,
-                SearchIndexDialog:{ Enable:true, },
-                ModifyIndexParamDialog:{ Enable:true, EnableRestoreParam:false },
-                FloatTooltip:{ Enable:true, },
     
                 KLineTitle: //标题设置
                 {
@@ -164,8 +201,8 @@
                     Bottom:25,      //底部间距
                     Top:25,         //顶部间距
 
-                    AutoLeft:{ Blank:10, MinWidth:30 },
-                    AutoRight:{ Blank:5, MinWidth:40 },
+                    AutoLeft:{ Blank:10, MinWidth:60 },
+                    AutoRight:{ Blank:5, MinWidth:80 },
                 },
                 
                 Frame:  //子框架设置
@@ -178,18 +215,6 @@
                             { 
                                 Type:0,
                                 Position:'right',LineType:1 //CountDown:true 
-                                //PositionEx:1,
-                            },
-
-                            { 
-                                Type:2,
-                                Position:'right',LineType:-1 //CountDown:true 
-                                //PositionEx:1,
-                            },
-
-                            { 
-                                Type:3,
-                                Position:'right',LineType:-1, //CountDown:true 
                                 //PositionEx:1,
                             },
                         ]
@@ -239,7 +264,7 @@
                     Left:50,         //左边间距
                     Right:50,       //右边间距
                     Bottom:25,      //底部间距
-                    Top:10,         //顶部间距
+                    Top:1,         //顶部间距
 
                     AutoLeft:true,
                     AutoRight:true
@@ -258,16 +283,33 @@
                 var blackStyle=HQChartStyle.GetStyleConfig(STYLE_TYPE_ID.BLACK_ID); //读取黑色风格配置
                 //blackStyle.DRAWICON={ MinSize:20 , MaxSize:60};
                 blackStyle.DrawPicture.PointType=1;
-
+               
 
                 JSChart.SetStyle(blackStyle);
                 this.DivKLine.style.backgroundColor=blackStyle.BGColor; //设置最外面的div背景
                 this.DivScrollBar.style.backgroundColor=blackStyle.BGColor; //设置最外面的div背景
 
-                //JSChart.GetResource().FrameLogo.Text=null;
-                JSChart.GetResource().ToolbarButtonStyle=1;
+                var resource=JSChart.GetResource();
+                resource.ToolbarButtonStyle=1;
+                resource.FrameLogo.Text+= ` 版本:${HQCHART_VERSION}`;
 
-                JSChart.SetCSSStyle(STYLE_TYPE_ID.BLACK_ID);
+                var ZOOM_SEED=  //0=柱子宽度  1=间距
+                [
+                    [48,10],	[44,10], 
+                    [40,9],     [36,9],	
+                    [32,8],     [28,8],	
+                    [24,7],     [20,7], 
+                    [18,6],     [16,6],
+                    [15,5],     [13,5],
+                    [9,4],  [7,4], [5,4], 
+
+                    [3,3], [3,1], [2,1], [1,1], [1,0],
+                    
+                    [0.9,0],[0.8,0],[0.7,0],[0.6,0],
+                    [0.5,0],[0.4,0],[0.3,0],[0.2,0],[0.1,0]
+                ];
+                JSChart.SetKLineZoom(ZOOM_SEED);
+
 
                 this.OnSize();  //让K线全屏
 
@@ -288,7 +330,7 @@
 
             this.OnSize=function(option)  //自适应大小调整
             {
-                var height= $(window).height()-160;
+                var height= $(window).height()-150;
                 var width = $(window).width();
                 //width=50000;
                 this.DivKLine.style.top='0px';
@@ -298,7 +340,7 @@
                 this.Chart.OnSize(option);
 
                 this.DivScrollBar.style.width=width+'px';
-                this.DivScrollBar.style.height='120px';
+                this.DivScrollBar.style.height='100px';
                 this.Scrollbar.OnSize(option);
             }
 
