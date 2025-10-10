@@ -816,6 +816,15 @@ function JSChart(element)
             }
         }
 
+        if (option.LatestPointFlash)
+        {
+            var item=option.LatestPointFlash;
+            if (item.Enable)
+            {
+                chart.CreateExtendChart("LatestPointFlashPaint", item);
+            }
+        }
+
         return chart;
     }
 
@@ -1570,6 +1579,13 @@ function JSChartContainer(uielement)
     { 
         RightHorizontal: { Show:true, },
         CorssCursorStatus:{ Value:null },    //十字光标状态 只读
+        LatestPoint:null,   //最新的点位置 { X:, Y: }
+    }
+
+    this.ClearGlobalOption=function()
+    {
+        if (!this.GlobalOption) return;
+        this.GlobalOption.LatestPoint=null;
     }
 
     this.ChartDestroy=function()    //销毁
@@ -8123,6 +8139,7 @@ function KLineChartContainer(uielement)
         this.AutoUpdateEvent(false,"KLineChartContainer::ChangeSymbol");
         this.ClearCustomKLine();
         this.Frame.ClearYCoordinateMaxMin();
+        this.ClearGlobalOption();
 
         this.Symbol = symbol;
 
@@ -10357,6 +10374,7 @@ function MinuteChartContainer(uielement)
         minuteLine.ChartBorder = this.Frame.SubFrame[0].Frame.ChartBorder;
         minuteLine.ChartFrame = this.Frame.SubFrame[0].Frame;
         minuteLine.Name = "Minute-Line";
+        minuteLine.Identify="Minute-Line";
         minuteLine.Color = g_JSChartResource.Minute.PriceColor;
         minuteLine.LineWidth=g_JSChartResource.Minute.PriceLineWidth;
         minuteLine.AreaColor = g_JSChartResource.Minute.AreaPriceColor;
@@ -10368,6 +10386,7 @@ function MinuteChartContainer(uielement)
         averageLine.ChartBorder = this.Frame.SubFrame[0].Frame.ChartBorder;
         averageLine.ChartFrame = this.Frame.SubFrame[0].Frame;
         averageLine.Name = "Minute-Average-Line";
+        averageLine.Identify="Minute-Average-Line";
         averageLine.Color = g_JSChartResource.Minute.AvPriceColor;
         averageLine.IsDrawArea = false;
         this.ChartPaint[1] = averageLine;
@@ -10379,6 +10398,7 @@ function MinuteChartContainer(uielement)
         chartVol.ChartBorder = this.Frame.SubFrame[1].Frame.ChartBorder;
         chartVol.ChartFrame = this.Frame.SubFrame[1].Frame;
         chartVol.Name = "Minute-Vol-Bar";
+        chartVol.Identify="Minute-Vol-Bar";
         this.ChartPaint[2] = chartVol;
 
         //持仓线
@@ -10388,6 +10408,7 @@ function MinuteChartContainer(uielement)
         chartPosition.ChartBorder = this.Frame.SubFrame[1].Frame.ChartBorder;
         chartPosition.ChartFrame = this.Frame.SubFrame[1].Frame;
         chartPosition.Name = "Minute-Position-Line";
+        chartPosition.Identify = "Minute-Position-Line";
         this.ChartPaint[3] = chartPosition;
 
         this.TitlePaint[0] = new DynamicMinuteTitlePainting();
@@ -10750,7 +10771,7 @@ function MinuteChartContainer(uielement)
         this.ClearIndexPaint();
         this.ResetOverlaySymbolStatus();
         this.Frame.ClearYCoordinateMaxMin();
-
+        this.ClearGlobalOption();
         this.RequestData();
     }
 
@@ -10763,7 +10784,7 @@ function MinuteChartContainer(uielement)
         this.ClearIndexPaint();
         this.ResetOverlaySymbolStatus();
         this.Frame.ClearYCoordinateMaxMin();
-        
+        this.ClearGlobalOption();
         this.RequestData();
     }
 
@@ -11602,6 +11623,7 @@ function MinuteChartContainer(uielement)
         var bindData = new ChartData();
         bindData.Data = minuteData.GetClose();
         this.ChartPaint[0].Data = bindData;
+        this.ChartPaint[0].Source=minuteData;
         this.ChartPaint[0].YClose = yClose;
         this.ChartPaint[0].NotSupportMessage = null;
 

@@ -40066,7 +40066,8 @@ function ChartDrawText()
 
     this.ClassName='ChartDrawText';         //类名
     this.Color="rgb(255,193,37)";           //线段颜色
-    this.TextFont="14px 微软雅黑";           //线段宽度
+    this.Font;                              //固定字体
+    this.TextFont="14px 微软雅黑";           //输出使用的字体
     this.TextBaseline="middle";
     this.TextAlign='left';
     this.Text
@@ -40141,8 +40142,9 @@ function ChartDrawText()
         var isArrayText=Array.isArray(this.Text);
         var drawTextInfo={ Text:{ Color:this.Color, Align:this.TextAlign, Baseline:this.TextBaseline }, Font:{ } };
         
-
-        if (this.FixedFontSize>0)  //固定字体大小模式
+        if (this.Font) 
+            this.TextFont=this.Font; 
+        else if (this.FixedFontSize>0)  //固定字体大小模式
             this.TextFont=`${this.FixedFontSize}px ${this.TextSize.FontName}`;
         else    //动态字体大小
             this.TextFont=this.GetDynamicFont(dataWidth,distanceWidth,this.TextSize.Max,this.TextSize.Min,this.TextSize.Zoom,this.TextSize.FontName);
@@ -48992,6 +48994,7 @@ function KLineTooltipPaint()
     this.ExtendLineWidth=2;
 
     this.Font=[g_JSChartResource.TooltipPaint.TitleFont];
+    
 
     this.HQChart;
     this.KLineTitlePaint;
@@ -49110,6 +49113,8 @@ function KLineTooltipPaint()
                 if (maxTextWidth<textWidth) maxTextWidth=textWidth;
                 lineWidth+=textWidth;
             }
+
+            if (IFrameSplitOperator.IsNumber(item.Space)) lineWidth+=item.Space;
 
             if (maxLineWidth<lineWidth) maxLineWidth=lineWidth;
 
@@ -49302,20 +49307,33 @@ function KLineTooltipPaint()
         {
             var item=titleData.AryText[i];
 
+            var titleWidth=0;
             if (item.Title)
             {
                 this.Canvas.textAlign="left";
                 this.Canvas.fillStyle=item.TitleColor;
                 this.Canvas.fillText(item.Title,left,top);
+                var titleWidth=this.Canvas.measureText(item.Title).width+2;
             }
 
             if (item.Text)
             {
-                this.Canvas.textAlign="right";
-                this.Canvas.fillStyle=item.Color;
-                this.Canvas.fillText(item.Text,right,top);
+                if (item.TextAlign==1)  //1=左对齐 0=右对齐
+                {
+                    var yText=left+titleWidth+2;
+                    if (IFrameSplitOperator.IsNumber(item.Space)) yText+=item.Space; //标题和数据内容间距
+                    this.Canvas.textAlign="left";
+                    this.Canvas.fillStyle=item.Color;
+                    this.Canvas.fillText(item.Text,yText,top);
+                }
+                else
+                {
+                    this.Canvas.textAlign="right";
+                    this.Canvas.fillStyle=item.Color;
+                    this.Canvas.fillText(item.Text,right,top);
+                }
             }
-
+                
             top+=this.LineHeight+this.LineSpace;
         }
 
@@ -53483,6 +53501,8 @@ function LatestPointFlashPaint()
     this.ClassName='LatestPointFlashPaint';
     this.HQChart;
 
+    this.FlashType=0;   //0=数据更新了闪烁, 1=一直显示
+    //闪烁
     this.Status=0;
     this.UpdateTime=new Date();
     this.FlashCount=0;  //闪烁次数
@@ -53507,6 +53527,7 @@ function LatestPointFlashPaint()
         if (option)
         {
             if (IFrameSplitOperator.IsNumber(option.Frequency)) this.Frequency=option.Frequency;
+            if (IFrameSplitOperator.IsNumber(option.FlashType)) this.FlashType=option.FlashType;
         }
     }
 
@@ -53541,18 +53562,32 @@ function LatestPointFlashPaint()
         if (!this.HQChart) return;
         this.HQChart.ClearCanvas(this.FlashCanvas);
 
-        if (this.FlashCount<=0) return;
-        if (this.IsStatusChange())
+        if (this.FlashType===1)
         {
-            this.Status=(this.Status+1)%2;
-            --this.FlashCount;
-        }
 
-        if (this.Status==0) return;
+        }
+        else
+        {
+            if (this.FlashCount<=0) return;
+            if (this.IsStatusChange())
+            {
+                this.Status=(this.Status+1)%2;
+                --this.FlashCount;
+            }
+            if (this.Status==0) return;
+        }
+        
+
+
         if (!this.HQChart.GlobalOption || !this.HQChart.GlobalOption.LatestPoint) return;
         var point=this.HQChart.GlobalOption.LatestPoint;
         if (!IFrameSplitOperator.IsNumber(point.X) || !IFrameSplitOperator.IsNumber(point.Y)) return;
 
+        this.DrawPoint(point);
+    }
+
+    this.DrawPoint=function(point)
+    {
         if (this.Style==1) this.GetChartColor();
 
         this.FlashCanvas.fillStyle=this.BGColor;
@@ -78686,7 +78721,7 @@ function JSChartResource()
     //虚线配置
     this.DOTLINE=
     {
-        LineDash:[3,5]  //虚线配置
+        LineDash:[2*GetDevicePixelRatio(),2*GetDevicePixelRatio()]  //虚线配置
     }
 
     this.DRAWSL=

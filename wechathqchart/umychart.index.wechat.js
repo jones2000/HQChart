@@ -981,7 +981,8 @@ function ScriptIndex(name, script, args, option)
     hqChart.ChartPaint.push(chart);
   }
 
-  this.CreateStraightLine = function (hqChart, windowIndex, varItem, id) {
+  this.CreateStraightLine = function (hqChart, windowIndex, varItem, id) 
+  {
     let line = new ChartLine();
     line.DrawType = 1;
     line.Canvas = hqChart.Canvas;
@@ -991,9 +992,16 @@ function ScriptIndex(name, script, args, option)
     if (varItem.Color) line.Color = this.GetColor(varItem.Color);
     else line.Color = this.GetDefaultColor(id);
 
-    if (varItem.LineWidth) {
-      let width = parseInt(varItem.LineWidth.replace("LINETHICK", ""));
-      if (!isNaN(width) && width > 0) line.LineWidth = width;
+    if (varItem.LineWidth) 
+    {
+        let width = parseInt(varItem.LineWidth.replace("LINETHICK", ""));
+        if (!isNaN(width) && width > 0) line.LineWidth = width;
+    }
+
+    if (varItem.IsDotLine) 
+    {
+        line.IsDotLine=true; //虚线
+        line.LineDash=g_JSChartResource.DOTLINE.LineDash.slice();
     }
 
     let titleIndex = windowIndex + 1;
@@ -2369,6 +2377,12 @@ function OverlayScriptIndex(name,script,args,option)
         {
             let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
             if (!isNaN(width) && width>0) chart.LineWidth=width;
+        }
+
+        if (varItem.IsDotLine) 
+        {
+            chart.IsDotLine=true; //虚线
+            chart.LineDash=g_JSChartResource.DOTLINE.LineDash.slice();
         }
         
         let titleIndex=windowIndex+1;

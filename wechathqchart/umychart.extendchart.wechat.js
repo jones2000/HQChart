@@ -44,6 +44,11 @@ import
     IFrameSplitOperator,
 } from './umychart.framesplit.wechat.js'
 
+import
+{
+    IChartDrawPicture,
+} from "./umychart.ChartDrawPicture.wechart.js"
+
 function IExtendChartPainting() 
 {
     this.Canvas;                        //画布
@@ -340,6 +345,8 @@ function KLineTooltipPaint()
                 lineWidth+=textWidth;
             }
 
+            if (IFrameSplitOperator.IsNumber(item.Space)) lineWidth+=item.Space;
+
             if (maxLineWidth<lineWidth) maxLineWidth=lineWidth;
 
             height+=this.LineHeight;
@@ -428,19 +435,31 @@ function KLineTooltipPaint()
         for(var i=0; i<titleData.AryText.length; ++i)
         {
             var item=titleData.AryText[i];
-
+            var titleWidth=0;
             if (item.Title)
             {
                 this.Canvas.textAlign="left";
                 this.Canvas.fillStyle=item.TitleColor;
                 this.Canvas.fillText(item.Title,left,top);
+                var titleWidth=this.Canvas.measureText(item.Title).width+2;
             }
 
             if (item.Text)
             {
-                this.Canvas.textAlign="right";
-                this.Canvas.fillStyle=item.Color;
-                this.Canvas.fillText(item.Text,right,top);
+                if (item.TextAlign==1)  //1=左对齐 0=右对齐
+                {
+                    var yText=left+titleWidth+2;
+                    if (IFrameSplitOperator.IsNumber(item.Space)) yText+=item.Space; //标题和数据内容间距
+                    this.Canvas.textAlign="left";
+                    this.Canvas.fillStyle=item.Color;
+                    this.Canvas.fillText(item.Text,yText,top);
+                }
+                else
+                {
+                    this.Canvas.textAlign="right";
+                    this.Canvas.fillStyle=item.Color;
+                    this.Canvas.fillText(item.Text,right,top);
+                }
             }
 
             top+=this.LineHeight+this.LineSpace;
@@ -1995,8 +2014,82 @@ function StockChipPhone()
         this.Data.Cast=aryCast;
     }
 
-}   
+}  
 
+//最新数据点闪动
+function LatestPointFlashPaint()
+{
+    this.newMethod=IExtendChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='LatestPointFlashPaint';
+    this.HQChart;
+    this.FlashType=1;   //0=数据更新了闪烁, 1=一直显示
+   
+    this.PointColor=g_JSChartResource.LatestPointFlash.PointColor;
+    this.PointRadius=g_JSChartResource.LatestPointFlash.PointRadius;
+    this.BGColor=g_JSChartResource.LatestPointFlash.BGColor;
+    this.BGRadius=g_JSChartResource.LatestPointFlash.BGRadius;
+    this.Style=1;   //0=默认配置 1=图形保持一致
+    
+    this.SetOption=function(option)
+    {
+        
+    }
+
+    this.ReloadResource=function(resource)
+    {
+        this.PointColor=g_JSChartResource.LatestPointFlash.PointColor;
+        this.PointRadius=g_JSChartResource.LatestPointFlash.PointRadius;
+        this.BGColor=g_JSChartResource.LatestPointFlash.BGColor;
+        this.BGRadius=g_JSChartResource.LatestPointFlash.BGRadius;
+    }
+
+    this.GetChartColor=function()
+    {
+        var chart=this.HQChart.ChartPaint[0];
+        if (!chart) return;
+
+        if (chart.ClassName=="ChartKLine")
+        {
+            this.PointColor=chart.CloseLineColor;
+            this.BGColor=IChartDrawPicture.ColorToRGBA(chart.CloseLineColor, 0.6);
+        }
+        else if (chart.ClassName=="ChartMinutePriceLine")
+        {
+            this.PointColor=chart.Color;
+            this.BGColor=IChartDrawPicture.ColorToRGBA(chart.Color, 0.6);
+        }
+    }
+
+    this.Draw=function()
+    {
+        if (!this.HQChart.GlobalOption || !this.HQChart.GlobalOption.LatestPoint) return;
+        var point=this.HQChart.GlobalOption.LatestPoint;
+        if (!IFrameSplitOperator.IsNumber(point.X) || !IFrameSplitOperator.IsNumber(point.Y)) return;
+
+        this.DrawPoint(point);
+    }
+
+    this.DrawPoint=function(point)
+    {
+        if (this.Style==1) this.GetChartColor();
+
+        this.Canvas.fillStyle=this.BGColor;
+        this.Canvas.beginPath();
+        this.Canvas.arc(point.X,point.Y,this.BGRadius,0,360,false);
+        this.Canvas.fill();                         
+        this.Canvas.closePath();
+
+        //画实心圆
+        this.Canvas.fillStyle=this.PointColor;
+        this.Canvas.beginPath();
+        this.Canvas.arc(point.X,point.Y,this.PointRadius,0,360,false);
+        this.Canvas.fill();                         
+        this.Canvas.closePath();
+    }
+}
 /*
     扩展图形
 */
@@ -2005,6 +2098,7 @@ function ExtendChartPaintFactory()
     this.DataMap=new Map(
         [
             //["FrameSplitPaint", { Create:function() { return new FrameSplitPaint(); } }],
+            ["LatestPointFlashPaint", {Create:function() { return new LatestPointFlashPaint(); }}],
         ]
     );
 

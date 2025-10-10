@@ -1449,7 +1449,7 @@ function DynamicChartTitlePainting()
     {
         if (item.StringFormat == STRING_FORMAT_TYPE.DEFAULT)
             return IFrameSplitOperator.FormatValueString(value, item.FloatPrecision, this.LanguageID);
-        else if (item.StringFormat = STRING_FORMAT_TYPE.THOUSANDS)
+        else if (item.StringFormat == STRING_FORMAT_TYPE.THOUSANDS)
             return IFrameSplitOperator.FormatValueThousandsString(value, item.FloatPrecision);
         else if (item.StringFormat == STRING_FORMAT_TYPE.ORIGINAL)
             return value.toFixed(item.FloatPrecision).toString();

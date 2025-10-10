@@ -173,6 +173,15 @@ function JSChartResource()
         Title:'🔒开通权限'
     }
 
+    this.LatestPointFlash=
+    {
+        PointColor:"rgb(50,171,205)",
+        PointRadius:3,
+
+        BGColor:"rgba(50,171,205,0.7)",
+        BGRadius:6,
+    }
+
     this.Domain = "http://127.0.0.1:8080";               //API域名
     this.CacheDomain = "http://127.0.0.1:8087";     //缓存域名
 
@@ -966,6 +975,17 @@ function JSChartResource()
 
         if (style.KLineTrain)  this.SetKLineTrain(style.KLineTrain);
         if (style.IndexLock) this.SetIndexLock(style.IndexLock);
+        if (style.LatestPointFlash) this.SetLatestPointFlash(style.LatestPointFlash);
+    }
+
+    this.SetLatestPointFlash=function(style)
+    {
+        var dest=this.LatestPointFlash;
+        if (style.PointColor) dest.PointColor=style.PointColor;
+        if (IFrameSplitOperator.IsNumber(style.PointRadius)) dest.PointRadius=style.PointRadius;
+
+        if (style.BGColor) dest.BGColor=style.BGColor;
+        if (IFrameSplitOperator.IsNumber(style.BGRadius)) dest.BGRadius=style.BGRadius;
     }
 
     this.SetKLineTrain=function(style)

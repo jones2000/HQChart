@@ -9841,6 +9841,17 @@ function JSDraw(errorHandler,symbolData)
         let bSecondPont=false;
         let lineCache={Start:{ },End:{ }, List:new Array()};
 
+        function CopyLineData(aryDest, arySrc)
+        {
+            if (!IFrameSplitOperator.IsNonEmptyArray(arySrc)) return;
+
+            for(var j=0; j<arySrc.length; ++j)
+            {
+                var item=arySrc[j];
+                aryDest[item.ID]=item.Value;
+            }
+        }
+
         for(let i=0;i<count;++i)
         {
             drawData[i]=null;
@@ -9867,6 +9878,16 @@ function JSDraw(errorHandler,symbolData)
                     {
                         bSecondPont=true;
                         lineCache.End={ID:i, Value:data2[i]};   //第2个点
+                        
+                        if (condition[i])
+                        {
+                            var lineData=this.CalculateDrawLine(lineCache);     //计算2个点的线上 其他点的数值
+                            CopyLineData(drawData,lineData);
+
+                            bFirstPoint=true;
+                            bSecondPont=false;
+                            lineCache.Start={ID:i, Value:data[i]};  //第1个点
+                        }
                     }
                 }
                 else if (bFirstPoint==true && bSecondPont==true)
@@ -9878,13 +9899,8 @@ function JSDraw(errorHandler,symbolData)
                     }
                     else if (condition[i])  //条件1满足
                     {
-                        let lineData=this.CalculateDrawLine(lineCache);     //计算2个点的线上 其他点的数值
-
-                        for(let j in lineData)
-                        {
-                            let item=lineData[j];
-                            drawData[item.ID]=item.Value;
-                        }
+                        var lineData=this.CalculateDrawLine(lineCache);     //计算2个点的线上 其他点的数值
+                        CopyLineData(drawData,lineData);
 
                         if (expand==1) this.CalculateDrawDataExtendLine(drawData, lineCache.Start.ID-2);//右延长线
 
@@ -9901,12 +9917,9 @@ function JSDraw(errorHandler,symbolData)
             //最后一组线
             if (bFirstPoint==true && bSecondPont==true)
             {
-                let lineData=this.CalculateDrawLine(lineCache);     
-                for(let j in lineData)
-                {
-                    let item=lineData[j];
-                    drawData[item.ID]=item.Value;
-                }
+                var lineData=this.CalculateDrawLine(lineCache);     
+                CopyLineData(drawData,lineData);
+
             }
         }
 
@@ -10423,7 +10436,13 @@ function JSDraw(errorHandler,symbolData)
     {
         if (!numberData) return null;
 
-        if (numberData.DataType==1) return numberData.SingleValue;
+        if (numberData.DataType==1) 
+        {
+            var value=numberData.SingleValue;
+            if (IFrameSplitOperator.IsNumber(value)) return value.toFixed(decimal);
+            else if (value) return value.toString();
+            else return null;
+        }
 
         if (!IFrameSplitOperator.IsNonEmptyArray(numberData.ArrayValue)) return null;
 
@@ -10807,6 +10826,12 @@ function JSDraw(errorHandler,symbolData)
     {
         var rgba=`RGB(${r},${g},${b},${a})`;
         return rgba;
+    }
+
+    //设置字体
+    this.CSSFONT=function(strFont)
+    {
+        return strFont;
     }
 
     this.UPCOLOR=function(color)
@@ -17854,6 +17879,7 @@ function JSExecute(ast,option)
                 let xOffset=null, yOffset=null;
                 var klineType=null;
                 var lineDash=null;
+                var font=null;
                 for(let j=0; j<item.Expression.Expression.length; ++j)
                 {
                     let itemExpression=item.Expression.Expression[j];
@@ -17969,6 +17995,10 @@ function JSExecute(ast,option)
                             else if (itemExpression.Callee.Name=="DOWNCOLOR")
                             {
                                 downColor=itemExpression.Out;
+                            }
+                            else if (itemExpression.Callee.Name=="CSSFONT")
+                            {
+                                font=itemExpression.Out;
                             }
                             else if (itemExpression.Callee.Name=="STICKTYPE")
                             {
@@ -18172,6 +18202,7 @@ function JSExecute(ast,option)
                     if (drawAlign>=0) outVar.DrawAlign=drawAlign;
                     if (drawVAlign>=0) outVar.DrawVAlign=drawVAlign;
                     if (fontSize>0) outVar.DrawFontSize=fontSize;
+                    if (font) outVar.Font=font;
                     if (bgConfig) outVar.Background=bgConfig;
                     if (vLineConfig) outVar.VerticalLine=vLineConfig;
                     if (IFrameSplitOperator.IsNumber(xOffset)) outVar.XOffset=xOffset;
@@ -18671,6 +18702,9 @@ function JSExecute(ast,option)
                 break;
             case "DOWNCOLOR":
                 node.Out=this.Draw.DOWNCOLOR(args[0]);
+                break;
+            case "CSSFONT":
+                node.Out=this.Draw.CSSFONT(args[0]);
                 break;
             case "STICKTYPE":   //柱子类型
                 node.Out=this.Draw.STICKTYPE(args[0]);
@@ -21386,6 +21420,7 @@ function ScriptIndex(name,script,args,option)
         }
 
         if (varItem.DrawFontSize>0) chartText.FixedFontSize=varItem.DrawFontSize;
+        if (varItem.Font) chartText.Font=varItem.Font;
         if (varItem.Background) chartText.TextBG=varItem.Background;
         if (varItem.VerticalLine) chartText.VerticalLine=varItem.VerticalLine;
 
@@ -21540,6 +21575,12 @@ function ScriptIndex(name,script,args,option)
         {
             let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
             if (!isNaN(width) && width>0) line.LineWidth=width;
+        }
+
+        if (varItem.IsDotLine) 
+        {
+            line.IsDotLine=true; //虚线
+            line.LineDash=g_JSChartResource.DOTLINE.LineDash.slice();
         }
         
         let titleIndex=windowIndex+1;
@@ -23775,6 +23816,7 @@ function OverlayScriptIndex(name,script,args,option)
         }
 
         if (varItem.DrawFontSize>0) chartText.FixedFontSize=varItem.DrawFontSize;
+        if (varItem.Font) chartText.Font=varItem.Font;
         if (varItem.Background) chartText.TextBG=varItem.Background;
         if (varItem.VerticalLine) chartText.VerticalLine=varItem.VerticalLine;
         if (IFrameSplitOperator.IsNumber(varItem.XOffset)) chartText.ShowOffset.X=varItem.XOffset;
@@ -23972,6 +24014,12 @@ function OverlayScriptIndex(name,script,args,option)
         {
             let width=parseInt(varItem.LineWidth.replace("LINETHICK",""));
             if (!isNaN(width) && width>0) chart.LineWidth=width;
+        }
+
+        if (varItem.IsDotLine) 
+        {
+            chart.IsDotLine=true; //虚线
+            chart.LineDash=g_JSChartResource.DOTLINE.LineDash.slice();
         }
         
         let titleIndex=windowIndex+1;

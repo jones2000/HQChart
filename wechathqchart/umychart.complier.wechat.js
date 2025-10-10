@@ -8683,83 +8683,133 @@ function JSDraw(errorHandler, symbolData)
     当COND1条件满足时，在PRICE1位置画直线起点，当COND2条件满足时，在PRICE2位置画直线终点，EXPAND为延长类型。
     例如：　DRAWLINE(HIGH>=HHV(HIGH,20),HIGH,LOW<=LLV(LOW,20),LOW,1)　表示在创20天新高与创20天新低之间画直线并且向右延长。
     */
-    this.DRAWLINE=function(condition,data,condition2,data2,expand)
+   this.DRAWLINE=function(condition,data,condition2,data2,expand)
+   {
+       let drawData=[];
+       let result={DrawData:drawData, DrawType:'DRAWLINE', Expand:expand};
+
+       if(condition.length<=0) return result;
+       let count=Math.max(condition.length,condition2.length);
+
+       let bFirstPoint=false;
+       let bSecondPont=false;
+       let lineCache={Start:{ },End:{ }, List:new Array()};
+
+       function CopyLineData(aryDest, arySrc)
+       {
+           if (!IFrameSplitOperator.IsNonEmptyArray(arySrc)) return;
+
+           for(var j=0; j<arySrc.length; ++j)
+           {
+               var item=arySrc[j];
+               aryDest[item.ID]=item.Value;
+           }
+       }
+
+       for(let i=0;i<count;++i)
+       {
+           drawData[i]=null;
+           if (i<condition.length && i<condition2.length)
+           {
+               if (bFirstPoint==false && bSecondPont==false)
+               {
+                   if (condition[i]==null || !condition[i]) continue;
+
+                   bFirstPoint=true;
+                   lineCache.Start={ID:i, Value:data[i]};  //第1个点
+               }
+               else if (bFirstPoint==true && bSecondPont==false)
+               {
+                   var bCondition2=(condition2[i]!=null && condition2[i]); //条件2
+                   if (!bCondition2) 
+                   {
+                       if (condition[i] ) //条件1满足
+                           lineCache.Start={ID:i, Value:data[i]};  //移动第1个点
+                       continue;
+                   }
+
+                   if (bCondition2)
+                   {
+                       bSecondPont=true;
+                       lineCache.End={ID:i, Value:data2[i]};   //第2个点
+                       
+                       if (condition[i])
+                       {
+                           var lineData=this.CalculateDrawLine(lineCache);     //计算2个点的线上 其他点的数值
+                           CopyLineData(drawData,lineData);
+
+                           bFirstPoint=true;
+                           bSecondPont=false;
+                           lineCache.Start={ID:i, Value:data[i]};  //第1个点
+                       }
+                   }
+               }
+               else if (bFirstPoint==true && bSecondPont==true)
+               {
+                   var bCondition2=(condition2[i]!=null && condition2[i]); //条件2
+                   if (bCondition2)    //条件2满足
+                   {
+                       lineCache.End={ID:i, Value:data2[i]};   //移动第2个点
+                   }
+                   else if (condition[i])  //条件1满足
+                   {
+                       var lineData=this.CalculateDrawLine(lineCache);     //计算2个点的线上 其他点的数值
+                       CopyLineData(drawData,lineData);
+
+                       if (expand==1) this.CalculateDrawDataExtendLine(drawData, lineCache.Start.ID-2);//右延长线
+
+                       bFirstPoint=bSecondPont=false;
+                       lineCache={Start:{ },End:{ }};
+
+                       bFirstPoint=true;
+                       bSecondPont=false;
+                       lineCache.Start={ID:i, Value:data[i]};  //第1个点
+                   }
+               }
+           }
+
+           //最后一组线
+           if (bFirstPoint==true && bSecondPont==true)
+           {
+               var lineData=this.CalculateDrawLine(lineCache);     
+               CopyLineData(drawData,lineData);
+
+           }
+       }
+
+       if (expand==1) this.CalculateDrawDataExtendLine(drawData);//右延长线
+
+       return result;
+   }
+
+    this.CalculateDrawDataExtendLine=function(drawData, maxCount)
     {
-        let drawData=[];
-        let result={DrawData:drawData, DrawType:'DRAWLINE', Expand:expand};
+        if (maxCount<0) return;
 
-        if(condition.length<=0) return result;
-        let count=Math.max(condition.length,condition2.length);
-
-        let bFirstPoint=false;
-        let bSecondPont=false;
-        let lineCache={Start:{ },End:{ }, List:new Array()};
-
-        for(let i=0;i<count;++i)
+        var x2=null;
+        var count=drawData.length;
+        if (this.IsNumber(maxCount) && maxCount<count) count=maxCount;
+        for(var i=count-1;i>=0;--i)
         {
-            drawData[i]=null;
-            if (i<condition.length && i<condition2.length)
+            if (this.IsNumber(drawData[i]))
             {
-                if (bFirstPoint==false && bSecondPont==false)
-                {
-                    if (condition[i]==null || !condition[i]) continue;
-
-                    bFirstPoint=true;
-                    lineCache.Start={ID:i, Value:data[i]};  //第1个点
-                }
-                else if (bFirstPoint==true && bSecondPont==false)
-                {
-                    var bCondition2=(condition2[i]!=null && condition2[i]); //条件2
-                    if (!bCondition2) continue;
-
-                    if (bCondition2)
-                    {
-                        bSecondPont=true;
-                        lineCache.End={ID:i, Value:data2[i]};   //第2个点
-                    }
-                }
-                
-                if (bFirstPoint==true && bSecondPont==true)    //2个点都有了, 等待下一次的点出现
-                {
-                    let lineData=this.CalculateDrawLine(lineCache);     //计算2个点的线上 其他点的数值
-
-                    for(let j in lineData)
-                    {
-                        let item=lineData[j];
-                        drawData[item.ID]=item.Value;
-                    }
-
-                    bFirstPoint=bSecondPont=false;
-                    lineCache={Start:{ },End:{ }};
-                }
+                x2=i;
+                break;
             }
         }
-        if (expand==1) //右延长线
+        //y3=(y1-y2)*(x3-x1)/(x2-x1)
+        if (x2!=null && x2-1>=0)
         {
-            var x2=null;
-            for(var i=drawData.length-1;i>=0;--i)
+            var x1=x2-1;
+            for(var i=x2+1;i<count;++i)
             {
-                if (this.IsNumber(drawData[i]))
-                {
-                    x2=i;
-                    break;
-                }
-            }
-            //y3=(y1-y2)*(x3-x1)/(x2-x1)
-            if (x2!=null && x2-1>=0)
-            {
-                var x1=x2-1;
-                for(var i=x2+1;i<drawData.length;++i)
-                {
-                    var y1=drawData[x1];
-                    var y2=drawData[x2];
-                    var y3=(y1-y2)*(i-x1)/(x2-x1);
-                    drawData[i]=y1-y3;
-                }
+                var y1=drawData[x1];
+                var y2=drawData[x2];
+                var y3=(y1-y2)*(i-x1)/(x2-x1);
+                if (y1-y3<0) break;
+                drawData[i]=y1-y3;
             }
         }
-        
-        return result;
     }
 
     /*
@@ -9034,7 +9084,13 @@ function JSDraw(errorHandler, symbolData)
     {
         if (!numberData) return null;
 
-        if (numberData.DataType==1) return numberData.SingleValue;
+        if (numberData.DataType==1) 
+        {
+            var value=numberData.SingleValue;
+            if (IFrameSplitOperator.IsNumber(value)) return value.toFixed(decimal);
+            else if (value) return value.toString();
+            return null;
+        }
 
         if (!IFrameSplitOperator.IsNonEmptyArray(numberData.ArrayValue)) return null;
 

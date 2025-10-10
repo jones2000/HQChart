@@ -10576,9 +10576,22 @@ function ChartMinutePriceLine()
     this.YClose;
     this.IsDrawArea = true;    //是否画价格面积图
     this.AreaColor = 'rgba(0,191,255,0.1)';
+    this.LastPoint={};  //最后一个点的信息 {X, Y, Data:, Value:, DateTime:YYYYMMDDHHMMSS }
+    
+    this.UpdateLastPoint=function(dateTime, x,y, item)
+    {
+        if (IFrameSplitOperator.IsNumber(this.LastPoint.DateTime) && this.LastPoint.DateTime>dateTime) return;
+
+        this.LastPoint.DateTime=dateTime;
+        this.LastPoint.X=x;
+        this.LastPoint.Y=y;
+        this.LastPoint.Data=item;
+        this.LastPoint.Value=item.Value;
+    }
 
     this.Draw = function () 
     {
+        this.LastPoint={};
         if (this.NotSupportMessage) 
         {
             this.DrawNotSupportmessage();
@@ -10632,6 +10645,13 @@ function ChartMinutePriceLine()
                 else this.Canvas.lineTo(x, y);
             }
 
+            if (this.Source)
+            {
+                var item=this.Source.Data[i];
+                var dateTime=item.Date*1000000+item.Time*100;
+                this.UpdateLastPoint(dateTime, x,y, { Value:value, Index:i, Date:item.Date, Time:item.Time, Type:0,  Explain:"盘中"});
+            }
+            
             ++drawCount;
 
             if (pointCount >= minuteCount) //上一天的数据和这天地数据线段要断开
@@ -10681,6 +10701,12 @@ function ChartMinutePriceLine()
         }
 
         this.Canvas.restore();
+
+        if (this.Identify=="Minute-Line" && this.ChartFrame.GlobalOption)
+        {
+            var globalOption=this.ChartFrame.GlobalOption;
+            globalOption.LatestPoint={ X:this.LastPoint.X, Y:this.LastPoint.Y };
+        }
     }
 
     this.GetMaxMin = function () 
