@@ -3122,14 +3122,15 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
             var indexData = [];
             var outVarItem = { Name: item.name, Type: item.type };
             if (item.color) outVarItem.Color = item.color;
+            else if (item.Color) outVarItem.Color=item.Color;
             if (IFrameSplitOperator.IsBool(item.IsShowTitle)) outVarItem.IsShowTitle = item.IsShowTitle;  //是否显示指标标题
             if (IFrameSplitOperator.IsNumber(item.DrawVAlign)) outVarItem.DrawVAlign = item.DrawVAlign;
             if (IFrameSplitOperator.IsNumber(item.DrawAlign)) outVarItem.DrawAlign = item.DrawAlign;
+            if (item.Font) outVarItem.Font=item.Font;
+
             if (item.data) 
             {
                 outVarItem.Data = this.FittingArray(item.data, date, time, hqChart);
-
-                if (item.color) outVarItem.Color = item.color;
                 if (item.linewidth >= 1) outVarItem.LineWidth = item.linewidth;
                 if (IFrameSplitOperator.IsBool(item.isshow)) outVarItem.IsShow = item.isshow;
                 if (item.isexdata == true) outVarItem.IsExData = true;
@@ -3167,6 +3168,18 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
                     drawItem.DrawData = this.FittingArray(draw.DrawData, date, time, hqChart);
                     outVarItem.Draw = drawItem;
 
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType=="DRAWTEXT_FIX")
+                {
+                    drawItem.Text=draw.Text;
+                    drawItem.Name=draw.Name;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData={ Value:null, Text:null };
+                    drawItem.DrawData.Value=this.FittingArray(draw.DrawData.Value,date,time,hqChart);
+                    drawItem.DrawData.Text=this.FittingArray(draw.DrawData.Text,date,time,hqChart);
+                    drawItem.Position=draw.Position;
+                    outVarItem.Draw=drawItem;
                     result.push(outVarItem);
                 }
                 else if (draw.DrawType == 'STICKLINE')    //柱子

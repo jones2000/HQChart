@@ -3138,6 +3138,7 @@ var JSCHART_MENU_ID=
     CMD_CORSS_X_TEXTALIGN_ID:61,            //十字光标 底部文字对齐方式
 
     CMD_CHANGE_YRIGHT_TEXT_FORMAT:62,       //分时图主图 右侧刻度格式
+    CMD_ENABLE_ZOOM_Y_ID:63,                //放大缩小Y坐标 { FrameID:, Enable: , Range:{ Max:, Min: }}
 
 
     CMD_REPORT_CHANGE_BLOCK_ID:100,      //报价列表 切换板块ID
@@ -11939,6 +11940,10 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 if (param===2) frame.MultiTextFormat=1;
                 this.ResetFrameXYSplit();
                 this.Draw();
+                break;
+            case JSCHART_MENU_ID.CMD_ENABLE_ZOOM_Y_ID:
+                if (!srcParam) return false;
+                if (this.EnableZoomYCoordinate) this.EnableZoomYCoordinate(srcParam);
                 break;
         }
     }
@@ -30618,12 +30623,13 @@ function ChartKLine()
         if (this.TradeIcon) this.DrawTradeIcon()
         else this.DrawTrade();
 
+        if (this.PriceGap.Enable) this.DrawPriceGap();
+
         this.Canvas.restore();
 
         this.UpdateGlobalLatestPoint();
 
         this.DrawPredictionLine();
-        if (this.PriceGap.Enable) this.DrawPriceGap();
 
         if (this.IsShowMaxMinPrice)     //标注最大值最小值
         {
@@ -58095,7 +58101,7 @@ function FrameSplitMinuteX()
         width=width/GetDevicePixelRatio();
 
         const minuteCoordinate = g_MinuteCoordinateData;
-        var xcoordinateData = minuteCoordinate.GetCoordinateData(this.Symbol,width);
+        var xcoordinateData = minuteCoordinate.GetCoordinateData(this.Symbol, width, this.Frame.GlobalOption);
         var minuteCount=xcoordinateData.Count;
         var minuteMiddleCount=xcoordinateData.MiddleCount>0? xcoordinateData.MiddleCount: parseInt(minuteCount/2);
         var xcoordinate = xcoordinateData.Data;
@@ -60761,7 +60767,8 @@ function HQMinuteTimeStringFormat()
     this.MultiDayBeforeOpenData;    //多日分时图 盘前数据
     this.MultiDayAfterCloseData;    //多日分时图 收盘数据
 
-    this.GetEventCallback
+    this.GetEventCallback;
+    this.HQChart;
 
     this.GetBeforeOpen=function()
     {
@@ -60859,7 +60866,9 @@ function HQMinuteTimeStringFormat()
         if (this.Frame && this.Frame.MinuteCount) showIndex=index%this.Frame.MinuteCount;
 
         var timeStringData=g_MinuteTimeStringData;
-        var timeData=timeStringData.GetTimeData(this.Symbol);
+        var globalOption=null;
+        if (this.HQChart) globalOption=this.HQChart.GlobalOption;
+        var timeData=timeStringData.GetTimeData(this.Symbol, globalOption);
         if (!timeData) return false;
 
         if (showIndex<0) showIndex=0;
@@ -88242,12 +88251,19 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         var bDaySummary=klineChart.DaySummary.Enable;
         var infoPosition=klineChart.InfoPosition;
         var coordinateType=null, yCoordinateType=null;      //坐标类型
+        var bZoomYCoordinate=false;
         var mainFrame=null;
         if (this.Frame.SubFrame[0] && this.Frame.SubFrame[0].Frame) mainFrame=this.Frame.SubFrame[0].Frame;
         if (mainFrame) 
         {
             coordinateType=mainFrame.CoordinateType;
-            if (mainFrame.YSplitOperator) yCoordinateType=mainFrame.YSplitOperator.CoordinateType;
+            if (mainFrame.YSplitOperator) 
+            {
+                yCoordinateType=mainFrame.YSplitOperator.CoordinateType;
+                if (mainFrame.YSplitOperator.FixedYMaxMin && mainFrame.YSplitOperator.EnableZoomUpDown)
+                    bZoomYCoordinate=true;
+            }
+            
         }
 
         var aryKLineInfo=[];    //信息地雷
@@ -88508,6 +88524,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                     { Name:"双击弹分时图", Data:{ ID:JSCHART_MENU_ID.CMD_ENABLE_POP_MINUTE_CHART_ID, Args:[!bPopMinuteChart]}, Checked:bPopMinuteChart},
 
                     { Name:"显示走完剩余时间", Data:{ ID:JSCHART_MENU_ID.CMD_ENABLE_KLINE_DAY_SUMMARY_ID, Args:[!bDaySummary]}, Checked:bDaySummary},
+
+                    { Name:"拖动Y轴", Data:{ ID:JSCHART_MENU_ID.CMD_ENABLE_ZOOM_Y_ID, Args:[{FrameID:0, Enable:!bZoomYCoordinate }, ]}, Checked:bZoomYCoordinate}, 
 
                     { Name:JSPopMenu.SEPARATOR_LINE_NAME },
                     { 
@@ -90381,6 +90399,41 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         }
 
         return false;
+    }
+
+    //option={ FrameID:, Enable: }
+    this.EnableZoomYCoordinate=function(option)
+    {
+        if (!option) return false;
+        if (!IFrameSplitOperator.IsNumber(option.FrameID)) return false;
+        if (!IFrameSplitOperator.IsBool(option.Enable)) return false;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.Frame.SubFrame)) return false;
+        if (option.FrameID<0 || option.FrameID>this.Frame.SubFrame.length) return false;
+
+        var item=this.Frame.SubFrame[option.FrameID];
+        if (!item || !item.Frame || !item.Frame.YSplitOperator) return false;
+
+        var frame=item.Frame;
+        var splitOper=frame.YSplitOperator;
+
+        if (option.Enable)
+        {
+             var max=frame.HorizontalMax, min=frame.HorizontalMin;
+            if (!IFrameSplitOperator.IsNumber(max) || !IFrameSplitOperator.IsNumber(min)) return false;
+
+            splitOper.FixedYMaxMin={ Max:max, Min:min };
+            splitOper.EnableZoomUpDown=true;
+            frame.XYSplit=true;
+            this.ChartDragSelectRect.EnableLButton=false;
+        }
+        else
+        {
+            splitOper.FixedYMaxMin=null
+            splitOper.EnableZoomUpDown=false;
+            frame.XYSplit=true;
+        }
+
+        this.Draw();
     }
 }
 
@@ -93134,7 +93187,8 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         this.ChartCorssCursor.PtInClient=(x,y)=>{ return this.PtInClient(x,y); }
         this.ChartCorssCursor.Canvas=this.Canvas;
         this.ChartCorssCursor.StringFormatX=g_DivTooltipDataForamt.Create("CorssCursor_Minute_XStringFormat");
-        this.ChartCorssCursor.StringFormatX.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+        this.ChartCorssCursor.StringFormatX.GetEventCallback=(id)=> { return this.GetEventCallback(id); };
+        this.ChartCorssCursor.StringFormatX.HQChart=this;
         this.ChartCorssCursor.StringFormatY=g_DivTooltipDataForamt.Create("CorssCursor_YStringFormat");
         this.ChartCorssCursor.StringFormatY.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
         this.ChartCorssCursor.StringFormatY.LanguageID=this.LanguageID;
@@ -99156,6 +99210,7 @@ function MinuteChartHScreenContainer(uielement)
         this.ChartCorssCursor.Canvas=this.Canvas;
         this.ChartCorssCursor.StringFormatX=g_DivTooltipDataForamt.Create("CorssCursor_Minute_XStringFormat");
         this.ChartCorssCursor.StringFormatX.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+        this.ChartCorssCursor.StringFormatX.HQChart=this;
         this.ChartCorssCursor.StringFormatY=g_DivTooltipDataForamt.Create("CorssCursor_YStringFormat");
         this.ChartCorssCursor.StringFormatY.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
         this.ChartCorssCursor.StringFormatY.HQChart=this;
@@ -102792,7 +102847,7 @@ function MinuteTimeStringData()
         return data;
     }
 
-    this.GetTimeData = function (symbol) 
+    this.GetTimeData = function (symbol, option) 
     {
         if (!symbol) return this.SHSZ;
 
@@ -102808,7 +102863,7 @@ function MinuteTimeStringData()
         if (MARKET_SUFFIX_NAME.IsUSA(upperSymbol)) return this.GetUSA(upperSymbol);
         if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsSHFE(upperSymbol) || MARKET_SUFFIX_NAME.IsGZFE(upperSymbol))
         {
-            var splitData = g_FuturesTimeData.GetSplitData(upperSymbol);
+            var splitData = g_FuturesTimeData.GetSplitData(upperSymbol, option);
             if (!splitData) return null;
             return this.GetFutures(splitData);
         }
@@ -103273,8 +103328,8 @@ function MinuteCoordinateData()
     }
 
     
-
-    this.GetCoordinateData = function (symbol, width) 
+    // option=GlobalOption
+    this.GetCoordinateData = function (symbol, width, option) 
     {
         var data = null;
         if (!symbol) 
@@ -103299,7 +103354,7 @@ function MinuteCoordinateData()
             else if (MARKET_SUFFIX_NAME.IsJP(upperSymbol))
                 data=this.GetJPData(upperSymbol,width);
             else if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsSHFE(upperSymbol) || MARKET_SUFFIX_NAME.IsGZFE(upperSymbol))
-                return this.GetChinatFuturesData(upperSymbol,width);
+                return this.GetChinatFuturesData(upperSymbol, width, option);
             else if (MARKET_SUFFIX_NAME.IsUSA(upperSymbol))
                 data = this.GetUSAData(upperSymbol,width);
             else if (MARKET_SUFFIX_NAME.IsFTSE(upperSymbol))
@@ -103381,9 +103436,9 @@ function MinuteCoordinateData()
         return result;
     }
 
-    this.GetFuturesData = function (upperSymbol,width,timeData)
+    this.GetFuturesData = function (upperSymbol,width,timeData, option)
     {
-        var splitData = timeData.GetSplitData(upperSymbol);
+        var splitData = timeData.GetSplitData(upperSymbol, option);
         if (!splitData) return null;
         var stringData = g_MinuteTimeStringData.GetFutures(splitData);
         if (!stringData) return null;
@@ -103422,9 +103477,9 @@ function MinuteCoordinateData()
         return result;
     }
 
-    this.GetChinatFuturesData=function(upperSymbol,width)
+    this.GetChinatFuturesData=function(upperSymbol, width, option)
     {
-        return this.GetFuturesData(upperSymbol,width, g_FuturesTimeData);
+        return this.GetFuturesData(upperSymbol,width, g_FuturesTimeData, option);
     }
 
     this.GetNYMEXData=function(upperSymbol,width)
@@ -104230,7 +104285,7 @@ function FuturesTimeData()
         }
     }
 
-    this.GetData=function(upperSymbol)
+    this.GetData=function(upperSymbol, option)
     {
         var oneWord = upperSymbol.charAt(0);
         var twoWords = upperSymbol.substr(0,2);
@@ -104275,9 +104330,9 @@ function FuturesTimeData()
         return null;
     }
 
-    this.GetSplitData = function (upperSymbol)
+    this.GetSplitData = function (upperSymbol, option)
     {
-        var data=this.GetData(upperSymbol);
+        var data=this.GetData(upperSymbol, option);
         if (!data) return null;
 
         return this.TIME_SPLIT[data.Time];
