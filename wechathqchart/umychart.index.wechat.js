@@ -3170,7 +3170,7 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
 
                     result.push(outVarItem);
                 }
-                else if (draw.DrawType=="DRAWTEXT_FIX")
+                else if (draw.DrawType=="DRAWTEXT_FIX" || draw.DrawType=="DRAWNUMBER_FIX")
                 {
                     drawItem.Text=draw.Text;
                     drawItem.Name=draw.Name;

@@ -2762,6 +2762,8 @@ HQData.Report_APIIndex=function(data, callback)
         HQData.APIIndex_VERTLINE(data, callback);
     else if (request.Data.indexname=="API_DRAWTEXT_FIX")
         HQData.APIIndex_DRAWTEXT_FIX(data, callback);
+    else if (request.Data.indexname=="API_DRAWNUMBER_FIX")
+        HQData.APIIndex_DRAWNUMBER_FIX(data, callback);
 
     else if (request.Data.indexname=="API_ERRORMESSAGE")
         HQData.APIIndex_ErrorMessage(data, callback);
@@ -4483,7 +4485,54 @@ HQData.APIIndex_DRAWTEXT_FIX=function(data, callback)
         if (i%50==1)
         {
             textData.Draw.DrawData.Value[i]=1;
-            textData.Draw.DrawData.Text[i]=`${kItem.Date}-${i}`;
+            //textData.Draw.DrawData.Text[i]=`${kItem.Date}-${i}`;
+            textData.Draw.DrawData.Text[i]=[{ Name:`${kItem.Date}-${i}`}, { Name:`第2行${i}`}];
+        }
+        else
+        {
+            textData.Draw.DrawData.Value[i]=0;
+        }
+    }
+
+    var apiData=
+    {
+        code:0, 
+        stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+        outdata: { date:kData.GetDate(), time:kData.GetTime(), outvar:[textData] } 
+    };
+
+    console.log('[HQData.APIIndex_PARTLINE] apiData ', apiData);
+    callback(apiData);
+}
+
+HQData.APIIndex_DRAWNUMBER_FIX=function(data, callback)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var kData=hqchart.GetKData();
+
+    var textData= 
+    { 
+        name:'DRAWNUMBER_FIX', type:1, 
+        Draw: 
+        { 
+            DrawType:'DRAWNUMBER_FIX', 
+            DrawData: { Value:[], Text:[] },
+            Position:{ X:0.5, Y:0.2, Type:1 }
+        },
+        Color:"rgb(30,144,255)",
+        Font:`italic bold 2.2em "Fira Sans", sans-serif`,
+    };
+
+    for(var i=0;i<kData.Data.length;++i)
+    {
+        var kItem=kData.Data[i];
+
+        if (i%50==1)
+        {
+            textData.Draw.DrawData.Value[i]=1;
+            textData.Draw.DrawData.Text[i]=`${i.toFixed(2)}`
+            //textData.Draw.DrawData.Text[i]=[{ Name:`${kItem.Date}-${i}`}, { Name:`第2行${i}`}];
         }
         else
         {

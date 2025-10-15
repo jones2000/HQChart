@@ -39674,6 +39674,7 @@ function ChartDrawText_Fix()
         if (!kData || !IFrameSplitOperator.IsNonEmptyArray(kData.Data)) return;
         if (!data || !IFrameSplitOperator.IsNonEmptyArray(data.Value) || !IFrameSplitOperator.IsNonEmptyArray(data.Text)) return;
 
+        var splitWord="&";  //内置分隔符
         for(var i=0;i<kData.Data.length;++i)
         {
             var value=data.Value[i];
@@ -39684,6 +39685,18 @@ function ChartDrawText_Fix()
 
             var kItem=kData.Data[i];
             var item={ Value:value, Text:text, Date:kItem.Date, Time:kItem.Time };
+            if (text.includes(splitWord))   //&自动换行
+            {
+                var aryText=[];
+                var aryValue=text.split(splitWord);
+                for(var j=0;j<aryValue.length;++j)
+                {
+                    var value=aryValue[j];
+                    if (value) aryText.push({ Name:value});
+                }
+                if (IFrameSplitOperator.IsNonEmptyArray(aryText)) item.Text=aryText;
+            }
+
             var key=this.BuildKey(item);
 
             /* //测试
@@ -90696,6 +90709,7 @@ KLineChartContainer.JsonDataToMinuteHistoryData=function(data)
     var date = 0, yclose = 1, open = 2, high = 3, low = 4, close = 5, vol = 6, amount = 7, time = 8, position=9;
     var fclose=10, yfclose=11;   //结算价, 前结算价
     var bfactor=12, afactor=13; //前, 后复权因子
+    var flowCapital=15;         //流通股本
     var orderFlow=JSCHART_DATA_FIELD_ID.KLINE_ORDERFLOW;
     var colorData=JSCHART_DATA_FIELD_ID.KLINE_COLOR_DATA;
     var heatMapIndex=JSCHART_DATA_FIELD_ID.KLINE_HEATMAP;
@@ -90721,6 +90735,7 @@ KLineChartContainer.JsonDataToMinuteHistoryData=function(data)
 
         if (IFrameSplitOperator.IsNumber(jsData[bfactor])) item.BFactor=jsData[bfactor];    //前复权因子
         if (IFrameSplitOperator.IsNumber(jsData[afactor])) item.AFactor=jsData[afactor];    //后复权因子
+        if (IFrameSplitOperator.IsNumber(jsData[flowCapital])) item.FlowCapital=jsData[flowCapital];   //流通股本
 
         if (!IFrameSplitOperator.IsNumber(item.YClose))
         {
