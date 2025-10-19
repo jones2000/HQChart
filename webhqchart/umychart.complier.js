@@ -18122,6 +18122,8 @@ function JSExecute(ast,option)
                     if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
                     let value={Name:varName, Data:outVar, Radius:g_JSChartResource.CIRCLEDOT.Radius, Type:3, UpDownDot:true };
                     if (color) value.Color=color;
+                    if (upColor) value.UpColor=upColor;
+                    if (downColor) value.DownColor=downColor;
                     if (lineWidth) value.LineWidth=lineWidth;
                     this.OutVarTable.push(value);
                 }
@@ -21501,6 +21503,8 @@ function ScriptIndex(name,script,args,option)
         {
             pointDot.EnableUpDownColor=varItem.UpDownDot;
             pointDot.HistoryData=hisData;
+            if (varItem.UpColor) pointDot.UpColor=varItem.UpColor;
+            if (varItem.DownColor) pointDot.DownColor=varItem.DownColor;
         }
 
         let titleIndex=windowIndex+1;
@@ -23929,6 +23933,8 @@ function OverlayScriptIndex(name,script,args,option)
         {
             chart.EnableUpDownColor=varItem.UpDownDot;
             chart.HistoryData=hisData;
+            if (varItem.UpColor) chart.UpColor=varItem.UpColor;
+            if (varItem.DownColor) chart.DownColor=varItem.DownColor;
         }
 
         let titleIndex=windowIndex+1;

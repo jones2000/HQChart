@@ -37969,6 +37969,8 @@ function ChartPointDot()
     this.Color="rgb(255,193,37)";   //线段颜色
     this.Radius=1;                  //点半径
     this.EnableUpDownColor=false;   //是否是红绿点
+    this.UpColor=g_JSChartResource.ChartPointDot.UpColor;
+    this.DownColor=g_JSChartResource.ChartPointDot.DownColor;
     this.HistoryData;
 
     this.ExportData=this.ExportArrayData;
@@ -38012,8 +38014,8 @@ function ChartPointDot()
             {
                 var kItem=this.HistoryData.Data[i];
 
-                if (kItem.Close>value) colorDot="rgb(255,61,61)";
-                else colorDot='rgb(0,199,65)';
+                if (kItem.Close>value) colorDot=this.UpColor
+                else colorDot=this.DownColor;
 
                 this.Canvas.fillStyle=colorDot;
             }
@@ -78420,6 +78422,12 @@ function JSChartResource()
         DownColor:"rgb(25,158,0)"
     }
 
+    this.ChartPointDot=
+    {
+        UpColor:"rgb(255,61,61)",
+        DownColor:"rgb(0,199,65)"
+    }
+
     this.ChartDrawTVLongPosition=
     {
         TopArea:
@@ -79797,6 +79805,7 @@ function JSChartResource()
         if (style.ChartSimpleRadar) this.SetChartSimpleRadar(style.ChartSimpleRadar);
 
         if (style.ChartBaseLineBar) this.SetChartBaseLineBar(style.ChartBaseLineBar);
+        if (style.ChartPointDot) this.SetChartPointDot(style.ChartPointDot);
         
         if (style.DRAWICON) 
         {
@@ -81068,6 +81077,13 @@ function JSChartResource()
     {
         var dest=this.ChartBaseLineBar;
 
+        if (style.UpColor) dest.UpColor=style.UpColor;
+        if (style.DownColor) dest.DownColor=style.DownColor;
+    }
+
+    this.SetChartPointDot=function(style)
+    {
+        var dest=this.ChartPointDot;
         if (style.UpColor) dest.UpColor=style.UpColor;
         if (style.DownColor) dest.DownColor=style.DownColor;
     }

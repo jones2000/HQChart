@@ -404,6 +404,12 @@ function JSChartResource()
         LineDash:[3,5]
     }
 
+    this.ChartPointDot=
+    {
+        UpColor:"rgb(255,61,61)",
+        DownColor:"rgb(0,199,65)"
+    }
+
     this.StockChip=
     {
         InfoColor:'rgb(0,0,0)', //文字颜色
@@ -976,8 +982,16 @@ function JSChartResource()
         if (style.KLineTrain)  this.SetKLineTrain(style.KLineTrain);
         if (style.IndexLock) this.SetIndexLock(style.IndexLock);
         if (style.LatestPointFlash) this.SetLatestPointFlash(style.LatestPointFlash);
+        if (style.ChartPointDot) this.SetChartPointDot(style.ChartPointDot);
     }
 
+    this.SetChartPointDot=function(style)
+    {
+        var dest=this.ChartPointDot;
+        if (style.UpColor) dest.UpColor=style.UpColor;
+        if (style.DownColor) dest.DownColor=style.DownColor;
+    }
+    
     this.SetLatestPointFlash=function(style)
     {
         var dest=this.LatestPointFlash;

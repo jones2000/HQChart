@@ -4613,6 +4613,8 @@ function ChartPointDot()
     this.Radius = 1;                  //点半径
     this.ClassName = 'ChartPointDot';
     this.EnableUpDownColor=false;   //是否是红绿点
+    this.UpColor=g_JSChartResource.ChartPointDot.UpColor;
+    this.DownColor=g_JSChartResource.ChartPointDot.DownColor;
     this.HistoryData;
 
     this.Draw = function () 
@@ -4651,8 +4653,8 @@ function ChartPointDot()
             {
                 var kItem=this.HistoryData.Data[i];
 
-                if (kItem.Close>value) colorDot="rgb(255,61,61)";
-                else colorDot='rgb(0,199,65)';
+                if (kItem.Close>value) colorDot=this.UpColor
+                else colorDot=this.DownColor;
 
                 this.Canvas.fillStyle=colorDot;
             }

@@ -13892,6 +13892,8 @@ function JSExecute(ast,option)
                         if (!Array.isArray(outVar)) outVar=this.SingleDataToArrayData(outVar);
                         let value={Name:varName, Data:outVar, Radius:g_JSChartResource.CIRCLEDOT.Radius, Type:3, UpDownDot:true };
                         if (color) value.Color=color;
+                        if (upColor) value.UpColor=upColor;
+                        if (downColor) value.DownColor=downColor;
                         if (lineWidth) value.LineWidth=lineWidth;
                         this.OutVarTable.push(value);
                     }

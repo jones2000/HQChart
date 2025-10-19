@@ -925,6 +925,8 @@ function ScriptIndex(name, script, args, option)
         {
             pointDot.EnableUpDownColor=varItem.UpDownDot;
             pointDot.HistoryData=hisData;
+            if (varItem.UpColor) pointDot.UpColor=varItem.UpColor;
+            if (varItem.DownColor) pointDot.DownColor=varItem.DownColor;
         }
 
         let titleIndex = windowIndex + 1;
@@ -2295,6 +2297,8 @@ function OverlayScriptIndex(name,script,args,option)
         {
             chart.EnableUpDownColor=varItem.UpDownDot;
             chart.HistoryData=hisData;
+            if (varItem.UpColor) chart.UpColor=varItem.UpColor;
+            if (varItem.DownColor) chart.DownColor=varItem.DownColor;
         }
 
         let titleIndex=windowIndex+1;
