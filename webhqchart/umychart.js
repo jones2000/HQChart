@@ -1136,6 +1136,15 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (IFrameSplitOperator.IsBool(item.EnableDBClick)) chart.ChartCorssCursor.EnableDBClick=item.EnableDBClick;
             if (IFrameSplitOperator.IsBool(item.IsShowCorssPoint)) chart.ChartCorssCursor.CorssPointConfig.Enable=item.IsShowCorssPoint;
             if (IFrameSplitOperator.IsNumber(item.VLineType)) chart.ChartCorssCursor.VLineType=item.VLineType;
+
+            if (item.TextStyle)
+            {
+                if (item.TextStyle.Right)   //右侧输出样式
+                {
+                    var subItem=item.TextStyle.Right;
+                    if (IFrameSplitOperator.IsNumber(subItem.Type)) chart.ChartCorssCursor.StringFormatY.TextStyleConfig.Right.Type=subItem.Type;
+                }
+            }
         }
 
         if (option.MinuteInfo) chart.CreateMinuteInfo(option.MinuteInfo);
@@ -3139,6 +3148,7 @@ var JSCHART_MENU_ID=
 
     CMD_CHANGE_YRIGHT_TEXT_FORMAT:62,       //分时图主图 右侧刻度格式
     CMD_ENABLE_ZOOM_Y_ID:63,                //放大缩小Y坐标 { FrameID:, Enable: , Range:{ Max:, Min: }}
+    CMD_CORSS_YRIGHT_TEXT_STYLE:64,         //十字光标右侧输出样式
 
 
     CMD_REPORT_CHANGE_BLOCK_ID:100,      //报价列表 切换板块ID
@@ -11941,6 +11951,11 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 this.ResetFrameXYSplit();
                 this.Draw();
                 break;
+            case JSCHART_MENU_ID.CMD_CORSS_YRIGHT_TEXT_STYLE:
+                if (param==null) return false;
+                if (!this.ChartCorssCursor || !this.ChartCorssCursor.StringFormatY) return false;
+                this.ChartCorssCursor.StringFormatY.TextStyleConfig.Right.Type=param;
+                break;
             case JSCHART_MENU_ID.CMD_ENABLE_ZOOM_Y_ID:
                 if (!srcParam) return false;
                 if (this.EnableZoomYCoordinate) this.EnableZoomYCoordinate(srcParam);
@@ -12756,6 +12771,25 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         }
 
         return false;
+    }
+
+    this.RecvOverlayIndex=function(identify, data)
+    {
+        var overlayIndex=this.GetOverlayIndexByIdentify(identify);
+        if (overlayIndex==null) 
+        {
+            console.warn(`[JSChartContainer::RecvOverlayIndex] can't find overlay index. [identify=${identify}]`);
+            return;
+        }
+
+        var script=overlayIndex.OverlayItem.Script;
+        if (!script) return;
+        if (typeof(script.RecvSubscribeData)!="function") return;
+
+        var kData=this.GetKData();
+        if (!kData) return;
+
+        script.RecvSubscribeData(data,this,overlayIndex.WindowIndex,kData);
     }
 }
 
@@ -59134,8 +59168,16 @@ function ChartCorssCursor()
                         if (IFrameSplitOperator.IsNumber(itemSize.Height)) yValue=itemSize.Height/2;
                     }  
 
-                    rtBG.Top=rtBG.YCenter-yValue;
-                    rtBG.Bottom=rtBG.Top+rtBG.Height;
+                    if (complexText.BaseLine=="center")
+                    {
+                        rtBG.Top=rtBG.YCenter-rtBG.Height/2;
+                        rtBG.Bottom=rtBG.Top+rtBG.Height;
+                    }
+                    else
+                    {
+                        rtBG.Top=rtBG.YCenter-yValue;
+                        rtBG.Bottom=rtBG.Top+rtBG.Height;
+                    }
                 }
                 else
                 {
@@ -59348,7 +59390,6 @@ function ChartCorssCursor()
         if (complexText.ShowType==1) showType=complexText.ShowType;
         if (showType==1)    //多行
         {
-            var xLeft=rtBG.Left;
             var yTop=rtBG.Top;    //顶
             for(var i=0; i<complexText.Text.length; ++i)
             {
@@ -59362,7 +59403,17 @@ function ChartCorssCursor()
                 else this.Canvas.fillStyle=complexText.Color;
 
                 var y=yTop+itemSize.Height;
+                var xLeft=rtBG.Left, xRight=rtBG.Right;
+                if (item.Margin)
+                {
+                    var margin=item.Margin;
+                    if (IFrameSplitOperator.IsNumber(margin.Left)) xLeft+=margin.Left;
+                    if (IFrameSplitOperator.IsNumber(margin.Right)) xRight-=margin.Right;
+                }
+
                 var x=xLeft;
+                if (item.TextAlign=="right") x=xRight-itemSize.TextWidth;
+                else if (item.TextAlign=="center") x=rtBG.Left+rtBG.Width/2-itemSize.TextWidth/2;
 
                 if (item.TextOffset)
                 {
@@ -59371,7 +59422,7 @@ function ChartCorssCursor()
                     if (IFrameSplitOperator.IsNumber(textOffset.Y)) y+=textOffset.Y;
                 }
 
-                this.Canvas.fillText(item.Text,x,y,itemSize.Width);
+                this.Canvas.fillText(item.Text,x,y,itemSize.TextWidth);
                 
                 yTop+=itemSize.Height;
             }
@@ -59422,7 +59473,8 @@ function ChartCorssCursor()
                 var item=complexText.Text[i];
                 if (item.Font) this.Canvas.font=item.Font;
                 else this.Canvas.font=complexText.Font;
-                var itemWidth=this.Canvas.measureText(item.Text).width;    //前后各空2个像素
+                var outWidth=this.Canvas.measureText(item.Text).width;
+                var itemWidth=outWidth
                 var itemHeight=this.GetFontHeight();
                 if (item.Margin)
                 {
@@ -59433,7 +59485,7 @@ function ChartCorssCursor()
                     if (IFrameSplitOperator.IsNumber(margin.Bottom)) itemHeight+=margin.Bottom;
                 }
 
-                size.Text[i]={ Width:itemWidth, Height:itemHeight };    //保存所有文字的大小信息
+                size.Text[i]={ Width:itemWidth, Height:itemHeight, TextWidth:outWidth };    //保存所有文字的大小信息
 
                 if (textWidth<itemWidth) textWidth=itemWidth;
                 textHeight+=itemHeight;
@@ -59450,8 +59502,8 @@ function ChartCorssCursor()
                 var item=complexText.Text[i];
                 if (item.Font) this.Canvas.font=item.Font;
                 else this.Canvas.font=complexText.Font;
-
-                var itemWidth=this.Canvas.measureText(item.Text).width;    //前后各空2个像素
+                var outWidth=this.Canvas.measureText(item.Text).width;
+                var itemWidth=outWidth; 
                 var itemHeight=this.Canvas.measureText("擎").width;
                 if (item.Margin)
                 {
@@ -59462,7 +59514,7 @@ function ChartCorssCursor()
                     if (IFrameSplitOperator.IsNumber(margin.Bottom)) itemHeight+=margin.Bottom;
                 }
 
-                size.Text[i]={ Width:itemWidth, Height:itemHeight };    //保存所有文字的大小信息
+                size.Text[i]={ Width:itemWidth, Height:itemHeight, TextWidth:outWidth };    //保存所有文字的大小信息
 
                 textWidth+=itemWidth;
                 if (textHeight<itemHeight) textHeight=itemHeight;
@@ -60473,6 +60525,24 @@ function HQPriceStringFormat()
     this.Point;
     this.ClientPos=-1;
     this.HQChart;
+    this.TextStyleConfig={ Right:{ Type:-1 } };      //输出文本样式  Type: -1=默认 1=价格 2=价格|涨幅 2行(分时图)
+    //自定义样式模板
+    this.TextStyleTemplate=
+    [ 
+        null, 
+        null, 
+        /*
+        { 
+            ShowType:1, Space:2, 
+            BaseLine:"center",
+            Text:
+            [ 
+                { Text:null, TextAlign:"center", Margin:{ Left:5, Right:5 } }, 
+                { Text:null, TextAlign:"center", Margin:{ Left:5, Right:5 } } 
+            ] 
+        } 
+        */
+    ]
 
     this.ExtendChartPaint;
     this.RExtendText=[];
@@ -60566,6 +60636,13 @@ function HQPriceStringFormat()
         }
     }
 
+    this.GetTextStyleTemplate=function(type, defaultTemplate)
+    {
+        var template=this.TextStyleTemplate[type];
+        if (!template) return defaultTemplate;
+        return CloneData(template);
+    }
+
     this.Operator=function()
     {
         this.RText=null;
@@ -60584,7 +60661,41 @@ function HQPriceStringFormat()
             else 
                 this.Text=this.Value.toFixed(defaultfloatPrecision);
 
-            if (this.YClose>0) this.PercentageText=((this.Value-this.YClose)*100/this.YClose).toFixed(2);   //走势图右边坐标显示百分比
+            if (this.TextStyleConfig.Right.Type==2)
+            {
+                if (IFrameSplitOperator.IsNumber(this.YClose))
+                {
+                    var value=(this.Value-this.YClose)*100/this.YClose;
+                    var text=`${value.toFixed(2)}%`;
+                    if (value>=0) text=` ${value.toFixed(2)}%`;
+
+                    var defaultTemplate=
+                    {
+                        ShowType:1, Space:2, 
+                        BaseLine:"center",
+                        Text:
+                        [ 
+                            { Text:null, TextAlign:"center", Margin:{ Left:2, Right:2 } }, 
+                            { Text:null, TextAlign:"center", Margin:{ Left:2, Right:2 }} 
+                        ] 
+                    }
+
+                    var complexText=this.GetTextStyleTemplate(this.TextStyleConfig.Right.Type,defaultTemplate);
+                    
+                    complexText.Text[0].Text=this.Text; //价格
+                    complexText.Text[1].Text=text;      //百分比
+
+                    this.RComplexText=complexText;
+                }
+            }
+            else if (this.TextStyleConfig.Right.Type==1)
+            {
+
+            }
+            else
+            {
+                if (IFrameSplitOperator.IsNumber(this.YClose)) this.PercentageText=((this.Value-this.YClose)*100/this.YClose).toFixed(2);   //走势图右边坐标显示百分比          
+            }
 
             this.GetExtendPaintData(defaultfloatPrecision);
         }
@@ -88990,25 +89101,6 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         return null;
     }
 
-    this.RecvOverlayIndex=function(identify, data)
-    {
-        var overlayIndex=this.GetOverlayIndexByIdentify(identify);
-        if (overlayIndex==null) 
-        {
-            console.warn(`[KLineChartContainer::RecvOverlayIndex] can't find overlay index. [identify=${identify}]`);
-            return;
-        }
-
-        if (!overlayIndex.Script) return;
-        if (typeof(overlayIndex.RecvSubscribeData)!="function") return;
-
-        if (!this.ChartPaint[0]) return;
-        var kData=this.ChartPaint[0].Data;
-        if (!kData) return;
-
-        overlayIndex.Script.RecvSubscribeData(data,this,overlayIndex.WindowIndex,kData);
-    }
-
     //更新叠加指标
     this.UpdateOverlayIndex=function(identify)
     {
@@ -92753,6 +92845,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         var bCorssDrawVaildTime=false;
         var bCorssDrawPoint=false;
         var bCorssBCClick=false;
+        var corssRightTextStyle=-1;
         if (this.ChartCorssCursor) 
         {
             bShowCorss=this.ChartCorssCursor.IsShowCorss;
@@ -92760,6 +92853,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             bCorssDrawVaildTime=this.ChartCorssCursor.IsFixXLastTime;
             bCorssDrawPoint=this.ChartCorssCursor.CorssPointConfig.Enable;
             bCorssBCClick=this.ChartCorssCursor.EnableDBClick;
+            if (this.ChartCorssCursor.StringFormatY) corssRightTextStyle=this.ChartCorssCursor.StringFormatY.TextStyleConfig.Right.Type;
         }
 
         var bRButtonSelectRect=false,bLButtonSelectRect=false;
@@ -92867,6 +92961,15 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                     { Name:"画在有效X轴上",Data:{ ID:JSCHART_MENU_ID.CMD_CORSS_ON_VAILD_TIME_ID, Args:[!bCorssDrawVaildTime]}, Checked:bCorssDrawVaildTime },
                     { Name:"画圆点",Data:{ ID:JSCHART_MENU_ID.CMD_CORSS_POINT_ID, Args:[!bCorssDrawPoint]}, Checked:bCorssDrawPoint },
                     { Name:"双击显示/隐藏", Data:{ ID:JSCHART_MENU_ID.CMD_CORSS_DBCLICK_ID, Args:[!bCorssBCClick]}, Checked:bCorssBCClick },
+                    { 
+                        Name:"主图右侧文字格式",
+                        SubMenu:
+                        [
+                            { Name:"默认(百分比)", Data:{ ID:JSCHART_MENU_ID.CMD_CORSS_YRIGHT_TEXT_STYLE, Args:[-1]}, Checked:corssRightTextStyle===-1  },
+                            { Name:"价格", Data:{ ID:JSCHART_MENU_ID.CMD_CORSS_YRIGHT_TEXT_STYLE, Args:[1]}, Checked:corssRightTextStyle===1 },
+                            { Name:"价格|百分比(两行)", Data:{ ID:JSCHART_MENU_ID.CMD_CORSS_YRIGHT_TEXT_STYLE, Args:[2]}, Checked:corssRightTextStyle===2 },
+                        ]
+                    },
                 ]
             },
 
@@ -96151,6 +96254,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         return null;
     }
 
+    /*
     this.RecvOverlayIndex=function(identify, data)
     {
         var overlayIndex=this.GetOverlayIndexByIdentify(identify);
@@ -96160,14 +96264,16 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             return;
         }
 
-        if (!overlayIndex.Script) return;
-        if (typeof(overlayIndex.RecvSubscribeData)!="function") return;
+        var script=overlayIndex.OverlayItem.Script;
+        if (!script) return;
+        if (typeof(script.RecvSubscribeData)!="function") return;
 
         var bindData=this.SourceData;
         if (!bindData) return;
 
-        overlayIndex.Script.RecvSubscribeData(data,this,overlayIndex.WindowIndex,bindData);
+        script.RecvSubscribeData(data,this,overlayIndex.WindowIndex,bindData);
     }
+    */
 
     //更新叠加指标
     this.UpdateOverlayIndex=function(identify)
