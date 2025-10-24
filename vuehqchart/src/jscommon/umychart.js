@@ -36879,7 +36879,7 @@ function ChartScatterPlotV2()
 
     this.TooltipData=[];
     this.MapCache=null; //key=date/date-time  value={ Data:[] }
-    this.AryPoint=[ ];  //[{ Value:, Radius:半径(可选), Color:颜色(可选),ColorBorder:边框颜色(可选), 
+    this.AryPoint=[ ];  //[{ Value:, Radius:半径(可选), Radius2:固定半径(可选), Color:颜色(可选),ColorBorder:边框颜色(可选),
                         //  Text:{ Text:显示文字, Color:"rgb(0,30,100)", BaseLine:1, YOffset:5, Align:2 };  }]
                         //  BaseLine: 0=圆点上面 1=圆点下面 Align: 2=居中 1=左 3=右 
     
@@ -37011,11 +37011,17 @@ function ChartScatterPlotV2()
         if (!IFrameSplitOperator.IsNumber(price)) return;
 
         var y=this.GetYFromData(price,false);
-
         var radius=this.Radius;
-        if (item.Radius) radius=item.Radius;
-        if (!IFrameSplitOperator.IsNumber(radius)) return;
-        if (radius>maxRadius) radius=maxRadius;
+        if (IFrameSplitOperator.IsNumber(item.Radius2))
+        {
+            radius=item.Radius2; 
+        }
+        else
+        {
+            if (IFrameSplitOperator.IsNumber(item.Radius)) radius=item.Radius;
+            if (!IFrameSplitOperator.IsNumber(radius)) return;
+            if (radius>maxRadius) radius=maxRadius;
+        }
 
         this.Canvas.beginPath();
         this.Canvas.arc(x, y, radius, 0, 2 * Math.PI);
@@ -37140,7 +37146,7 @@ function ChartScatterPlotV2()
             var mapItem=this.MapCache.get(key);
             if (!IFrameSplitOperator.IsNonEmptyArray(mapItem.Data)) continue;
 
-            for(k=0;k<mapItem.Data.length;++k)
+            for(var k=0;k<mapItem.Data.length;++k)
             {
                 var item=mapItem.Data[k];
                 var value=item.Value;
