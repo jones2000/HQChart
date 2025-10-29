@@ -45057,7 +45057,7 @@ function ChartMultiBar()
     delete this.newMethod;
     
     this.ClassName="ChartMultiBar";
-    this.Bars=[];   // [ {Point:[ {Date, Time, Value, Value2 }, ], Color:, Width: , Type: 0 实心 1 空心 }, ] 
+    this.Bars=[];   // [ {Point:[ {Date, Time, Value, Value2 }, ], Color:, Width: , AdWidth：{ Type: 高级宽度设置 Type:1=柱子宽度, 2=柱子+间距宽度, Value:倍数 } , Type: 0 实心 1 空心 }, ] 
     this.IsHScreen=false;
 
     this.MapCache=null; //key=date/date-time  value={ Data:[] }
@@ -45084,8 +45084,9 @@ function ChartMultiBar()
             var groupItem=this.Bars[i];
             if (!groupItem || !IFrameSplitOperator.IsNonEmptyArray(groupItem.Point)) continue;
 
-            var clrConfig= { Color:groupItem.Color, BGColor:null, Width:null, Name:groupItem.Name, Type:0 };
+            var clrConfig= { Color:groupItem.Color, BGColor:null, Width:null, AdWidth:null, Name:groupItem.Name, Type:0 };
             if (IFrameSplitOperator.IsNumber(groupItem.Width)) clrConfig.Width=groupItem.Width;
+            if (groupItem.AdWidth) clrConfig.AdWidth=groupItem.AdWidth;
             if (IFrameSplitOperator.IsNumber(groupItem.Type)) clrConfig.Type=groupItem.Type;
             if (groupItem.BorderColor) clrConfig.BorderColor=groupItem.BorderColor;
 
@@ -45200,7 +45201,8 @@ function ChartMultiBar()
     this.DrawAllBar=function(mapBar)
     {
         var pixelRatio=GetDevicePixelRatio();
-        var dataWidth=this.ChartFrame.DataWidth;
+        var dataWidth=this.ChartFrame.DataWidth;            //柱子宽度
+        var distanceWidth=this.ChartFrame.DistanceWidth;    //间距
         for(var mapItem of mapBar)
         {
             var aryBar=mapItem[1].AryBar;
@@ -45220,7 +45222,17 @@ function ChartMultiBar()
                 {
                     barWidth=dataWidth;             //默认K线宽度
                     config=item.Data.ColorConfig;
-                    if (IFrameSplitOperator.IsNumber(config.Width)) barWidth=config.Width*pixelRatio;
+                    if (config.AdWidth && IFrameSplitOperator.IsNumber(config.AdWidth.Value) && IFrameSplitOperator.IsNumber(config.AdWidth.Type))   //高级宽度设置 Type:1, 2, Value:倍数
+                    {
+                        var type=config.AdWidth.Type;
+                        var value=config.AdWidth.Value;
+                       if (type==1) barWidth=dataWidth*value;
+                       else if (type==2) barWidth=(dataWidth+distanceWidth)*value;
+                    }
+                    else if (IFrameSplitOperator.IsNumber(config.Width)) 
+                    {
+                        barWidth=config.Width*pixelRatio;
+                    }
                     if (barWidth>4)
                     {
                         if (config.Type==0) drawType=2;         //实心
