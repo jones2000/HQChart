@@ -990,7 +990,7 @@ function MinuteTimeStringData()
         return data;
     }
 
-    this.GetTimeData = function (symbol) 
+    this.GetTimeData = function (symbol, option) 
     {
         if (!symbol) return this.SHSZ;
 
@@ -1005,7 +1005,7 @@ function MinuteTimeStringData()
         if (MARKET_SUFFIX_NAME.IsUSA(upperSymbol)) return this.GetUSA(true);
         if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsSHFE(upperSymbol) || MARKET_SUFFIX_NAME.IsGZFE(upperSymbol))
         {
-            var splitData = g_FuturesTimeData.GetSplitData(upperSymbol);
+            var splitData = g_FuturesTimeData.GetSplitData(upperSymbol, option);
             if (!splitData) return null;
             return this.GetFutures(splitData);
         }
@@ -2222,7 +2222,7 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.CFFEX + '-T', { Time: 1, Decimal: 3, Name:"十债"}],
     ]);
 
-    this.GetData = function (upperSymbol) 
+    this.GetData = function (upperSymbol, option) 
     {
         var oneWord = upperSymbol.charAt(0);
         var twoWords = upperSymbol.substr(0, 2);
@@ -2267,9 +2267,9 @@ function FuturesTimeData()
         return null;
     }
 
-    this.GetSplitData = function (upperSymbol)
+    this.GetSplitData = function (upperSymbol, option)
     {
-        var data = this.GetData(upperSymbol);
+        var data = this.GetData(upperSymbol, option);
         if (!data) return null;
 
         return this.TIME_SPLIT[data.Time];

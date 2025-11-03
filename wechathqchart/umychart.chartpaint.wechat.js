@@ -10683,22 +10683,37 @@ function ChartMinutePriceLine()
 
         if (drawCount > 0) 
         {
-            this.Canvas.stroke();
-            if (this.IsDrawArea)   //画面积
+            if (drawCount==1)   //如果线段只有1个点 线段无法画出来 直接画点
             {
-                if (isHScreen) 
-                {
-                    this.Canvas.lineTo(left, x);
-                    this.Canvas.lineTo(left, ptFirst.X);
-                    this.SetFillStyle(this.AreaColor, this.ChartBorder.GetRight(), bottom, this.ChartBorder.GetLeftEx(), bottom);
-                }
-                else 
-                {
-                    this.Canvas.lineTo(x, bottom);
-                    this.Canvas.lineTo(ptFirst.X, bottom);
-                    this.SetFillStyle(this.AreaColor, left, this.ChartBorder.GetTopEx(), left, bottom);
-                }
+                this.Canvas.beginPath();
+                if (isHScreen)
+                    this.Canvas.arc(ptFirst.Y, ptFirst.X, 1,0,360, false);
+                else
+                    this.Canvas.arc(ptFirst.X, ptFirst.Y, 1,0,360, false);
+                    
+                this.Canvas.closePath();
+                this.Canvas.fillStyle=this.Color;
                 this.Canvas.fill();
+            }
+            else
+            {
+                this.Canvas.stroke();
+                if (this.IsDrawArea)   //画面积
+                {
+                    if (isHScreen) 
+                    {
+                        this.Canvas.lineTo(left, x);
+                        this.Canvas.lineTo(left, ptFirst.X);
+                        this.SetFillStyle(this.AreaColor, this.ChartBorder.GetRight(), bottom, this.ChartBorder.GetLeftEx(), bottom);
+                    }
+                    else 
+                    {
+                        this.Canvas.lineTo(x, bottom);
+                        this.Canvas.lineTo(ptFirst.X, bottom);
+                        this.SetFillStyle(this.AreaColor, left, this.ChartBorder.GetTopEx(), left, bottom);
+                    }
+                    this.Canvas.fill();
+                }
             }
         }
 

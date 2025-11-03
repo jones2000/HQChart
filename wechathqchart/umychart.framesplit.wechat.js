@@ -2352,9 +2352,10 @@ function HQMinuteTimeStringFormat()
     this.newMethod = IChangeStringFormat;   //派生
     this.newMethod();
     delete this.newMethod;
-
+    
     this.Frame;
     this.Symbol;
+    this.HQChart;
 
     this.Operator = function () 
     {
@@ -2366,7 +2367,9 @@ function HQMinuteTimeStringFormat()
         if (this.Frame && this.Frame.MinuteCount) showIndex = index % this.Frame.MinuteCount;
 
         var timeStringData = JSCommonCoordinateData.MinuteTimeStringData;
-        var timeData = timeStringData.GetTimeData(this.Symbol);
+        var globalOption=null;
+        if (this.HQChart) globalOption=this.HQChart.GlobalOption;
+        var timeData = timeStringData.GetTimeData(this.Symbol,globalOption);
         if (!timeData) return false;
 
         if (showIndex < 0) showIndex = 0;

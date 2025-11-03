@@ -10125,6 +10125,7 @@ function MinuteChartContainer(uielement)
         this.ChartCorssCursor.StringFormatY.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
         this.ChartCorssCursor.StringFormatY.LanguageID = this.LanguageID;
         this.ChartCorssCursor.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+        this.ChartCorssCursor.HQChart=this;
 
         //创建等待提示
         this.ChartSplashPaint = new ChartSplashPaint();
@@ -12834,7 +12835,8 @@ function MinuteChartHScreenContainer(uielement)
         this.ChartCorssCursor.StringFormatX = new HQMinuteTimeStringFormat();
         this.ChartCorssCursor.StringFormatY = new HQPriceStringFormat();
         this.ChartCorssCursor.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
-
+        this.ChartCorssCursor.HQChart=this;
+        
         //创建等待提示
         this.ChartSplashPaint = new ChartSplashPaint();
         this.ChartSplashPaint.Canvas = this.Canvas;
