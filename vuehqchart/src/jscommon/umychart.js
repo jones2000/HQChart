@@ -97943,7 +97943,10 @@ MinuteChartContainer.JsonDataToMinuteDataArray=function(data)
                 item.Date=jsData[8];    //日期
                 item.DateTime=item.Date.toString()+" "+jsData[0].toString();
             }
-            if ((isFutures || isSHO || isSZO) && 9<jsData.length) item.Position=jsData[9];  //持仓
+
+            //持仓
+            if ((isFutures || isSHO || isSZO) && 9<jsData.length) item.Position=jsData[9];  
+            else if (IFrameSplitOperator.IsNumber(jsData[9])) item.Position=jsData[9];
             
             if (!IFrameSplitOperator.IsNumber(item.Close))    //当前没有价格 使用上一个价格填充
             {

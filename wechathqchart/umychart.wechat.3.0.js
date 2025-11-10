@@ -12145,6 +12145,7 @@ MinuteChartContainer.JsonDataToMinuteDataArray = function (data)
                 item.DateTime=item.Date.toString()+" "+jsData[0].toString();
             }
             if ((isFutures || isSHO || isSZO) && 9 < jsData.length) item.Position = jsData[9];  //持仓
+            else if (IFrameSplitOperator.IsNumber(jsData[9])) item.Position=jsData[9];
 
             if (j == 0 )      
             {
