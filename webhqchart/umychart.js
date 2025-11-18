@@ -368,6 +368,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             if (option.KLine.FirstShowDate>19910101) chart.CustomShow={ Date:option.KLine.FirstShowDate, PageSize:option.KLine.PageSize };  //!!已弃用 新的格式"CustomShow"
             if (option.KLine.RightSpaceCount>0) chart.RightSpaceCount=option.KLine.RightSpaceCount;
             if (option.KLine.ZoomType>0) chart.ZoomType=option.KLine.ZoomType;
+            if (IFrameSplitOperator.IsNumber(option.KLine.PageSizeV2)) chart.KLineSize={ PageSize:option.KLine.PageSizeV2 };
             if (option.KLine.DataWidth>=1) chart.KLineSize={ DataWidth:option.KLine.DataWidth };
             if (IFrameSplitOperator.IsNumber(option.KLine.RightFormula)) chart.RightFormula=option.KLine.RightFormula;
         }
@@ -13425,7 +13426,7 @@ function IChartFramePainting()
     this.HorizontalMax;                 //Y轴最大值
     this.HorizontalMin;                 //Y轴最小值
     this.HorizontalReserved=null;       //Y轴预留高度 { Top:上, Bottom:下 }
-    this.XPointCount=10;                //X轴数据个数
+    this.XPointCount=g_JSChartResource.Frame.XPointCount;                //X轴数据个数
 
     this.ClientBGColor;                 //客户区背景色
 
@@ -31367,7 +31368,7 @@ function ChartKLine()
                 var data=this.Data.Data[i];
                 if (!data || data.Open==null || data.High==null || data.Low==null || data.Close==null) continue;
 
-                if (this.DrawType==5 && data.OrderFlow && IFrameSplitOperator.IsNumber(data.OrderFlow.PriceOffset))
+                if ([5,7,8,17,18].includes(this.DrawType) && data.OrderFlow && IFrameSplitOperator.IsNumber(data.OrderFlow.PriceOffset))
                 {
                     var high=data.High;
                     var low=data.Low;
@@ -31742,16 +31743,29 @@ function ChartKLine()
             this.Canvas.stroke();
         }
         
+        this.DrawOrderFlowBarHighLow(orderFlow, xKLine, cellHeight);    //绘制最高 最低点文字
+    }
 
-        //var fontHeight=this.Canvas.measureText("擎").width+2;
-        var textFont=this.GetDynamicOrderFlowFont(cellHeight, xKLine.DataWidth);
-        //上下文字
-        if (orderFlow && IFrameSplitOperator.IsNonEmptyArray(orderFlow.High) && this.IsShowOrderText)
+    //绘制最高 最低点文字
+    this.DrawOrderFlowBarHighLow=function(orderFlow, xKLine, cellHeight)
+    {
+        if (!orderFlow) return;
+        if (!this.IsShowOrderText) return;
+        var bDrawHigh=IFrameSplitOperator.IsNonEmptyArray(orderFlow.High);
+        var bDrawLow=IFrameSplitOperator.IsNonEmptyArray(orderFlow.Low);
+        if (!bDrawHigh && !bDrawLow) return;
+
+        var defaultFont=this.GetDynamicOrderFlowFont(cellHeight, xKLine.DataWidth);
+        this.Canvas.textBaseline='middle';
+        this.Canvas.textAlign='center';
+
+        //高点文字
+        if (bDrawHigh)
         {
             for(var i=0;i<orderFlow.High.length;++i)
             {
                 var item=orderFlow.High[i];
-                var text;
+                var text=null;
                 if (IFrameSplitOperator.IsString(item.Text)) text=item.Text;
                 else if (IFrameSplitOperator.IsNumber(item.Value)) text=item.Value.toString();
                 if (!text) continue;
@@ -31766,22 +31780,24 @@ function ChartKLine()
                     var itemFont=this.GetDynamicOrderFlowFont(cellHeight, xKLine.DataWidth, item.Font);
                     this.Canvas.font=itemFont;
                     this.Canvas.fillText(text,xKLine.Center,yPrice);
-                    this.Canvas.font=textFont;
+                    this.Canvas.font=defaultFont;
                 } 
                 else
                 {
+                    
                     this.Canvas.fillText(text,xKLine.Center,yPrice);
                 }
                 
             }
         }
 
-        if (orderFlow && IFrameSplitOperator.IsNonEmptyArray(orderFlow.Low) && this.IsShowOrderText)
+        //低点
+        if (bDrawLow)
         {
             for(var i=0;i<orderFlow.Low.length;++i)
             {
                 var item=orderFlow.Low[i];
-                var text;
+                var text=null;
                 if (IFrameSplitOperator.IsString(item.Text)) text=item.Text;
                 else if (IFrameSplitOperator.IsNumber(item.Value)) text=item.Value.toString();
                 if (!text) continue;
@@ -31796,7 +31812,7 @@ function ChartKLine()
                     var itemFont=this.GetDynamicOrderFlowFont(cellHeight, xKLine.DataWidth, item.Font);
                     this.Canvas.font=itemFont;
                     this.Canvas.fillText(text,xKLine.Center,yPrice);
-                    this.Canvas.font=textFont;
+                    this.Canvas.font=defaultFont;
                 } 
                 else
                 {
@@ -32116,6 +32132,7 @@ function ChartKLine()
             this.Canvas.fillRect(barLeft,ToFixedRect(barTop-cellHeight/2),barWidth,ToFixedRect(barBottom-barTop+cellHeight));
             var yKline={ Low:yLow, High:yHigh, Open:yOpen, Close:yClose };
             var xKLine={ Left:barRight, Right:right, DataWidth:(right-barRight) };
+            xKLine.Center=xKLine.Left+xKLine.DataWidth/2;
             this.DrawOrderFlowBar_Style3(data.OrderFlow, data, xKLine, yKline, isHScreen);
         }
 
@@ -32262,6 +32279,8 @@ function ChartKLine()
                 }
             }
         }
+
+        this.DrawOrderFlowBarHighLow(orderFlow, xKLine, cellHeight);    //绘制最高 最低点文字
     }
 
     this.DrawOrderFlowBar_Style3=function(orderFlow, kItem, xKLine, yKline, isHScreen)
@@ -32350,6 +32369,8 @@ function ChartKLine()
                 }
             }
         }
+
+        this.DrawOrderFlowBarHighLow(orderFlow, xKLine, cellHeight);    //绘制最高 最低点文字
     }
 
 
@@ -32591,6 +32612,8 @@ function ChartKLine()
                 
             }
         }
+
+        this.DrawOrderFlowBarHighLow(orderFlow, xKLine, cellHeight);    //绘制最高 最低点文字
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -32766,6 +32789,8 @@ function ChartKLine()
                 }
             }
         }
+
+        this.DrawOrderFlowBarHighLow(orderFlow, xKLine, cellHeight);    //绘制最高 最低点文字
     }
 
     //////////////////////////////////////////////////////////////
@@ -34462,6 +34487,7 @@ function ChartKLineTable()
     this.MapCache=null; //key=date/date-time  value={ Date:, Time:, Data:[ ] }
     this.GetKValue=ChartData.GetKValue;
     this.AryCellRect=[];    //保存单元格信息
+    this.AryNameRect=[];    //右侧行的名字
 
 
     this.SetOption=function(option)
@@ -34564,6 +34590,7 @@ function ChartKLineTable()
     this.Draw=function()
     {
         this.AryCellRect=[];
+        this.AryNameRect=[];
         if (!this.IsShow || this.ChartFrame.IsMinSize || !this.IsVisible) return;
         if (this.IsShowIndexTitleOnly()) return;
         if (this.IsHideScriptIndex()) return;
@@ -34766,10 +34793,18 @@ function ChartKLineTable()
 
             if (item.Name && rtBG.Width>10)
             {
+                if (item.BGColor) 
+                {
+                    this.Canvas.fillStyle=item.BGColor;
+                    this.Canvas.fillRect(rtBG.Left, rtBG.Top, rtBG.Width, rtBG.Height);
+                }
+
                 this.Canvas.fillStyle=item.Color?item.Color:this.TextColor;
                 this.Canvas.textBaseline='bottom';
                 this.Canvas.textAlign='left';
                 this.Canvas.fillText(item.Name,rtBG.Left+2,yText);
+
+                this.AryNameRect.push({ Rect:rtBG, Item:item, Index:i });
             }
 
             y+=this.RowHeight;
@@ -78187,7 +78222,8 @@ function JSChartResource()
         YTopOffset:2*GetDevicePixelRatio(),      //Y轴顶部文字向下偏移
         YTextPadding:[2,2],
         EnableRemoveZero:true,                  //移除小数点后面的0
-        StringFormat:0
+        StringFormat:0,
+        XPointCount:10,
     };
     this.ToolbarButtonStyle=0;
 
@@ -79827,6 +79863,7 @@ function JSChartResource()
         {
             if (style.Frame.XBottomOffset) this.Frame.XBottomOffset=style.Frame.XBottomOffset;
             if (style.Frame.YTopOffset) this.Frame.YTopOffset=style.Frame.YTopOffset;
+            if (IFrameSplitOperator.IsNumber(style.Frame.XPointCount)) this.Frame.XPointCount=style.Frame.XPointCount;
             if (style.Frame.PercentageText)
             {
                 var item=style.Frame.PercentageText;
@@ -84088,21 +84125,32 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
     this.BindMainData=function(hisData, showCount, chartOperator)
     {
         var isShowAll=false;    //全部显示
-        if (chartOperator && chartOperator.IsShowAll===true) isShowAll=true;
+        if (chartOperator)
+        {
+            if (chartOperator.IsShowAll===true) isShowAll=true;
+            if (IFrameSplitOperator.IsPlusNumber(chartOperator.PageSize)) showCount=chartOperator.PageSize;
+        }  
         this.ChartPaint[0].Data=hisData;
         this.ChartPaint[0].Symbol=this.Symbol;
 
         if (this.KLineSize)
         {
-            if (!IFrameSplitOperator.IsNumber(this.KLineSize.DataWidth))
-            {
-                showCount=this.Frame.SubFrame[0].Frame.XPointCount-this.RightSpaceCount;
-            }
-            else
+            if (IFrameSplitOperator.IsNumber(this.KLineSize.DataWidth))
             {
                 var obj=this.Frame.SetDataWidth(this.KLineSize.DataWidth);
                 showCount=obj.XPointCount-this.RightSpaceCount;
                 this.KLineSize.DataWidth=null;
+                this.KLineSize.PageSize=null;
+            }
+            else if (IFrameSplitOperator.IsNumber(this.KLineSize.PageSize))
+            {
+                showCount=this.KLineSize.PageSize;
+                this.KLineSize.PageSize=null;
+                this.KLineSize.DataWidth=null;
+            }
+            else
+            {
+                showCount=this.Frame.SubFrame[0].Frame.XPointCount-this.RightSpaceCount;
             }
         }
 
@@ -84766,7 +84814,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         {
             var item=data.ChartOperator;
             chartOperator={ };
-            if (item.IsShowAll===true) chartOperator.IsShowAll=true;                                                        //全部显示
+            if (item.IsShowAll===true) chartOperator.IsShowAll=true;   
+            if (IFrameSplitOperator.IsNumber(item.PageSize))  chartOperator.PageSize=item.PageSize;                                                  //全部显示
         }
 
         this.BindMainData(bindData,this.PageSize,chartOperator);
@@ -89323,6 +89372,19 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             var data={ e:e, X:x, Y:y, Draw:false };
             this.ChartCorssCursor.OnDBClick(data);
             bDraw=data.Draw
+        }
+
+        if (this.TryDBClickChartTooltipData)    //外部预留接口
+        {
+            var data={ e:e, X:x, Y:y, Draw:false, PreventDefault:false };
+            this.TryDBClickChartTooltipData(data, this);
+            if (data.Draw) bDraw=true;
+
+            if (data.PreventDefault)
+            {
+                if (bDraw) this.Draw();
+                return;
+            }
         }
             
         if (this.EnableYDrag && (this.EnableYDrag.Left || this.EnableYDrag.Right) && this.Frame && this.Frame.PtInFrameY)

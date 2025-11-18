@@ -158,6 +158,10 @@ HQData.NetworkFilter=function(data, callback)
             HQData.INDEX_RequestData(data,callback);
             break;
 
+        case "JSSymbolData::GetIndustryData":
+            HQData.INDUSTRY_RequestData(data,callback);
+            break;
+
         case 'JSSymbolData::GetSymbolData':   
             //HQChart使用教程30-K线图如何对接第3方数据38-通达信指标K线数据
             HQData.RequestSymbolData(data,callback);        //计算指标需要的K线数据
@@ -1792,6 +1796,30 @@ HQData.INDEX_RequestData=function(data,callback)
     var period=data.Period;
     var symbol=data.Request.Data.symbol;
     var indexSymbol="000001.sh";
+    var dateRange=data.Request.Data.dateRange;
+    var aryData=[];
+    if (ChartData.IsMinutePeriod(period, true))
+    {
+        var fullData=HQData.GetM1KLineDataBySymbol(symbol);
+        if (fullData) aryData=HQData.GetKLineDataByDateTime(fullData, dateRange.Start.Date, dateRange.Start.Time, dateRange.End.Date, dateRange.End.Time);
+    }
+    else if (ChartData.IsDayPeriod(period,true))
+    {
+        var fullData=HQData.GetDayKLineDataBySymbol(indexSymbol);
+        if (fullData) aryData=HQData.GetKLineDataByDate(fullData, dateRange.Start.Date, dateRange.End.Date);
+    }
+
+    var hqchartData={ name:indexSymbol, symbol:indexSymbol, data:aryData, ver:2.0 };
+
+    callback(hqchartData);
+}
+
+HQData.INDUSTRY_RequestData=function(data, callback)
+{
+    data.PreventDefault=true;
+    var period=data.Period;
+    var symbol=data.Request.Data.symbol;
+    var indexSymbol="399001.sz";
     var dateRange=data.Request.Data.dateRange;
     var aryData=[];
     if (ChartData.IsMinutePeriod(period, true))
@@ -3489,6 +3517,7 @@ HQData.APIIndex_MULTI_BAR=function(data, callback)
             //{Date:20190916, Time: Value:15.5, Value2:0 },
         ],
         //Width:10
+        AdWidth:{ Type:1, Value:0.8 }
     };
 
     var point2=
@@ -3502,6 +3531,7 @@ HQData.APIIndex_MULTI_BAR=function(data, callback)
             //{Date:20190916, Time: Value:15.5, Value2:0 },
         ],
         //Width:10
+        AdWidth:{ Type:1, Value:0.5 }
     };
 
     for(var i=0;i<kData.Data.length;++i)
@@ -3828,6 +3858,8 @@ HQData.APIIndex_SCATTER_PLOT_V2=function(data, callback)
             };
         }
 
+        //if ((i%6)==2) item.Radius2=20;
+
 
         item.Tooltip=
         [
@@ -3890,6 +3922,7 @@ HQData.APIIndex_KLINE_TABLE=function(data, callback)
         { Name:"账户4", DayCount:8, OperatorID:0 },
     ]
     
+    
     for(var i=0;i<kData.Data.length;++i)   
     {
         var kItem=kData.Data[i];
@@ -3950,6 +3983,7 @@ HQData.APIIndex_KLINE_TABLE=function(data, callback)
 
         tableData.Draw.DrawData.push(colItem);
     }
+    
 
     var apiData=
     {

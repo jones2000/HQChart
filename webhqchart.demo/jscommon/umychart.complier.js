@@ -1212,6 +1212,7 @@ var Syntax = {
 function Node(ErrorHandler)
 {
     this.IsNeedIndexData=false;         //是否需要大盘数据
+    this.IsNeedIndustryData=false;      //行业数据下载
     this.IsNeedLatestIndexData=false;   //是否需要下载最新大盘数据
     this.IsNeedSymbolData=false;        //是否需要下载股票数据
     this.IsNeedMarginData=new Set();
@@ -1239,6 +1240,7 @@ function Node(ErrorHandler)
         if (this.IsNeedSymbolData) jobs.push({ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_DATA});
         if (this.IsNeedIndexData) jobs.push({ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_INDEX_DATA});
         if (this.IsNeedLatestIndexData) jobs.push({ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_LATEST_INDEX_DATA});
+        if (this.IsNeedIndustryData) jobs.push({ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_INDUSTRY_DATA});
 
         //最新的个股行情数据
         for(var i=0;i<this.Dynainfo.length;++i)
@@ -1322,6 +1324,13 @@ function Node(ErrorHandler)
         if (setIndexName.has(varName)) 
         {
             this.IsNeedIndexData=true;
+            return;
+        }
+
+        let setIndustryName=new Set(['HY_INDEXA','HY_INDEXC','HY_INDEXH','HY_INDEXL',"HY_INDEXO","HY_INDEXV",'HY_INDEXADV','HY_INDEXDEC']);
+        if (setIndustryName.has(varName)) 
+        {
+            this.IsNeedIndustryData=true;
             return;
         }
 
@@ -7449,9 +7458,26 @@ function JSAlgorithm(errorHandler,symbolData)
     //用法: STRCAT('多头','开仓')将两个字符串'多头','开仓'相加成一个字符串'多头开仓'
     this.STRCAT=function(str1, str2)
     {
-        var result=[];
-        if (IFrameSplitOperator.IsString(str1) && IFrameSplitOperator.IsString(str2))
-            result=str1+str2;
+        var result="";
+        
+        if (IFrameSplitOperator.IsString(str1)) result+=str1;
+        if (IFrameSplitOperator.IsString(str2)) result+=str2;
+
+        return result;
+    }
+
+    //STRCAT6(A,B,C,D,E,F):将六个字符串A,B,C,D,E,F(非序列化)相加成一个字符串.
+    //用法: STRCAT6('多头','开仓','或者','空头','平仓','')将六个字符串相加成一个字符串
+    this.STRCAT6=function(str1, str2,str3, str4,str5, str6)
+    {
+        var result="";
+        if (IFrameSplitOperator.IsString(str1)) result+=str1;
+        if (IFrameSplitOperator.IsString(str2)) result+=str2;
+        if (IFrameSplitOperator.IsString(str3)) result+=str3;
+        if (IFrameSplitOperator.IsString(str4)) result+=str4;
+        if (IFrameSplitOperator.IsString(str5)) result+=str5;
+        if (IFrameSplitOperator.IsString(str6)) result+=str6;
+
         return result;
     }
 
@@ -7615,7 +7641,9 @@ function JSAlgorithm(errorHandler,symbolData)
     //用法: CON2STR(FINANCE(20),3)表示取营业收入,以3位小数转为字符串
     this.CON2STR=function(data,n)
     {
-        var result=[];
+        var result="";
+        var dec=0;
+        if (IFrameSplitOperator.IsNumber(n)) dec=n;
         if (Array.isArray(data))
         {
             for(var i=data.length-1 ; i>=0; --i)
@@ -7623,7 +7651,7 @@ function JSAlgorithm(errorHandler,symbolData)
                 var item=data[i];
                 if (this.IsNumber(item))
                 {
-                    result=item.toFixed(n);
+                    result=item.toFixed(dec);
                     return result;
                 }
             }
@@ -7631,7 +7659,7 @@ function JSAlgorithm(errorHandler,symbolData)
         else
         {
             if (this.IsNumber(data)) 
-                result=data.toFixed(n);
+                result=data.toFixed(dec);
         }
 
         return result;
@@ -9359,6 +9387,8 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.BETWEEN(args[0], args[1], args[2]);
             case 'STRCAT':
                 return this.STRCAT(args[0], args[1]);
+            case "STRCAT6":
+                return this.STRCAT6(args[0], args[1],args[2], args[3],args[4], args[5]);
             case 'CON2STR':
                 return this.CON2STR(args[0], args[1]);
             case "VAR2STR":
@@ -12112,6 +12142,7 @@ function JSSymbolData(ast,option,jsExecute)
 
     this.LatestData=new Map();  //最新行情 key=id value=数据
     this.IndexData;             //大盘指数
+    this.IndustryData;          //行业数据
     this.LatestIndexData;       //最新大盘数据
     this.MarginData=new Map();  //融资融券
     this.HKToSHSZData=new Map();    //北上资金
@@ -12504,168 +12535,130 @@ function JSSymbolData(ast,option,jsExecute)
     this.GetIndexData=function()
     {
         if (this.IndexData) return this.Execute.RunNextJob();
+        if (!this.NetworkFilter) return this.Execute.RunNextJob();
 
-        var self=this;
-        if (ChartData.IsDayPeriod(this.Period,true))     //请求日线数据 9=季线
+        var dateRange=this.Data.GetDateRange();
+        var period=this.Period;
+        var obj=
         {
-            if (this.NetworkFilter)
-            {
-                var dateRange=this.Data.GetDateRange();
-                var obj=
-                {
-                    Name:'JSSymbolData::GetIndexData', //类名::
-                    Explain:'大盘数据',
-                    Period:self.Period,
-                    Request:
-                    { 
-                        Url:self.KLineApiUrl,  Type:'POST' ,
-                        Data: 
-                        { 
-                            field:[ "name", "symbol","yclose","open","price","high","low","vol",'up','down','stop','unchanged'],
-                            indexSymbol:"000001.sh", symbol: this.Symbol, period:this.Period,
-                            dateRange:dateRange 
-                        } 
-                    },
-                    Self:this,
-                    PreventDefault:false
-                };
-                this.NetworkFilter(obj, function(data) 
+            Name:'JSSymbolData::GetIndexData', //类名::
+            Explain:'大盘数据',
+            Period:period,
+            Request:
+            { 
+                Type:'POST' ,
+                Data: 
                 { 
-                    self.RecvIndexHistroyData(data);
-                    self.Execute.RunNextJob();
-                });
+                    field:[ "name", "symbol","yclose","open","price","high","low","vol",'up','down','stop','unchanged'],
+                    indexSymbol:"000001.sh", symbol: this.Symbol, period:period,
+                    dateRange:dateRange 
+                } 
+            },
+            Self:this,
+            PreventDefault:false
+        };
 
-                if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
-            }
+        this.NetworkFilter(obj, (data)=>
+        { 
+            JSConsole.Complier.Log('[JSSymbolData::GetIndexData] recv data' , data);
 
-            JSNetwork.HttpRequest({
-                url: self.KLineApiUrl,
-                data:
-                {
-                    "field": [ "name", "symbol","yclose","open","price","high","low","vol",'up','down','stop','unchanged'],
-                    "symbol": '000001.sh',
-                    "start": -1,
-                    "count": self.MaxRequestDataCount+500   //多请求2年的数据 确保股票剔除停牌日期以后可以对上
-                },
-                type:"post",
-                dataType: "json",
-                async:true, 
-                success: function (recvData)
-                {
-                    self.RecvIndexHistroyData(recvData);
-                    self.Execute.RunNextJob();
-                },
-                error: function(request)
-                {
-                    self.RecvError(request);
-                }
-            });
-        }
-        else  if (ChartData.IsMinutePeriod(this.Period, true))          //请求分钟数据
-        {
-            if (this.NetworkFilter)
-            {
-                var dateRange=this.Data.GetDateRange();
-                var obj=
-                {
-                    Name:'JSSymbolData::GetIndexData', //类名::
-                    Explain:'大盘数据',
-                    Period:self.Period,
-                    Request:{ Url:self.MinuteKLineApiUrl,  Type:'POST' ,
-                        Data: 
-                        { 
-                            field:["name","symbol","yclose","open","price","high","low","vol"],
-                            indexSymbol:"000001.sh", symbol: this.Symbol, period:this.Period,
-                            dateRange:dateRange 
-                        } 
-                    },
-                    Self:this,
-                    PreventDefault:false
-                };
-                this.NetworkFilter(obj, function(data) 
-                { 
-                    self.RecvIndexMinuteHistroyData(data);
-                    self.Execute.RunNextJob();
-                });
-
-                if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
-            }
-
-            JSNetwork.HttpRequest({
-                url: self.MinuteKLineApiUrl,
-                data:
-                {
-                    "field": ["name","symbol","yclose","open","price","high","low","vol"],
-                    "symbol": '000001.sh',
-                    "start": -1,
-                    "count": self.MaxRequestMinuteDayCount+5
-                },
-                type:"post",
-                dataType: "json",
-                async:true,
-                success: function (data)
-                {
-                    self.RecvIndexMinuteHistroyData(data);
-                    self.Execute.RunNextJob();
-                },
-                error: function(request)
-                {
-                    self.RecvError(request);
-                }
-            });
-        }
+            this.IndexData=this.APIKDataToChartData(data, period);
+            this.Execute.RunNextJob();
+        });
 
     }
 
-    this.RecvIndexHistroyData=function(data)
+
+    this.APIKDataToChartData=function(data, period)
     {
-        JSConsole.Complier.Log('[JSSymbolData::RecvIndexHistroyData] recv data' , data);
-
-        let hisData=this.JsonDataToHistoryData(data);
-        this.IndexData=new ChartData();
-        this.IndexData.DataType=0; /*日线数据 */
-        this.IndexData.Data=hisData;
-
-        if (this.IsApiPeriod==true)
+        var result=null;
+        if (ChartData.IsDayPeriod(period,true))     //请求日线数据
         {
-            this.IndexData.Period=this.Period;
-            this.IndexData.Data=this.Data.FixKData(hisData,this.Period);
-        }
-        else
-        {
-            var aryOverlayData=this.SourceData.GetOverlayData(this.IndexData.Data);      //和主图数据拟合以后的数据
-            this.IndexData.Data=aryOverlayData;
-    
-            if (ChartData.IsDayPeriod(this.Period,false))   //周期数据
+            var hisData=this.JsonDataToHistoryData(data);
+            result=new ChartData();
+            result.DataType=0; /*日线数据 */
+            result.Data=hisData;
+
+            if (this.IsApiPeriod==true)
             {
-                let periodData=this.IndexData.GetPeriodData(this.Period);
-                this.IndexData.Data=periodData;
+                result.Period=period;
+                result.Data=this.Data.FixKData(hisData,period);
+            }
+            else
+            {
+                var aryOverlayData=this.SourceData.GetOverlayData(result.Data);      //和主图数据拟合以后的数据
+                result.Data=aryOverlayData;
+        
+                if (ChartData.IsDayPeriod(period,false))   //周期数据
+                {
+                    var periodData=result.GetPeriodData(period);
+                    result.Data=periodData;
+                }
             }
         }
+        else if (ChartData.IsMinutePeriod(period, true))
+        {
+            var hisData=this.JsonDataToMinuteHistoryData(data);
+            result=new ChartData();
+            result.DataType=1; /*分钟线数据 */
+            result.Data=hisData;
+
+            if (this.IsApiPeriod==true)
+            {
+                result.Period=this.Period;
+                result.Data=this.Data.FixKData(hisData,period);
+            }
+            else
+            {
+                var aryOverlayData=this.SourceData.GetOverlayMinuteData(result.Data);      //和主图数据拟合以后的数据
+                result.Data=aryOverlayData;
+
+                if (ChartData.IsMinutePeriod(period,false))   //周期数据
+                {
+                    var periodData=result.GetPeriodData(period);
+                    result.Data=periodData;
+                }
+            }
+        }
+
+        return result;
     }
 
-    this.RecvIndexMinuteHistroyData=function(data)
+    //获取行业数据
+    this.GetIndustryData=function()
     {
-        JSConsole.Complier.Log('[JSSymbolData::RecvIndexMinuteHistroyData] recv data' , data);
+        if (this.IndustryData) return this.Execute.RunNextJob();
+        if (!this.NetworkFilter) return this.Execute.RunNextJob();
 
-        let hisData=this.JsonDataToMinuteHistoryData(data);
-        this.IndexData=new ChartData();
-        this.IndexData.DataType=1; /*分钟线数据 */
-        this.IndexData.Data=hisData;
+        var dateRange=this.Data.GetDateRange();
+        var period=this.Period;
+        var obj=
+        {
+            Name:'JSSymbolData::GetIndustryData', //类名::
+            Explain:'行业数据',
+            Period:period,
+            Request:
+            { 
+                Url:self.KLineApiUrl,  Type:'POST' ,
+                Data: 
+                { 
+                    field:[ "name", "symbol","yclose","open","price","high","low","vol",'up','down','stop','unchanged'],
+                    symbol: this.Symbol, period:period,
+                    dateRange:dateRange 
+                } 
+            },
+            Self:this,
+            PreventDefault:false
+        };
 
-        if (this.IsApiPeriod==true)
-        {
-            this.IndexData.Period=this.Period;
-            this.IndexData.Data=this.Data.FixKData(hisData,this.Period);
-        }
-        else
-        {
-            if (ChartData.IsMinutePeriod(this.Period,false))   //周期数据
-            {
-                let periodData=this.IndexData.GetPeriodData(this.Period);
-                this.IndexData.Data=periodData;
-            }
-        }
+       
+        this.NetworkFilter(obj, (data)=>
+        { 
+            JSConsole.Complier.Log('[JSSymbolData::GetIndustryData] recv data' , data);
+
+            this.IndustryData=this.APIKDataToChartData(data, period);
+            this.Execute.RunNextJob();
+        });
     }
 
     this.GetOtherSymbolParam=function(name)
@@ -13006,6 +12999,32 @@ function JSSymbolData(ast,option,jsExecute)
             return this.IndexData.GetUp();
         case 'INDEXDEC':
             return this.IndexData.GetDown();
+        }
+    }
+
+    //获取大盘指数缓存数据
+    this.GetIndustryCacheData=function(dataName)
+    {
+        if (!this.IndustryData) return [];
+
+        switch(dataName)
+        {
+        case 'HY_INDEXA':
+            return this.IndustryData.GetAmount();
+        case 'HY_INDEXC':
+            return this.IndustryData.GetClose();
+        case 'HY_INDEXH':
+            return this.IndustryData.GetHigh();
+        case 'HY_INDEXL':
+            return this.IndustryData.GetLow();
+        case 'HY_INDEXO':
+            return this.IndustryData.GetOpen();
+        case 'HY_INDEXV':
+            return this.IndustryData.GetVol();
+        case 'HY_INDEXADV':
+            return this.IndustryData.GetUp();
+        case 'HY_INDEXDEC':
+            return this.IndustryData.GetDown();
         }
     }
 
@@ -16951,6 +16970,7 @@ var JS_EXECUTE_JOB_ID=
     JOB_DOWNLOAD_LATEST_INDEX_DATA:8,   //下载最新大盘数据
     JOB_DOWNLOAD_OTHER_SYMBOL_DATA:9,   //下载其他股票的K线数据
     JOB_DOWNLOAD_SYMBOL_PERIOD_DATA:10, //下载周期数据
+    JOB_DOWNLOAD_INDUSTRY_DATA:11,      //行业数据
 
     JOB_DOWNLOAD_FINVALUE:301,                  //引用专业财务数据 FINVALUE(ID),ID为数据编号
     JOB_DOWNLOAD_FINONE:302,                    //引用指定年和月日的某类型的财务数据 FINONE(ID,Y,MMDD),ID为数据编号,Y和MMDD表示年和月日.
@@ -17237,6 +17257,10 @@ function JSExecute(ast,option)
         ['INDEXA',null],['INDEXC',null],['INDEXH',null],['INDEXL',null],['INDEXO',null],['INDEXV',null],
         ['INDEXADV',null],['INDEXDEC',null],
 
+        //行业数据
+        ["HY_INDEXA",null],["HY_INDEXC",null],["HY_INDEXH",null],["HY_INDEXL",null],["HY_INDEXO",null],["HY_INDEXV",null],
+        ["HY_INDEXADV",null],["HY_INDEXDEC",null],
+
         ["ADVANCE",null],['DECLINE', null],
 
         ['FROMOPEN',null],      //已开盘有多长分钟
@@ -17361,6 +17385,8 @@ function JSExecute(ast,option)
                 return this.SymbolData.GetSymbolPeriodData(jobItem);
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_INDEX_DATA:
                 return this.SymbolData.GetIndexData();
+            case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_INDUSTRY_DATA:
+                return this.SymbolData.GetIndustryData();
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_LATEST_INDEX_DATA:
                 return this.SymbolData.GetLatestIndexData();
             case JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_INDEX_INCREASE_DATA:
@@ -17485,6 +17511,16 @@ function JSExecute(ast,option)
             case 'INDEXADV':
             case 'INDEXDEC':
                 return this.SymbolData.GetIndexCacheData(name);
+            //行业数据
+            case 'HY_INDEXA':
+            case 'HY_INDEXC':
+            case 'HY_INDEXH':
+            case 'HY_INDEXL':
+            case 'HY_INDEXO':
+            case 'HY_INDEXV':
+            case 'HY_INDEXADV':
+            case 'HY_INDEXDEC':
+                return this.SymbolData.GetIndustryCacheData(name);
             case 'CURRBARSCOUNT':
                 return this.SymbolData.GetCurrBarsCount();
             case "BARPOS":
@@ -19800,6 +19836,7 @@ function JSExplainer(ast,option)
             ["STR2CON", { Name:"STR2CON", Param:{ Count:1 }, ToString:function(args) { return `${args[0]}转为数字`; } } ],
             ["STRLEN", { Name:"STRLEN", Param:{ Count:1 }, ToString:function(args) { return `得到${args[0]}字符串长度`; } } ],
             ["STRCAT", { Name:"STRCAT", Param:{ Count:2 }, ToString:function(args) { return `字符串相加`; } } ],
+            ["STRCAT6",{ Name:"STRCAT6", Param:{ Dynamic:true }, ToString:function(args) { return `字符串相加`; } } ],
             ["VARCAT", { Name:"VARCAT", Param:{ Count:2 }, ToString:function(args) { return `字符串相加`; } } ],
             ["STRSPACE", { Name:"STRSPACE", Param:{ Count:1 }, ToString:function(args) { return `字符串${args[0]}加一空格`; } } ],
             ["SUBSTR", { Name:"SUBSTR", Param:{ Count:3 }, ToString:function(args) { return `字符串${args[0]}中取一部分`; } } ],
@@ -19916,6 +19953,8 @@ function JSExplainer(ast,option)
             case "DRAWICON":
                 return `当满足条件${args[0]}时,在${args[1]}位置画${args[2]}号图标`;
             case "DRAWTEXT":
+                return `当满足条件${args[0]}时,在${args[1]}位置书写文字`;
+            case "DRAWFLAGTEXT":
                 return `当满足条件${args[0]}时,在${args[1]}位置书写文字`;
             case "DRAWTEXT_FIX":
                 return `当满足条件${args[0]}时,在横轴${args[1]}纵轴${args[2]}位置书写文字`;
@@ -20115,7 +20154,7 @@ function JSExplainer(ast,option)
             "STICKLINE","DRAWTEXT",'SUPERDRAWTEXT','DRAWLINE','DRAWBAND','DRAWKLINE',"DRAWKLINE1",'DRAWKLINE_IF','PLOYLINE',
             'POLYLINE','DRAWNUMBER',"DRAWNUMBER_FIX",'DRAWICON','DRAWCHANNEL','PARTLINE','DRAWTEXT_FIX','DRAWGBK','DRAWTEXT_LINE','DRAWRECTREL',"DRAWTEXTABS",
             'DRAWOVERLAYLINE',"FILLRGN", "FILLRGN2","FILLTOPRGN", "FILLBOTTOMRGN", "FILLVERTICALRGN","FLOATRGN","DRAWSL", "DRAWGBK2",
-            "BUY","BUYSHORT","SELL","SELLSHORT",
+            "BUY","BUYSHORT","SELL","SELLSHORT","DRAWFLAGTEXT",
         ]);
         if (setFunctionName.has(name)) return true;
     

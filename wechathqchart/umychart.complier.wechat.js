@@ -6437,9 +6437,24 @@ function JSAlgorithm(errorHandler, symbolData)
     //用法: STRCAT('多头','开仓')将两个字符串'多头','开仓'相加成一个字符串'多头开仓'
     this.STRCAT = function (str1, str2) 
     {
-        var result=[];
-        if (this.IsString(str1) && this.IsString(str2))
-            result=str1+str2;
+        var result="";
+        if (IFrameSplitOperator.IsString(str1)) result+=str1;
+        if (IFrameSplitOperator.IsString(str2)) result+=str2;
+        return result;
+    }
+
+    //STRCAT6(A,B,C,D,E,F):将六个字符串A,B,C,D,E,F(非序列化)相加成一个字符串.
+    //用法: STRCAT6('多头','开仓','或者','空头','平仓','')将六个字符串相加成一个字符串
+    this.STRCAT6=function(str1, str2,str3, str4,str5, str6)
+    {
+        var result="";
+        if (IFrameSplitOperator.IsString(str1)) result+=str1;
+        if (IFrameSplitOperator.IsString(str2)) result+=str2;
+        if (IFrameSplitOperator.IsString(str3)) result+=str3;
+        if (IFrameSplitOperator.IsString(str4)) result+=str4;
+        if (IFrameSplitOperator.IsString(str5)) result+=str5;
+        if (IFrameSplitOperator.IsString(str6)) result+=str6;
+
         return result;
     }
 
@@ -6603,7 +6618,9 @@ function JSAlgorithm(errorHandler, symbolData)
     //用法: CON2STR(FINANCE(20),3)表示取营业收入,以3位小数转为字符串
     this.CON2STR = function (data, n) 
     {
-        var result = [];
+        var result = "";
+        var dec=0;
+        if (IFrameSplitOperator.IsNumber(n)) dec=n;
         if (Array.isArray(data)) 
         {
             for (var i = data.length - 1; i >= 0; --i) 
@@ -6611,7 +6628,7 @@ function JSAlgorithm(errorHandler, symbolData)
                 var item = data[i];
                 if (this.IsNumber(item)) 
                 {
-                    result = item.toFixed(n);
+                    result = item.toFixed(dec);
                     return result;
                 }
             }
@@ -6619,7 +6636,7 @@ function JSAlgorithm(errorHandler, symbolData)
         else 
         {
             if (this.IsNumber(data))
-                result = data.toFixed(n);
+                result = data.toFixed(dec);
         }
 
         return result;
@@ -8201,6 +8218,8 @@ function JSAlgorithm(errorHandler, symbolData)
                 return this.BACKSET(args[0], args[1]);
             case 'STRCAT':
                 return this.STRCAT(args[0], args[1]);
+            case "STRCAT6":
+                return this.STRCAT6(args[0], args[1],args[2], args[3],args[4], args[5]);
             case "VARCAT":
                 return this.VARCAT(args[0], args[1]);
             case "VAR2STR":
