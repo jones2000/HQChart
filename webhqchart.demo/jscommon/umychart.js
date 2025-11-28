@@ -1794,22 +1794,26 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
 
                 }
 
-                if (item.Modify!=null) chart.Frame.SubFrame[i].Frame.ModifyIndex=item.Modify;
-                if (item.Change!=null) chart.Frame.SubFrame[i].Frame.ChangeIndex=item.Change;
-                if (item.Close!=null) chart.Frame.SubFrame[i].Frame.CloseIndex=item.Close;
-                if (item.Overlay!=null) frame.OverlayIndex=item.Overlay;
-                if (IFrameSplitOperator.IsBool(item.Export)) frame.ExportData=item.Export;
-                if (IFrameSplitOperator.IsBool(item.MaxMin)) chart.Frame.SubFrame[i].Frame.MaxMinWindow=item.MaxMin;
-                if (IFrameSplitOperator.IsBool(item.TitleWindow)) chart.Frame.SubFrame[i].Frame.TitleWindow=item.TitleWindow;
-                if (IFrameSplitOperator.IsBool(item.IsDrawTitleBG))  chart.Frame.SubFrame[i].Frame.IsDrawTitleBG=item.IsDrawTitleBG;
-                if (IFrameSplitOperator.IsBool(item.IsShowNameArrow))  chart.Frame.SubFrame[i].Frame.IsShowNameArrow=item.IsShowNameArrow;
+                chart.SetSubFrameAttribute(chart.Frame.SubFrame[i],item, null)
+            }
+        }
 
-                if (IFrameSplitOperator.IsNumber(item.TitleHeight)) chart.Frame.SubFrame[i].Frame.ChartBorder.TitleHeight=item.TitleHeight;
-                if (IFrameSplitOperator.IsBool(item.IsShowTitleArrow)) chart.Frame.SubFrame[i].Frame.IsShowTitleArrow=item.IsShowTitleArrow;
-                if (item.IsShowIndexName==false) chart.Frame.SubFrame[i].Frame.IsShowIndexName=false;
-                if (item.IsShowOverlayIndexName==false) chart.Frame.SubFrame[i].Frame.IsShowOverlayIndexName=false;
-                if (IFrameSplitOperator.IsNumber(item.IndexParamSpace)) chart.Frame.SubFrame[i].Frame.IndexParamSpace=item.IndexParamSpace;
-                if (IFrameSplitOperator.IsNumber(item.IndexTitleSpace)) chart.Frame.SubFrame[i].Frame.IndexTitleSpace=item.IndexTitleSpace;
+        //叠加指标宽度
+        if (option.OverlayIndexFrameWidth>40) chart.Frame.FixedRightWidth.Overlay=option.OverlayIndexFrameWidth;
+
+        //叠加指标
+        if (IFrameSplitOperator.IsNonEmptyArray(option.OverlayIndex))
+        {
+            for(var i=0;i<option.OverlayIndex.length;++i)
+            {
+                var item=option.OverlayIndex[i];
+                if (item.Windows>=chart.Frame.SubFrame.length) continue;
+    
+                var itemString = JSON.stringify(item);
+                var obj = JSON.parse(itemString);
+                if (item.Index) obj.IndexName=item.Index;
+                if (item.Windows>=0) obj.WindowIndex=item.Windows;
+                chart.CreateOverlayWindowsIndex(obj);
             }
         }
 
@@ -3049,6 +3053,7 @@ var JSCHART_DATA_FIELD_ID=
     KLINE_COLOR_DATA:66,            //K线自定义颜色数据
     KLINE_DAY_EXTENDDATA:25,
     KLINE_MINUTE_EXTENDDATA:25,
+    KLINE_TICK_EXTENDDATA:25,
 
     //OrderBook Heatmap
     KLINE_HEATMAP:67,
@@ -7667,6 +7672,23 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         this.LastPoint.FrameID=frameID;
         if (IFrameSplitOperator.IsNumber(frameID) && frameID>=0)    //在K线内部移动,调整K线索引
             this.CursorIndex=this.Frame.GetXData(x);
+
+        if (this.TryMouseMoveChartTooltipData)
+        {
+            //DrawDynamic:{ Enable, Option: }
+            var data={ e:e, X:x, Y:y, Draw:false, DrawDynamic:null, PreventDefault:false, MouseStatus:null };
+            this.TryMouseMoveChartTooltipData(data, this);
+
+            if (data.MouseStatus) mouseStatus=data.MouseStatus;
+            
+            if (data.PreventDefault)
+            {
+                if (data.Draw) this.Draw();
+                if (data.DrawDynamic && data.DrawDynamic.Enable) this.DrawDynamicInfo(data.DrawDynamic.Option);
+                this.SetCursor(mouseStatus);
+                return;
+            }
+        }
         
 
         if (this.EnableBorderDrag && this.Frame && !this.CurrentChartDrawPicture)
@@ -34471,6 +34493,7 @@ function ChartKLineTable()
     this.RowNamePosition=1; //0=不显示 1=左边内部  2=左边外部 3=右边外部
     this.BGColor;       //背景色
     this.BorderColor;   //分割线颜色
+    this.AryBorderColor;//分割线颜色
 
     this.RowCount=5;                    //行数
     this.RowHeight=10;                  //行高
@@ -34519,6 +34542,8 @@ function ChartKLineTable()
         }
 
         if (IFrameSplitOperator.IsPlusNumber(option.CellWidth)) this.CellWidth=option.CellWidth;
+
+        if (IFrameSplitOperator.IsNonEmptyArray(option.AryBorderColor)) this.AryBorderColor=option.AryBorderColor.slice();
     }
     
     this.BuildCacheData=function()
@@ -34560,10 +34585,14 @@ function ChartKLineTable()
         var lineCount=30;
         if (this.Style===1 || this.Style===2) lineCount=this.RowCount+1;
 
-        this.Canvas.strokeStyle=this.BorderColor;
         var yLine=rtBG.Top;
         for(var i=0;i<lineCount;++i)
         {
+            var borderColor=this.BorderColor;
+            if (this.AryBorderColor && this.AryBorderColor[i])
+                borderColor=this.AryBorderColor[i];
+            
+            this.Canvas.strokeStyle=borderColor
             this.Canvas.beginPath();
             this.Canvas.moveTo(rtBG.Left,ToFixedPoint(yLine));
             this.Canvas.lineTo(rtBG.Right,ToFixedPoint(yLine));
@@ -34736,7 +34765,7 @@ function ChartKLineTable()
     this.DrawRightRowName=function(rtBG)
     {
         var border=this.ChartFrame.GetBorder();
-
+        var maxTextWidth=0;
         if (this.BGColor)
         {
             if (this.Style===1)
@@ -34744,7 +34773,6 @@ function ChartKLineTable()
                 var height=this.RowCount*this.RowHeight;
                 height=Math.min(rtBG.Height,height);
                 var width=border.ChartWidth-rtBG.Right-2;
-                var maxTextWidth=0;
                 for(var i=0;i<this.RowName.length;++i)
                 {
                     var item=this.RowName[i];
@@ -34796,7 +34824,8 @@ function ChartKLineTable()
                 if (item.BGColor) 
                 {
                     this.Canvas.fillStyle=item.BGColor;
-                    this.Canvas.fillRect(rtBG.Left, rtBG.Top, rtBG.Width, rtBG.Height);
+                    if (maxTextWidth>0)  this.Canvas.fillRect(rtBG.Left, rtBG.Top, maxTextWidth, rtBG.Height);
+                    else this.Canvas.fillRect(rtBG.Left, rtBG.Top, rtBG.Width, rtBG.Height);
                 }
 
                 this.Canvas.fillStyle=item.Color?item.Color:this.TextColor;
@@ -34868,7 +34897,7 @@ function ChartKLineTable()
                         }
                     }
 
-                    if (rtBG.Width>5)
+                    //if (rtBG.Width>5)
                     {
                         this.AryCellRect.push({ Item:{ Cell:item, Colunm:data, RowIndex:i, SubCell:subItem, SubIndex:j, Tooltip:subItem.Tooltip, Type:2 }, Rect:rtSubBG });
                     }
@@ -34909,7 +34938,7 @@ function ChartKLineTable()
                     }
                 }
 
-                if (rtBG.Width>5)
+                //if (rtBG.Width>5)
                 {
                     this.AryCellRect.push({ Item:{ Cell:item, Colunm:data, RowIndex:i, Tooltip:item.Tooltip, Type:1 }, Rect:rtBG });
                 }
@@ -86148,14 +86177,26 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
     {
         var self=this;
         var start=0;
-        if (this.SourceData && this.SourceData.Data) start=this.SourceData.Data.length;
+        var hisData=this.GetKData();
+        var dateRange=hisData.GetDateRange();
+
         if (this.NetworkFilter)
         {
+            var kLineDrawType=this.GetKLineDrawType();
             var obj=
             {
                 Name:'KLineChartContainer::RequestTickRealtimeData', //类名::
                 Explain:'当天最新分笔数据',
-                Request:{ Url:self.TickApiUrl, Data:{ symbol: self.Symbol, start:start, end:start+1000 }, Type:'POST' }, 
+                Request:
+                { 
+                    Url:self.TickApiUrl, 
+                    Data:
+                    { 
+                        symbol:self.Symbol, period:this.Period, right:this.Right, 
+                        dateRange:dateRange, klineDrawType:kLineDrawType
+                    }, 
+                    Type:'POST' 
+                }, 
                 Self:this,
                 PreventDefault:false
             };
@@ -86168,29 +86209,14 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
         }
-
-        JSNetwork.HttpRequest({
-            url: self.TickApiUrl,
-            data:{"symbol":self.Symbol, start:start-10, end:start+1000 },
-            type:"post",
-            dataType: "json",
-            async:true,
-            success: function (data)
-            {
-                self.ChartSplashPaint.EnableSplash(false);
-                self.RecvTickRealtimeData(data);
-                self.AutoUpdate();
-            }
-        });
     }
 
     this.RecvTickRealtimeData=function(data)
     {
-        if (data.ver==2.0)
-            var aryDayData=KLineChartContainer.JsonDataToTickDataV2(data);    //增量数据
-        else
-            var aryDayData=KLineChartContainer.JsonDataToTickData(data);    //增量数据
-        if (!aryDayData || aryDayData.length<=0) return;
+        var aryDayData=null;
+        if (data.ver==2.0) aryDayData=KLineChartContainer.JsonDataToTickDataV2(data);    //增量数据
+        else aryDayData=KLineChartContainer.JsonDataToTickData(data);    //增量数据
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryDayData)) return;
 
         var redraw=false;   //强制重绘
         if (data.redraw==true) redraw=true;
@@ -86200,7 +86226,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         var lastTime=0;
         if (source.length>0) lastTime=source[source.length-1].Time;
         var newCount=0;
-        for(var i in aryDayData)
+        for(var i=0; i<aryDayData.length; ++i)
         {
             var item=aryDayData[i];
             if (item.Time<=lastTime) continue;
@@ -91185,20 +91211,24 @@ KLineChartContainer.JsonDataToTickDataV2=function(data)
 {
    var aryDayData=[];
    if (!IFrameSplitOperator.IsNonEmptyArray(data.data)) return aryDayData;
-
+   var extendDataIndex=JSCHART_DATA_FIELD_ID.KLINE_TICK_EXTENDDATA;
    for(var i=0;i<data.data.length;++i)
    {
        var item = new HistoryData();
-       var tick=data.data[i];   //[ date, time, yClose, price, extendData]
+       var tick=data.data[i];   //[ date, time, yClose, price, vol, amount, flag,]
        if (!tick) continue;
 
        item.Date = tick[0];
        item.Time=tick[1];
        item.YClose = tick[2];
        item.Low=item.High=item.Close=item.Open = tick[3];
+       item.Vol = tick[4];      //原始单位股
+       item.Amount = tick[5];
+       item.Flag=tick[6];
+
        aryDayData.push(item);
 
-       if (tick[4]) item.ExtendData=tick[4];
+       if (tick[extendDataIndex]) item.ExtendData=tick[extendDataIndex];
    }
 
    return aryDayData;

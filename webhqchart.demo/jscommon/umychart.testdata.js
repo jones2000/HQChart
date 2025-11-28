@@ -62,6 +62,15 @@ HQData.NetworkFilter=function(data, callback)
             HQData.RequestMinuteRealtimeData(data,callback);
             break;
 
+        case "KLineChartContainer::RequestTickData":
+            //HQChart使用教程30-K线图如何对接第3方数据5-逐笔数据
+            HQData.RequestKLineTickData(data,callback);
+            break;
+        case "KLineChartContainer::RequestTickRealtimeData":
+            //HQChart使用教程30-K线图如何对接第3方数据16-轮询增量更新逐笔数据
+            HQData.RequestTickRealtimeData(data,callback);
+            break;
+
         case "JSSymbolData::GetVariantData":                            //额外的变量数据
             //HQChart使用教程30-K线图如何对接第3方数据29-板块字符串函数数据[GNBLOCK,GNBLOCKNUM......]
             HQData.RequestIndexVariantData(data,callback);
@@ -1226,6 +1235,50 @@ HQData.RequestMinuteRealtimeData=function(data,callback)
     var hqchartData={ name:symbol, symbol:symbol, ver:2.0, data:aryMainData };
     if (IFrameSplitOperator.IsNonEmptyArray(aryOverlay)) hqchartData.overlay=aryOverlay;
    
+    callback(hqchartData);
+}
+
+
+HQData.RequestKLineTickData=function(data,callback)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Data.symbol;
+    console.log(`[HQData::RequestKLineTickData] Symbol=${symbol}`);
+
+    var hqchartData={ code:0, symbol:symbol, name:symbol, data:[], ver:2.0 };
+    for(var i=0;i<MSECOND_TEST_DATA.data.length-100;++i)
+    {
+        var item=MSECOND_TEST_DATA.data[i];
+        var flag=HQData.GetRandomTestData(1,10)%3;
+        var kItem=[item[0], parseInt(item[8]/1000), item[1], item[5], item[6]*1000, item[7], flag ];
+        hqchartData.data.push(kItem);
+    }
+    
+    callback(hqchartData);
+}
+
+HQData.RequestTickRealtimeData=function(data,callback)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Data.symbol; //请求的股票代码
+    var dateRange=data.Request.Data.dateRange;
+    var endTime=dateRange.End.Time;
+    var endDate=dateRange.End.Date;
+
+    var hqchartData={ code:0, symbol:symbol, name:symbol, data:[], ver:2.0 };
+    for(var i=0;i<MSECOND_TEST_DATA.data.length;++i)
+    {
+        var item=MSECOND_TEST_DATA.data[i];
+        var time=parseInt(item[8]/1000);
+        if (time>endTime) 
+        {
+            var flag=HQData.GetRandomTestData(1,10)%3;
+            var kItem=[item[0], time, item[1], item[5], item[6]*1000, item[7], flag ];
+            hqchartData.data.push(kItem);
+            break;
+        }
+    }
+
     callback(hqchartData);
 }
 
@@ -3897,7 +3950,13 @@ HQData.APIIndex_KLINE_TABLE=function(data, callback)
             DrawType:'KLINE_TABLE', 
             DrawData:[ ] ,                                      //数据  [ [ { Text, Color: BGColor }, ...... ], [],]
             RowCount:4,
-            RowName:[ {Name:"账户[*9993]",TextAlign:"center", Color:"rgb(124, 252, 0)"}, {Name:"账户[*8881]",TextAlign:"center", Color:"rgb(238, 99, 9)"}, {Name:"账户3",TextAlign:"center"},{Name:"账户4", TextAlign:"center"}],
+            RowName:
+            [ 
+                {Name:"账户[*9993]",TextAlign:"center", Color:"rgb(124, 252, 0)"}, 
+                {Name:"账户[*8881]",TextAlign:"center", Color:"rgb(238, 99, 9)", BGColor:"rgb(100,0,200)" }, 
+                {Name:"账户3",TextAlign:"center"},
+                {Name:"账户4", TextAlign:"center"}
+            ],
 
             Config:
             {
@@ -3908,7 +3967,9 @@ HQData.APIIndex_KLINE_TABLE=function(data, callback)
                 RowNamePosition:3,
                 TextFont:{ Family:'微软雅黑' , FontMaxSize:14*GetDevicePixelRatio(), },
                 RowHeightType:0,
-                Style:1
+                Style:1,
+
+                AryBorderColor:[null, "rgb(100,20,200)", "rgb(200,0,100)"]
             }
         },
         

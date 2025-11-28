@@ -8036,7 +8036,7 @@ function ChartReport()
 
     this.FormaTimeDrawInfo=function(column, stock, drawInfo, data)
     {
-        if (!IFrameSplitOperator.IsNumber(stock.Time)) return;
+        if (!stock || !IFrameSplitOperator.IsNumber(stock.Time)) return;
 
         if (column.ValueType==0) //0=hhmm 1=hhmmss 2=hhmmss.fff
         {
@@ -8054,7 +8054,7 @@ function ChartReport()
 
     this.FormaDateDrawInfo=function(column, stock, drawInfo, data)
     {
-        if (!IFrameSplitOperator.IsNumber(stock.Date)) return;
+        if (!stock || !IFrameSplitOperator.IsNumber(stock.Date)) return;
 
         if (column.FormatType==0)
             drawInfo.Text=IFrameSplitOperator.FormatDateString(stock.Date,"YYYY-MM-DD");

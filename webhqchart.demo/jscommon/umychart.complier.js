@@ -7544,6 +7544,32 @@ function JSAlgorithm(errorHandler,symbolData)
         return result;
     }
 
+    //VARCAT6(A,B,C,D,E,F):将六个字符串A,B,C,D,E,F相加成一个字符串.
+    //每个数据都进行序列运算,若用于多股选股,建议换用STRCAT6
+    //用法: VARCAT6('多头',VAR2STR(C,2),' ',VAR2STR(O,2),' ',VAR2STR(MA(C,5),2))将六个字符串相加成一个字符串
+    this.VARCAT6=function(data,data2,data3,data4,data5)
+    {
+        var aryData=[];
+        if (Array.isArray(data) || IFrameSplitOperator.IsString(data)) aryData.push(data);
+        if (Array.isArray(data2) || IFrameSplitOperator.IsString(data2)) aryData.push(data2);
+        if (Array.isArray(data3) || IFrameSplitOperator.IsString(data3)) aryData.push(data3);
+        if (Array.isArray(data4) || IFrameSplitOperator.IsString(data4)) aryData.push(data4);
+        if (Array.isArray(data5) || IFrameSplitOperator.IsString(data5)) aryData.push(data5);
+
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryData)) return [];
+        if (aryData.length==1) return data;
+
+        var tempData=this.VARCAT(aryData[0], aryData[1]);
+        var result=tempData;
+        for(var i=2;i<aryData.length;++i)
+        {
+            result=this.VARCAT(tempData,aryData[i]);
+            tempData=result;
+        }
+
+        return result;
+    }
+
     //FINDSTR(A,B):在字符串A中查找字符串B,如果找到返回1,否则返回0.
     //用法: FINDSTR('多头开仓','开仓')在字符串'多头开仓'中查找字符串'开仓',返回1
     this.FINDSTR=function(data, data2)
@@ -7670,6 +7696,8 @@ function JSAlgorithm(errorHandler,symbolData)
     this.VAR2STR=function(data,n)
     {
         var result=[];
+        var dec=0;
+        if (IFrameSplitOperator.IsNumber(n)) dec=n;
         if (Array.isArray(data))
         {
             for(var i=0;i<data.length;++i)
@@ -7677,13 +7705,13 @@ function JSAlgorithm(errorHandler,symbolData)
                 result[i]=null;
                 var item=data[i];
                 if (this.IsNumber(item))
-                    result[i]=item.toFixed(n);
+                    result[i]=item.toFixed(dec);
             }
         }
         else
         {
             if (this.IsNumber(data))
-                result=data.toFixed(n);
+                result=data.toFixed(dec);
         }
 
         return result;
@@ -9395,6 +9423,8 @@ function JSAlgorithm(errorHandler,symbolData)
                 return this.VAR2STR(args[0], args[1]);
             case "VARCAT":
                 return this.VARCAT(args[0], args[1]);
+            case "VARCAT6":
+                return this.VARCAT6(args[0], args[1],args[2], args[3],args[4], args[5]);
             case "STRSPACE":
                 return this.STRSPACE(args[0]);
             case "FINDSTR":
@@ -9607,7 +9637,8 @@ function JSDraw(errorHandler,symbolData)
         var drawData=[];
         var result={ DrawData:drawData, DrawType:'DRAWFLAGTEXT' };
         if (!text) return result;
-
+        var bArrayText=Array.isArray(text); //是否是数组字符串
+        
         if (Array.isArray(condition))
         {
             if (condition.length<=0) return result;
@@ -9618,14 +9649,18 @@ function JSDraw(errorHandler,symbolData)
                 drawData[i]=null;
     
                 if (isNaN(condition[i]) || !condition[i]) continue;
+
+                var outText=null;
+                if (!bArrayText) outText=text;
+                else if (bArrayText && text[i]) outText=text[i];
     
                 if (bSinglePrice) 
                 {
-                    drawData[i]={ YValue:price, Text:text };
+                    drawData[i]={ YValue:price, Text:outText };
                 }
                 else 
                 {
-                    if (IFrameSplitOperator.IsNumber(price[i])) drawData[i]={ YValue:price[i], Text:text };
+                    if (IFrameSplitOperator.IsNumber(price[i])) drawData[i]={ YValue:price[i], Text:outText };
                 }
             }
         }
@@ -9634,13 +9669,17 @@ function JSDraw(errorHandler,symbolData)
             var bSinglePrice=IFrameSplitOperator.IsNumber(price);
             for(var i=0;i<this.SymbolData.Data.Data.length;++i)
             {
+                var outText=null;
+                if (!bArrayText) outText=text;
+                else if (bArrayText && text[i]) outText=text[i];
+
                 if (bSinglePrice) 
                 {
-                    drawData[i]={ YValue:price, Text:text };
+                    drawData[i]={ YValue:price, Text:outText };
                 }
                 else 
                 {
-                    if (IFrameSplitOperator.IsNumber(price[i])) drawData[i]={ YValue:price[i], Text:text };
+                    if (IFrameSplitOperator.IsNumber(price[i])) drawData[i]={ YValue:price[i], Text:outText };
                 }
             }
         }
@@ -19838,6 +19877,7 @@ function JSExplainer(ast,option)
             ["STRCAT", { Name:"STRCAT", Param:{ Count:2 }, ToString:function(args) { return `字符串相加`; } } ],
             ["STRCAT6",{ Name:"STRCAT6", Param:{ Dynamic:true }, ToString:function(args) { return `字符串相加`; } } ],
             ["VARCAT", { Name:"VARCAT", Param:{ Count:2 }, ToString:function(args) { return `字符串相加`; } } ],
+            ["VARCAT6", { Name:"VARCAT", Param:{ Dynamic:true }, ToString:function(args) { return `字符串相加`; } } ],
             ["STRSPACE", { Name:"STRSPACE", Param:{ Count:1 }, ToString:function(args) { return `字符串${args[0]}加一空格`; } } ],
             ["SUBSTR", { Name:"SUBSTR", Param:{ Count:3 }, ToString:function(args) { return `字符串${args[0]}中取一部分`; } } ],
             ["STRCMP", { Name:"STRCMP", Param:{ Count:2 }, ToString:function(args) { return `字符串${args[0]}和字符串${args[1]}比较`; } } ],

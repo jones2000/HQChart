@@ -6521,6 +6521,32 @@ function JSAlgorithm(errorHandler, symbolData)
         return result;
     }
 
+    //VARCAT6(A,B,C,D,E,F):将六个字符串A,B,C,D,E,F相加成一个字符串.
+    //每个数据都进行序列运算,若用于多股选股,建议换用STRCAT6
+    //用法: VARCAT6('多头',VAR2STR(C,2),' ',VAR2STR(O,2),' ',VAR2STR(MA(C,5),2))将六个字符串相加成一个字符串
+    this.VARCAT6=function(data,data2,data3,data4,data5)
+    {
+        var aryData=[];
+        if (Array.isArray(data) || IFrameSplitOperator.IsString(data)) aryData.push(data);
+        if (Array.isArray(data2) || IFrameSplitOperator.IsString(data2)) aryData.push(data2);
+        if (Array.isArray(data3) || IFrameSplitOperator.IsString(data3)) aryData.push(data3);
+        if (Array.isArray(data4) || IFrameSplitOperator.IsString(data4)) aryData.push(data4);
+        if (Array.isArray(data5) || IFrameSplitOperator.IsString(data5)) aryData.push(data5);
+
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryData)) return [];
+        if (aryData.length==1) return data;
+
+        var tempData=this.VARCAT(aryData[0], aryData[1]);
+        var result=tempData;
+        for(var i=2;i<aryData.length;++i)
+        {
+            result=this.VARCAT(tempData,aryData[i]);
+            tempData=result;
+        }
+
+        return result;
+    }
+
     //FINDSTR(A,B):在字符串A中查找字符串B,如果找到返回1,否则返回0.
     //用法: FINDSTR('多头开仓','开仓')在字符串'多头开仓'中查找字符串'开仓',返回1
     this.FINDSTR=function(data, data2)
@@ -6647,6 +6673,8 @@ function JSAlgorithm(errorHandler, symbolData)
     this.VAR2STR=function(data,n)
     {
         var result=[];
+        var dec=0;
+        if (IFrameSplitOperator.IsNumber(n)) dec=n;
         if (Array.isArray(data))
         {
             for(var i=0;i<data.length;++i)
@@ -6654,13 +6682,13 @@ function JSAlgorithm(errorHandler, symbolData)
                 result[i]=null;
                 var item=data[i];
                 if (this.IsNumber(item))
-                    result[i]=item.toFixed(n);
+                    result[i]=item.toFixed(dec);
             }
         }
         else
         {
             if (this.IsNumber(data))
-                result=data.toFixed(n);
+                result=data.toFixed(dec);
         }
 
         return result;
@@ -8222,6 +8250,8 @@ function JSAlgorithm(errorHandler, symbolData)
                 return this.STRCAT6(args[0], args[1],args[2], args[3],args[4], args[5]);
             case "VARCAT":
                 return this.VARCAT(args[0], args[1]);
+            case "VARCAT6":
+                return this.VARCAT6(args[0], args[1],args[2], args[3],args[4], args[5]);
             case "VAR2STR":
                 return this.VAR2STR(args[0], args[1]);
             case 'CON2STR':
