@@ -298,6 +298,28 @@ function JSChart(element)
         }
     }
 
+    this.SetCorssCursorConfig=function(chart, option)
+    {
+        if (!option || !option.CorssCursorInfo) return;
+        var item=option.CorssCursorInfo;
+        if (IFrameSplitOperator.IsNumber(item.Left)) chart.ChartCorssCursor.ShowTextMode.Left = item.Left;
+        if (IFrameSplitOperator.IsNumber(item.Right)) chart.ChartCorssCursor.ShowTextMode.Right = item.Right;
+        if (IFrameSplitOperator.IsNumber(item.Bottom)) chart.ChartCorssCursor.ShowTextMode.Bottom = item.Bottom;
+        if (IFrameSplitOperator.IsBool(item.IsShowCorss)) chart.ChartCorssCursor.IsShowCorss = item.IsShowCorss;
+        if (IFrameSplitOperator.IsNumber(item.HPenType)) chart.ChartCorssCursor.HPenType = item.HPenType;
+        if (IFrameSplitOperator.IsNumber(item.VPenType)) chart.ChartCorssCursor.VPenType = item.VPenType;
+        if (IFrameSplitOperator.IsNumber(item.PriceFormatType)) chart.ChartCorssCursor.StringFormatY.PriceFormatType=item.PriceFormatType;
+        if (IFrameSplitOperator.IsNumber(item.DataFormatType)) chart.ChartCorssCursor.StringFormatY.DataFormatType=item.DataFormatType;
+        if (IFrameSplitOperator.IsBool(item.IsShowCorssPoint)) chart.ChartCorssCursor.CorssPointConfig.Enable=item.IsShowCorssPoint;
+
+        if (item.YDecimals) //Y轴文字小数位数
+        {
+            var subItem=item.YDecimals;
+            if (IFrameSplitOperator.IsNumber(subItem.Value)) chart.ChartCorssCursor.StringFormatY.DecimalsConfig.Value=subItem.Value;
+            if (IFrameSplitOperator.IsNumber(subItem.Type)) chart.ChartCorssCursor.StringFormatY.DecimalsConfig.Type=subItem.Type;
+        }
+    }
+
     //历史K线图
     this.CreateKLineChartContainer = function (option) 
     {
@@ -378,20 +400,12 @@ function JSChart(element)
         if (option.CorssCursorTouchEnd == true) chart.CorssCursorTouchEnd = option.CorssCursorTouchEnd;
         if (option.IsClickShowCorssCursor == true) chart.IsClickShowCorssCursor = option.IsClickShowCorssCursor;
         if (option.IsFullDraw == true) chart.IsFullDraw = option.IsFullDraw;
+
+        this.SetCorssCursorConfig(chart, option);
         if (option.CorssCursorInfo) 
         {
             var item=option.CorssCursorInfo;
-            if (!isNaN(option.CorssCursorInfo.Left)) chart.ChartCorssCursor.ShowTextMode.Left = option.CorssCursorInfo.Left;
-            if (!isNaN(option.CorssCursorInfo.Right)) chart.ChartCorssCursor.ShowTextMode.Right = option.CorssCursorInfo.Right;
-            if (!isNaN(option.CorssCursorInfo.Bottom)) chart.ChartCorssCursor.ShowTextMode.Bottom = option.CorssCursorInfo.Bottom;
-            if (option.CorssCursorInfo.IsShowCorss === false) chart.ChartCorssCursor.IsShowCorss = option.CorssCursorInfo.IsShowCorss;
             if (IFrameSplitOperator.IsBool(item.IsShowClose)) chart.ChartCorssCursor.IsShowClose = item.IsShowClose;    //Y轴显示收盘价
-            if (IFrameSplitOperator.IsNumber(option.CorssCursorInfo.HPenType)) chart.ChartCorssCursor.HPenType = option.CorssCursorInfo.HPenType;
-            if (option.CorssCursorInfo.VPenType > 0) chart.ChartCorssCursor.VPenType = option.CorssCursorInfo.VPenType;
-            if (IFrameSplitOperator.IsNumber(item.DateFormatType)) chart.ChartCorssCursor.StringFormatX.DateFormatType=item.DateFormatType;
-            if (IFrameSplitOperator.IsNumber(item.PriceFormatType)) chart.ChartCorssCursor.StringFormatY.PriceFormatType=item.PriceFormatType;
-            if (IFrameSplitOperator.IsNumber(item.DataFormatType)) chart.ChartCorssCursor.StringFormatY.DataFormatType=item.DataFormatType;
-            if (IFrameSplitOperator.IsBool(item.IsShowCorssPoint)) chart.ChartCorssCursor.CorssPointConfig.Enable=item.IsShowCorssPoint;
         }
 
         if (typeof (option.UpdateUICallback) == 'function') //数据到达回调
@@ -659,21 +673,14 @@ function JSChart(element)
         if (option.CorssCursorTouchEnd == true) chart.CorssCursorTouchEnd = option.CorssCursorTouchEnd;
         if (IFrameSplitOperator.IsBool(option.IsClickShowCorssCursor)) chart.IsClickShowCorssCursor = option.IsClickShowCorssCursor;
         if (option.IsFullDraw == true) chart.IsFullDraw = option.IsFullDraw;
+
+        this.SetCorssCursorConfig(chart, option);
         if (option.CorssCursorInfo)     //十字光标设置
         {
             var item=option.CorssCursorInfo;
-            if (!isNaN(option.CorssCursorInfo.Left)) chart.ChartCorssCursor.ShowTextMode.Left = option.CorssCursorInfo.Left;
-            if (!isNaN(option.CorssCursorInfo.Right)) chart.ChartCorssCursor.ShowTextMode.Right = option.CorssCursorInfo.Right;
-            if (!isNaN(option.CorssCursorInfo.Bottom)) chart.ChartCorssCursor.ShowTextMode.Bottom = option.CorssCursorInfo.Bottom;
-            if (option.CorssCursorInfo.IsShowCorss === false) chart.ChartCorssCursor.IsShowCorss = option.CorssCursorInfo.IsShowCorss;
             if (IFrameSplitOperator.IsBool(option.CorssCursorInfo.IsFixXLastTime)) chart.ChartCorssCursor.IsFixXLastTime=option.CorssCursorInfo.IsFixXLastTime;
-            if (IFrameSplitOperator.IsNumber(item.PriceFormatType)) chart.ChartCorssCursor.StringFormatY.PriceFormatType=item.PriceFormatType;
-            if (IFrameSplitOperator.IsNumber(item.DataFormatType)) chart.ChartCorssCursor.StringFormatY.DataFormatType=item.DataFormatType;
             if (IFrameSplitOperator.IsNumber(item.RightTextFormat)) chart.ChartCorssCursor.TextFormat.Right=item.RightTextFormat;
             if (IFrameSplitOperator.IsBool(item.IsOnlyDrawMinute)) chart.ChartCorssCursor.IsOnlyDrawMinute = item.IsOnlyDrawMinute;    //Y轴显示收盘价
-            if (IFrameSplitOperator.IsNumber(item.HPenType)) chart.ChartCorssCursor.HPenType=item.HPenType;
-            if (IFrameSplitOperator.IsNumber(item.VPenType)) chart.ChartCorssCursor.VPenType=item.VPenType;
-            if (IFrameSplitOperator.IsBool(item.IsShowCorssPoint)) chart.ChartCorssCursor.CorssPointConfig.Enable=item.IsShowCorssPoint;
         }
 
         if (option.MinuteInfo) chart.CreateMinuteInfo(option.MinuteInfo);
@@ -6036,6 +6043,7 @@ function KLineChartContainer(uielement)
         this.ChartCorssCursor.StringFormatY = g_DivTooltipDataForamt.Create("CorssCursor_YStringFormat");
         this.ChartCorssCursor.StringFormatY.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
         this.ChartCorssCursor.StringFormatY.LanguageID = this.LanguageID;
+        this.ChartCorssCursor.StringFormatY.HQChart=this;
         this.ChartCorssCursor.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
 
         //创建等待提示
@@ -10124,6 +10132,7 @@ function MinuteChartContainer(uielement)
         this.ChartCorssCursor.StringFormatY = g_DivTooltipDataForamt.Create("CorssCursor_YStringFormat");
         this.ChartCorssCursor.StringFormatY.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
         this.ChartCorssCursor.StringFormatY.LanguageID = this.LanguageID;
+        this.ChartCorssCursor.StringFormatY.HQChart=this;
         this.ChartCorssCursor.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
         this.ChartCorssCursor.HQChart=this;
 

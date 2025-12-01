@@ -2245,6 +2245,8 @@ function HQPriceStringFormat()
     this.PriceFormatType=0; //主窗口格式    0=默认 1=科学计数
     this.DataFormatType=0;  //副图指标格式   0=默认 1=科学计数
 
+    this.DecimalsConfig={ Value:2, Type:0 };        //小数设置, Value:小数位数 , Type: 0=默认 1=跟指标标题一致
+
     this.Operator = function () 
     {
         this.RText = null;
@@ -2253,7 +2255,7 @@ function HQPriceStringFormat()
         if (IFrameSplitOperator.IsString(this.RValue)) this.RText = this.RValue;
         if (!this.Value) return false;
 
-        var defaultfloatPrecision = 2;     //价格小数位数 
+        var defaultfloatPrecision = this.DecimalsConfig.Value;     //价格小数位数 
         if (this.FrameID == 0)    //第1个窗口显示原始价格
         {
             var defaultfloatPrecision = JSCommonCoordinateData.GetfloatPrecision(this.Symbol);
@@ -2267,6 +2269,7 @@ function HQPriceStringFormat()
         }
         else 
         {
+            defaultfloatPrecision=this.GetIndexTitleFloatPrecision(this.FrameID);
             if (this.DataFormatType==1)
             {
                 this.Text=IFrameSplitOperator.FormatValueThousandsString(this.Value,defaultfloatPrecision);
@@ -2291,6 +2294,23 @@ function HQPriceStringFormat()
         }
 
         return true;
+    }
+
+    //获取指标标题小数位数
+    this.GetIndexTitleFloatPrecision=function(frameID)
+    {
+        var dec=this.DecimalsConfig.Value;
+        if (this.DecimalsConfig.Type===0) return dec;
+
+        if (frameID<0) return dec;
+        if (!this.HQChart) return dec;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.HQChart.WindowIndex)) return dec;
+        var item=this.HQChart.WindowIndex[frameID];
+        if (!item) return dec;
+
+        if (IFrameSplitOperator.IsNumber(item.FloatPrecision)) dec=item.FloatPrecision;
+
+        return dec;
     }
 }
   

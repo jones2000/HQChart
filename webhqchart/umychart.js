@@ -283,6 +283,49 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         if (IFrameSplitOperator.IsNumber(item.Count)) klineChart.PriceGap.Count=item.Count;
     }
 
+    //设置十字光标
+    this.SetCorssCursorConfig=function(chart, option)
+    {
+        if (!option || !option.CorssCursorInfo) return;
+
+        var item=option.CorssCursorInfo;
+        if (IFrameSplitOperator.IsNumber(item.Left)) chart.ChartCorssCursor.ShowTextMode.Left=item.Left;
+        if (IFrameSplitOperator.IsNumber(item.Right)) chart.ChartCorssCursor.ShowTextMode.Right=item.Right;
+        if (IFrameSplitOperator.IsNumber(item.Bottom)) chart.ChartCorssCursor.ShowTextMode.Bottom=item.Bottom;
+
+        if (IFrameSplitOperator.IsBool(item.IsShowCorss)) chart.ChartCorssCursor.IsShowCorss=item.IsShowCorss;
+
+        if (IFrameSplitOperator.IsNumber(item.HPenType)) chart.ChartCorssCursor.HPenType=item.HPenType;
+        if (IFrameSplitOperator.IsNumber(item.VPenType)) chart.ChartCorssCursor.VPenType=item.VPenType;
+        if (IFrameSplitOperator.IsNumber(item.VLineType)) chart.ChartCorssCursor.VLineType=item.VLineType;
+        
+        if (item.RightButton)
+        {
+            if (IFrameSplitOperator.IsBool(item.RightButton.Enable)) chart.ChartCorssCursor.RightButton.Enable=item.RightButton.Enable;
+        }
+
+        if (item.BottomButton)
+        {
+            var subItem=item.BottomButton;
+            if (IFrameSplitOperator.IsBool(subItem.Enable)) chart.ChartCorssCursor.BottomButton.Enable=subItem.Enable;
+        }
+
+        if (IFrameSplitOperator.IsNumber(item.PriceFormatType)) chart.ChartCorssCursor.StringFormatY.PriceFormatType=item.PriceFormatType;
+        if (IFrameSplitOperator.IsNumber(item.DataFormatType)) chart.ChartCorssCursor.StringFormatY.DataFormatType=item.DataFormatType;
+
+        if (IFrameSplitOperator.IsBool(item.EnableKeyboard)) chart.ChartCorssCursor.EnableKeyboard=item.EnableKeyboard;
+        if (IFrameSplitOperator.IsBool(item.EnableDBClick)) chart.ChartCorssCursor.EnableDBClick=item.EnableDBClick;
+
+        if (IFrameSplitOperator.IsBool(item.IsShowCorssPoint)) chart.ChartCorssCursor.CorssPointConfig.Enable=item.IsShowCorssPoint;
+
+        if (item.YDecimals) //Y轴文字小数位数
+        {
+            var subItem=item.YDecimals;
+            if (IFrameSplitOperator.IsNumber(subItem.Value)) chart.ChartCorssCursor.StringFormatY.DecimalsConfig.Value=subItem.Value;
+            if (IFrameSplitOperator.IsNumber(subItem.Type)) chart.ChartCorssCursor.StringFormatY.DecimalsConfig.Type=subItem.Type;
+        }
+    }
+
     //历史K线图
     this.CreateKLineChartContainer=function(option)
     {
@@ -536,48 +579,23 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         if (option.IsCorssOnlyDrawKLine===true) chart.ChartCorssCursor.IsOnlyDrawKLine=option.IsCorssOnlyDrawKLine;
         if (option.CorssCursorTouchEnd===true) chart.CorssCursorTouchEnd = option.CorssCursorTouchEnd;
         if (option.IsClickShowCorssCursor==true) chart.IsClickShowCorssCursor=option.IsClickShowCorssCursor;
-        if (option.CorssCursorInfo)
+        this.SetCorssCursorConfig(chart, option);
+        if (option.CorssCursorInfo) //十字光标K线上的属性设置
         {
             var item=option.CorssCursorInfo;
-            if (!isNaN(option.CorssCursorInfo.Left)) chart.ChartCorssCursor.ShowTextMode.Left=option.CorssCursorInfo.Left;
-            if (!isNaN(option.CorssCursorInfo.Right)) chart.ChartCorssCursor.ShowTextMode.Right=option.CorssCursorInfo.Right;
-            if (!isNaN(option.CorssCursorInfo.Bottom)) chart.ChartCorssCursor.ShowTextMode.Bottom=option.CorssCursorInfo.Bottom;
-            if (option.CorssCursorInfo.IsShowCorss===false) chart.ChartCorssCursor.IsShowCorss=option.CorssCursorInfo.IsShowCorss;
             if (IFrameSplitOperator.IsBool(item.IsShowClose)) chart.ChartCorssCursor.IsShowClose = item.IsShowClose;    //Y轴显示收盘价
             if (IFrameSplitOperator.IsBool(item.IsOnlyDrawKLine)) chart.ChartCorssCursor.IsOnlyDrawKLine = item.IsOnlyDrawKLine;    //Y轴显示收盘价
             if (option.CorssCursorInfo.PressTime) chart.PressTime=option.CorssCursorInfo.PressTime; //长按显示十字光标的时间
-            if (IFrameSplitOperator.IsNumber(option.CorssCursorInfo.HPenType)) chart.ChartCorssCursor.HPenType=option.CorssCursorInfo.HPenType;
-            if (option.CorssCursorInfo.VPenType>0) chart.ChartCorssCursor.VPenType=option.CorssCursorInfo.VPenType;
-            if (IFrameSplitOperator.IsNumber(item.VLineType)) chart.ChartCorssCursor.VLineType=item.VLineType;
             if (option.CorssCursorInfo.DateFormatType>0) chart.ChartCorssCursor.StringFormatX.DateFormatType=option.CorssCursorInfo.DateFormatType;
             if (IFrameSplitOperator.IsBool(item.IsDrawXRangeBG)) chart.ChartCorssCursor.IsDrawXRangeBG=item.IsDrawXRangeBG;
             if (IFrameSplitOperator.IsBool(option.CorssCursorInfo.IsFixXLastTime)) chart.ChartCorssCursor.IsFixXLastTime=option.CorssCursorInfo.IsFixXLastTime;
             if (IFrameSplitOperator.IsNumber(item.TextHeight)) chart.ChartCorssCursor.TextHeight=item.TextHeight;
-            
-            if (item.RightButton)
-            {
-                if (IFrameSplitOperator.IsBool(item.RightButton.Enable)) chart.ChartCorssCursor.RightButton.Enable=item.RightButton.Enable;
-            }
-
-            if (item.BottomButton)
-            {
-                var subItem=item.BottomButton;
-                if (IFrameSplitOperator.IsBool(subItem.Enable)) chart.ChartCorssCursor.BottomButton.Enable=subItem.Enable;
-            }
-
-            if (IFrameSplitOperator.IsNumber(item.PriceFormatType)) chart.ChartCorssCursor.StringFormatY.PriceFormatType=item.PriceFormatType;
-            if (IFrameSplitOperator.IsNumber(item.DataFormatType)) chart.ChartCorssCursor.StringFormatY.DataFormatType=item.DataFormatType;
-            if (IFrameSplitOperator.IsBool(item.EnableKeyboard)) chart.ChartCorssCursor.EnableKeyboard=item.EnableKeyboard;
-            if (IFrameSplitOperator.IsBool(item.EnableDBClick)) chart.ChartCorssCursor.EnableDBClick=item.EnableDBClick;
-
-            if (IFrameSplitOperator.IsBool(item.IsShowCorssPoint)) chart.ChartCorssCursor.CorssPointConfig.Enable=item.IsShowCorssPoint;
 
             if (item.RangeIncrease)
             {
                 var subItem=item.RangeIncrease;
                 if (IFrameSplitOperator.IsBool(subItem.IsShow)) chart.ChartCorssCursor.StringFormatX.RangeIncrease.IsShow=subItem.IsShow;
                 if (IFrameSplitOperator.IsNumber(subItem.Formula)) chart.ChartCorssCursor.StringFormatX.RangeIncrease.Formula=subItem.Formula;
-
             }
         }
 
@@ -1105,38 +1123,14 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         if (option.PageInfo) chart.SetPageInfo(option.PageInfo);
 
         chart.Create(windowsCount,option);                            //创建子窗口
-
-        if (option.CorssCursorInfo)
+        this.SetCorssCursorConfig(chart, option);
+        if (option.CorssCursorInfo) //分时图十字光标属性设置
         {
             var item=option.CorssCursorInfo;
-            if (!isNaN(option.CorssCursorInfo.Left)) chart.ChartCorssCursor.ShowTextMode.Left=option.CorssCursorInfo.Left;
-            if (!isNaN(option.CorssCursorInfo.Right)) chart.ChartCorssCursor.ShowTextMode.Right=option.CorssCursorInfo.Right;
-            if (!isNaN(option.CorssCursorInfo.Bottom)) chart.ChartCorssCursor.ShowTextMode.Bottom=option.CorssCursorInfo.Bottom;
-            if (option.CorssCursorInfo.IsShowCorss===false) chart.ChartCorssCursor.IsShowCorss=option.CorssCursorInfo.IsShowCorss;
+           
             if (option.CorssCursorInfo.RightTextFormat>0) chart.ChartCorssCursor.TextFormat.Right=option.CorssCursorInfo.RightTextFormat;
             if (option.CorssCursorInfo.IsOnlyDrawMinute == true) chart.ChartCorssCursor.IsOnlyDrawMinute = option.CorssCursorInfo.IsOnlyDrawMinute;    //Y轴显示收盘价
             if (IFrameSplitOperator.IsBool(option.CorssCursorInfo.IsFixXLastTime)) chart.ChartCorssCursor.IsFixXLastTime=option.CorssCursorInfo.IsFixXLastTime;
-
-            if (item.RightButton)
-            {
-                if (IFrameSplitOperator.IsBool(item.RightButton.Enable)) chart.ChartCorssCursor.RightButton.Enable=item.RightButton.Enable;
-            } 
-
-            if (item.BottomButton)
-            {
-                var subItem=item.BottomButton;
-                if (IFrameSplitOperator.IsBool(subItem.Enable)) chart.ChartCorssCursor.BottomButton.Enable=subItem.Enable;
-            }
-
-            if (IFrameSplitOperator.IsNumber(item.PriceFormatType)) chart.ChartCorssCursor.StringFormatY.PriceFormatType=item.PriceFormatType;
-            if (IFrameSplitOperator.IsNumber(item.DataFormatType)) chart.ChartCorssCursor.StringFormatY.DataFormatType=item.DataFormatType;
-
-            if (IFrameSplitOperator.IsNumber(item.HPenType)) chart.ChartCorssCursor.HPenType=item.HPenType;
-            if (IFrameSplitOperator.IsNumber(item.VPenType)) chart.ChartCorssCursor.VPenType=item.VPenType;
-            if (IFrameSplitOperator.IsBool(item.EnableKeyboard)) chart.ChartCorssCursor.EnableKeyboard=item.EnableKeyboard;
-            if (IFrameSplitOperator.IsBool(item.EnableDBClick)) chart.ChartCorssCursor.EnableDBClick=item.EnableDBClick;
-            if (IFrameSplitOperator.IsBool(item.IsShowCorssPoint)) chart.ChartCorssCursor.CorssPointConfig.Enable=item.IsShowCorssPoint;
-            if (IFrameSplitOperator.IsNumber(item.VLineType)) chart.ChartCorssCursor.VLineType=item.VLineType;
 
             if (item.TextStyle)
             {
@@ -60797,6 +60791,7 @@ function HQPriceStringFormat()
 
     this.PriceFormatType=0; //主窗口格式    0=默认 1=科学计数
     this.DataFormatType=0;  //副图指标格式   0=默认 1=科学计数
+    this.DecimalsConfig={ Value:2, Type:0 };        //小数设置, Value:小数位数 , Type: 0=默认 1=跟指标标题一致
 
     this.GetEventCallback
 
@@ -60895,7 +60890,7 @@ function HQPriceStringFormat()
         if (!this.Value) return false;
 
         this.PercentageText=null;
-        var defaultfloatPrecision=2;     //价格小数位数 
+        var defaultfloatPrecision=this.DecimalsConfig.Value;     //价格小数位数 
         if (this.FrameID==0)    //第1个窗口显示原始价格
         {
             var defaultfloatPrecision=GetfloatPrecision(this.Symbol);
@@ -60944,6 +60939,7 @@ function HQPriceStringFormat()
         }
         else if (this.FrameID==1)
         {
+            defaultfloatPrecision=this.GetIndexTitleFloatPrecision(this.FrameID);
             if (this.DataFormatType==1)
             {
                 this.Text=IFrameSplitOperator.FormatValueThousandsString(this.Value,defaultfloatPrecision);
@@ -60976,6 +60972,7 @@ function HQPriceStringFormat()
         }
         else
         {
+            defaultfloatPrecision=this.GetIndexTitleFloatPrecision(this.FrameID);
             if (this.DataFormatType==1) this.Text=IFrameSplitOperator.FormatValueThousandsString(this.Value,defaultfloatPrecision);
             else this.Text=IFrameSplitOperator.FormatValueString(this.Value,defaultfloatPrecision,this.LanguageID);
             if (IFrameSplitOperator.IsNumber(this.RValue)) this.RText=IFrameSplitOperator.FormatValueString(this.RValue,defaultfloatPrecision,this.LanguageID);
@@ -61019,6 +61016,23 @@ function HQPriceStringFormat()
         }
 
         return true;
+    }
+
+    //获取指标标题小数位数
+    this.GetIndexTitleFloatPrecision=function(frameID)
+    {
+        var dec=this.DecimalsConfig.Value;
+        if (this.DecimalsConfig.Type===0) return dec;
+
+        if (frameID<0) return dec;
+        if (!this.HQChart) return dec;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.HQChart.WindowIndex)) return dec;
+        var item=this.HQChart.WindowIndex[frameID];
+        if (!item) return dec;
+
+        if (IFrameSplitOperator.IsNumber(item.FloatPrecision)) dec=item.FloatPrecision;
+
+        return dec;
     }
 
     //深度图刻度
