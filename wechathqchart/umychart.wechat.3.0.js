@@ -12439,6 +12439,17 @@ function KLineChartHScreenContainer(uielement)
                     }
                 }, jsChart.PressTime);
             }
+
+            if (this.EnableClickModel)
+            {
+                //if (this.ClickModel.IsShowCorssCursor===true) this.MoveCorssCursor(drag.Click,e)
+            }
+            else if (jsChart.IsClickShowCorssCursor) 
+            {
+                var x = drag.Click.X;
+                var y = drag.Click.Y;
+                jsChart.OnMouseMove(x, y, e,true);
+            }
            
         }
         else if (this.IsPhonePinching(e)) 
