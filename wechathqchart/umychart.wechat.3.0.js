@@ -6109,7 +6109,7 @@ function KLineChartContainer(uielement)
                 frame.YSplitOperator = new FrameSplitKLinePriceY();
                 frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('price');
                 frame.YSplitOperator.FrameSplitData2 = this.FrameSplitData.get('double');
-                frame.YSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+               
                 frame.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
                 border.BottomSpace = 12;  //主图上下留空间
                 border.TopSpace = 12;
@@ -6119,9 +6119,9 @@ function KLineChartContainer(uielement)
                 frame.YSplitOperator = new FrameSplitY();
                 frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('double');
                 frame.YSplitOperator.LanguageID = this.LanguageID;
-                frame.YSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
             }
 
+            frame.YSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
             frame.YSplitOperator.Frame = frame;
             frame.YSplitOperator.ChartBorder = border;
             frame.XSplitOperator = new FrameSplitKLineX();
@@ -10203,7 +10203,6 @@ function MinuteChartContainer(uielement)
             {
                 frame.YSplitOperator = new FrameSplitMinutePriceY();
                 frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('price');
-                frame.YSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
                 frame.YSplitOperator.HQChart=this;
             }
             else 
@@ -10211,9 +10210,9 @@ function MinuteChartContainer(uielement)
                 frame.YSplitOperator = new FrameSplitY();
                 frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('double');
                 frame.YSplitOperator.LanguageID = this.LanguageID;
-                frame.YSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
             }
 
+            frame.YSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
             frame.YSplitOperator.Frame = frame;
             frame.YSplitOperator.ChartBorder = border;
             frame.XSplitOperator = new FrameSplitMinuteX();
@@ -12762,6 +12761,7 @@ function KLineChartHScreenContainer(uielement)
             }
 
             frame.YSplitOperator.Frame = frame;
+            frame.YSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
             frame.YSplitOperator.ChartBorder = border;
             frame.XSplitOperator = new FrameSplitKLineX();
             frame.XSplitOperator.Frame = frame;
@@ -12923,6 +12923,7 @@ function MinuteChartHScreenContainer(uielement)
                 frame.YSplitOperator.FrameSplitData = this.FrameSplitData.get('double');
             }
 
+            frame.YSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
             frame.YSplitOperator.Frame = frame;
             frame.YSplitOperator.ChartBorder = border;
             frame.XSplitOperator = new FrameSplitMinuteX();

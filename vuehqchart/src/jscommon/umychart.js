@@ -7076,7 +7076,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         {
             var item=this.OverlayChartPaint[i];
             if (!item) continue;
-            if (item.YInfoType!=4) continue;
+            if (item.YInfoConfig.Type===0) continue;
             var data=item.Data;
             if (!data || !IFrameSplitOperator.IsNonEmptyArray(data.Data)) continue;
             if (!IFrameSplitOperator.IsNumber(item.DrawKRange.Start) || !IFrameSplitOperator.IsNumber(item.DrawKRange.End)) continue;
@@ -7096,15 +7096,29 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             
             var endKLine=data.Data[item.DrawKRange.End];
             var value=(endKLine.Close-startKLine.Close)/startKLine.Close*100;
-
+            var text="";
+            if (item.YInfoConfig.Type===3)
+            {
+                var dec=GetfloatPrecision(item.Symbol);   //小数位数
+                text=endKLine.Close.toFixed(dec);
+            }
+            else if (item.YInfoConfig.Type===4)
+            {
+                text=value.toFixed(2)+"%";
+            }
+            else
+            {
+                continue;
+            }
+            
             var info=new CoordinateInfo();
             info.Value=endKLine.Close/item.ShowRange.FirstOverlayOpen*item.ShowRange.FirstOpen;
-            info.Message[1]=value.toFixed(2)+"%";
+            info.Message[1]=text
             info.LineType=-1;
-            info.Type=item.YInfoType;    //叠加股票
+            info.Type=4;    //叠加股票
             info.LineColor=item.Color;
             info.TextColor=g_JSChartResource.FrameLatestPrice.OverlayTextColor;
-            if (item.Title) info.Title=item.Title;
+            if (item.Title && item.YInfoConfig.IsShowName) info.Title=item.Title;
             frame.CustomHorizontalInfo.push(info);
         }
     }
@@ -27590,6 +27604,7 @@ function IChartPainting()
         var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
         var chartright=border.RightEx;
         var xPointCount=this.ChartFrame.XPointCount;
+        if (!this.Data || !IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return null;
 
         if (isHScreen) 
         {
@@ -33926,13 +33941,19 @@ function ChartOverlayKLine()
     this.CloseLineWidth=g_JSChartResource.CloseLineWidth;
     this.ShowRange={ };     //K线显示范围 { Start:, End:,  DataCount:, ShowCount: }
     this.DrawKRange={ Start:null, End:null };       //当前屏K线的索引{ Start: , End:}
-    this.YInfoType=4;
+    this.YInfoConfig={ Type:0, IsShowName:false }    //右侧Y轴自定刻度设置 0不显示  3=名字|最新价  4=名字|涨幅
 
     this.SetOption=function(option)
     {
         if (!option) return;
         if (IFrameSplitOperator.IsNumber(option.DrawType)) this.CustomDrawType=option.DrawType;
-        if (IFrameSplitOperator.IsNumber(option.YInfoType)) this.YInfoType=option.YInfoType;
+        if (IFrameSplitOperator.IsNumber(option.YInfoType)) this.YInfoConfig.Type=option.YInfoType;
+        if (option.YInfo)
+        {
+            var item=option.YInfo;
+            if (IFrameSplitOperator.IsNumber(item.Type)) this.YInfoConfig.Type=item.Type;
+            if (IFrameSplitOperator.IsBool(item.IsShowName)) this.YInfoConfig.IsShowName=item.IsShowName;
+        }
     }
 
     this.DrawKBar=function(firstOpen)   //firstOpen 当前屏第1个显示数据
@@ -88046,8 +88067,15 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             {
                 Name:'KLineChartContainer::RequestOverlayHistoryData', //类名::
                 Explain:'叠加股票日K线数据',
-                Request:{ Url:self.KLineApiUrl, Data: { symbol: symbol, count: dataCount.MaxRequestDataCount,"first":{ date: firstDate },
-                    field:["name","symbol","yclose","open","price","high",'vol','amount'] }, Type:'POST' }, 
+                Request:
+                { 
+                    Url:self.KLineApiUrl, 
+                    Data: 
+                    { 
+                        symbol: symbol, period:this.Period, count: dataCount.MaxRequestDataCount, first:{ date: firstDate },
+                        Main:{ Symbol:this.Symbol, Period:this.Period, Right:this.Right }
+                    }, 
+                },
                 Self:this,
                 PreventDefault:false
             };
@@ -88139,8 +88167,15 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             {
                 Name:'KLineChartContainer::RequestOverlayHistoryMinuteData', //类名::
                 Explain:'叠加股票分钟K线数据',
-                Request:{ Url:self.MinuteKLineApiUrl, Data: { symbol: symbol, count: dataCount.MaxRequestMinuteDayCount,"first":{ date: firstDate, time:firstTime },
-                    field:["name","symbol","yclose","open","price","high",'vol','amount'] }, Type:'POST' }, 
+                Request:
+                { 
+                    Url:self.MinuteKLineApiUrl, 
+                    Data: 
+                    { 
+                        symbol: symbol, period:this.Period, count: dataCount.MaxRequestMinuteDayCount, first:{ date: firstDate, time:firstTime },
+                        Main:{ Symbol:this.Symbol, Period:this.Period, Right:this.Right }
+                    }, 
+                }, 
                 Self:this,
                 PreventDefault:false
             };
