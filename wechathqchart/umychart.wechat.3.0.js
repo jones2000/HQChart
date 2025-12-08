@@ -2890,19 +2890,28 @@ function JSChartContainer(uielement)
 
     this.UpdatePointByCursorIndex = function () 
     {
-        this.LastPoint.X = this.Frame.GetXFromIndex(this.CursorIndex);
-
+        var x=null, y=null;
+        x= this.Frame.GetXFromIndex(this.CursorIndex);
         var index = Math.abs(this.CursorIndex - 0.5);
         index = parseInt(index.toFixed(0));
         if (this.ClassName == 'KLineChartContainer') index = this.CursorIndex;
         var data = this.Frame.Data;
-        if (data.DataOffset + index >= data.Data.length) 
+        if (data.DataOffset + index < data.Data.length) 
         {
-            return;
+            var close=data.Data[data.DataOffset + index].Close;
+            y=this.Frame.GetYFromData(close);
         }
-        var close = data.Data[data.DataOffset + index].Close;
 
-        this.LastPoint.Y = this.Frame.GetYFromData(close);
+        if (this.ClassName=="KLineChartHScreenContainer" || this.ClassName=="MinuteChartHScreenContainer")
+        {   //横屏坐标互换下
+            this.LastPoint.Y=x;
+            if (IFrameSplitOperator.IsNumber(y)) this.LastPoint.X=y;
+        }
+        else
+        {
+            this.LastPoint.X=x;
+            if (IFrameSplitOperator.IsNumber(y)) this.LastPoint.Y=y;
+        }
     }
 
     this.ResetFrameXYSplit = function () 

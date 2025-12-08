@@ -8592,6 +8592,13 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         return false;
     }
 
+    this.IsHScreenModel=function()
+    {
+        if (this.ClassName=="KLineChartHScreenContainer" || this.ClassName=="MinuteChartHScreenContainer") return true;
+
+        return false;
+    }
+
     this.UpdatePointByCursorIndex=function(type)    //type 1=根据十字光标更新 2=强制取消十字光标
     {
         if (type==1)    //根据十字光标更新
@@ -8612,8 +8619,18 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                     pt.X=null;
                 }
             }
-            this.LastPoint.X=pt.X;
-            this.LastPoint.Y=pt.Y;
+
+            if (this.IsHScreenModel())
+            {
+                this.LastPoint.X=pt.Y;
+                this.LastPoint.Y=pt.X;
+            }
+            else
+            {
+                this.LastPoint.X=pt.X;
+                this.LastPoint.Y=pt.Y;
+            }
+            
         }
         else if (type==2)
         {
@@ -8633,8 +8650,18 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 pt.Y=this.Frame.GetYFromData(close);
                 this.LastPoint.FrameID=0;
             }
-            this.LastPoint.X=pt.X;
-            this.LastPoint.Y=pt.Y;
+
+            if (this.IsHScreenModel())
+            {
+                this.LastPoint.X=pt.Y;
+                this.LastPoint.Y=pt.X;
+            }
+            else
+            {
+                this.LastPoint.X=pt.X;
+                this.LastPoint.Y=pt.Y;
+            }
+            
         }
     }
 
@@ -79471,6 +79498,13 @@ function JSChartResource()
             CloseColor:"rgb(30,144,255)",
             YCloseColor:"rgba(105,105,105,0.5)",  //昨收线
             AreaColor:'rgba(0,191,255,0.2)',
+
+            UpColor:"rgb(255,0,0)",
+            UpAreaColor:"rgba(255,0,0,0.5)",
+            DownColor:"rgb(0,128,0)",
+            DownAreaColor:"rgba(0,128,0,0.5)",
+            UnchangeColor:'rgb(90,90,90)', 
+            UnchangeAreaColor:'rgba(90,90,90,0.5)', 
         },
 
         KLine:
@@ -80869,6 +80903,13 @@ function JSChartResource()
             if (closeLine.CloseColor) this.Report.CloseLine.CloseColor=closeLine.CloseColor;
             if (closeLine.YCloseColor) this.Report.CloseLine.YCloseColor=closeLine.YCloseColor;
             if (closeLine.AreaColor) this.Report.CloseLine.AreaColor=closeLine.AreaColor;
+
+            if (closeLine.UpColor) this.Report.CloseLine.UpColor=closeLine.UpColor;
+            if (closeLine.UpAreaColor) this.Report.CloseLine.UpAreaColor=closeLine.UpAreaColor;
+            if (closeLine.DownColor) this.Report.CloseLine.DownColor=closeLine.DownColor;
+            if (closeLine.DownAreaColor) this.Report.CloseLine.DownAreaColor=closeLine.DownAreaColor;
+            if (closeLine.UnchangeColor) this.Report.CloseLine.UnchangeColor=closeLine.UnchangeColor;
+            if (closeLine.UnchangeAreaColor) this.Report.CloseLine.UnchangeAreaColor=closeLine.UnchangeAreaColor;
         }
 
         if (item.KLine)
@@ -93617,21 +93658,31 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
     this.UpdatePointByCursorIndex=function()
     {
-        this.LastPoint.X=this.Frame.GetXFromIndex(this.CursorIndex);
+        var x=null, y=null;
+        x=this.Frame.GetXFromIndex(this.CursorIndex);
 
         var index=this.CursorIndex;
         index=parseInt(index.toFixed(0));
         var data=this.GetKData();
-        if (data.DataOffset+index>=data.Data.length)
+        if (data.DataOffset+index<data.Data.length)
         {
-            return;
+            var item=data.Data[data.DataOffset+index];
+            var close=null;
+            if (item.Before) close=item.Before.Close;
+            else close=item.Close;
+            y=this.Frame.GetYFromData(close);
         }
-        var item=data.Data[data.DataOffset+index];
-        var close=null;
-        if (item.Before) close=item.Before.Close;
-        else close=item.Close
 
-        this.LastPoint.Y=this.Frame.GetYFromData(close);
+        if (this.IsHScreenModel())
+        {
+            this.LastPoint.X=y;
+            this.LastPoint.Y=x;
+        }
+        else
+        {
+            this.LastPoint.X=x;
+            this.LastPoint.Y=y;
+        }
         this.LastPoint.FrameID=0;
     }
 

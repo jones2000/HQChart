@@ -281,6 +281,23 @@ TOKEN_NAME[8 /* StringLiteral */] = 'String';
 TOKEN_NAME[9 /* RegularExpression */] = 'RegularExpression';
 TOKEN_NAME[10 /* Template */] = 'Template';
 
+//DYNAINFO() 转换
+//["DYNA_NOW",null],  //DYNA_NOW  现价 DYNAINFO(7) 即时行情数据 没有现价时(比如在开盘前),返回昨收盘价
+//["DYNA_ZAF",null],  //DYNA_ZAF 涨幅 DYNAINFO(14)  即时行情数据(沪深京早盘竞价期间使用匹配价的涨幅) 转换成幅度需要乘100
+//["DYNA_LB", null],  //DYNA_LB   DYNAINFO(17)    量比 即时行情数据
+//["DYNA_ZAS",null],  //DYNA_ZAS  DYNAINFO(24)  返回涨速 报价界面行情数据 转换成幅度需要乘100
+//["SELLVOL", null], //返回内盘,即DYNAINFO(22) 即时行情数据
+//["BUYVOL", null],  //返回外盘,即DYNAINFO(21) 即时行情数据
+const MAP_DYNAINFO_SHORTCUT=new Map(
+    [
+        ['DYNA_NOW', { Name:"DYNA_NOW", ID:7 } ],
+        ['DYNA_LB',  { Name:"DYNA_LB", ID:17 } ],
+        ['DYNA_ZAS', { Name:"DYNA_ZAS", ID:24 } ],
+        ['SELLVOL',  { Name:"SELLVOL", ID:22 }],
+        ['BUYVOL',  { Name:"BUYVOL", ID:21 } ],
+    ]
+);
+
 //编译异常, 错误类
 function ErrorHandler()
 {
@@ -1166,6 +1183,14 @@ function Node()
             var item={ ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_VARIANT, VariantName:varName };
             if (token) item.Token={ Index:token.Start, Line:token.LineNumber };
             this.FunctionData.push(item);
+            return;
+        }
+
+        if (MAP_DYNAINFO_SHORTCUT.has(varName))
+        {
+            var item=MAP_DYNAINFO_SHORTCUT.get(varName);
+            var item={ ID:JS_EXECUTE_JOB_ID.JOB_DOWNLOAD_SYMBOL_LATEST_DATA, Args:[item.ID], FunctionName:varName };
+            this.Dynainfo.push(item);
             return;
         }
 
@@ -9767,16 +9792,16 @@ function JSSymbolData(ast,option,jsExecute)
         let stock=data.stock[0];
         if (!stock) return;
 
-        if (IFrameSplitOperator.IsNumber(stock.yclose)) this.LatestData.set(DYNAINFO_ARGUMENT_ID.YCLOSE,stock.yclose);
-        if (IFrameSplitOperator.IsNumber(stock.open)) this.LatestData.set(DYNAINFO_ARGUMENT_ID.OPEN,stock.open);
-        if (IFrameSplitOperator.IsNumber(stock.high)) this.LatestData.set(DYNAINFO_ARGUMENT_ID.HIGH,stock.high);
-        if (IFrameSplitOperator.IsNumber(stock.low)) this.LatestData.set(DYNAINFO_ARGUMENT_ID.LOW,stock.low);
-        if (IFrameSplitOperator.IsNumber(stock.price)) this.LatestData.set(DYNAINFO_ARGUMENT_ID.CLOSE,stock.price);
-        if (IFrameSplitOperator.IsNumber(stock.vol)) this.LatestData.set(DYNAINFO_ARGUMENT_ID.VOL,stock.vol);
-        if (IFrameSplitOperator.IsNumber(stock.amount)) this.LatestData.set(DYNAINFO_ARGUMENT_ID.AMOUNT,stock.amount);
-        if (IFrameSplitOperator.IsNumber(stock.increase)) this.LatestData.set(DYNAINFO_ARGUMENT_ID.INCREASE,stock.increase);
-        if (IFrameSplitOperator.IsNumber(stock.exchangerate)) this.LatestData.set(DYNAINFO_ARGUMENT_ID.EXCHANGERATE,stock.exchangerate);
-        if (IFrameSplitOperator.IsNumber(stock.amplitude)) this.LatestData.set(DYNAINFO_ARGUMENT_ID.AMPLITUDE,stock.amplitude);
+        if (IFrameSplitOperator.IsNumber(stock.yclose)) this.LatestData.set(this.GetLatestDataKey(DYNAINFO_ARGUMENT_ID.YCLOSE),stock.yclose);
+        if (IFrameSplitOperator.IsNumber(stock.open)) this.LatestData.set(this.GetLatestDataKey(DYNAINFO_ARGUMENT_ID.OPEN),stock.open);
+        if (IFrameSplitOperator.IsNumber(stock.high)) this.LatestData.set(this.GetLatestDataKey(DYNAINFO_ARGUMENT_ID.HIGH),stock.high);
+        if (IFrameSplitOperator.IsNumber(stock.low)) this.LatestData.set(this.GetLatestDataKey(DYNAINFO_ARGUMENT_ID.LOW),stock.low);
+        if (IFrameSplitOperator.IsNumber(stock.price)) this.LatestData.set(this.GetLatestDataKey(DYNAINFO_ARGUMENT_ID.CLOSE),stock.price);
+        if (IFrameSplitOperator.IsNumber(stock.vol)) this.LatestData.set(this.GetLatestDataKey(DYNAINFO_ARGUMENT_ID.VOL),stock.vol);
+        if (IFrameSplitOperator.IsNumber(stock.amount)) this.LatestData.set(this.GetLatestDataKey(DYNAINFO_ARGUMENT_ID.AMOUNT),stock.amount);
+        if (IFrameSplitOperator.IsNumber(stock.increase)) this.LatestData.set(this.GetLatestDataKey(DYNAINFO_ARGUMENT_ID.INCREASE),stock.increase);
+        if (IFrameSplitOperator.IsNumber(stock.exchangerate)) this.LatestData.set(this.GetLatestDataKey(DYNAINFO_ARGUMENT_ID.EXCHANGERATE),stock.exchangerate);
+        if (IFrameSplitOperator.IsNumber(stock.amplitude)) this.LatestData.set(this.GetLatestDataKey(DYNAINFO_ARGUMENT_ID.AMPLITUDE),stock.amplitude);
 
         /*
         this.LatestData={ Symbol:stock.symbol, Name:stock.name, Date:stock.date, Time:stock.time,
@@ -9802,7 +9827,7 @@ function JSSymbolData(ast,option,jsExecute)
             if (IFrameSplitOperator.IsNumber(item.value) || IFrameSplitOperator.IsString(item.value))
             {
                 JSConsole.Complier.Log(`[JSSymbolData::RecvLatestDataVer2] symbol=${symbol} DYNAINFO(${item.id})=${item.value}.`);
-                this.LatestData.set(item.id, item.value);
+                this.LatestData.set(this.GetLatestDataKey(item.id), item.value);
             }
                 
         }
@@ -9810,9 +9835,47 @@ function JSSymbolData(ast,option,jsExecute)
         JSConsole.Complier.Log('[JSSymbolData::RecvLatestDataVer2]', this.LatestData);
     }
 
-    this.GetLatestCacheData=function(dataname)
+    this.GetLatestCacheData=function(dataID)
     {
-        if (this.LatestData && this.LatestData.has(dataname)) return this.LatestData.get(dataname);
+        var key=this.GetLatestDataKey(dataID);
+        if (!this.LatestData.has(key)) return null;
+
+        var data=this.LatestData.get(key);
+
+        //DYNAINFO(36) 自由流通换手率(序列数据,每个周期的数据不同,使用最新的自由流通股本) 转换成幅度需要乘100 比如DYNAINFO(36)>0.25表示换手超过25%
+        //DYNAINFO(37) 换手率(序列数据,每个周期的数据不同,使用的流通股本为最近数据) 转换成幅度需要乘100 比如DYNAINFO(37)>0.1表示换手超过10%
+        if (dataID==37 || dataID==36)
+        {
+            var value=null;
+            if (IFrameSplitOperator.IsNumber(data)) value=data;
+            else if (IFrameSplitOperator.IsNonEmptyArray(data) && IFrameSplitOperator.IsNumber(data[0])) value=data[0];
+            else return null;
+
+            if (!this.Data || !IFrameSplitOperator.IsNonEmptyArray(this.Data.Data)) return null;
+           
+            var aryData=[];
+            for(var i=0;i<this.Data.Data.length;++i)
+            {
+                var kItem=this.Data.Data[i];
+                aryData[i]=null;
+                if (!kItem || !IFrameSplitOperator.IsNumber(kItem.Vol)) continue;
+
+                aryData[i]=kItem.Vol/value*100.0;//  换手率
+            }
+
+            return aryData;
+        }
+        
+        return data;
+    }
+
+    this.GetDynaCacheData=function(name)
+    {
+        if (MAP_DYNAINFO_SHORTCUT.has(name))
+        {
+            var item=MAP_DYNAINFO_SHORTCUT.get(name);
+            return this.GetLatestCacheData(item.ID);
+        }
 
         return null;
     }
@@ -13204,6 +13267,13 @@ function JSExecute(ast,option)
 
         ["MACHINEDATE",null],["MACHINETIME",null],["MACHINEWEEK",null],
 
+        ["DYNA_NOW",null],  //DYNA_NOW  现价 DYNAINFO(7) 即时行情数据 没有现价时(比如在开盘前),返回昨收盘价
+        ["DYNA_ZAF",null],  //DYNA_ZAF 涨幅 DYNAINFO(14)  即时行情数据(沪深京早盘竞价期间使用匹配价的涨幅) 转换成幅度需要乘100
+        ["DYNA_LB", null],  //DYNA_LB   DYNAINFO(17)    量比 即时行情数据
+        ["DYNA_ZAS",null],  //DYNA_ZAS  DYNAINFO(24)  返回涨速 报价界面行情数据 转换成幅度需要乘100
+        ["SELLVOL", null], //返回内盘,即DYNAINFO(22) 即时行情数据
+        ["BUYVOL", null],  //返回外盘,即DYNAINFO(21) 即时行情数据
+
         ['LARGEINTRDVOL', null],    //逐笔买入大单成交量,相当于L2_VOL(0,0)+L2_VOL(1,0),沪深京品种的资金流向,仅日线以上周期,用于特定版本
         ['LARGEOUTTRDVOL', null],    //逐笔卖出大单成交量,相当于L2_VOL(0,1)+L2_VOL(1,1),沪深京品种的资金流向,仅日线以上周期,用于特定版本
         ["TRADENUM", null],         //逐笔成交总单数,沪深京品种的资金流向,仅日线以上周期,用于特定版本
@@ -13478,6 +13548,13 @@ function JSExecute(ast,option)
                 return this.SymbolData.WEEKOFYEAR();
             case "DAYSTOTODAY":
                 return this.SymbolData.DAYSTOTODAY();
+            case "DYNA_NOW":
+            case "DYNA_ZAF":
+            case "DYNA_LB":
+            case "DYNA_ZAS":
+            case "SELLVOL":
+            case "BUYVOL":
+                return this.SymbolData.GetDynaCacheData(name);
             default:
                 this.ThrowUnexpectedNode(node, '变量'+name+'不存在', name);
         }

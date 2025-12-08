@@ -5296,7 +5296,15 @@ function ChartReport()
     { 
         CloseColor:g_JSChartResource.Report.CloseLine.CloseColor,
         YCloseColor:g_JSChartResource.Report.CloseLine.YCloseColor,
-        AreaColor:g_JSChartResource.Report.CloseLine.AreaColor
+        AreaColor:g_JSChartResource.Report.CloseLine.AreaColor,
+
+        UpColor:g_JSChartResource.Report.CloseLine.UpColor,
+        DownColor:g_JSChartResource.Report.CloseLine.DownColor,
+        UnchangeColor:g_JSChartResource.Report.CloseLine.UnchangeColor, 
+
+        UpAreaColor:g_JSChartResource.Report.CloseLine.UpAreaColor,
+        DownAreaColor:g_JSChartResource.Report.CloseLine.DownAreaColor,
+        UnchangeAreaColor:g_JSChartResource.Report.CloseLine.UnchangeAreaColor, 
     }
 
     //K线配置
@@ -5607,6 +5615,7 @@ function ChartReport()
         else if (item.Type==REPORT_COLUMN_ID.CLOSE_LINE_ID)
         {
             if (IFrameSplitOperator.IsBool(item.IsDrawArea)) colItem.IsDrawArea=item.IsDrawArea;
+            if (IFrameSplitOperator.IsNumber(item.LineColorType)) colItem.LineColorType=item.LineColorType;
         }
         else if(item.Type==REPORT_COLUMN_ID.TIME_ID)
         {
@@ -5735,7 +5744,7 @@ function ChartReport()
             { Type:REPORT_COLUMN_ID.VOL_IN_ID, Title:"内盘", TextAlign:"right", TextColor:g_JSChartResource.Report.DownTextColor, Width:null, MaxText:"8888.8擎" },
             { Type:REPORT_COLUMN_ID.VOL_OUT_ID, Title:"外盘", TextAlign:"right", TextColor:g_JSChartResource.Report.UpTextColor, Width:null, MaxText:"8888.8擎" },
 
-            { Type:REPORT_COLUMN_ID.CLOSE_LINE_ID, Title:"走势", TextAlign:"center", TextColor:g_JSChartResource.Report.CloseLineColor, Width:null, MaxText:"88888.88888" },
+            { Type:REPORT_COLUMN_ID.CLOSE_LINE_ID, Title:"走势", TextAlign:"center", TextColor:g_JSChartResource.Report.CloseLineColor, Width:null, MaxText:"88888.88888", LineColorType:0 },
 
 
             { Type:REPORT_COLUMN_ID.BUY_VOL_ID, Title:"买量", TextAlign:"right", TextColor:g_JSChartResource.Report.FieldColor.Vol, Width:null, MaxText:"8888.8擎" },
@@ -8774,8 +8783,7 @@ function ChartReport()
             this.Canvas.setLineDash([]);
         }
 
-        if (lineData.Color) this.Canvas.strokeStyle=lineData.Color;
-        else this.Canvas.strokeStyle=this.CloseLineConfig.CloseColor; 
+        this.Canvas.strokeStyle=this.GetCloseLineColor(lineData, column);
 
         var bFirstPoint=true;
         var ptFirst={}; //第1个点
@@ -8813,14 +8821,55 @@ function ChartReport()
                 this.Canvas.lineTo(x,yCenter);
                 this.Canvas.lineTo(ptFirst.X,yCenter);
                 this.Canvas.closePath();
-                var areaColor=this.CloseLineConfig.AreaColor;
-                if (lineData.AreaColor) areaColor=lineData.AreaColor;
+                var areaColor=this.GetCloseAreaColor(lineData, column);
                 this.SetFillStyle(areaColor,left,top, left,bottom);
                 this.Canvas.fill();
             }
         }
 
         this.Canvas.restore();
+    }
+
+    this.GetCloseLineColor=function(lineData, column)
+    {
+        var color=this.CloseLineConfig.CloseColor;
+        if (lineData.Color) 
+        {
+            color=lineData.Color;
+        }
+        else if (column.LineColorType==1)
+        {
+            var color= this.CloseLineConfig.UnchangeColor;
+            if (IFrameSplitOperator.IsNumber(lineData.YClose) && IFrameSplitOperator.IsNonEmptyArray(lineData.Data) && IFrameSplitOperator.IsNumber(lineData.Data[ lineData.Data.length -1 ]))
+            {
+                var lastValue=lineData.Data[ lineData.Data.length -1 ];
+                if (lastValue>lineData.YClose) color=this.CloseLineConfig.UpColor; 
+                else if (lastValue<lineData.YClose) color=this.CloseLineConfig.DownColor; 
+            }
+        }
+
+        return color;
+    }
+
+    this.GetCloseAreaColor=function(lineData, column)
+    {
+        var color=this.CloseLineConfig.AreaColor;
+        if (lineData.AreaColor) 
+        {
+            color=lineData.AreaColor;
+        }
+        else if (column.LineColorType==1)
+        {
+            var color= this.CloseLineConfig.UnchangeAreaColor;
+            if (IFrameSplitOperator.IsNumber(lineData.YClose) && IFrameSplitOperator.IsNonEmptyArray(lineData.Data) && IFrameSplitOperator.IsNumber(lineData.Data[ lineData.Data.length -1 ]))
+            {
+                var lastValue=lineData.Data[ lineData.Data.length -1 ];
+                if (lastValue>lineData.YClose) color=this.CloseLineConfig.UpAreaColor; 
+                else if (lastValue<lineData.YClose) color=this.CloseLineConfig.DownAreaColor; 
+            }
+        }
+
+        return color;
     }
 
     //klineData={ Data:[ open, high, low, close ] }
@@ -8892,7 +8941,31 @@ function ChartReport()
         var distanceWidth=this.KLineConfig.DistanceWidth;
         var xOffset=left;
         var x, xLeft, xRight;
+        var drawCount=0;
         for(var i=0;i<aryKLine.length;++i,xOffset+=(dataWidth+distanceWidth))
+        {
+            xLeft=xOffset;
+            xRight=xOffset+dataWidth;
+            x=xLeft+(xRight-xLeft)/2;
+            if (xRight>right) break;
+            drawCount++;
+        }
+
+        var xOffset=left;
+        var startIndex=0;
+        if (aryKLine.length>drawCount) 
+        {
+            high=null,low=null;
+            startIndex=aryKLine.length-drawCount;
+            for(var i=startIndex;i<aryKLine.length;++i)
+            {
+                var item=aryKLine[i];
+                if (high==null || high<item.High) high=item.High;
+                if (low==null || low>item.Low) low=item.Low;
+            }
+        }
+
+        for(var i=startIndex;i<aryKLine.length;++i,xOffset+=(dataWidth+distanceWidth))
         {
             var item=aryKLine[i];
             xLeft=xOffset;
@@ -8980,7 +9053,11 @@ function ChartReport()
         }
         else
         {
-
+            this.Canvas.beginPath();
+            var xBar=x;
+            this.Canvas.moveTo(ToFixedPoint(xBar),ToFixedPoint(yBarTop));
+            this.Canvas.lineTo(ToFixedPoint(xBar),ToFixedPoint(yBarBottom));
+            this.Canvas.stroke();
         }
     }
 
