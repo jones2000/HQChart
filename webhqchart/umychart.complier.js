@@ -12424,13 +12424,13 @@ function JSSymbolData(ast,option,jsExecute)
 
     this.GetDynaCacheData=function(name)
     {
+        var data=null;
         if (MAP_DYNAINFO_SHORTCUT.has(name))
         {
             var item=MAP_DYNAINFO_SHORTCUT.get(name);
-            return this.GetLatestCacheData(item.ID);
+            data=this.GetLatestCacheData(item.ID);
         }
-
-        return null;
+        return data;
     }
 
     this.GetLatestIndexData=function()
@@ -13506,12 +13506,7 @@ function JSSymbolData(ast,option,jsExecute)
                     { Url:self.RealtimeApiUrl,  Type:'POST' ,
                         Data: 
                         {
-                            "field": [ "name", "symbol","yclose","open","price","high","low","vol"],
-                            "symbol": self.Symbol,
-                            "start": -1,
-                            "count": self.MaxRequestDataCount,
-                            "period":this.Period,
-                            "right":this.Right
+                            symbol: self.Symbol,count: self.MaxRequestDataCount, period:this.Period,right:this.Right
                         } 
                     },
                     Self:this,
@@ -13523,6 +13518,7 @@ function JSSymbolData(ast,option,jsExecute)
                     obj.Request.KLineDataTimeRange={Start:{ Date:this.KLineDateTimeRange.Start.Date},  End:{ Date:this.KLineDateTimeRange.End.Date} };
                     if (this.IsNumber(this.KLineDateTimeRange.Start.Time)) obj.Request.KLineDataTimeRange.Start.Time=this.KLineDateTimeRange.Start.Time;
                     if (this.IsNumber(this.KLineDateTimeRange.End.Time)) obj.Request.KLineDataTimeRange.End.Time=this.KLineDateTimeRange.End.Time;
+                    obj.Request.Data.dateRange=obj.Request.KLineDataTimeRange;
                 }
 
                 this.NetworkFilter(obj, function(data) 
@@ -15884,13 +15880,14 @@ function JSSymbolData(ast,option,jsExecute)
         if (readArgument.Value=='') readArgument.Value=this.Symbol; //缺省使用股票代码
 
         var symbol=readArgument.Value;
+        var upperSymbol=symbol.toUpperCase();
 
         //支持 SH60000, SZ000001
         //A股后缀小写
-        if (symbol.indexOf('.SH')>0) result.Symbol=symbol.replace('.SH', ".sh");
-        else if (symbol.indexOf('.SZ')>0) result.Symbol=symbol.replace('.SZ', ".sz");
-        else if (symbol.indexOf("SH")==0) result.Symbol=symbol.slice(2)+".sh";
-        else if (symbol.indexOf("SZ")==0) result.Symbol=symbol.slice(2)+".sz";
+        if (upperSymbol.indexOf('.SH')>0) result.Symbol=symbol.replace('.SH', ".sh");
+        else if (upperSymbol.indexOf('.SZ')>0) result.Symbol=symbol.replace('.SZ', ".sz");
+        else if (upperSymbol.indexOf("SH")==0) result.Symbol=symbol.slice(2)+".sh";
+        else if (upperSymbol.indexOf("SZ")==0) result.Symbol=symbol.slice(2)+".sz";
         else result.Symbol=symbol;
 
         return true;
@@ -17586,6 +17583,8 @@ function JSExecute(ast,option)
 
     this.ReadSymbolData=function(name,node)
     {
+        if (MAP_DYNAINFO_SHORTCUT.has(name)) return this.SymbolData.GetDynaCacheData(name);
+
         switch(name)
         {
             case 'CLOSE':
@@ -17653,7 +17652,6 @@ function JSExecute(ast,option)
             case 'CAPITAL':
             case 'EXCHANGE':
             case "HSL":
-
             case "HYBLOCK":
             case "DYBLOCK":
             case "GNBLOCK":
@@ -17754,14 +17752,6 @@ function JSExecute(ast,option)
                 return this.SymbolData.WEEKOFYEAR();
             case "DAYSTOTODAY":
                 return this.SymbolData.DAYSTOTODAY();
-
-            case "DYNA_NOW":
-            case "DYNA_ZAF":
-            case "DYNA_LB":
-            case "DYNA_ZAS":
-            case "SELLVOL":
-            case "BUYVOL":
-                return this.SymbolData.GetDynaCacheData(name);
         }
 
         this.ThrowUnexpectedNode(node, '变量'+name+'不存在', name);
@@ -27120,8 +27110,8 @@ function DownloadFinanceData(obj)
         {
             case 1: //FINANCE(1) 总股本(随时间可能有变化) 股
             case 7: //FINANCE(7) 流通股本(随时间可能有变化) 股
-            case "EXCHANGE": //换手率
             case "HSL"://换手率
+            case "EXCHANGE": //换手率
                 this.DownloadHistoryData(id);
                 break;
             case 3:
@@ -27382,7 +27372,7 @@ function DownloadFinanceData(obj)
                 if (!item.capital) return null;
                 return { Date:date, Value:item.capital.total };
             case 7:
-            case "HSL": //换手率
+            case "HSL":
             case "EXCHANGE":    //换手率 历史流通股本
                 if (!item.capital) return null;
                 return { Date:date, Value:item.capital.a };

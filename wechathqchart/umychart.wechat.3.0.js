@@ -7632,6 +7632,9 @@ function KLineChartContainer(uielement)
         if (!option.Windows) return;
         var count = option.Windows.length;
         if (count <= 0) return;
+
+        this.Frame.RestoreIndexWindows();
+
         var currentLength = this.Frame.SubFrame.length;
 
         var period=null, right=null, symbol=null;
@@ -10488,6 +10491,9 @@ function MinuteChartContainer(uielement)
     this.ChangeIndexTemplate=function(option)   //切换指标模板 可以设置指标窗口个数 每个窗口的指标, 只能从第3个指标窗口开始设置，前面2个指标窗口固定无法设置
     {
         if (!Array.isArray(option.Windows)) return;
+
+        this.Frame.RestoreIndexWindows();
+        
         var count=option.Windows.length;
         var currentLength=this.Frame.SubFrame.length;
         var startWindowIndex=2;
