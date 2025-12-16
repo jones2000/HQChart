@@ -1,0 +1,116 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+
+<title>页面行情(K线图)</title>  
+    <!-- 加载资源 -->
+    <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
+</head>  
+<body>
+    <div id="kline" >
+       
+    </div>
+
+    <div>
+        <span id="button_1" class="btn-style">日</span>
+        <span id="button_2" class="btn-style">周</span>
+        <span id="button_3" class="btn-style">月</span>
+
+        <span id="button_5" class="btn-style">5M</span>
+        <span id="button_6" class="btn-style">15M</span>
+<!--
+        <span id='button_7' class="btn-style">RSI</span>
+        <span id='button_8' class="btn-style">指标模板</span>
+ -->
+
+        <span id='button_9' class="btn-style">测试按钮</span>
+    </div>
+
+    <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
+    <script src="../jscommon/umychart.resource/js/webfont.js"></script>
+    <script src='../jscommon/umychart.console.js'></script>     <!-- 日志输出 -->
+    <script src="../jscommon/umychart.network.js"></script>     <!-- 网络请求分装 -->
+    <script src="../jscommon/umychart.js"></script>             <!-- K线图形 -->
+    <script src="../jscommon/umychart.complier.js"></script>    <!-- 麦语言解析执行器 -->
+    <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
+    <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+    <script src="../jscommon/umychart.popMenu.js"></script>
+    <script src="../jscommon/umychart.DialogDrawTool.js"></script>
+    <script src="../jscommon/umychart.PopMinuteChart.js"></script>
+    <script src="../jscommon/umychart.PopKLineChart.js"></script>
+    <script src="../jscommon/umychart.report.js"></script>
+    <script src="../jscommon/umychart.keyboard.js"></script>
+    <script src="../jscommon/umychart.PopKeyboard.js"></script>
+    <script src="../jscommon/umychart.DialogTooltip.js"></script>
+    <script src="../jscommon/umychart.DialogSelectRect.js"></script>
+    <script src="../jscommon/umychart.DialogSearchIndex.js"></script>
+    <script src="../jscommon/umychart.deal.js"></script>
+    <script src="../jscommon/umychart.StockInfo.js"></script>
+    <script src="../jscommon/umychart.version.js"></script>
+    
+    <script src="./src/KLineChart.js"></script>
+    <script src="./src/EnvironmentVariable.js"></script>
+    <script src="./src/HQData.js"></script>  <!-- 数据 -->
+
+    <script>
+
+        MARKET_SUFFIX_NAME.GetMarketStatus = function (symbol)  { return 2; }
+        
+        $(function () 
+        {
+            WebFont.load({ custom: { families: ['iconfont'] } });   //预加载下iconfont资源
+           
+            var klineControl=new KLineChart();
+            var wsClient=new HQChartWSClient();
+            wsClient.Create();
+            klineControl.HQData.WSClient=wsClient;
+
+            klineControl.Symbol="600036.sh";
+            klineControl.Create(document.getElementById('kline'));
+
+            //$("#button_7").click(function() { klineControl.AddIndexWindow("RSI"); } );
+            //$("#button_8").click(function() { klineControl.TestChangeIndexTemplate(); } );
+
+            $("#button_1").click(function() { klineControl.Chart.ChangePeriod(0); } );
+            $("#button_2").click(function() { klineControl.Chart.ChangePeriod(1); } );
+            $("#button_3").click(function() { klineControl.Chart.ChangePeriod(2); } );
+
+            $("#button_4").click(function() { klineControl.Chart.ChangePeriod(4); } );
+            $("#button_5").click(function() { klineControl.Chart.ChangePeriod(5); } );
+            $("#button_6").click(function() { klineControl.Chart.ChangePeriod(6); } );
+
+            $("#button_9").click(function() { klineControl.ChangeSymbol("000001.sh"); } );
+
+        })
+
+      
+    </script>  
+</body>  
+</html>
+
+
+
+<style>
+
+#kline
+{
+    width: 100%;
+    height:95%;
+    position: relative;
+    /*margin-top: 100px;*/
+}
+
+.btn-style
+{
+    padding: 3px 8px;
+    border: 1px solid #ececec;
+    border-radius: 5px;
+    background-color: #f5f5f5;
+    cursor: pointer;
+}
+
+    
+</style>

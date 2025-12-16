@@ -1005,6 +1005,60 @@ function GetBlackStyle()
                 BGColor: {  Selected:"rgb(234,85,4)", Default:"rgb(25,25,25)", MoveOn:"rgb(59,59,59)" },
                 BorderColor:"rgb(60,60,60)",
             }
+        },
+
+        StockInfo:
+        {
+            Header:
+            {
+                Name:
+                {
+                    //Font:`${20*GetDevicePixelRatio()}px 微软雅黑`,
+                    Color:"rgb(255,255,0)",
+                    //Margin:{ Left:5, Top:10, Bottom:5, Right:10, YOffset:0 },
+                },
+
+                Symbol:
+                {
+                    //Font:`${18*GetDevicePixelRatio()}px 微软雅黑`,
+                    Color:"rgb(250,250,250)",
+                    //Margin:{ Left:5, Top:10, Bottom:5, Right:5, YOffset:0 },
+                },
+
+                AryCell:
+                [
+                    //{ Font:`bold ${16*GetDevicePixelRatio()}px 微软雅黑`, Margin:{ Left:5, Top:5, Bottom:5, Right:15, YOffset:0 } },
+                    //{ Font:`${16*GetDevicePixelRatio()}px 微软雅黑`, Margin:{ Left:5, Top:5, Bottom:5, Right:15, YOffset:0 } },
+                    //{ Font:`${16*GetDevicePixelRatio()}px 微软雅黑`, Margin:{ Left:5, Top:5, Bottom:5, Right:5, YOffset:0 } }
+                ],
+
+                TextColor:"rgb(250,250,250)"
+            },
+
+            BuySell:
+            {
+                //Font:14*GetDevicePixelRatio() +'px 微软雅黑',
+                TitleColor:"rgb(250,250,250)",
+                VolColor:"rgb(250,250,250)",
+                //Margin:{ Left:0, Top:0, Bottom:0, Right:0 },
+                //CellMargin:{ Top:5, Bottom:5, YOffset:0, Left:5, Right:5, YOffset:-5 },
+                BottomLine:{ Enable:true, Color:"rgb(60,60,60)"} ,    //底部分割线
+                TopLine:{ Enable:true, Color:"rgb(60,60,60)"} ,    //底部分割线
+            },
+
+            Table:
+            {
+                Font:14*GetDevicePixelRatio() +'px 微软雅黑',
+                TitleColor:"rgb(250,250,250)",
+                TextColor:"rgb(250,250,250)",
+                //Margin:{ Left:0, Top:0, Bottom:0, Right:0 },
+                //CellMargin:{ Top:5, Bottom:5, YOffset:0, Left:5, Right:5, YOffset:-5 },
+            },
+
+            UpTextColor:"rgb(238,21,21)",      //上涨文字颜色
+            DownTextColor:"rgb(25,158,0)",     //下跌文字颜色
+            UnchangeTextColor:"rgb(90,90,90)",     //平盘文字颜色 
+            BorderColor:'rgb(38,38,41)',        //边框线
         }
         
     };

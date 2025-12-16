@@ -28064,6 +28064,12 @@ function ChartKLine()
             TextColor: g_JSChartResource.DaySummaryKLine.TextColor,
             LeftMargin:g_JSChartResource.DaySummaryKLine.LeftMargin,
         }
+
+        this.PriceGapStyple=
+        { 
+            Line:{ Color:g_JSChartResource.PriceGapStyple.Line.Color }, 
+            Text:{ Color:g_JSChartResource.PriceGapStyple.Text.Color, Font: g_JSChartResource.PriceGapStyple.Text.Font } 
+        };
             
     }
 
@@ -79738,6 +79744,62 @@ function JSChartResource()
         }
     }
 
+    //买卖5档
+    this.StockInfo=
+    {
+        Header:
+        {
+            Name:
+            {
+                Font:`${20*GetDevicePixelRatio()}px 微软雅黑`,
+                Color:"rgb(90,90,90)",
+                Margin:{ Left:5, Top:10, Bottom:5, Right:5, YOffset:0 },
+            },
+
+            Symbol:
+            {
+                Font:`${18*GetDevicePixelRatio()}px 微软雅黑`,
+                Color:"rgb(90,90,90)",
+                Margin:{ Left:5, Top:10, Bottom:5, Right:5, YOffset:0 },
+            },
+
+            AryCell:
+            [
+                { Font:`bold ${16*GetDevicePixelRatio()}px 微软雅黑`,Color:"rgb(90,90,90)", Margin:{ Left:5, Top:5, Bottom:5, Right:5, YOffset:0 } },
+                { Font:`${16*GetDevicePixelRatio()}px 微软雅黑`,Color:"rgb(90,90,90)", Margin:{ Left:5, Top:5, Bottom:5, Right:5, YOffset:0 } },
+                { Font:`${16*GetDevicePixelRatio()}px 微软雅黑`,Color:"rgb(90,90,90)", Margin:{ Left:5, Top:5, Bottom:5, Right:5, YOffset:0 } }
+            ],
+
+            TextColor:"rgb(100,100,10)"
+        },
+
+        BuySell:
+        {
+            Font:14*GetDevicePixelRatio() +'px 微软雅黑',
+            TitleColor:"rgb(90,90,90)",
+            VolColor:"rgb(90,90,90)",
+            Margin:{ Left:0, Top:0, Bottom:0, Right:0 },
+            CellMargin:{ Top:5, Bottom:5, Left:5, Right:5, YOffset:0 },
+            BottomLine:{ Enable:true, Color:"rgb(192,192,192)"} ,    //底部分割线
+            TopLine:{ Enable:true, Color:"rgb(192,192,192)"} ,    //底部分割线
+        },
+
+        Table:
+        {
+            Font:14*GetDevicePixelRatio() +'px 微软雅黑',
+            TitleColor:"rgb(90,90,90)",
+            TextColor:"rgb(90,90,90)",
+            Margin:{ Left:0, Top:0, Bottom:0, Right:0 },
+            CellMargin:{ Top:5, Bottom:5, Left:5, Right:5, YOffset:0 },
+        },
+
+        UpTextColor:"rgb(238,21,21)",      //上涨文字颜色
+        DownTextColor:"rgb(25,158,0)",     //下跌文字颜色
+        UnchangeTextColor:"rgb(90,90,90)",     //平盘文字颜色 
+
+        BorderColor:"rgb(192,192,192)"
+    }
+
 
     //自定义风格
     this.SetStyle=function(style)
@@ -80706,7 +80768,113 @@ function JSChartResource()
         if (style.KLineCountDownPaint) this.SetKLineCountDownPaint(style.KLineCountDownPaint);
 
         if (style.SmallFloatTooltipV2) this.SetSmallFloatTooltipV2(style.SmallFloatTooltipV2);
+        if (style.StockInfo) this.SetStockInfo(style.StockInfo);
 
+    }
+
+    this.SetStockInfo=function(style)
+    {
+        var dest=this.StockInfo;
+
+        if (style.BuySell)
+        {
+            var item=style.BuySell;
+            if (item.Font) dest.BuySell.Font=item.Font;
+            if (item.TitleColor) dest.BuySell.TitleColor=item.TitleColor;
+            if (item.VolColor) dest.BuySell.VolColor=item.VolColor;
+            CopyMarginConfig(dest.BuySell.Margin, item.Margin);
+            if (item.CellMargin)
+            {
+                var subItem=item.CellMargin;
+                CopyMarginConfig(dest.BuySell.CellMargin, subItem);
+                if (IFrameSplitOperator.IsNumber(subItem.YOffset)) dest.BuySell.CellMargin.YOffset=subItem.YOffset
+            }
+
+            if (item.BottomLine)
+            {
+                var subItem=item.BottomLine;
+                if (subItem.Color) dest.BuySell.BottomLine.Color=subItem.Color;
+                if (IFrameSplitOperator.IsBool(subItem.Enable)) dest.BuySell.BottomLine.Enable=subItem.Enable;
+            }
+
+            if (item.TopLine)
+            {
+                var subItem=item.TopLine;
+                if (subItem.Color) dest.BuySell.TopLine.Color=subItem.Color;
+                if (IFrameSplitOperator.IsBool(subItem.Enable)) dest.BuySell.TopLine.Enable=subItem.Enable;
+            }
+
+            
+        }
+
+        if (style.Table)
+        {
+            var item=style.Table;
+            if (item.Font) dest.Table.Font=item.Font;
+            if (item.TitleColor) dest.Table.TitleColor=item.TitleColor;
+            if (item.TextColor) dest.Table.TextColor=item.TextColor;
+            CopyMarginConfig(dest.Table.Margin, item.Margin);
+            if (item.CellMargin)
+            {
+                var subItem=item.CellMargin;
+                CopyMarginConfig(dest.Table.CellMargin, subItem);
+                if (IFrameSplitOperator.IsNumber(subItem.YOffset)) dest.Table.CellMargin.YOffset=subItem.YOffset
+            }
+        }
+
+        if (style.Header)
+        {
+            var item=style.Header;
+            if (item.Font) dest.Header.Font=item.Font;
+            if (item.TextColor) dest.Header.TextColor=item.TextColor;
+            if (item.Name)
+            {
+                var subItem=item.Name;
+                if (subItem.Font) dest.Header.Name.Font=subItem.Font;
+                if (subItem.Color) dest.Header.Name.Color=subItem.Color;
+                if (subItem.Margin)
+                {
+                    var margin=subItem.Margin;
+                    CopyMarginConfig(dest.Header.Name.Margin, margin);
+                    if (IFrameSplitOperator.IsNumber(margin.YOffset)) dest.Header.Name.Margin.YOffset=margin.YOffset
+                }
+            }
+
+            if (item.Symbol)
+            {
+                var subItem=item.Symbol;
+                if (subItem.Font) dest.Header.Symbol.Font=subItem.Font;
+                if (subItem.Color) dest.Header.Symbol.Color=subItem.Color;
+                if (subItem.Margin)
+                {
+                    var margin=subItem.Margin;
+                    CopyMarginConfig(dest.Header.Symbol.Margin, margin);
+                    if (IFrameSplitOperator.IsNumber(margin.YOffset)) dest.Header.Symbol.Margin.YOffset=margin.YOffset
+                }
+            }
+
+            if (IFrameSplitOperator.IsNonEmptyArray(item.AryCell))
+            {
+                for(var i=0;i<item.AryCell.length;++i)
+                {
+                    var subItem=item.AryCell[i];
+                    if (!dest.Header.AryCell[i]) dest.Header.AryCell[i]={ };
+                    var subDest=dest.Header.AryCell[i];
+                    if (subItem.Font) subDest.Font=subItem.Font;
+                    if (subItem.Margin)
+                    {
+                        var margin=subItem.Margin;
+                        CopyMarginConfig(subDest.Margin, margin);
+                        if (IFrameSplitOperator.IsNumber(margin.YOffset)) subDest.YOffset=margin.YOffset
+                    }
+                }
+            }
+        }
+
+        if (style.UpTextColor) dest.UpTextColor=style.UpTextColor;
+        if (style.DownTextColor) dest.DownTextColor=style.DownTextColor;
+        if (style.UnchangeTextColor) dest.UnchangeTextColor=style.UnchangeTextColor;
+        if (style.BorderColor) dest.BorderColor=style.BorderColor;
     }
 
     this.SetSmallFloatTooltipV2=function(style)
@@ -103036,7 +103204,18 @@ var MARKET_SUFFIX_NAME=
         if (MARKET_SUFFIX_NAME.IsBJ(upperSymbol)) return 100;   //单位手=100股
 
         return 1;
+    },
+
+    //获取不带后缀的代码
+    GetShortSymbol:function(symbol)
+    {
+        if (!IFrameSplitOperator.IsString(symbol)) return null;
+        var pos=symbol.lastIndexOf(".");
+        if (pos<=0) return symbol;
+
+        return symbol.slice(0,pos);
     }
+
 }
 
 

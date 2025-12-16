@@ -1,0 +1,87 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+<title>成交明细</title>  
+    <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
+</head>  
+<body>
+    <div id="deal" style="width:100%;height:90%;"></div>
+
+    <div class="line-box">
+        <span id='button_1' class="btn-style" onclick='OnChangeSymbol("000001.sz")'>平安银行</span>
+        <span id='button_2' class="btn-style" onclick='OnChangeSymbol("600519.sh")'>贵州茅台</span>
+    </div>
+
+    <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
+    <script src="../jscommon/umychart.resource/js/webfont.js"></script>
+    <script src='../jscommon/umychart.console.js'></script>     <!-- 日志输出 -->
+    <script src="../jscommon/umychart.network.js"></script>     <!-- 网络请求分装 -->
+    <script src="../jscommon/umychart.js"></script>             <!-- K线图形 -->
+    <script src="../jscommon/umychart.complier.js"></script>    <!-- 麦语言解析执行器 -->
+    <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
+    <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+    <script src="../jscommon/umychart.popMenu.js"></script>
+    <script src="../jscommon/umychart.PopKeyboard.js"></script>
+    <script src="../jscommon/umychart.DialogTooltip.js"></script>
+    <script src="../jscommon/umychart.DialogSelectRect.js"></script>
+    <script src="../jscommon/umychart.DialogSearchIndex.js"></script>
+    <script src="../jscommon/umychart.deal.js"></script>
+    <script src="../jscommon/umychart.version.js"></script>
+
+    <script src="./src/DealChart.js"></script>
+    <script src="./src/EnvironmentVariable.js"></script>
+    <script src="./src/HQData.js"></script>
+    
+    <script>
+
+        //JSConsole.Chart.Log=() =>{}
+        //JSConsole.Complier.Log=()=>{}
+
+        MARKET_SUFFIX_NAME.GetMarketStatus = function (symbol)  { return 2; }
+
+        var g_dealCtrl;
+        $(function () 
+        {
+            var dealCtrl=new DealChart();
+            dealCtrl.ShowType=3;
+            dealCtrl.Option.IsSingleTable=false;
+            dealCtrl.Option.IsShowHeader=true;
+            //dealCtrl.Option.KeyDown=true;  //禁止键盘
+            dealCtrl.Option.Wheel=true;    //禁止滚轴
+
+            dealCtrl.Symbol="600000.sh"
+            dealCtrl.Create(document.getElementById('deal'));
+            g_dealCtrl=dealCtrl;
+            //$("#button_1").click(function() { dealCtrl.Chart.ChangeSymbol("000001.sz"); } );
+        })
+
+        function OnChangeSymbol(symbol)
+        {
+            g_dealCtrl.Chart.ChangeSymbol(symbol); 
+        }
+
+    </script>  
+</body>  
+</html>
+
+
+<style>
+
+.line-box
+{
+    height: 25px;
+}
+
+.btn-style
+{
+    margin:5px,8px;
+    border: 1px solid #ececec;
+    background-color: #f5f5f5;
+    cursor: pointer;
+}
+    
+        
+</style>

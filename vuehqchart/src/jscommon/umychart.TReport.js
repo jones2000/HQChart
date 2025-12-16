@@ -17,17 +17,17 @@ function JSTReportChart(divElement)
     this.JSChartContainer;              //表格控件
     this.ResizeListener;                //大小变动监听
 
-     //h5 canvas
-     this.CanvasElement=document.createElement("canvas");
-     this.CanvasElement.className='jstreport-drawing';
-     this.CanvasElement.id=Guid();
-     this.CanvasElement.setAttribute("tabindex",0);
-     if (this.CanvasElement.style) this.CanvasElement.style.outline='none';
-     if(divElement.hasChildNodes())
-     {
-         JSConsole.Chart.Log("[JSTReportChart::JSReportChart] divElement hasChildNodes", divElement.childNodes);
-     }
-     divElement.appendChild(this.CanvasElement);
+    //h5 canvas
+    this.CanvasElement=document.createElement("canvas");
+    this.CanvasElement.className='jstreport-drawing';
+    this.CanvasElement.id=Guid();
+    this.CanvasElement.setAttribute("tabindex",0);
+    if (this.CanvasElement.style) this.CanvasElement.style.outline='none';
+    if(divElement.hasChildNodes())
+    {
+        JSConsole.Chart.Log("[JSTReportChart::JSReportChart] divElement hasChildNodes", divElement.childNodes);
+    }
+    divElement.appendChild(this.CanvasElement);
 
 
     this.OnSize=function()

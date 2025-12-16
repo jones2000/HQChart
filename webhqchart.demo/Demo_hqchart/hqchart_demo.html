@@ -1,0 +1,629 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+
+<title>HQChart示例</title>  
+    <!-- 加载资源 -->
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/drawtool/iconfont.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/js/codemirror/codemirror.css" />
+</head> 
+
+<body>
+
+    <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
+    <script src="../jscommon/umychart.resource/js/webfont.js"></script>
+    <script src='../jscommon/umychart.console.js'></script>     <!-- 日志输出 -->
+    <script src="../jscommon/umychart.network.js"></script>     <!-- 网络请求分装 -->
+    <script src="../jscommon/umychart.js"></script>             <!-- K线图形 -->
+    <script src="../jscommon/umychart.complier.js"></script>    <!-- 麦语言解析执行器 -->
+    <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
+    <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+    <script src="../jscommon/umychart.popMenu.js"></script>
+    <script src="../jscommon/umychart.DialogDrawTool.js"></script>
+    <script src="../jscommon/umychart.PopMinuteChart.js"></script>
+    <script src="../jscommon/umychart.PopKLineChart.js"></script>
+    <script src="../jscommon/umychart.report.js"></script>
+    <script src="../jscommon/umychart.keyboard.js"></script>
+    <script src="../jscommon/umychart.PopKeyboard.js"></script>
+    <script src="../jscommon/umychart.DialogTooltip.js"></script>
+    <script src="../jscommon/umychart.DialogSelectRect.js"></script>
+    <script src="../jscommon/umychart.DialogSearchIndex.js"></script>
+    <script src="../jscommon/umychart.deal.js"></script>
+    <script src="../jscommon/umychart.StockInfo.js"></script>
+    <script src="../jscommon/umychart.version.js"></script>
+
+    <script src="./src/KLineChart.js"></script>
+    <script src="./src/MinuteChart.js"></script>
+    <script src="./src/ReportChart.js"></script>
+    <script src="./src/DealChart.js"></script>
+    <script src="./src/StockInfoChart.js"></script>
+    <script src="./src/EnvironmentVariable.js"></script>
+    <script src="./src/HQData.js"></script>
+   
+    <div id="FullDemo">
+        <div id="LeftPanel">
+            <div id="Report">
+                <div id="ReportCtrl"></div>
+            </div>
+        </div>
+
+        <div id="CenterPanel">
+            <div id="PeriodTab">
+                <div id="MinuteDay" class="TabItem">分时</div>
+                <div id="Minute5Day" class="TabItem" style="display: none;">5日</div>
+                <div id="KLineDay" class="TabItem">日线</div>
+                <div id="KLineWeek" class="TabItem">周线</div>
+                <div id="KLineMonth" class="TabItem">月线</div>
+                <div id="KLineYear" class="TabItem" style="display: none;">年线</div>
+
+                <div id="KLineMinute" class="TabItem" style="display: none;">1分钟</div>
+                <div id="KLine5Minute" class="TabItem">5分钟</div>
+                <div id="KLine15Minute" class="TabItem">15分钟</div>
+                <div id="KLine30Minute" class="TabItem">30分钟</div>
+                <div id="KLine60Minute" class="TabItem">60分钟</div>
+            
+                <div class="SpaceItem"></div>
+                <div id="StockChip" class="TabItem">筹码</div>
+                <div id="BeforeOpen" class="TabItem" style="display: none;">竞价</div>
+                <div id="DrawTool" class="TabItem">画线</div>
+
+                <div id="WhiteStyle" class="TabItem">白色风格</div>
+                <div id="BlackStyle" class="TabItem">黑色风格</div>
+            </div>
+
+            <div id="ChartContainer">
+                <div id="Minute">
+                    <div id="MinuteCtrl"></div>
+                </div>
+                <div id="KLine">
+                    <div id="KLineCtrl"></div>
+                </div>
+            </div>
+        
+        </div>
+
+        <div id="RightPanel">
+            <div id="StockInfo_Top">
+                <div id="StockBaseData"></div>
+            </div>
+            <div id="StockInfo_Bottom">
+                <div id="DealCtrl" ></div>
+                <div id="MinMinuteCtrl" style="display: none;"></div>
+            </div>
+            <div id="StockInfo_Bottom_Tab">
+                <div id="DealList" class="TabItem">笔</div>
+                <div id="DealPriceList" class="TabItem">分</div>
+                <div id="StockMinChart" class="TabItem">势</div>
+                <div id="IndexMinChart" class="TabItem">联</div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        MARKET_SUFFIX_NAME.GetMarketStatus = function (symbol)  { return 2; }
+       
+        class ChartContainer
+        {
+            KLineCtrl=new KLineChart();
+            MinuteCtrl=new MinuteChart();
+            SelfReport=new ReportChart();
+            MinDealCtrl=new MinDealChart();
+            MinMinuteCtrl=new MinMinuteChart();
+            StockInfoCtrl=new StockInfoChart();
+            Symbol="002371.sz";
+
+            Create()
+            {
+                var resource=JSChart.GetResource();
+                //resource.BGColor=blackStyle.BGColor;
+                resource.ToolbarButtonStyle=1;
+                resource.FrameLogo.Text+= ` ${HQCHART_VERSION}`;
+
+                this.ChangeStyle(STYLE_TYPE_ID.BLACK_ID);
+
+                this.KLineCtrl.Create(document.getElementById('KLineCtrl'));
+                this.MinuteCtrl.Create(document.getElementById('MinuteCtrl'));
+                this.MinDealCtrl.Create(document.getElementById('DealCtrl'));
+                this.MinMinuteCtrl.Create(document.getElementById('MinMinuteCtrl'));
+                this.StockInfoCtrl.Create(document.getElementById('StockBaseData'));
+
+                var SELF_STOCK_LIST_1=
+                [
+                    "600000.sh",
+                    "688597.sh",
+                    "688611.sh",
+                    "688597.sh",
+                    "000001.sh", 
+                    "399001.sz",
+                    "300040.sz", 
+                    "000001.sz",
+                    "002594.sz"
+                ];
+
+                this.SelfReport.HQData.SetSelfBlock("自选股1", SELF_STOCK_LIST_1);
+                this.SelfReport.OnClickRowCallback=(data, obj)=>{ this.OnClickReportRow(data, obj); }
+                this.SelfReport.Create(document.getElementById('ReportCtrl'));
+
+                var divKLine=document.getElementById('KLine');
+                divKLine.style["visibility"]="visible";
+                divKLine.style["display"]="block";
+
+                var divMinute=document.getElementById('Minute');
+                divMinute.style["visibility"]="visible";
+                divMinute.style["display"]="none";
+
+                document.getElementById('MinuteDay').onmousedown=(e)=>{  this.Show(1, 1); }
+                document.getElementById('Minute5Day').onmousedown=(e)=>{  this.Show(1, 5); }
+
+                document.getElementById('KLineDay').onmousedown=(e)=>{  this.Show(0, 0); }
+                document.getElementById('KLineWeek').onmousedown=(e)=>{  this.Show(0, 1); }
+                document.getElementById('KLineMonth').onmousedown=(e)=>{  this.Show(0, 2); }
+                document.getElementById('KLineYear').onmousedown=(e)=>{  this.Show(0, 3); }
+                
+
+                document.getElementById('KLineMinute').onmousedown=(e)=>{  this.Show(0, 4); }
+                document.getElementById('KLine5Minute').onmousedown=(e)=>{  this.Show(0, 5); }
+                document.getElementById('KLine15Minute').onmousedown=(e)=>{  this.Show(0, 6); }
+                document.getElementById('KLine30Minute').onmousedown=(e)=>{  this.Show(0, 7); }
+                document.getElementById('KLine60Minute').onmousedown=(e)=>{  this.Show(0, 8); }
+
+
+                document.getElementById('WhiteStyle').onmousedown=(e)=>{  this.ChangeStyle(STYLE_TYPE_ID.WHITE_ID); }
+                document.getElementById('BlackStyle').onmousedown=(e)=>{  this.ChangeStyle(STYLE_TYPE_ID.BLACK_ID); }
+                
+                document.getElementById('StockChip').onmousedown=(e)=>{ this.EnableStockChip(); }
+                document.getElementById('DrawTool').onmousedown=(e)=>{ this.ShowDrawTool(); }
+                document.getElementById('BeforeOpen').onmousedown=(e)=>{ this.EnableBeforeOpen(); }
+
+                document.getElementById('DealList').onmousedown=(e)=>{  this.OnClickStockInfoTab("DealList"); }
+                document.getElementById('DealPriceList').onmousedown=(e)=>{  this.OnClickStockInfoTab("DealPriceList"); }
+                document.getElementById('StockMinChart').onmousedown=(e)=>{  this.OnClickStockInfoTab("StockMinChart"); }
+                document.getElementById('IndexMinChart').onmousedown=(e)=>{  this.OnClickStockInfoTab("IndexMinChart"); }
+
+                this.UpdataToolbar(0);
+
+                addEventListener("resize", (event) => { this.OnSize(event); })
+
+                this.OnSize();
+
+                this.ChangeSymbol("300750.sz");
+            }
+
+            //type 1=分时图     0=K线图
+            Show(type, period)
+            {
+                if (type===0)
+                {
+                    var divKLine=document.getElementById('KLine');
+                    divKLine.style["visibility"]="visible";
+                    divKLine.style["display"]="block";
+
+                    var divMinute=document.getElementById('Minute');
+                    divMinute.style["visibility"]="visible";
+                    divMinute.style["display"]="none";
+                    this.MinuteCtrl.Hide();
+
+                    this.KLineCtrl.Hide();
+                    this.KLineCtrl.ChangePeriod(period)
+
+                    this.UpdataToolbar(type);
+                }
+                else if (type===1)
+                {
+                    var divMinute=document.getElementById('Minute');
+                    divMinute.style["visibility"]="visible";
+                    divMinute.style["display"]="block";
+
+                    var divKLine=document.getElementById('KLine');
+                    divKLine.style["visibility"]="visible";
+                    divKLine.style["display"]="none";
+                    this.KLineCtrl.Hide();
+
+                    this.MinuteCtrl.ChangeDayCount(period);
+                    this.UpdataToolbar(type);
+                }
+            }
+
+            ChangeStyle(value)
+            {
+                var style=HQChartStyle.GetStyleConfig(value); //读取风格配置
+                JSChart.SetCSSStyle(value);
+                JSChart.SetStyle(style);
+
+                var pixelRatio=GetDevicePixelRatio();
+                var resource=JSChart.GetResource();
+                resource.ToolbarButtonStyle=1;
+                resource.Report.Item.Font.Size=12;
+                resource.Report.Item.Mergin.Top=8*pixelRatio;
+                resource.Report.Item.Mergin.Bottom=8*pixelRatio;
+
+                if (this.MinuteCtrl) this.MinuteCtrl.ReloadResource();  //动态更新颜色配置  
+                if (this.KLineCtrl) this.KLineCtrl.ReloadResource();    //动态更新颜色配置  
+                if (this.SelfReport) this.SelfReport.ReloadResource();
+                if (this.MinDealCtrl) this.MinDealCtrl.ReloadResource();
+                if (this.MinMinuteCtrl) this.MinMinuteCtrl.ReloadResource();
+                if (this.StockInfoCtrl) this.StockInfoCtrl.ReloadResource();
+            }
+
+            EnableStockChip()
+            {
+                if (!this.KLineCtrl) return;
+                this.KLineCtrl.EnableStockChip();
+            }
+
+            ShowDrawTool()
+            {
+                var divKLine=document.getElementById('KLine');
+                if (divKLine.style["display"]=="block" && this.KLineCtrl)
+                {
+                    this.KLineCtrl.ShowDrawTool();
+                    return;
+                }
+
+                var divMinute=document.getElementById('Minute');
+                if (divMinute.style["display"]=="block" && this.MinuteCtrl)
+                {
+                    this.MinuteCtrl.ShowDrawTool();
+                }
+            }
+
+            EnableBeforeOpen()
+            {
+                if (this.MinuteCtrl) this.MinuteCtrl.EnableBeforeOpen();
+            }
+
+            UpdataToolbar(type)
+            {
+                var dom=document.getElementById('StockChip');
+                dom.style["display"]=(type===0?"block":"none");
+
+                //dom=document.getElementById('BeforeOpen');
+                //dom.style["display"]=(type===1?"block":"none");
+            }
+
+            OnClickReportRow(data, obj)
+            {
+                var symbol=data.Data.Symbol;
+                this.ChangeSymbol(symbol);
+            }
+
+            OnClickStockInfoTab(id)
+            {
+                if (id=="DealList")
+                {
+                    if (this.MinMinuteCtrl) this.MinMinuteCtrl.Show(false);
+                    if (this.MinDealCtrl) this.MinDealCtrl.Show(true, { Symbol:this.Symbol, ShowType:0 });
+                }
+                else if (id=="DealPriceList")
+                {
+                    if (this.MinMinuteCtrl) this.MinMinuteCtrl.Show(false);
+                    if (this.MinDealCtrl) this.MinDealCtrl.Show(true, { Symbol:this.Symbol, ShowType:2 })
+                }
+                else if (id=="StockMinChart")
+                {
+                    if (this.MinDealCtrl)  this.MinDealCtrl.Show(false);
+                    if (this.MinMinuteCtrl) this.MinMinuteCtrl.Show(true, { Symbol:this.Symbol, IsIndexChart:false })
+                }
+                else if (id=="IndexMinChart")
+                {
+                    if (this.MinDealCtrl)  this.MinDealCtrl.Show(false);
+                    if (this.MinMinuteCtrl) this.MinMinuteCtrl.Show(true, { Symbol:this.GetIndexSymbol(this.Symbol), IsIndexChart:true })
+                }
+            }
+
+            //获取对应的指数代码
+            GetIndexSymbol(symbol)
+            {
+                var indexSymbol="000001.sh";
+                if (!symbol) return indexSymbol;
+                var upperSymbol=symbol.toUpperCase();
+                if (MARKET_SUFFIX_NAME.IsSH(upperSymbol)) indexSymbol="000001.sh";
+                else if (MARKET_SUFFIX_NAME.IsSZ(upperSymbol)) indexSymbol="399001.sz";
+
+                return indexSymbol;
+            }
+
+            ChangeSymbol(symbol)
+            {
+                this.Symbol=symbol;
+
+                if (this.MinuteCtrl) this.MinuteCtrl.ChangeSymbol(symbol); 
+                
+                var option=
+                {
+                    Windows:
+                    [
+                        { Index:"MA3"},
+
+                        { 
+                            Index:"RSI",
+                            /*
+                            Lock:
+                            {
+                                IsLocked: true,             //是否上锁
+                                Callback: (data)=>
+                                { 
+                                    var frameID=data.ChartPaint.ChartFrame.Identify;
+                                    var indexData=data.HQChart.WindowIndex[frameID];
+
+                                }, //this.UnlockIndex, //点击上锁区域回调函数
+                                BG: ['rgba(245,245,220, 0.5)', "rgb(100,255,100)"],     //锁区域背景色
+                                //TextColor: 'rgb(255,165,79)',   //锁区域输出文字颜色
+                                // Text: '\ue611',                  //锁区域输出文字内容
+                                // Font: '40px iconfont',           //锁区域输出文字字体 支持iconfont
+                                Count: 12,                      //上锁主右边几条数据  
+                                Text:
+                                [
+                                    //{ Text:"付费指标", TextMargin:{ Top:2, Bottom:2 }, YOffset:-2, Font:`${25*GetDevicePixelRatio()}px 微软雅黑` },
+                                    //{ Image:{ Data:image1, Width:50*GetDevicePixelRatio(), Height:50*GetDevicePixelRatio() }, TextMargin:{ Top:2, Bottom:2 }, YOffset:-2, Align:1, },
+                                    //{ Text:"\ue611", TextMargin:{ Top:2, Bottom:2 }, YOffset:-2, Align:1, Font:`${40*GetDevicePixelRatio()}px iconfont`, Color:"rgb(100,100,100)" },
+                                    { Text:"描述信息:XX", TextMargin:{ Top:2, Bottom:2 }, YOffset:-2,},
+                                    { Text:"\ue611", TextMargin:{ Top:2, Bottom:2 }, YOffset:-2, Align:1, Font:`${40*GetDevicePixelRatio()}px iconfont`, Color:"rgb(100,0,100)" },
+                                ]   
+                            } 
+                            */
+                        }
+                    ]
+                }
+                
+                var option=null;
+                if (this.KLineCtrl) this.KLineCtrl.ChangeSymbol(symbol, option);
+
+                if (this.MinDealCtrl && this.MinDealCtrl.IsShow()) this.MinDealCtrl.ChangeSymbol(symbol);
+
+                if (this.MinMinuteCtrl && this.MinMinuteCtrl.IsShow()) 
+                {
+                    if (this.MinMinuteCtrl.IsIndexChart)
+                        this.MinMinuteCtrl.ChangeSymbol(this.GetIndexSymbol(symbol));
+                    else
+                        this.MinMinuteCtrl.ChangeSymbol(symbol);
+                }  
+                
+                if (this.StockInfoCtrl) this.StockInfoCtrl.ChangeSymbol(symbol);
+            }
+
+            //整体布局
+            OnSize(event)
+            {
+                var height= $(window).height();
+                var width = $(window).width();
+
+                var leftWidth=250;
+                var rightWidth=300;
+                var centerWidth=width-250-300;
+
+                var centerPanel=document.getElementById('CenterPanel')
+                centerPanel.style.width=centerWidth+'px';
+
+                this.OnSizeStockInfo();
+            }
+
+            OnSizeStockInfo()
+            {
+                var height=$("#RightPanel")[0].offsetHeight;
+                var tabHeight=$("#StockInfo_Bottom_Tab")[0].offsetHeight;
+                var topPanelHeight=500;
+                var bottomPanelHeight=height-topPanelHeight-tabHeight;
+
+                var topPanel=document.getElementById('StockInfo_Top');
+                topPanel.style.height=topPanelHeight+'px';
+
+                var bottomPanel=document.getElementById('StockInfo_Bottom');
+                bottomPanel.style.height=bottomPanelHeight+'px';
+            }
+        }
+
+        $(function () 
+        {
+            var control=new ChartContainer();
+            control.Create();
+        })
+    
+
+    </script>
+</body>
+</html>
+
+
+<style>
+
+html,body
+{
+    height:100%;
+    overflow-x:hidden;
+}
+
+body 
+{
+    margin:0px;
+    font-size:14px;
+    background-color: var(--BGColor);
+}
+
+#FullDemo
+{
+    display: flex;
+    height:100%;
+}
+
+#CenterPanel
+{
+    width:500px;
+    height: 100%;
+}
+
+#LeftPanel
+{
+    width: 250px;
+    height: 100%;
+    margin-right: 2px;
+    border-right:solid 1px var(--BorderColor);
+}
+
+#RightPanel
+{
+    width: 300px;
+    height: 100%;
+    border-left:solid 1px var(--BorderColor);
+}
+
+#PeriodTab
+{
+    display: flex;
+    width: 100%;
+    border-bottom:solid 1px var(--BorderColor);
+    
+    background-color: var(--BGColor);
+    line-height: 30px;
+}
+
+
+#ChartContainer
+{
+    width: 100%;
+    height: calc(100% - 35px);
+    background-color: var(--BGColor);
+    overflow-x:hidden;
+}
+
+#KLine
+{
+    width: 100%;
+    height: 100%;
+}
+
+#KLineCtrl
+{
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+#Minute
+{
+    width: 100%;
+    height: 100%;
+}
+
+#MinuteCtrl
+{
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.TabItem
+{
+    padding-left: 5px;
+    padding-right: 5px;
+    border-right:solid 1px var(--BorderColor);
+    cursor: default;
+    background-color: var(--TabItemBG);
+    color:var(--TabTextColor);
+
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.SpaceItem
+{
+    width: 50px;
+    border-right:solid 1px var(--BorderColor);
+}
+
+
+#Report
+{
+    width: 100%;
+    height: 100%;
+}
+
+#ReportCtrl
+{
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+
+#StockInfo_Top
+{
+    height:100px;
+    width: 100%;
+}
+
+#StockInfo_Bottom
+{
+    width: 300px;
+    height: 50%;
+}
+
+#StockInfo_Bottom_Tab
+{
+    display: flex;
+    width: 100%;
+    border-bottom:solid 1px var(--BorderColor);
+    
+    background-color: var(--BGColor);
+    line-height: 25px;
+}
+
+#StockBaseData
+{
+    width: 100%;
+    height: 100%;
+}
+
+#DealCtrl
+{
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+#MinMinuteCtrl
+{
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+:root 
+{
+    --BGColor:rgb(255,255,255);
+    --TabItemBG:rgb(242,242,242);
+    --BorderColor:rgb(206,206,206);
+    --TabTextColor:rgb(90,90,90);
+}
+
+/*
+    白色风格
+*/
+:root[hqchart_style='0'],
+:root[hqchart_style='defined']
+{
+    --BGColor:rgb(255,255,255);
+    --TabItemBG:rgb(242,242,242);
+    --BorderColor:rgb(206,206,206);
+    --TabTextColor:rgb(90,90,90);
+}
+
+/*
+    黑色风格
+*/
+:root[hqchart_style='1']
+{
+    --BGColor:rgb(0,0,0);
+    --TabItemBG:rgb(38,38,38);
+    --BorderColor:rgb(74,74,74);
+    --TabTextColor:rgb(204,204,204);
+}
+
+</style>
