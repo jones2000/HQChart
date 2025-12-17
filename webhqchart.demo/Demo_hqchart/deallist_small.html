@@ -49,6 +49,8 @@
         var g_dealCtrl, g_dealCtrl2;
         $(function () 
         {
+            EnvironmentVariable.Load();
+            
             var dealCtrl=new DealChart();
             dealCtrl.Symbol="600000.sh"
             dealCtrl.Create(document.getElementById('deal'));

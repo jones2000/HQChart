@@ -1032,7 +1032,9 @@ function GetBlackStyle()
                     //{ Font:`${16*GetDevicePixelRatio()}px 微软雅黑`, Margin:{ Left:5, Top:5, Bottom:5, Right:5, YOffset:0 } }
                 ],
 
-                TextColor:"rgb(250,250,250)"
+                TextColor:"rgb(250,250,250)",
+
+                BottomLine:{ Enable:true, Color:"rgb(60,60,60)"} ,    //底部分割线
             },
 
             BuySell:
@@ -1043,7 +1045,12 @@ function GetBlackStyle()
                 //Margin:{ Left:0, Top:0, Bottom:0, Right:0 },
                 //CellMargin:{ Top:5, Bottom:5, YOffset:0, Left:5, Right:5, YOffset:-5 },
                 BottomLine:{ Enable:true, Color:"rgb(60,60,60)"} ,    //底部分割线
-                TopLine:{ Enable:true, Color:"rgb(60,60,60)"} ,    //底部分割线
+                TopLine:{ Enable:false, Color:"rgb(60,60,60)"} ,      //顶部分割线
+
+                CenterLine:
+                {
+                    NoneColor:"rgb(60,60,60)",
+                }
             },
 
             Table:

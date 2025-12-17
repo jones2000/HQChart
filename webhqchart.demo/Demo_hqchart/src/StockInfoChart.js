@@ -15,7 +15,7 @@ class StockInfoChart
         
         Symbol:'600000.sh',
         IsAutoUpdate:true,          //是自动更新数据
-        AutoUpdateFrequency:3000,   //数据更新频率
+        AutoUpdateFrequency:5000,   //数据更新频率
         EnableResize:true,
 
         Column:
@@ -46,6 +46,58 @@ class StockInfoChart
             Top:1          //顶部间距
         }
     };
+
+
+    GetSZSHStockShowOption()
+    {
+        var column=
+        [
+            [{ Name:"现价", Key:"Price", ColorType:3, FloatPrecision:-1 }, { Name:"今开",  Key:"Open",ColorType:3, FloatPrecision:-1 }],
+            [{ Name:"涨幅", Key:"Increase", ColorType:1, FloatPrecision:2, StringFormat:"{Value}%" }, { Name:"涨跌", Key:"UpDown",ColorType:1, FloatPrecision:-1 }],
+            [{ Name:"最高", Key:"High",ColorType:3, FloatPrecision:-1 }, { Name:"最低", Key:"Low",ColorType:3, FloatPrecision:-1 }],
+            [{ Name:"振幅", Key:"Amplitude", FloatPrecision:2, StringFormat:"{Value}%" }, { Name:"换手率", Key:"Exchange", FloatPrecision:2, StringFormat:"{Value}%" }],
+            [{ Name:"涨停价", Key:"UpLimit",ColorType:3, FloatPrecision:-1 }, { Name:"跌停价",  Key:"DownLimit" , ColorType:3, FloatPrecision:-1 }],
+            [{ Name:"总量", Key:"Vol", FloatPrecision:0, Format:{ Type:3, ExFloatPrecision:2 } }, { Name:"总额",  Key:"Amount", FloatPrecision:0, Format:{ Type:3, ExFloatPrecision:2 } }],
+            [{ Name:"内盘", Key:"InVol", ColorType:4, FloatPrecision:0 }, { Name:"外盘",  Key:"OutVol",ColorType:5, FloatPrecision:0 }],
+            [{ Name:"TTM", Key:"PE_TTM",  FloatPrecision:2 }, { Name:"市净率",  Key:"PB", FloatPrecision:2 }],
+            [{ Name:"流通市值", Key:"FlowMarketValue",  FloatPrecision:0, Format:{ Type:3, ExFloatPrecision:2 } }, { Name:"总市值",  Key:"TotalMarketValue", FloatPrecision:0, Format:{ Type:3, ExFloatPrecision:2 } }],
+        ];
+
+        return { Column:column, BuySellCount:5 };
+    }
+
+    GetHKStockShowOption()
+    {
+        var column=
+        [
+            [{ Name:"现价", Key:"Price", ColorType:3, FloatPrecision:-1 }, { Name:"今开",  Key:"Open",ColorType:3, FloatPrecision:-1 }],
+            [{ Name:"涨幅", Key:"Increase", ColorType:1, FloatPrecision:2, StringFormat:"{Value}%" }, { Name:"涨跌", Key:"UpDown",ColorType:1, FloatPrecision:-1 }],
+            [{ Name:"振幅", Key:"Amplitude", FloatPrecision:2, StringFormat:"{Value}%" }, { Name:"昨手", Key:"YClose", ColorType:3, FloatPrecision:-1 } ],
+            [{ Name:"最高", Key:"High",ColorType:3, FloatPrecision:-1 }, { Name:"最低", Key:"Low",ColorType:3, FloatPrecision:-1 }],
+            [{ Name:"总量", Key:"Vol", FloatPrecision:0, Format:{ Type:3, ExFloatPrecision:2 } }, { Name:"总额",  Key:"Amount", FloatPrecision:0, Format:{ Type:3, ExFloatPrecision:2 } }],
+        ];
+
+        return { Column:column, BuySellCount:1 };
+    }
+
+    GetIndexShowOption()
+    {
+        var column=
+        [
+            [{ Name:"现价", Key:"Price", ColorType:3, FloatPrecision:-1, ShowType:1 }],
+            [{ Name:"今开",  Key:"Open",ColorType:3, FloatPrecision:-1, ShowType:1 }],
+            [{ Name:"涨幅", Key:"Increase", ColorType:1, FloatPrecision:2, StringFormat:"{Value}%", ShowType:1 }],
+            [{ Name:"涨跌", Key:"UpDown",ColorType:1, FloatPrecision:-1, ShowType:1}],
+            [{ Name:"振幅", Key:"Amplitude", FloatPrecision:2, StringFormat:"{Value}%", ShowType:1 } ],
+            [{ Name:"昨手", Key:"YClose", ColorType:3, FloatPrecision:-1, ShowType:1}],
+            [{ Name:"最高", Key:"High",ColorType:3, FloatPrecision:-1, ShowType:1 }],
+            [{ Name:"最低", Key:"Low",ColorType:3, FloatPrecision:-1, ShowType:1 }],
+            [{ Name:"总量", Key:"Vol", FloatPrecision:0, Format:{ Type:3, ExFloatPrecision:2 }, ShowType:1 }],
+            [{ Name:"总额",  Key:"Amount", FloatPrecision:0, Format:{ Type:3, ExFloatPrecision:2 }, ShowType:1 }]
+        ];
+
+        return { Column:column, BuySellCount:0 };
+    }
 
             
     Create(divInfo)  //创建图形
@@ -97,7 +149,25 @@ class StockInfoChart
     ChangeSymbol(symbol)
     {
         this.Symbol=symbol;
-        this.Chart.ChangeSymbol(symbol);
+        var upperSymbol=symbol.toUpperCase();
+
+        //设置显示内容
+        var option=null;
+        if (MARKET_SUFFIX_NAME.IsSHSZStockA(symbol)) 
+        {
+            option=this.GetSZSHStockShowOption();
+        }
+        else if (MARKET_SUFFIX_NAME.IsSHSZIndex(symbol)) 
+        {
+            option=this.GetIndexShowOption();
+        }
+        else if (MARKET_SUFFIX_NAME.IsHK(upperSymbol))
+        {
+            if (MARKET_SUFFIX_NAME.IsHKStock(symbol)) option=this.GetHKStockShowOption();
+            else option=this.GetIndexShowOption();
+        }
+        
+        this.Chart.ChangeSymbol(symbol, option);
     }
 
     ReloadResource()

@@ -70,6 +70,7 @@
                 <div id="StockChip" class="TabItem">筹码</div>
                 <div id="BeforeOpen" class="TabItem" style="display: none;">竞价</div>
                 <div id="DrawTool" class="TabItem">画线</div>
+                <div id="Settings"  class="TabItem">设置</div>
 
                 <div id="WhiteStyle" class="TabItem">白色风格</div>
                 <div id="BlackStyle" class="TabItem">黑色风格</div>
@@ -101,6 +102,24 @@
                 <div id="IndexMinChart" class="TabItem">联</div>
             </div>
 
+        </div>
+    </div>
+
+    <!-- 弹框遮罩层 -->
+    <div class="modal-mask" id="settingModal">
+        <!-- 弹框内容 -->
+        <div class="modal-content">
+            <div class="modal-title">系统设置</div>
+            <form id="settingForm">
+                <div class="form-item">
+                    <label for="extendID">HQChartData数据插件ID</label>
+                    <input type="text" id="extendID" name="extendID" placeholder="请输入插件ID">
+                </div>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-cancel" id="cancelBtn">取消</button>
+                    <button type="button" class="btn btn-save" id="saveBtn">保存</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -137,12 +156,14 @@
                     "600000.sh",
                     "688597.sh",
                     "688611.sh",
-                    "688597.sh",
                     "000001.sh", 
                     "399001.sz",
                     "300040.sz", 
                     "000001.sz",
-                    "002594.sz"
+                    "002594.sz",
+                    "01810.hk",
+                    "01211.hk",
+                    "HSCEI.hk",
                 ];
 
                 this.SelfReport.HQData.SetSelfBlock("自选股1", SELF_STOCK_LIST_1);
@@ -179,6 +200,8 @@
                 document.getElementById('StockChip').onmousedown=(e)=>{ this.EnableStockChip(); }
                 document.getElementById('DrawTool').onmousedown=(e)=>{ this.ShowDrawTool(); }
                 document.getElementById('BeforeOpen').onmousedown=(e)=>{ this.EnableBeforeOpen(); }
+                document.getElementById('Settings').onmousedown=(e)=>{ this.OnSettings(); }
+                
 
                 document.getElementById('DealList').onmousedown=(e)=>{  this.OnClickStockInfoTab("DealList"); }
                 document.getElementById('DealPriceList').onmousedown=(e)=>{  this.OnClickStockInfoTab("DealPriceList"); }
@@ -324,6 +347,7 @@
                 var upperSymbol=symbol.toUpperCase();
                 if (MARKET_SUFFIX_NAME.IsSH(upperSymbol)) indexSymbol="000001.sh";
                 else if (MARKET_SUFFIX_NAME.IsSZ(upperSymbol)) indexSymbol="399001.sz";
+                else if (MARKET_SUFFIX_NAME.IsHK(upperSymbol)) indexSymbol="HSI.hk";
 
                 return indexSymbol;
             }
@@ -416,10 +440,45 @@
                 var bottomPanel=document.getElementById('StockInfo_Bottom');
                 bottomPanel.style.height=bottomPanelHeight+'px';
             }
+
+
+            //设置
+            OnSettings()
+            {
+                const modalMask = document.getElementById('settingModal');
+                const cancelBtn = document.getElementById('cancelBtn');
+                const settingForm = document.getElementById('settingForm');
+                const input = document.getElementById('extendID');
+                if (!modalMask) return;
+
+                input.value = EnvironmentVariable.TargetExtensionID;
+
+                cancelBtn.onclick=(e)=>
+                {
+                    modalMask.style.display = 'none';
+                };
+
+                saveBtn.onclick=(e)=>
+                {
+                    const input = document.getElementById('extendID');
+                    var value=input.value.trim();
+                    EnvironmentVariable.TargetExtensionID=value;
+                    EnvironmentVariable.Save();
+
+                    modalMask.style.display = 'none';
+
+                    setTimeout(() => { location.reload(); }, 1000);
+                }
+
+                modalMask.style.display = 'flex';
+                
+            }
         }
 
         $(function () 
         {
+            EnvironmentVariable.Load();
+
             var control=new ChartContainer();
             control.Create();
         })
@@ -624,6 +683,105 @@ body
     --TabItemBG:rgb(38,38,38);
     --BorderColor:rgb(74,74,74);
     --TabTextColor:rgb(204,204,204);
+}
+
+
+/*
+设置弹框 AI生成
+*/
+
+/* 弹框遮罩层 */
+.modal-mask 
+{
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* 默认隐藏 */
+    display: none;
+}
+
+/* 弹框主体 */
+.modal-content {
+    width: 400px;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 弹框标题 */
+.modal-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+/* 表单项样式 */
+.form-item {
+    margin-bottom: 20px;
+}
+
+.form-item label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #333;
+}
+
+.form-item input {
+    width: 90%;
+    padding: 10px;
+    font-size: 14px;
+    border: 1px solid #dcdfe6;
+    border-radius: 4px;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.form-item input:focus {
+    border-color: #409eff;
+}
+
+/* 按钮组样式 */
+.btn-group {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.btn {
+    padding: 8px 16px;
+    font-size: 14px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-cancel {
+    color: #666;
+    background-color: #f5f5f5;
+}
+
+.btn-cancel:hover {
+    background-color: #e5e5e5;
+}
+
+.btn-save {
+    color: #fff;
+    background-color: #409eff;
+}
+
+.btn-save:hover {
+    background-color: #66b1ff;
 }
 
 </style>

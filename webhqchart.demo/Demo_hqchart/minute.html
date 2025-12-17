@@ -38,6 +38,8 @@
 
         $(function () 
         {
+            EnvironmentVariable.Load();
+
             WebFont.load({ custom: { families: ['iconfont'] } });   //预加载下iconfont资源
 
             var minuteControl=new MinuteChart();
@@ -46,6 +48,7 @@
             minuteControl.HQData.WSClient=wsClient;
 
             minuteControl.Symbol="600000.sh";
+            //minuteControl.Symbol="01810.hk";
             minuteControl.Create(document.getElementById('divminute'));
         })
 

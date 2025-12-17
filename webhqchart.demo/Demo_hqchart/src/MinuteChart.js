@@ -29,7 +29,7 @@ class MinuteChart
         Symbol:'600000.sh',         // cf1909.czc
         //Symbol:'HSI.hk',         // cf1909.czc
         IsAutoUpdate:true,          //是自动更新数据
-        AutoUpdateFrequency:3000,   //数据更新频率
+        AutoUpdateFrequency:5000,   //数据更新频率
         DayCount:1,                     //1 最新交易日数据 >1 多日走势图
         IsShowRightMenu:true,       //是否显示右键菜单
         //CorssCursorTouchEnd:true,

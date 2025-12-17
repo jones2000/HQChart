@@ -56074,6 +56074,11 @@ IFrameSplitOperator.RemoveMarketSuffix=function(symbol)
     return symbol;
 }
 
+IFrameSplitOperator.IsNumberString=function(strValue)
+{
+    return /^\d+$/.test(strValue);
+}
+
 function FrameSplitKLinePriceY()
 {
     this.newMethod=IFrameSplitOperator;   //派生
@@ -79770,7 +79775,9 @@ function JSChartResource()
                 { Font:`${16*GetDevicePixelRatio()}px 微软雅黑`,Color:"rgb(90,90,90)", Margin:{ Left:5, Top:5, Bottom:5, Right:5, YOffset:0 } }
             ],
 
-            TextColor:"rgb(100,100,10)"
+            TextColor:"rgb(100,100,10)",
+
+            BottomLine:{ Enable:true, Color:"rgb(192,192,192)"} ,    //底部分割线
         },
 
         BuySell:
@@ -79780,8 +79787,14 @@ function JSChartResource()
             VolColor:"rgb(90,90,90)",
             Margin:{ Left:0, Top:0, Bottom:0, Right:0 },
             CellMargin:{ Top:5, Bottom:5, Left:5, Right:5, YOffset:0 },
-            BottomLine:{ Enable:true, Color:"rgb(192,192,192)"} ,    //底部分割线
-            TopLine:{ Enable:true, Color:"rgb(192,192,192)"} ,    //底部分割线
+            BottomLine:{ Enable:true, Color:"rgb(192,192,192)"},    //底部分割线
+            TopLine:{ Enable:false, Color:"rgb(192,192,192)"},    //底部分割线
+
+            CenterLine:
+            {
+                BuyColor:"rgb(228, 164, 54)",SellColor:"rgb(61, 147, 219)", NoneColor:"rgb(90,90,90)",
+                Width:2*GetDevicePixelRatio()
+            }
         },
 
         Table:
@@ -80804,6 +80817,15 @@ function JSChartResource()
                 if (IFrameSplitOperator.IsBool(subItem.Enable)) dest.BuySell.TopLine.Enable=subItem.Enable;
             }
 
+            if (item.CenterLine)
+            {
+                var subItem=item.CenterLine;
+                if (subItem.BuyColor) dest.BuySell.CenterLine.BuyColor=subItem.BuyColor;
+                if (subItem.SellColor) dest.BuySell.CenterLine.SellColor=subItem.SellColor;
+                if (subItem.NoneColor) dest.BuySell.CenterLine.NoneColor=subItem.NoneColor;
+                if (IFrameSplitOperator.IsNumber(subItem.Width)) dest.BuySell.CenterLine.Width=subItem.Width;
+            }
+
             
         }
 
@@ -80868,6 +80890,13 @@ function JSChartResource()
                         if (IFrameSplitOperator.IsNumber(margin.YOffset)) subDest.YOffset=margin.YOffset
                     }
                 }
+            }
+
+            if (item.BottomLine)
+            {
+                var subItem=item.BottomLine;
+                if (subItem.Color) dest.Header.BottomLine.Color=subItem.Color;
+                if (IFrameSplitOperator.IsBool(subItem.Enable)) dest.Header.BottomLine.Enable=subItem.Enable;
             }
         }
 
@@ -102861,6 +102890,18 @@ var MARKET_SUFFIX_NAME=
         if (upperSymbol.charAt(0)=='3' && upperSymbol.charAt(1)=='0')
             return true;
         
+        return false;
+    },
+
+    IsHKStock:function(symbol)  //港股股票 全是数字
+    {
+        if (!symbol) return false;
+        var upperSymbol=symbol.toUpperCase();
+        if (!this.IsHK(upperSymbol)) return false;
+
+        var shortSymbol=this.GetShortSymbol(symbol);
+        if (IFrameSplitOperator.IsNumberString(shortSymbol)) return true;
+
         return false;
     },
 

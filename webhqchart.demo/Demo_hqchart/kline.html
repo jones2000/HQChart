@@ -61,6 +61,8 @@
         
         $(function () 
         {
+            EnvironmentVariable.Load();
+
             WebFont.load({ custom: { families: ['iconfont'] } });   //预加载下iconfont资源
            
             var klineControl=new KLineChart();
@@ -69,6 +71,7 @@
             klineControl.HQData.WSClient=wsClient;
 
             klineControl.Symbol="600036.sh";
+            //klineControl.Symbol="01810.hk";
             klineControl.Create(document.getElementById('kline'));
 
             //$("#button_7").click(function() { klineControl.AddIndexWindow("RSI"); } );

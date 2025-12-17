@@ -45,6 +45,8 @@
         var g_dealCtrl;
         $(function () 
         {
+            EnvironmentVariable.Load();
+            
             var dealCtrl=new DealChart();
             dealCtrl.ShowType=3;
             dealCtrl.Option.IsSingleTable=false;

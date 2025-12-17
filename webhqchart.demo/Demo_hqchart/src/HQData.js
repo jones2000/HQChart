@@ -9,12 +9,18 @@ function HQChartWSClient()
 
     this.Create=function()
     {
-        this.Port=chrome.runtime.connect(this.TargetExtensionID, { name:this.ClientName });
-        this.Port.onMessage.addListener((msg)=>
+        try
         {
-           this.OnRecvMessage(msg)
-        });
+            this.Port=chrome.runtime.connect(this.TargetExtensionID, { name:this.ClientName });
+            this.Port.onMessage.addListener((msg)=>
+            {
+            this.OnRecvMessage(msg)
+            });
+        }
+        catch(error)
+        {
 
+        }
     }
 
     this.OnRecvMessage=function(msg)
@@ -611,7 +617,7 @@ class HQData
 
         var symbol=hqchart.Symbol;
         var hqchartData={ name:symbol, symbol:symbol, data:[], ver:2.0 };
-
+        var bFlowCapital=false;
         for(var i=0;i<recv.AryData.length;++i)
         {
             var item=recv.AryData[i];
@@ -619,26 +625,31 @@ class HQData
             {
                 var aryKLine=item.Data;
                 if (item.Name) hqchartData.name=item.Name;
-                for(var j=0;j<aryKLine.length;++j)
+                if (item.FlowCapital===true) bFlowCapital=true;
+                if (IFrameSplitOperator.IsNonEmptyArray(aryKLine))
                 {
-                    var item=aryKLine[j];
-                    var kItem=[];
-                    kItem[0]=item.Date;
-                    kItem[1]=item.YClose;
-                    kItem[2]=item.Open;
-                    kItem[3]=item.High;
-                    kItem[4]=item.Low;
-                    kItem[5]=item.Close;
-                    kItem[6]=item.Vol;
-                    kItem[7]=item.Amount;
-
-                    hqchartData.data.push(kItem);
+                    for(var j=0;j<aryKLine.length;++j)
+                    {
+                        var item=aryKLine[j];
+                        var kItem=[];
+                        kItem[0]=item.Date;
+                        kItem[1]=item.YClose;
+                        kItem[2]=item.Open;
+                        kItem[3]=item.High;
+                        kItem[4]=item.Low;
+                        kItem[5]=item.Close;
+                        kItem[6]=item.Vol;
+                        kItem[7]=item.Amount;
+                        if (bFlowCapital) kItem[15]=item.FlowCapital;
+                        hqchartData.data.push(kItem);
+                    }
                 }
+                
                 break;
             }
         }
 
-        //if (hqchart) hqchart.FlowCapitalReady=true;
+        if (hqchart && bFlowCapital) hqchart.FlowCapitalReady=true;
 
         callback(hqchartData);
     }
@@ -649,6 +660,7 @@ class HQData
         var symbol=data.Request.Data.symbol[0];    //请求的股票代码
         var right=data.Request.Data.right;      //复权
         var period=data.Request.Data.period;    //周期
+        var dateRange=data.Request.Data.dateRange;
         console.log(`[HQData::KLine_RequestHistoryData] Symbol=${symbol}, Right=${right} Period=${period}`);
 
         if (option) option.HQChart=data.Self;
@@ -662,7 +674,7 @@ class HQData
             {
                 Type:100,
                 ID:this.RequestKLineRealtimeData_ID,
-                ArySymbol:[{ Symbol:symbol, Period:period, Right:right, Count:3 } ],
+                ArySymbol:[{ Symbol:symbol, Period:period, Right:right, Count:3, DateRange:dateRange } ],
                 ExtendData:{ ExtendID:extendID },
             }
         };
@@ -704,20 +716,23 @@ class HQData
             {
                 var aryKLine=item.Data;
                 if (item.Name) stockItem.name=item.Name;
-                for(var j=0;j<aryKLine.length;++j)
+                if (IFrameSplitOperator.IsNonEmptyArray(aryKLine))
                 {
-                    var item=aryKLine[j];
-                    var kItem=[];
-                    kItem[0]=item.Date;
-                    kItem[1]=item.YClose;
-                    kItem[2]=item.Open;
-                    kItem[3]=item.High;
-                    kItem[4]=item.Low;
-                    kItem[5]=item.Close;
-                    kItem[6]=item.Vol;
-                    kItem[7]=item.Amount;
+                    for(var j=0;j<aryKLine.length;++j)
+                    {
+                        var item=aryKLine[j];
+                        var kItem=[];
+                        kItem[0]=item.Date;
+                        kItem[1]=item.YClose;
+                        kItem[2]=item.Open;
+                        kItem[3]=item.High;
+                        kItem[4]=item.Low;
+                        kItem[5]=item.Close;
+                        kItem[6]=item.Vol;
+                        kItem[7]=item.Amount;
 
-                    stockItem.data.push(kItem);
+                        stockItem.data.push(kItem);
+                    }
                 }
             }
             else
@@ -833,6 +848,7 @@ class HQData
         var symbol=data.Request.Data.symbol[0];    //请求的股票代码
         var right=data.Request.Data.right;     //复权
         var period=data.Request.Data.period;    //周期
+        var dateRange=data.Request.Data.dateRange;
         console.log(`[HQData::KLine_RequestHistoryMinuteData] Symbol=${symbol}, Right=${right} Period=${period}`);
 
         if (option) option.HQChart=data.Self;
@@ -846,7 +862,7 @@ class HQData
             {
                 Type:101,
                 ID:this.RequestKLineMinuteRealtimeData_ID,
-                ArySymbol:[{ Symbol:symbol, Period:period, Right:right, Count:3 } ],
+                ArySymbol:[{ Symbol:symbol, Period:period, Right:right, Count:3, DateRange:dateRange } ],
                 ExtendData:{ ExtendID:extendID },
             }
         };

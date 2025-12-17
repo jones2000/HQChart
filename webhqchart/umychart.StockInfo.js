@@ -235,7 +235,12 @@ function JSStockInfoChartContainer(uielement)
             { Name:"买二", Price:null, Vol:null, Amount:null },
             { Name:"买三", Price:null, Vol:null, Amount:null },
             { Name:"买四", Price:null, Vol:null, Amount:null },
-            { Name:"买五", Price:null, Vol:null, Amount:null } 
+            { Name:"买五", Price:null, Vol:null, Amount:null },
+            { Name:"买六", Price:null, Vol:null, Amount:null },
+            { Name:"买七", Price:null, Vol:null, Amount:null },
+            { Name:"买八", Price:null, Vol:null, Amount:null },
+            { Name:"买九", Price:null, Vol:null, Amount:null },
+            { Name:"买十", Price:null, Vol:null, Amount:null },
         ],
 
         Sells:
@@ -244,7 +249,12 @@ function JSStockInfoChartContainer(uielement)
             { Name:"卖二", Price:null, Vol:null, Amount:null },
             { Name:"卖三", Price:null, Vol:null, Amount:null },
             { Name:"卖四", Price:null, Vol:null, Amount:null },
-            { Name:"卖五", Price:null, Vol:null, Amount:null } 
+            { Name:"卖五", Price:null, Vol:null, Amount:null },
+            { Name:"卖六", Price:null, Vol:null, Amount:null },
+            { Name:"卖七", Price:null, Vol:null, Amount:null },
+            { Name:"卖八", Price:null, Vol:null, Amount:null },
+            { Name:"卖九", Price:null, Vol:null, Amount:null },
+            { Name:"卖十", Price:null, Vol:null, Amount:null },
         ],
 
         MapData:new Map(),  //key=, { Value:, Text:, }
@@ -291,7 +301,12 @@ function JSStockInfoChartContainer(uielement)
             { Name:"买二", Price:null, Vol:null, Amount:null },
             { Name:"买三", Price:null, Vol:null, Amount:null },
             { Name:"买四", Price:null, Vol:null, Amount:null },
-            { Name:"买五", Price:null, Vol:null, Amount:null } 
+            { Name:"买五", Price:null, Vol:null, Amount:null },
+            { Name:"买六", Price:null, Vol:null, Amount:null },
+            { Name:"买七", Price:null, Vol:null, Amount:null },
+            { Name:"买八", Price:null, Vol:null, Amount:null },
+            { Name:"买九", Price:null, Vol:null, Amount:null },
+            { Name:"买十", Price:null, Vol:null, Amount:null },
         ];
 
         this.Data.Sells=
@@ -300,7 +315,12 @@ function JSStockInfoChartContainer(uielement)
             { Name:"卖二", Price:null, Vol:null, Amount:null },
             { Name:"卖三", Price:null, Vol:null, Amount:null },
             { Name:"卖四", Price:null, Vol:null, Amount:null },
-            { Name:"卖五", Price:null, Vol:null, Amount:null } 
+            { Name:"卖五", Price:null, Vol:null, Amount:null },
+            { Name:"卖六", Price:null, Vol:null, Amount:null },
+            { Name:"卖七", Price:null, Vol:null, Amount:null },
+            { Name:"卖八", Price:null, Vol:null, Amount:null },
+            { Name:"卖九", Price:null, Vol:null, Amount:null },
+            { Name:"卖十", Price:null, Vol:null, Amount:null },
         ];
 
         this.Data.MapData=new Map();
@@ -312,6 +332,12 @@ function JSStockInfoChartContainer(uielement)
         this.ClearData();
         this.Symbol=symbol;
         this.Data.Symbol=symbol;
+
+        if (option)
+        {
+            if (IFrameSplitOperator.IsNonEmptyArray(option.Column)) this.SetColumn(option.Column);
+            if (IFrameSplitOperator.IsNumber(option.BuySellCount)) this.SetBuySellCount(option.BuySellCount);
+        }
 
         this.Draw();
         this.RequestStockData();
@@ -547,6 +573,17 @@ function JSStockInfoChartContainer(uielement)
 
         if (option && option.Redraw) this.Draw();
     }
+
+    this.SetBuySellCount=function(count, option)
+    {
+        var chart=this.ChartPaint[0];
+        if (!chart)  return;
+
+        chart.BuySellCount=count;
+        chart.SizeChange=true;
+
+        if (option && option.Redraw) this.Draw();
+    }
 }
 
 function JSStockInfoFrame()
@@ -661,6 +698,7 @@ function ChartStockData()
 
     //买卖5档配置
     this.BuySellConfig=CloneData(g_JSChartResource.StockInfo.BuySell);
+    this.BuySellCount=5;    //显示几档买卖盘
 
     this.TableConfig=CloneData(g_JSChartResource.StockInfo.Table);
     
@@ -833,11 +871,24 @@ function ChartStockData()
         }
 
         position.Top=yText;
+
+        if (config.BottomLine && config.BottomLine.Enable)
+        {
+            var xLeft=position.Border.Left, xRight=position.Border.Right;
+            this.Canvas.strokeStyle=config.BottomLine.Color;
+            this.Canvas.lineWidth=1*GetDevicePixelRatio();
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(xLeft,ToFixedPoint(yText));
+            this.Canvas.lineTo(xRight,ToFixedPoint(yText));
+            this.Canvas.stroke();
+        }
     }
 
     //买卖5档
     this.DrawBuySell=function(position)
     {
+        if (this.BuySellCount<=0) return;
+
         var config=this.BuySellConfig;
         var top=position.Top;
         var left=position.Left+config.Margin.Left;
@@ -850,26 +901,72 @@ function ChartStockData()
         this.Canvas.textAlign = 'left';
         this.Canvas.textBaseline = 'bottom';
         var cellHeight=this.Canvas.measureText("擎").width+config.CellMargin.Top+config.CellMargin.Bottom;
-
-        for(var i=4;i>=0;--i)
+        var count=this.BuySellCount;
+        var sellVol=0, buyVol=0;
+        for(var i=count-1;i>=0;--i)
         {
             xText=left;
             var item=this.Data.Sells[i];
             this.DrawBuySellItem(item, xText, yText, cellWidth, cellHeight);
-
+            if (IFrameSplitOperator.IsNumber(item.Vol)) sellVol+=item.Vol;
             yText+=cellHeight;
         }
 
-        for(var i=0;i<4;++i)
+        var yCenter=null;
+        if (config.CenterLine)  //留出画线的位置
+        {
+            yCenter=yText;
+            var lineConfig=config.CenterLine;
+            var lineWidth=lineConfig.Width;
+            yText+=lineWidth;
+        }
+        
+
+        for(var i=0;i<count && i<this.Data.Buys.length;++i)
         {
             xText=left;
             var item=this.Data.Buys[i];
             this.DrawBuySellItem(item, xText, yText, cellWidth, cellHeight);
-
+            if (IFrameSplitOperator.IsNumber(item.Vol)) buyVol+=item.Vol;
             yText+=cellHeight;
         }
 
         position.Top=yText;
+
+        if (IFrameSplitOperator.IsNumber(yCenter) && config.CenterLine)
+        {
+            var lineConfig=config.CenterLine;
+            var xLeft=position.Border.Left, xRight=position.Border.Right;
+            var lineWidth=lineConfig.Width;
+            if (buyVol+sellVol>0)
+            {
+                var buyRate=buyVol/(buyVol+sellVol);
+                var barWidth=xRight-xLeft;
+                var buyWidth=barWidth*buyRate;
+                var xCenter=xLeft+buyWidth;
+                this.Canvas.lineWidth=lineWidth;
+                this.Canvas.strokeStyle=lineConfig.BuyColor;
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(xLeft,ToFixedPoint2(lineWidth,yCenter));
+                this.Canvas.lineTo(xCenter,ToFixedPoint2(lineWidth,yCenter));
+                this.Canvas.stroke();
+
+                this.Canvas.strokeStyle=lineConfig.SellColor;
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(xCenter,ToFixedPoint2(lineWidth,yCenter,));
+                this.Canvas.lineTo(xRight,ToFixedPoint2(lineWidth,yCenter));
+                this.Canvas.stroke();
+            }
+            else
+            {
+                this.Canvas.strokeStyle=lineConfig.NoneColor;
+                this.Canvas.lineWidth=lineWidth;
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(xLeft,ToFixedPoint2(lineWidth,yCenter));
+                this.Canvas.lineTo(xRight,ToFixedPoint2(lineWidth,yCenter));
+                this.Canvas.stroke();
+            }
+        }
 
         if (config.BottomLine && config.BottomLine.Enable)
         {
@@ -996,10 +1093,22 @@ function ChartStockData()
 
                     if (text)
                     {
-                        var textWidth=this.Canvas.measureText(text).width;
-                        var x=xText+cellWidth-textWidth-config.CellMargin.Right;
-                        this.Canvas.fillStyle=color;
-                        this.Canvas.fillText(text,x,yBottom);
+                        if (i==0 && item.ShowType==1)   //整行显示
+                        {
+                            var textWidth=this.Canvas.measureText(text).width;
+                            var x=xText+(cellWidth*3)-textWidth-config.CellMargin.Right;
+                            this.Canvas.fillStyle=color;
+                            this.Canvas.fillText(text,x,yBottom);
+                            break;
+                        }
+                        else
+                        {
+                            var textWidth=this.Canvas.measureText(text).width;
+                            var x=xText+cellWidth-textWidth-config.CellMargin.Right;
+                            this.Canvas.fillStyle=color;
+                            this.Canvas.fillText(text,x,yBottom);
+                        }
+                        
                     }
                 }
                 xText+=cellWidth;

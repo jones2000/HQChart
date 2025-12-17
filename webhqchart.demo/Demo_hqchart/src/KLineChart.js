@@ -33,7 +33,8 @@ class KLineChart
             { Index:"MA", Overlay:true, AddIndexWindow:true, Export:true, IsSync:true,IndexHelp:true },
             { Index:"VOL", Overlay:true, Export:true, IsSync:true, IndexHelp:true},
             { Index:"MACD", Overlay:true, Export:true, IsSync:true, IndexHelp:true},
-            { Name:"测试", FloatPrecision:4, Script:
+
+            //{ Name:"测试", FloatPrecision:4, Script:
                 //"T:=DYNAINFO(3);T2:=DYNAINFO(37);"
                 
                 /*
@@ -54,9 +55,8 @@ class KLineChart
                //`STKINDI('sz300059','KDJ.K#WEEK',9,4,4,)`
                //`T:CAPITAL;`
                //`T:DYNAINFO(37);`
-               `FINANCE(7);`
-            }
-            
+               //`FINANCE(7);`
+            //}
         ], 
 
         OverlayIndex:
@@ -89,7 +89,7 @@ class KLineChart
         //Language:'EN',
 
         Symbol:"600000.sh",
-        IsAutoUpdate:false,       //是自动更新数据
+        IsAutoUpdate:true,       //是自动更新数据
         AutoUpdateFrequency:5000,   //数据更新频率
         //TradeIndex: {Index:'交易系统-BIAS'},    //交易系统
         IsApiPeriod:true,

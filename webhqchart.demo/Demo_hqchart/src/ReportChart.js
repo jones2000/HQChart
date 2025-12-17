@@ -19,7 +19,7 @@ class ReportChart
         //显示列
         Column:
         [
-            {Type:REPORT_COLUMN_ID.SYMBOL_NAME_ID ,Sort:1 ,SortType:[0], Title:"名称", ChartTooltip:{ Enable:true, Type:20 }, },
+            {Type:REPORT_COLUMN_ID.SYMBOL_NAME_ID ,Sort:1 ,SortType:[0], Title:"名称", MaxText:"擎擎擎擎擎擎", ChartTooltip:{ Enable:true, Type:20 }, },
             //{ Type:REPORT_COLUMN_ID.PRICE_ID, Sort:1, MaxText:"88888.88" },
             { 
                 Type:REPORT_COLUMN_ID.CLOSE_LINE_ID, IsDrawArea:true, MaxText:"88888.88",EnablePopupHeaderMenu:true,LineColorType:1,

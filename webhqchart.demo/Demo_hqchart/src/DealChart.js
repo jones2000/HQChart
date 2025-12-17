@@ -17,7 +17,7 @@ class DealChart
         
         Symbol:'600000.sh',
         IsAutoUpdate:true,          //是自动更新数据
-        AutoUpdateFrequency:3000,   //数据更新频率
+        AutoUpdateFrequency:5000,   //数据更新频率
 
         Column:
         [
