@@ -515,8 +515,11 @@ function JSDealChartContainer(uielement)
         var chart=this.ChartPaint[0];
         if (chart) chart.Data=null;
 
-        if (option && IFrameSplitOperator.IsNumber(option.TradeDate))
-            this.TradeDate=option.TradeDate;
+        if (option)
+        {
+            if (IFrameSplitOperator.IsNumber(option.TradeDate)) this.TradeDate=option.TradeDate;
+            if (IFrameSplitOperator.IsNonEmptyArray(option.Column)) this.SetColumn(option.Column);
+        } 
 
         if (!this.Symbol)
         {
@@ -624,6 +627,7 @@ function JSDealChartContainer(uielement)
         chart.Data=this.Data;
         chart.Symbol=this.Symbol;
         chart.YClose=data.yclose;
+        chart.YFClose=data.yfclose;
         chart.Open=data.open;
 
         if (this.IsShowLastPage) this.SetLastPageDataOffset();   //显示最后一屏
@@ -1291,8 +1295,6 @@ var DEAL_COLUMN_ID=
     SYMBOL_ID:11,       //股票代码
     NAME_ID:12,         //股票名称
 
-   
-
     //预留数值类型 10个
     RESERVE_NUMBER1_ID:201,         //ReserveNumber1:
     RESERVE_NUMBER2_ID:202,
@@ -1370,6 +1372,7 @@ function ChartDealList()
     //this.Data={Offset:0, Data:[ {Time:925, Price:20.1, Vol:10000050, BS:1, Deal:45 }, {Time:925, Price:18.2, Vol:1150, BS:1, Deal:5 }] };
     this.Symbol;
     this.YClose;    //昨收
+    this.YFClose;   //昨结算
     this.Open;      //开盘价
     this.Decimal=2; //小数位数
     this.IsSingleTable=false;    //单表模式
@@ -1524,7 +1527,6 @@ function ChartDealList()
             { Type:DEAL_COLUMN_ID.STRING_TIME_ID, Title:"时间", TextAlign:"center", Width:null, TextColor:g_JSChartResource.DealList.FieldColor.Time, MaxText:"88:88:88" },
             { Type:DEAL_COLUMN_ID.INDEX_ID, Title:"序号", TextAlign:"center", Width:null, TextColor:g_JSChartResource.DealList.FieldColor.Index, MaxText:"88888" },
 
-           
             { Type:DEAL_COLUMN_ID.CENTER_BAR_ID, Title:"柱子2", TextAlign:"center", Width:null, TextColor:g_JSChartResource.DealList.FieldColor.BarTitle, MaxText:"888888" },
             { Type:DEAL_COLUMN_ID.CUSTOM_TEXT_ID, Title:"自定义", TextAlign:"center", Width:null, TextColor:g_JSChartResource.DealList.FieldColor.Text, MaxText:"擎擎擎擎擎" },
 
@@ -1853,10 +1855,7 @@ function ChartDealList()
             }
             else if (item.Type==DEAL_COLUMN_ID.PRICE_ID)
             {
-                if (data.Price>this.YClose) textColor=this.UpColor;
-                else if (data.Price<this.YClose) textColor=this.DownColor;
-                else textColor=this.UnchangeColor;
-
+                textColor=this.GetPriceColor(data.Price);
                 text=data.Price.toFixed(this.Decimal);
             }
             else if (item.Type==DEAL_COLUMN_ID.VOL_ID)
@@ -1955,6 +1954,29 @@ function ChartDealList()
 
             left+=item.Width;
         }
+    }
+
+    this.GetPriceColor=function(price)
+    {
+        var upperSymbol=null;
+        if (this.Symbol) upperSymbol=this.Symbol.toUpperCase();
+        if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol))
+        {
+            if (!IFrameSplitOperator.IsNumber(this.YFClose)) return  this.UnchangeColor;
+            return this.GetUpDownColor(price, this.YFClose);
+        }
+        else
+        {
+            if (!IFrameSplitOperator.IsNumber(this.YClose)) return this.UnchangeColor;
+            return this.GetUpDownColor(price, this.YClose);
+        }
+    }
+
+    this.GetUpDownColor=function(price, price2)
+    {
+        if (price>price2) return this.UpColor;
+        else if (price<price2) return this.DownColor;
+        else return this.UnchangeColor;
     }
 
     this.FormatReserveNumber=function(column, data, drawInfo)

@@ -43,6 +43,7 @@ var MARKET_SUFFIX_NAME=
     DCE: '.DCE',         //大连商品交易所(Dalian Commodity Exchange)
     CZCE: '.CZC',        //郑州期货交易所
     GZFE:".GZFE",        //广州期货交易所
+    INE:".INE",          //上海国际能源交易中心
 
     USA: '.USA',         //美股
     FTSE: '.FTSE',       //富时中国
@@ -282,11 +283,17 @@ var MARKET_SUFFIX_NAME=
         return upperSymbol.indexOf(this.GZFE) > 0;
     },
 
+    IsINE:function(upperSymbol)
+    {
+        if (!upperSymbol) return false;
+        return upperSymbol.indexOf(this.INE) > 0;
+    },
+
     IsChinaFutures: function (upperSymbol)   //是否是国内期货
     {
         if (!upperSymbol) return false;
 
-        return this.IsCFFEX(upperSymbol) || this.IsCZCE(upperSymbol) || this.IsDCE(upperSymbol) || this.IsSHFE(upperSymbol) || this.IsGZFE(upperSymbol) ;
+        return this.IsCFFEX(upperSymbol) || this.IsCZCE(upperSymbol) || this.IsDCE(upperSymbol) || this.IsSHFE(upperSymbol) || this.IsGZFE(upperSymbol) || this.IsINE(upperSymbol);
     },
 
     IsFutures: function (upperSymbol) //是否是期货 包含国外的
@@ -1003,7 +1010,8 @@ function MinuteTimeStringData()
         if (MARKET_SUFFIX_NAME.IsTW(upperSymbol)) return this.GetTW(upperSymbol);
         if (MARKET_SUFFIX_NAME.IsJP(upperSymbol)) return this.GetJP(upperSymbol);
         if (MARKET_SUFFIX_NAME.IsUSA(upperSymbol)) return this.GetUSA(true);
-        if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsSHFE(upperSymbol) || MARKET_SUFFIX_NAME.IsGZFE(upperSymbol))
+        if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || 
+            MARKET_SUFFIX_NAME.IsSHFE(upperSymbol) || MARKET_SUFFIX_NAME.IsGZFE(upperSymbol) || MARKET_SUFFIX_NAME.IsINE(upperSymbol))
         {
             var splitData = g_FuturesTimeData.GetSplitData(upperSymbol, option);
             if (!splitData) return null;
@@ -1507,7 +1515,8 @@ function MinuteCoordinateData()
                 data=this.GetTWData(upperSymbol,width);
             else if (MARKET_SUFFIX_NAME.IsJP(upperSymbol))
                 data=this.GetJPData(upperSymbol,width);
-            else if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsSHFE(upperSymbol) || MARKET_SUFFIX_NAME.IsGZFE(upperSymbol))
+            else if (MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || 
+                MARKET_SUFFIX_NAME.IsSHFE(upperSymbol) || MARKET_SUFFIX_NAME.IsGZFE(upperSymbol) || MARKET_SUFFIX_NAME.IsINE(upperSymbol))
                 return this.GetChinatFuturesData(upperSymbol,width);
             else if (MARKET_SUFFIX_NAME.IsUSA(upperSymbol))
                 data = this.GetUSAData(upperSymbol, width);
@@ -2156,6 +2165,13 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.SHFE + '-BC', {Time:4,Decimal:0,Name:'国际铜'}],
         [MARKET_SUFFIX_NAME.SHFE + '-EC', {Time:0,Decimal:0,Name:'集运指数'}],
 
+        //上海国际能源交易中心 独立的一个市场
+        [MARKET_SUFFIX_NAME.INE + '-NR', {Time:6,Decimal:1,Name:'20号胶'}],
+        [MARKET_SUFFIX_NAME.INE + '-SC', {Time:5,Decimal:1,Name:'原油'}],
+        [MARKET_SUFFIX_NAME.INE + '-LU', {Time:6,Decimal:0,Name:'低硫燃油'}],
+        [MARKET_SUFFIX_NAME.INE + '-BC', {Time:4,Decimal:0,Name:'国际铜'}],
+        [MARKET_SUFFIX_NAME.INE + '-EC', {Time:0,Decimal:0,Name:'集运指数'}],
+
         //郑州期货交易所
         [MARKET_SUFFIX_NAME.CZCE + '-CF', {Time:6,Decimal:0,Name:"棉花"}],
         [MARKET_SUFFIX_NAME.CZCE + '-SR', {Time:6,Decimal:0,Name:"白糖"}],
@@ -2252,6 +2268,11 @@ function FuturesTimeData()
         {
             oneWordName = MARKET_SUFFIX_NAME.GZFE + '-' + oneWord;
             twoWordsName = MARKET_SUFFIX_NAME.GZFE + '-' + twoWords;
+        }
+        else if (MARKET_SUFFIX_NAME.IsINE(upperSymbol))     //上海国际能源交易中心
+        {
+            oneWordName = MARKET_SUFFIX_NAME.INE + '-' + oneWord;
+            twoWordsName = MARKET_SUFFIX_NAME.INE + '-' + twoWords;
         }
 
         if (this.MAP_TWOWORDS.has(twoWordsName)) 

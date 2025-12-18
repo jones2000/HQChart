@@ -871,7 +871,7 @@ function JSDialogTooltip()
             return item;
         }
 
-        if (IFrameSplitOperator.IsNumber(yClose) && format!=1)
+        if (IFrameSplitOperator.IsNumber(yClose) && format!=1 && yClose!=0)
         {
             var value=(price-yClose)/yClose*100;
             item.Text=`${price.toFixed(defaultfloatPrecision)}(${value.toFixed(2)}%)`;
@@ -947,9 +947,7 @@ function JSDialogTooltip()
             Color:this.ValueColor
         };
 
-        if (!IFrameSplitOperator.IsNumber(price) || !IFrameSplitOperator.IsNumber(yClose)) return item;
-
-      
+        if (!IFrameSplitOperator.IsNumber(price) || !IFrameSplitOperator.IsNumber(yClose) || yClose===0) return item;
 
         var diffValue=price-yClose;
         var value=(price-yClose)/yClose;
@@ -997,7 +995,7 @@ function JSDialogTooltip()
         };
 
 
-        if (!IFrameSplitOperator.IsNumber(high) || !IFrameSplitOperator.IsNumber(low) || !IFrameSplitOperator.IsNumber(yClose)) return item;
+        if (!IFrameSplitOperator.IsNumber(high) || !IFrameSplitOperator.IsNumber(low) || !IFrameSplitOperator.IsNumber(yClose) || yClose===0) return item;
 
         var diffValue=high-low;
         var value=(high-low)/yClose;

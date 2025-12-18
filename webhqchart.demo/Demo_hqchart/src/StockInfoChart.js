@@ -72,7 +72,7 @@ class StockInfoChart
         [
             [{ Name:"现价", Key:"Price", ColorType:3, FloatPrecision:-1 }, { Name:"今开",  Key:"Open",ColorType:3, FloatPrecision:-1 }],
             [{ Name:"涨幅", Key:"Increase", ColorType:1, FloatPrecision:2, StringFormat:"{Value}%" }, { Name:"涨跌", Key:"UpDown",ColorType:1, FloatPrecision:-1 }],
-            [{ Name:"振幅", Key:"Amplitude", FloatPrecision:2, StringFormat:"{Value}%" }, { Name:"昨手", Key:"YClose", ColorType:3, FloatPrecision:-1 } ],
+            [{ Name:"振幅", Key:"Amplitude", FloatPrecision:2, StringFormat:"{Value}%" }, { Name:"昨收", Key:"YClose", ColorType:3, FloatPrecision:-1 } ],
             [{ Name:"最高", Key:"High",ColorType:3, FloatPrecision:-1 }, { Name:"最低", Key:"Low",ColorType:3, FloatPrecision:-1 }],
             [{ Name:"总量", Key:"Vol", FloatPrecision:0, Format:{ Type:3, ExFloatPrecision:2 } }, { Name:"总额",  Key:"Amount", FloatPrecision:0, Format:{ Type:3, ExFloatPrecision:2 } }],
         ];
@@ -89,7 +89,7 @@ class StockInfoChart
             [{ Name:"涨幅", Key:"Increase", ColorType:1, FloatPrecision:2, StringFormat:"{Value}%", ShowType:1 }],
             [{ Name:"涨跌", Key:"UpDown",ColorType:1, FloatPrecision:-1, ShowType:1}],
             [{ Name:"振幅", Key:"Amplitude", FloatPrecision:2, StringFormat:"{Value}%", ShowType:1 } ],
-            [{ Name:"昨手", Key:"YClose", ColorType:3, FloatPrecision:-1, ShowType:1}],
+            [{ Name:"昨收", Key:"YClose", ColorType:3, FloatPrecision:-1, ShowType:1}],
             [{ Name:"最高", Key:"High",ColorType:3, FloatPrecision:-1, ShowType:1 }],
             [{ Name:"最低", Key:"Low",ColorType:3, FloatPrecision:-1, ShowType:1 }],
             [{ Name:"总量", Key:"Vol", FloatPrecision:0, Format:{ Type:3, ExFloatPrecision:2 }, ShowType:1 }],
@@ -97,6 +97,22 @@ class StockInfoChart
         ];
 
         return { Column:column, BuySellCount:0 };
+    }
+
+    //期货
+    GetChinaFuturesShowOption()
+    {
+        var column=
+        [
+            [{ Name:"现价", Key:"Price", ColorType:3, FloatPrecision:-1 }, { Name:"今开",  Key:"Open",ColorType:3, FloatPrecision:-1 }],
+            [{ Name:"涨幅", Key:"Increase", ColorType:1, FloatPrecision:2, StringFormat:"{Value}%" }, { Name:"涨跌", Key:"UpDown",ColorType:1, FloatPrecision:-1 }],
+            [{ Name:"振幅", Key:"Amplitude", FloatPrecision:2, StringFormat:"{Value}%" }, { Name:"昨收", Key:"YClose", ColorType:3, FloatPrecision:-1 } ],
+            [{ Name:"结算", Key:"FClose", ColorType:3, FloatPrecision:-1 }, { Name:"昨结",  Key:"YFClose",ColorType:3, FloatPrecision:-1 }],
+            [{ Name:"最高", Key:"High",ColorType:3, FloatPrecision:-1 }, { Name:"最低", Key:"Low",ColorType:3, FloatPrecision:-1 }],
+            [{ Name:"总量", Key:"Vol", FloatPrecision:0, Format:{ Type:3, ExFloatPrecision:2 } }, { Name:"持仓",  Key:"Position", FloatPrecision:0 }],
+        ];
+
+        return { Column:column, BuySellCount:1 };
     }
 
             
@@ -149,7 +165,8 @@ class StockInfoChart
     ChangeSymbol(symbol)
     {
         this.Symbol=symbol;
-        var upperSymbol=symbol.toUpperCase();
+        var upperSymbol=null;
+        if (symbol) upperSymbol=symbol.toUpperCase();
 
         //设置显示内容
         var option=null;
@@ -165,6 +182,10 @@ class StockInfoChart
         {
             if (MARKET_SUFFIX_NAME.IsHKStock(symbol)) option=this.GetHKStockShowOption();
             else option=this.GetIndexShowOption();
+        }
+        else if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol))
+        {
+             option=this.GetChinaFuturesShowOption();
         }
         
         this.Chart.ChangeSymbol(symbol, option);

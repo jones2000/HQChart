@@ -32,7 +32,7 @@ class DealChart
         ShowOrder:0,
         EnableResize:true,
         IsSingleTable:true,
-        IsShowHeader:false,
+        IsShowHeader:true,
 
         //KeyDown:false,  //禁止键盘
         //Wheel:false,    //禁止滚轴
@@ -131,10 +131,10 @@ class DealChart
 
     }
 
-    ChangeSymbol(symbol)
+    ChangeSymbol(symbol, option)
     {
         this.Symbol=symbol;
-        this.Chart.ChangeSymbol(symbol);
+        this.Chart.ChangeSymbol(symbol, option);
     }
 
     ChangeShowType(showType, option)
@@ -201,6 +201,92 @@ class DealChart
 
 class MinDealChart extends DealChart
 {
+    ChangeSymbol(symbol, option)
+    {
+        this.Symbol=symbol;
+        var option=this.GetShowOption();
+        this.Chart.ChangeSymbol(symbol, option);
+    }
+
+    GetShowOption()
+    {
+        if (!this.Symbol) return null;
+
+        var upperSymbol=this.Symbol.toUpperCase();
+        var option=null;
+
+        if (MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol)) 
+        {
+            option=this.GetSZSHStockShowOption();
+        }
+        else if (MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol)) 
+        {
+            option=this.GetSZSHStockShowOption();
+        }
+        else if (MARKET_SUFFIX_NAME.IsHK(upperSymbol))
+        {
+            option=this.GetSZSHStockShowOption();
+        }
+        else if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol))
+        {
+            option=this.GetChinaFuturesShowOption();
+        }
+
+        return option;
+    }
+
+    GetSZSHStockShowOption()
+    {
+        var column=
+        [
+            //{Type:DEAL_COLUMN_ID.STRING_TIME_ID }, //自定义时间格式
+            //{Type:DEAL_COLUMN_ID.INDEX_ID },
+            {Type:DEAL_COLUMN_ID.TIME_ID, Foramt:"hh:mm:ss" },
+            {Type:DEAL_COLUMN_ID.PRICE_ID },
+            {Type:DEAL_COLUMN_ID.VOL_ID },
+            {Type:DEAL_COLUMN_ID.BS_ID, },
+        ];
+
+        return { Column:column };
+    }
+
+    GetChinaFuturesShowOption()
+    {
+        var column=
+        [
+            {Type:DEAL_COLUMN_ID.TIME_ID, Foramt:"hh:mm:ss" },
+            {Type:DEAL_COLUMN_ID.PRICE_ID, MaxText:"88888.88" },
+            {Type:DEAL_COLUMN_ID.VOL_ID, Title:"现量", MaxText:"88888"},
+            {Type:DEAL_COLUMN_ID.RESERVE_STRING1_ID, Title:"仓差", MaxText:"88888", TextAlign:"right" },
+            {Type:DEAL_COLUMN_ID.RESERVE_STRING2_ID, Title:"开平", MaxText:"擎擎", TextAlign:"right" },
+        ];
+
+        return { Column:column };
+    }
+
+    GetColumn()
+    {
+        if (this.ShowType===0)
+        {
+            var option=this.GetShowOption();
+            if (option) return option.Column;
+        }
+        else if (this.ShowType==2)
+        {
+            var data=
+            [
+                {Type:DEAL_COLUMN_ID.PRICE_ID },
+                {Type:DEAL_COLUMN_ID.RESERVE_NUMBER3_ID, Format:{ Type:1 }, Title:"成交量(手)", FloatPrecision:0},
+                {Type:DEAL_COLUMN_ID.MULTI_BAR_ID, Title:" " },
+                {Type:DEAL_COLUMN_ID.RESERVE_NUMBER2_ID, Title:"占比", MaxText:"100.0%", FloatPrecision:1, StringFormat:"{0}%" },
+                //{Type:DEAL_COLUMN_ID.RESERVE_NUMBER1_ID, Title:"竞买率", MaxText:"100.0%", FloatPrecision:1, StringFormat:"{0}%" }
+            ];
+            return data;
+        }
+
+        return null;
+    }
+
     Show(bShow, option)
     {
         if (bShow)

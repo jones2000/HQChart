@@ -1740,6 +1740,8 @@ function JSReportChartContainer(uielement)
         //80=整行背景色
         //101-199=数值型  201-299=字符型 301-350=进度条 351-400=按钮 401-499=日期时间
 
+        var upperSymbol=null;
+        if (stock.Symbol) upperSymbol=stock.Symbol.toUpperCase();
         if (IFrameSplitOperator.IsString(item[1])) stock.Name=item[1];
         if (IFrameSplitOperator.IsNumber(item[2])) stock.YClose=item[2];
         if (IFrameSplitOperator.IsNumber(item[3])) stock.Open=item[3];
@@ -1771,17 +1773,39 @@ function JSReportChartContainer(uielement)
 
         if (item[27]) stock.NameEx=item[27];      //扩展名字
 
+        if (IFrameSplitOperator.IsNumber(item[38])) stock.Position=item[38];        //持仓量
+        if (IFrameSplitOperator.IsNumber(item[39])) stock.FClose=item[39];          //结算价
+        if (IFrameSplitOperator.IsNumber(item[40])) stock.YFClose=item[40];         //昨结算价
+        if (IFrameSplitOperator.IsNumber(item[41])) stock.OpenPosition=item[41];    //开仓量
+        if (IFrameSplitOperator.IsNumber(item[42])) stock.ClosePosition=item[42];   //平仓量
+
         //衍生数据计算
         if (!IFrameSplitOperator.IsNumber(item[21]))    //涨幅%
         {
-            if (IFrameSplitOperator.IsNumber(stock.Price) && IFrameSplitOperator.IsNumber(stock.YClose) && stock.YClose!=0)
-                stock.Increase=(stock.Price-stock.YClose)/stock.YClose*100;
+            if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol))
+            {
+                if (IFrameSplitOperator.IsNumber(stock.Price) && IFrameSplitOperator.IsNumber(stock.YFClose) && stock.YFClose!=0)
+                    stock.Increase=(stock.Price-stock.YFClose)/stock.YFClose*100;
+            }
+            else
+            {
+                if (IFrameSplitOperator.IsNumber(stock.Price) && IFrameSplitOperator.IsNumber(stock.YClose) && stock.YClose!=0)
+                    stock.Increase=(stock.Price-stock.YClose)/stock.YClose*100;
+            }
         }
 
         if (!IFrameSplitOperator.IsNumber(item[22]))    //涨跌
         {
-            if (IFrameSplitOperator.IsNumber(stock.Price) && IFrameSplitOperator.IsNumber(stock.YClose))
-                stock.UpDown=stock.Price-stock.YClose;
+            if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol))
+            {
+                if (IFrameSplitOperator.IsNumber(stock.Price) && IFrameSplitOperator.IsNumber(stock.YFClose))
+                    stock.UpDown=stock.Price-stock.YFClose;
+            }
+            else
+            {
+                if (IFrameSplitOperator.IsNumber(stock.Price) && IFrameSplitOperator.IsNumber(stock.YClose))
+                    stock.UpDown=stock.Price-stock.YClose;
+            }
         }   
 
         if (!IFrameSplitOperator.IsNumber(item[23]))    //换手率%
@@ -1792,8 +1816,17 @@ function JSReportChartContainer(uielement)
 
         if (!IFrameSplitOperator.IsNumber(item[24]))    //振幅%
         {
-            if (IFrameSplitOperator.IsNumber(stock.High) && IFrameSplitOperator.IsNumber(stock.Low) && IFrameSplitOperator.IsNumber(stock.YClose) && stock.YClose!=0)
-                stock.Amplitude=(stock.High-stock.Low)/stock.YClose*100;
+            if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol))
+            {
+                if (IFrameSplitOperator.IsNumber(stock.High) && IFrameSplitOperator.IsNumber(stock.Low) && IFrameSplitOperator.IsNumber(stock.YFClose) && stock.YFClose!=0)
+                    stock.Amplitude=(stock.High-stock.Low)/stock.YFClose*100;
+            }
+            else
+            {
+                if (IFrameSplitOperator.IsNumber(stock.High) && IFrameSplitOperator.IsNumber(stock.Low) && IFrameSplitOperator.IsNumber(stock.YClose) && stock.YClose!=0)
+                    stock.Amplitude=(stock.High-stock.Low)/stock.YClose*100;
+            }
+            
         }
 
         if (!IFrameSplitOperator.IsNumber(item[25]))    //流通市值
@@ -1822,11 +1855,7 @@ function JSReportChartContainer(uielement)
 
         if (IFrameSplitOperator.IsBool(item[37])) stock.Checked=item[37];
 
-        if (IFrameSplitOperator.IsNumber(item[38])) stock.Position=item[38];        //持仓量
-        if (IFrameSplitOperator.IsNumber(item[39])) stock.FClose=item[39];          //结算价
-        if (IFrameSplitOperator.IsNumber(item[40])) stock.YFClose=item[40];         //昨结算价
-        if (IFrameSplitOperator.IsNumber(item[41])) stock.OpenPosition=item[41];    //开仓量
-        if (IFrameSplitOperator.IsNumber(item[42])) stock.ClosePosition=item[42];   //平仓量
+        
 
         //1,3,5,10,15 涨速%
         if (IFrameSplitOperator.IsNumber(item[43])) stock.RSpeed1M=item[43]; 
@@ -8116,7 +8145,16 @@ function ChartReport()
         }
         else    //昨收价 计算颜色
         {
-            if (IFrameSplitOperator.IsNumber(stock.YClose))  yClose=stock.YClose;
+            var upperSymbol=null;
+            if (stock.Symbol) upperSymbol=stock.Symbol.toUpperCase();
+            if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol) && IFrameSplitOperator.IsNumber(stock.YFClose))
+            {
+                yClose=stock.YFClose;
+            }
+            else
+            {
+                if (IFrameSplitOperator.IsNumber(stock.YClose))  yClose=stock.YClose;
+            }
         }
 
         if (!IFrameSplitOperator.IsNumber(yClose))  

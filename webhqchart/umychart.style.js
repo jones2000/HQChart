@@ -711,13 +711,13 @@ function GetBlackStyle()
             {
                 Color:"RGB(245,245,245)",
                 Mergin:{ Left:5, Right:5, Top:4, Bottom:2 },
-                Font:{ Size:12, Name:"微软雅黑" }
+                //Font:{ Size:12, Name:"微软雅黑" }
             },
     
             Row:
             {
                 Mergin:{ Top:2, Bottom:2 },
-                Font:{ Size:15, Name:"微软雅黑"},
+                //Font:{ Size:15, Name:"微软雅黑"},
                 BarMergin:{ Top:2, Left:3, Right:3, Bottom:2 }
             },
     

@@ -227,6 +227,7 @@ function JSStockInfoChartContainer(uielement)
     { 
         Name:null,
         YClose:null,    //昨收盘
+        YFClose:null,   //昨计算价
         Symbol:null,
 
         Buys:
@@ -294,6 +295,7 @@ function JSStockInfoChartContainer(uielement)
     {
         this.Data.Name=null;
         this.Data.YClose=null;
+        this.Data.YFClose=null;
 
         this.Data.Buys= 
         [ 
@@ -400,6 +402,8 @@ function JSStockInfoChartContainer(uielement)
 
         if (recv.name) this.Data.Name=recv.Name;
         if (IFrameSplitOperator.IsNumber(recv.yclose)) this.Data.YClose=recv.yclose;
+        if (IFrameSplitOperator.IsNumber(recv.yfclose)) this.Data.YFClose=recv.yfclose;
+        
         if (recv.name) this.Data.Name=recv.name;
 
         if (IFrameSplitOperator.IsNonEmptyArray(recv.data))
@@ -759,7 +763,7 @@ function ChartStockData()
 
     this.Draw=function()
     {
-        this.Decimal=GetfloatPrecision(this.Symbol);
+        this.Decimal=GetfloatPrecision(this.Data.Symbol);
         var border=this.ChartBorder.GetBorder();
         var position = { Left:border.Left, Right:border.Right, Top:border.Top, Width:border.Right-border.Left, Border:border };
         this.DrawHeader(position);
@@ -1171,16 +1175,25 @@ function ChartStockData()
 
     this.GetPriceColor=function(price)
     {
-        if (!IFrameSplitOperator.IsNumber(this.Data.YClose)) return this.UnchangeColor;
-
-        return this.GetUpDownColor(price, this.Data.YClose);
+        var upperSymbol=null;
+        if (this.Data.Symbol) upperSymbol=this.Data.Symbol.toUpperCase();
+        if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol))
+        {
+            if (!IFrameSplitOperator.IsNumber(this.Data.YFClose)) return  this.UnchangeColor;
+            return this.GetUpDownColor(price, this.Data.YFClose);
+        }
+        else
+        {
+            if (!IFrameSplitOperator.IsNumber(this.Data.YClose)) return this.UnchangeColor;
+            return this.GetUpDownColor(price, this.Data.YClose);
+        }
     }
 
     this.GetUpDownColor=function(price, price2)
     {
         if (price>price2) return this.UpColor;
         else if (price<price2) return this.DownColor;
-        else return this.UnchagneColor;
+        else return this.UnchangeColor;
     }
 }
 

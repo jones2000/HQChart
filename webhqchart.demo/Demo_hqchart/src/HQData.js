@@ -337,6 +337,14 @@ class HQData
                 item[35]=stockItem.Time;               //时间
                 item[36]=stockItem.Date;               //日期
 
+                item[21]=stockItem.Increase;           //涨幅%
+                item[22]=stockItem.UpDown;             //涨跌
+                item[24]=stockItem.Amplitude;          //振幅%
+
+                item[38]=stockItem.Position;           //持仓量
+                item[39]=stockItem.FClose;             //结算价
+                item[40]=stockItem.YFClose;            //昨结算价
+
                 __Temp_CheckPriceChange(stockItem.Symbol, stockItem.Close, "Price", REPORT_COLUMN_ID.PRICE_ID);
                 __Temp_CheckPriceChange(stockItem.Symbol, stockItem.BidPrice, "BuyPrice", REPORT_COLUMN_ID.BUY_PRICE_ID);
                 __Temp_CheckPriceChange(stockItem.Symbol, stockItem.AskPrice, "SellPrice", REPORT_COLUMN_ID.SELL_PRICE_ID);
@@ -2009,7 +2017,14 @@ class HQData
         if (option)
         {
             if (IFrameSplitOperator.IsNumber(option.Count)) count=option.Count;
-            option.DataID=dataID;
+
+            if (option.ShowType===0)
+            {
+                count=50;
+                dataID=-1;
+            }
+
+             option.DataID=dataID;
         }
 
         var msg=
@@ -2043,7 +2058,7 @@ class HQData
 
     Deal_RecvUpdateData(recv, callback, option)
     {
-        var hqchart=null, symbol=null,  startID=-1;
+        var hqchart=null, symbol=null,  startID=-1, showType=0;
         if (option) 
         {
             hqchart=option.HQChart;
@@ -2065,41 +2080,81 @@ class HQData
             hqchartData.detail=aryFilterData;
         }
 
+        if (hqchartData && option && option.ShowType===0) hqchartData.UpdateType=1;
+
         callback(hqchartData);
     }
 
 
     JsonToDetailData(symbol, recv)
     {
-        var hqchartData={ symbol:symbol, detail:[], yclose:null };
+        var hqchartData={ symbol:symbol, detail:[], yclose:null, yfclose:null };
         if (!recv || !IFrameSplitOperator.IsNonEmptyArray(recv.AryData)) return hqchartData;
-        
-        for(var i=0;i<recv.AryData.length;++i)
-        {
-            var stockItem=recv.AryData[i];
-            if (stockItem.Symbol==symbol)
-            {
-                if (IFrameSplitOperator.IsNumber(stockItem.YClose)) hqchartData.yclose=stockItem.YClose;
-                if (IFrameSplitOperator.IsNonEmptyArray(stockItem.Data))
-                {
-                    for(var j=0;j<stockItem.Data.length;++j)
-                    {
-                        var tickItem=stockItem.Data[j];
-                        var item=[]
-                        item[0]=tickItem.Time;
-                        item[1]=tickItem.Price;
-                        item[2]=tickItem.Vol;
-                        item[3]=tickItem.Amount;
-                        item[4]=tickItem.Type=="B"?1:2;
-                        item[6]=tickItem.ID;
 
-                        hqchartData.detail.push(item);
+        var upperSymbol=null;
+        if (symbol) upperSymbol=symbol.toUpperCase();
+        if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) //期货
+        {
+            for(var i=0;i<recv.AryData.length;++i)
+            {
+                var stockItem=recv.AryData[i];
+                if (stockItem.Symbol==symbol)
+                {
+                    if (IFrameSplitOperator.IsNumber(stockItem.YClose)) hqchartData.yclose=stockItem.YClose;
+                    if (IFrameSplitOperator.IsNumber(stockItem.YFClose)) hqchartData.yfclose=stockItem.YFClose;
+                    if (IFrameSplitOperator.IsNonEmptyArray(stockItem.Data))
+                    {
+                        for(var j=0;j<stockItem.Data.length;++j)
+                        {
+                            var tickItem=stockItem.Data[j];
+                            var item=[]
+                            item[0]=tickItem.Time;
+                            item[1]=tickItem.Price;
+                            item[2]=tickItem.Vol;
+                            item[6]=tickItem.ID;
+
+                            var color=null;
+                            if (tickItem.Type==1) color="rgb(238,21,21)";       //开仓
+                            else if (tickItem.Type==2) color="rgb(25,158,0)";   //平仓
+                            item[201]={ Text:tickItem.PositionChange.toFixed(0), TextColor:color };
+                            item[202]={ Text:tickItem.Flag, TextColor:color };
+
+                            hqchartData.detail.push(item);
+                        }
                     }
+                    break;
                 }
-                break;
             }
         }
-        
+        else
+        {
+            for(var i=0;i<recv.AryData.length;++i)
+            {
+                var stockItem=recv.AryData[i];
+                if (stockItem.Symbol==symbol)
+                {
+                    if (IFrameSplitOperator.IsNumber(stockItem.YClose)) hqchartData.yclose=stockItem.YClose;
+                    if (IFrameSplitOperator.IsNonEmptyArray(stockItem.Data))
+                    {
+                        for(var j=0;j<stockItem.Data.length;++j)
+                        {
+                            var tickItem=stockItem.Data[j];
+                            var item=[]
+                            item[0]=tickItem.Time;
+                            item[1]=tickItem.Price;
+                            item[2]=tickItem.Vol;
+                            item[3]=tickItem.Amount;
+                            item[4]=tickItem.Type=="B"?1:2;
+                            item[6]=tickItem.ID;
+
+                            hqchartData.detail.push(item);
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
         return hqchartData;
     }
 
@@ -2154,7 +2209,7 @@ class HQData
 
     JsonToStockInfo_StockData(symbol, recv)
     {
-        var hqchartData={ symbol:symbol,name:symbol, yclose:null, data:[] };    //data:[ { Name:"", Value: }]
+        var hqchartData={ symbol:symbol,name:symbol, yclose:null, yfclose:null, data:[] };    //data:[ { Name:"", Value: }]
         if (!recv || !IFrameSplitOperator.IsNonEmptyArray(recv.AryData)) return hqchartData;
         
         for(var i=0;i<recv.AryData.length;++i)
@@ -2162,16 +2217,21 @@ class HQData
             var stockItem=recv.AryData[i];
             if (stockItem.Symbol==symbol)
             {
+                var upperSymbol=null;
+                if (symbol) upperSymbol=symbol.toUpperCase();
                 if (IFrameSplitOperator.IsNumber(stockItem.YClose)) hqchartData.yclose=stockItem.YClose;
+                if (IFrameSplitOperator.IsNumber(stockItem.YFClose)) hqchartData.yfclose=stockItem.YFClose;
                 if (stockItem.Name) hqchartData.name=stockItem.Name;
 
+                var volBase=1;
+                if (MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol)) volBase=100;
                 if (IFrameSplitOperator.IsNonEmptyArray(stockItem.Buys))
                 {
                     var aryValue=[];
                     for(var j=0;j<stockItem.Buys.length;++j)
                     {
                         var item=stockItem.Buys[j];
-                        aryValue[j]={ Price:item.Price, Vol:item.Vol/100 };
+                        aryValue[j]={ Price:item.Price, Vol:item.Vol/volBase };
                     }
 
                     hqchartData.data.push({ Name:"Buys", Value:aryValue });
@@ -2183,7 +2243,7 @@ class HQData
                     for(var j=0;j<stockItem.Sells.length;++j)
                     {
                         var item=stockItem.Sells[j];
-                        aryValue[j]={ Price:item.Price, Vol:item.Vol/100 };
+                        aryValue[j]={ Price:item.Price, Vol:item.Vol/volBase };
                     }
 
                     hqchartData.data.push({ Name:"Sells", Value:aryValue });
@@ -2198,13 +2258,13 @@ class HQData
                 if (IFrameSplitOperator.IsNumber(stockItem.UpLimit)) hqchartData.data.push({ Name:"UpLimit", Value:{ Value:stockItem.UpLimit } });
                 if (IFrameSplitOperator.IsNumber(stockItem.DownLimit)) hqchartData.data.push({ Name:"DownLimit", Value:{ Value:stockItem.DownLimit } });
 
-                if (IFrameSplitOperator.IsNumber(stockItem.DownLimit)) hqchartData.data.push({ Name:"OutVol", Value:{ Value:stockItem.OutVol/100 } });  //转成手
-                if (IFrameSplitOperator.IsNumber(stockItem.DownLimit)) hqchartData.data.push({ Name:"InVol", Value:{ Value:stockItem.InVol/100 } });    //转成手
+                if (IFrameSplitOperator.IsNumber(stockItem.DownLimit)) hqchartData.data.push({ Name:"OutVol", Value:{ Value:stockItem.OutVol/volBase } });  //转成手
+                if (IFrameSplitOperator.IsNumber(stockItem.DownLimit)) hqchartData.data.push({ Name:"InVol", Value:{ Value:stockItem.InVol/volBase } });    //转成手
 
                 if (IFrameSplitOperator.IsNumber(stockItem.UpDown)) hqchartData.data.push({ Name:"UpDown", Value:{ Value:stockItem.UpDown } });
                 if (IFrameSplitOperator.IsNumber(stockItem.Increase)) hqchartData.data.push({ Name:"Increase", Value:{ Value:stockItem.Increase } });
 
-                if (IFrameSplitOperator.IsNumber(stockItem.Vol)) hqchartData.data.push({ Name:"Vol", Value:{ Value:stockItem.Vol/100 } }); //转成手
+                if (IFrameSplitOperator.IsNumber(stockItem.Vol)) hqchartData.data.push({ Name:"Vol", Value:{ Value:stockItem.Vol/volBase } }); //转成手
                 if (IFrameSplitOperator.IsNumber(stockItem.Amount)) hqchartData.data.push({ Name:"Amount", Value:{ Value:stockItem.Amount } });
                 if (IFrameSplitOperator.IsNumber(stockItem.PE_TTM)) hqchartData.data.push({ Name:"PE_TTM", Value:{ Value:stockItem.PE_TTM } }); //市盈率(TTM)
                 if (IFrameSplitOperator.IsNumber(stockItem.PB)) hqchartData.data.push({ Name:"PB", Value:{ Value:stockItem.PB } }); //市净率
@@ -2213,7 +2273,11 @@ class HQData
                 if (IFrameSplitOperator.IsNumber(stockItem.TotalMarketValue)) hqchartData.data.push({ Name:"TotalMarketValue", Value:{ Value:stockItem.TotalMarketValue } });   //总市值
                 if (IFrameSplitOperator.IsNumber(stockItem.Exchange)) hqchartData.data.push({ Name:"Exchange", Value:{ Value:stockItem.Exchange } });       //换手率%
                 if (IFrameSplitOperator.IsNumber(stockItem.Amplitude)) hqchartData.data.push({ Name:"Amplitude", Value:{ Value:stockItem.Amplitude } });     //振幅%
-                
+
+                if (IFrameSplitOperator.IsNumber(stockItem.Position)) hqchartData.data.push({ Name:"Position", Value:{ Value:stockItem.Position } });    //持仓量
+                if (IFrameSplitOperator.IsNumber(stockItem.FClose)) hqchartData.data.push({ Name:"FClose", Value:{ Value:stockItem.FClose } });    //结算价
+                if (IFrameSplitOperator.IsNumber(stockItem.YFClose)) hqchartData.data.push({ Name:"YFClose", Value:{ Value:stockItem.YFClose } });    //昨结算价
+
                 break;
             }
         }
