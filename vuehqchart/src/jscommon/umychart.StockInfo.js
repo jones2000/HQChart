@@ -514,12 +514,6 @@ function JSStockInfoChartContainer(uielement)
             var item=this.ChartPaint[i];
             item.Draw();
         }
-
-        for(var i=0; i<this.ChartPaint.length; ++i)
-        {
-            var item=this.ChartPaint[i];
-            item.Draw();
-        }
     }
 
     this.OnSize=function()

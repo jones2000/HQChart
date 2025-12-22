@@ -82,7 +82,9 @@ class HQData
 
     RequestDealData_ID=`$${this.ID}-Request-DealData`;
 
-    RequestStockInfoData_ID=`${this.ID}-RequestStockInfoData`
+    RequestStockInfoData_ID=`${this.ID}-RequestStockInfoData`;
+
+    RequestStatusBarData_ID=`${this.I}-RequestStatusBarData`;
 
     Counter=1;
 
@@ -95,7 +97,7 @@ class HQData
 
     NetworkFilter(data, callback, option)
     {
-         console.log(`[HQData::NetworkFilter] ${data.Name} - ${data.Explain}`);
+        console.log(`[HQData::NetworkFilter] ${data.Name} - ${data.Explain}`);
 
         switch(data.Name) 
         {
@@ -204,9 +206,16 @@ class HQData
                 break;
 
             ////////////////////////////////////////////////////////////////////////////
-            //
+            // 5档买卖
             case  "JSStockInfoChartContainer::RequestStockData":
                 this.StockInfo_RequestStockData(data, callback, option);
+                break;
+
+
+            ////////////////////////////////////////////////////////////////////////////
+            // 底部状态栏
+            case "JSStatusBarChartContainer::RequestStockData":
+                this.StatusBar_RequestStockData(data, callback, option);
                 break;
 
 
@@ -352,7 +361,12 @@ class HQData
                 if (stockItem.Minute)   //分时图
                 {
                     var minData=stockItem.Minute;
-                    var newData={ Data:minData.AryClose, Max:null, Min:null, Count:Math.max(242,minData.AryClose.length), YClose:minData.YClose };
+                    var minMaxCount=242;
+
+                    var aryTime=JSChart.GetMinuteTimeStringData().GetTimeData(stockItem.Symbol);
+                    if (IFrameSplitOperator.IsNonEmptyArray(aryTime)) minMaxCount=aryTime.length;
+
+                    var newData={ Data:minData.AryClose, Max:null, Min:null, Count:Math.max(minMaxCount,minData.AryClose.length), YClose:minData.YClose };
                     for(var j=0;j<newData.Data.length;++j)
                     {
                         var value=newData.Data[j];
@@ -649,6 +663,8 @@ class HQData
                         kItem[6]=item.Vol;
                         kItem[7]=item.Amount;
                         if (bFlowCapital) kItem[15]=item.FlowCapital;
+                        if (IFrameSplitOperator.IsNumber(item.Position)) kItem[8]=item.Position;
+                        if (IFrameSplitOperator.IsNumber(item.FClose)) kItem[9]=item.FClose;
                         hqchartData.data.push(kItem);
                     }
                 }
@@ -738,7 +754,8 @@ class HQData
                         kItem[5]=item.Close;
                         kItem[6]=item.Vol;
                         kItem[7]=item.Amount;
-
+                        if (IFrameSplitOperator.IsNumber(item.Position)) kItem[8]=item.Position;
+                        
                         stockItem.data.push(kItem);
                     }
                 }
@@ -837,6 +854,7 @@ class HQData
                     kItem[6]=item.Vol;
                     kItem[7]=item.Amount;
                     kItem[8]=item.Time;
+                    if (IFrameSplitOperator.IsNumber(item.Position)) kItem[9]=item.Position;
 
                     hqchartData.data.push(kItem);
                 }
@@ -923,6 +941,7 @@ class HQData
                     kItem[6]=item.Vol;
                     kItem[7]=item.Amount;
                     kItem[8]=item.Time;
+                    if (IFrameSplitOperator.IsNumber(item.Position)) kItem[9]=item.Position;
 
                     hqchartData.data.push(kItem);
                 }
@@ -2108,7 +2127,7 @@ class HQData
                         {
                             var tickItem=stockItem.Data[j];
                             var item=[]
-                            item[0]=tickItem.Time;
+                            item[0]=tickItem.Time2;
                             item[1]=tickItem.Price;
                             item[2]=tickItem.Vol;
                             item[6]=tickItem.ID;
@@ -2282,6 +2301,77 @@ class HQData
             }
         }
         
+        return hqchartData;
+    }
+
+    //状态栏
+    StatusBar_RequestStockData(data, callback, option)
+    {
+        data.PreventDefault=true;
+        var aryStock=data.Request.Data.stocks;    //股票列表
+        if (option) option.Report=data.Self;
+
+        var arySymbol=[];
+        for (var i=0; i<aryStock.length; ++i)
+        {
+            arySymbol.push({ Symbol:aryStock[i].Symbol } ); 
+        }
+
+        var extendID=this.Counter++;
+        var requestID=this.RequestStockInfoData_ID;
+
+        var msg=
+        {
+            MessageID:3,
+            Data:
+            {
+                Type:1,
+                ID:requestID,
+                ArySymbol:arySymbol,
+                ExtendData:{ ExtendID:extendID },
+            }
+        };
+
+        var callbackInfo=
+        {
+            ID:requestID,
+            ExtendID:extendID,
+            Callback:(recv)=>
+            {
+                this.StatusBar_RecvStockData(recv, callback, option);
+            }
+        }
+
+        this.WSClient.Request(msg, callbackInfo);
+    }
+
+    StatusBar_RecvStockData(recv, callback, option)
+    {
+        var hqchartData=this.JsonToStatusBar_StockData(recv);
+        callback(hqchartData);
+    }
+
+    JsonToStatusBar_StockData(recv)
+    {
+        var hqchartData={ data:[] };
+        if (!IFrameSplitOperator.IsNonEmptyArray(recv.AryData)) return hqchartData;
+        
+        for(var i=0;i<recv.AryData.length;++i)
+        {
+            var stockItem=recv.AryData[i];
+            var item={ Symbol:stockItem.Symbol, Data:[] };
+            item.YClose=stockItem.YClose;
+            
+            item.Data.push({ Key:"Name", Value:{ Text:stockItem.Name} });          //名称
+            item.Data.push({ Key:"Increase", Value:{ Value:stockItem.Increase} });  //涨幅%
+            item.Data.push({ Key:"UpDown", Value:{ Value:stockItem.UpDown} });      //涨跌
+            item.Data.push({ Key:"Amount", Value:{ Value:stockItem.Amount} });      //成交额
+            item.Data.push({ Key:"Price", Value:{ Value:stockItem.Close} });        //价格
+            
+            hqchartData.data.push(item);
+        }
+    
+
         return hqchartData;
     }
 

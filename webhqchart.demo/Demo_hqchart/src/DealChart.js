@@ -180,7 +180,7 @@ class DealChart
     NetworkFilter(data, callback)
     {
         console.log('[DealChart::NetworkFilter] data', data);
-        var option={ ShowType:this.ShowType };
+        var option={ ShowType:this.ShowType, ChartName:"DealChart" };
         switch(data.Name) 
         {
             default:

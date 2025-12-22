@@ -218,7 +218,7 @@ class MinuteChart
     NetworkFilter(data, callback)
     {
         console.log(`[MinuteChart::NetworkFilter] ${HQData.Explain}`, data);
-        var option={ };
+        var option={ ChartName:"MinuteChart",};
         switch(data.Name) 
         {
             default:

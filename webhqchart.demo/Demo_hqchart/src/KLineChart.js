@@ -343,7 +343,7 @@ class KLineChart
     NetworkFilter(data, callback)
     {
         console.log(`[KLineChart::NetworkFilter] ${HQData.Explain}`, data);
-        var option={ };
+        var option={ ChartName:"KLineChart", };
         switch(data.Name) 
         {
             default:

@@ -2933,6 +2933,9 @@ var JSCHART_EVENT_ID=
     ON_BEFORE_DRAW_HLINE:180,     //画图工具-水平线(ChartDrawPictureHorizontalLine) 绘图前
 
     ON_HIDE_ALL_POP_DIV:181,        //隐藏所有弹框div
+
+    //工具条
+    ON_CLICK_STATUSBAR_ITEM:301,
 }
 
 var JSCHART_OPERATOR_ID=
@@ -51084,6 +51087,9 @@ function StockChip()
         if (recvData && recvData.PreventDefault)
             return recvData.Result;
 
+        if (MARKET_SUFFIX_NAME.IsIncludes(symbol, ARRAY_CHINA_FUTURES_SUFFIX)) 
+            return this.CalculateChip_Futrues();
+
         if (MARKET_SUFFIX_NAME.IsSHSZIndex(symbol)) return false;   //指数暂时不支持移动筹码
 
         var bindData=this.HQChart.ChartPaint[0].Data;
@@ -51105,6 +51111,142 @@ function StockChip()
             var item=bindData.Data[i];
             var changeRate=1;   //换手率
             if (item.FlowCapital>0) changeRate=item.Vol/item.FlowCapital;
+            if (i==count) vol=item.Vol*changeRate;
+            else vol=item.Vol*seed;
+            var dataItem={Vol:vol,High:item.High,Low:item.Low};
+            aryVol.push(dataItem);
+            seed*=(1-changeRate*rate);
+
+            if (!maxPrice || maxPrice<item.High) maxPrice=item.High;
+            if (!minPrice || minPrice>item.Low) minPrice=item.Low;
+        }
+
+        //JSConsole.Chart.Log("[StockChip::CalculateChip]",maxPrice,minPrice);
+        if (!maxPrice || !minPrice) return true;
+
+        var priceZoom=this.PriceZoom;
+
+        maxPrice=parseInt(maxPrice*priceZoom);
+        minPrice=parseInt(minPrice*priceZoom);
+
+        var dataCount=maxPrice-minPrice;
+        var aryChip=new Array()
+        for(let i=0;i<=dataCount;++i)
+        {
+            aryChip.push(0);
+        }
+
+        var dayChip=[];
+        var distributeData;
+        if (this.ShowType==2)
+        {
+            var dayChip=
+            [
+                {Day:100, Color:this.DAY_COLOR[1][5]}, {Day:60, Color:this.DAY_COLOR[1][4]}, {Day:30, Color:this.DAY_COLOR[1][3]},
+                {Day:20, Color:this.DAY_COLOR[1][2]}, {Day:10, Color:this.DAY_COLOR[1][1]}, {Day:5, Color:this.DAY_COLOR[1][0]}
+            ];
+            for(let i in aryVol)
+            {
+                var item=aryVol[i];
+                var high=parseInt(item.High*priceZoom);
+                var low=parseInt(item.Low*priceZoom);
+                var averageVol=item.Vol;
+                if (high-low>0) averageVol=item.Vol/(high-low);
+                if (averageVol<=0.000000001) continue;
+
+                for(var k=0;k<dayChip.length;++k)
+                {
+                    if (i==dayChip[k].Day) 
+                    {
+                        dayChip[k].Chip=aryChip.slice(0);
+                        break;
+                    }
+                }
+
+                distributeData={Low:low, High:high, Vol:item.Vol, MaxPrice:maxPrice, MinPrice:minPrice};
+                this.CalculateDistribute(aryChip, distributeData );
+            }
+        }
+        else if (this.ShowType==1)
+        {
+            var dayChip=
+            [
+                {Day:5, Color:this.DAY_COLOR[0][0]},{Day:10, Color:this.DAY_COLOR[0][1]},{Day:20, Color:this.DAY_COLOR[0][2]},
+                {Day:30, Color:this.DAY_COLOR[0][3]},{Day:60, Color:this.DAY_COLOR[0][4]},{Day:100, Color:this.DAY_COLOR[0][5]}
+            ];
+
+            for(let i=aryVol.length-1;i>=0;--i)
+            {
+                var item=aryVol[i];
+                var high=parseInt(item.High*priceZoom);
+                var low=parseInt(item.Low*priceZoom);
+                var averageVol=item.Vol;
+                if (high-low>0) averageVol=item.Vol/(high-low);
+                if (averageVol<=0.000000001) continue;
+
+                for(var k=0;k<dayChip.length;++k)
+                {
+                    if (i==dayChip[k].Day) 
+                    {
+                        dayChip[k].Chip=aryChip.slice(0);
+                        break;
+                    }
+                }
+                
+                distributeData={Low:low, High:high, Vol:item.Vol, MaxPrice:maxPrice, MinPrice:minPrice};
+                this.CalculateDistribute(aryChip, distributeData);
+            }
+        }
+        else
+        {
+            for(let i in aryVol)
+            {
+                var item=aryVol[i];
+                var high=parseInt(item.High*priceZoom);
+                var low=parseInt(item.Low*priceZoom);
+                var averageVol=item.Vol;
+                if (high-low>0) averageVol=item.Vol/(high-low);
+                if (averageVol<=0.000000001) continue;
+
+                distributeData={Low:low, High:high, Vol:item.Vol, MaxPrice:maxPrice, MinPrice:minPrice};
+                this.CalculateDistribute(aryChip, distributeData);
+            }
+        }
+
+        if (!distributeData) return false;
+
+        this.Data={AllChip:aryChip, MaxVol:distributeData.MaxVol, MaxPrice:maxPrice, MinPrice:minPrice,SelectData:selData, DayChip:dayChip, YPrice:yPrice};
+        return true;
+    }
+
+    this.CalculateChip_Futrues=function()   //计算期货筹码 (持仓和量计算的)
+    {
+        if (!this.HQChart) return false;
+        var symbol=this.HQChart.Symbol;
+        if (!symbol) return false;
+        var upperSymbol=symbol.toUpperCase();
+
+        if (!MARKET_SUFFIX_NAME.IsIncludes(symbol, ARRAY_CHINA_FUTURES_SUFFIX)) return false;
+
+        var bindData=this.HQChart.GetKData();
+        //if (bindData.Period>=4) return false;   //分钟K线不支持, 没时间做,以后再做吧
+        var count=bindData.DataOffset+parseInt(this.HQChart.CursorIndex);
+        if (count>=bindData.Data.length) count=bindData.Data.length-1;
+        var selData=bindData.Data[count];
+        var yPrice=selData.Close;
+
+        var mouseY=this.HQChart.LastPoint.Y;
+        if (mouseY) yPrice=this.HQChart.Frame.SubFrame[0].Frame.GetYData(mouseY);
+        
+        //JSConsole.Chart.Log("[StockChip::CalculateChip]",count,this.HQChart.CursorIndex,selData);
+        const rate=1;
+        var aryVol=[];
+        var seed=1,vol,maxPrice,minPrice;
+        for(let i=count;i>=0;--i)
+        {
+            var item=bindData.Data[i];
+            var changeRate=1;   //换手率
+            if (item.Position>0) changeRate=item.Vol/item.Position;
             if (i==count) vol=item.Vol*changeRate;
             else vol=item.Vol*seed;
             var dataItem={Vol:vol,High:item.High,Low:item.Low};
@@ -79813,6 +79955,57 @@ function JSChartResource()
         BorderColor:"rgb(192,192,192)"
     }
 
+    this.StatusBar=
+    {
+        Table:
+        {
+            Font:14*GetDevicePixelRatio() +'px 微软雅黑',
+            TitleColor:"rgb(90,90,90)",
+            AryTextColor:["rgb(90,90,90)","rgb(192,192,0)"],
+            Margin:{ Left:1*GetDevicePixelRatio(), Top:0, Bottom:0, Right:0 },
+            CellMargin:
+            { 
+                Top:5*GetDevicePixelRatio(), 
+                Bottom:5*GetDevicePixelRatio(), 
+                Left:5*GetDevicePixelRatio(), 
+                Right:5*GetDevicePixelRatio(), 
+                YOffset:1* GetDevicePixelRatio(),
+            },
+
+            Separator: { Left:10, Right:10, Line:{ Width:1, Color:"rgb(192,192,192)", Top:2, Bottom:2 } }
+        },
+
+        DateTime:
+        {
+            Font:14*GetDevicePixelRatio() +'px 微软雅黑',
+            TitleColor:"rgb(90,90,90)",
+            Format:"HH:MM:SS",
+            MaxText:"99:99:99",
+            Margin:{ Left:2*GetDevicePixelRatio(), Top:5*GetDevicePixelRatio(), Bottom:5*GetDevicePixelRatio(), Right:5*GetDevicePixelRatio(), YOffset:1*GetDevicePixelRatio() },
+        },
+
+        RightToolbar:
+        {
+            Icon:{ Family:"iconfont", Size:14*GetDevicePixelRatio() },
+
+            Margin:{ Left:1*GetDevicePixelRatio(), Top:0, Bottom:0, Right:2*GetDevicePixelRatio() },
+            CellMargin:
+            { 
+                Top:5*GetDevicePixelRatio(), 
+                Bottom:5*GetDevicePixelRatio(), 
+                Left:2*GetDevicePixelRatio(), 
+                Right:2*GetDevicePixelRatio(), 
+                YOffset:0,
+            },
+        },
+
+        UpTextColor:"rgb(238,21,21)",      //上涨文字颜色
+        DownTextColor:"rgb(25,158,0)",     //下跌文字颜色
+        UnchangeTextColor:"rgb(90,90,90)",     //平盘文字颜色 
+
+        BorderColor:"rgb(192,192,192)"
+    }
+
 
     //自定义风格
     this.SetStyle=function(style)
@@ -80782,7 +80975,64 @@ function JSChartResource()
 
         if (style.SmallFloatTooltipV2) this.SetSmallFloatTooltipV2(style.SmallFloatTooltipV2);
         if (style.StockInfo) this.SetStockInfo(style.StockInfo);
+        if (style.StatusBar) this.SetStatusBar(style.StatusBar);
 
+    }
+
+    this.SetStatusBar=function(style)
+    {
+        var dest=this.StatusBar;
+
+        if (style.Table)
+        {
+            var item=style.Table;
+            if (item.Font) dest.Table.Font=item.Font;
+            if (item.TitleColor) dest.Table.TitleColor=item.TitleColor;
+            if (IFrameSplitOperator.IsNonEmptyArray(item.AryTextColor)) dest.Table.AryTextColor=item.AryTextColor.slice();
+            CopyMarginConfig(dest.Table.Margin, item.Margin);
+            if (item.CellMargin)
+            {
+                var subItem=item.CellMargin;
+                CopyMarginConfig(dest.Table.CellMargin, subItem);
+                if (IFrameSplitOperator.IsNumber(subItem.YOffset)) dest.Table.CellMargin.YOffset=subItem.YOffset
+            }
+
+            if (item.Separator)
+            {
+                var subItem=item.Separator;
+                var subDest=dest.Table.Separator;
+                if (IFrameSplitOperator.IsNumber(subItem.Left)) subDest.Left=subItem.Left;
+                if (IFrameSplitOperator.IsNumber(subItem.Right)) subDest.Left=subItem.Right;
+
+                if (subItem.Line)
+                {
+                    if (IFrameSplitOperator.IsNumber(subItem.Line.Width)) subDest.Line.Width=subItem.Line.Width;
+                    if (IFrameSplitOperator.IsNumber(subItem.Line.Top)) subDest.Line.Top=subItem.Line.Top;
+                    if (IFrameSplitOperator.IsNumber(subItem.Line.Bottom)) subDest.Line.Bottom=subItem.Line.Bottom;
+                    if (subItem.Line.Color) subDest.Line.Color=subItem.Line.Color;
+                }
+            }
+        }
+
+        if (style.DateTime)
+        {
+            var item=style.DateTime;
+            if (item.Font) dest.DateTime.Font=item.Font;
+            if (item.TitleColor) dest.DateTime.TitleColor=item.TitleColor;
+            if (item.Format) dest.DateTime.Format=item.Format;
+            if (item.MaxText) dest.DateTime.MaxText=item.MaxText;
+            if (item.Margin)
+            {
+                var subItem=item.Margin;
+                CopyMarginConfig(dest.DateTime.Margin, subItem);
+                if (IFrameSplitOperator.IsNumber(subItem.YOffset)) dest.DateTime.Margin.YOffset=subItem.YOffset;
+            }
+        }
+
+        if (style.UpTextColor) dest.UpTextColor=style.UpTextColor;
+        if (style.DownTextColor) dest.DownTextColor=style.DownTextColor;
+        if (style.UnchangeTextColor) dest.UnchangeTextColor=style.UnchangeTextColor;
+        if (style.BorderColor) dest.BorderColor=style.BorderColor;
     }
 
     this.SetStockInfo=function(style)
@@ -102753,13 +103003,55 @@ var MARKET_SUFFIX_NAME=
         return upperSymbol.indexOf(this.INE) > 0;
     },
 
+    //是否包含某一个市场的
+    IsIncludes:function(symbol, arySuffix)
+    {
+        if (!symbol) return false;
+        if (!IFrameSplitOperator.IsNonEmptyArray(arySuffix)) return false;
+        var upperSymbol=symbol.toUpperCase();
+
+        var bMatch=false;
+        for(var i=0;i<arySuffix.length;++i)
+        {
+            var item=arySuffix[i];
+            switch(item)
+            {
+                case this.SHFE:
+                case this.SHFE2:
+                    if (this.IsSHFE(upperSymbol)) bMatch=true;
+                    break;
+                case this.CFFEX2:
+                case this.CFFEX:
+                case this.CFFEX3:
+                    if (this.IsCFFEX(upperSymbol)) bMatch=true;
+                    break;
+                case this.DCE:
+                    if (this.IsDCE(upperSymbol)) bMatch=true;
+                    break;
+                case this.CZCE:
+                    if (this.IsCZCE(upperSymbol)) bMatch=true;
+                    break;
+                case this.GZFE:
+                    if (this.IsGZFE(upperSymbol)) bMatch=true;
+                    break;
+                case this.INE:
+                    if (this.IsINE(upperSymbol)) bMatch=true;
+                    break;
+            }
+
+            if (bMatch) return true;
+        }
+
+        return false;
+    },
+
     IsChinaFutures:function(upperSymbol)   //是否是国内期货 /期权
     {
         if (!upperSymbol) return false;
         
         return this.IsSHO(upperSymbol) || this.IsSZO(upperSymbol) || 
-            this.IsGZFE(upperSymbol) || this.IsINE(upperSymbol) ||
-            this.IsCFFEX(upperSymbol) || this.IsCZCE(upperSymbol) || this.IsDCE(upperSymbol) || this.IsSHFE(upperSymbol);
+                this.IsGZFE(upperSymbol) || this.IsINE(upperSymbol) ||
+                this.IsCFFEX(upperSymbol) || this.IsCZCE(upperSymbol) || this.IsDCE(upperSymbol) || this.IsSHFE(upperSymbol);
     },
 
     IsFutures:function(upperSymbol) //是否是期货 包含国外的
@@ -103268,6 +103560,16 @@ var MARKET_SUFFIX_NAME=
 
 }
 
+//国内期货市场
+const ARRAY_CHINA_FUTURES_SUFFIX=
+[
+    MARKET_SUFFIX_NAME.SHFE,
+    MARKET_SUFFIX_NAME.CFFEX,
+    MARKET_SUFFIX_NAME.DCE,
+    MARKET_SUFFIX_NAME.CZCE,
+    MARKET_SUFFIX_NAME.GZFE, 
+    MARKET_SUFFIX_NAME.INE
+];
 
 //走势图分钟数据对应的时间
 function MinuteTimeStringData() 

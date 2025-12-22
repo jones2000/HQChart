@@ -199,7 +199,7 @@ class StockInfoChart
     NetworkFilter(data, callback)
     {
         console.log('[StockInfoChart::NetworkFilter] data', data);
-        var option={ };
+        var option={ ChartName:"StockInfoChart" };
         switch(data.Name)
         {
             //case "JSReportChartContainer::RequestMemberListData":   //板块成分

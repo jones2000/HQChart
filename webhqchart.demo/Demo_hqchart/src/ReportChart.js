@@ -127,7 +127,7 @@ class ReportChart
     NetworkFilter(data, callback)
     {
         console.log('[ReportChart::NetworkFilter] data', data);
-        var option={ };
+        var option={ ChartName:"ReportChart" };
         switch(data.Name)
         {
             //case "JSReportChartContainer::RequestMemberListData":   //板块成分

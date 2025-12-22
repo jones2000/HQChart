@@ -1066,6 +1066,48 @@ function GetBlackStyle()
             DownTextColor:"rgb(25,158,0)",     //下跌文字颜色
             UnchangeTextColor:"rgb(90,90,90)",     //平盘文字颜色 
             BorderColor:'rgb(38,38,41)',        //边框线
+        },
+
+
+        StatusBar:
+        {
+            Table:
+            {
+                //Font:14*GetDevicePixelRatio() +'px 微软雅黑',
+                TitleColor:"rgb(250,250,250)",
+                AryTextColor:["rgb(250,250,250)", "rgb(255, 185, 15)"],
+                //Margin:{ Left:0, Top:0, Bottom:0, Right:0 },
+                //CellMargin:{ Top:5, Bottom:5, Left:5, Right:5, YOffset:0 },
+                //ItemSpace:20,
+
+                Separator: 
+                { 
+                    //Left:20, 
+                   // Right:20, 
+                    Line:
+                    { 
+                        //Width:1, 
+                        Color:"rgb(38,38,41)", 
+                        //Top:2, 
+                        //Bottom:2 
+                    } 
+                }
+            },
+
+            DateTime:
+            {
+                //Font:14*GetDevicePixelRatio() +'px 微软雅黑',
+                TitleColor:"rgb(250,250,250)",
+                //Format:"HH:MM:SS",
+                //MaxText:"99:99:99",
+                //Margin:{ Left:2*GetDevicePixelRatio(), Top:5*GetDevicePixelRatio(), Bottom:5*GetDevicePixelRatio(), Right:5*GetDevicePixelRatio(), YOffset:1*GetDevicePixelRatio() },
+            },
+
+            UpTextColor:"rgb(238,21,21)",      //上涨文字颜色
+            DownTextColor:"rgb(25,158,0)",     //下跌文字颜色
+            UnchangeTextColor:"rgb(90,90,90)",     //平盘文字颜色 
+
+            BorderColor:'rgb(38,38,41)',        //边框线
         }
         
     };

@@ -38,6 +38,11 @@ uniapp 版本:
 麦语法指标计算引擎，[https://github.com/jones2000/hqchartPy2/tree/master/HQChartPy2.Free](https://github.com/jones2000/hqchartPy2/tree/master/HQChartPy2.Free),
 支持windows,和linux. 这个版本是用c++开发的，通过cpython来对接py，能高效的完成指标执行. 可以应用于回测, 选股等批量指标计算中.
 
+## 完整的行情面板示例
+![示例](/小程序行情模块用例/image/fulldem_1.png)    
+纯前端， 需要安装数据插件[https://github.com/jones2000/HQChartData](https://github.com/jones2000/HQChartData)  
+页面地址: [https://jones2000.github.io/HQChart/webhqchart.demo/Demo_hqchart/hqchart_demo.html](https://jones2000.github.io/HQChart/webhqchart.demo/Demo_hqchart/hqchart_demo.html)  
+
 
 # 目录结构
 --webhqchart 行情前端js代码模块 <br>
