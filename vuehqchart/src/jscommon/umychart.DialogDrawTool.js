@@ -556,6 +556,7 @@ function JSDialogDrawTool()
     this.Close=function(e)
     {
         if (!this.DivDialog) return;
+        if (!this.IsShow()) return;
 
         this.DivDialog.style.visibility='hidden';
 
@@ -901,6 +902,8 @@ function JSDialogModifyDraw()
         if (!this.DivDialog) return;
 
         this.ChartPicture=null;
+        if (!this.IsShow()) return;
+
         this.DivDialog.style.visibility='hidden';
 
         if (this.HQChart) this.HQChart.RestoreFocus(this.RestoreFocusDelay);

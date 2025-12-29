@@ -17,6 +17,7 @@ class StockInfoChart
         IsAutoUpdate:true,          //是自动更新数据
         AutoUpdateFrequency:5000,   //数据更新频率
         EnableResize:true,
+        EnablePopMenuV2:true,
 
         Column:
         [
@@ -38,6 +39,13 @@ class StockInfoChart
             { Name:"涨跌", Key:"UpDown",ColorType:1, FloatPrecision:-1, DefaultText:"--.--" }
         ],
         
+        MouseOnKey:
+        [
+            "Price","UpLimit","DownLimit",
+            "BUY_PRICE_0","BUY_PRICE_1","BUY_PRICE_2","BUY_PRICE_3","BUY_PRICE_4",
+            "SELL_PRICE_0","SELL_PRICE_1","SELL_PRICE_2","SELL_PRICE_3","SELL_PRICE_4",
+        ],
+
         Border: //边框
         {
             Left:1,         //左边间距
@@ -63,7 +71,14 @@ class StockInfoChart
             [{ Name:"流通市值", Key:"FlowMarketValue",  FloatPrecision:0, Format:{ Type:3, ExFloatPrecision:2 } }, { Name:"总市值",  Key:"TotalMarketValue", FloatPrecision:0, Format:{ Type:3, ExFloatPrecision:2 } }],
         ];
 
-        return { Column:column, BuySellCount:5 };
+        var mouseOnKey=
+        [
+            "Price","UpLimit","DownLimit",
+            "BUY_PRICE_0","BUY_PRICE_1","BUY_PRICE_2","BUY_PRICE_3","BUY_PRICE_4",
+            "SELL_PRICE_0","SELL_PRICE_1","SELL_PRICE_2","SELL_PRICE_3","SELL_PRICE_4",
+        ];
+
+        return { Column:column, BuySellCount:5, MouseOnKey:mouseOnKey };
     }
 
     GetHKStockShowOption()
@@ -77,7 +92,7 @@ class StockInfoChart
             [{ Name:"总量", Key:"Vol", FloatPrecision:0, Format:{ Type:3, ExFloatPrecision:2 } }, { Name:"总额",  Key:"Amount", FloatPrecision:0, Format:{ Type:3, ExFloatPrecision:2 } }],
         ];
 
-        return { Column:column, BuySellCount:1 };
+        return { Column:column, BuySellCount:1, MouseOnKey:[] };
     }
 
     GetIndexShowOption()
@@ -96,7 +111,7 @@ class StockInfoChart
             [{ Name:"总额",  Key:"Amount", FloatPrecision:0, Format:{ Type:3, ExFloatPrecision:2 }, ShowType:1 }]
         ];
 
-        return { Column:column, BuySellCount:0 };
+        return { Column:column, BuySellCount:0, MouseOnKey:[] };
     }
 
     //期货
@@ -112,7 +127,7 @@ class StockInfoChart
             [{ Name:"总量", Key:"Vol", FloatPrecision:0, Format:{ Type:3, ExFloatPrecision:2 } }, { Name:"持仓",  Key:"Position", FloatPrecision:0 }],
         ];
 
-        return { Column:column, BuySellCount:1 };
+        return { Column:column, BuySellCount:1, MouseOnKey:[] };
     }
 
             
@@ -138,18 +153,14 @@ class StockInfoChart
 
         this.Option.EventCallback= 
         [ 
-            {   //根据大小单显示成交量颜色
-                event:JSCHART_EVENT_ID.ON_DRAW_DEAL_VOL_COLOR, 
-                callback:(event, data, obj)=>{ this.GetVolColor(event, data, obj); }  
+            {   //右键菜单
+                event:JSCHART_EVENT_ID.ON_CREATE_RIGHT_MENU, 
+                callback:(event, data, obj)=>{ this.OnCreateRightMenu(event, data, obj); }  
             },
-            {   //自定义内容
-                event:JSCHART_EVENT_ID.ON_DRAW_DEAL_TEXT, 
-                callback:(event, data, obj)=>{ this.GetCustomText(event, data, obj); }  
+            {   //菜单命令执行
+                event:JSCHART_EVENT_ID.ON_MENU_COMMAND, 
+                callback:(event, data, obj)=>{ this.OnMenuCommand(event, data, obj); }  
             },
-            {   //过滤数据
-                event:JSCHART_EVENT_ID.ON_FILTER_DEAL_DATA, 
-                callback:(event, data, obj)=>{ this.OnFilterData(event, data, obj); }  
-            }
         ];
 
         this.OnCreate();
@@ -170,11 +181,11 @@ class StockInfoChart
 
         //设置显示内容
         var option=null;
-        if (MARKET_SUFFIX_NAME.IsSHSZStockA(symbol)) 
+        if (MARKET_SUFFIX_NAME.IsSHSZStockA(symbol) || MARKET_SUFFIX_NAME.IsBJStock(upperSymbol)) 
         {
             option=this.GetSZSHStockShowOption();
         }
-        else if (MARKET_SUFFIX_NAME.IsSHSZIndex(symbol)) 
+        else if (MARKET_SUFFIX_NAME.IsSHSZIndex(symbol) || MARKET_SUFFIX_NAME.IsBJIndex(symbol)) 
         {
             option=this.GetIndexShowOption();
         }
@@ -210,5 +221,32 @@ class StockInfoChart
                 this.HQData.NetworkFilter(data, callback, option);  
                 break;
         }
+    }
+
+    OnCreateRightMenu(event, data, obj)
+    {
+        var price=null;
+        var item=data.Data.Cell.Data;
+        if (item.Type==1) 
+        {
+            price=item.Value;
+        }
+        else if (item.Type==2)
+        {
+            price=item.Value.Value;
+        }
+
+        if (!IFrameSplitOperator.IsNumber(price)) return;
+        
+        data.MenuData.Menu=
+        [
+            { Name:"闪电买入", Data:{ ID:"CUSTOM_MENU_BUY_ID", Args:[price] } },
+            { Name:"闪电卖出", Data:{ ID:"CUSTOM_MENU_SELL_ID", Args:[price] } }
+        ];
+    }
+
+    OnMenuCommand(event, data, obj)
+    {
+
     }
 }

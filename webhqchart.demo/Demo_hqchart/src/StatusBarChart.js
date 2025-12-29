@@ -70,6 +70,8 @@ class StatusBarChart
         {
             AryButton:
             [
+                { ID:3, Type:1, Icon:[{ Symbol:"\ue62a", Color:"rgb(180,180,180)"} ] }, //搜索
+
                 { ID:2, Type:1, Icon:[{ Symbol:"\ue609", Color:"rgb(180,180,180)"} ] }, //设置
 
                 //网络
@@ -86,6 +88,12 @@ class StatusBarChart
                     }
                 },
             ]
+        },
+        
+        MinuteChartTooltip:
+        { 
+            Enable:true,
+            Option:{ EnableResize:false }
         },
         
         Border: //边框
@@ -165,7 +173,27 @@ class StatusBarChart
         }
         else if (item.Type==2)
         {
+            var e=data.e;
+            JSChart.CancelEvent(e);
             if (this.OnClickRightToolbarCallback) this.OnClickRightToolbarCallback({ ID:item.Data.ID }, item);
+        }
+    }
+
+    UpdateNetworkStatus(data)
+    {
+        if (!this.Chart || !this.Chart.JSChartContainer) return;
+        var chart=this.Chart.JSChartContainer.GetStatusBarChart();
+        if (!chart) return;
+        if (!chart.MapToolbarFlash.has(1)) return;
+
+        var item=chart.MapToolbarFlash.get(1);
+        if (data.Error)
+        {
+            item.Enable=false;
+        }
+        else
+        {
+            item.Enable=true;
         }
     }
 }

@@ -1062,6 +1062,8 @@ function GetBlackStyle()
                 //CellMargin:{ Top:5, Bottom:5, YOffset:0, Left:5, Right:5, YOffset:-5 },
             },
 
+            MouseOn:{ BGColor:"rgb(54,54,54)" },
+
             UpTextColor:"rgb(238,21,21)",      //上涨文字颜色
             DownTextColor:"rgb(25,158,0)",     //下跌文字颜色
             UnchangeTextColor:"rgb(90,90,90)",     //平盘文字颜色 

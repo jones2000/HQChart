@@ -43,6 +43,7 @@
     <script src="./src/DealChart.js"></script>
     <script src="./src/StockInfoChart.js"></script>
     <script src="./src/StatusBarChart.js"></script>
+    <script src="./src/KeyboardChart.js"></script>
     <script src="./src/EnvironmentVariable.js"></script>
     <script src="./src/HQData.js"></script>
    
@@ -141,10 +142,14 @@
             MinMinuteCtrl=new MinMinuteChart();
             StockInfoCtrl=new StockInfoChart();
             StatusBarCtrl=new StatusBarChart();
+            KeyboardCtrl=new KeyboardChart();
             Symbol="002371.sz";
 
+            
             Create()
             {
+                HQChartWSClient.NetworkStatusCallback=(data)=>{ this.UpdateNetworkStatus(data); }
+
                 var resource=JSChart.GetResource();
                 //resource.BGColor=blackStyle.BGColor;
                 resource.ToolbarButtonStyle=1;
@@ -161,6 +166,10 @@
                 this.StatusBarCtrl.Create(document.getElementById('StatuBarCtrl'));
                 this.StatusBarCtrl.OnClickStockCallback=(data, obj)=>{ this.ChangeSymbol(data.Symbol); }
                 this.StatusBarCtrl.OnClickRightToolbarCallback=(data, obj)=>{ this.OnClickBottomToolbar(data, obj); }
+
+                this.KeyboardCtrl.Create(["KLineCtrl", "MinuteCtrl"]);
+                this.KeyboardCtrl.OnSelectedItemCallback=(data)=>{ this.OnKeyboardSelected(data); }
+                this.KeyboardCtrl.OnShowCallback=(data)=>{ this.OnKeyboardShow(data); }
 
                 var SELF_STOCK_LIST_1=
                 [
@@ -194,6 +203,10 @@
 
                     //上海国际能源交易中心
                     "BC2601.ine",
+
+                    //北交所
+                    "920000.bj",
+                    "899050.bj"
                 ];
 
                 this.SelfReport.HQData.SetSelfBlock("自选股1", SELF_STOCK_LIST_1);
@@ -302,6 +315,8 @@
                 if (this.MinMinuteCtrl) this.MinMinuteCtrl.ReloadResource();
                 if (this.StockInfoCtrl) this.StockInfoCtrl.ReloadResource();
                 if (this.StatusBarCtrl) this.StatusBarCtrl.ReloadResource();
+                if (this.KeyboardCtrl) this.KeyboardCtrl.ReloadResource();
+                
             }
 
             EnableStockChip()
@@ -379,6 +394,7 @@
                 if (MARKET_SUFFIX_NAME.IsSH(upperSymbol)) indexSymbol="000001.sh";
                 else if (MARKET_SUFFIX_NAME.IsSZ(upperSymbol)) indexSymbol="399001.sz";
                 else if (MARKET_SUFFIX_NAME.IsHK(upperSymbol)) indexSymbol="HSI.hk";
+                else if (MARKET_SUFFIX_NAME.IsBJ(upperSymbol)) indexSymbol="899050.bj";
 
                 return indexSymbol;
             }
@@ -466,7 +482,7 @@
                 var tabHeight=$("#StockInfo_Bottom_Tab")[0].offsetHeight;
                 var topPanelHeight=500;
                 var pixelRatio=GetDevicePixelRatio();
-                topPanelHeight=((20*pixelRatio+15)+(16*pixelRatio+15)+((14*pixelRatio)+10)*10+((14*pixelRatio)+10)*9)/pixelRatio;   //动态计算高度
+                topPanelHeight=((20*pixelRatio+15)+(16*pixelRatio+15)+(20*pixelRatio)*10+(20*pixelRatio)*9)/pixelRatio;   //动态计算高度
                 var bottomPanelHeight=height-topPanelHeight-tabHeight;
 
                 var topPanel=document.getElementById('StockInfo_Top');
@@ -478,15 +494,21 @@
 
             OnSizeStatusBar(width, height)
             {
-                var pixelRatio=GetDevicePixelRatio();
-                var statusBarHeight=(14*pixelRatio+(5+5)*pixelRatio)/pixelRatio;
+                var statusBarHeight=this.GetStatusBarHeight();
 
                 var statusBar=document.getElementById('BottomStatusBar');
                 statusBar.style.height=`${statusBarHeight}px`;
 
-
                 var fullDemo=document.getElementById('FullDemo');
                 fullDemo.style.height=`${height-statusBarHeight-2}px`;
+            }
+
+            GetStatusBarHeight()
+            {
+                var pixelRatio=GetDevicePixelRatio();
+                var statusBarHeigth=(14*pixelRatio+(5+5)*pixelRatio)/pixelRatio;
+
+                return statusBarHeigth;
             }
 
 
@@ -532,11 +554,56 @@
                 {
 
                 }
+                else if (data.ID==3)    //搜索
+                {
+                    this.KeyboardCtrl.Show();
+                }
+            }
+
+            UpdateNetworkStatus(data)
+            {
+                if (this.StatusBarCtrl)  this.StatusBarCtrl.UpdateNetworkStatus(data);
+            }
+
+            OnKeyboardSelected(data)
+            {
+                var selItem=data.RowData;
+                if (selItem.Data.Type===1 || selItem.Data.Type===2 || selItem.Data.Type===3)  //1=股票 2=指数 3=期货
+                {
+                    this.ChangeSymbol(selItem.Data.Symbol);
+                }
+
+                /*
+                else if (selItem.Data.Type===1)
+                {
+                    klineControl.Chart.Focus();
+                    klineControl.Chart.ChangeIndex(0,selItem.Data.Index);
+                }
+                else if (selItem.Data.Type===2)
+                {
+                    alert(`跳转'${selItem.Data.PageName}'页面`);
+                }
+                */
+            }
+
+            OnKeyboardShow(data)
+            {
+                this.KLineCtrl.ClearRestoreFocusTimer();
+
+                //调整显示位置， 留出底部状态栏
+                var statusBarHeight=this.GetStatusBarHeight();
+                var height= $(window).height();
+                var width = $(window).width();
+                var y=height-statusBarHeight-data.Height-3;
+                data.Y=y;
             }
         }
 
         $(function () 
         {
+            var value=new Date().getTime();
+            console.log(value);
+            
             EnvironmentVariable.Load();
 
             var control=new ChartContainer();

@@ -271,6 +271,21 @@ function JSPopKeyboard()
         var x=xRight-width;
         var y=ybottom-height;
 
+        if (this.Keyboard.JSChart && this.Keyboard.JSChart.JSChartContainer)
+        {
+            var event=this.Keyboard.JSChart.JSChartContainer.GetEventCallback(JSCHART_EVENT_ID.ON_KEYBOARD_SHOW);
+            if (event && event.Callback)
+            {
+                var data={ PreventDefault:false, Y:y, X:x, Height:height, Width:width };
+                event.Callback(event, data, this);
+                if (data.PreventDefault) return;
+
+                //修改显示位置
+                x=data.X;
+                y=data.Y;
+            }
+        }
+
         this.DivDialog.style.visibility='visible';
         this.DivDialog.style.top = y + "px";
         this.DivDialog.style.left = x + "px";
@@ -294,6 +309,19 @@ function JSPopKeyboard()
     {
         if (!this.DivDialog) return false;
         return this.DivDialog.style.visibility==='visible';
+    }
+
+    this.PopKeyboard=function(search)
+    {
+        if (!this.DivDialog) return;
+        if (this.IsShow()) return;
+
+        this.Show();
+        this.InputDOM.focus();
+        if (this.InputDOM.value=="") 
+        {
+            if (search) this.InputDOM.value=search;
+        }
     }
 
     this.OnGlobalKeydown=function(event)

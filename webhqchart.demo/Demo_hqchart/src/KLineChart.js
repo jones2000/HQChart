@@ -392,7 +392,10 @@ class KLineChart
 
     ChangeSymbol(symbol, option)
     {
-        if (this.Chart) this.Chart.ChangeSymbol(symbol, option);
+        if (this.Chart) 
+        {
+            this.Chart.ChangeSymbol(symbol, option);
+        }
     }
 
     ReloadResource()
@@ -431,6 +434,12 @@ class KLineChart
     OnClickChartPaint(event, data, obj)
     {
         console.log("[KLineChart::OnClickChartPaint] data=", data);
+    }
+
+    ClearRestoreFocusTimer()
+    {
+        if (!this.Chart || !this.Chart.JSChartContainer) return;
+        this.Chart.JSChartContainer.ClearRestoreFocusTimer();
     }
 
 }

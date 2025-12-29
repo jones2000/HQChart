@@ -68,6 +68,9 @@ export default {
     //X轴滚动条
     JSScrollBarChart:JSScrollBarChart,
 
+    JSStockInfoChart:JSStockInfoChart,      //5档买卖
+    JSStatusBarChart:JSStatusBarChart,      //底部状态栏
+
     //图形基类导出
     IChartPainting:IChartPainting,              //图形
     IExtendChartPainting:IExtendChartPainting,  //扩展图形

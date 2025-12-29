@@ -1,3 +1,5 @@
+//自选股列表
+
 class ReportChart
 {
     DivReport=null;
@@ -127,7 +129,7 @@ class ReportChart
     NetworkFilter(data, callback)
     {
         console.log('[ReportChart::NetworkFilter] data', data);
-        var option={ ChartName:"ReportChart" };
+        var option={ ChartName:"SelfReportChart" };
         switch(data.Name)
         {
             //case "JSReportChartContainer::RequestMemberListData":   //板块成分

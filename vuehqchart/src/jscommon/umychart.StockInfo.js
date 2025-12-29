@@ -72,6 +72,7 @@ function JSStockInfoChart(divElement)
         this.DivElement.JSChart=this;   //div中保存一份
 
         if (option.EnableResize==true) this.CreateResizeListener();
+        if (option.EnablePopMenuV2===true) chart.InitalPopMenu();
 
         if (option.Symbol)
         {
@@ -111,6 +112,8 @@ function JSStockInfoChart(divElement)
 
         if (IFrameSplitOperator.IsNonEmptyArray(option.Column))  chart.SetColumn(option.Column);
         if (IFrameSplitOperator.IsNonEmptyArray(option.HeaderColumn))  chart.SetHeaderColumn(option.HeaderColumn);
+        if (IFrameSplitOperator.IsNonEmptyArray(option.MouseOnKey)) chart.SetMouseOnKey(option.MouseOnKey);
+
         //是否自动更新
         if (option.NetworkFilter) chart.NetworkFilter=option.NetworkFilter;
 
@@ -271,6 +274,8 @@ function JSStockInfoChartContainer(uielement)
     this.AutoUpdateTimer=null;
     this.AutoUpdateFrequency=15000;             //15秒更新一次数据
 
+    this.JSPopMenu;             //内置菜单
+
     this.UIElement=uielement;
    
     this.IsDestroy=false;        //是否已经销毁了
@@ -279,6 +284,8 @@ function JSStockInfoChartContainer(uielement)
     {
         this.IsDestroy=true;
         this.StopAutoUpdate();
+
+        this.DestroyPopMenu();
     }
 
     //设置事件回调
@@ -290,6 +297,37 @@ function JSStockInfoChartContainer(uielement)
         var data={Callback:object.callback, Source:object};
         this.mapEvent.set(object.event,data);
     }
+
+    this.RemoveEventCallback=function(eventid)
+    {
+        if (!this.mapEvent.has(eventid)) return;
+
+        this.mapEvent.delete(eventid);
+    }
+
+    this.GetEventCallback=function(id)  //获取事件回调
+    {
+        if (!this.mapEvent.has(id)) return null;
+        var item=this.mapEvent.get(id);
+        return item;
+    }
+
+    this.InitalPopMenu=function()   //初始化弹出窗口
+    {
+        if (this.JSPopMenu) return;
+
+        this.JSPopMenu=new JSPopMenu();     //内置菜单
+        this.JSPopMenu.Inital();
+    }
+
+    this.DestroyPopMenu=function()
+    {
+        if (!this.JSPopMenu) return;
+        
+        this.JSPopMenu.Destroy();
+        this.JSPopMenu=null;
+    }
+
 
     this.ClearData=function()
     {
@@ -332,13 +370,15 @@ function JSStockInfoChartContainer(uielement)
     {
         this.CancelAutoUpdate();
         this.ClearData();
+        this.ChartClearMouseOnData();
         this.Symbol=symbol;
         this.Data.Symbol=symbol;
 
         if (option)
         {
-            if (IFrameSplitOperator.IsNonEmptyArray(option.Column)) this.SetColumn(option.Column);
+            if (IFrameSplitOperator.IsArray(option.Column)) this.SetColumn(option.Column);
             if (IFrameSplitOperator.IsNumber(option.BuySellCount)) this.SetBuySellCount(option.BuySellCount);
+            if (IFrameSplitOperator.IsArray(option.MouseOnKey)) this.SetMouseOnKey(option.MouseOnKey);
         }
 
         this.Draw();
@@ -486,16 +526,219 @@ function JSStockInfoChartContainer(uielement)
         }
 
        
-
-        /*
-        this.UIElement.ondblclick=(e)=>{ this.UIOnDblClick(e); }
+        this.UIElement.oncontextmenu=(e)=> { this.UIOnContextMenu(e); }
         this.UIElement.onmousedown=(e)=> { this.UIOnMouseDown(e); }
         this.UIElement.onmousemove=(e)=>{ this.UIOnMouseMove(e);}
         this.UIElement.onmouseout=(e)=>{ this.UIOnMounseOut(e); }
         this.UIElement.onmouseleave=(e)=>{ this.UIOnMouseleave(e); }
-        this.UIElement.oncontextmenu=(e)=> { this.UIOnContextMenu(e); }
+        /*
+        this.UIElement.ondblclick=(e)=>{ this.UIOnDblClick(e); }
+        
         */
     }
+
+    this.UIOnMouseDown=function(e)
+    {
+        var pixelTatio = GetDevicePixelRatio();
+        this.ClickDownPoint={ X:e.clientX, Y:e.clientY };
+        var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
+        var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
+
+        if (e)   
+        {
+            if (e.button==0)        //左键点击
+            {
+                var ptClick={ X:this.ClickDownPoint.X, Y:this.ClickDownPoint.Y };
+                this.TryClickPaintEvent(JSCHART_EVENT_ID.ON_CLICK_STOCKINFO_ITEM, ptClick, e);
+            }
+            else if (e.button==2)   //右键点击
+            {
+                var ptClick={ X:this.ClickDownPoint.X, Y:this.ClickDownPoint.Y };
+                this.TryClickPaintEvent(JSCHART_EVENT_ID.ON_RCLICK_STOCKINFO_ITEM, ptClick, e);
+            }
+        }
+    }
+
+    this.UIOnContextMenu=function(e)
+    {
+        if (e)  //去掉系统右键菜单
+        {
+            if (e.preventDefault) e.preventDefault();
+            if (e.stopPropagation) e.stopPropagation();
+            e.returnValue=false;
+        } 
+
+        var x = e.clientX-this.UIElement.getBoundingClientRect().left;
+        var y = e.clientY-this.UIElement.getBoundingClientRect().top;
+
+        this.OnRightMenu(x, y, e);
+    }
+
+    this.OnRightMenu=function(x,y,e)
+    {
+        if (!this.JSPopMenu) return;
+
+        var pixelTatio = GetDevicePixelRatio();
+        var toolTip=new TooltipData();
+        var data=null;
+        for(var i=0;i<this.ChartPaint.length;++i)
+        {
+            var item=this.ChartPaint[i];
+            if (item.GetTooltipData(x*pixelTatio,y*pixelTatio,toolTip))
+            {
+                if (toolTip.Data)
+                {
+                    data= { Cell:toolTip.Data};
+                    break;
+                }
+            }
+        }
+
+        if (!data) return;
+
+        data.e=e;
+        var menuData={ Menu:null, Position:JSPopMenu.POSITION_ID.RIGHT_MENU_ID };
+        menuData.ClickCallback=(data)=>{ this.OnClickRightMenu(data); }
+
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CREATE_RIGHT_MENU);
+        if (event && event.Callback)
+        {
+            var sendData={ MenuData:menuData, Data:data };
+            event.Callback(event, sendData, this);
+        }
+
+        if (menuData.Menu) this.PopupMenuByRClick(menuData, x, y);
+    }
+
+     //右键菜单
+    this.PopupMenuByRClick=function(menuData, x, y)
+    {
+        if (!this.JSPopMenu) return;
+
+        var rtClient=this.UIElement.getBoundingClientRect();
+        var rtScroll=GetScrollPosition();
+
+        x+=rtClient.left+rtScroll.Left;
+        y+=rtClient.top+rtScroll.Top;
+
+        this.JSPopMenu.CreatePopMenu(menuData);
+        this.JSPopMenu.PopupMenuByRight(x,y);
+    }
+
+    //点击右键菜单
+    this.OnClickRightMenu=function(data)
+    {
+        JSConsole.Chart.Log('[JSStockInfoChartContainer::OnClickRightMenu] ',data);
+        if (!data || !data.Data) return;
+
+        var cmdID=data.Data.ID;     //命令ID
+        var aryArgs=data.Data.Args; //参数
+
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_MENU_COMMAND);  //回调通知外部
+        if (event && event.Callback)
+        {
+            var data={ PreventDefault:false, CommandID:cmdID, Args:aryArgs, SrcData:data };
+            event.Callback(event,data,this);
+            if (data.PreventDefault) return;
+        }
+
+        this.ExecuteMenuCommand(cmdID, aryArgs);
+    }
+
+    this.ExecuteMenuCommand=function(cmdID, aryArgs)
+    {
+
+    }
+
+    this.UIOnMouseMove=function(e)
+    {
+        var pixelTatio = GetDevicePixelRatio();
+        var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
+        var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
+
+        var option={ Update:false };
+
+        this.OnChartMouseMove(x,y,e,option);
+
+        if (option.Update===true) this.Draw();
+    }
+
+    this.OnChartMouseMove=function(x, y, e, option)
+    {
+        for(var i=0;i<this.ChartPaint.length;++i)
+        {
+            var item=this.ChartPaint[i];
+            if (item && item.OnMouseMove)
+            {
+                if (item.OnMouseMove(x,y,e,option)) return true;
+            }
+        }
+
+        return false;
+    }
+
+    this.TryClickPaintEvent=function(eventID, ptClick, e)
+    {
+        var event=this.GetEventCallback(eventID);
+        if (!event) return false;
+
+        if (ptClick.X==e.clientX && ptClick.Y==e.clientY)
+        {
+            var pixelTatio = GetDevicePixelRatio();
+            var x = (e.clientX-uielement.getBoundingClientRect().left)*pixelTatio;
+            var y = (e.clientY-uielement.getBoundingClientRect().top)*pixelTatio;
+
+            var toolTip=new TooltipData();
+            for(var i=0;i<this.ChartPaint.length;++i)
+            {
+                var item=this.ChartPaint[i];
+                if (item.GetTooltipData(x,y,toolTip))
+                {
+                    if (toolTip.Data)
+                    {
+                        var data= { X:e.clientX, Y:e.clientY, Tooltip:toolTip };
+                        event.Callback(event, data, this);
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    this.UIOnMouseleave=function(e)
+    {
+        var option={ Update:false }
+        
+        this.ChartClearMouseOnData(option);
+
+        if (option.Update===true) this.Draw();
+    }
+
+    this.UIOnMounseOut=function(e)
+    {
+        var option={ Update:false }
+
+        this.ChartClearMouseOnData(option);
+
+        if (option.Update===true) this.Draw();
+
+        //this.HideAllTooltip();
+    }
+
+    this.ChartClearMouseOnData=function(option)
+    {
+        for(var i=0;i<this.ChartPaint.length;++i)
+        {
+            var item=this.ChartPaint[i];
+            if (item && item.ClearMouseOnData)
+            {
+                item.ClearMouseOnData(option);
+            }
+        }
+    }
+
 
     this.Draw=function()
     {
@@ -581,6 +824,14 @@ function JSStockInfoChartContainer(uielement)
         chart.SizeChange=true;
 
         if (option && option.Redraw) this.Draw();
+    }
+
+    this.SetMouseOnKey=function(aryKey)
+    {
+        var chart=this.ChartPaint[0];
+        if (!chart)  return;
+
+        chart.SetMouseOnKey(aryKey);
     }
 }
 
@@ -713,7 +964,15 @@ function ChartStockData()
         [{ Name:"内盘", Key:"InVol", ColorType:4, FloatPrecision:0 }, { Name:"外盘",  Key:"OutVol",ColorType:5, FloatPrecision:0 }],
         [{ Name:"TTM", Key:"PE_TTM",  FloatPrecision:2 }, { Name:"市净率",  Key:"PB", FloatPrecision:2 }],
         [{ Name:"流通市值", Key:"FlowMarketValue",  FloatPrecision:0, Format:{ Type:3, ExFloatPrecision:2 } }, { Name:"总市值",  Key:"TotalMarketValue", FloatPrecision:0, Format:{ Type:3, ExFloatPrecision:2 } }],
-    ]
+    ];
+
+    this.AryCellRect=[];
+    this.MouseOnItem=null; //{ Key:, Rect: }
+    //this.MouseOnItem={ Key:"SELL_PRICE_0" };
+    this.MouseOnConfig=CloneData(g_JSChartResource.StockInfo.MouseOn); 
+
+    this.MapMouseOnKey=new Map();
+    
     
     this.ReloadResource=function(resource)
     {
@@ -727,6 +986,17 @@ function ChartStockData()
         this.BuySellConfig=CloneData(g_JSChartResource.StockInfo.BuySell);
 
         this.TableConfig=CloneData(g_JSChartResource.StockInfo.Table);
+
+        this.MouseOnConfig=CloneData(g_JSChartResource.StockInfo.MouseOn); 
+    }
+
+    this.ClearMouseOnData=function(option)
+    {
+        if (this.MouseOnItem)
+        {
+            this.MouseOnItem=null;
+            if (option) option.Update=true; //需要更新
+        }
     }
 
     this.SetColumn=function(aryColumn)
@@ -755,8 +1025,75 @@ function ChartStockData()
         }
     }
 
+    this.SetMouseOnKey=function(aryKey)
+    {
+        this.MapMouseOnKey.clear();
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryKey)) return;
+
+        for(var i=0;i<aryKey.length;++i)
+        {
+            var key=aryKey[i];
+            if (!key) continue;
+
+            this.MapMouseOnKey.set(key, { Key:key });
+        }
+        
+    }
+
+    this.OnMouseMove=function(x, y, e, option)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.AryCellRect)) return false;
+
+        if (this.MouseOnItem && this.MouseOnItem.Rect)
+        {
+            var rect=this.MouseOnItem.Rect;
+            if (Path2DHelper.PtInRect(x,y,rect )) return true;
+        }
+
+        for(var i=0;i<this.AryCellRect.length;++i)
+        {
+            var item=this.AryCellRect[i];
+            var rect=item.Rect;
+            if (Path2DHelper.PtInRect(x,y, rect))
+            {
+                this.MouseOnItem={ Key:item.Data.Key, Rect:rect };
+                if (option) option.Update=true;
+                return true;
+            }
+        }
+
+        if (this.MouseOnItem)
+        {
+            this.MouseOnItem=null;
+            if (option) option.Update=true;
+        }
+
+        return false;
+    }
+
+    this.GetTooltipData=function(x,y,tooltip)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.AryCellRect)) return false;
+
+        for(var i=0;i<this.AryCellRect.length;++i)
+        {
+            var item=this.AryCellRect[i];
+            var rect=item.Rect;
+            if (Path2DHelper.PtInRect(x,y, rect))
+            {
+                tooltip.Data=item;
+                tooltip.ChartPaint=this;
+                tooltip.Type=151;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     this.Draw=function()
     {
+        this.AryCellRect=[];
         this.Decimal=GetfloatPrecision(this.Data.Symbol);
         var border=this.ChartBorder.GetBorder();
         var position = { Left:border.Left, Right:border.Right, Top:border.Top, Width:border.Right-border.Left, Border:border };
@@ -874,11 +1211,13 @@ function ChartStockData()
         {
             var xLeft=position.Border.Left, xRight=position.Border.Right;
             this.Canvas.strokeStyle=config.BottomLine.Color;
-            this.Canvas.lineWidth=1*GetDevicePixelRatio();
+            var lineWidth=1*GetDevicePixelRatio();;
+            this.Canvas.lineWidth=lineWidth;
             this.Canvas.beginPath();
             this.Canvas.moveTo(xLeft,ToFixedPoint(yText));
             this.Canvas.lineTo(xRight,ToFixedPoint(yText));
             this.Canvas.stroke();
+            position.Top=ToFixedPoint(yText);
         }
     }
 
@@ -905,7 +1244,7 @@ function ChartStockData()
         {
             xText=left;
             var item=this.Data.Sells[i];
-            this.DrawBuySellItem(item, xText, yText, cellWidth, cellHeight);
+            this.DrawBuySellItem(item, xText, yText, cellWidth, cellHeight, { Type:1, Index:i});
             if (IFrameSplitOperator.IsNumber(item.Vol)) sellVol+=item.Vol;
             yText+=cellHeight;
         }
@@ -924,7 +1263,7 @@ function ChartStockData()
         {
             xText=left;
             var item=this.Data.Buys[i];
-            this.DrawBuySellItem(item, xText, yText, cellWidth, cellHeight);
+            this.DrawBuySellItem(item, xText, yText, cellWidth, cellHeight, { Type:2, Index:i});
             if (IFrameSplitOperator.IsNumber(item.Vol)) buyVol+=item.Vol;
             yText+=cellHeight;
         }
@@ -989,7 +1328,8 @@ function ChartStockData()
         }
     }
 
-    this.DrawBuySellItem=function(item, left, top, cellWidth, cellHeight)
+    //itemInfo={ Type:2(1=买 2=卖), Index:数据索引 }
+    this.DrawBuySellItem=function(item, left, top, cellWidth, cellHeight, itemInfo)
     {
         var config=this.BuySellConfig;
         var xText=left;
@@ -1004,11 +1344,22 @@ function ChartStockData()
 
         if (IFrameSplitOperator.IsNumber(item.Price))
         {
+            var key=`${itemInfo.Type==1?"BUY":"SELL"}_PRICE_${itemInfo.Index}`;
+            var mouseOnItem=this.IsMouseOn(key);
+
             var text=item.Price.toFixed(this.Decimal);
             var textWidth=this.Canvas.measureText(text).width;
             var x=xText+cellWidth-textWidth-config.CellMargin.Right;
+            var rtCell={ Left:xText, Width:cellWidth, Top:top, Height:cellHeight };
+            rtCell.Right=rtCell.Left+rtCell.Width;
+            rtCell.Bottom=rtCell.Top+rtCell.Height;
+            if (mouseOnItem) this.DrawMouseOnRect(rtCell);
+
             this.Canvas.fillStyle=this.GetPriceColor(item.Price);
             this.Canvas.fillText(text,x,yBottom);
+            
+            if (this.MapMouseOnKey.has(key))
+                this.AryCellRect.push({ Rect:rtCell, Data:{ Type:1, Key:key, Value:item.Price }});
         }
         xText+=cellWidth;
 
@@ -1022,6 +1373,25 @@ function ChartStockData()
             this.Canvas.fillStyle=config.VolColor;
             this.Canvas.fillText(text,x,yBottom);
         }
+    }
+
+    this.IsMouseOn=function(key)
+    {
+        if (!this.MouseOnItem) return null;
+
+        if (this.MouseOnItem.Key===key) return this.MouseOnItem;
+
+        return null;
+    }
+
+    this.DrawMouseOnRect=function(rect)
+    {
+        if (!this.MouseOnItem) return;
+
+        this.Canvas.fillStyle=this.MouseOnConfig.BGColor;
+        this.Canvas.fillRect(rect.Left, rect.Top, rect.Width, rect.Height);
+
+        this.MouseOnItem.Rect=rect;
     }
 
 
@@ -1093,18 +1463,36 @@ function ChartStockData()
                     {
                         if (i==0 && item.ShowType==1)   //整行显示
                         {
+                            var mouseOnItem=this.IsMouseOn(item.Key);
                             var textWidth=this.Canvas.measureText(text).width;
                             var x=xText+(cellWidth*3)-textWidth-config.CellMargin.Right;
+                            var rtCell={ Left:xText+cellWidth, Top:top, Width:cellWidth*2, Height:cellHeight};
+                            rtCell.Right=rtCell.Left+rtCell.Width;
+                            rtCell.Bottom=rtCell.Top+rtCell.Height;
+                            if (mouseOnItem) this.DrawMouseOnRect(rtCell);
+
                             this.Canvas.fillStyle=color;
                             this.Canvas.fillText(text,x,yBottom);
+
+                            if (this.MapMouseOnKey.has(item.Key))
+                                this.AryCellRect.push({ Rect:rtCell, Data:{ Type:2, Key:item.Key, Value:dataItem }});
                             break;
                         }
                         else
                         {
+                            var mouseOnItem=this.IsMouseOn(item.Key);
                             var textWidth=this.Canvas.measureText(text).width;
                             var x=xText+cellWidth-textWidth-config.CellMargin.Right;
+                            var rtCell={ Left:xText, Top:top, Width:cellWidth, Height:cellHeight};
+                            rtCell.Right=rtCell.Left+rtCell.Width;
+                            rtCell.Bottom=rtCell.Top+rtCell.Height;
+                            if (mouseOnItem) this.DrawMouseOnRect(rtCell);
+
                             this.Canvas.fillStyle=color;
                             this.Canvas.fillText(text,x,yBottom);
+
+                            if (this.MapMouseOnKey.has(item.Key))
+                                this.AryCellRect.push({ Rect:rtCell, Data:{ Type:2, Key:item.Key, Value:dataItem }});
                         }
                         
                     }

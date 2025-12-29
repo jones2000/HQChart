@@ -215,11 +215,11 @@ class MinDealChart extends DealChart
         var upperSymbol=this.Symbol.toUpperCase();
         var option=null;
 
-        if (MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol)) 
+        if (MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol) || MARKET_SUFFIX_NAME.IsBJStock(this.Symbol)) 
         {
             option=this.GetSZSHStockShowOption();
         }
-        else if (MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol)) 
+        else if (MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol) || MARKET_SUFFIX_NAME.IsBJIndex(this.Symbol)) 
         {
             option=this.GetSZSHStockShowOption();
         }

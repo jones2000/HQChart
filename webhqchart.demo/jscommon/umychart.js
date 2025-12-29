@@ -2700,6 +2700,15 @@ JSChart.GetShortSymbol=function(symbol)
     return symbol.slice(0,pos);
 }
 
+JSChart.CancelEvent=function(e)
+{
+    if (!e) return;
+
+    if (e.preventDefault) e.preventDefault();
+    if (e.stopPropagation) e.stopPropagation();
+    e.returnValue=false;
+}
+
 
 var JSCHART_EVENT_ID=
 {
@@ -2787,9 +2796,6 @@ var JSCHART_EVENT_ID=
 
     ON_DRAG_SUB_SELECT_RECT:66,              //拖拽区间选择子区域
     ON_DRAG_SUB_SELECT_RECT_MOUSEUP:67,       //拖拽区间选择子区域鼠标松开
-
-    ON_KEYBOARD_SELECTED:68,        //键盘精灵选中回车
-    ON_KEYBOARD_MOUSEUP:69,
 
     ON_CLICK_DRAWPICTURE_BUTTON:70,  //画图工具按钮
     ON_FINISH_MOVE_DRAWPICTURE:71,   //画图工具移动完成
@@ -2936,6 +2942,15 @@ var JSCHART_EVENT_ID=
 
     //工具条
     ON_CLICK_STATUSBAR_ITEM:301,
+    ON_RCLICK_STATUSBAR_ITEM:302,
+
+    //5档买卖
+    ON_CLICK_STOCKINFO_ITEM:350,
+    ON_RCLICK_STOCKINFO_ITEM:351,
+
+    ON_KEYBOARD_SHOW:350,            //显示键盘精灵
+    ON_KEYBOARD_SELECTED:351,        //键盘精灵选中回车
+    ON_KEYBOARD_MOUSEUP:352,
 }
 
 var JSCHART_OPERATOR_ID=
@@ -27378,6 +27393,7 @@ function IChartPainting()
         if (!this.IsShow || this.ChartFrame.IsMinSize) return;
         var bHScreen=(this.ChartFrame.IsHScreen===true);
         if (bHScreen) return;
+        if (!this.Data) return;
 
         var isMinute=this.IsMinuteFrame();
         var dataWidth=this.ChartFrame.DataWidth;
@@ -27518,6 +27534,7 @@ function IChartPainting()
         if (!this.IsShow || this.ChartFrame.IsMinSize) return null;
         var bHScreen=(this.ChartFrame.IsHScreen===true);
         if (bHScreen) return null;
+        if (!this.Data) return null;
 
         var dataWidth=this.ChartFrame.DataWidth;
         var distanceWidth=this.ChartFrame.DistanceWidth;
@@ -56826,6 +56843,8 @@ function FrameSplitKLinePriceY()
                 isLast=pageInfo.IsLast;
             }
         }
+
+        if (!latestItem || !IFrameSplitOperator.IsNumber(latestItem.Close)) return null;
         
         var info=new CoordinateInfo();
         info.Type=0;
@@ -79928,7 +79947,7 @@ function JSChartResource()
             TitleColor:"rgb(90,90,90)",
             VolColor:"rgb(90,90,90)",
             Margin:{ Left:0, Top:0, Bottom:0, Right:0 },
-            CellMargin:{ Top:5, Bottom:5, Left:5, Right:5, YOffset:0 },
+            CellMargin:{ Top:3*GetDevicePixelRatio(), Bottom:3*GetDevicePixelRatio(), Left:5*GetDevicePixelRatio(), Right:5*GetDevicePixelRatio(), YOffset:1*GetDevicePixelRatio() },
             BottomLine:{ Enable:true, Color:"rgb(192,192,192)"},    //底部分割线
             TopLine:{ Enable:false, Color:"rgb(192,192,192)"},    //底部分割线
 
@@ -79944,9 +79963,11 @@ function JSChartResource()
             Font:14*GetDevicePixelRatio() +'px 微软雅黑',
             TitleColor:"rgb(90,90,90)",
             TextColor:"rgb(90,90,90)",
-            Margin:{ Left:0, Top:0, Bottom:0, Right:0 },
-            CellMargin:{ Top:5, Bottom:5, Left:5, Right:5, YOffset:0 },
+            Margin:{ Left:0, Top:2*GetDevicePixelRatio(), Bottom:0, Right:0 },
+            CellMargin:{ Top:3*GetDevicePixelRatio(), Bottom:3*GetDevicePixelRatio(), Left:5, Right:5, YOffset:1*GetDevicePixelRatio() },
         },
+
+        MouseOn:{ BGColor:"rgb(169,169,169)" },
 
         UpTextColor:"rgb(238,21,21)",      //上涨文字颜色
         DownTextColor:"rgb(25,158,0)",     //下跌文字颜色
@@ -81148,6 +81169,12 @@ function JSChartResource()
                 if (subItem.Color) dest.Header.BottomLine.Color=subItem.Color;
                 if (IFrameSplitOperator.IsBool(subItem.Enable)) dest.Header.BottomLine.Enable=subItem.Enable;
             }
+        }
+
+        if (style.MouseOn)
+        {
+            var item=style.MouseOn;
+            if (item.BGColor) dest.MouseOn.BGColor=item.BGColor;
         }
 
         if (style.UpTextColor) dest.UpTextColor=style.UpTextColor;
@@ -103045,6 +103072,24 @@ var MARKET_SUFFIX_NAME=
         return false;
     },
 
+    //是否包含前缀
+    IsPrefixIncludes:function(symbol, aryPrefix)
+    {
+        if (!symbol) return false;
+        var shortSymbol=this.GetShortSymbol(symbol);
+        if (!shortSymbol) return false;
+        shortSymbol=shortSymbol.toUpperCase();
+
+        for(var i=0;i<aryPrefix.length;++i)
+        {
+            var strValue=aryPrefix[i];
+            if (!strValue) continue;
+            if (shortSymbol.search(strValue)===0) return true;
+        }
+
+        return false;
+    },
+
     IsChinaFutures:function(upperSymbol)   //是否是国内期货 /期权
     {
         if (!upperSymbol) return false;
@@ -103159,15 +103204,26 @@ var MARKET_SUFFIX_NAME=
         return false;
     },
 
+    //北交所股票代码全面启用“920”开头的六位数编码规则（如 920XXX），已于 2025 年 10 月 9 日完成存量与增量股票的统一切换，标志着其与新三板代码的脱钩。
+    // 新代码通常将原 43、83、87 开头的旧代码前三位变更为 920，后三位保持不变
     IsBJStock:function(symbol)  //北交所股票
     {
         if (!symbol) return false;
         var upperSymbol=symbol.toUpperCase();
         if (!this.IsBJ(upperSymbol)) return false;
 
-        var value=upperSymbol.charAt(0);
+        if (upperSymbol.charAt(0)=='9' && upperSymbol.charAt(1)=='2' && upperSymbol.charAt(2)=='0') return true;
 
-        if (value=='4' || value=='8') return true;
+        return false;
+    },
+
+    IsBJIndex:function(symbol)  //北交所指数 北交所指数代码通常以“899”开头，采用6位数字序列
+    {
+        if (!symbol) return false;
+        var upperSymbol=symbol.toUpperCase();
+        if (!this.IsBJ(upperSymbol)) return false;
+
+        if (upperSymbol.charAt(0)=='8' && upperSymbol.charAt(1)=='9' && upperSymbol.charAt(2)=='9') return true;
 
         return false;
     },
@@ -103183,11 +103239,11 @@ var MARKET_SUFFIX_NAME=
         return false;
     },
 
-    IsSHGEM:function(symbol)    //创业板(growth enterprise market) 30开头
+    IsSZGEM:function(symbol)    //创业板(growth enterprise market) 30开头
     {
         if (!symbol) return false;
         var upperSymbol=symbol.toUpperCase();
-        if (!this.IsSH(upperSymbol)) return false;
+        if (!this.IsSZ(upperSymbol)) return false;
         if (upperSymbol.charAt(0)=='3' && upperSymbol.charAt(1)=='0')
             return true;
         
@@ -103331,7 +103387,7 @@ var MARKET_SUFFIX_NAME=
     {
         if (!this.IsSHSZStockA(symbol)) return null;
         if (this.IsSHStockSTAR(symbol)) return {Max:0.2 , Min:-0.2};    //科创板 [20% - -20%]
-        if (this.IsSHGEM(symbol)) return { Max:0.2 , Min:-0.2};         //创业板 [20% - -20%]
+        if (this.IsSZGEM(symbol)) return { Max:0.2 , Min:-0.2};         //创业板 [20% - -20%]
         
         if (!name) return null;
         if (name.indexOf('ST')>=0) return { Max:0.05, Min:-0.05 }; //ST 股票 [5% - -5%]
@@ -105248,6 +105304,7 @@ function FuturesTimeData()
         [MARKET_SUFFIX_NAME.SHFE + '-AO', {Time:4,Decimal:0,Name:'氧化铝'}],
         [MARKET_SUFFIX_NAME.SHFE + '-BR', {Time:6,Decimal:0,Name:'合成橡胶'}],
         [MARKET_SUFFIX_NAME.SHFE + '-AD', {Time:4,Decimal:0,Name:"铝合金"}],
+        [MARKET_SUFFIX_NAME.SHFE + '-OP', {Time:6,Decimal:0,Name:"胶版印刷纸"}],
 
         //上期所-能源
         [MARKET_SUFFIX_NAME.SHFE + '-NR', {Time:6,Decimal:1,Name:'20号胶'}],
@@ -106807,59 +106864,6 @@ function GetfloatPrecision(symbol)  //获取小数位数
     else defaultfloatPrecision=MARKET_SUFFIX_NAME.GetDefaultDecimal(upperSymbol);
 
     return defaultfloatPrecision;
-}
-
-//把不连续的分时数据转成连续的分时数据
-function GenerateMinuteStockJsonData(data)
-{
-    var stock =
-    { 
-        symbol:data.symbol, name:data.name,time:data.time, date:data.date,
-        price:data.price, open:data.open, yclose:data.yclose, high:data.high, low:data.low, vol:data.vol,amount:data.amount,
-        minute:[]
-    };
-
-    var mapMinute=new Map();
-    for(var i in data.minute)
-    {
-        var item=data.minute[i];
-        mapMinute.set(item.time,item);
-    }
-
-    var timeData=g_MinuteTimeStringData.GetTimeData(stock.symbol);
-    for(var i in timeData)  //根据交易时间产生数据
-    {
-        var time=timeData[i];
-        var minuteItem={ time:time, vaild:false };
-        if (mapMinute.has(time))
-        {
-            var find=mapMinute.get(time);
-            minuteItem.vaild=true;
-            minuteItem.price=find.price;
-            minuteItem.open=find.open;
-            minuteItem.high=find.high;
-            minuteItem.low=find.low;
-            minuteItem.avprice=find.avprice;
-            minuteItem.vol=find.vol;
-            minuteItem.amount=find.amount;
-            if (IFrameSplitOperator.IsNumber(find.increase)) minuteItem.increase=find.increase;
-            if (IFrameSplitOperator.IsNumber(find.risefall)) minuteItem.risefall=find.risefall;
-            if (IFrameSplitOperator.IsNumber(find.position)) minuteItem.position=find.position;
-        }
-        stock.minute.push(minuteItem);
-    }
-
-    var vaildCount=0;
-    for(var i=stock.minute.length-1;i>=0;--i)
-    {
-        vaildCount=i+1;
-        var item=stock.minute[i];
-        if (item.vaild==true) break;
-    }
-
-    stock.minute=stock.minute.slice(0,vaildCount);  //去掉最后无用的数据
-
-    return stock;
 }
 
 function GetLocalTime(i)    //得到标准时区的时间的函数

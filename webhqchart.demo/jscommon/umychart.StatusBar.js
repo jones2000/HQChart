@@ -73,6 +73,8 @@ function JSStatusBarChart(divElement)
 
         if (option.EnableResize==true) this.CreateResizeListener();
 
+        if (option.MinuteChartTooltip && option.MinuteChartTooltip.Enable) chart.InitalMinuteChartTooltip(option.MinuteChartTooltip);
+
         chart.Draw();
         chart.RequestData();
     }
@@ -222,6 +224,8 @@ function JSStatusBarChartContainer(uielement)
 
     this.ToolbarTimer=null;
 
+    this.TooltipMinuteChart;                    //分时图
+
     this.UIElement=uielement;
    
     this.IsDestroy=false;        //是否已经销毁了
@@ -236,6 +240,25 @@ function JSStatusBarChartContainer(uielement)
             clearInterval(this.ToolbarTimer);
             this.ToolbarTimer=null;
         }
+
+        this.DestroyMinuteChartTooltip();
+    }
+
+    this.InitalMinuteChartTooltip=function(option)
+    {
+        if (this.TooltipMinuteChart) return;
+
+        this.TooltipMinuteChart=new JSTooltipMinuteChart();
+        this.TooltipMinuteChart.Inital(this, option);
+        this.TooltipMinuteChart.Create();
+    }
+
+    this.DestroyMinuteChartTooltip=function()
+    {
+        if (!this.TooltipMinuteChart) return;
+
+        this.TooltipMinuteChart.Destroy();
+        this.TooltipMinuteChart=null;
     }
 
     //设置事件回调
@@ -412,14 +435,17 @@ function JSStatusBarChartContainer(uielement)
         }
 
         this.UIElement.onmousedown=(e)=> { this.UIOnMouseDown(e); }
+        this.UIElement.onmousemove=(e)=>{ this.UIOnMouseMove(e); }
+        this.UIElement.onmouseout=(e)=>{ this.UIOnMounseOut(e); }
+        this.UIElement.oncontextmenu=(e)=> { this.UIOnContextMenu(e); }
 
         /*
         this.UIElement.ondblclick=(e)=>{ this.UIOnDblClick(e); }
         this.UIElement.onmousedown=(e)=> { this.UIOnMouseDown(e); }
-        this.UIElement.onmousemove=(e)=>{ this.UIOnMouseMove(e);}
-        this.UIElement.onmouseout=(e)=>{ this.UIOnMounseOut(e); }
+        
+       
         this.UIElement.onmouseleave=(e)=>{ this.UIOnMouseleave(e); }
-        this.UIElement.oncontextmenu=(e)=> { this.UIOnContextMenu(e); }
+        
         */
 
         var frequency=500;
@@ -436,9 +462,84 @@ function JSStatusBarChartContainer(uielement)
         var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
         var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
 
-        var ptClick={ X:this.ClickDownPoint.X, Y:this.ClickDownPoint.Y };
-        this.TryClickPaintEvent(JSCHART_EVENT_ID.ON_CLICK_STATUSBAR_ITEM, ptClick, e);
+        if (e)   
+        {
+            if (e.button==0)        //左键点击
+            {
+                var ptClick={ X:this.ClickDownPoint.X, Y:this.ClickDownPoint.Y };
+                this.TryClickPaintEvent(JSCHART_EVENT_ID.ON_CLICK_STATUSBAR_ITEM, ptClick, e);
+            }
+            else if (e.button==2)   //右键点击
+            {
+                this.HideAllTooltip();
+                var ptClick={ X:this.ClickDownPoint.X, Y:this.ClickDownPoint.Y };
+                this.TryClickPaintEvent(JSCHART_EVENT_ID.ON_RCLICK_STATUSBAR_ITEM, ptClick, e);
+            }
+        }
     }
+
+    this.UIOnContextMenu=function(e)
+    {
+        if (e)  //去掉系统右键菜单
+        {
+            if (e.preventDefault) e.preventDefault();
+            if (e.stopPropagation) e.stopPropagation();
+            e.returnValue=false;
+        } 
+    }
+
+    this.GetChartTooltipData=function(x,y,option)
+    {
+        var toolTip=new TooltipData();
+        for(var i=0;i<this.ChartPaint.length;++i)
+        {
+            var item=this.ChartPaint[i];
+            if (item.GetTooltipData(x,y,toolTip))
+            {
+               return toolTip;
+            }
+        }
+
+        return null;
+    }
+
+    this.UIOnMouseMove=function(e)
+    {
+        var pixelTatio = GetDevicePixelRatio();
+        var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
+        var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
+
+        //var bShowKLineTooltip=false;
+        var bShowMinuteTooltip=false;
+        var chartTooltipData=null;
+        var tooltipData=this.GetChartTooltipData(x,y);
+
+        if (tooltipData)
+        {
+            if (tooltipData.Type==121)
+            {
+                var item=tooltipData.Data;
+                if (item && item.Data && item.Data.Symbol)
+                {
+                    bShowMinuteTooltip=true;
+                    chartTooltipData={ Symbol:item.Data.Symbol, Rect:item.Rect, Position:1 };
+                }
+            }
+        }
+
+        //if (!bShowKLineTooltip) this.HideKLineChartTooltip();
+        if (!bShowMinuteTooltip) this.HideMinuteChartTooltip();
+
+        if (bShowMinuteTooltip) this.ShowMinuteChartTooltip(null, null, chartTooltipData);
+        //if (bShowKLineTooltip) this.ShowKLineChartTooltip(null, null, chartTooltipData);
+    }
+
+    this.UIOnMounseOut=function(e)
+    {
+        this.HideAllTooltip();
+    }
+
+
 
     this.TryClickPaintEvent=function(eventID, ptClick, e)
     {
@@ -459,7 +560,7 @@ function JSStatusBarChartContainer(uielement)
                 {
                     if (toolTip.Data)
                     {
-                        var data= { X:e.clientX, Y:e.clientY, Tooltip:toolTip };
+                        var data= { X:e.clientX, Y:e.clientY, Tooltip:toolTip, e:e };
                         event.Callback(event, data, this);
                         return true;
                     }
@@ -521,6 +622,8 @@ function JSStatusBarChartContainer(uielement)
             this.SetSizeChange(true);
             this.Draw();
         }
+
+        if (this.TooltipMinuteChart) this.TooltipMinuteChart.ReloadResource(option);    //分时图
     }
 
     this.SetColumn=function(aryColunm, option)
@@ -544,6 +647,44 @@ function JSStatusBarChartContainer(uielement)
 
         if (option && option.Redraw) this.Draw();
     }
+
+    this.GetStatusBarChart=function()
+    {
+        var chart=this.ChartPaint[0];
+        if (!chart)  return null;
+
+        return chart;
+    }
+
+    //data={ Symbol }
+    this.ShowMinuteChartTooltip=function(x,y, data)
+    {
+        if (!this.TooltipMinuteChart) return;
+
+        var rtClient=this.UIElement.getBoundingClientRect();
+        var rtScroll=GetScrollPosition();
+
+        var offsetLeft=rtClient.left+rtScroll.Left;
+        var offsetTop=rtClient.top+rtScroll.Top;
+
+        data.Offset={ Left:offsetLeft, Top:offsetTop };
+
+        this.TooltipMinuteChart.Show(data, x,y);
+    }
+
+    this.HideMinuteChartTooltip=function()
+    {
+        if (!this.TooltipMinuteChart) return;
+
+        this.TooltipMinuteChart.Hide();
+    }
+
+    this.HideAllTooltip=function()
+    {
+        //this.HideKLineChartTooltip();
+        this.HideMinuteChartTooltip();
+    }
+
 }
 
 function JSStatusBarFrame()
@@ -788,6 +929,7 @@ function ChartStatusBarStockData()
             if (!item || !item.Symbol) continue;
             
             var rtCell={ Left:itemPos.Left, Top:itemPos.Top, Bottom:itemPos.Bottom, Right:itemPos.Left };
+            if (i>0) rtCell.Left-=config.Separator.Right;
             this.DrawCellItem(item, itemPos );
             if (itemPos.CellCount>0)
             {
@@ -1047,7 +1189,7 @@ function ChartStatusBarStockData()
             {
                 tooltip.Data=item;
                 tooltip.ChartPaint=this;
-                tooltip.Type=21;
+                tooltip.Type=121;
                 return true;
             }
         }
@@ -1059,7 +1201,7 @@ function ChartStatusBarStockData()
             {
                 tooltip.Data=item;
                 tooltip.ChartPaint=this;
-                tooltip.Type=22;
+                tooltip.Type=122;
                 return true;
             }
         }
@@ -1067,3 +1209,9 @@ function ChartStatusBarStockData()
         return false;
     }
 }
+
+
+
+
+
+

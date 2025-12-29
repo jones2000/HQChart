@@ -535,6 +535,7 @@ function JSReportChartContainer(uielement)
         this.DestroyMinuteChartTooltip();
         this.DestroyKLineChartTooltip();
         this.DestroyFloatTooltip();
+        this.DestroyPopMenu();
     }
 
     this.StopAutoDragScrollTimer=function()
@@ -554,6 +555,14 @@ function JSReportChartContainer(uielement)
 
         this.JSPopMenu=new JSPopMenu();     //内置菜单
         this.JSPopMenu.Inital();
+    }
+
+    this.DestroyPopMenu=function()
+    {
+        if (!this.JSPopMenu) return;
+        
+        this.JSPopMenu.Destroy();
+        this.JSPopMenu=null;
     }
 
     this.InitalMinuteChartTooltip=function(option)

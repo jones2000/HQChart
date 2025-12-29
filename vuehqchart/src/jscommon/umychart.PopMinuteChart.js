@@ -165,10 +165,38 @@ function JSPopMinuteChart()
         {
             data.Request.Data.date=this.Date;
             data.Name="MinuteChartContainer::RequestPopMinuteData";
-            data.Explain="指定日期分时数据"
-        };
+            data.Explain="指定日期分时数据";
+            this.HQChart.NetworkFilter(data, (recv)=>{ this.OnRecvPopMinuteData(recv, callback); });   
+        }
+        else
+        {
+            this.HQChart.NetworkFilter(data, callback);   
+        }
+    }
 
-        this.HQChart.NetworkFilter(data, callback);       
+    this.OnRecvPopMinuteData=function(recv, callback)
+    {
+        var bUpdateTitle=false;
+        if (recv && IFrameSplitOperator.IsNonEmptyArray(recv.stock))
+        {
+            var stockItem=recv.stock[0];
+            if (stockItem)
+            {
+                if (stockItem.Title) 
+                {
+                    this.Name=stockItem.Title;
+                    bUpdateTitle=true;
+                }
+                else if (stockItem.name) 
+                {
+                    this.Name=stockItem.name;
+                    bUpdateTitle=true;
+                }
+            }
+        }
+
+        if (bUpdateTitle) this.UpdateDialogTitle();
+        callback(recv);
     }
 
     this.OnCreateHQChart=function(chart)
@@ -750,26 +778,52 @@ function JSTooltipMinuteChart()
         }
         else if (data.Rect)
         {
-            var rtCell=data.Rect;
-            var pixelRatio=GetDevicePixelRatio();
-            var rtItem={ Left:rtCell.Left/pixelRatio, Right:rtCell.Right/pixelRatio, Bottom:rtCell.Bottom/pixelRatio, Top:rtCell.Top/pixelRatio };
-            rtItem.Width=rtItem.Right-rtItem.Left;
-            rtItem.Height=rtItem.Bottom-rtItem.Top;
+            if (data.Position===1)  //上左位置
+            {
+                var rtCell=data.Rect;
+                var pixelRatio=GetDevicePixelRatio();
+                var rtItem={ Left:rtCell.Left/pixelRatio, Right:rtCell.Right/pixelRatio, Bottom:rtCell.Bottom/pixelRatio, Top:rtCell.Top/pixelRatio };
+                rtItem.Width=rtItem.Right-rtItem.Left;
+                rtItem.Height=rtItem.Bottom-rtItem.Top;
 
-            //超出窗口调整位置
-            var height=this.DivDialog.offsetHeight;
-            var width=this.DivDialog.offsetWidth;
-            var x=rtItem.Right+data.Offset.Left;
-            var y=rtItem.Bottom+data.Offset.Top;
+                //超出窗口调整位置
+                var height=this.DivDialog.offsetHeight;
+                var width=this.DivDialog.offsetWidth;
+                var x=rtItem.Left+data.Offset.Left;
+                var y=rtItem.Top+data.Offset.Top;
 
-            var xRight=window.innerWidth-5;
-            var ybottom=window.innerHeight-5;
-            if (x+width>xRight) x=(rtItem.Left+data.Offset.Left)-width;
-            if (y+height>ybottom) y=(rtItem.Top+data.Offset.Top)-height;
+                var xRight=window.innerWidth-5;
+                var ybottom=window.innerHeight-5;
+                if (x+width>xRight) x=(rtItem.Left+data.Offset.Left)-width;
+                if (y+height>ybottom) y=(rtItem.Top+data.Offset.Top)-height;
 
-            this.DivDialog.style.visibility='visible';
-            this.DivDialog.style.top = y + "px";
-            this.DivDialog.style.left = x + "px";
+                this.DivDialog.style.visibility='visible';
+                this.DivDialog.style.top = y + "px";
+                this.DivDialog.style.left = x + "px";
+            }
+            else
+            {
+                var rtCell=data.Rect;
+                var pixelRatio=GetDevicePixelRatio();
+                var rtItem={ Left:rtCell.Left/pixelRatio, Right:rtCell.Right/pixelRatio, Bottom:rtCell.Bottom/pixelRatio, Top:rtCell.Top/pixelRatio };
+                rtItem.Width=rtItem.Right-rtItem.Left;
+                rtItem.Height=rtItem.Bottom-rtItem.Top;
+
+                //超出窗口调整位置
+                var height=this.DivDialog.offsetHeight;
+                var width=this.DivDialog.offsetWidth;
+                var x=rtItem.Right+data.Offset.Left;
+                var y=rtItem.Bottom+data.Offset.Top;
+
+                var xRight=window.innerWidth-5;
+                var ybottom=window.innerHeight-5;
+                if (x+width>xRight) x=(rtItem.Left+data.Offset.Left)-width;
+                if (y+height>ybottom) y=(rtItem.Top+data.Offset.Top)-height;
+
+                this.DivDialog.style.visibility='visible';
+                this.DivDialog.style.top = y + "px";
+                this.DivDialog.style.left = x + "px";
+            }
         }
     }
 
