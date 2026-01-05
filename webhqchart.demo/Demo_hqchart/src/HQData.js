@@ -138,7 +138,7 @@ class HQData
                 break;
             case "JSReportChartContainer::RequestMemberListData":                           //板块成分
                 //HQChart使用教程95-报价列表对接第3方数据2-板块成分数据
-                this.Report_RequestMemberListDat(data, callback, option);
+                this.Report_RequestMemberListData(data, callback, option);
                 break;
             case "JSDealChartContainer::RequestStockData":                  //股票数据更新
                 //HQChart使用教程95-报价列表对接第3方数据3-股票数据
@@ -320,7 +320,7 @@ class HQData
 
 
     //板块|行业等成分列表
-    Report_RequestMemberListDat(data, callback, option)
+    Report_RequestMemberListData(data, callback, option)
     {
         var symbol=data.Request.Data.symbol;    //板块代码
         data.PreventDefault=true;
@@ -338,7 +338,14 @@ class HQData
     Report_RequestStockData(data, callback, option)
     {
         var aryStock=data.Request.Data.stocks;    //股票列表
+        var blockSymbol=data.Request.symbol;
         data.PreventDefault=true;
+
+        if (blockSymbol=="SZSH_HK_STOCK")   //A+H股
+        {
+            this.Report_RequestStockData_SZSH_HK(data, callback, option);
+            return;
+        }
 
         var bMinuteLine=false, kLineConfig=null;
         var reportCtrl=data.Self;
@@ -356,6 +363,7 @@ class HQData
         }
 
         if (option) option.Report=data.Self;
+        
 
         var arySymbol=[];
         for (var i=0; i<aryStock.length; ++i)
@@ -484,6 +492,155 @@ class HQData
 
         callback(hqchartData);
     }
+
+
+    //A+H股
+    Report_RequestStockData_SZSH_HK(data, callback, option)
+    {
+        var aryStock=data.Request.Data.stocks;    //股票列表
+        var blockSymbol=data.Request.symbol;
+        data.PreventDefault=true;
+        var mapStock=option.MapSHSZ_HK;
+
+        var arySymbol=[];
+        for (var i=0; i<aryStock.length; ++i)
+        {
+            var symbol=aryStock[i].Symbol;
+            arySymbol.push({ Symbol:symbol} );
+            if (mapStock && mapStock.has(symbol))
+            {
+                arySymbol.push({ Symbol:mapStock.get(symbol).HK.Symbol });
+            }
+        }
+
+        if (option) option.Report=data.Self;
+        var extendID=this.Counter++;
+        var msg=
+        {
+            MessageID:3,
+            Data:
+            {
+                Type:1,
+                ID:this.RequestStockData_ID,
+                ArySymbol:arySymbol,
+                ExtendData:{ ExtendID:extendID },
+            }
+        };
+
+        var callbackInfo=
+        {
+            ID:this.RequestStockData_ID,
+            ExtendID:extendID,
+            Callback:(recv)=>
+            {
+                this.Report_RecvStockData_SZSH_HK(recv, callback, option);
+            }
+        }
+
+        this.WSClient.Request(msg, callbackInfo);
+    }
+
+
+    Report_RecvStockData_SZSH_HK(recv, callback, option)
+    {
+        var hqchartData={ data:[], code:0 };
+        var report=null;
+        if (option && option.Report) report=option.Report;
+        var mapSHSZHK=option.MapSHSZ_HK;
+
+        function __Temp_CheckPriceChange(symbol, price, filedName, colID)
+        {
+            if (!symbol || !IFrameSplitOperator.IsNumber(price)) return false;
+            if (!report) return false;
+            if (!report.MapStockData.has(symbol)) return false;
+            var stockItem=report.MapStockData.get(symbol);
+            var value=stockItem[filedName]
+            if (!IFrameSplitOperator.IsNumber(value)) return false;
+            if (price===value) return false;
+
+            var flashData={ ID:colID, Color:null, Count:1 }; //4=最新价
+            if (price>value) flashData.Color="rgba(205,92,92,0.4)";
+            else flashData.Color="rgba(46,139,87,0.4)";   
+
+            report.SetFlashBGItem(symbol, flashData);
+        }
+
+        var mapStock=new Map();
+        if (IFrameSplitOperator.IsNonEmptyArray(recv.AryData))
+        {
+            for(var i=0;i<recv.AryData.length;++i)
+            {
+                var stockItem=recv.AryData[i];
+                var upperSymbol=stockItem.Symbol.toUpperCase();
+                if (MARKET_SUFFIX_NAME.IsHK(upperSymbol)) continue;
+
+                var item=[];
+                item[0]=stockItem.Symbol;
+                item[1]=stockItem.Name;               //名称
+                item[2]=stockItem.YClose;             //昨收
+                item[3]=stockItem.Open;               //今开
+                item[4]=stockItem.High;               //最高
+                item[5]=stockItem.Low;                //最低
+                item[6]=stockItem.Close;              //最新价
+                item[7]=stockItem.Vol;                //成交量
+                item[8]=stockItem.Amount;             //成交额
+                item[9]=stockItem.BidPrice;           //买一价
+                item[11]=stockItem.AskPrice;          //卖一价
+                item[35]=stockItem.Time;               //时间
+                item[36]=stockItem.Date;               //日期
+
+                item[21]=stockItem.Increase;           //涨幅%
+                item[22]=stockItem.UpDown;             //涨跌
+                item[24]=stockItem.Amplitude;          //振幅%
+
+                __Temp_CheckPriceChange(stockItem.Symbol, stockItem.Close, "Price", REPORT_COLUMN_ID.PRICE_ID);
+                __Temp_CheckPriceChange(stockItem.Symbol, stockItem.BidPrice, "BuyPrice", REPORT_COLUMN_ID.BUY_PRICE_ID);
+                __Temp_CheckPriceChange(stockItem.Symbol, stockItem.AskPrice, "SellPrice", REPORT_COLUMN_ID.SELL_PRICE_ID);
+
+                if (mapSHSZHK.has(stockItem.Symbol))
+                {
+                    var shsz_hk=mapSHSZHK.get(stockItem.Symbol);
+                    item[201]=MARKET_SUFFIX_NAME.GetShortSymbol(shsz_hk.HK.Symbol);
+                    item[202]=shsz_hk.HK.Name;
+                }
+
+                mapStock.set(stockItem.Symbol, item);
+            }
+
+            for(var i=0;i<recv.AryData.length;++i)
+            {
+                var stockItem=recv.AryData[i];
+                var upperSymbol=stockItem.Symbol.toUpperCase();
+                if (upperSymbol=="01812.HK")
+                    var nnnn=10;
+                if (!MARKET_SUFFIX_NAME.IsHK(upperSymbol)) continue;
+                if (!mapSHSZHK.has(stockItem.Symbol)) continue;
+
+                var shsz_hk=mapSHSZHK.get(stockItem.Symbol);
+                if (!mapStock.has(shsz_hk.SHSZ.Symbol)) continue;
+                
+                var item=mapStock.get(shsz_hk.SHSZ.Symbol);
+                //item[201]=MARKET_SUFFIX_NAME.GetShortSymbol(stockItem.Symbol);
+                item[202]=stockItem.Name;
+                item[203]=IFrameSplitOperator.FormatDateString(stockItem.Date,"YYYY-MM-DD");           //日期
+                item[204]=IFrameSplitOperator.FormatTimeString(stockItem.Time,"HH:MM:SS")              //时间
+
+                item[101]=stockItem.Increase;
+                item[102]={ Value:stockItem.Close, CompareValue:stockItem.YClose };
+                item[103]=stockItem.UpDown;
+
+
+            }
+
+            for(var mapItem of mapStock)
+            {
+                hqchartData.data.push(mapItem[1]);
+            }
+        }
+
+        callback(hqchartData);
+    }
+    
 
     Report_RequestPopMinuteData(data, callback, option)
     {

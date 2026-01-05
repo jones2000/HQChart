@@ -1876,61 +1876,75 @@ function JSReportChartContainer(uielement)
         if (item[80] || item[80]===null) stock.BGColor=item[80];       //整行背景色
         if (item[JSCHART_DATA_FIELD_ID.REPORT_EXTENDDATA]) stock.ExtendDataV2=item[JSCHART_DATA_FIELD_ID.REPORT_EXTENDDATA];  //扩展数据2
 
+        function __Temp_IsNumberOrObject(value)
+        {
+            if (IFrameSplitOperator.IsNumber(value)) return true;
+            if (IFrameSplitOperator.IsObject(value)) return true;
+            return false;
+        }
+
+        function __Temp_IsStringOrObject(value)
+        {
+            if (IFrameSplitOperator.IsString(value)) return true;
+            if (IFrameSplitOperator.IsObject(value)) return true;
+            return false;
+        }
+
         //10个数值型 101-199
-        if (IFrameSplitOperator.IsNumber(item[101])) stock.ReserveNumber1=item[101];
-        if (IFrameSplitOperator.IsNumber(item[102])) stock.ReserveNumber2=item[102];
-        if (IFrameSplitOperator.IsNumber(item[103])) stock.ReserveNumber3=item[103];
-        if (IFrameSplitOperator.IsNumber(item[104])) stock.ReserveNumber4=item[104];
-        if (IFrameSplitOperator.IsNumber(item[105])) stock.ReserveNumber5=item[105];
-        if (IFrameSplitOperator.IsNumber(item[106])) stock.ReserveNumber6=item[106];
-        if (IFrameSplitOperator.IsNumber(item[107])) stock.ReserveNumber7=item[107];
-        if (IFrameSplitOperator.IsNumber(item[108])) stock.ReserveNumber8=item[108];
-        if (IFrameSplitOperator.IsNumber(item[109])) stock.ReserveNumber9=item[109];
-        if (IFrameSplitOperator.IsNumber(item[110])) stock.ReserveNumber10=item[110];
-        if (IFrameSplitOperator.IsNumber(item[111])) stock.ReserveNumber11=item[111];
-        if (IFrameSplitOperator.IsNumber(item[112])) stock.ReserveNumber12=item[112];
-        if (IFrameSplitOperator.IsNumber(item[113])) stock.ReserveNumber13=item[113];
-        if (IFrameSplitOperator.IsNumber(item[114])) stock.ReserveNumber14=item[114];
-        if (IFrameSplitOperator.IsNumber(item[115])) stock.ReserveNumber15=item[115];
-        if (IFrameSplitOperator.IsNumber(item[116])) stock.ReserveNumber16=item[116];
-        if (IFrameSplitOperator.IsNumber(item[117])) stock.ReserveNumber17=item[117];
-        if (IFrameSplitOperator.IsNumber(item[118])) stock.ReserveNumber18=item[118];
-        if (IFrameSplitOperator.IsNumber(item[119])) stock.ReserveNumber19=item[119];
-        if (IFrameSplitOperator.IsNumber(item[120])) stock.ReserveNumber20=item[120];
+        if (__Temp_IsNumberOrObject(item[101])) stock.ReserveNumber1=item[101];
+        if (__Temp_IsNumberOrObject(item[102])) stock.ReserveNumber2=item[102];
+        if (__Temp_IsNumberOrObject(item[103])) stock.ReserveNumber3=item[103];
+        if (__Temp_IsNumberOrObject(item[104])) stock.ReserveNumber4=item[104];
+        if (__Temp_IsNumberOrObject(item[105])) stock.ReserveNumber5=item[105];
+        if (__Temp_IsNumberOrObject(item[106])) stock.ReserveNumber6=item[106];
+        if (__Temp_IsNumberOrObject(item[107])) stock.ReserveNumber7=item[107];
+        if (__Temp_IsNumberOrObject(item[108])) stock.ReserveNumber8=item[108];
+        if (__Temp_IsNumberOrObject(item[109])) stock.ReserveNumber9=item[109];
+        if (__Temp_IsNumberOrObject(item[110])) stock.ReserveNumber10=item[110];
+        if (__Temp_IsNumberOrObject(item[111])) stock.ReserveNumber11=item[111];
+        if (__Temp_IsNumberOrObject(item[112])) stock.ReserveNumber12=item[112];
+        if (__Temp_IsNumberOrObject(item[113])) stock.ReserveNumber13=item[113];
+        if (__Temp_IsNumberOrObject(item[114])) stock.ReserveNumber14=item[114];
+        if (__Temp_IsNumberOrObject(item[115])) stock.ReserveNumber15=item[115];
+        if (__Temp_IsNumberOrObject(item[116])) stock.ReserveNumber16=item[116];
+        if (__Temp_IsNumberOrObject(item[117])) stock.ReserveNumber17=item[117];
+        if (__Temp_IsNumberOrObject(item[118])) stock.ReserveNumber18=item[118];
+        if (__Temp_IsNumberOrObject(item[119])) stock.ReserveNumber19=item[119];
+        if (__Temp_IsNumberOrObject(item[120])) stock.ReserveNumber20=item[120];
 
         //10个字符型 201-299
-        if (IFrameSplitOperator.IsString(item[201]) || IFrameSplitOperator.IsObject(item[201])) stock.ReserveString1=item[201];
-        if (IFrameSplitOperator.IsString(item[202]) || IFrameSplitOperator.IsObject(item[202])) stock.ReserveString2=item[202];
-        if (IFrameSplitOperator.IsString(item[203]) || IFrameSplitOperator.IsObject(item[203])) stock.ReserveString3=item[203];
-        if (IFrameSplitOperator.IsString(item[204]) || IFrameSplitOperator.IsObject(item[204])) stock.ReserveString4=item[204];
-        if (IFrameSplitOperator.IsString(item[205]) || IFrameSplitOperator.IsObject(item[205])) stock.ReserveString5=item[205];
-        if (IFrameSplitOperator.IsString(item[206]) || IFrameSplitOperator.IsObject(item[206])) stock.ReserveString6=item[206];
-        if (IFrameSplitOperator.IsString(item[207]) || IFrameSplitOperator.IsObject(item[207])) stock.ReserveString7=item[207];
-        if (IFrameSplitOperator.IsString(item[208]) || IFrameSplitOperator.IsObject(item[208])) stock.ReserveString8=item[208];
-        if (IFrameSplitOperator.IsString(item[209]) || IFrameSplitOperator.IsObject(item[209])) stock.ReserveString9=item[209];
-        if (IFrameSplitOperator.IsString(item[210]) || IFrameSplitOperator.IsObject(item[210])) stock.ReserveString10=item[210];
-        if (IFrameSplitOperator.IsString(item[211]) || IFrameSplitOperator.IsObject(item[211])) stock.ReserveString11=item[211];
-        if (IFrameSplitOperator.IsString(item[212]) || IFrameSplitOperator.IsObject(item[212])) stock.ReserveString12=item[212];
-        if (IFrameSplitOperator.IsString(item[213]) || IFrameSplitOperator.IsObject(item[213])) stock.ReserveString13=item[213];
-        if (IFrameSplitOperator.IsString(item[214]) || IFrameSplitOperator.IsObject(item[214])) stock.ReserveString14=item[214];
-        if (IFrameSplitOperator.IsString(item[215]) || IFrameSplitOperator.IsObject(item[215])) stock.ReserveString15=item[215];
-        if (IFrameSplitOperator.IsString(item[216]) || IFrameSplitOperator.IsObject(item[216])) stock.ReserveString16=item[216];
-        if (IFrameSplitOperator.IsString(item[217]) || IFrameSplitOperator.IsObject(item[217])) stock.ReserveString17=item[217];
-        if (IFrameSplitOperator.IsString(item[218]) || IFrameSplitOperator.IsObject(item[218])) stock.ReserveString18=item[218];
-        if (IFrameSplitOperator.IsString(item[219]) || IFrameSplitOperator.IsObject(item[219])) stock.ReserveString19=item[219];
-        if (IFrameSplitOperator.IsString(item[220]) || IFrameSplitOperator.IsObject(item[220])) stock.ReserveString20=item[220];
+        if (__Temp_IsStringOrObject(item[201])) stock.ReserveString1=item[201];
+        if (__Temp_IsStringOrObject(item[202])) stock.ReserveString2=item[202];
+        if (__Temp_IsStringOrObject(item[203])) stock.ReserveString3=item[203];
+        if (__Temp_IsStringOrObject(item[204])) stock.ReserveString4=item[204];
+        if (__Temp_IsStringOrObject(item[205])) stock.ReserveString5=item[205];
+        if (__Temp_IsStringOrObject(item[206])) stock.ReserveString6=item[206];
+        if (__Temp_IsStringOrObject(item[207])) stock.ReserveString7=item[207];
+        if (__Temp_IsStringOrObject(item[208])) stock.ReserveString8=item[208];
+        if (__Temp_IsStringOrObject(item[209])) stock.ReserveString9=item[209];
+        if (__Temp_IsStringOrObject(item[210])) stock.ReserveString10=item[210];
+        if (__Temp_IsStringOrObject(item[211])) stock.ReserveString11=item[211];
+        if (__Temp_IsStringOrObject(item[212])) stock.ReserveString12=item[212];
+        if (__Temp_IsStringOrObject(item[213])) stock.ReserveString13=item[213];
+        if (__Temp_IsStringOrObject(item[214])) stock.ReserveString14=item[214];
+        if (__Temp_IsStringOrObject(item[215])) stock.ReserveString15=item[215];
+        if (__Temp_IsStringOrObject(item[216])) stock.ReserveString16=item[216];
+        if (__Temp_IsStringOrObject(item[217])) stock.ReserveString17=item[217];
+        if (__Temp_IsStringOrObject(item[218])) stock.ReserveString18=item[218];
+        if (__Temp_IsStringOrObject(item[219])) stock.ReserveString19=item[219];
+        if (__Temp_IsStringOrObject(item[220])) stock.ReserveString20=item[220];
 
         //10个进度条 301-350  { Value:, BGColor: }
-        if (IFrameSplitOperator.IsNumber(item[301]) || IFrameSplitOperator.IsObject(item[301])) stock.ReserveProgressBar1=item[301];
-        if (IFrameSplitOperator.IsNumber(item[302]) || IFrameSplitOperator.IsObject(item[302])) stock.ReserveProgressBar2=item[302];
-        if (IFrameSplitOperator.IsNumber(item[303]) || IFrameSplitOperator.IsObject(item[303])) stock.ReserveProgressBar3=item[303];
-        if (IFrameSplitOperator.IsNumber(item[304]) || IFrameSplitOperator.IsObject(item[304])) stock.ReserveProgressBar4=item[304];
-        if (IFrameSplitOperator.IsNumber(item[305]) || IFrameSplitOperator.IsObject(item[305])) stock.ReserveProgressBar5=item[305];
-        if (IFrameSplitOperator.IsNumber(item[306]) || IFrameSplitOperator.IsObject(item[306])) stock.ReserveProgressBar6=item[306];
-        if (IFrameSplitOperator.IsNumber(item[307]) || IFrameSplitOperator.IsObject(item[307])) stock.ReserveProgressBar7=item[307];
-        if (IFrameSplitOperator.IsNumber(item[308]) || IFrameSplitOperator.IsObject(item[308])) stock.ReserveProgressBar8=item[308];
-        if (IFrameSplitOperator.IsNumber(item[309]) || IFrameSplitOperator.IsObject(item[309])) stock.ReserveProgressBar9=item[309];
-        if (IFrameSplitOperator.IsNumber(item[310]) || IFrameSplitOperator.IsObject(item[310])) stock.ReserveProgressBar10=item[310];
+        if (__Temp_IsNumberOrObject(item[301])) stock.ReserveProgressBar1=item[301];
+        if (__Temp_IsNumberOrObject(item[302])) stock.ReserveProgressBar2=item[302];
+        if (__Temp_IsNumberOrObject(item[303])) stock.ReserveProgressBar3=item[303];
+        if (__Temp_IsNumberOrObject(item[304])) stock.ReserveProgressBar4=item[304];
+        if (__Temp_IsNumberOrObject(item[305])) stock.ReserveProgressBar5=item[305];
+        if (__Temp_IsNumberOrObject(item[306])) stock.ReserveProgressBar6=item[306];
+        if (__Temp_IsNumberOrObject(item[307])) stock.ReserveProgressBar7=item[307];
+        if (__Temp_IsNumberOrObject(item[308])) stock.ReserveProgressBar8=item[308];
+        if (__Temp_IsNumberOrObject(item[309])) stock.ReserveProgressBar9=item[309];
+        if (__Temp_IsNumberOrObject(item[310])) stock.ReserveProgressBar10=item[310];
 
         //10个按钮 351-400 { Title, Enable:, BGColor, TextColor: }
         if (IFrameSplitOperator.IsObject(item[351])) stock.ReserveButton1=item[351];
@@ -7900,6 +7914,14 @@ function ChartReport()
         if (!data || !fieldName) return;
 
         var value=data[fieldName];
+        var compareValue=null;
+        if (IFrameSplitOperator.IsObject(data[fieldName]))
+        {
+            var item=data[fieldName];
+            if (IFrameSplitOperator.IsNumber(item.Value)) value=item.Value;
+            if (IFrameSplitOperator.IsNumber(item.CompareValue)) compareValue=item.CompareValue;
+        }
+
         if (!IFrameSplitOperator.IsNumber(value)) return;
 
         if (IFrameSplitOperator.IsNumber(column.ColorType))
@@ -7915,6 +7937,11 @@ function ChartReport()
             else if (column.ColorType==3)
             {
                 drawInfo.TextColor=this.GetUpDownColor(value,data.YClose);
+            }
+            else if (column.ColorType==4)
+            {
+                if (IFrameSplitOperator.IsNumber(compareValue))
+                    drawInfo.TextColor=this.GetUpDownColor(value,compareValue);
             }
         }
 
