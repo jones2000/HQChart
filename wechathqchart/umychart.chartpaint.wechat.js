@@ -2935,6 +2935,85 @@ function ChartDrawIcon()
 
 }
 
+function ChartDrawIconV2()
+{
+    this.newMethod = IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName="ChartDrawIconV2";
+    this.bHScreen=false;   //是否横屏
+    this.Icon=null;
+    this.TextAlign='left';
+    this.Direction=0;               //0=middle 1=bottom 2=top
+    this.ShowOffset={ X:0, Y:0 };   //显示偏移
+    this.Size=null;
+
+    this.Draw=function()
+    {
+        this.bHScreen = (this.ChartFrame.IsHScreen === true)
+        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
+        if (!this.Data || !this.Data.Data) return;
+        if (!this.Icon) return;
+        var chartright = this.ChartBorder.GetRight();
+        var xPointCount = this.ChartFrame.XPointCount;
+        if (this.bHScreen) 
+        {
+            chartright = this.ChartBorder.GetBottom();
+        }
+        var iconWidth=this.Icon.Width;
+        var iconHeight=this.Icon.Height;
+        if (IFrameSplitOperator.IsNumber(this.Size)) iconWidth=iconHeight=this.Size;
+        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
+        {
+            var value = this.Data.Data[i];
+            if (!IFrameSplitOperator.IsNumber(value)) continue;
+            var x = this.ChartFrame.GetXFromIndex(j);
+            var y = this.ChartFrame.GetYFromData(value);
+
+            if (x > chartright) break;
+
+            if (this.TextAlign=="right") x-=iconWidth;
+            else if (this.TextAlign=="center") x-=iconWidth/2;
+
+            if (this.Direction===0) y-=iconHeight/2;
+            else if (this.Direction===1) y-=iconHeight;
+
+            y+=this.ShowOffset.Y;
+            x+=this.ShowOffset.X;
+
+            var drawInfo={ X:x, Y:y, Image:this.Icon.Image, Width:iconWidth, Height:iconHeight };
+
+            this.DrawIcon(drawInfo);
+        }
+
+    }
+
+    this.DrawIcon=function(drawInfo)
+    {
+        if (!drawInfo || !drawInfo.Image) return;
+
+        if (this.bHScreen)
+        {
+            /*
+            var xCenter=drawInfo.X+drawInfo.Width/2;
+            var yCenter=drawInfo.Y+drawInfo.Height/2;
+            this.Canvas.save();
+            this.Canvas.translate(yCenter,xCenter);
+            this.Canvas.rotate(90 * Math.PI / 180);
+            this.Canvas.drawImage(drawInfo.Image, 0, 0, drawInfo.Width, drawInfo.Height);
+            this.Canvas.restore();
+            */
+            
+            this.Canvas.drawImage(drawInfo.Image, drawInfo.Y, drawInfo.X, drawInfo.Width, drawInfo.Height);
+        }
+        else
+        {
+            this.Canvas.drawImage(drawInfo.Image, drawInfo.X, drawInfo.Y, drawInfo.Width, drawInfo.Height);
+        }
+    }
+}
+
 /*
     文字输出 支持横屏
     数组不为null的数据中输出 this.Text文本
@@ -11166,6 +11245,7 @@ export
     ChartSubLine,
     ChartSingleText,
     ChartDrawIcon,
+    ChartDrawIconV2,
     ChartDrawText,
     ChartDrawNumber,
     ChartPointDot,

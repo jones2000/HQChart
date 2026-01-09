@@ -931,6 +931,24 @@ function JSChart(element)
         chart.TitlePaint[0].IsShowSettingInfo = false;
         chart.TitlePaint[0].IsShowDateTime = false;
 
+        if (option.KLineTitle) 
+        {
+            var item=option.KLineTitle;
+            var chartTitle=chart.TitlePaint[0];
+            if (IFrameSplitOperator.IsBool(item.IsShowName)) chartTitle.IsShowName = item.IsShowName;
+            if (IFrameSplitOperator.IsBool(item.IsShowSettingInfo)) chartTitle.IsShowSettingInfo = item.IsShowSettingInfo;
+            if (IFrameSplitOperator.IsBool(item.IsShow)) chartTitle.IsShow = item.IsShow;
+            if (IFrameSplitOperator.IsBool(item.IsShowDateTime)) chartTitle.IsShowDateTime=item.IsShowDateTime;
+            if (option.KLineTitle.UpdateUICallback) chart.TitlePaint[0].UpdateUICallback = option.KLineTitle.UpdateUICallback
+            if (IFrameSplitOperator.IsPlusNumber(item.LineCount)) chartTitle.LineCount = item.LineCount;
+            if (IFrameSplitOperator.IsPlusNumber(item.ColumnCount)) chartTitle.ColumnCount = item.ColumnCount;
+            if (IFrameSplitOperator.IsNumber(item.TextSpace)) chart.TitlePaint[0].TextSpace=item.TextSpace;
+            if (IFrameSplitOperator.IsNumber(item.PeriodSpace)) chart.TitlePaint[0].PeriodSpace=item.PeriodSpace;
+            if (IFrameSplitOperator.IsNumber(item.DateTimeSpace)) chart.TitlePaint[0].DateTimeSpace=item.DateTimeSpace;
+            if (IFrameSplitOperator.IsNumber(item.NameSpace)) chart.TitlePaint[0].NameSpace=item.NameSpace;
+        }
+
+
         //创建子窗口的指标
         let scriptData = new JSCommonIndexScript.JSIndexScript();
         for (var i=0;i<option.Windows.length;++i) 

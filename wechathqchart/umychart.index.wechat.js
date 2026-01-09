@@ -67,7 +67,8 @@ import {
     ChartSingleLine,
     ChartPartLine,
     ChartDrawText_Fix,
-    ChartDrawNumber_Fix
+    ChartDrawNumber_Fix,
+    ChartDrawIconV2
 } from "./umychart.chartpaint.wechat.js";
 
 import 
@@ -1186,10 +1187,21 @@ function ScriptIndex(name, script, args, option)
             }
         }
 
-        let chartText = new ChartSingleText();
+        var chartText=null;
+        if (varItem.Draw && varItem.Draw.Icon && varItem.Draw.Icon.Image) 
+        {
+            chartText=new ChartDrawIconV2();
+            chartText.Icon=varItem.Draw.Icon;
+            if (varItem.DrawFontSize>0) chartText.Size=varItem.DrawFontSize;
+        }
+        else 
+        {
+            chartText = new ChartSingleText();
+            if (varItem.DrawFontSize>0) chartText.FixedFontSize=varItem.DrawFontSize;
+        }
+        
         chartText.Canvas = hqChart.Canvas;
         chartText.TextAlign = 'center';
-       
 
         chartText.Name = varItem.Name;
         chartText.ChartBorder = hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
@@ -1201,8 +1213,6 @@ function ScriptIndex(name, script, args, option)
         if (varItem.Color) chartText.Color = this.GetColor(varItem.Color);
         else if (varItem.Draw.Icon.Color) chartText.Color = varItem.Draw.Icon.Color;
         else chartText.Color = 'rgb(0,0,0)';
-
-       
 
         if (varItem.DrawVAlign>=0)
         {
@@ -1218,7 +1228,9 @@ function ScriptIndex(name, script, args, option)
             else if (varItem.DrawAlign==2) chartText.TextAlign='right';
         }
         
-        if (varItem.DrawFontSize>0) chartText.FixedFontSize=varItem.DrawFontSize;
+        if (IFrameSplitOperator.IsNumber(varItem.XOffset)) chartText.ShowOffset.X=varItem.XOffset;
+        if (IFrameSplitOperator.IsNumber(varItem.YOffset)) chartText.ShowOffset.Y=varItem.YOffset;
+       
         //hqChart.TitlePaint[titleIndex].Data[id]=new DynamicTitleData(bar.Data,varItem.Name,bar.Color);
 
         hqChart.ChartPaint.push(chartText);
@@ -2678,7 +2690,17 @@ function OverlayScriptIndex(name,script,args,option)
     {
         var overlayIndex=this.OverlayIndex;
         var frame=overlayIndex.Frame;
-        let chart=new ChartSingleText();
+        var chart=null;
+        if (varItem.Draw && varItem.Draw.Icon && varItem.Draw.Icon.Image) 
+        {
+            chart=new ChartDrawIconV2();
+            chart.Icon=varItem.Draw.Icon;
+            if (varItem.DrawFontSize>0) chart.Size=varItem.DrawFontSize;
+        }
+        else
+        {
+            chart=new ChartSingleText();
+        }
         chart.Canvas=hqChart.Canvas;
         chart.TextAlign='center';
 
@@ -2709,6 +2731,10 @@ function OverlayScriptIndex(name,script,args,option)
         if (icon.IconFont==true)
         {
             chart.IconFont={ Family:icon.Family, Text:icon.Symbol, Color:icon.Color };
+        }
+        else if (icon.Image)
+        {
+            
         }
         else
         {

@@ -48,6 +48,12 @@ var g_JSComplierResource=
     Domain : "http://127.0.0.1:8080",               //API域名
     CacheDomain : "http://127.0.0.1:8087",     //缓存域名
 
+    CustomDrawIcon:
+    {
+        Data:new Map()  //自定义图标 key=id 
+                        //value={ID:, Image:, Width:, Height: }   //png 图片
+    },
+
     CustomFunction: //定制函数
     {
         Data:new Map()  //自定义函数 key=函数名, Value:{ID:函数名, Callback: }
@@ -127,6 +133,23 @@ var g_JSComplierResource=
         var icon=mapIcon.get(id);
         return icon;
     },
+
+    GetDrawIcon:function(id)
+    {
+        var icon=null;
+        if (this.CustomDrawIcon.Data.has(id))
+        {
+            var item=this.CustomDrawIcon.Data.get(id);
+            if (item.Image) icon={ ID:id, Image:item.Image, Width:item.Width, Height:item.Height };
+        }
+        
+        return icon;
+    },
+
+    AddDrawIcon:function(id, icon)
+    {
+        this.CustomDrawIcon.Data.set(id, icon);
+    }
 }
 
 var Messages = {
@@ -9193,10 +9216,11 @@ function JSDraw(errorHandler, symbolData)
             type=parseInt(value);
         } 
 
-        let icon =  g_JSComplierResource.GetDrawTextIcon(type);
+        var icon=g_JSComplierResource.GetDrawIcon(type);
+        if (!icon) icon =  g_JSComplierResource.GetDrawTextIcon(type);
         if (!icon) icon = { Symbol: '●', Color: 'rgb(0,139,69)'};
-        let drawData = [];
-        let result = { DrawData: drawData, DrawType: 'DRAWICON', Icon: icon , IconID:type};
+        var drawData = [];
+        var result = { DrawData: drawData, DrawType: 'DRAWICON', Icon: icon , IconID:type};
         if (markID) result.MarkID=markID;
         if (condition.length <= 0) return result;
 
@@ -12788,6 +12812,21 @@ function JSSymbolData(ast,option,jsExecute)
         return result;
     }
 
+    this.DAY=function()
+    {
+        var result=[];
+        if (!this.Data || !this.Data.Data || !this.Data.Data.length) return result;
+
+        for(let i in this.Data.Data)
+        {
+            var item=this.Data.Data[i];
+            if (IFrameSplitOperator.IsNumber(item.Date)) result[i]=parseInt(item.Date%100);
+            else result[i]=null;
+        }
+
+        return result;
+    }
+
     this.MONTH = function () 
     {
         var result = [];
@@ -13218,6 +13257,7 @@ function JSExecute(ast,option)
 
         //日期类
         ['DATE', null], ['YEAR', null], ['MONTH', null], ['PERIOD', null], ['WEEK', null],['WEEKDAY',null],["TIME",null],["DATETIME",null],["TIME2",null],
+        ["DAY", null],
         ["WEEKOFYEAR", null],["DAYSTOTODAY", null],
 
         ["HOUR",null],["MINUTE",null],
@@ -13514,6 +13554,8 @@ function JSExecute(ast,option)
             case 'WEEK':
             case "WEEKDAY":
                 return this.SymbolData.WEEK();
+            case "DAY":
+                return this.SymbolData.DAY();
             case 'PERIOD':
                 return this.SymbolData.PERIOD();
 
@@ -14961,6 +15003,12 @@ JSComplier.AddVariant=function(obj) //{ Name:变量名, Description:描述信息
 
     var ID=obj.Name.toUpperCase();
     g_JSComplierResource.CustomVariant.Data.set(ID, obj);
+}
+
+JSComplier.AddIcon=function(obj)    //添加一个obj={ID:, Text:, Color, Family: }
+{
+    if (!obj || !obj.ID) return;
+    g_JSComplierResource.AddDrawIcon(obj.ID, obj);
 }
 
 

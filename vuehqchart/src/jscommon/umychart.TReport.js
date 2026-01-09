@@ -695,6 +695,7 @@ function JSTReportChartContainer(uielement)
             {
                 Name:'JSTReportChartContainer::RequestStockListData', //类名::
                 Explain:'T型报价列表数据',
+                Request:{ Data: { symbol:this.Symbol } }, 
                 Self:this,
                 PreventDefault:false
             };

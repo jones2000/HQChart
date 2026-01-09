@@ -104,6 +104,7 @@ var g_JSComplierResource=
         Data:new Map()  //自定义图标 key=id 
                         //value={ID:, Text:, Color, Family: }   //svg
                         //value={ ID:1, Symbol:'↑', Color:'rgb(238,44,44)' } //文字
+                        //value={ ID:, Image:, Width, Height }
     },
 
     CustomFunction: //定制函数
@@ -151,20 +152,24 @@ var g_JSComplierResource=
     GetDrawIcon:function(id)
     {
         var icon;
-        if (g_JSComplierResource.CustomDrawIcon.Data.has(id))
+        if (this.CustomDrawIcon.Data.has(id))
         {
             const iconfont=g_JSComplierResource.CustomDrawIcon.Data.get(id);
-            if (iconfont.Symbol)    //文字
+
+            if (iconfont.Image) //图片
+                icon={ ID:id, Image:iconfont.Image, Width:iconfont.Width, Height:iconfont.Height };
+            else if (iconfont.Symbol)    //文字
                 icon={ Symbol:iconfont.Symbol, Color:iconfont.Color, IconFont:false, ID:id };
             else    //SVG图标
                 icon={ Symbol:iconfont.Text, Color:iconfont.Color, Family:iconfont.Family, IconFont:true, ID:id };
+
             return icon;
         }
 
-        if (g_JSComplierResource.DrawIcon.Data.has(id))
+        if (this.DrawIcon.Data.has(id))
         {
-            const iconfont=g_JSComplierResource.DrawIcon.Data.get(id);
-            icon={ Symbol:iconfont.Text, Color:iconfont.Color, Family:g_JSComplierResource.DrawIcon.Family, IconFont:true, ID:id };
+            const iconfont=this.DrawIcon.Data.get(id);
+            icon={ Symbol:iconfont.Text, Color:iconfont.Color, Family:this.DrawIcon.Family, IconFont:true, ID:id };
             return icon;
         }
 
@@ -206,6 +211,11 @@ var g_JSComplierResource=
     {
         if (g_JSComplierResource.CustomDataFunction.Data.has(name)) return true;
         return false;
+    },
+
+    AddDrawIcon:function(id, icon)
+    {
+        this.CustomDrawIcon.Data.set(id, icon);
     }
 }
 
@@ -20665,14 +20675,16 @@ JSComplier.SetDomain = function (domain, cacheDomain)   //修改API地址
 
 JSComplier.AddIcon=function(obj)    //添加一个obj={ID:, Text:, Color, Family: }
 {
-    g_JSComplierResource.CustomDrawIcon.Data.set(obj.ID, obj);
+
+    if (!obj || !obj.ID) return;
+
+    g_JSComplierResource.AddDrawIcon(obj.ID, obj);
 }
 
 JSComplier.AddFunction=function(obj)    //添加函数 { Name:函数名, Description:描述信息, IsDownload:是否需要下载数据, Invoke:函数执行(可选) }
 {
     if (!obj || !obj.Name) return;
 
-    var ID=obj.Name.toUpperCase();
     g_JSComplierResource.CustomFunction.Data.set(ID, obj);
 }
 
@@ -22456,7 +22468,21 @@ function ScriptIndex(name,script,args,option)
     //创建图标
     this.CreateIcon=function(hqChart,windowIndex,varItem,id)
     {
-        let chartText=new ChartSingleText();
+        var chartText=null;
+
+        if (varItem.Draw && varItem.Draw.Icon && varItem.Draw.Icon.Image) 
+        {
+            chartText=new ChartDrawIconV2();
+            chartText.Icon=varItem.Draw.Icon;
+            if (varItem.DrawFontSize>0) chartText.Size=varItem.DrawFontSize;
+        }
+        else
+        {
+            chartText=new ChartSingleText();
+            if (varItem.DrawFontSize>0) chartText.FixedFontSize=varItem.DrawFontSize;
+        }
+
+        
         chartText.Canvas=hqChart.Canvas;
         chartText.TextAlign='center';
 
@@ -22488,6 +22514,10 @@ function ScriptIndex(name,script,args,option)
             chartText.IconFont={ Family:icon.Family, Text:icon.Symbol, Color:icon.Color };
             if (varItem.Color) chartText.IconFont.Color=this.GetColor(varItem.Color);
         }
+        else if (icon.Image)
+        {
+
+        }
         else
         {
             chartText.Text=icon.Symbol;
@@ -22496,7 +22526,7 @@ function ScriptIndex(name,script,args,option)
             else chartText.Color='rgb(0,0,0)';
         }
 
-        if (varItem.DrawFontSize>0) chartText.FixedFontSize=varItem.DrawFontSize;
+       
         if (IFrameSplitOperator.IsNumber(varItem.XOffset)) chartText.ShowOffset.X=varItem.XOffset;
         if (IFrameSplitOperator.IsNumber(varItem.YOffset)) chartText.ShowOffset.Y=varItem.YOffset;
 
@@ -24554,7 +24584,19 @@ function OverlayScriptIndex(name,script,args,option)
     {
         var overlayIndex=this.OverlayIndex;
         var frame=overlayIndex.Frame;
-        let chart=new ChartSingleText();
+        var chart=null;
+
+        if (varItem.Draw && varItem.Draw.Icon && varItem.Draw.Icon.Image) 
+        {
+            chart=new ChartDrawIconV2();
+            chart.Icon=varItem.Draw.Icon;
+            if (varItem.DrawFontSize>0) chart.Size=varItem.DrawFontSize;
+        }
+        else
+        {
+            chart=new ChartSingleText();
+        }
+
         chart.Canvas=hqChart.Canvas;
         chart.TextAlign='center';
 
@@ -24585,6 +24627,10 @@ function OverlayScriptIndex(name,script,args,option)
         if (icon.IconFont==true)
         {
             chart.IconFont={ Family:icon.Family, Text:icon.Symbol, Color:icon.Color };
+        }
+        else if (icon.Image)
+        {
+
         }
         else
         {

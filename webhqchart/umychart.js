@@ -1711,6 +1711,8 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             {
                 var item=option.Frame[i];
                 if (!chart.Frame.SubFrame[i]) continue;
+                chart.SetSubFrameAttribute(chart.Frame.SubFrame[i], null, item);
+                /*
                 if (item.SplitCount) chart.Frame.SubFrame[i].Frame.YSplitOperator.SplitCount=item.SplitCount;
                 if (item.StringFormat) chart.Frame.SubFrame[i].Frame.YSplitOperator.StringFormat=item.StringFormat;
                 if (IFrameSplitOperator.IsNumber(item.FloatPrecision)) chart.Frame.SubFrame[i].Frame.YSplitOperator.FloatPrecision=item.FloatPrecision;
@@ -1720,6 +1722,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
 
                 if (item.IsShowLeftText==false) chart.Frame.SubFrame[i].Frame.YSplitOperator.IsShowLeftText=item.IsShowLeftText;            //显示左边刻度
                 if (item.IsShowRightText==false) chart.Frame.SubFrame[i].Frame.YSplitOperator.IsShowRightText=item.IsShowRightText;         //显示右边刻度 
+                */
             }
         }
 
@@ -1734,9 +1737,13 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
 
         if(option.KLineTitle)    //股票名称 日期 周期
         {
-            if(option.KLineTitle.IsShowName==false) chart.TitlePaint[0].IsShowName=false;
-            if(option.KLineTitle.IsShowSettingInfo==false) chart.TitlePaint[0].IsShowSettingInfo=false;
-            if(option.KLineTitle.IsShow == false) chart.TitlePaint[0].IsShow = false;
+            var item=option.KLineTitle;
+            var chartTitle=chart.TitlePaint[0];
+            if (IFrameSplitOperator.IsBool(item.IsShowName)) chartTitle.IsShowName=item.IsShowName;
+            if (IFrameSplitOperator.IsBool(item.IsShowSettingInfo)) chartTitle.IsShowSettingInfo=item.IsShowSettingInfo;
+            if (IFrameSplitOperator.IsBool(item.IsShow)) chartTitle.IsShow=item.IsShow;
+            if (IFrameSplitOperator.IsBool(item.IsShowDateTime)) chartTitle.IsShowDateTime=item.IsShowDateTime;
+            if (IFrameSplitOperator.IsBool(item.IsTitleShowLatestData)) chart.IsTitleShowLatestData=item.IsTitleShowLatestData;
         }
 
         if (IFrameSplitOperator.IsNonEmptyArray(option.Overlay)) //叠加股票
@@ -39481,6 +39488,125 @@ function ChartText()
         return range;
     }
 }
+
+function ChartDrawIconV2()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName="ChartDrawIconV2";
+    this.bHScreen=false;   //是否横屏
+    this.Icon=null;
+    this.TextAlign='left';
+    this.Direction=0;               //0=middle 1=bottom 2=top
+    this.ShowOffset={ X:0, Y:0 };   //显示偏移
+    this.Size=null;
+
+     this.Draw=function()
+    {
+        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
+        if (this.IsShowIndexTitleOnly()) return;
+        if (this.IsHideScriptIndex()) return;
+
+        if (!this.Data || !this.Data.Data) return;
+        if (!this.Icon) return;
+
+        this.bHScreen=(this.ChartFrame.IsHScreen===true);
+        var xPointCount=this.ChartFrame.XPointCount;
+        var bMinute=this.IsMinuteFrame();
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xOffset=this.ChartBorder.GetLeft()+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        var chartright=this.ChartBorder.GetRight();
+        var top=this.ChartBorder.GetTopEx();
+        var bottom=this.ChartBorder.GetBottomEx();
+
+        if (this.bHScreen) 
+        {
+            chartright=this.ChartBorder.GetBottom();
+            top=this.ChartBorder.GetRightEx();
+            bottom=this.ChartBorder.GetLeftEx();
+            xOffset=this.ChartBorder.GetTop()+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        }
+
+        var pixelTatio = GetDevicePixelRatio();
+        var iconWidth=this.Icon.Width*pixelTatio;
+        var iconHeight=this.Icon.Height*pixelTatio;
+        if (IFrameSplitOperator.IsNumber(this.Size)) iconWidth=iconHeight=this.Size*pixelTatio;
+
+        
+
+        this.Canvas.save();
+        this.ClipClient(this.ChartFrame.IsHScreen);
+
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+        {
+            var value=this.Data.Data[i];
+            if (value==null) continue;
+
+            if (bMinute)
+            {
+                var x=this.ChartFrame.GetXFromIndex(j);
+            }
+            else
+            {
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                if (right>chartright) break;
+                var x=left+(right-left)/2;
+            }
+            
+            var y=this.ChartFrame.GetYFromData(value,false);
+
+            if (x>chartright) break;
+
+            if (this.TextAlign=="right") x-=iconWidth;
+            else if (this.TextAlign=="center") x-=iconWidth/2;
+
+            if (this.Direction===0) y-=iconHeight/2;
+            else if (this.Direction===1) y-=iconHeight;
+
+
+            y+=this.ShowOffset.Y;
+            x+=this.ShowOffset.X;
+
+            var drawInfo={ X:x, Y:y, Image:this.Icon.Image, Width:iconWidth, Height:iconHeight };
+
+            this.DrawIcon(drawInfo);
+        }
+
+
+
+        this.Canvas.restore();
+
+    }
+
+    this.DrawIcon=function(drawInfo)
+    {
+        if (!drawInfo || !drawInfo.Image) return;
+
+        if (this.bHScreen)
+        {
+            /*
+            var xCenter=drawInfo.X+drawInfo.Width/2;
+            var yCenter=drawInfo.Y+drawInfo.Height/2;
+            this.Canvas.save();
+            this.Canvas.translate(yCenter,xCenter);
+            this.Canvas.rotate(90 * Math.PI / 180);
+            this.Canvas.drawImage(drawInfo.Image, 0, 0, drawInfo.Width, drawInfo.Height);
+            this.Canvas.restore();
+            */
+            
+            this.Canvas.drawImage(drawInfo.Image, drawInfo.Y, drawInfo.X, drawInfo.Width, drawInfo.Height);
+        }
+        else
+        {
+            this.Canvas.drawImage(drawInfo.Image, drawInfo.X, drawInfo.Y, drawInfo.Width, drawInfo.Height);
+        }
+    }
+}
+
 
 /*
     文字输出 支持横屏
@@ -103006,6 +103132,26 @@ var MARKET_SUFFIX_NAME=
         return false;
     },
 
+    IsCFFEXOption:function(upperSymbol) //中金所股票期权
+    {
+        if (!upperSymbol) return false;
+        if (!this.IsCFFEX(upperSymbol)) return false;   
+        var shortSymbol=JSChart.GetShortSymbol(upperSymbol);
+        //MO2602-C-6300.cffex
+        var aryValue=shortSymbol.split("-");
+        if (!aryValue || aryValue.length!=3) return false;
+        
+        var strValue=aryValue[0];
+        const regex = /([a-zA-Z]+)(\d+)/;
+        const match = strValue.match(regex);
+        if (!match || !match[1] || !match[2]) return false;
+
+        var prefix=match[1];
+        if (["IM","IO","MO","HO"].includes(prefix)) return true;
+        
+        return true;
+    },
+
     IsDCE: function (upperSymbol) 
     {
         if (!upperSymbol) return false;
@@ -103612,6 +103758,23 @@ var MARKET_SUFFIX_NAME=
         if (pos<=0) return symbol;
 
         return symbol.slice(0,pos);
+    },
+
+    SplitSymbol:function(symbol, format) //分析代码 返回对象
+    {
+        if (!format || !symbol) return null;
+        var shortSymbol=this.GetShortSymbol(symbol);
+        if (format=="A+D+")
+        {
+            var regex=/([a-zA-Z]+)(\d+)/;
+            var match=shortSymbol.match(regex);
+            if (!match || !match[1] || !match[2]) return null;
+            
+            return { AryString:[match[1], match[2]], ShortSymbol:shortSymbol, Symbol:symbol, Market:symbol.slice(shortSymbol.length) };
+        }
+
+
+        return null;
     }
 
 }
