@@ -123,7 +123,13 @@ class ReportChart
             }
         ];
 
+        this.OnCreate();
         this.Chart.SetOption(this.Option);  //设置配置
+    }
+
+    OnCreate()
+    {
+        
     }
 
     NetworkFilter(data, callback)

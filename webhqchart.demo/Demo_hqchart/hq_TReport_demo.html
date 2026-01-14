@@ -1,0 +1,303 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+<title>T型报价</title>  
+    <link rel="stylesheet" href="../jscommon/umychart.resource/css/tools.css" />
+    <link rel="stylesheet" href="../jscommon/umychart.resource/font/iconfont.css" />
+</head>  
+<body>
+    <div id="FullDemo">
+        <div id="Report"> 
+            <div id="ReportCtrl">
+            </div>
+        </div>
+
+        <div id="TReport"> 
+            <div id="TReportCtrl">
+            </div>
+        </div>
+    </div>
+
+    <div id="BottomStatusBar">
+        <div id="StatuBarCtrl"></div>
+    </div>
+
+    <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
+    <script src="../jscommon/umychart.resource/js/webfont.js"></script>
+    <script src="../jscommon/umychart.network.js"></script>
+    <script src="../jscommon/umychart.js"></script>             <!-- K线图形 -->
+    <script src="../jscommon/umychart.report.js"></script>    <!-- 报价列表 -->
+    <script src="../jscommon/umychart.TReport.js"></script>    <!-- T型报价 -->
+    <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
+    <script src="../jscommon/umychart.popMenu.js"></script>
+    <script src="../jscommon/umychart.PopKLineChart.js"></script>
+    <script src="../jscommon/umychart.PopMinuteChart.js"></script>
+    <script src="../jscommon/umychart.DialogTooltip.js"></script>
+    <script src="../jscommon/umychart.StatusBar.js"></script>
+    <script src="../jscommon/umychart.version.js"></script>
+
+    <script src="./src/TReportChart.js"></script>
+    <script src="./src/MessageData.js"></script>
+    <script src="./src/FullReportChart.js"></script>
+    <script src="./src/EnvironmentVariable.js"></script>
+    <script src="./src/StatusBarChart.js"></script>
+    <script src="./src/HQData.js"></script>  <!-- 数据 -->
+
+    <script>
+
+        //JSConsole.Chart.Log=() =>{}
+        //JSConsole.Complier.Log=()=>{}
+
+        MARKET_SUFFIX_NAME.GetMarketStatus = function (symbol)  { return 2; }
+
+        class ChartContainer
+        {
+            FullReportCtrl=new FullReportChart();
+            TReportCtrl=new TReportChart();
+            StatusBarCtrl=new StatusBarChart();
+
+            Create()
+            {
+                HQChartWSClient.NetworkStatusCallback=(data)=>{ this.UpdateNetworkStatus(data); }
+                var resource=JSChart.GetResource();
+                resource.ToolbarButtonStyle=1;
+                resource.FrameLogo.Text+= ` ${HQCHART_VERSION}`;
+
+                this.ChangeStyle(STYLE_TYPE_ID.BLACK_ID);
+
+                this.FullReportCtrl.OnCreate=()=>{ this.OnCreateReport(this.FullReportCtrl); }
+                this.FullReportCtrl.Create(document.getElementById('ReportCtrl'));
+                this.FullReportCtrl.OnClickRowCallback=(data, obj, reportCtrl)=>{ this.OnClickReportRow(data, obj, reportCtrl); }
+
+                this.StatusBarCtrl.Create(document.getElementById('StatuBarCtrl'));
+                //this.StatusBarCtrl.OnClickStockCallback=(data, obj)=>{ this.ChangeSymbol(data.Symbol); }
+                //this.StatusBarCtrl.OnClickRightToolbarCallback=(data, obj)=>{ this.OnClickBottomToolbar(data, obj); }
+
+                this.TReportCtrl.Create(document.getElementById('TReportCtrl'));
+                this.TReportCtrl.OnClickRowCallback=(data, obj, reportCtrl)=>{ this.OnClickTReportRow(data, obj, reportCtrl); }
+                this.TReportCtrl.Symbol="159922-2602.szo";
+
+                this.FullReportCtrl.ChangeSymbol(HQ_CLASS_SYMBOL.SHSZ_OPTION_ETF.Symbol)
+
+                addEventListener("resize", (event) => { this.OnSize(event); });
+                this.OnSize();
+            }
+
+            OnCreateReport(reportCtrl)
+            {
+                reportCtrl.Option.Tab=
+                [
+                    { Title:HQ_CLASS_SYMBOL.SHSZ_OPTION_ETF.Name, ID:HQ_CLASS_SYMBOL.SHSZ_OPTION_ETF.Symbol , CommandID:JSCHART_MENU_ID.CMD_REPORT_CHANGE_BLOCK_ID},
+                    { Title:HQ_CLASS_SYMBOL.CFFEX_OPTION_INDEX.Name, ID:HQ_CLASS_SYMBOL.CFFEX_OPTION_INDEX.Symbol , CommandID:JSCHART_MENU_ID.CMD_REPORT_CHANGE_BLOCK_ID},
+                    
+                ];
+
+                reportCtrl.Option.Symbol=HQ_CLASS_SYMBOL.SHSZ_OPTION_ETF.Symbol;
+                reportCtrl.Option.Name=HQ_CLASS_SYMBOL.SHSZ_OPTION_ETF.Name;
+            }
+
+            OnClickReportRow(data, obj, reportCtrl)
+            {
+                var symbol=data.Data.Symbol;
+                console.log(`[ChartContainer::OnClickReportRow] symbol=${symbol}`);
+                var upperSymbol=symbol.toUpperCase();
+                if (MARKET_SUFFIX_NAME.IsSHETF(upperSymbol))
+                {
+                    var shortSymbol=MARKET_SUFFIX_NAME.GetShortSymbol(symbol);
+                    var opSymbol=`${shortSymbol}-2601.sho`;
+                    this.TReportCtrl.ChangeSymbol(opSymbol);
+                }
+                else if (MARKET_SUFFIX_NAME.IsSZETF(upperSymbol))
+                {
+                    var shortSymbol=MARKET_SUFFIX_NAME.GetShortSymbol(symbol);
+                    var opSymbol=`${shortSymbol}-2601.szo`;
+                    this.TReportCtrl.ChangeSymbol(opSymbol);
+                }
+                else if (MARKET_SUFFIX_NAME.IsSHSZIndex(symbol))
+                {
+                    var opSymbol="";
+                    var shortSymbol=MARKET_SUFFIX_NAME.GetShortSymbol(symbol);
+                    if (shortSymbol=="000300")
+                        opSymbol="IO2601.cffex";
+                    else if (shortSymbol=="000852")
+                        opSymbol="MO2601.cffex";
+                    else if (shortSymbol=="000016")
+                        opSymbol="HO2601.cffex";
+                    else 
+                        return;
+
+                    this.TReportCtrl.ChangeSymbol(opSymbol);
+                }
+            }
+
+            OnClickTReportRow(data, obj, reportCtrl)
+            {
+                console.log('[ChartContainer::OnClickTReportRow] data=', data);
+
+                var item=null;
+                if (data.Data.CellType===1)
+                {
+                    if (data.Data.Item && data.Data.Item.LeftData) item=data.Data.Item.LeftData;
+                }
+                else if (data.Data.CellType==2)
+                {
+                    if (data.Data.Item && data.Data.Item.RightData) item=data.Data.Item.RightData;
+                }
+
+                if (item && item.Symbol)
+                {
+                    var msgData={ ID:PAGE_MESSAGE_ID.CLICK_TREPORT_ROW_ID, Symbol:item.Symbol, From:reportCtrl.Name };
+                    localStorage.setItem(PAGE_MESSAGE_KEY, JSON.stringify(msgData));
+                }
+                
+            }
+
+            //整体布局
+            OnSize(event)
+            {
+                var height= $(window).height();
+                var width = $(window).width();
+
+                var statusBarHeight=this.GetStatusBarHeight();
+
+                var statusBar=document.getElementById('BottomStatusBar');
+                statusBar.style.height=`${statusBarHeight}px`;
+
+                var fullDemo=document.getElementById('FullDemo');
+                fullDemo.style.height=`${height-statusBarHeight-2}px`;
+            }
+
+            GetStatusBarHeight()
+            {
+                var pixelRatio=GetDevicePixelRatio();
+                var statusBarHeigth=(14*pixelRatio+(5+5)*pixelRatio)/pixelRatio;
+
+                return statusBarHeigth;
+            }
+
+            ChangeStyle(value)
+            {
+                var style=HQChartStyle.GetStyleConfig(value); //读取风格配置
+                JSChart.SetCSSStyle(value);
+                JSChart.SetStyle(style);
+
+                if (this.FullReportCtrl) this.FullReportCtrl.ReloadResource();  //动态更新颜色配置  
+                if (this.StatusBarCtrl) this.StatusBarCtrl.ReloadResource();
+            }
+
+            UpdateNetworkStatus(data)
+            {
+                if (this.StatusBarCtrl)  this.StatusBarCtrl.UpdateNetworkStatus(data);
+            }
+
+        }
+
+        $(function () 
+        {
+            WebFont.load({ custom: { families: ['iconfont'] } });   //预加载下iconfont资源
+ 
+            EnvironmentVariable.Load();
+
+            var chartContainer=new ChartContainer();
+            chartContainer.Create();
+            
+        })
+
+    </script>  
+</body>  
+</html>
+
+
+<style>
+
+html,body
+{
+    height:100%;
+    overflow-x:hidden;
+}
+
+body 
+{
+    margin:0px;
+    font-size:14px;
+    background-color: var(--BGColor);
+}
+
+#FullDemo
+{
+    
+    height:800px
+}
+
+#Report
+{
+    width: 100%;
+    height:30%;
+    position: relative;
+    /*margin-top: 100px;*/
+}
+
+#ReportCtrl
+{
+    width: 100%;
+    height:100%;
+    position: relative;
+}
+
+#TReport
+{
+    width: 100%;
+    height:70%;
+    position: relative;
+}
+
+
+#TReportCtrl
+{
+    width: 100%;
+    height:100%;
+    position: relative;
+}
+
+#BottomStatusBar
+{
+    width: 100%;
+    height: 30px;
+}
+
+#StatuBarCtrl
+{
+    width: 100%;
+    height: 100%;
+    border-bottom:solid 1px var(--BorderColor);
+}
+
+
+/*
+    白色风格
+*/
+:root[hqchart_style='0'],
+:root[hqchart_style='defined']
+{
+    --BGColor:rgb(255,255,255);
+    --TabItemBG:rgb(242,242,242);
+    --BorderColor:rgb(206,206,206);
+    --TabTextColor:rgb(90,90,90);
+}
+
+/*
+    黑色风格
+*/
+:root[hqchart_style='1']
+{
+    --BGColor:rgb(0,0,0);
+    --TabItemBG:rgb(38,38,38);
+    --BorderColor:rgb(74,74,74);
+    --TabTextColor:rgb(204,204,204);
+}
+    
+        
+</style>

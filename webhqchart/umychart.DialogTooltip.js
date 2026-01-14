@@ -2174,7 +2174,7 @@ function JSFloatTooltip()
             Color:this.ValueColor
         };
 
-        if (!IFrameSplitOperator.IsNumber(price) || !IFrameSplitOperator.IsNumber(yClose)) return item;
+        if (!IFrameSplitOperator.IsNumber(price) || !IFrameSplitOperator.IsNumber(yClose) || yClose===0) return item;
 
         var diffValue=price-yClose;
         var value=(price-yClose)/yClose;
@@ -2215,7 +2215,7 @@ function JSFloatTooltip()
         };
 
 
-        if (!IFrameSplitOperator.IsNumber(high) || !IFrameSplitOperator.IsNumber(low) || !IFrameSplitOperator.IsNumber(yClose)) return item;
+        if (!IFrameSplitOperator.IsNumber(high) || !IFrameSplitOperator.IsNumber(low) || !IFrameSplitOperator.IsNumber(yClose) || yClose===0) return item;
 
         var diffValue=high-low;
         var value=(diffValue)/yClose;

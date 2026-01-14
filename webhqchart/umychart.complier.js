@@ -20685,6 +20685,7 @@ JSComplier.AddFunction=function(obj)    //添加函数 { Name:函数名, Descrip
 {
     if (!obj || !obj.Name) return;
 
+    var ID=obj.Name.toUpperCase();
     g_JSComplierResource.CustomFunction.Data.set(ID, obj);
 }
 

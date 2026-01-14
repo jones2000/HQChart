@@ -103408,6 +103408,43 @@ var MARKET_SUFFIX_NAME=
         return false;
     },
 
+    IsSHSZETF:function(symbol) //是否是沪深ETF
+    {
+        if (!symbol) return false;
+        var upperSymbol=symbol.toUpperCase();
+        if (this.IsSHETF(upperSymbol)) return true;
+        else if (this.IsSZETF(upperSymbol)) return true;
+        
+
+        return false;
+    },
+
+    IsSHETF:function(upperSymbol)
+    {
+        if (upperSymbol && this.IsSH(upperSymbol))
+        {
+            //上证ETF：通常以51开头
+            if (upperSymbol.charAt(0)=='5' && upperSymbol.charAt(1)=='1')
+                return true;
+            if (upperSymbol.charAt(0)=='5' && upperSymbol.charAt(1)=='8')
+                return true;
+        }
+
+        return false;
+    },
+
+    IsSZETF:function(upperSymbol)
+    {
+        if (upperSymbol && this.IsSZ(upperSymbol))
+        {
+            //深交所上市的ETF代码以15开头
+            if (upperSymbol.charAt(0)=='1' && upperSymbol.charAt(1)=='5')
+                return true;
+        }
+
+        return false;
+    },
+
     GetMarketStatus:function(symbol)    //获取市场状态 0=闭市 1=盘前 2=盘中 3=盘后
     {
         if (!symbol) return 0;

@@ -20,12 +20,16 @@ class HQ_CLASS_SYMBOL
     static DCE_FUTRUES={ Symbol:"DCE_FUTRUES", Name:"大连商品" };
     static CZCE_FUTRUES={ Symbol:"CZCE_FUTRUES", Name:"郑州商品" };
     static INE_FUTRUES={ Symbol:"INE_FUTRUES", Name:"上期能源" };
+
+    static SHSZ_OPTION_ETF={ Symbol:"SHSZ_OPTION_ETF", Name:"ETF期权" };            //沪深期权ETF
+    static CFFEX_OPTION_INDEX={ Symbol:"CFFEX_OPTION_INDEX", Name:"指数期权" };   //中金所期权指数
     
 }
 
 
 class FullReportChart
 {
+    Name="FullReportChart";
     DivReport=null;
     Chart=null              //JSReportChart.Init(divReport);   //把报价列表绑定到一个Div上
     HQData=new HQData();            //数据
@@ -175,7 +179,13 @@ class FullReportChart
             }
         ];
 
+        this.OnCreate();
         this.Chart.SetOption(this.Option);  //设置配置
+    }
+
+    OnCreate()
+    {
+
     }
 
     //股票
@@ -293,10 +303,37 @@ class FullReportChart
 
     }
 
+    GetSHSZ_ETFOption()
+    {
+        var column=
+        [
+            {Type:REPORT_COLUMN_ID.INDEX_ID },
+            {Type:REPORT_COLUMN_ID.SYMBOL_ID,  SortType:[0], EnableDragWidth:true, ChartTooltip:{ Enable:true, Type:20 } },
+            {Type:REPORT_COLUMN_ID.NAME_ID ,EnableDragWidth:true, ChartTooltip:{ Enable:true, Type:21 }, MaxText:"擎擎擎擎擎擎擎擎擎擎"},
+            {Type:REPORT_COLUMN_ID.INCREASE_ID, ID:REPORT_COLUMN_ID.INCREASE_ID },
+            {Type:REPORT_COLUMN_ID.PRICE_ID, ID:REPORT_COLUMN_ID.PRICE_ID },
+            {Type:REPORT_COLUMN_ID.UPDOWN_ID,  },
+            {Type:REPORT_COLUMN_ID.BUY_PRICE_ID, ID:REPORT_COLUMN_ID.BUY_PRICE_ID},
+            {Type:REPORT_COLUMN_ID.SELL_PRICE_ID, ID:REPORT_COLUMN_ID.SELL_PRICE_ID},
+            {Type:REPORT_COLUMN_ID.VOL_ID },
+            {Type:REPORT_COLUMN_ID.OPEN_ID},
+            {Type:REPORT_COLUMN_ID.HIGH_ID },
+            {Type:REPORT_COLUMN_ID.LOW_ID},
+            {Type:REPORT_COLUMN_ID.AMOUNT_ID},
+            {Type:REPORT_COLUMN_ID.YCLOSE_ID, },
+            {Type:REPORT_COLUMN_ID.AMPLITUDE_ID },
+            
+            {Type:REPORT_COLUMN_ID.DATE_ID, Title:"更新日期", TitleAlign:"center"},
+            {Type:REPORT_COLUMN_ID.TIME_ID,  Title:"更新时间", TitleAlign:"center", ValueType:1,  MaxText:"99:99:99"},
+        ];
+
+        return { Column:column };
+    }
+
     NetworkFilter(data, callback)
     {
         console.log('[FullReportChart::NetworkFilter] data', data);
-        var option={ ChartName:"FullReportChart", AryData:this.AryData, MapSHSZ_HK:this.MapSHSZ_HK };
+        var option={ ChartName:this.Name, AryData:this.AryData, MapSHSZ_HK:this.MapSHSZ_HK };
         switch(data.Name)
         {
             case "JSReportChartContainer::RequestMemberListData":   //板块成分
@@ -321,6 +358,15 @@ class FullReportChart
 
     GetStockList(classSymbol)
     {
+        if (classSymbol==HQ_CLASS_SYMBOL.SHSZ_OPTION_ETF.Symbol)    //沪深期权ETF
+        {
+            return ["510050.sh", "510300.sh", "510500.sh","588080.sh","588000.sh","159919.sz", "159922.sz", "159915.sz","159901.sz" ];
+        }
+        else if (classSymbol==HQ_CLASS_SYMBOL.CFFEX_OPTION_INDEX.Symbol)    //中金所期权指数
+        {
+            return [ "000852.sh", "000300.sh","000016.sh" ];
+        }
+
         var aryData=[];
         if (!IFrameSplitOperator.IsNonEmptyArray(this.AryData)) return aryData;
 
@@ -422,7 +468,7 @@ class FullReportChart
     OnClickRow(event, data, obj)
     {
         console.log("[FullReportChart::OnClickRow] data=",data);
-        if (this.OnClickRowCallback) this.OnClickRowCallback(data, obj);
+        if (this.OnClickRowCallback) this.OnClickRowCallback(data, obj, this);
     }
 
     OnCreateHeaderMenu(event, data, obj)
@@ -473,6 +519,10 @@ class FullReportChart
             case HQ_CLASS_SYMBOL.SZSH_HK_STOCK.Symbol:
                 option=this.GetSHSZ_HKOption();
                 this.BuildSHSZ_HKMap();
+                break;
+            case HQ_CLASS_SYMBOL.SHSZ_OPTION_ETF.Symbol:
+            case HQ_CLASS_SYMBOL.CFFEX_OPTION_INDEX.Symbol:
+                option=this.GetSHSZ_ETFOption();
                 break;
         }
 

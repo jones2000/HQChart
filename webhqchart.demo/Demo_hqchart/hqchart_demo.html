@@ -37,6 +37,7 @@
     <script src="../jscommon/umychart.StatusBar.js"></script>
     <script src="../jscommon/umychart.version.js"></script>
 
+    <script src="./src/MessageData.js"></script>
     <script src="./src/KLineChart.js"></script>
     <script src="./src/MinuteChart.js"></script>
     <script src="./src/ReportChart.js"></script>
@@ -258,6 +259,9 @@
                 this.OnSize();
 
                 this.ChangeSymbol("300750.sz");
+                //this.ChangeSymbol("10010723.sho")
+
+                window.addEventListener('storage',(event)=>{ this.OnRecvPageMessage(event); });
             }
 
             //type 1=分时图     0=K线图
@@ -597,13 +601,27 @@
                 var y=height-statusBarHeight-data.Height-3;
                 data.Y=y;
             }
+
+
+            OnRecvPageMessage(event)
+            {
+                console.log('[ChartContainer::OnRecvPageMessage]', event.key, event.newValue);
+                if (event.key!=PAGE_MESSAGE_KEY) return;
+                var msgData=JSON.parse(event.newValue);
+                if (!msgData) return;
+
+                switch(msgData.ID)
+                {
+                    case PAGE_MESSAGE_ID.CLICK_REPORT_ROW_ID:
+                    case PAGE_MESSAGE_ID.CLICK_TREPORT_ROW_ID:
+                        this.ChangeSymbol(msgData.Symbol);
+                        break;
+                }
+            }
         }
 
         $(function () 
         {
-            var value=new Date().getTime();
-            console.log(value);
-            
             EnvironmentVariable.Load();
 
             var control=new ChartContainer();

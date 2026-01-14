@@ -39,9 +39,19 @@ uniapp 版本:
 支持windows,和linux. 这个版本是用c++开发的，通过cpython来对接py，能高效的完成指标执行. 可以应用于回测, 选股等批量指标计算中.
 
 ## 完整的行情面板示例
-![示例](/小程序行情模块用例/image/fulldem_1.png)    
+  
 纯前端， 需要安装数据插件[https://github.com/jones2000/HQChartData](https://github.com/jones2000/HQChartData)  
+
+## 行情页面
+![示例](/小程序行情模块用例/image/fulldem_1.png)  
 页面地址: [https://jones2000.github.io/HQChart/webhqchart.demo/Demo_hqchart/hqchart_demo.html](https://jones2000.github.io/HQChart/webhqchart.demo/Demo_hqchart/hqchart_demo.html)  
+
+## 报价列表
+页面地址: [https://jones2000.github.io/HQChart/webhqchart.demo/Demo_hqchart/hq_report_demo.html](https://jones2000.github.io/HQChart/webhqchart.demo/Demo_hqchart/hq_report_demo.html)  
+
+## 期权T型报价
+![示例](/小程序行情模块用例/image/TReport_demo2.gif)  
+页面地址: [https://jones2000.github.io/HQChart/webhqchart.demo/Demo_hqchart/hq_TReport_demo.html](https://jones2000.github.io/HQChart/webhqchart.demo/Demo_hqchart/hq_TReport_demo.html)  
 
 
 # 目录结构

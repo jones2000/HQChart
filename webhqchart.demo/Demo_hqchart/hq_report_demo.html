@@ -22,7 +22,7 @@
     <script src="../jscommon/umychart.resource/js/webfont.js"></script>
     <script src="../jscommon/umychart.network.js"></script>
     <script src="../jscommon/umychart.js"></script>             <!-- K线图形 -->
-    <script src="../jscommon/umychart.report.js"></script>    <!-- 麦语言解析执行器 -->
+    <script src="../jscommon/umychart.report.js"></script>    <!-- 报价列表 -->
     <script src="../jscommon/umychart.style.js"></script>       <!-- 白色风格和黑色风格配置信息 -->
     <script src="../jscommon/umychart.complier.js"></script>    <!-- 麦语言解析执行器 -->
     <script src="../jscommon/umychart.index.data.js"></script>  <!-- 基础指标库 -->
@@ -33,7 +33,7 @@
     <script src="../jscommon/umychart.StatusBar.js"></script>
     <script src="../jscommon/umychart.version.js"></script>
 
-
+    <script src="./src/MessageData.js"></script>
     <script src="./src/FullReportChart.js"></script>
     <script src="./src/StatusBarChart.js"></script>
     <script src="./src/EnvironmentVariable.js"></script>
@@ -61,6 +61,7 @@
                 this.ChangeStyle(STYLE_TYPE_ID.BLACK_ID);
 
                 this.FullReportCtrl.Create(document.getElementById('ReportCtrl'));
+                this.FullReportCtrl.OnClickRowCallback=(data, obj, reportCtrl)=>{ this.OnClickRow(data, obj, reportCtrl); }
                 this.StatusBarCtrl.Create(document.getElementById('StatuBarCtrl'));
                 //this.StatusBarCtrl.OnClickStockCallback=(data, obj)=>{ this.ChangeSymbol(data.Symbol); }
                 //this.StatusBarCtrl.OnClickRightToolbarCallback=(data, obj)=>{ this.OnClickBottomToolbar(data, obj); }
@@ -106,6 +107,15 @@
 
                 if (this.FullReportCtrl) this.FullReportCtrl.ReloadResource();  //动态更新颜色配置  
                 if (this.StatusBarCtrl) this.StatusBarCtrl.ReloadResource();
+            }
+
+            OnClickRow(data, obj, reportCtrl)
+            {
+                var symbol=data.Data.Symbol;
+                console.log(`[ChartContainer::OnClickRow] symbol=${symbol}`);
+
+                var msgData={ ID:PAGE_MESSAGE_ID.CLICK_REPORT_ROW_ID, Symbol:symbol, From:reportCtrl.Name };
+                localStorage.setItem(PAGE_MESSAGE_KEY, JSON.stringify(msgData));
             }
         }
 

@@ -115,6 +115,9 @@ class HQData
 
     RequestStatusBarData_ID=`${this.I}-RequestStatusBarData`;
 
+    RequestTReportListData_ID=`${this.ID}-RequestTReportListData`;
+    RequestTReportStockData_ID=`${this.ID}-RequestTReportStockData`;
+
     Counter=1;
 
     MapSelfBlcok = new Map();  //自选股数据缓存
@@ -245,6 +248,15 @@ class HQData
             // 底部状态栏
             case "JSStatusBarChartContainer::RequestStockData":
                 this.StatusBar_RequestStockData(data, callback, option);
+                break;
+
+            /////////////////////////////////////////////////////////////////////////////
+            //T型报价
+            case "JSTReportChartContainer::RequestStockListData":
+                this.TReport_RequestStockListData(data, callback, option);             //T型报价列表
+                break;
+            case "JSTReportChartContainer::RequestStockData":          //T型报价数据更新
+                this.TReport_RequestStockData(data, callback, option);
                 break;
         }
     }
@@ -748,6 +760,8 @@ class HQData
                         vol:subItem.Vol,
                         amount:subItem.Amount
                     };
+
+                    if (IFrameSplitOperator.IsNumber(subItem.Position)) minItem.position=subItem.Position;
 
                     stockItem.minute.push(minItem);
                 }
@@ -2690,6 +2704,216 @@ class HQData
         }
 
         callback(arySymbol);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //T型报价
+    //
+
+    TReport_RequestStockListData(data, callback, option)
+    {
+        data.PreventDefault=true;
+        var symbol=data.Request.Data.symbol;
+        
+        var extendID=this.Counter++;
+        var requestID=this.RequestTReportListData_ID;
+
+        var msg=
+        {
+            MessageID:3,
+            Data:
+            {
+                Type:8,
+                ID:requestID,
+                ArySymbol:[{ Symbol:symbol } ],
+                ExtendData:{ ExtendID:extendID },
+            }
+        };
+
+        var callbackInfo=
+        {
+            ID:requestID,
+            ExtendID:extendID,
+            Callback:(recv)=>
+            {
+                this.TReport_RecvStockListData(recv, callback, option);
+            }
+        }
+
+        this.WSClient.Request(msg, callbackInfo);
+    }
+
+    TReport_RecvStockListData(recv, callback, option)
+    {
+        var hqchartData={ symbol:null, name:null, data:[] };
+
+        if (recv && IFrameSplitOperator.IsNonEmptyArray(recv.AryData) && recv.AryData[0])
+        {
+            var data=recv.AryData[0];
+            hqchartData.symbol=data.Symbol;
+            hqchartData.name=data.Name; 
+            if (IFrameSplitOperator.IsNonEmptyArray(data.AryData))
+            {
+                for(var i=0;i<data.AryData.length;++i)
+                {
+                    var item=data.AryData[i];
+                    //[2025.0, "HO2404-C-2025.CF", "HO2404-P-2025.CFE","HO2404-C-2025", "HO2404-P-2025"],
+                    var newItem=[item.Price,null, null, null,null ];
+                    if (item.P)
+                    {
+                        newItem[2]=item.P.Symbol;
+                        newItem[4]=item.P.ShortSymbol;
+                    }
+
+                    if (item.C)
+                    {
+                        newItem[1]=item.C.Symbol;
+                        newItem[3]=item.C.ShortSymbol;
+                    }
+
+                    hqchartData.data.push(newItem);
+                }
+            }
+
+            if (option && option.Underlying)
+            {
+                option.Underlying.Symbol=data.Underlying.Symbol;
+                option.Underlying.Name=data.Underlying.Name;
+            }
+        }
+        
+        callback(hqchartData);
+    }
+
+
+    TReport_RequestStockData(data, callback, option)
+    {
+        var aryStock=data.Request.Data.stocks;    //列表
+        data.PreventDefault=true;
+
+        var arySymbol=[];
+        for (var i=0; i<aryStock.length; ++i)
+        {
+            arySymbol.push({ Symbol:aryStock[i] } ); //MinuteClose=走势图线 KLine=k线图
+        }
+
+        if (option)
+        {
+            if (option.Underlying) arySymbol.push({ Symbol:option.Underlying.Symbol } );
+
+            option.Report=data.Self;
+        }
+
+        var extendID=this.Counter++;
+        var requestID=this.RequestTReportStockData_ID;
+
+        var msg=
+        {
+            MessageID:3,
+            Data:
+            {
+                Type:1,
+                ID:requestID,
+                ArySymbol:arySymbol,
+                ExtendData:{ ExtendID:extendID },
+            }
+        };
+
+        var callbackInfo=
+        {
+            ID:requestID,
+            ExtendID:extendID,
+            Callback:(recv)=>
+            {
+                this.TReport_RecvStockData(recv, callback, option);
+            }
+        }
+
+        this.WSClient.Request(msg, callbackInfo);
+    }
+
+    TReport_RecvStockData(recv, callback, option)
+    {
+        var hqchartData={ data:[], code:0 };
+        var report=null;
+        if (option && option.Report) report=option.Report;
+
+        function __Temp_CheckPriceChange(symbol, price, filedName, colID)
+        {
+            if (!symbol || !IFrameSplitOperator.IsNumber(price)) return false;
+            if (!report) return false;
+            if (!report.MapStockData.has(symbol)) return false;
+            var stockItem=report.MapStockData.get(symbol);
+            var value=stockItem[filedName]
+            if (!IFrameSplitOperator.IsNumber(value)) return false;
+            if (price===value) return false;
+
+            var flashData={ ID:colID, Color:null, Count:1 }; //4=最新价
+            if (price>value) flashData.Color="rgba(205,92,92,0.4)";
+            else flashData.Color="rgba(46,139,87,0.4)";   
+
+            report.SetFlashBGItem(symbol, flashData);
+        }
+
+        if (IFrameSplitOperator.IsNonEmptyArray(recv.AryData))
+        {
+            //0=证券代码 1=股票名称 2=昨收 3=开 4=高 5=低 6=收 7=成交量 8=成交金额, 9=买价 10=买量 11=卖价 12=卖量 13=均价 14=持仓 16=涨停价 17=跌停价
+            //21=涨幅% 22=涨跌 24=振幅% 
+            //30=全局扩展数据  31=当前板块扩展数据
+            // 101-110 数值
+            var underlyingSymbol=option.Underlying.Symbol;
+            for(var i=0;i<recv.AryData.length;++i)
+            {
+                var stockItem=recv.AryData[i];
+                if (!stockItem) continue;
+                if (stockItem.Symbol==underlyingSymbol)
+                {
+                    hqchartData.price=stockItem.Close; //标的最新价
+                    continue;
+                }
+
+                var upperSymbol=stockItem.Symbol.toUpperCase();
+
+                var item=[];
+                item[0]=stockItem.Symbol;
+                //if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol) || MARKET_SUFFIX_NAME.IsSZO(upperSymbol)) item[1]=MARKET_SUFFIX_NAME.GetShortSymbol(stockItem.Symbol);
+                //else item[1]=stockItem.Name;               //名称
+
+                //item[1]=stockItem.Name;
+                item[1]=MARKET_SUFFIX_NAME.GetShortSymbol(upperSymbol);
+
+                item[2]=stockItem.YClose;             //昨收
+                item[3]=stockItem.Open;               //今开
+                item[4]=stockItem.High;               //最高
+                item[5]=stockItem.Low;                //最低
+                item[6]=stockItem.Close;              //最新价
+                item[7]=stockItem.Vol;                //成交量
+                item[8]=stockItem.Amount;             //成交额
+                item[9]=stockItem.BidPrice;           //买一价
+                item[10]=stockItem.BidVol;           //买量
+                item[11]=stockItem.AskPrice;          //卖一价
+                item[12]=stockItem.AskVol;            //卖量
+                item[14]=stockItem.Position;            //持仓量
+                item[35]=stockItem.Time;               //时间
+                item[36]=stockItem.Date;               //日期
+
+                item[21]=stockItem.Increase;           //涨幅%
+                item[22]=stockItem.UpDown;             //涨跌
+                item[24]=stockItem.Amplitude;          //振幅%
+
+                item[38]=stockItem.Position;           //持仓量
+                item[39]=stockItem.FClose;             //结算价
+                item[40]=stockItem.YFClose;            //昨结算价
+
+                __Temp_CheckPriceChange(stockItem.Symbol, stockItem.Close, "Price", TREPORT_COLUMN_ID.PRICE_ID);
+                __Temp_CheckPriceChange(stockItem.Symbol, stockItem.BidPrice, "BuyPrice", TREPORT_COLUMN_ID.BUY_PRICE_ID);
+                __Temp_CheckPriceChange(stockItem.Symbol, stockItem.AskPrice, "SellPrice", TREPORT_COLUMN_ID.SELL_PRICE_ID);
+
+                hqchartData.data.push(item);
+            }
+        }
+
+        callback(hqchartData);
     }
 
     //获取市场名称
