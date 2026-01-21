@@ -11,9 +11,13 @@ class TReportChart
     HQData=new HQData();            //数据
 
     Symbol="MO2601.cffex";
-    Underlying={ Symbol:null, Name:null };    //标的物
+    Underlying={ Symbol:null, Name:null };                          //标的物
+    PeriodData={ AryData:null, Selected:null };                      //周期
+
+    AllProduct={ AryData:null };     //{ Underlying:{ Symbol: }, Period:, AryData:[]    }
 
     OnClickRowCallback=null;
+    OnRecvStockListCallback=null;
 
     //配置信息
     Option= 
@@ -134,8 +138,18 @@ class TReportChart
 
     ChangeSymbol(symbol)
     {
+        this.PeriodData.Selected=null;
+        this.PeriodData.AryData=null;
         this.Symbol=symbol;
         if (this.Chart) this.Chart.ChangeSymbol(symbol);
+    }
+
+    ChangePeriod(period, underlyingSymbol)
+    {
+        this.PeriodData.Selected={ Period:period, UnderlyingSymbol:underlyingSymbol };
+        var symbol=`${this.Symbol}|${period}`;
+        this.Symbol=symbol;
+        if (this.Chart) this.Chart.ChangeSymbol(this.Symbol);
     }
 
     OnCreateMinuteChart=function(chart)
@@ -146,9 +160,13 @@ class TReportChart
     NetworkFilter(data, callback)
     {
         console.log(`[TReportChart::NetworkFilter] ${HQData.Explain}`, data);
-        var option={ ChartName:this.Name, Underlying:this.Underlying};
+        var option={ ChartName:this.Name, Underlying:this.Underlying, AllProduct:this.AllProduct, PeriodData:this.PeriodData, MainSymbol:this.Symbol };
         switch(data.Name) 
         {
+            case "JSTReportChartContainer::RequestStockListData":
+                option.Callback=()=>{ if (this.OnRecvStockListCallback) this.OnRecvStockListCallback(this); }
+                this.HQData.TReport_RequestStockListDataV2(data, callback, option);
+                break;
             default:
                 this.HQData.NetworkFilter(data, callback, option);
                 break;

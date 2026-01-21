@@ -253,6 +253,7 @@ class HQData
             /////////////////////////////////////////////////////////////////////////////
             //T型报价
             case "JSTReportChartContainer::RequestStockListData":
+                //this.TReport_RequestStockListDataV2(data, callback, option);
                 this.TReport_RequestStockListData(data, callback, option);             //T型报价列表
                 break;
             case "JSTReportChartContainer::RequestStockData":          //T型报价数据更新
@@ -461,6 +462,10 @@ class HQData
                 item[38]=stockItem.Position;           //持仓量
                 item[39]=stockItem.FClose;             //结算价
                 item[40]=stockItem.YFClose;            //昨结算价
+
+                if (IFrameSplitOperator.IsNumber(stockItem.DeliveryDate)) item[48]=stockItem.DeliveryDate;
+                if (IFrameSplitOperator.IsNumber(stockItem.OpenDate)) item[49]=stockItem.OpenDate;
+                if (IFrameSplitOperator.IsNumber(stockItem.ExpireDate)) item[50]=stockItem.ExpireDate;
 
                 __Temp_CheckPriceChange(stockItem.Symbol, stockItem.Close, "Price", REPORT_COLUMN_ID.PRICE_ID);
                 __Temp_CheckPriceChange(stockItem.Symbol, stockItem.BidPrice, "BuyPrice", REPORT_COLUMN_ID.BUY_PRICE_ID);
@@ -2697,6 +2702,12 @@ class HQData
                     stockItem.TypeName=`${marketName}期货`;
                     stockItem.Color="rgb(159, 61, 61)";
                 }
+                else if (item.Type==4)
+                {
+                    stockItem.TypeName=`${marketName}期权`;
+                    stockItem.Column=[null, { IsShow:false }];  //隐藏第2列
+                    stockItem.Color="rgb(0,144,255)";
+                }
                 
 
                 arySymbol.push(stockItem);
@@ -2709,6 +2720,241 @@ class HQData
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////
     //T型报价
     //
+
+    TReport_RequestStockListDataV2(data, callback, option)
+    {
+        data.PreventDefault=true;
+        var symbol=data.Request.Data.symbol;
+        option.Symbol=symbol;
+
+        if (option.AllProduct && IFrameSplitOperator.IsNonEmptyArray(option.AllProduct.AryData))    //使用缓存
+        {
+            var tData=this.GetTReportStockList(option);
+            this.TReport_RecvStockListDataV3(tData, callback, option);
+            if (option.Callback) option.Callback();
+            return;
+        }
+
+        var extendID=this.Counter++;
+        var requestID=this.RequestTReportListData_ID;
+
+        var msg=
+        {
+            MessageID:3,
+            Data:
+            {
+                Type:7, ID:requestID,
+                AryMarket:[{ Type:4 }], ExtendData:{ ExtendID:extendID },
+            }
+        };
+
+        var callbackInfo=
+        {
+            ID:requestID,
+            ExtendID:extendID,
+            Callback:(recv)=>
+            {
+                this.TReport_RecvStockListDataV2(recv, callback, option);
+                var tData=this.GetTReportStockList(option);
+                this.TReport_RecvStockListDataV3(tData, callback, option);
+                if (option.Callback) option.Callback();
+            }
+        }
+
+        this.WSClient.Request(msg, callbackInfo);
+    }
+
+    TReport_RecvStockListDataV2(recv, callback, option)
+    {
+        var allProduct=option.AllProduct;
+        var mapData=new Map();
+
+        for(var i=0; i<recv.AryData.length; ++i)
+        {
+            var item=recv.AryData[i];
+            var upperSymbol=item.Symbol.toUpperCase();
+            var propertyItem=this.GetStockProperty(item, "标的信息");
+            if (!propertyItem) continue;
+            var info=this.GetStockProperty(item, "期权信息");
+            if (!info) continue;
+
+            if (MARKET_SUFFIX_NAME.IsGZFEOption(upperSymbol))
+                var nnn=10;
+
+            if (MARKET_SUFFIX_NAME.IsSHO(upperSymbol) || MARKET_SUFFIX_NAME.IsSZO(upperSymbol) || MARKET_SUFFIX_NAME.IsCFFEXOption(upperSymbol) || MARKET_SUFFIX_NAME.IsSHFEOption(upperSymbol) ||
+                MARKET_SUFFIX_NAME.IsDCEOption(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCEOption(upperSymbol) || MARKET_SUFFIX_NAME.IsGZFEOption(upperSymbol) || 
+                MARKET_SUFFIX_NAME.IsINEOption(upperSymbol) || MARKET_SUFFIX_NAME.IsGZFEOption(upperSymbol))
+            {
+                var key=`${propertyItem.Underlying.Symbol}|${info.Option.Period}`;
+                if (mapData.has(key))
+                {
+                    var cellItem=mapData.get(key);
+                    cellItem.AryData.push(item);
+                }
+                else
+                {
+                    var cellItem={ Underlying:propertyItem.Underlying, Period:info.Option.Period, AryData:[item] };
+                    mapData.set(key, cellItem);
+                }
+            }
+        }
+
+        var aryData=[];
+        for(var mapItem of mapData)
+        {
+            aryData.push(mapItem[1]);
+        }
+
+        allProduct.AryData=aryData;
+    }
+
+    GetTReportStockList(option)
+    {
+        var allProduct=option.AllProduct;
+        var periodData=option.PeriodData;
+
+        var mainSymbol=option.MainSymbol;
+        //mainSymbol="510050.sh";
+
+        var symbol=option.Symbol;
+        var period=option.Period;
+
+        if (periodData && periodData.Selected)
+        {
+            for(var i=0;i<allProduct.AryData.length;++i)
+            {
+                var selItem=periodData.Selected;
+                var item=allProduct.AryData[i];
+                
+                if (item.Underlying.Symbol==selItem.UnderlyingSymbol && item.Period==selItem.Period)
+                {
+                    return  { Data:item };
+                }
+            }
+
+            return null;
+        }
+        else if (mainSymbol)
+        {
+            var upperSymbol=mainSymbol.toUpperCase();
+            var bETF=MARKET_SUFFIX_NAME.IsSHSZETF(mainSymbol);
+            var bIndex=MARKET_SUFFIX_NAME.IsSHSZIndex(symbol);
+            var bFutrues=MARKET_SUFFIX_NAME.IsSHFE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsGZFE(upperSymbol) || MARKET_SUFFIX_NAME.IsINE(upperSymbol);
+            var aryData=[];
+            var symbolInfo=MARKET_SUFFIX_NAME.SplitSymbol(mainSymbol, "A+D+");
+            for(var i=0;i<allProduct.AryData.length;++i)
+            {
+                var item=allProduct.AryData[i];
+                if (bETF || bIndex)
+                {
+                    if (item.Underlying.Symbol==mainSymbol)
+                        aryData.push(item);
+                }
+                else if (bFutrues)
+                {
+                    if (MARKET_SUFFIX_NAME.IsGZFE(item.Underlying.Symbol.toUpperCase()))
+                        var nnn=10;
+                    var info=MARKET_SUFFIX_NAME.SplitSymbol(item.Underlying.Symbol, "A+D+");
+                    if (!info) continue;
+
+                    if (info.AryString[0]==symbolInfo.AryString[0])
+                        aryData.push(item);
+                }
+            }
+
+            aryData.sort((left, right)=>{ return left.Period-right.Period; });
+            
+            if (!IFrameSplitOperator.IsNonEmptyArray(aryData)) return null;
+
+            periodData.AryData=[];
+            for(var i=0;i<aryData.length;++i)
+            {
+                var item=aryData[i];
+                periodData.AryData.push({ UnderlyingSymbol:item.Underlying.Symbol, Period:item.Period });
+            }
+
+            periodData.Selected=periodData.AryData[0];
+
+            return { Data:aryData[0] };
+        }
+        
+        return null;
+    }
+
+    GetStockProperty(stock, name)
+    {
+        if (!stock || !IFrameSplitOperator.IsNonEmptyArray(stock.AryProperty)) return null;
+        for(var i=0;i<stock.AryProperty.length;++i)
+        {
+            var item=stock.AryProperty[i];
+            if (item.Name==name)
+            {
+                return item;
+            }
+        }
+
+        return null;
+    }
+
+    TReport_RecvStockListDataV3(recv, callback, option)
+    {
+        var hqchartData={ symbol:option.Symbol, name:MARKET_SUFFIX_NAME.GetShortSymbol(option.Symbol), data:[] };
+        if (recv && recv.Data && IFrameSplitOperator.IsNonEmptyArray(recv.Data.AryData))
+        {
+            var mapData=new Map();
+            for(var i=0;i<recv.Data.AryData.length;++i)
+            {
+                var item=recv.Data.AryData[i];
+                var info=this.GetStockProperty(item, "期权信息");
+                if (!info || !info.Option) continue;
+
+                var tItem=null;
+                if (mapData.has(item.ExePrice))
+                {
+                    tItem=mapData.get(item.ExePrice);
+                }
+                else
+                {
+                    tItem={ Price:item.ExePrice };
+                    mapData.set(item.ExePrice, tItem);
+                }
+
+                if (info.Option.Type=="C") tItem.C={ Symbol:item.Symbol, Name:item.Name, ShortSymbol:item.ShortSymbol };
+                else if (info.Option.Type=="P") tItem.P={ Symbol:item.Symbol, Name:item.Name, ShortSymbol:item.ShortSymbol };
+            }
+
+            for(var mapItem of mapData)
+            {
+                var item=mapItem[1];
+
+                var newItem=[item.Price,null, null, null,null ];
+                if (item.P)
+                {
+                    newItem[2]=item.P.Symbol;
+                    newItem[4]=item.P.ShortSymbol;
+                }
+
+                if (item.C)
+                {
+                    newItem[1]=item.C.Symbol;
+                    newItem[3]=item.C.ShortSymbol;
+                }
+
+                hqchartData.data.push(newItem);
+            }
+
+            hqchartData.data.sort((left,right)=>{ return right[0]-left[0]; })
+
+            if (option && option.Underlying)
+            {
+                option.Underlying.Symbol=recv.Data.Underlying.Symbol;
+                option.Underlying.Name=MARKET_SUFFIX_NAME.GetShortSymbol(recv.Data.Underlying.Symbol);
+            }
+        }
+
+
+        callback(hqchartData);
+    }
 
     TReport_RequestStockListData(data, callback, option)
     {
@@ -2799,7 +3045,7 @@ class HQData
 
         if (option)
         {
-            if (option.Underlying) arySymbol.push({ Symbol:option.Underlying.Symbol } );
+            if (option.Underlying && option.Underlying.Symbol) arySymbol.push({ Symbol:option.Underlying.Symbol } );
 
             option.Report=data.Self;
         }

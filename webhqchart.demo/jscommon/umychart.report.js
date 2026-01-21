@@ -1745,7 +1745,7 @@ function JSReportChartContainer(uielement)
         //18=内盘 19=外盘 20=现量 21=涨幅% 22=涨跌 23=换手率% 24=振幅% 25=流通市值 26=总市值 27=扩展名字
         //30=全局扩展数据  31=当前板块扩展数据 
         //32=收盘价线 33=K线  35=时间 36=日期字段 38=持仓量 39=结算价 40=昨结算价 41=开仓量 42=平仓量
-        //43=1m涨速% 44=3m涨速% 45=5m涨速% 46=10m涨速%  47=15m涨速%
+        //43=1m涨速% 44=3m涨速% 45=5m涨速% 46=10m涨速%  47=15m涨速% 48=交割日期 49=开始日期 50=过期时间
         //80=整行背景色
         //101-199=数值型  201-299=字符型 301-350=进度条 351-400=按钮 401-499=日期时间
 
@@ -1864,17 +1864,12 @@ function JSReportChartContainer(uielement)
 
         if (IFrameSplitOperator.IsBool(item[37])) stock.Checked=item[37];
 
-        
-
         //1,3,5,10,15 涨速%
         if (IFrameSplitOperator.IsNumber(item[43])) stock.RSpeed1M=item[43]; 
         if (IFrameSplitOperator.IsNumber(item[44])) stock.RSpeed3M=item[44]; 
         if (IFrameSplitOperator.IsNumber(item[45])) stock.RSpeed5M=item[45]; 
         if (IFrameSplitOperator.IsNumber(item[46])) stock.RSpeed10M=item[46]; 
         if (IFrameSplitOperator.IsNumber(item[47])) stock.RSpeed15M=item[47]; 
-
-        if (item[80] || item[80]===null) stock.BGColor=item[80];       //整行背景色
-        if (item[JSCHART_DATA_FIELD_ID.REPORT_EXTENDDATA]) stock.ExtendDataV2=item[JSCHART_DATA_FIELD_ID.REPORT_EXTENDDATA];  //扩展数据2
 
         function __Temp_IsNumberOrObject(value)
         {
@@ -1889,6 +1884,14 @@ function JSReportChartContainer(uielement)
             if (IFrameSplitOperator.IsObject(value)) return true;
             return false;
         }
+
+        if (__Temp_IsNumberOrObject(item[48])) stock.DeliveryDate=item[48];
+        if (__Temp_IsNumberOrObject(item[49])) stock.OpenDate=item[49];
+        if (__Temp_IsNumberOrObject(item[50])) stock.ExpireDate=item[50];
+        
+
+        if (item[80] || item[80]===null) stock.BGColor=item[80];       //整行背景色
+        if (item[JSCHART_DATA_FIELD_ID.REPORT_EXTENDDATA]) stock.ExtendDataV2=item[JSCHART_DATA_FIELD_ID.REPORT_EXTENDDATA];  //扩展数据2
 
         //10个数值型 101-199
         if (__Temp_IsNumberOrObject(item[101])) stock.ReserveNumber1=item[101];
@@ -4991,6 +4994,9 @@ var REPORT_COLUMN_ID=
     FUTURES_YCLOSE_ID:36,        //期货昨结算
     FUTURES_OPEN_POSITION_ID:37,    //期货开仓量
     FUTURES_CLOSE_POSITION_ID:38,    //期货平仓量
+    DELIVERY_DATE_ID:39,             //交割日期
+    OPEN_DATE_ID:40,
+    EXPIRE_DATE_ID:41,
 
 
     //1,3,5,10,15分钟涨速
@@ -5141,6 +5147,10 @@ var MAP_COLUMN_FIELD=new Map([
     [REPORT_COLUMN_ID.FUTURES_YCLOSE_ID, "YFClose"],
     [REPORT_COLUMN_ID.FUTURES_OPEN_POSITION_ID, "OpenPosition"],
     [REPORT_COLUMN_ID.FUTURES_CLOSE_POSITION_ID, "ClosePosition"],
+
+    [REPORT_COLUMN_ID.DELIVERY_DATE_ID, "DeliveryDate"],
+    [REPORT_COLUMN_ID.OPEN_DATE_ID, "OpenDate"],
+    [REPORT_COLUMN_ID.EXPIRE_DATE_ID, "ExpireDate"],
 
     [REPORT_COLUMN_ID.RISING_SPEED_1M_ID, "RSpeed1M"],
     [REPORT_COLUMN_ID.RISING_SPEED_3M_ID, "RSpeed3M"],
@@ -5813,6 +5823,9 @@ function ChartReport()
 
             { Type:REPORT_COLUMN_ID.TIME_ID, Title:"时间", TextAlign:"left", ValueType:0, TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"99:99:99.999" },
             { Type:REPORT_COLUMN_ID.DATE_ID, Title:"日期", TextAlign:"left", FormatType:0, TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"9999-99-99" },
+            { Type:REPORT_COLUMN_ID.DELIVERY_DATE_ID, Title:"交割日", TextAlign:"left", FormatType:0, TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"9999-99-99" },
+            { Type:REPORT_COLUMN_ID.OPEN_DATE_ID, Title:"上市日", TextAlign:"left", FormatType:0, TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"9999-99-99" },
+            { Type:REPORT_COLUMN_ID.EXPIRE_DATE_ID, Title:"到期日", TextAlign:"left", FormatType:0, TextColor:g_JSChartResource.Report.FieldColor.Text, MaxText:"9999-99-99" },
 
             { Type:REPORT_COLUMN_ID.CHECKBOX_ID, Title:"", TextAlign:"center", FixedWidth:20*GetDevicePixelRatio() },
 
@@ -6969,7 +6982,7 @@ function ChartReport()
         else if (column.Type==REPORT_COLUMN_ID.SYMBOL_ID)
         {
             if (stock && stock.Symbol) drawInfo.Text=stock.Symbol;
-            else drawInfo.Text=data.Symbol;
+            else drawInfo.Text=MARKET_SUFFIX_NAME.GetShortSymbol(data.Symbol);
 
             this.FormatDrawInfo(column, stock, drawInfo, data);
         }
@@ -7202,7 +7215,7 @@ function ChartReport()
             this.FormaTimeDrawInfo(column, stock, drawInfo, data);
             this.FormatDrawInfoEvent(stock, data, column, drawInfo);
         }
-        else if (column.Type==REPORT_COLUMN_ID.DATE_ID)
+        else if (column.Type==REPORT_COLUMN_ID.DATE_ID || column.Type==REPORT_COLUMN_ID.DELIVERY_DATE_ID || column.Type==REPORT_COLUMN_ID.OPEN_DATE_ID || column.Type==REPORT_COLUMN_ID.EXPIRE_DATE_ID)
         {
             this.FormaDateDrawInfo(column, stock, drawInfo, data);
             this.FormatDrawInfoEvent(stock, data, column, drawInfo);
@@ -8128,20 +8141,26 @@ function ChartReport()
 
     this.FormaDateDrawInfo=function(column, stock, drawInfo, data)
     {
-        if (!stock || !IFrameSplitOperator.IsNumber(stock.Date)) return;
+        var fieldName=MAP_COLUMN_FIELD.get(column.Type);
+        if (!stock || !fieldName) return;
+        var date=stock[fieldName];
+
+        if (!IFrameSplitOperator.IsNumber(date)) return;
 
         if (column.FormatType==0)
-            drawInfo.Text=IFrameSplitOperator.FormatDateString(stock.Date,"YYYY-MM-DD");
+            drawInfo.Text=IFrameSplitOperator.FormatDateString(date,"YYYY-MM-DD");
         else if (column.FormatType==1)
-            drawInfo.Text=IFrameSplitOperator.FormatDateString(stock.Date,"YYYY/MM/DD");
+            drawInfo.Text=IFrameSplitOperator.FormatDateString(date,"YYYY/MM/DD");
         else if (column.FormatType==2)
-            drawInfo.Text=IFrameSplitOperator.FormatDateString(stock.Date,"YYYY/MM/DD/W");
+            drawInfo.Text=IFrameSplitOperator.FormatDateString(date,"YYYY/MM/DD/W");
         else if (column.FormatType==3)
-            drawInfo.Text=IFrameSplitOperator.FormatDateString(stock.Date,"YYYY-MM");
+            drawInfo.Text=IFrameSplitOperator.FormatDateString(date,"YYYY-MM");
         else if (column.FormatType==4)
-            drawInfo.Text=IFrameSplitOperator.FormatDateString(stock.Date,"MM/DD");
-        else if (column.FormatType==4)
-            drawInfo.Text=IFrameSplitOperator.FormatDateString(stock.Date,"MM-DD");
+            drawInfo.Text=IFrameSplitOperator.FormatDateString(date,"MM/DD");
+        else if (column.FormatType==5)
+            drawInfo.Text=IFrameSplitOperator.FormatDateString(date,"MM-DD");
+        else 
+            drawInfo.Text=IFrameSplitOperator.FormatDateString(date,"YYYY-MM-DD");
     }
 
 

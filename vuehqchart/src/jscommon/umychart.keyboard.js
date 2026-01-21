@@ -1529,20 +1529,23 @@ function ChartSymbolList()
         for(var i=this.Data.XOffset;i<this.Column.length;++i)
         {
             var item=this.Column[i];
-            this.DrawItem(dataIndex, data, item, left, top, rowType);
+            this.DrawItem(dataIndex, data, item, left, top, rowType, i);
             left+=item.Width;
 
             if (left>=chartRight) break;
         }
     }
 
-    this.DrawItem=function(index, data, column, left, top, rowType)
+    this.DrawItem=function(index, data, column, left, top, rowType, colIndex)
     {
         var itemWidth=column.Width;
         var x=left+this.ItemMergin.Left;
         var textWidth=column.Width-this.ItemMergin.Left-this.ItemMergin.Right;
         var stock=data.Stock;
         var drawInfo={ Text:null, TextColor:this.TextColor , TextAlign:column.TextAlign };
+        var columnEx=null;
+        if (stock && IFrameSplitOperator.IsNonEmptyArray(stock.Column)) columnEx=stock.Column[colIndex];
+
         if (column.Type==KEYBOARD_COLUMN_ID.SHORT_SYMBOL_ID)
         {
             if (stock && stock.ShortSymbol) drawInfo.Text=stock.ShortSymbol;
@@ -1552,6 +1555,8 @@ function ChartSymbolList()
         }
         else if (column.Type==KEYBOARD_COLUMN_ID.NAME_ID)
         {
+            if (columnEx && columnEx.IsShow===false) return;
+
             if (stock && stock.Name) 
             {
                 drawInfo.Text=this.TextEllipsis(stock.Name, textWidth, column.MaxText);
@@ -1560,6 +1565,8 @@ function ChartSymbolList()
         }
         else if (column.Type==KEYBOARD_COLUMN_ID.TYPE_NAME_ID)
         {
+            if (columnEx && columnEx.IsShow===false) return;
+            
             if (stock && stock.TypeName) 
             {
                 drawInfo.Text=this.TextEllipsis(stock.TypeName, textWidth, column.MaxText);
