@@ -313,7 +313,7 @@ function ChartKLine()
 
     this.ClassName = 'ChartKLine';
     this.Symbol;        //股票代码
-    this.DrawType = 0;    // 0=K线  1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积 6=空心阴线阳线柱 9=自定义颜色K线
+    this.DrawType = 0;    // 0=K线  1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积 6=空心阴线阳线柱 9=自定义颜色K线 20=空心K线柱子3(阴实心 阳空心)
     this.CloseLineColor = g_JSChartResource.CloseLineColor;
     this.CloseLineAreaColor = g_JSChartResource.CloseLineAreaColor;
     this.UpColor = g_JSChartResource.UpBarColor;
@@ -882,7 +882,9 @@ function ChartKLine()
 
     this.DrawKBar_Up = function(data, dataWidth, upColor, drawType, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen) //阳线
     {
-        var isEmptyBar=(drawType==3 || drawType==6);
+        var isEmptyBar=false;
+        if (drawType==3 || drawType==6) isEmptyBar=true;
+
         if (dataWidth >= this.MinBarWidth) 
         {
             if (isEmptyBar)
@@ -1010,7 +1012,9 @@ function ChartKLine()
 
     this.DrawKBar_Down=function(data, dataWidth, downColor, drawType, x, y, left, right, yLow, yHigh, yOpen, yClose, isHScreen) //阴线
     {
-        var isEmptyBar=(drawType==6);
+        var isEmptyBar=false;
+        if (drawType==6 || drawType==20) isEmptyBar=true;
+        
         if (dataWidth >= this.MinBarWidth) 
         {
             if (isEmptyBar)
