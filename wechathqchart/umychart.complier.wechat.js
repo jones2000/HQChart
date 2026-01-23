@@ -14088,6 +14088,7 @@ function JSExecute(ast,option)
                         if (color) value.Color=color;
                         if (upColor) value.UpColor=upColor;
                         if (downColor) value.DownColor=downColor;
+                        if (IFrameSplitOperator.IsBool(isShowTitle)) value.IsShowTitle=isShowTitle;
                         if (IFrameSplitOperator.IsNumber(stickType)) value.StickType=stickType;
                         this.OutVarTable.push(value);
                     }

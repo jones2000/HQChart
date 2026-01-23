@@ -18310,6 +18310,7 @@ function JSExecute(ast,option)
                     if (upColor) value.UpColor=upColor;
                     if (downColor) value.DownColor=downColor;
                     if (lineWidth) value.LineWidth=lineWidth;
+                    if (IFrameSplitOperator.IsBool(isShowTitle)) value.IsShowTitle=isShowTitle;
                     if (IFrameSplitOperator.IsNumber(stickType)) value.StickType=stickType;
                     this.OutVarTable.push(value);
                 }
@@ -25890,7 +25891,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
 
     this.FittingMultiLine=function(sourceData,date,time,hqChart)
     {
-        var kdata=hqChart.ChartPaint[0].Data;   //K线
+        var kdata=hqChart.GetKData();   //K线
 
         if (ChartData.IsDayPeriod(hqChart.Period,true))  //日线
         {

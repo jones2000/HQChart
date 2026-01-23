@@ -1034,9 +1034,20 @@ function ScriptIndex(name, script, args, option)
         chart.HistoryData = hisData;
         this.ReloadChartResource(hqChart,windowIndex,chart);
 
-        var titleData=new DynamicTitleData(chart.Data, varItem.Name, chart.Color);
-        hqChart.TitlePaint[titleIndex].Data[id] = titleData;
-        this.SetTitleData(titleData,chart);
+        if (varItem.IsShowTitle===false)    //NOTEXT 不绘制标题
+        {
+
+        }
+        else if (IFrameSplitOperator.IsString(varItem.Name) && varItem.Name.indexOf("NOTEXT")==0) //标题中包含NOTEXT不绘制标题
+        {
+
+        }
+        else
+        {
+            var titleData=new DynamicTitleData(chart.Data, varItem.Name, chart.Color);
+            hqChart.TitlePaint[titleIndex].Data[id] = titleData;
+            this.SetTitleData(titleData,chart);
+        }
 
         this.SetChartIndexName(chart);
         hqChart.ChartPaint.push(chart);
@@ -3508,7 +3519,7 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
 
     this.FittingMultiLine = function (sourceData, date, time, hqChart) 
     {
-        var kdata = hqChart.ChartPaint[0].Data;   //K线
+        var kdata = hqChart.GetKData();   //K线
 
         if (ChartData.IsDayPeriod(hqChart.Period, true))  //日线
         {
@@ -3546,6 +3557,31 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
             });
 
             kdata.GetDateTimeIndex(aryPoint);
+            return sourceData;
+        }
+        else if (this.HQDataType==HQ_DATA_TYPE.MINUTE_ID || this.HQDataType==HQ_DATA_TYPE.MULTIDAY_MINUTE_ID)
+        {
+            var minuteData=hqChart.SourceData;
+
+            var aryPoint=[];
+            for(var i=0;i<sourceData.length; ++i)
+            {
+                var item=sourceData[i];
+                for(var j=0;j<item.Point.length; ++j)
+                {
+                    var point=item.Point[j];
+                    aryPoint.push(point);
+                }
+            }
+
+            aryPoint.sort(function(a,b) 
+                { 
+                    if (a.Date==b.Date) return a.Time-b.Time;
+                    return a.Date-b.Date; 
+                }
+            );
+
+            minuteData.GetDateTimeIndex(aryPoint);
             return sourceData;
         }
 

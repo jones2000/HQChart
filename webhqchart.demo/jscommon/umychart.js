@@ -102919,6 +102919,11 @@ var MARKET_SUFFIX_NAME=
     INE:".INE",          //上海国际能源交易中心
 
     USA:'.USA',          //美股
+    USA_NSDAQ:"NSDAQ",  //美国纳斯达克证券交易所
+    USA_NYSE:"NYSE",    //美国纽约证券交易所
+    USA_ANPDY:"ANPDY",  //美国粉单市场
+    USA_AMEX:"AMEX",    //美国证券交易所
+
     FTSE:'.FTSE',        //富时中国
 
     BIT:'.BIT',          //数字货币 如比特币
@@ -103045,7 +103050,41 @@ var MARKET_SUFFIX_NAME=
     IsUSA:function(upperSymbol) //是否是美股
     {
         if (!upperSymbol) return false;
-        return upperSymbol.indexOf(this.USA) > 0;
+        if (upperSymbol.indexOf(this.USA) > 0) return true;
+        if (upperSymbol.indexOf(this.USA_NSDAQ) > 0) return true;
+        if (upperSymbol.indexOf(this.USA_NYSE) > 0) return true;
+        if (upperSymbol.indexOf(this.USA_ANPDY) > 0) return true;
+        if (upperSymbol.indexOf(this.USA_AMEX) > 0) return true;
+
+        return false;
+    },
+
+    IsUSA_NSDAQ:function(upperSymbol)
+    {
+        if (!upperSymbol) return false;
+        if (upperSymbol.indexOf(this.USA_NSDAQ) > 0) return true;
+        return false;
+    },
+
+    IsUSA_NYSE:function(upperSymbol)
+    {
+        if (!upperSymbol) return false;
+        if (upperSymbol.indexOf(this.USA_NYSE) > 0) return true;
+        return false;
+    },
+
+    IsUSA_AMEX:function(upperSymbol)
+    {
+        if (!upperSymbol) return false;
+        if (upperSymbol.indexOf(this.USA_AMEX) > 0) return true;
+        return false;
+    },
+
+    IsUSA_ANPDY:function(upperSymbol)
+    {
+        if (!upperSymbol) return false;
+        if (upperSymbol.indexOf(this.USA_ANPDY) > 0) return true;
+        return false;
     },
 
     IsSH: function (upperSymbol)
