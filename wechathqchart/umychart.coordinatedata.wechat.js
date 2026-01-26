@@ -42,10 +42,16 @@ var MARKET_SUFFIX_NAME=
     CFFEX2:'.CFFEX',     //中期所 (China Financial Futures Exchange)
     DCE: '.DCE',         //大连商品交易所(Dalian Commodity Exchange)
     CZCE: '.CZC',        //郑州期货交易所
+    CZCE2:".CZCE",        //郑州期货交易所
     GZFE:".GZFE",        //广州期货交易所
     INE:".INE",          //上海国际能源交易中心
 
     USA: '.USA',         //美股
+    USA_INDEX:".USAI",  //美股指数
+    USA_NSDAQ:".NSDAQ",  //美国纳斯达克证券交易所
+    USA_NYSE:".NYSE",    //美国纽约证券交易所
+    USA_ANPDY:".ANPDY",  //美国粉单市场
+    USA_AMEX:".AMEX",    //美国证券交易所
     FTSE: '.FTSE',       //富时中国
 
     BIT: '.BIT',         //数字货币 如比特币
@@ -171,7 +177,49 @@ var MARKET_SUFFIX_NAME=
     IsUSA: function (upperSymbol) //是否是美股
     {
         if (!upperSymbol) return false;
-        return upperSymbol.indexOf(this.USA) > 0;
+        if (upperSymbol.indexOf(this.USA) > 0) return true;
+        if (upperSymbol.indexOf(this.USA_NSDAQ) > 0) return true;
+        if (upperSymbol.indexOf(this.USA_NYSE) > 0) return true;
+        if (upperSymbol.indexOf(this.USA_ANPDY) > 0) return true;
+        if (upperSymbol.indexOf(this.USA_AMEX) > 0) return true;
+        if (upperSymbol.indexOf(this.USA_INDEX) > 0) return true;
+
+        return false;
+    },
+
+    IsUSAIndex:function(upperSymbol)    //美股指数
+    {
+        if (!upperSymbol) return false;
+        if (upperSymbol.indexOf(this.USA_INDEX) > 0) return true;
+        return false;
+    },
+
+    IsUSA_NSDAQ:function(upperSymbol)
+    {
+        if (!upperSymbol) return false;
+        if (upperSymbol.indexOf(this.USA_NSDAQ) > 0) return true;
+        return false;
+    },
+
+    IsUSA_NYSE:function(upperSymbol)
+    {
+        if (!upperSymbol) return false;
+        if (upperSymbol.indexOf(this.USA_NYSE) > 0) return true;
+        return false;
+    },
+
+    IsUSA_AMEX:function(upperSymbol)
+    {
+        if (!upperSymbol) return false;
+        if (upperSymbol.indexOf(this.USA_AMEX) > 0) return true;
+        return false;
+    },
+
+    IsUSA_ANPDY:function(upperSymbol)
+    {
+        if (!upperSymbol) return false;
+        if (upperSymbol.indexOf(this.USA_ANPDY) > 0) return true;
+        return false;
     },
 
     IsSH: function (upperSymbol)
@@ -256,6 +304,25 @@ var MARKET_SUFFIX_NAME=
         if (upperSymbol.indexOf(this.SHFE2) > 0) return true;
         return false;
     },
+
+    IsSHFEOption:function(upperSymbol)
+    {
+        if (!upperSymbol) return false;
+        if (!this.IsSHFE(upperSymbol)) return false;
+        var shortSymbol=JSChart.GetShortSymbol(upperSymbol); 
+        //ZN2605-P-20600
+        var aryValue=shortSymbol.split("-");
+        if (!aryValue || aryValue.length!=3) return false;
+
+        var strValue=aryValue[0];
+        const regex = /([a-zA-Z]+)(\d+)/;
+        const match = strValue.match(regex);
+        if (!match || !match[1] || !match[2]) return false;
+
+        var prefix=match[1];
+
+        return true;
+    },
         
     IsCFFEX: function (upperSymbol) 
     {
@@ -265,16 +332,75 @@ var MARKET_SUFFIX_NAME=
         return false;
     },
 
+    IsCFFEXOption:function(upperSymbol) //中金所股票期权
+    {
+        if (!upperSymbol) return false;
+        if (!this.IsCFFEX(upperSymbol)) return false;   
+        var shortSymbol=JSChart.GetShortSymbol(upperSymbol);
+        //MO2602-C-6300.cffex
+        var aryValue=shortSymbol.split("-");
+        if (!aryValue || aryValue.length!=3) return false;
+        
+        var strValue=aryValue[0];
+        const regex = /([a-zA-Z]+)(\d+)/;
+        const match = strValue.match(regex);
+        if (!match || !match[1] || !match[2]) return false;
+
+        var prefix=match[1];
+        if (["IM","IO","MO","HO"].includes(prefix)) return true;
+        
+        return true;
+    },
+
     IsDCE: function (upperSymbol) 
     {
         if (!upperSymbol) return false;
         return upperSymbol.indexOf(this.DCE) > 0;
     },
 
+    IsDCEOption:function(upperSymbol)
+    {
+        if (!upperSymbol) return false;
+        if (!this.IsDCE(upperSymbol)) return false;
+        var shortSymbol=JSChart.GetShortSymbol(upperSymbol); 
+        //M2605-P-2400
+        var aryValue=shortSymbol.split("-");
+        if (!aryValue || aryValue.length!=3) return false;
+
+        var strValue=aryValue[0];
+        const regex = /([a-zA-Z]+)(\d+)/;
+        const match = strValue.match(regex);
+        if (!match || !match[1] || !match[2]) return false;
+
+        var prefix=match[1];
+
+        return true;
+    },
+
+
     IsCZCE: function (upperSymbol) 
     {
         if (!upperSymbol) return false;
         return upperSymbol.indexOf(this.CZCE) > 0;
+    },
+
+    IsCZCEOption:function(upperSymbol)
+    {
+        if (!upperSymbol) return false;
+        if (!this.IsCZCE(upperSymbol)) return false;
+        var shortSymbol=JSChart.GetShortSymbol(upperSymbol); 
+        //ZN2605-P-20600
+        var aryValue=shortSymbol.split("-");
+        if (!aryValue || aryValue.length!=3) return false;
+
+        var strValue=aryValue[0];
+        const regex = /([a-zA-Z]+)(\d+)/;
+        const match = strValue.match(regex);
+        if (!match || !match[1] || !match[2]) return false;
+
+        var prefix=match[1];
+
+        return true;
     },
 
     IsGZFE:function(upperSymbol)
@@ -287,6 +413,44 @@ var MARKET_SUFFIX_NAME=
     {
         if (!upperSymbol) return false;
         return upperSymbol.indexOf(this.INE) > 0;
+    },
+
+    IsINEOption:function(upperSymbol)
+    {
+        if (!upperSymbol) return false;
+        if (!this.IsINE(upperSymbol)) return false;
+        var shortSymbol=JSChart.GetShortSymbol(upperSymbol); 
+        //ZN2605-P-20600
+        var aryValue=shortSymbol.split("-");
+        if (!aryValue || aryValue.length!=3) return false;
+
+        var strValue=aryValue[0];
+        const regex = /([a-zA-Z]+)(\d+)/;
+        const match = strValue.match(regex);
+        if (!match || !match[1] || !match[2]) return false;
+
+        var prefix=match[1];
+
+        return true;
+    },
+
+    IsGZFEOption:function(upperSymbol)
+    {
+        if (!upperSymbol) return false;
+        if (!this.IsGZFE(upperSymbol)) return false;
+        var shortSymbol=JSChart.GetShortSymbol(upperSymbol); 
+        //ZN2605-P-20600
+        var aryValue=shortSymbol.split("-");
+        if (!aryValue || aryValue.length!=3) return false;
+
+        var strValue=aryValue[0];
+        const regex = /([a-zA-Z]+)(\d+)/;
+        const match = strValue.match(regex);
+        if (!match || !match[1] || !match[2]) return false;
+
+        var prefix=match[1];
+
+        return true;
     },
 
     IsChinaFutures: function (upperSymbol)   //是否是国内期货
@@ -314,9 +478,13 @@ var MARKET_SUFFIX_NAME=
     {
         if (!upperSymbol) return false;
 
-        if (this.IsSH(upperSymbol)) //51XXXX.SH
+        if (this.IsSH(upperSymbol)) //51XXXX.SH 58xxxx.sh 56xxxx.sh
         {
-            if (upperSymbol.charAt(0) == '5' && upperSymbol.charAt(1) == '1') return true;
+            if (upperSymbol.charAt(0)=='5')
+            {
+                var secondChar=upperSymbol.charAt(1);
+                if (["1", "2", "3", "4", "5", "7", "6", "8"].includes(secondChar)) return true;
+            } 
         }
         else if (this.IsSZ(upperSymbol)) //15XXXX.sz, 16XXXX.sz, 17XXXX.sz, 18XXXX.sz
         {
@@ -379,15 +547,26 @@ var MARKET_SUFFIX_NAME=
         return false;
     },
 
+    //北交所股票代码全面启用“920”开头的六位数编码规则（如 920XXX），已于 2025 年 10 月 9 日完成存量与增量股票的统一切换，标志着其与新三板代码的脱钩。
+    // 新代码通常将原 43、83、87 开头的旧代码前三位变更为 920，后三位保持不变
     IsBJStock:function(symbol)  //北交所股票
     {
         if (!symbol) return false;
         var upperSymbol=symbol.toUpperCase();
         if (!this.IsBJ(upperSymbol)) return false;
 
-        var value=upperSymbol.charAt(0);
+        if (upperSymbol.charAt(0)=='9' && upperSymbol.charAt(1)=='2' && upperSymbol.charAt(2)=='0') return true;
 
-        if (value=='4' || value=='8') return true;
+        return false;
+    },
+
+    IsBJIndex:function(symbol)  //北交所指数 北交所指数代码通常以“899”开头，采用6位数字序列
+    {
+        if (!symbol) return false;
+        var upperSymbol=symbol.toUpperCase();
+        if (!this.IsBJ(upperSymbol)) return false;
+
+        if (upperSymbol.charAt(0)=='8' && upperSymbol.charAt(1)=='9' && upperSymbol.charAt(2)=='9') return true;
 
         return false;
     },
@@ -399,6 +578,66 @@ var MARKET_SUFFIX_NAME=
         if (!this.IsSH(upperSymbol)) return false;
         if (upperSymbol.charAt(0) == '6' && upperSymbol.charAt(1) == '8' && upperSymbol.charAt(2) == '8')
             return true;
+
+        return false;
+    },
+
+    IsSZGEM:function(symbol)    //创业板(growth enterprise market) 30开头
+    {
+        if (!symbol) return false;
+        var upperSymbol=symbol.toUpperCase();
+        if (!this.IsSZ(upperSymbol)) return false;
+        if (upperSymbol.charAt(0)=='3' && upperSymbol.charAt(1)=='0')
+            return true;
+        
+        return false;
+    },
+
+    IsHKStock:function(symbol)  //港股股票 全是数字
+    {
+        if (!symbol) return false;
+        var upperSymbol=symbol.toUpperCase();
+        if (!this.IsHK(upperSymbol)) return false;
+
+        var shortSymbol=this.GetShortSymbol(symbol);
+        if (IFrameSplitOperator.IsNumberString(shortSymbol)) return true;
+
+        return false;
+    },
+
+    IsSHSZETF:function(symbol) //是否是沪深ETF
+    {
+        if (!symbol) return false;
+        var upperSymbol=symbol.toUpperCase();
+        if (this.IsSHETF(upperSymbol)) return true;
+        else if (this.IsSZETF(upperSymbol)) return true;
+        
+
+        return false;
+    },
+
+    IsSHETF:function(upperSymbol)
+    {
+        if (upperSymbol && this.IsSH(upperSymbol))
+        {
+            //上证ETF：通常以51开头
+            if (upperSymbol.charAt(0)=='5' && upperSymbol.charAt(1)=='1')
+                return true;
+            if (upperSymbol.charAt(0)=='5' && upperSymbol.charAt(1)=='8')
+                return true;
+        }
+
+        return false;
+    },
+
+    IsSZETF:function(upperSymbol)
+    {
+        if (upperSymbol && this.IsSZ(upperSymbol))
+        {
+            //深交所上市的ETF代码以15开头
+            if (upperSymbol.charAt(0)=='1' && upperSymbol.charAt(1)=='5')
+                return true;
+        }
 
         return false;
     },

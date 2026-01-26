@@ -3740,6 +3740,16 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
 
                     result.push(outVarItem);
                 }
+                else if (draw.DrawType=='MULTI_BAR')
+                {
+                    drawItem.Text=draw.Text;
+                    drawItem.Name=draw.Name;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=draw.DrawData;
+                    outVarItem.Draw=drawItem;
+
+                    result.push(outVarItem);
+                }
                 else if (draw.DrawType=="DRAWCOLORKLINE")
                 {
                     drawItem.Name=draw.Name;

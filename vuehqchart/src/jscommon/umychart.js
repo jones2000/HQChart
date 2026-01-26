@@ -1679,7 +1679,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         if (!option.Windows || option.Windows.length<=0) return null;
 
         //创建子窗口
-        chart.Create(option.Windows.length);
+        chart.Create(option.Windows.length, option);
 
         this.SetChartBorder(chart, option);
 
@@ -102919,10 +102919,11 @@ var MARKET_SUFFIX_NAME=
     INE:".INE",          //上海国际能源交易中心
 
     USA:'.USA',          //美股
-    USA_NSDAQ:"NSDAQ",  //美国纳斯达克证券交易所
-    USA_NYSE:"NYSE",    //美国纽约证券交易所
-    USA_ANPDY:"ANPDY",  //美国粉单市场
-    USA_AMEX:"AMEX",    //美国证券交易所
+    USA_INDEX:".USAI",  //美股指数
+    USA_NSDAQ:".NSDAQ",  //美国纳斯达克证券交易所
+    USA_NYSE:".NYSE",    //美国纽约证券交易所
+    USA_ANPDY:".ANPDY",  //美国粉单市场
+    USA_AMEX:".AMEX",    //美国证券交易所
 
     FTSE:'.FTSE',        //富时中国
 
@@ -103055,7 +103056,15 @@ var MARKET_SUFFIX_NAME=
         if (upperSymbol.indexOf(this.USA_NYSE) > 0) return true;
         if (upperSymbol.indexOf(this.USA_ANPDY) > 0) return true;
         if (upperSymbol.indexOf(this.USA_AMEX) > 0) return true;
+        if (upperSymbol.indexOf(this.USA_INDEX) > 0) return true;
 
+        return false;
+    },
+
+    IsUSAIndex:function(upperSymbol)    //美股指数
+    {
+        if (!upperSymbol) return false;
+        if (upperSymbol.indexOf(this.USA_INDEX) > 0) return true;
         return false;
     },
 
@@ -103957,9 +103966,8 @@ var MARKET_SUFFIX_NAME=
             var match=shortSymbol.match(regex);
             if (!match || !match[1] || !match[2]) return null;
             
-            return { AryString:[match[1], match[2]], ShortSymbol:shortSymbol, Symbol:symbol, Market:symbol.slice(shortSymbol.length) };
+            return { AryString:[match[1], match[2]], ShortSymbol:shortSymbol, Symbol:symbol, Market:symbol.slice(shortSymbol.length+1) };
         }
-
 
         return null;
     }

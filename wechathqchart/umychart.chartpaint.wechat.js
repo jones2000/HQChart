@@ -6458,16 +6458,17 @@ function ChartMultiBar()
         var mapData=new Map();
         this.MapCache=mapData;
         if (!IFrameSplitOperator.IsNonEmptyArray(this.Bars)) return;
-
+        var bMinute=this.IsMinuteFrame();
         for(var i=0; i<this.Bars.length; ++i)
         {
             var groupItem=this.Bars[i];
             if (!groupItem || !IFrameSplitOperator.IsNonEmptyArray(groupItem.Point)) continue;
 
             var clrConfig= { Color:groupItem.Color, Width:5, Name:groupItem.Name, Type:0 };
+            if (bMinute) clrConfig.Width=1;
+            
             if (IFrameSplitOperator.IsNumber(groupItem.Width)) clrConfig.Width=groupItem.Width;
             if (IFrameSplitOperator.IsNumber(groupItem.Type)) clrConfig.Type=groupItem.Type;
-
             for(var j=0; j<groupItem.Point.length; ++j)
             {
                 var point=groupItem.Point[j];
