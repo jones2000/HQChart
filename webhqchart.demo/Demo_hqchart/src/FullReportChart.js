@@ -17,6 +17,8 @@ class HQ_CLASS_SYMBOL
 
     static SHSZ_FUND={ Symbol:"SHSZ_FUND", Name:"深证基金" };
 
+    static USA_STOCK_CN={ Symbol:"USA_STOCK_CN", Name:"中概股"};
+
     //期货
     static CFFEX_FUTRUES={ Symbol:"CFFEX_FUTRUES", Name:"中金所期货" };
     static SHFE_FUTRUES={ Symbol:"SHFE_FUTRUES", Name:"上海商品" };
@@ -156,6 +158,8 @@ class FullReportChart
             
             { Title:HQ_CLASS_SYMBOL.HK_STOCK_CONNECT.Name, ID:HQ_CLASS_SYMBOL.HK_STOCK_CONNECT.Symbol, CommandID:JSCHART_MENU_ID.CMD_REPORT_CHANGE_BLOCK_ID},
             { Title:HQ_CLASS_SYMBOL.SZSH_HK_STOCK.Name, ID:HQ_CLASS_SYMBOL.SZSH_HK_STOCK.Symbol, CommandID:JSCHART_MENU_ID.CMD_REPORT_CHANGE_BLOCK_ID},
+
+            { Title:HQ_CLASS_SYMBOL.USA_STOCK_CN.Name, ID:HQ_CLASS_SYMBOL.USA_STOCK_CN.Symbol, CommandID:JSCHART_MENU_ID.CMD_REPORT_CHANGE_BLOCK_ID},
             
 
             { Title:HQ_CLASS_SYMBOL.CFFEX_FUTRUES.Name, ID:HQ_CLASS_SYMBOL.CFFEX_FUTRUES.Symbol, CommandID:JSCHART_MENU_ID.CMD_REPORT_CHANGE_BLOCK_ID},
@@ -262,6 +266,31 @@ class FullReportChart
             {Type:REPORT_COLUMN_ID.UPDOWN_ID,  },
             {Type:REPORT_COLUMN_ID.BUY_PRICE_ID, ID:REPORT_COLUMN_ID.BUY_PRICE_ID},
             {Type:REPORT_COLUMN_ID.SELL_PRICE_ID, ID:REPORT_COLUMN_ID.SELL_PRICE_ID},
+            {Type:REPORT_COLUMN_ID.VOL_ID },
+            {Type:REPORT_COLUMN_ID.OPEN_ID},
+            {Type:REPORT_COLUMN_ID.HIGH_ID },
+            {Type:REPORT_COLUMN_ID.LOW_ID},
+            {Type:REPORT_COLUMN_ID.AMOUNT_ID},
+            {Type:REPORT_COLUMN_ID.YCLOSE_ID, },
+            {Type:REPORT_COLUMN_ID.AMPLITUDE_ID },
+            
+            {Type:REPORT_COLUMN_ID.DATE_ID, Title:"更新日期", TitleAlign:"center"},
+            {Type:REPORT_COLUMN_ID.TIME_ID,  Title:"更新时间", TitleAlign:"center", ValueType:1,  MaxText:"99:99:99"},
+        ];
+
+        return { Column:column };
+    }
+
+    GetUSAStockOption()
+    {
+        var column=
+        [
+            {Type:REPORT_COLUMN_ID.INDEX_ID },
+            {Type:REPORT_COLUMN_ID.SYMBOL_ID,  SortType:[0], EnableDragWidth:true, ChartTooltip:{ Enable:true, Type:20 } },
+            {Type:REPORT_COLUMN_ID.NAME_ID ,EnableDragWidth:true, ChartTooltip:{ Enable:true, Type:21 }, MaxText:"擎擎擎擎擎擎擎擎"},
+            {Type:REPORT_COLUMN_ID.INCREASE_ID, ID:REPORT_COLUMN_ID.INCREASE_ID },
+            {Type:REPORT_COLUMN_ID.PRICE_ID, ID:REPORT_COLUMN_ID.PRICE_ID },
+            {Type:REPORT_COLUMN_ID.UPDOWN_ID,  },
             {Type:REPORT_COLUMN_ID.VOL_ID },
             {Type:REPORT_COLUMN_ID.OPEN_ID},
             {Type:REPORT_COLUMN_ID.HIGH_ID },
@@ -583,6 +612,12 @@ class FullReportChart
                 case HQ_CLASS_SYMBOL.INE_OPTION.Symbol:
                     if (MARKET_SUFFIX_NAME.IsINEOption(upperSymbol)) bMatch=true;
                     break;
+                case HQ_CLASS_SYMBOL.USA_STOCK_CN.Symbol:
+                    if (MARKET_SUFFIX_NAME.IsUSA(upperSymbol))
+                    {
+                        bMatch=true;
+                    }
+                    break;
             }
 
             if (bMatch) aryData.push(item.Symbol)
@@ -705,6 +740,9 @@ class FullReportChart
                 break;
             case HQ_CLASS_SYMBOL.SHSZ_FUND.Symbol:
                 option=this.GetSHSZFundOption();
+                break;
+            case HQ_CLASS_SYMBOL.USA_STOCK_CN.Symbol:
+                option=this.GetUSAStockOption()
                 break;
         }
 

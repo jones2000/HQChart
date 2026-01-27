@@ -187,27 +187,35 @@
                     "HSCEI.hk",
 
                     //上海商品期货
-                    "AU2602.shfe",
-                    "FU2612.shfe",
+                    "AU0.shfe",
+                    "FU0.shfe",
 
                     //大连商品期货
-                    "B2601.dce",
+                    "B0.dce",
 
                     //郑州商品期货
-                    "SR2601.czc",
+                    "SR0.czc",
 
                     //中金
                     "IF2603.cfe",
 
                     //广州期货交易所
-                    "SI2601.gzfe",
+                    "SI0.gzfe",
 
                     //上海国际能源交易中心
-                    "BC2601.ine",
+                    "BC0.ine",
 
                     //北交所
                     "920000.bj",
-                    "899050.bj"
+                    "899050.bj",
+
+                    //美股
+                    "MSFT.nsdaq",
+                    "BABA.nyse",
+
+                    "IXIC.usai",
+                    "DJI.usai",
+                    "INX.usai",
                 ];
 
                 this.SelfReport.HQData.SetSelfBlock("自选股1", SELF_STOCK_LIST_1);
@@ -395,10 +403,31 @@
                 var indexSymbol="000001.sh";
                 if (!symbol) return indexSymbol;
                 var upperSymbol=symbol.toUpperCase();
-                if (MARKET_SUFFIX_NAME.IsSH(upperSymbol)) indexSymbol="000001.sh";
-                else if (MARKET_SUFFIX_NAME.IsSZ(upperSymbol)) indexSymbol="399001.sz";
-                else if (MARKET_SUFFIX_NAME.IsHK(upperSymbol)) indexSymbol="HSI.hk";
-                else if (MARKET_SUFFIX_NAME.IsBJ(upperSymbol)) indexSymbol="899050.bj";
+                if (MARKET_SUFFIX_NAME.IsSH(upperSymbol)) 
+                {
+                    indexSymbol="000001.sh";
+                }
+                else if (MARKET_SUFFIX_NAME.IsSZ(upperSymbol)) 
+                {
+                    indexSymbol="399001.sz";
+                }
+                else if (MARKET_SUFFIX_NAME.IsHK(upperSymbol)) 
+                {
+                    indexSymbol="HSI.hk";
+                }
+                else if (MARKET_SUFFIX_NAME.IsBJ(upperSymbol)) 
+                {
+                    indexSymbol="899050.bj";
+                }
+                else if (MARKET_SUFFIX_NAME.IsSHFE(upperSymbol) || MARKET_SUFFIX_NAME.IsDCE(upperSymbol) || MARKET_SUFFIX_NAME.IsCZCE(upperSymbol) || MARKET_SUFFIX_NAME.IsCFFEX(upperSymbol) ||
+                    MARKET_SUFFIX_NAME.IsGZFE(upperSymbol) || MARKET_SUFFIX_NAME.IsGZFE(upperSymbol) || MARKET_SUFFIX_NAME.IsINE(upperSymbol))
+                {
+                    var info=MARKET_SUFFIX_NAME.SplitSymbol(symbol, "A+D+");
+                    if (info)
+                    {
+                        indexSymbol=`${info.AryString[0]}0.${info.Market}`;
+                    }
+                }
 
                 return indexSymbol;
             }
@@ -572,7 +601,7 @@
             OnKeyboardSelected(data)
             {
                 var selItem=data.RowData;
-                if (selItem.Data.Type===1 || selItem.Data.Type===2 || selItem.Data.Type===3)  //1=股票 2=指数 3=期货
+                if (selItem.Data.Type===1 || selItem.Data.Type===2 || selItem.Data.Type===3 || selItem.Data.Type===4)  //1=股票 2=指数 3=期货 4=期权
                 {
                     this.ChangeSymbol(selItem.Data.Symbol);
                 }

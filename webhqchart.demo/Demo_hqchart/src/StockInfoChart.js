@@ -94,6 +94,20 @@ class StockInfoChart
 
         return { Column:column, BuySellCount:1, MouseOnKey:[] };
     }
+    
+    GetUSAStockShowOption()
+    {
+        var column=
+        [
+            [{ Name:"现价", Key:"Price", ColorType:3, FloatPrecision:-1 }, { Name:"今开",  Key:"Open",ColorType:3, FloatPrecision:-1 }],
+            [{ Name:"涨幅", Key:"Increase", ColorType:1, FloatPrecision:2, StringFormat:"{Value}%" }, { Name:"涨跌", Key:"UpDown",ColorType:1, FloatPrecision:-1 }],
+            [{ Name:"振幅", Key:"Amplitude", FloatPrecision:2, StringFormat:"{Value}%" }, { Name:"昨收", Key:"YClose", ColorType:3, FloatPrecision:-1 } ],
+            [{ Name:"最高", Key:"High",ColorType:3, FloatPrecision:-1 }, { Name:"最低", Key:"Low",ColorType:3, FloatPrecision:-1 }],
+            [{ Name:"总量", Key:"Vol", FloatPrecision:0, Format:{ Type:3, ExFloatPrecision:2 } }, { Name:"总额",  Key:"Amount", FloatPrecision:0, Format:{ Type:3, ExFloatPrecision:2 } }],
+        ];
+
+        return { Column:column, BuySellCount:0, MouseOnKey:[] };
+    }
 
     GetIndexShowOption()
     {
@@ -197,6 +211,10 @@ class StockInfoChart
         else if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol))
         {
              option=this.GetChinaFuturesShowOption();
+        }
+        else if (MARKET_SUFFIX_NAME.IsUSA(upperSymbol))
+        {
+            option=this.GetUSAStockShowOption();
         }
         
         this.Chart.ChangeSymbol(symbol, option);

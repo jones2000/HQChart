@@ -215,7 +215,7 @@ class MinDealChart extends DealChart
         var upperSymbol=this.Symbol.toUpperCase();
         var option=null;
 
-        if (MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol) || MARKET_SUFFIX_NAME.IsBJStock(this.Symbol)) 
+        if (MARKET_SUFFIX_NAME.IsSHSZStockA(this.Symbol) || MARKET_SUFFIX_NAME.IsBJStock(this.Symbol) || MARKET_SUFFIX_NAME.IsUSA(upperSymbol)) 
         {
             option=this.GetSZSHStockShowOption();
         }

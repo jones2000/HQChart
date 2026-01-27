@@ -2688,6 +2688,7 @@ class HQData
             {
                 var item=recv.AryData[i];
                 var stockItem={ Symbol:item.Symbol, ShortSymbol:item.ShortSymbol, Name:item.Name, Type:item.Type, Data:{ Symbol:item.Symbol, Type:item.Type, Market:item.Market }};
+                var upperSymbol=item.Symbol.toUpperCase();
                 var marketName=this.GetMarketName(item.Symbol);
                 if (item.Type==1) 
                 {
@@ -3176,6 +3177,7 @@ class HQData
         else if (MARKET_SUFFIX_NAME.IsDCE(upperSymbol)) return "大连";
         else if (MARKET_SUFFIX_NAME.IsCZCE(upperSymbol)) return "郑州";
         else if (MARKET_SUFFIX_NAME.IsINE(upperSymbol)) return "上海";
+        else if (MARKET_SUFFIX_NAME.IsUSA(upperSymbol)) return "美国";
         else return "";
     }
 
