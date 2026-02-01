@@ -143,7 +143,7 @@ HQData.Minute_RequestMinuteData=function(data, callback)
     this.GetDayMinuteDataBySymbol(symbol, (fullData)=>
     {
         var stockItem=fullData[0];
-        //stockItem.minute.length=20;
+        //stockItem.minute.length=1;
         var hqchartData={ code:0, name:symbol, symbol: symbol, stock:[stockItem]};
     
         callback({data:hqchartData});
@@ -1068,6 +1068,9 @@ HQData.RequestAPIIndexData=function(data,callback)
         case "API_PARTLINE":
             HQData.APIIndex_PARTLINE(data, callback);
             break;
+        case "APIIndex_MULTI_LINE":
+            HQData.APIIndex_MULTI_LINE(data, callback);
+            break;
     }
 }
 
@@ -1217,7 +1220,7 @@ HQData.APIIndex_MULTI_BAR=function(data, callback)
         [
             //{Date:20190916, Time: Value:15.5, Value2:0 },
         ],
-        Width:10
+        Width:1
     };
 
     var point2=
@@ -1229,7 +1232,7 @@ HQData.APIIndex_MULTI_BAR=function(data, callback)
         [
             //{Date:20190916, Time: Value:15.5, Value2:0 },
         ],
-        Width:20
+        Width:1
     };
 
     for(var i=0;i<kData.Data.length;++i)
@@ -1349,6 +1352,97 @@ HQData.APIIndex_PARTLINE=function(data, callback)
     };
 
     console.log('[HQData.APIIndex_PARTLINE] apiData ', apiData);
+    callback({data:apiData});
+}
+
+HQData.APIIndex_MULTI_LINE=function(data, callback)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var kData=hqchart.GetKData();
+
+    var line3= 
+    { 
+        name:'MULTI_LINE', type:1, 
+        
+        Draw: 
+        { 
+            DrawType:'MULTI_LINE', DrawData:[],
+            LineWidth:5,
+            Arrow: 
+            { 
+                Start:true,     //是否绘制开始箭头 <-
+                End:true,       //是否绘制结束箭头 ->
+                Angle:30,       //三角斜边一直线夹角
+                Length:10,      //三角斜边长度
+                LineWidth:4,    //箭头粗细
+            }
+        }, //绘制线段数组
+
+        IsShowTitle:true,
+    };
+
+    var point3=
+    {
+        Color:'rgb(255,0,255)', 
+        Point:[]
+    }
+
+    for(var i=kData.Data.length-10;i<kData.Data.length;++i)
+    {
+        var item=kData.Data[i];
+        point3.Point.push({Date:item.Date, Time:item.Time, Value:item.High});
+    }
+    line3.Draw.DrawData.push(point3);
+
+
+    var point1={ Color:'rgb(0,0,255)', Point:[] };
+    var point2={ Color:'rgb(255,140,0)', Point:[] };
+    var point3={ Color:'rgb(255, 255, 0)', Point:[] };
+    var colorLine= 
+    { 
+        name:'MULTI_LINE', type:1, 
+        
+        Draw: 
+        { 
+            DrawType:'MULTI_LINE', DrawData:[point1,point2,point3],
+            LineWidth:2,
+        }, //绘制线段数组
+
+        IsShowTitle:false
+    };
+
+
+    var index=kData.Data.length-50;
+    if (index<0) index=0;
+    for(var j=0; index<kData.Data.length && j<10; ++index, ++j)
+    {
+        var item=kData.Data[index];
+        point1.Point.push({Date:item.Date, Time:item.Time, Value:item.Close});
+    }
+
+    --index;
+    for(var j=0; index<kData.Data.length && j<10; ++index, ++j)
+    {
+        var item=kData.Data[index];
+        point2.Point.push({Date:item.Date, Time:item.Time, Value:item.Close});
+    }
+
+    --index;
+    for(var j=0; index<kData.Data.length && j<10; ++index, ++j)
+    {
+        var item=kData.Data[index];
+        point3.Point.push({Date:item.Date, Time:item.Time, Value:item.Close});
+    }
+
+    var apiData=
+    {
+        code:0, 
+        stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+        outdata: { date:kData.GetDate(), time:kData.GetTime(), outvar:[line3,colorLine] } 
+    };
+    
+    console.log('[HQData.APIIndex_MULTI_LINE] apiData ', apiData);
     callback({data:apiData});
 }
 
