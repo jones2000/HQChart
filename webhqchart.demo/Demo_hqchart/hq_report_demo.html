@@ -14,8 +14,29 @@
         </div>
     </div>
 
+    <div id="ScrollText"> 
+        <div id="ScrollTextCtrl"></div>
+    </div>
     <div id="BottomStatusBar">
         <div id="StatuBarCtrl"></div>
+    </div>
+
+    <!-- 弹框遮罩层 -->
+    <div class="modal-mask" id="settingModal">
+        <!-- 弹框内容 -->
+        <div class="modal-content">
+            <div class="modal-title">系统设置</div>
+            <form id="settingForm">
+                <div class="form-item">
+                    <label for="extendID">HQChartData数据插件ID</label>
+                    <input type="text" id="extendID" name="extendID" placeholder="请输入插件ID">
+                </div>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-cancel" id="cancelBtn">取消</button>
+                    <button type="button" class="btn btn-save" id="saveBtn">保存</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
@@ -31,11 +52,13 @@
     <script src="../jscommon/umychart.PopKLineChart.js"></script>
     <script src="../jscommon/umychart.DialogTooltip.js"></script>
     <script src="../jscommon/umychart.StatusBar.js"></script>
+    <script src="../jscommon/umychart.ScrollText.js"></script>
     <script src="../jscommon/umychart.version.js"></script>
 
     <script src="./src/MessageData.js"></script>
     <script src="./src/FullReportChart.js"></script>
     <script src="./src/StatusBarChart.js"></script>
+    <script src="./src/ScrollTextChart.js"></script>
     <script src="./src/EnvironmentVariable.js"></script>
     <script src="./src/HQData.js"></script>  <!-- 数据 -->
 
@@ -50,6 +73,7 @@
         {
             FullReportCtrl=new FullReportChart();
             StatusBarCtrl=new StatusBarChart();
+            ScrollTextCtrl=new ScrollTextChart();
 
             Create()
             {
@@ -62,10 +86,26 @@
 
                 this.FullReportCtrl.Create(document.getElementById('ReportCtrl'));
                 this.FullReportCtrl.OnClickRowCallback=(data, obj, reportCtrl)=>{ this.OnClickRow(data, obj, reportCtrl); }
+
+                this.ScrollTextCtrl.Create(document.getElementById('ScrollTextCtrl'));
+               
+                var AryText=
+                [
+                    { Content:[ { Text:"滚动信息1:36238347-D299-42DA-BAA2-3A3C1B5A8ACB" } ] },
+                    { Content:[ { Text:"滚动信息2:358D6F13-C845-4AD1-8415-A9C3A62C1F1E."}, ] },
+                    { Content:[ { Text:"滚动信息3:144F91C3-6181-4C47-A620-62AAFA3BB377."}, ] },
+                    { Content:[ { Text:"滚动信息4:BCC78A08-84B3-4A10-8CE8-13C64C72972D."}, ] },
+                    { Content:[ { Text:"滚动信息5:1CCF5538-E20D-4121-B6A7-5E997AEBBC60."}, ] },
+                    { Content:[ { Text:"滚动信息6:921156AE-05BF-4EE9-8EE0-2DFF32DC94A4."}, ] },
+                    { Content:[ { Text:"滚动信息7:2DBB8E54-E001-4A62-BB47-62849AEC6DA6."}, ] },
+                    { Content:[ { Text:"滚动信息8:FC784BDE-038C-4C8D-8858-55A3E8EEE1E5."}, ] },
+                    { Content:[ { Text:"滚动信息9:2BB898AF-C4D4-4430-AF60-00852F16B2B0."}, ] },
+                ];
+                this.ScrollTextCtrl.Chart.AddText(AryText);
+
                 this.StatusBarCtrl.Create(document.getElementById('StatuBarCtrl'));
                 //this.StatusBarCtrl.OnClickStockCallback=(data, obj)=>{ this.ChangeSymbol(data.Symbol); }
-                //this.StatusBarCtrl.OnClickRightToolbarCallback=(data, obj)=>{ this.OnClickBottomToolbar(data, obj); }
-
+                this.StatusBarCtrl.OnClickRightToolbarCallback=(data, obj)=>{ this.OnClickBottomToolbar(data, obj); }
 
                 addEventListener("resize", (event) => { this.OnSize(event); });
                 this.OnSize();
@@ -78,12 +118,16 @@
                 var width = $(window).width();
 
                 var statusBarHeight=this.GetStatusBarHeight();
+                var scrollTextHeight=this.GetScrollTextHeight();
+
+                var scrollText=document.getElementById('ScrollText');
+                scrollText.style.height=`${scrollTextHeight}px`;
 
                 var statusBar=document.getElementById('BottomStatusBar');
                 statusBar.style.height=`${statusBarHeight}px`;
 
                 var fullDemo=document.getElementById('FullDemo');
-                fullDemo.style.height=`${height-statusBarHeight-2}px`;
+                fullDemo.style.height=`${height-statusBarHeight-scrollTextHeight-2}px`;
             }
 
             GetStatusBarHeight()
@@ -92,6 +136,14 @@
                 var statusBarHeigth=(14*pixelRatio+(5+5)*pixelRatio)/pixelRatio;
 
                 return statusBarHeigth;
+            }
+
+            GetScrollTextHeight()
+            {
+                var pixelRatio=GetDevicePixelRatio();
+                var heigth=20;
+
+                return heigth;
             }
 
             UpdateNetworkStatus(data)
@@ -116,6 +168,54 @@
 
                 var msgData={ ID:PAGE_MESSAGE_ID.CLICK_REPORT_ROW_ID, Symbol:symbol, From:reportCtrl.Name };
                 localStorage.setItem(PAGE_MESSAGE_KEY, JSON.stringify(msgData));
+            }
+
+            OnClickBottomToolbar(data, obj)
+            {
+                if (data.ID==2) //设置
+                {
+                    this.OnSettings();
+                }
+                else if (data.ID==1)    //网络
+                {
+
+                }
+                else if (data.ID==3)    //搜索
+                {
+                    //this.KeyboardCtrl.Show();
+                }
+            }
+
+            //设置
+            OnSettings()
+            {
+                const modalMask = document.getElementById('settingModal');
+                const cancelBtn = document.getElementById('cancelBtn');
+                const settingForm = document.getElementById('settingForm');
+                const input = document.getElementById('extendID');
+                if (!modalMask) return;
+
+                input.value = EnvironmentVariable.TargetExtensionID;
+
+                cancelBtn.onclick=(e)=>
+                {
+                    modalMask.style.display = 'none';
+                };
+
+                saveBtn.onclick=(e)=>
+                {
+                    const input = document.getElementById('extendID');
+                    var value=input.value.trim();
+                    EnvironmentVariable.TargetExtensionID=value;
+                    EnvironmentVariable.Save();
+
+                    modalMask.style.display = 'none';
+
+                    setTimeout(() => { location.reload(); }, 1000);
+                }
+
+                modalMask.style.display = 'flex';
+                
             }
         }
 
@@ -160,6 +260,18 @@ body
     position: relative;
 }
 
+#ScrollText
+{
+    width: 100%;
+    height:25px;
+}
+
+#ScrollTextCtrl
+{
+    width: 100%;
+    height: 100%;
+}
+
 #BottomStatusBar
 {
     width: 100%;
@@ -171,6 +283,104 @@ body
     width: 100%;
     height: 100%;
     border-bottom:solid 1px var(--BorderColor);
+}
+
+/*
+设置弹框 AI生成
+*/
+
+/* 弹框遮罩层 */
+.modal-mask 
+{
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* 默认隐藏 */
+    display: none;
+}
+
+/* 弹框主体 */
+.modal-content {
+    width: 400px;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 弹框标题 */
+.modal-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+/* 表单项样式 */
+.form-item {
+    margin-bottom: 20px;
+}
+
+.form-item label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #333;
+}
+
+.form-item input {
+    width: 90%;
+    padding: 10px;
+    font-size: 14px;
+    border: 1px solid #dcdfe6;
+    border-radius: 4px;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.form-item input:focus {
+    border-color: #409eff;
+}
+
+/* 按钮组样式 */
+.btn-group {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.btn {
+    padding: 8px 16px;
+    font-size: 14px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-cancel {
+    color: #666;
+    background-color: #f5f5f5;
+}
+
+.btn-cancel:hover {
+    background-color: #e5e5e5;
+}
+
+.btn-save {
+    color: #fff;
+    background-color: #409eff;
+}
+
+.btn-save:hover {
+    background-color: #66b1ff;
 }
 
 

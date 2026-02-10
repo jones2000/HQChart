@@ -4048,6 +4048,17 @@ function JSReportChartContainer(uielement)
                 var item=tabItem.ArySubMenu[i];
                 var menuItem={ Name:item.Title, Data:{ ID:item.CommandID, Args:[item.ID]} };
                 if (item.Text) menuItem.Text=item.Text;
+                if (IFrameSplitOperator.IsNonEmptyArray(item.ArySubMenu)) 
+                {
+                    menuItem.SubMenu=[];
+                    for(var j=0;j<item.ArySubMenu.length;++j)
+                    {
+                        var subItem=item.ArySubMenu[j];
+                        var subMenuItem={ Name:subItem.Title, Data:{ ID:subItem.CommandID, Args:[subItem.ID]} };
+                        if (subItem.Text) subMenuItem.Text=subItem.Text;
+                        menuItem.SubMenu.push(subMenuItem);
+                    }
+                }
 
                 aryMenu.push(menuItem);
             }
@@ -8803,6 +8814,12 @@ function ChartReport()
         if (!lineData) return false;
         if (!IFrameSplitOperator.IsNonEmptyArray(lineData.Data)) return false;
 
+        if (lineData.DrawType===1)
+        {
+            this.DrawLineV2(lineData, column, rtItem);
+            return;
+        }
+
         var width=rtItem.Width-this.ItemMergin.Left-this.ItemMergin.Right;
         var left=rtItem.Left+this.ItemMergin.Left;
         var top=rtItem.Top+this.ItemMergin.Top;
@@ -8913,6 +8930,101 @@ function ChartReport()
             {
                 this.Canvas.lineTo(x,yCenter);
                 this.Canvas.lineTo(ptFirst.X,yCenter);
+                this.Canvas.closePath();
+                var areaColor=this.GetCloseAreaColor(lineData, column);
+                this.SetFillStyle(areaColor,left,top, left,bottom);
+                this.Canvas.fill();
+            }
+        }
+
+        this.Canvas.restore();
+    }
+
+     //绘制线段  最高最低画线
+    this.DrawLineV2=function(lineData, column, rtItem)
+    {
+        if (!lineData) return false;
+        if (!IFrameSplitOperator.IsNonEmptyArray(lineData.Data)) return false;
+
+        var width=rtItem.Width-this.ItemMergin.Left-this.ItemMergin.Right;
+        var left=rtItem.Left+this.ItemMergin.Left;
+        var top=rtItem.Top+this.ItemMergin.Top;
+        var height=rtItem.Height-this.ItemMergin.Top-this.ItemMergin.Bottom;
+        var right=left+width;
+        var bottom=top+height;
+        var priceMax=lineData.Max, priceMin=lineData.Min;
+
+        var Temp_GetXFromIndex=function(index)
+        {
+            var count=lineData.Count;
+            if (count==1)
+            {
+                if (index==0) return left;
+                else return right;
+            }
+            else if (count<=0)
+            {
+                return left;
+            }
+            else if (index>=count)
+            {
+                return right;
+            }
+            else
+            {
+                var offset=left+width*index/count;
+                return offset;
+            }
+        }
+
+        var Temp_GetYFromData=function(value)
+        {
+            if(value<=priceMin) return bottom;
+            if(value>=priceMax) return top;
+
+            var value=height*(value-priceMin)/(priceMax-priceMin);
+            return bottom-value;
+        }
+
+        this.Canvas.save();
+        this.Canvas.strokeStyle=this.GetCloseLineColor(lineData, column);
+
+        var bFirstPoint=true;
+        var ptFirst={}; //第1个点
+        var drawCount=0, x,y;
+        var yLow=Temp_GetYFromData(priceMin);   //底部点
+
+        for(var i=0; i<lineData.Data.length; ++i)
+        {
+            var value=lineData.Data[i];
+            if (!IFrameSplitOperator.IsNumber(value)) continue;
+
+            x=Temp_GetXFromIndex(i);
+            y=Temp_GetYFromData(value);
+
+            if (bFirstPoint)
+            {
+                this.Canvas.beginPath();
+                this.Canvas.moveTo(x,y);
+                bFirstPoint=false;
+                ptFirst={ X:x, Y:y };
+            }
+            else
+            {
+                this.Canvas.lineTo(x,y);
+            }
+
+            ++drawCount;
+        }
+
+        if (drawCount>0) 
+        {
+            this.Canvas.stroke();
+
+            if (column.IsDrawArea && IFrameSplitOperator.IsNumber(yLow))
+            {
+                this.Canvas.lineTo(x,yLow);
+                this.Canvas.lineTo(ptFirst.X,yLow);
                 this.Canvas.closePath();
                 var areaColor=this.GetCloseAreaColor(lineData, column);
                 this.SetFillStyle(areaColor,left,top, left,bottom);

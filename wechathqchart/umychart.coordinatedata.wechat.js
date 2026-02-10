@@ -309,7 +309,7 @@ var MARKET_SUFFIX_NAME=
     {
         if (!upperSymbol) return false;
         if (!this.IsSHFE(upperSymbol)) return false;
-        var shortSymbol=JSChart.GetShortSymbol(upperSymbol); 
+        var shortSymbol=this.GetShortSymbol(upperSymbol); 
         //ZN2605-P-20600
         var aryValue=shortSymbol.split("-");
         if (!aryValue || aryValue.length!=3) return false;
@@ -336,7 +336,7 @@ var MARKET_SUFFIX_NAME=
     {
         if (!upperSymbol) return false;
         if (!this.IsCFFEX(upperSymbol)) return false;   
-        var shortSymbol=JSChart.GetShortSymbol(upperSymbol);
+        var shortSymbol=this.GetShortSymbol(upperSymbol);
         //MO2602-C-6300.cffex
         var aryValue=shortSymbol.split("-");
         if (!aryValue || aryValue.length!=3) return false;
@@ -362,7 +362,7 @@ var MARKET_SUFFIX_NAME=
     {
         if (!upperSymbol) return false;
         if (!this.IsDCE(upperSymbol)) return false;
-        var shortSymbol=JSChart.GetShortSymbol(upperSymbol); 
+        var shortSymbol=this.GetShortSymbol(upperSymbol); 
         //M2605-P-2400
         var aryValue=shortSymbol.split("-");
         if (!aryValue || aryValue.length!=3) return false;
@@ -388,7 +388,7 @@ var MARKET_SUFFIX_NAME=
     {
         if (!upperSymbol) return false;
         if (!this.IsCZCE(upperSymbol)) return false;
-        var shortSymbol=JSChart.GetShortSymbol(upperSymbol); 
+        var shortSymbol=this.GetShortSymbol(upperSymbol); 
         //ZN2605-P-20600
         var aryValue=shortSymbol.split("-");
         if (!aryValue || aryValue.length!=3) return false;
@@ -419,7 +419,7 @@ var MARKET_SUFFIX_NAME=
     {
         if (!upperSymbol) return false;
         if (!this.IsINE(upperSymbol)) return false;
-        var shortSymbol=JSChart.GetShortSymbol(upperSymbol); 
+        var shortSymbol=this.GetShortSymbol(upperSymbol); 
         //ZN2605-P-20600
         var aryValue=shortSymbol.split("-");
         if (!aryValue || aryValue.length!=3) return false;
@@ -438,7 +438,7 @@ var MARKET_SUFFIX_NAME=
     {
         if (!upperSymbol) return false;
         if (!this.IsGZFE(upperSymbol)) return false;
-        var shortSymbol=JSChart.GetShortSymbol(upperSymbol); 
+        var shortSymbol=this.GetShortSymbol(upperSymbol); 
         //ZN2605-P-20600
         var aryValue=shortSymbol.split("-");
         if (!aryValue || aryValue.length!=3) return false;
@@ -914,7 +914,19 @@ var MARKET_SUFFIX_NAME=
         if (MARKET_SUFFIX_NAME.IsBJ(upperSymbol)) return 100;   //单位手=100股
 
         return 1;
-    }
+    },
+
+    //获取不带后缀的代码
+    GetShortSymbol:function(symbol)
+    {
+        var type=typeof(symbol);
+        if (type!='string') return null;
+
+        var pos=symbol.lastIndexOf(".");
+        if (pos<=0) return symbol;
+
+        return symbol.slice(0,pos);
+    },
 
 }
 

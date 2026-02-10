@@ -1110,6 +1110,12 @@ function GetBlackStyle()
             UnchangeTextColor:"rgb(90,90,90)",     //平盘文字颜色 
 
             BorderColor:'rgb(38,38,41)',        //边框线
+        },
+
+        ScrollText:
+        {
+            Color:"rgb(30,144,255)",
+            MouseOnColor:"rgb(255,255,0)",
         }
         
     };

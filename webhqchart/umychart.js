@@ -2958,6 +2958,9 @@ var JSCHART_EVENT_ID=
     ON_KEYBOARD_SHOW:350,            //显示键盘精灵
     ON_KEYBOARD_SELECTED:351,        //键盘精灵选中回车
     ON_KEYBOARD_MOUSEUP:352,
+
+    ON_CLICK_SCROLL_TEXT_ITEM:381,
+    ON_RCLICK_SCROLL_TEXT_ITEM:382,
 }
 
 var JSCHART_OPERATOR_ID=
@@ -79804,11 +79807,11 @@ function JSChartResource()
             AreaColor:'rgba(0,191,255,0.2)',
 
             UpColor:"rgb(255,0,0)",
-            UpAreaColor:"rgba(255,0,0,0.5)",
+            UpAreaColor:"rgba(255,0,0,0.2)",
             DownColor:"rgb(0,128,0)",
-            DownAreaColor:"rgba(0,128,0,0.5)",
+            DownAreaColor:"rgba(0,128,0,0.2)",
             UnchangeColor:'rgb(90,90,90)', 
-            UnchangeAreaColor:'rgba(90,90,90,0.5)', 
+            UnchangeAreaColor:'rgba(90,90,90,0.2)', 
         },
 
         KLine:
@@ -80157,6 +80160,18 @@ function JSChartResource()
         UnchangeTextColor:"rgb(90,90,90)",     //平盘文字颜色 
 
         BorderColor:"rgb(192,192,192)"
+    }
+
+    this.ScrollText=
+    {
+        Font:`${12*GetDevicePixelRatio()}px 微软雅黑`,
+        Color:"rgb(30,144,255)",
+        MouseOnColor:"rgb(0,0,205)",
+        Margin:{ Top:2, Bottom:2 }, 
+        Spacing:20,     //间距
+        LeftMargin:5*GetDevicePixelRatio(),
+        RightMargin:5*GetDevicePixelRatio(),
+        MoveStep:4,    //移动步长
     }
 
 
@@ -81129,7 +81144,27 @@ function JSChartResource()
         if (style.SmallFloatTooltipV2) this.SetSmallFloatTooltipV2(style.SmallFloatTooltipV2);
         if (style.StockInfo) this.SetStockInfo(style.StockInfo);
         if (style.StatusBar) this.SetStatusBar(style.StatusBar);
+        if (style.ScrollText) this.SetScrollText(style.ScrollText);
 
+    }
+
+    this.SetScrollText=function(style)
+    {
+        var dest=this.ScrollText;
+        if (style.Font) dest.Font=style.Font;
+        if (style.Color) dest.Color=style.Color;
+        if (style.MouseOnColor) dest.MouseOnColor=style.MouseOnColor;
+        if (style.Margin)
+        {
+            var item=style.Margin;
+            if (IFrameSplitOperator.IsNumber(item.Top)) dest.Margin.Top=item.Top;
+            if (IFrameSplitOperator.IsNumber(item.Bottom)) dest.Margin.Bottom=item.Bottom;
+        }
+
+        if (IFrameSplitOperator.IsNumber(style.LeftMargin)) dest.LeftMargin=style.LeftMargin;
+        if (IFrameSplitOperator.IsNumber(style.RightMargin)) dest.RightMargin=style.RightMargin;
+        if (IFrameSplitOperator.IsNumber(style.Spacing)) dest.Spacing=style.Spacing; 
+        if (IFrameSplitOperator.IsNumber(style.MoveStep)) dest.MoveStep=style.MoveStep; 
     }
 
     this.SetStatusBar=function(style)
@@ -103183,7 +103218,7 @@ var MARKET_SUFFIX_NAME=
     {
         if (!upperSymbol) return false;
         if (!this.IsSHFE(upperSymbol)) return false;
-        var shortSymbol=JSChart.GetShortSymbol(upperSymbol); 
+        var shortSymbol=this.GetShortSymbol(upperSymbol); 
         //ZN2605-P-20600
         var aryValue=shortSymbol.split("-");
         if (!aryValue || aryValue.length!=3) return false;
@@ -103214,7 +103249,7 @@ var MARKET_SUFFIX_NAME=
     {
         if (!upperSymbol) return false;
         if (!this.IsCFFEX(upperSymbol)) return false;   
-        var shortSymbol=JSChart.GetShortSymbol(upperSymbol);
+        var shortSymbol=this.GetShortSymbol(upperSymbol);
         //MO2602-C-6300.cffex
         var aryValue=shortSymbol.split("-");
         if (!aryValue || aryValue.length!=3) return false;
@@ -103240,7 +103275,7 @@ var MARKET_SUFFIX_NAME=
     {
         if (!upperSymbol) return false;
         if (!this.IsDCE(upperSymbol)) return false;
-        var shortSymbol=JSChart.GetShortSymbol(upperSymbol); 
+        var shortSymbol=this.GetShortSymbol(upperSymbol); 
         //M2605-P-2400
         var aryValue=shortSymbol.split("-");
         if (!aryValue || aryValue.length!=3) return false;
@@ -103266,7 +103301,7 @@ var MARKET_SUFFIX_NAME=
     {
         if (!upperSymbol) return false;
         if (!this.IsCZCE(upperSymbol)) return false;
-        var shortSymbol=JSChart.GetShortSymbol(upperSymbol); 
+        var shortSymbol=this.GetShortSymbol(upperSymbol); 
         //ZN2605-P-20600
         var aryValue=shortSymbol.split("-");
         if (!aryValue || aryValue.length!=3) return false;
@@ -103294,7 +103329,7 @@ var MARKET_SUFFIX_NAME=
     {
         if (!upperSymbol) return false;
         if (!this.IsGZFE(upperSymbol)) return false;
-        var shortSymbol=JSChart.GetShortSymbol(upperSymbol); 
+        var shortSymbol=this.GetShortSymbol(upperSymbol); 
         //ZN2605-P-20600
         var aryValue=shortSymbol.split("-");
         if (!aryValue || aryValue.length!=3) return false;
@@ -103320,7 +103355,7 @@ var MARKET_SUFFIX_NAME=
     {
         if (!upperSymbol) return false;
         if (!this.IsINE(upperSymbol)) return false;
-        var shortSymbol=JSChart.GetShortSymbol(upperSymbol); 
+        var shortSymbol=this.GetShortSymbol(upperSymbol); 
         //ZN2605-P-20600
         var aryValue=shortSymbol.split("-");
         if (!aryValue || aryValue.length!=3) return false;
@@ -103424,12 +103459,12 @@ var MARKET_SUFFIX_NAME=
 
         if (this.IsSH(upperSymbol))
         {
-            var shortSymbol=JSChart.GetShortSymbol(upperSymbol);
+            var shortSymbol=this.GetShortSymbol(upperSymbol);
             if (shortSymbol.charAt(0)=="1" && shortSymbol.length==8) return true;
         }
         else if (this.IsSZ(upperSymbol)) 
         {
-            var shortSymbol=JSChart.GetShortSymbol(upperSymbol);
+            var shortSymbol=this.GetShortSymbol(upperSymbol);
             if (shortSymbol.charAt(0)=="9" && shortSymbol.length==8) return true;
         }
 
@@ -103967,6 +104002,23 @@ var MARKET_SUFFIX_NAME=
             if (!match || !match[1] || !match[2]) return null;
             
             return { AryString:[match[1], match[2]], ShortSymbol:shortSymbol, Symbol:symbol, Market:symbol.slice(shortSymbol.length+1) };
+        }
+        else if (format=="A+D+.S+")
+        {
+            var regex=/^([A-Za-z]+)(\d+)\.([A-Za-z]+)$/;
+            var match=symbol.match(regex);
+            if (!match || !match[1] || !match[2] || !match[3]) return null;
+
+            return { AryString:[match[1], match[2], match[3]], ShortSymbol:shortSymbol, Symbol:symbol, Market:match[3] };
+        }
+        else if (format=="A+D+-P/C-D+.S+")
+        {
+            var regex=/^([A-Za-z]+)(\d+)-(P|C)-(\d+)\.(.+)$/;
+            var match=symbol.match(regex);
+            //m[1]=字母, m[2]=数字, m[3]=P/C, m[4]=数字, m[5]=点后内容
+            if (!match || !match[1] || !match[2] || !match[3]) return null;
+
+            return { AryString:[match[1], match[2], match[3], match[4], match[5]], ShortSymbol:shortSymbol, Symbol:symbol, Market:match[5] };
         }
 
         return null;

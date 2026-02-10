@@ -441,6 +441,8 @@ class HQData
                 var stockItem=recv.AryData[i];
                 var item=[];
                 item[0]=stockItem.Symbol;
+                var upperSymbol=null;
+                if (stockItem.Symbol) upperSymbol=stockItem.Symbol.toUpperCase();
 
                 item[1]=stockItem.Name;               //名称
                 item[2]=stockItem.YClose;             //昨收
@@ -479,7 +481,7 @@ class HQData
                     var aryTime=JSChart.GetMinuteTimeStringData().GetTimeData(stockItem.Symbol);
                     if (IFrameSplitOperator.IsNonEmptyArray(aryTime)) minMaxCount=aryTime.length;
 
-                    var newData={ Data:minData.AryClose, Max:null, Min:null, Count:Math.max(minMaxCount,minData.AryClose.length), YClose:minData.YClose };
+                    var newData={ Data:minData.AryClose, DrawType:1, Max:null, Min:null, Count:Math.max(minMaxCount,minData.AryClose.length), YClose:minData.YClose };
                     for(var j=0;j<newData.Data.length;++j)
                     {
                         var value=newData.Data[j];
@@ -487,6 +489,9 @@ class HQData
                         if (newData.Min==null || newData.Min>value) newData.Min=value;
                     }
 
+                    if (MARKET_SUFFIX_NAME.IsSH(upperSymbol) || MARKET_SUFFIX_NAME.IsSZ(upperSymbol))
+                        newData.DrawType=0;
+                     
                     item[32]=newData;
                 }
 
@@ -499,6 +504,7 @@ class HQData
                         var kItem=kData.Data[j];
                         newData.AryData.push( [ kItem.Open, kItem.High, kItem.Low, kItem.Close] );
                     }
+                    
                     item[33]=newData;
                 }
                 

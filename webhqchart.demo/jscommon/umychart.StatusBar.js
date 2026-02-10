@@ -436,7 +436,7 @@ function JSStatusBarChartContainer(uielement)
 
         this.UIElement.onmousedown=(e)=> { this.UIOnMouseDown(e); }
         this.UIElement.onmousemove=(e)=>{ this.UIOnMouseMove(e); }
-        this.UIElement.onmouseout=(e)=>{ this.UIOnMounseOut(e); }
+        this.UIElement.onmouseout=(e)=>{ this.UIOnMouseOut(e); }
         this.UIElement.oncontextmenu=(e)=> { this.UIOnContextMenu(e); }
 
         /*
@@ -534,7 +534,7 @@ function JSStatusBarChartContainer(uielement)
         //if (bShowKLineTooltip) this.ShowKLineChartTooltip(null, null, chartTooltipData);
     }
 
-    this.UIOnMounseOut=function(e)
+    this.UIOnMouseOut=function(e)
     {
         this.HideAllTooltip();
     }
