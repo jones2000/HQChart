@@ -379,10 +379,26 @@ class HQData
         
 
         var arySymbol=[];
-        for (var i=0; i<aryStock.length; ++i)
+        if (option.ChartName=="SelfReportChart")    //自选股请求所有的股票数据
         {
-            arySymbol.push({ Symbol:aryStock[i].Symbol, Fields:{ MinuteClose:bMinuteLine, KLine:kLineConfig } } ); //MinuteClose=走势图线 KLine=k线图
+            if (data.Self.Data && IFrameSplitOperator.IsNonEmptyArray(data.Self.Data.Data))
+            {
+                var aryData=data.Self.Data.Data;
+                for(var i=0;i<aryData.length;++i)
+                {
+                    arySymbol.push({ Symbol:aryData[i], Fields:{ MinuteClose:bMinuteLine, KLine:kLineConfig } } ); //MinuteClose=走势图线 KLine=k线图
+                }
+            }
+            
         }
+        else
+        {
+            for (var i=0; i<aryStock.length; ++i)
+            {
+                arySymbol.push({ Symbol:aryStock[i].Symbol, Fields:{ MinuteClose:bMinuteLine, KLine:kLineConfig } } ); //MinuteClose=走势图线 KLine=k线图
+            }
+        }
+        
 
         var extendID=this.Counter++;
 

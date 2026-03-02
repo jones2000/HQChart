@@ -23728,6 +23728,10 @@ function OverlayScriptIndex(name,script,args,option)
                         this.CreatePartLine(hqChart,windowIndex,item,i);
                         break;
 
+                    case 'DRAWRECTREL':
+                        this.CreateRectangle(hqChart,windowIndex,item,i);
+                        break;
+
                     case "DRAWTEXTABS":
                     case "DRAWTEXTREL":
                         this.CreateDrawText(hqChart,windowIndex,item,i);
@@ -24823,6 +24827,23 @@ function OverlayScriptIndex(name,script,args,option)
 
         chart.Data.Data=varItem.Draw.DrawData;
         this.SetChartIndexName(chart);
+        frame.ChartPaint.push(chart);
+    }
+
+    this.CreateRectangle=function(hqChart,windowIndex,varItem,i)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        var chart=new ChartRectangle();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+
+        chart.Color=[varItem.Draw.DrawData.Color];
+        chart.Rect=varItem.Draw.DrawData.Rect;
+        if (varItem.Color) chart.BorderColor=this.GetColor(varItem.Color);
         frame.ChartPaint.push(chart);
     }
 

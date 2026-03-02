@@ -32,7 +32,7 @@ class ReportChart
                 },
             },
             { 
-                Type:REPORT_COLUMN_ID.MULTI_LINE_CONTAINER, Sort:1, SortSubField:0,
+                Type:REPORT_COLUMN_ID.MULTI_LINE_CONTAINER, Sort:1, SortSubField:1,
                 Title:"涨幅",TextAlign:"center", MaxText:"1000.88%",TextAlign:"right",
                 AryField:
                 [ 
