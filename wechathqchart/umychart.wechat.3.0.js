@@ -10920,26 +10920,7 @@ function MinuteChartContainer(uielement)
         this.UpdateFrameMaxMin();
         this.Draw();
     }
-
-    this.TryClickLock = function (x, y) 
-    {
-        for (var i=0; i<this.Frame.SubFrame.length; ++i) 
-        {
-            var item = this.Frame.SubFrame[i];
-            if (!item.Frame.IsLocked) continue;
-            if (!item.Frame.LockPaint) continue;
-
-            var tooltip = new TooltipData();
-            if (!item.Frame.LockPaint.GetTooltipData(x, y, tooltip)) continue;
-
-            tooltip.HQChart = this;
-            if (tooltip.Data.Callback) tooltip.Data.Callback(tooltip);
-            return true;
-        }
-
-        return false;
-    }
-
+    
     this.RequestData = function () 
     {
         if (this.DayCount <= 1) this.RequestMinuteData();
