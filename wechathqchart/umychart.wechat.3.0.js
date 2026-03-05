@@ -1702,6 +1702,8 @@ function JSChartContainer(uielement)
         return angle;
     }
 
+    this.GetZoomAngle=this.GetMoveAngle;
+   
     this.GetToucheData = function (e, isForceLandscape) 
     {
         var touches = new Array();
@@ -2024,51 +2026,55 @@ function JSChartContainer(uielement)
                 }
                 else if (jsChart.DragMode == 1)  //数据左右拖拽
                 {
-                    var moveAngle=this.GetMoveAngle(drag.LastMove,{X:touches[0].clientX, Y:touches[0].clientY});
-                    var moveUpDown=Math.abs(drag.LastMove.Y-touches[0].clientY);
-
-                    if ( ((moveUpDown>0 && moveSetp<=3) || moveAngle<=this.TouchMoveMinAngle) && this.EnableScrollUpDown==true ) 
+                    var dragZoom=this.TouchDragZoom(touches, e);   //单指缩放
+                    if (!dragZoom)
                     {
-                        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_TOUCH_SCROLL_UP_DOWN);
-                        var isEnd=true; //是否退出
-                        if (event && event.Callback)
+                        var moveAngle=this.GetMoveAngle(drag.LastMove,{X:touches[0].clientX, Y:touches[0].clientY});
+                        var moveUpDown=Math.abs(drag.LastMove.Y-touches[0].clientY);
+
+                        if ( ((moveUpDown>0 && moveSetp<=3) || moveAngle<=this.TouchMoveMinAngle) && this.EnableScrollUpDown==true ) 
                         {
-                            var sendData={ DragData:drag, PreventDefault:false };
-                            event.Callback(event, sendData, this);
-                            isEnd=(sendData.PreventDefault===false);
+                            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_TOUCH_SCROLL_UP_DOWN);
+                            var isEnd=true; //是否退出
+                            if (event && event.Callback)
+                            {
+                                var sendData={ DragData:drag, PreventDefault:false };
+                                event.Callback(event, sendData, this);
+                                isEnd=(sendData.PreventDefault===false);
+                            }
+
+                            if (isEnd)
+                            {
+                                this.ClearTouchTimer();
+                                return;
+                            }
                         }
 
-                        if (isEnd)
+                        if (this.EnableMoveData && this.EnableMoveData.Touch===false)
                         {
-                            this.ClearTouchTimer();
+                            jsChart.MouseDrag = null;
                             return;
                         }
-                    }
 
-                    if (this.EnableMoveData && this.EnableMoveData.Touch===false)
-                    {
-                        jsChart.MouseDrag = null;
-                        return;
-                    }
+                        if (moveSetp < 5) return;
+                        var isLeft = true;
+                        if (drag.LastMove.X < touches[0].clientX) isLeft = false;//右移数据
 
-                    if (moveSetp < 5) return;
-                    var isLeft = true;
-                    if (drag.LastMove.X < touches[0].clientX) isLeft = false;//右移数据
-
-                    if (this.DataMoveConfig.Touch.EnableLR)
-                    {
-                        if (jsChart.DataMove(moveSetp, isLeft)) 
+                        if (this.DataMoveConfig.Touch.EnableLR)
                         {
-                            jsChart.UpdataDataoffset();
-                            jsChart.UpdatePointByCursorIndex();
-                            jsChart.UpdateFrameMaxMin();
-                            jsChart.ResetFrameXYSplit();
-                            jsChart.Draw();
-                            this.OnKLinePageChange("OnTouchMove");
-                        }
-                        else
-                        {
-                            if (jsChart.DragDownloadData) jsChart.DragDownloadData();
+                            if (jsChart.DataMove(moveSetp, isLeft)) 
+                            {
+                                jsChart.UpdataDataoffset();
+                                jsChart.UpdatePointByCursorIndex();
+                                jsChart.UpdateFrameMaxMin();
+                                jsChart.ResetFrameXYSplit();
+                                jsChart.Draw();
+                                this.OnKLinePageChange("OnTouchMove");
+                            }
+                            else
+                            {
+                                if (jsChart.DragDownloadData) jsChart.DragDownloadData();
+                            }
                         }
                     }
 
@@ -2140,6 +2146,55 @@ function JSChartContainer(uielement)
 
             phonePinch.Last = { X: touches[0].pageX, Y: touches[0].pageY, X2: touches[1].pageX, Y2: touches[1].pageY };
         }
+    }
+
+    this.TouchDragZoom=function(touches, e)
+    {
+        var drag=this.MouseDrag;
+        if (!drag) return null;
+        var zoomAngle=this.GetZoomAngle(drag.LastMove,{X:touches[0].clientX, Y:touches[0].clientY});      
+        var moveSetp=Math.abs(drag.LastMove.X-touches[0].clientX);
+        var moveUpDown=Math.abs(drag.LastMove.Y-touches[0].clientY);
+        var yStep=touches[0].clientY-drag.LastMove.Y;
+        var config=null;
+        if (this.EnableZoomUpDown && this.EnableZoomUpDown.TouchDrag) config=this.EnableZoomUpDown.TouchDrag;
+        if (!config || config.Enable!==true) return null;
+        var maxAngle=15;
+        var minStep=20;
+        if (IFrameSplitOperator.IsPlusNumber(config.MaxAngle)) maxAngle=config.MaxAngle;
+        if (IFrameSplitOperator.IsPlusNumber(config.MinStep)) minStep=config.MinStep;
+
+        if (moveUpDown<5 || zoomAngle>maxAngle) return null;
+        if (moveUpDown<minStep) return null;
+
+        if (yStep < 0)    //放大
+        {
+            var cursorIndex = { IsLockRight:this.IsZoomLockRight };
+            cursorIndex.Index = parseInt(Math.abs(this.CursorIndex - 0.5).toFixed(0));
+            if (!this.Frame.ZoomUp(cursorIndex)) return;
+            this.CursorIndex = cursorIndex.Index;
+            this.UpdatePointByCursorIndex();
+            this.UpdataDataoffset();
+            this.UpdateFrameMaxMin();
+            this.ResetFrameXYSplit();
+            this.Draw();
+            this.OnKLinePageChange("OnTouchMove");
+        }
+        else        //缩小
+        {
+            var cursorIndex = { IsLockRight:this.IsZoomLockRight };
+            cursorIndex.Index = parseInt(Math.abs(this.CursorIndex - 0.5).toFixed(0));
+            if (!this.Frame.ZoomDown(cursorIndex)) return;
+            this.CursorIndex = cursorIndex.Index;
+            this.UpdataDataoffset();
+            this.UpdatePointByCursorIndex();
+            this.UpdateFrameMaxMin();
+            this.ResetFrameXYSplit();
+            this.Draw();
+            this.OnKLinePageChange("OnTouchMove");
+        }
+
+        return { };
     }
 
     this.ontouchend = function (e) 
@@ -13938,27 +13993,6 @@ export
 {
     JSCommon
 };
-
-/*
-module.exports =
-{
-    JSCommon:
-    {
-        JSCanvasElement: JSCanvasElement,
-        JSChart: JSChart,
-        Guid: Guid,
-        IFrameSplitOperator: IFrameSplitOperator,
-        ChartData: ChartData,
-        DataPlus: DataPlus,
-        KLineTooltipPaint: KLineTooltipPaint,
-        MARKET_SUFFIX_NAME: MARKET_SUFFIX_NAME,
-        JSCommonCoordinateData:JSCommonCoordinateData,
-        FrameSplitKLineX:FrameSplitKLineX,
-        FrameSplitKLinePriceY:FrameSplitKLinePriceY,
-        JSCHART_EVENT_ID:JSCHART_EVENT_ID
-    },
-};
-*/
 
 
 

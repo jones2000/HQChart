@@ -5824,6 +5824,14 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         return angle;
     }
 
+    this.GetZoomAngle=function(pt,pt2)  //计算缩放角度
+    {
+        var xMove=Math.abs(pt.X-pt2.X);
+        var yMove=Math.abs(pt.Y-pt2.Y);
+        var angle=Math.atan(xMove/yMove)*180/Math.PI;
+        return angle;
+    }
+
     //手机拖拽
     uielement.ontouchstart=(e)=> { this.OnTouchStart(e); } 
     uielement.ontouchmove=(e)=> {this.OnTouchMove(e); }
@@ -6098,7 +6106,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         var touches=this.GetToucheData(e,this.IsForceLandscape);
         this.ClickModel.IsClickButton=false;
 
-        if (this.IsPhoneDragging(e))
+        if (this.IsPhoneDragging(e))    //单指
         {
             var drag=this.MouseDrag;
             if (drag==null)
@@ -6126,7 +6134,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                     else isMoveCorssCursor=false;
                 }
 
-                //JSConsole.Chart.Log(`[JSChartContainer::OnTouchMove]  moveAngle=${moveAngle} , moveUpDown=${moveUpDown}, moveSetp=${moveSetp}`);
+                //JSConsole.Chart.Log(`[JSChartContainer::OnTouchMove]  moveAngle=${moveAngle}, moveUpDown=${moveUpDown}, moveSetp=${moveSetp}`);
 
                 if (this.CurrentChartDrawPicture && this.CurrentChartDrawPicture.EnableMove===true)
                 {
@@ -6167,47 +6175,52 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 }
                 else if (this.DragMode==1 || isMoveCorssCursor==false)  //数据左右拖拽
                 {
-                    if ( ((moveUpDown>0 && moveSetp<=3) || moveAngle<=this.TouchMoveMinAngle) && this.EnableScrollUpDown==true ) 
+                    var dragZoom=this.TouchDragZoom(touches, e);   //单指缩放
+
+                    if (!dragZoom)
                     {
-                        this.StopDragTimer();
-                        return;
-                    }
-
-                    if (moveSetp<5 || moveAngle<=this.TouchMoveMinAngle) 
-                    {
-                        this.PreventTouchEvent(e);
-                        return;
-                    }
-
-                    if (this.EnableVerticalDrag)
-                    {
-                        if (!this.VerticalDrag) return;
-                        if (!this.VerticalDrag.IsDrag) return;
-                    }
-
-                    var isLeft=true;
-                    if (drag.LastMove.X<touches[0].clientX) isLeft=false;//右移数据
-
-                    var oneStepWidth=this.GetMoveOneStepWidth();
-                    if (moveSetp<oneStepWidth) return;
-
-                    if (this.DataMoveConfig.Touch.EnableLR)
-                    {
-                        if(this.DataMove(moveSetp,isLeft))
+                        if (((moveUpDown>0 && moveSetp<=3) || moveAngle<=this.TouchMoveMinAngle) && this.EnableScrollUpDown==true ) 
                         {
-                            this.UpdataDataoffset();
-                            this.UpdatePointByCursorIndex();
-                            this.UpdateFrameMaxMin();
-                            this.ResetFrameXYSplit();
-                            this.Draw();
-                            this.OnKLinePageChange("OnTouchMove");
+                            this.StopDragTimer();
+                            return;
                         }
-                        else
+
+                        if (moveSetp<5 || moveAngle<=this.TouchMoveMinAngle) 
                         {
-                            if (this.DragDownloadData) this.DragDownloadData();
+                            this.PreventTouchEvent(e);
+                            return;
+                        }
+
+                        if (this.EnableVerticalDrag)
+                        {
+                            if (!this.VerticalDrag) return;
+                            if (!this.VerticalDrag.IsDrag) return;
+                        }
+
+                        var isLeft=true;
+                        if (drag.LastMove.X<touches[0].clientX) isLeft=false;//右移数据
+
+                        var oneStepWidth=this.GetMoveOneStepWidth();
+                        if (moveSetp<oneStepWidth) return;
+
+                        if (this.DataMoveConfig.Touch.EnableLR)
+                        {
+                            if(this.DataMove(moveSetp,isLeft))
+                            {
+                                this.UpdataDataoffset();
+                                this.UpdatePointByCursorIndex();
+                                this.UpdateFrameMaxMin();
+                                this.ResetFrameXYSplit();
+                                this.Draw();
+                                this.OnKLinePageChange("OnTouchMove");
+                            }
+                            else
+                            {
+                                if (this.DragDownloadData) this.DragDownloadData();
+                            }
                         }
                     }
-
+                    
                     drag.LastMove.X=touches[0].clientX;
                     drag.LastMove.Y=touches[0].clientY;
                 }
@@ -6226,7 +6239,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 touchDrag.LastMove.Y=touches[0].clientY;
             }
         }
-        else if (this.IsPhonePinching(e))
+        else if (this.IsPhonePinching(e))   //双指
         {
             if (this.DragMode==JSCHART_DRAG_ID.DISABLE_DRAG_ID) return;
 
@@ -6284,6 +6297,61 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         }
 
         this.PreventTouchEvent(e);
+    }
+
+    this.TouchDragZoom=function(touches, e)
+    {
+        var drag=this.MouseDrag;
+        if (!drag) return null;
+
+        var zoomAngle=this.GetZoomAngle(drag.LastMove,{X:touches[0].clientX, Y:touches[0].clientY});      
+        var moveSetp=Math.abs(drag.LastMove.X-touches[0].clientX);
+        var moveUpDown=Math.abs(drag.LastMove.Y-touches[0].clientY);
+        var yStep=touches[0].clientY-drag.LastMove.Y;
+        var config=null;
+        if (this.EnableZoomUpDown && this.EnableZoomUpDown.TouchDrag) config=this.EnableZoomUpDown.TouchDrag;
+        if (!config || config.Enable!==true) return null;
+        var maxAngle=15;
+        var minStep=50;
+        if (IFrameSplitOperator.IsPlusNumber(config.MaxAngle)) maxAngle=config.MaxAngle;
+        if (IFrameSplitOperator.IsPlusNumber(config.MinStep)) minStep=config.MinStep;
+
+        if (moveUpDown<5 || zoomAngle>maxAngle) return null;
+        if (moveUpDown<minStep) return null;
+
+        if (yStep<0)    //放大
+        {
+            var cursorIndex={ IsLockRight:this.IsZoomLockRight };
+            cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
+            if (!this.Frame.ZoomUp(cursorIndex)) return;
+            this.CursorIndex=cursorIndex.Index;
+            this.UpdatePointByCursorIndex();
+            this.UpdataDataoffset();
+            this.UpdateFrameMaxMin();
+            //this.ResetFrameXSplit();
+            this.Draw();
+            this.ShowTooltipByKeyDown();
+            this.StopDragTimer();
+        }
+        else        //缩小
+        {
+            var cursorIndex={ IsLockRight:this.IsZoomLockRight };
+            cursorIndex.Index=parseInt(Math.abs(this.CursorIndex-0.5).toFixed(0));
+            if (!this.Frame.ZoomDown(cursorIndex)) return;
+            this.CursorIndex=cursorIndex.Index;
+            this.UpdataDataoffset();
+            this.UpdatePointByCursorIndex();
+            this.UpdateFrameMaxMin();
+            //this.ResetFrameXSplit();
+            this.Draw();
+            this.ShowTooltipByKeyDown();
+            this.StopDragTimer();
+        }
+    
+        drag.LastMove.X=touches[0].clientX;
+        drag.LastMove.Y=touches[0].clientY;
+
+        return { };
     }
 
     this.OnTouchEnd=function(e)
@@ -83134,7 +83202,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
     this.ScriptErrorCallback;           //脚本执行错误回调
     this.FlowCapitalReady=false;        //流通股本是否下载完成
     this.EnableFlowCapital={};          //强制现在流通股 { BIT:数据货币true/false, }
-    this.EnableZoomUpDown=null;         //是否手势/键盘/鼠标允许缩放{ Touch:true/false, Mouse:true/false, Keyboard:true/false, Wheel:true/false }
+    this.EnableZoomUpDown=null;         //是否手势/键盘/鼠标允许缩放/手势单指{ Touch:true/false, Mouse:true/false, Keyboard:true/false, Wheel:true/false, TouchDrag:{ Enable:true/false, MaxAngle:, MinStep: }
     this.ChartDrawStorage=new ChartDrawStorage();
     this.ChartDrawStorageCache=null;    //首次需要创建的画图工具数据
     this.RightSpaceCount=0;             //右侧空白个数
