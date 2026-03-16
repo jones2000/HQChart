@@ -23146,7 +23146,7 @@ function ScriptIndex(name,script,args,option)
 
         //清空主指标图形
         hqChart.DeleteIndexPaint(windowIndex);
-        if (windowIndex==0) hqChart.ShowKLine(true);
+        if (windowIndex==0 && hqChart.ShowKLine) hqChart.ShowKLine(true);
 
         if (this.OutVar==null || this.OutVar.length<0) return;
 

@@ -10373,94 +10373,94 @@ function JSSymbolData(ast,option,jsExecute)
     this.GetIndexData=function()
     {
         if (this.IndexData) return this.Execute.RunNextJob();
+        if (!this.NetworkFilter) return this.Execute.RunNextJob();
+        var dateRange=this.Data.GetDateRange();
+        var period=this.Period;
+        var obj=
+        {
+            Name:'JSSymbolData::GetIndexData', //类名::
+            Explain:'大盘数据',
+            Period:period,
+            Request:
+            { 
+                Type:'POST' ,
+                Data: 
+                { 
+                    field:[ "name", "symbol","yclose","open","price","high","low","vol",'up','down','stop','unchanged'],
+                    indexSymbol:"000001.sh", symbol: this.Symbol, period:period,
+                    dateRange:dateRange 
+                } 
+            },
+            Self:this,
+            PreventDefault:false
+        };
 
-        var self=this;
-        if (JSCommonData.ChartData.IsDayPeriod(this.Period,true))     //请求日线数据
-        {
-            JSNetwork.HttpRequest({
-                url: self.KLineApiUrl,
-                data:
-                {
-                    "field": ["name", "symbol", "yclose", "open", "price", "high", "low", "vol", 'up', 'down', 'stop', 'unchanged'],
-                    "symbol": '000001.sh',
-                    "start": -1,
-                    "count": self.MaxRequestDataCount+500   //多请求2年的数据 确保股票剔除停牌日期以后可以对上
-                },
-                method: 'POST',
-                dataType: "json",
-                success: function (recvData)
-                {
-                    self.RecvIndexHistroyData(recvData);
-                    self.Execute.RunNextJob();
-                },
-                error: function(request)
-                {
-                    self.RecvError(request);
-                }
-            });
-        }
-        else if (JSCommonData.ChartData.IsMinutePeriod(this.Period, true))          //请求分钟数据
-        {
-            JSNetwork.HttpRequest({
-                url: self.MinuteKLineApiUrl,
-                data:
-                {
-                    "field": ["name","symbol","yclose","open","price","high","low","vol"],
-                    "symbol": '000001.sh',
-                    "start": -1,
-                    "count": self.MaxRequestMinuteDayCount+5
-                },
-                method: 'POST',
-                dataType: "json",
-                success: function (data)
-                {
-                    self.RecvIndexMinuteHistroyData(data);
-                    self.Execute.RunNextJob();
-                },
-                error: function(request)
-                {
-                    self.RecvError(request);
-                }
-            });
-        }
+        this.NetworkFilter(obj, (data)=>
+        { 
+            JSConsole.Complier.Log('[JSSymbolData::GetIndexData] recv data' , data);
+            this.IndexData=this.APIKDataToChartData(data, period);
+            this.Execute.RunNextJob();
+        });
     }
 
-    this.RecvIndexHistroyData=function(recvData)
+    this.APIKDataToChartData=function(recvData, period)
     {
-        let data = recvData.data;
-        JSConsole.Complier.Log('[JSSymbolData::RecvIndexHistroyData] recv data' , data);
-
-        let hisData=this.JsonDataToHistoryData(data);
-        this.IndexData = new JSCommonData.ChartData();
-        this.IndexData.DataType=0; /*日线数据 */
-        this.IndexData.Data=hisData;
-
-        var aryOverlayData = this.SourceData.GetOverlayData(this.IndexData.Data);      //和主图数据拟合以后的数据
-        this.IndexData.Data=aryOverlayData;
-
-        if (JSCommonData.ChartData.IsDayPeriod(this.Period, false))   //周期数据
+        var data=recvData.data;
+        var result=null;
+        if (ChartData.IsDayPeriod(period,true))     //请求日线数据
         {
-            let periodData=this.IndexData.GetPeriodData(this.Period);
-            this.IndexData.Data=periodData;
+            var hisData=this.JsonDataToHistoryData(data);
+            result=new ChartData();
+            result.DataType=0; /*日线数据 */
+            result.Data=hisData;
+
+            if (this.IsApiPeriod==true)
+            {
+                result.Period=period;
+                result.Data=this.Data.FixKData(hisData,period);
+            }
+            else
+            {
+                var aryOverlayData=this.SourceData.GetOverlayData(result.Data);      //和主图数据拟合以后的数据
+                result.Data=aryOverlayData;
+        
+                if (ChartData.IsDayPeriod(period,false))   //周期数据
+                {
+                    var periodData=result.GetPeriodData(period);
+                    result.Data=periodData;
+                }
+            }
         }
-    }
-
-    this.RecvIndexMinuteHistroyData = function (recvData)
-    {
-        let data = recvData.data;
-        JSConsole.Complier.Log('[JSSymbolData::RecvIndexMinuteHistroyData] recv data' , data);
-
-        let hisData=this.JsonDataToMinuteHistoryData(data);
-        this.IndexData = new JSCommonData.ChartData();
-        this.IndexData.DataType=1; /*分钟线数据 */
-        this.IndexData.Data=hisData;
-
-        if (JSCommonData.ChartData.IsMinutePeriod(this.Period, false))   //周期数据
+        else if (ChartData.IsMinutePeriod(period, true))
         {
-            let periodData=this.IndexData.GetPeriodData(this.Period);
-            this.IndexData.Data=periodData;
+            var hisData=this.JsonDataToMinuteHistoryData(data);
+            result=new ChartData();
+            result.DataType=1; /*分钟线数据 */
+            result.Data=hisData;
+
+            if (this.IsApiPeriod==true)
+            {
+                result.Period=this.Period;
+                result.Data=this.Data.FixKData(hisData,period);
+            }
+            else
+            {
+                var aryOverlayData=this.SourceData.GetOverlayMinuteData(result.Data);      //和主图数据拟合以后的数据
+                result.Data=aryOverlayData;
+
+                if (ChartData.IsMinutePeriod(period,false))   //周期数据
+                {
+                    var periodData=result.GetPeriodData(period);
+                    result.Data=periodData;
+                }
+            }
         }
+
+        return result;
     }
+    
+
+    
 
     //获取大盘指数缓存数据
     this.GetIndexCacheData=function(dataName)

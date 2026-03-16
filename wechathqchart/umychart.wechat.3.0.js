@@ -770,26 +770,30 @@ function JSChart(element)
             if (option.MinuteLine.SplitType>0) chart.Frame.SubFrame[0].Frame.YSplitOperator.SplitType=option.MinuteLine.SplitType;
         }
 
+        var windows=[null,null];
+        if (option.MainWindow) windows[0]=option.MainWindow;
+        if (IFrameSplitOperator.IsNonEmptyArray(option.Windows)) windows.push(...option.Windows);
         let scriptData = new JSCommonIndexScript.JSIndexScript();
-        for (var i=0; i<option.Windows.length; ++i)   //分钟数据指标从第3个指标窗口设置
+        for (var i=0; i<windows.length; ++i)   //分钟数据指标从第3个指标窗口设置
         {
-            var index=i+2;
-            var item = option.Windows[i];
+            var index=i;
+            var item = windows[i];
+            if (!item) continue;
             if (item.Script) 
             {
-                chart.WindowIndex[2+i] = new ScriptIndex(item.Name, item.Script, item.Args, item);    //脚本执行
+                chart.WindowIndex[index] = new ScriptIndex(item.Name, item.Script, item.Args, item);    //脚本执行
             }
             else if (item.API)  //使用API挂接指标数据 API:{ Name:指标名字, Script:指标脚本可以为空, Args:参数可以为空, Url:指标执行地址 }
             {
                 var apiItem = item.API;
-                chart.WindowIndex[2+i] = new APIScriptIndex(apiItem.Name, apiItem.Script, apiItem.Args, item);
+                chart.WindowIndex[index] = new APIScriptIndex(apiItem.Name, apiItem.Script, apiItem.Args, item);
             }
             else 
             {
                 var indexItem = JSIndexMap.Get(item.Index);
                 if (indexItem) 
                 {
-                    chart.WindowIndex[2+i] = indexItem.Create();       //创建子窗口的指标
+                    chart.WindowIndex[index] = indexItem.Create();       //创建子窗口的指标
                     chart.CreateWindowIndex(index);
                 }
                 else 
@@ -798,7 +802,7 @@ function JSChart(element)
                     if (!indexInfo) continue;
                     JSIndexScript.ModifyAttribute(indexInfo, item);
                     indexInfo.ID=item.Index;
-                    chart.WindowIndex[2+i] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args, indexInfo);    //脚本执行
+                    chart.WindowIndex[index] = new ScriptIndex(indexInfo.Name, indexInfo.Script, indexInfo.Args, indexInfo);    //脚本执行
                     if (item.StringFormat > 0) chart.WindowIndex[index].StringFormat = item.StringFormat;
                     if (item.FloatPrecision >= 0) chart.WindowIndex[index].FloatPrecision = item.FloatPrecision;
                 }
@@ -7624,16 +7628,9 @@ function KLineChartContainer(uielement)
             {
                 if (windowIndex == 0) windowIndex = 1;  //幅图指标,不能再主图显示
             }
-            let indexData = indexInfo;
-            if (option) 
-            {
-                if (option.FloatPrecision >= 0) indexData.FloatPrecision = option.FloatPrecision;
-                if (option.StringFormat > 0) indexData.StringFormat = option.StringFormat;
-                if (option.Args) indexData.Args = option.Args;
-                if (IFrameSplitOperator.IsNumber(option.IsShortTitle)) indexData.IsShortTitle=option.IsShortTitle;
-            }
-
-            return this.ChangeScriptIndex(windowIndex, indexData, option);
+            if (this.Frame.SubFrame.length<=windowIndex) return;
+            JSIndexScript.ModifyAttribute(indexInfo, option);
+            return this.ChangeScriptIndex(windowIndex, indexInfo, option);
         }
 
         //主图指标
@@ -10423,8 +10420,9 @@ function MinuteChartContainer(uielement)
         {
             let item = this.ChartPaint[i];
             var bFind=(item.ChartFrame.Guid==subFrame.Guid || item.ChartFrame==subFrame);
+            if (item && ["Minute-Line", "Minute-Average-Line", "Minute-Vol-Bar","Minute-BuySell-Bar"].includes(item.Name)) bFind=false;    //价格线和均线不能删除
 
-            if (i == 0 || !bFind)
+            if (!bFind)
             {
                 paint.push(item);
             }
@@ -10544,7 +10542,9 @@ function MinuteChartContainer(uielement)
 
     this.ChangeIndex = function (windowIndex, indexName, option) 
     {
-        if (this.Frame.SubFrame.length < 3) return;
+        if (windowIndex===1) return;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.Frame.SubFrame)) return;
+        if (windowIndex>=this.Frame.SubFrame.length) return;
 
         if (option && option.API)
             return this.ChangeAPIIndex(windowIndex,option);
@@ -10553,8 +10553,14 @@ function MinuteChartContainer(uielement)
         let scriptData = new JSCommonIndexScript.JSIndexScript();
         let indexInfo = scriptData.Get(indexName);
         if (!indexInfo) return;
-        if (windowIndex < 2) windowIndex = 2;
-        if (windowIndex >= this.Frame.SubFrame.length) windowIndex = 2;
+        if (indexInfo.IsMainIndex)
+        {
+            windowIndex=0;
+        }
+        else
+        {
+            if (windowIndex==0) windowIndex=2;   //主图只能设置主指标，副图才能设置副指标
+        }
 
         if (option) JSIndexScript.ModifyAttribute(indexInfo, option);
       
@@ -10563,24 +10569,26 @@ function MinuteChartContainer(uielement)
 
     this.ChangeIndexTemplate=function(option)   //切换指标模板 可以设置指标窗口个数 每个窗口的指标, 只能从第3个指标窗口开始设置，前面2个指标窗口固定无法设置
     {
-        if (!Array.isArray(option.Windows)) return;
-
+        if (!option) return;
         this.Frame.RestoreIndexWindows();
+
+        var windows=[null, null];
+        if (IFrameSplitOperator.IsNonEmptyArray(option.Windows)) windows.push(...option.Windows);
+        if (option.MainWindow) windows[0]=option.MainWindow;
         
-        var count=option.Windows.length;
+        var count=windows.length;
         var currentLength=this.Frame.SubFrame.length;
-        var startWindowIndex=2;
-        count+=startWindowIndex;
 
         var dayCount=null;
         if (IFrameSplitOperator.IsNumber(option.DayCount) && option.DayCount!=this.DayCount) dayCount= option.DayCount; //天数
         var bRefreshData= (dayCount!=null);
 
         //清空所有的指标图型
-        for(var i=startWindowIndex;i<currentLength;++i)
+        for(var i=0;i<windows.length;++i)
         {
             this.DeleteIndexPaint(i);
             var frame=this.Frame.SubFrame[i];
+            if (!frame) continue;
             frame.YSpecificMaxMin=null;
             frame.IsLocked=false;
             frame.YSplitScale = null;
@@ -10623,7 +10631,7 @@ function MinuteChartContainer(uielement)
             var windowIndex=i;
             var item=null,frameItem=null;
             if (option.Frame && option.Frame.length>i) frameItem=option.Frame[windowIndex];
-            if (windowIndex>=startWindowIndex) item=option.Windows[windowIndex-startWindowIndex];
+            item=windows[i];
 
             var titleIndex=windowIndex+1;
             this.TitlePaint[titleIndex].Data=[];
@@ -11106,15 +11114,13 @@ function MinuteChartContainer(uielement)
         this.BindMainData(sourceData, yClose);
         //if (MARKET_SUFFIX_NAME.IsChinaFutures(this.Symbol)) this.ChartPaint[1].Data = null;   //期货均线暂时不用
 
-        if (this.Frame.SubFrame.length > 2) 
+        var bindData = new ChartData();
+        bindData.Data = allMinuteData;
+        for (var i = 0; i < this.Frame.SubFrame.length; ++i) 
         {
-            var bindData = new ChartData();
-            bindData.Data = allMinuteData;
-            for (var i = 2; i < this.Frame.SubFrame.length; ++i) 
-            {
-                this.BindIndexData(i, bindData);
-            }
+            this.BindIndexData(i, bindData);
         }
+        
 
         for (let i in this.Frame.SubFrame) 
         {
@@ -11290,14 +11296,11 @@ function MinuteChartContainer(uielement)
         }
 
         //计算指标
-        if (this.Frame.SubFrame.length > 2) 
+        var bindData = new ChartData();
+        bindData.Data = this.SourceData.Data;
+        for (var i = 0; i < this.Frame.SubFrame.length; ++i) 
         {
-            var bindData = new ChartData();
-            bindData.Data = this.SourceData.Data;
-            for (var i = 2; i < this.Frame.SubFrame.length; ++i) 
-            {
-                this.BindIndexData(i, bindData);
-            }
+            this.BindIndexData(i, bindData);
         }
 
         this.ChartCorssCursor.StringFormatY.Symbol = this.Symbol;
