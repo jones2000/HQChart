@@ -9782,25 +9782,29 @@ function JSSymbolData(ast,option,jsExecute)
         if (this.LatestData.has(key)) return this.Execute.RunNextJob();
 
         var self=this;
-        JSNetwork.HttpRequest({
-            url: self.RealtimeApiUrl,
-            data:
+        if (this.NetworkFilter)
+        {
+            var obj=
             {
-                "field": ["name","symbol","yclose","open","price","high","low","vol","amount","date","time","increase","exchangerate","amplitude"],
-                "symbol": [this.Symbol]
-            },
-            method:"POST",
-            dataType: "json",
-            success: function (recvData)
-            {
-                self.RecvLatestData(recvData);
+                Name:'JSSymbolData::GetLatestData', //类名::
+                Explain:'DYNAINFO()',
+                Args:aryArgs,
+                Request:{ Url:self.RealtimeApiUrl,  Type:'POST' ,
+                    Data: { symbol:[this.Symbol], field: ["name","symbol","yclose","open","price","high","low","vol","amount","date","time","increase","exchangerate","amplitude"] } }, 
+                Self:this,
+                PreventDefault:false
+            };
+            this.NetworkFilter(obj, function(data) 
+            { 
+                JSConsole.Complier.Log(`[JSSymbolData::GetLatestData] key=${key} recv data` , data.data);
+                self.RecvLatestData(data);
                 self.Execute.RunNextJob();
-            },
-            error: function(request)
-            {
-                self.RecvError(request);
-            }
-        });
+            });
+
+            if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
+        }
+
+        this.Execute.RunNextJob();
     }
 
     this.RecvLatestData = function (recvData)
@@ -9808,7 +9812,7 @@ function JSSymbolData(ast,option,jsExecute)
         let data=recvData.data;
         if (data.ver==2.0) 
         {
-            this.RecvLatestDataVer2(data);
+            this.RecvLatestDataVer2(recvData);
             return;
         }
 
@@ -9859,10 +9863,14 @@ function JSSymbolData(ast,option,jsExecute)
         JSConsole.Complier.Log('[JSSymbolData::RecvLatestDataVer2]', this.LatestData);
     }
 
-    this.GetLatestCacheData=function(dataID)
+    this.GetLatestCacheData=function(dataID, node)
     {
         var key=this.GetLatestDataKey(dataID);
-        if (!this.LatestData.has(key)) return null;
+        if (!this.LatestData.has(key)) 
+        {
+            this.Execute.ThrowUnexpectedNode(node, `[JSSymbolData.GetLatestCacheData] key=${key} 数据不存在`);
+            return null;
+        }
 
         var data=this.LatestData.get(key);
 
@@ -11307,15 +11315,17 @@ function JSSymbolData(ast,option,jsExecute)
             };
             this.NetworkFilter(obj, function(recvData) 
             { 
-                if (recvData.Error) 
+                var data=recvData.data;
+                JSConsole.Complier.Log(`[JSSymbolData::GetVariantData] '${jobItem.VariantName}' recv data` , data);
+                if (data.Error) 
                 {
-                    self.AddStockValueError(key,recvData.Error);
+                    self.AddStockValueError(key,data.Error);
                 }
                 else
                 {
                     var dataType=0;
-                    if (IFrameSplitOperator.IsNumber(recvData.DataType)) dataType=recvData.DataType;
-                    self.RecvStockValue(recvData.Data,jobItem,key,dataType);
+                    if (IFrameSplitOperator.IsNumber(data.DataType)) dataType=data.DataType;
+                    self.RecvStockValue(data.Data,jobItem,key,dataType);
                 }
                
                 self.Execute.RunNextJob();
@@ -11323,69 +11333,11 @@ function JSSymbolData(ast,option,jsExecute)
 
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
         }
-
-        var errorCallback=function(strError)
-        {
-            self.AddStockValueError(key,strError);
-        };
-
-        var apiDownload;
-        if (jobItem.VariantName=="CAPITAL" || jobItem.VariantName=="TOTALCAPITAL" || jobItem.VariantName=="EXCHANGE")
-        {
-            var callback=function(recvData, jobItem, key) 
-            { 
-                self.RecvStockValue(recvData, jobItem, key,0);
-                self.Execute.RunNextJob();
-            };
-
-            apiDownload=new DownloadFinanceData( 
-            {
-                Job:jobItem, 
-                Symbol:this.Symbol, 
-                Url:this.StockHistoryDayApiUrl, 
-                RealtimeUrl:this.RealtimeApiUrl,
-                Args:[jobItem.VariantName],
-                DataKey:key,
-                Callback:callback,
-                ErrorCallback:errorCallback
-            });
-        }
-        else if (jobItem.VariantName=="HYBLOCK" || jobItem.VariantName=="DYBLOCK" || jobItem.VariantName=="GNBLOCK")
-        {
-            var callback=function(recvData, jobItem, key, dataType) 
-            { 
-                self.RecvStockValue(recvData, jobItem, key, dataType);
-                self.Execute.RunNextJob();
-            };
-
-            apiDownload=new DownloadGroupData(
-            {
-                Job:jobItem, 
-                Symbol:this.Symbol, 
-                Url:this.StockHistoryDayApiUrl, 
-                RealtimeUrl:this.RealtimeApiUrl,
-                Args:[jobItem.VariantName],
-                DataKey:key,
-                Callback:callback,
-                ErrorCallback:errorCallback
-            });
-        }
-        else if (jobItem.VariantName=="INBLOCK")
-        {
-            var errorMessage=`${jobItem.VariantName}, 请对接外部数据.`;
-            this.AddStockValueError(key,errorMessage);
-            this.Execute.RunNextJob();
-            return;
-        }
-        else
-        {
-            var errorMessage=`不支持变量${jobItem.VariantName}, 请对接外部数据.`;
-            this.AddStockValueError(key,errorMessage);
-            this.Execute.RunNextJob();
-            return;
-        }
-
-        apiDownload.Download();
+        
+        var errorMessage=`[JSSymbolData::GetVariantData] 不支持变量${jobItem.VariantName}, 请对接外部数据.`;
+        this.AddStockValueError(key,errorMessage);
+        this.Execute.RunNextJob();
+        
     }
 
     this.GetProFinance=function(jobItem)
@@ -11462,8 +11414,13 @@ function JSSymbolData(ast,option,jsExecute)
             };
             this.NetworkFilter(obj, function(recvData) 
             { 
-                if (recvData.Error) self.AddStockValueError(key,recvData.Error);
-                else self.RecvStockValue(recvData.Data,jobItem,key,recvData.DataType);
+                var data=recvData.data;
+                JSConsole.Complier.Log(`[JSSymbolData::GetCustomVariantData] '${jobItem.VariantName}' recv data` , data);
+                if (data)
+                {
+                    if (data.Error) self.AddStockValueError(key,data.Error);
+                    else self.RecvStockValue(data.Data,jobItem,key,data.DataType);
+                }
                 self.Execute.RunNextJob();
             });
         }
@@ -11506,8 +11463,12 @@ function JSSymbolData(ast,option,jsExecute)
             };
             this.NetworkFilter(obj, function(recvData) 
             { 
-                if (recvData.Error) self.AddStockValueError(key,recvData.Error);
-                else self.RecvStockValue(recvData.Data,jobItem,key,recvData.DataType);
+                var data=recvData.data;
+                if (data)
+                {
+                    if (data.Error) self.AddStockValueError(key,data.Error);
+                    else self.RecvStockValue(data.Data,jobItem,key,data.DataType);
+                }
                 self.Execute.RunNextJob();
             });
         }
@@ -11557,8 +11518,12 @@ function JSSymbolData(ast,option,jsExecute)
             };
             this.NetworkFilter(obj, function(recvData) 
             { 
-                if (recvData.Error) self.AddStockValueError(key,recvData.Error);
-                else self.RecvStockValue(recvData.Data,jobItem,key,recvData.DataType);
+                var data=recvData.data;
+                if (data)
+                {
+                    if (data.Error) self.AddStockValueError(key,data.Error);
+                    else self.RecvStockValue(data.Data,jobItem,key,data.DataType);
+                }
                 self.Execute.RunNextJob();
             });
         }
@@ -11665,7 +11630,11 @@ function JSSymbolData(ast,option,jsExecute)
         else
             return null;
 
-        if (!this.StockData.has(key)) return null;
+        if (!this.StockData.has(key)) 
+        {
+            this.Execute.ThrowUnexpectedNode(obj.Node, `[JSSymbolData::GetStockCacheData] '${key}' 数据不存在`);
+            return null;
+        }
         var data=this.StockData.get(key);
 
         if (data.Error) this.Execute.ThrowUnexpectedNode(obj.Node, data.Error);
@@ -13810,9 +13779,9 @@ function JSExecute(ast,option)
                 }
                 else if (item.Expression.Type==Syntax.SequenceExpression)
                 {
-                    var varName;
-                    var draw;
-                    var color, upColor, downColor, stickType;
+                    var varName=null;
+                    var draw=null;
+                    var color=null, upColor=null, downColor=null, stickType=null;
                     var lineWidth;
                     var colorStick=false;
                     var pointDot=false;
@@ -14435,7 +14404,7 @@ function JSExecute(ast,option)
         switch(funcName)
         {
             case 'DYNAINFO':    //行情最新数据
-                node.Out=this.SymbolData.GetLatestCacheData(args[0]);
+                node.Out=this.SymbolData.GetLatestCacheData(args[0], node);
                 break;
             case 'STICKLINE':
                 node.Draw=this.Draw.STICKLINE(args[0],args[1],args[2],args[3],args[4]);

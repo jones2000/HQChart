@@ -1195,6 +1195,7 @@ function StockChipPhone()
     this.Font=g_JSChartResource.StockChip.Font;
     this.InfoColor=g_JSChartResource.StockChip.InfoColor;
     this.CloseButtonConfig=CloneData(g_JSChartResource.StockChip.PhoneCloseButton);
+    this.IsShowCloseButton=true;
     this.DayInfoColor=g_JSChartResource.StockChip.DayInfoColor;
     this.PeriodTextTemplate="999周期内成本99.9%";
 
@@ -1220,6 +1221,7 @@ function StockChipPhone()
         if (option.Width>100) this.Width=option.Width;
         if (option.CalculateType>0) this.CalculateType=option.CalculateType;
         if (IFrameSplitOperator.IsNumber(option.PriceZoom)) this.PriceZoom=option.PriceZoom;
+        if (IFrameSplitOperator.IsBool(option.IsShowCloseButton)) this.IsShowCloseButton=option.IsShowCloseButton;
     }
 
     this.ReloadResource=function(resource)
@@ -1675,6 +1677,7 @@ function StockChipPhone()
     //关闭按钮
     this.DrawCloseButton=function()
     {
+        if (!this.IsShowCloseButton) return;
         var config=this.CloseButtonConfig;
         var rtButton=null;
         if (this.IsHScreen)

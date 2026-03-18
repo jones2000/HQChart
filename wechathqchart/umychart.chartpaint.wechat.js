@@ -3013,7 +3013,14 @@ function ChartDrawIconV2()
         }
         else
         {
-            this.Canvas.drawImage(drawInfo.Image, drawInfo.X, drawInfo.Y, drawInfo.Width, drawInfo.Height);
+            try
+            {
+                this.Canvas.drawImage(drawInfo.Image, drawInfo.X, drawInfo.Y, drawInfo.Width, drawInfo.Height);
+            }
+            catch(error)
+            {
+                JSConsole.Chart.Log('[ChartDrawIconV2:DrawIcon]  drawImage error.', error);
+            }
         }
     }
 }
@@ -8441,7 +8448,14 @@ function ChartLock()
                     if (outSize.Width>item.Width) xText+=(outSize.Width-item.Width)/2;
                 }
 
-                this.Canvas.drawImage(item.Image.Data, xText, yText, item.Image.Width, item.Image.Height);
+                try
+				{
+                    this.Canvas.drawImage(item.Image.Data, xText, yText, item.Image.Width, item.Image.Height);
+                }
+                catch(error)
+				{
+					JSConsole.Chart.Log('[ChartLock:Draw]  drawImage error.', error);
+				}
 
                 yText+=item.Height;
             }

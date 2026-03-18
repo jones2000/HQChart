@@ -2620,7 +2620,7 @@ function OverlayScriptIndex(name,script,args,option)
         }
 
         //字体
-        if (varItem.DrawFontSize>0) chart.TextFont=`${varItem.DrawFontSize*GetDevicePixelRatio()}px 微软雅黑`;    //临时用下吧
+        if (varItem.DrawFontSize>0) chart.TextFont=`${varItem.DrawFontSize}px 微软雅黑`;    //临时用下吧
         if (varItem.Font) chart.TextFont=varItem.Font;
         
         //颜色

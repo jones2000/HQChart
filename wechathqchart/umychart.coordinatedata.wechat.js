@@ -903,7 +903,7 @@ var MARKET_SUFFIX_NAME=
         if (ChartData.IsMinutePeriod(period,true)) return false;                    //内置分钟K线不支持复权
 
         //内置日线线支持复权,其他不支持复权
-        return false;
+        return true;
     },
     
     //获取成交量单位

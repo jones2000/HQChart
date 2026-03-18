@@ -9840,6 +9840,7 @@ KLineChartContainer.JsonDataToMinuteHistoryData = function (data)
     var date = 0, yclose = 1, open = 2, high = 3, low = 4, close = 5, vol = 6, amount = 7, time = 8, position = 9;
     var fclose=10, yfclose=11;   //结算价, 前结算价
     var bfactor=12, afactor=13;  //前, 后复权因子
+    var flowCapital=15;         //流通股本
     var colorData=JSCHART_DATA_FIELD_ID.KLINE_COLOR_DATA;
     var extendDataIndex=JSCHART_DATA_FIELD_ID.KLINE_MINUTE_EXTENDDATA; //k线扩展数据
     for (var i = 0; i < list.length; ++i) 
@@ -9862,7 +9863,8 @@ KLineChartContainer.JsonDataToMinuteHistoryData = function (data)
 
         if (IFrameSplitOperator.IsNumber(jsData[bfactor])) item.BFactor=jsData[bfactor];    //前复权因子
         if (IFrameSplitOperator.IsNumber(jsData[afactor])) item.AFactor=jsData[afactor];    //后复权因子
-
+        if (IFrameSplitOperator.IsNumber(jsData[flowCapital])) item.FlowCapital=jsData[flowCapital];   //流通股本
+        
         if (jsData[colorData]) item.ColorData=jsData[colorData];
         if (jsData[extendDataIndex]) item.ExtendData=jsData[extendDataIndex];
         aryDayData.push(item);
