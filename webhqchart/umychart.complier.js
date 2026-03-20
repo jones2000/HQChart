@@ -20853,6 +20853,7 @@ function ScriptIndex(name,script,args,option)
     this.LockFont=null;
     this.LockCount=20;
     this.LockMinWidth=null;
+    this.IsLockFullFrame=false;   //锁满整个指标区域
     this.TitleFont=g_JSChartResource.TitleFont;     //标题字体
     this.IsShortTitle=false;                        //是否显示指标参数
     this.IsUsePageData=false;                       //是否使用了K线界面数据
@@ -20906,6 +20907,7 @@ function ScriptIndex(name,script,args,option)
         if (option.Lock.Font) this.LockFont=option.Lock.Font;
         if (option.Lock.Count) this.LockCount=option.Lock.Count;
         if (option.Lock.MinWidth) this.LockMinWidth=option.Lock.MinWidth*GetDevicePixelRatio();
+        if (IFrameSplitOperator.IsBool(option.Lock.IsFullFrame)) this.IsLockFullFrame=option.Lock.IsFullFrame;
     }
 
     if (option && option.YAxis)
@@ -20950,6 +20952,7 @@ function ScriptIndex(name,script,args,option)
             if (lockData.Font) this.LockFont=lockData.Font;
             if (lockData.Count) this.LockCount=lockData.Count;
             if (lockData.MinWidth) this.LockMinWidth=lockData.MinWidth*GetDevicePixelRatio();
+            if (IFrameSplitOperator.IsBool(lockData.IsFullFrame)) this.IsLockFullFrame=lockData.IsFullFrame;
         }
         else
         {   //清空锁配置信息
@@ -20961,6 +20964,7 @@ function ScriptIndex(name,script,args,option)
             this.LockText=null;
             this.LockFont=null;
             this.LockCount=20;
+            this.IsLockFullFrame=false;   //锁满整个指标区域
         }
     }
 
@@ -21147,8 +21151,12 @@ function ScriptIndex(name,script,args,option)
         }
         else    //上锁
         {
-            let lockData={ IsLocked:true,Callback:param.Self.LockCallback,IndexName:param.Self.Name,IndexID:param.Self.ID, ID:param.Self.LockID,
-                BG:param.Self.LockBG,Text:param.Self.LockText,TextColor:param.Self.LockTextColor, Font:param.Self.LockFont, Count:param.Self.LockCount, MinWidth:param.Self.LockMinWidth };
+            let lockData=
+            { 
+                IsLocked:true,Callback:param.Self.LockCallback,IndexName:param.Self.Name,IndexID:param.Self.ID, ID:param.Self.LockID,
+                BG:param.Self.LockBG,Text:param.Self.LockText,TextColor:param.Self.LockTextColor, Font:param.Self.LockFont, Count:param.Self.LockCount, MinWidth:param.Self.LockMinWidth,
+                IsFullFrame:param.Self.IsLockFullFrame 
+            };
             param.HQChart.Frame.SubFrame[windowIndex].Frame.SetLock(lockData);
         }
 

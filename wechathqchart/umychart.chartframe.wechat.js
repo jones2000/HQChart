@@ -71,6 +71,7 @@ function IndexLockData()
     this.LockID;        //锁ID
     this.IndexName;     //指标名字
     this.IndexID;       //指标ID
+    this.IsFullFrame=false;  //锁整个框架
 
     this.SetData=function(lockData)
     {
@@ -90,6 +91,7 @@ function IndexLockData()
         if (lockData.TextColor) this.TextColor=lockData.TextColor;  
         if (lockData.Font) this.Font=lockData.Font;
         if (lockData.Count) this.LockCount=lockData.Count;
+        if (IFrameSplitOperator.IsBool(lockData.IsFullFrame)) this.IsFullFrame=lockData.IsFullFrame;          //锁整个框架
     }
 }
 

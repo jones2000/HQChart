@@ -8233,7 +8233,7 @@ function ChartLock()
     this.Callback;      //回调
     this.IndexName;     //指标名字
     this.IndexID;       //指标ID
-
+    this.IsFullFrame=false;  //锁整个框架
     this.MinWidthText="  付费指标  "
 
     this.SetData=function(aryData)
@@ -8253,6 +8253,7 @@ function ChartLock()
             this.Callback=item.Callback;        //回调
             this.IndexName=item.IndexName;      //指标名字
             this.IndexID=item.IndexID;          //指标ID
+            if (IFrameSplitOperator.IsBool(item.IsFullFrame)) this.IsFullFrame=item.IsFullFrame;          //锁整个框架
         }
     }
 
@@ -8342,22 +8343,30 @@ function ChartLock()
 
         var kData=this.ChartFrame.Data;
         var left=xOffset;
-        if (kData && IFrameSplitOperator.IsNonEmptyArray(kData.Data))
+        if (this.IsFullFrame)
         {
-            for(var i=kData.DataOffset,j=0;i<kData.Data.length-this.LockCount && j<xPointCount-this.LockCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+            if (bHScreen) left=border.TopEx;
+            else left=border.LeftEx;
+        }
+        else
+        {
+            if (kData && IFrameSplitOperator.IsNonEmptyArray(kData.Data))
             {
-                var kItem=kData.Data[i];
-                if (kItem.Open==null || kItem.High==null || kItem.Low==null || kItem.Close==null) continue;
+                for(var i=kData.DataOffset,j=0;i<kData.Data.length-this.LockCount && j<xPointCount-this.LockCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+                {
+                    var kItem=kData.Data[i];
+                    if (kItem.Open==null || kItem.High==null || kItem.Low==null || kItem.Close==null) continue;
 
-                if (bMinute)
-                {
-                    left=this.ChartFrame.GetXFromIndex(j);
-                }
-                else
-                {
-                    left=xOffset;
-                    var right=xOffset+dataWidth;
-                    if (right>chartright) break;
+                    if (bMinute)
+                    {
+                        left=this.ChartFrame.GetXFromIndex(j);
+                    }
+                    else
+                    {
+                        left=xOffset;
+                        var right=xOffset+dataWidth;
+                        if (right>chartright) break;
+                    }
                 }
             }
         }

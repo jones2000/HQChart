@@ -1147,6 +1147,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         if (IFrameSplitOperator.IsBool(option.IsShowRightMenu)) chart.IsShowRightMenu=option.IsShowRightMenu;
 
         if (IFrameSplitOperator.IsNumber(option.DayCount)) chart.DayCount=option.DayCount;
+        if (IFrameSplitOperator.IsBool(option.IsShowMaxMinText)) chart.ChartPaint[0].MaxMinTextConfig.IsShow=option.IsShowMaxMinText;
 
         this.SetChartBorder(chart, option);
 
@@ -3100,6 +3101,7 @@ var JSCHART_MENU_ID=
     CMD_CORSS_YRIGHT_TEXT_STYLE:64,         //十字光标右侧输出样式
 
     CMD_DELETE_INDEX_ID:65,           //删除指标
+    CMD_SHOW_MAXMIN_ID:66,            //显示隐藏最大最小值
 
 
     CMD_REPORT_CHANGE_BLOCK_ID:100,      //报价列表 切换板块ID
@@ -12015,6 +12017,23 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                     chart.IsShow=srcParam;
                     this.RequestData({ ClearYCoordinateMaxMin:true });
                     this.Draw();
+                }
+                break;
+            case JSCHART_MENU_ID.CMD_SHOW_MAXMIN_ID:
+                if (IFrameSplitOperator.IsBool(srcParam))
+                {
+                    var chart=this.ChartPaint[0];
+                    if (!chart) return false;
+                    if (chart.ClassName=="ChartMinutePriceLine")
+                    {
+                        chart.MaxMinTextConfig.IsShow=srcParam;
+                        this.Draw();
+                    }
+                    else if (chart.ClassName=="ChartKLine")
+                    {
+                        chart.IsShowMaxMinPrice=srcParam;
+                        this.Draw();
+                    }
                 }
                 break;
             case JSCHART_MENU_ID.CMD_CHANGE_YRIGHT_TEXT_FORMAT:
@@ -41287,6 +41306,19 @@ function ChartMinutePriceLine()
     this.FFMChart; //定制图形
     this.DrawType=0;    //0=走势图 14=定制图形
 
+    this.MaxMinTextConfig=
+    {
+        IsShow:false,   //是否显示最大最小价格
+        Font:g_JSChartResource.Minute.MaxMinText.Font,
+        Max:CloneData(g_JSChartResource.Minute.MaxMinText.Max),   //最大值颜色
+        Min:CloneData(g_JSChartResource.Minute.MaxMinText.Min),   //最小值颜色 
+        Dot:CloneData(g_JSChartResource.Minute.MaxMinText.Dot),   //最大最小值的点
+    };
+    
+
+    this.MaxInfo=null;
+    this.MinInfo=null;
+
 
     this.UpdateLastPoint=function(dateTime, x,y, item)
     {
@@ -41299,8 +41331,47 @@ function ChartMinutePriceLine()
         this.LastPoint.Value=item.Value;
     }
 
+    //更新最大最小值
+    this.UpdateMaxMinPrice=function(dateTime, x,y, item)
+    {
+        if (!this.MaxInfo)
+        {
+            this.MaxInfo={ DateTime:dateTime, X:x, Y:y, Value:item.Value, Data:item };
+        }
+        else
+        {
+            if (this.MaxInfo.Value<item.Value)
+            {
+                this.MaxInfo.DateTime=dateTime;
+                this.MaxInfo.X=x;
+                this.MaxInfo.Y=y;
+                this.MaxInfo.Data=item;
+                this.MaxInfo.Value=item.Value;
+            }
+        }
+
+        if (!this.MinInfo)
+        {
+            this.MinInfo={ DateTime:dateTime, X:x, Y:y, Value:item.Value, Data:item };
+        }
+        else
+        {
+            if (this.MinInfo.Value>item.Value)
+            {
+                this.MinInfo.DateTime=dateTime;
+                this.MinInfo.X=x;
+                this.MinInfo.Y=y;
+                this.MinInfo.Data=item;
+                this.MinInfo.Value=item.Value;
+            }
+        }
+    }
+
     this.Draw=function()
     {
+        this.MaxInfo=null;
+        this.MinInfo=null;
+
         if (this.NotSupportMessage)
         {
             this.DrawNotSupportmessage();
@@ -41373,6 +41444,7 @@ function ChartMinutePriceLine()
                 var item=this.Source.Data[i];
                 var dateTime=item.Date*1000000+item.Time*100;
                 this.UpdateLastPoint(dateTime, x,y, { Value:value, Index:i, Date:item.Date, Time:item.Time, Type:0,  Explain:"盘中"});
+                this.UpdateMaxMinPrice(dateTime, x,y, { Value:value, Index:i, Date:item.Date, Time:item.Time, Type:0,  Explain:"盘中"});
             }
           
             ++drawCount;
@@ -41445,6 +41517,7 @@ function ChartMinutePriceLine()
         this.DrawColorLine();
         this.DrawAfterClose();      //收盘集合竞价
         this.DrawMultiDayAfterClose();
+        this.DrawMaxMinPrice();
 
         if (this.Identify=="Minute-Line" && this.ChartFrame.GlobalOption)
         {
@@ -41945,6 +42018,127 @@ function ChartMinutePriceLine()
         }
 
         return false;
+    }
+
+    this.DrawMaxMinPrice=function()
+    {
+        if (!this.MaxMinTextConfig) return;
+        var config=this.MaxMinTextConfig;
+        if (!config.IsShow) return;
+        if (!this.MaxInfo || !this.MaxInfo) return;
+        if (!IFrameSplitOperator.IsNumber(this.MaxInfo.X) || !IFrameSplitOperator.IsNumber(this.MaxInfo.Y) || !IFrameSplitOperator.IsNumber(this.MaxInfo.Value) ||
+            !IFrameSplitOperator.IsNumber(this.MinInfo.X) || !IFrameSplitOperator.IsNumber(this.MinInfo.Y)  || !IFrameSplitOperator.IsNumber(this.MinInfo.Value)) return;
+
+        var bHScreen=(this.ChartFrame.IsHScreen===true);
+        this.Canvas.font=config.Font;
+        this.Canvas.textAlign="left";
+        this.Canvas.textBaseline='bottom';
+        var textHeight=this.GetFontHeight();
+
+        if (config.Dot && config.Dot.Radius>0)
+        {
+            this.Canvas.fillStyle=config.Dot.MaxColor;
+            this.Canvas.beginPath();
+            if (bHScreen) this.Canvas.arc(this.MaxInfo.Y,this.MaxInfo.X,config.Dot.Radius,0,360,false);
+            else this.Canvas.arc(this.MaxInfo.X,this.MaxInfo.Y,config.Dot.Radius,0,360,false);
+            this.Canvas.closePath();
+            this.Canvas.fill();
+        }
+        
+        var border=this.ChartFrame.GetBorder();
+        this.Canvas.fillStyle=config.Max.Color;
+        var text=`${this.MaxInfo.Value}`;
+        var textWidth=this.Canvas.measureText(text).width;
+        if (bHScreen) 
+        {
+            var rtText={ Left:this.MaxInfo.Y-config.Max.YOffset, Top:this.MaxInfo.X-textWidth/2, Width:textHeight, Height:textWidth };
+            rtText.Bottom=rtText.Top+rtText.Height;
+            rtText.Right=rtText.Left+rtText.Width;
+            if (rtText.Top<border.Top) 
+            {
+                rtText.Top=border.Top;
+                rtText.Bottom=rtText.Top+rtText.Height;
+            }
+            //this.Canvas.fillRect(rtText.Left,rtText.Top,rtText.Width,rtText.Height);
+
+            var xText=rtText.Left, yText=rtText.Top;
+            this.Canvas.save();
+            this.Canvas.translate(xText, yText);
+            this.Canvas.rotate(90 * Math.PI / 180);
+            this.Canvas.fillText(text, 0,0);
+            this.Canvas.restore();
+        }
+        else
+        {
+            var rtText={ Left:this.MaxInfo.X-textWidth/2, Bottom:this.MaxInfo.Y+config.Max.YOffset, Width:textWidth, Height:textHeight };
+            rtText.Top=rtText.Bottom-rtText.Height;
+            rtText.Right=rtText.Left+rtText.Width;
+
+            if (rtText.Left<border.Left) 
+            {
+                rtText.Left=border.Left;
+                rtText.Right=rtText.Left+rtText.Width;
+            }
+            else if (rtText.Right>border.Right)
+            {
+                rtText.Right=border.Right;
+                rtText.Left=rtText.Right-rtText.Width;
+            }
+
+            this.Canvas.fillText(text, rtText.Left,rtText.Bottom);
+        }
+
+        if (config.Dot && config.Dot.Radius>0)
+        {
+            this.Canvas.fillStyle=config.Dot.MinColor;
+            this.Canvas.beginPath();
+            if (bHScreen) this.Canvas.arc(this.MinInfo.Y,this.MinInfo.X,config.Dot.Radius,0,360,false);
+            else this.Canvas.arc(this.MinInfo.X,this.MinInfo.Y,config.Dot.Radius,0,360,false);
+            this.Canvas.closePath();
+            this.Canvas.fill();
+        }
+
+        this.Canvas.fillStyle=config.Min.Color;
+        var text=`${this.MinInfo.Value}`;
+        var textWidth=this.Canvas.measureText(text).width;
+        if (bHScreen)
+        {
+            var rtText={ Right:this.MinInfo.Y-config.Min.YOffset, Top:this.MinInfo.X-textWidth/2, Width:textHeight, Height:textWidth };
+            rtText.Bottom=rtText.Top+rtText.Height;
+            rtText.Left=rtText.Right-rtText.Width;
+            if (rtText.Top<border.Top)
+            {
+                rtText.Top=border.Top;
+                rtText.Bottom=rtText.Top+rtText.Height;
+            }
+            //this.Canvas.fillRect(rtText.Left,rtText.Top,rtText.Width,rtText.Height);
+
+            var xText=rtText.Left, yText=rtText.Top;
+            this.Canvas.save();
+            this.Canvas.translate(xText, yText);
+            this.Canvas.rotate(90 * Math.PI / 180);
+            this.Canvas.fillText(text, 0,0);
+            this.Canvas.restore();
+        }
+        else
+        {
+            var rtText={ Left:this.MinInfo.X-textWidth/2, Top:this.MinInfo.Y+config.Min.YOffset, Width:textWidth, Height:textHeight };
+            rtText.Bottom=rtText.Top+rtText.Height;
+            rtText.Right=rtText.Left+rtText.Width;
+
+            if (rtText.Left<border.Left) 
+            {
+                rtText.Left=border.Left;
+                rtText.Right=rtText.Left+rtText.Width;
+            }
+            else if (rtText.Right>border.Right)
+            {
+                rtText.Right=border.Right;
+                rtText.Left=rtText.Right-rtText.Width;
+            }
+            this.Canvas.fillText(text, rtText.Left,rtText.Bottom);
+        }
+
     }
 }
 
@@ -48760,6 +48954,7 @@ function IndexLockData()
     this.LockID;        //锁ID
     this.IndexName;     //指标名字
     this.IndexID;       //指标ID
+    this.IsFullFrame=false;  //锁整个框架
 
     this.SetData=function(lockData)
     {
@@ -48779,6 +48974,7 @@ function IndexLockData()
         if (lockData.TextColor) this.TextColor=lockData.TextColor;  
         if (lockData.Font) this.Font=lockData.Font;
         if (lockData.Count) this.LockCount=lockData.Count;
+        if (IFrameSplitOperator.IsBool(lockData.IsFullFrame)) this.IsFullFrame=lockData.IsFullFrame;          //锁整个框架
     }
 }
 
@@ -48794,6 +48990,7 @@ function ChartLock()
     this.LockRect=null; //上锁区域
 
     this.LockCount = 20; // 锁最新的几个数据
+    this.IsFullFrame=false;  //锁整个框架
     this.BGColor = g_JSChartResource.IndexLock.BGColor;
     this.TextColor = g_JSChartResource.IndexLock.TextColor;
     this.Font = g_JSChartResource.IndexLock.Font;
@@ -48823,6 +49020,7 @@ function ChartLock()
             this.Callback=item.Callback;        //回调
             this.IndexName=item.IndexName;      //指标名字
             this.IndexID=item.IndexID;          //指标ID
+            if (IFrameSplitOperator.IsBool(item.IsFullFrame)) this.IsFullFrame=item.IsFullFrame;          //锁整个框架
         }
     }
 
@@ -48913,22 +49111,30 @@ function ChartLock()
 
         var kData=this.ChartFrame.Data;
         var left=xOffset;
-        if (kData && IFrameSplitOperator.IsNonEmptyArray(kData.Data))
+        if (this.IsFullFrame)
         {
-            for(var i=kData.DataOffset,j=0;i<kData.Data.length-this.LockCount && j<xPointCount-this.LockCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+            if (bHScreen) left=border.TopEx;
+            else left=border.LeftEx;
+        }
+        else
+        {
+            if (kData && IFrameSplitOperator.IsNonEmptyArray(kData.Data))
             {
-                var kItem=kData.Data[i];
-                if (kItem.Open==null || kItem.High==null || kItem.Low==null || kItem.Close==null) continue;
+                for(var i=kData.DataOffset,j=0;i<kData.Data.length-this.LockCount && j<xPointCount-this.LockCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
+                {
+                    var kItem=kData.Data[i];
+                    if (kItem.Open==null || kItem.High==null || kItem.Low==null || kItem.Close==null) continue;
 
-                if (bMinute)
-                {
-                    left=this.ChartFrame.GetXFromIndex(j);
-                }
-                else
-                {
-                    left=xOffset;
-                    var right=xOffset+dataWidth;
-                    if (right>chartright) break;
+                    if (bMinute)
+                    {
+                        left=this.ChartFrame.GetXFromIndex(j);
+                    }
+                    else
+                    {
+                        left=xOffset;
+                        var right=xOffset+dataWidth;
+                        if (right>chartright) break;
+                    }
                 }
             }
         }
@@ -78560,6 +78766,15 @@ function JSChartResource()
         AryBarRange:[{ Start:240, End:120 }, { Start:120, End:0}],
     }
 
+    this.Minute.MaxMinText=
+    {
+        IsShow:false,   //是否显示最大最小价格
+        Font:`${10*GetDevicePixelRatio()}px 微软雅黑`,   //字体
+        Max:{ Color:"rgb(255,0,0)", YOffset:-5*GetDevicePixelRatio()},   //最大值颜色
+        Min:{ Color:"rgb(0,255,0)", YOffset:5*GetDevicePixelRatio()},   //最小值颜色 
+        Dot:{ MaxColor:"rgba(255,0,0,0.5)", MinColor:"rgba(0,255,0,0.5)", Radius:4*GetDevicePixelRatio() },   //最大最小值的点
+    }
+
     this.DefaultTextColor="rgb(43,54,69)";                          //图形中默认的字体颜色
     this.DefaultTextFont=14*GetDevicePixelRatio() +'px 微软雅黑';    //图形中默认的字体
     this.TitleFont=13*GetDevicePixelRatio() +'px 微软雅黑';          //指标显示,tooltip显示字体
@@ -89471,6 +89686,10 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             bTooltipDialogShowIndexTitle=this.DialogTooltip.IndexTitle.Enable;
         }
 
+        var bShowMaxMin=false;
+        var klineChart=this.ChartPaint[0];
+        if (klineChart) bShowMaxMin=klineChart.IsShowMaxMinPrice;
+
         var aryMenu=
         [
             { 
@@ -89668,6 +89887,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                     { Name:"显示走完剩余时间", Data:{ ID:JSCHART_MENU_ID.CMD_ENABLE_KLINE_DAY_SUMMARY_ID, Args:[!bDaySummary]}, Checked:bDaySummary},
 
                     { Name:"拖动Y轴", Data:{ ID:JSCHART_MENU_ID.CMD_ENABLE_ZOOM_Y_ID, Args:[{FrameID:0, Enable:!bZoomYCoordinate }, ]}, Checked:bZoomYCoordinate}, 
+
+                    { Name:"显示最大最小值", Data:{ ID:JSCHART_MENU_ID.CMD_SHOW_MAXMIN_ID, Args:[!bShowMaxMin]}, Checked:bShowMaxMin },
 
                     { Name:JSPopMenu.SEPARATOR_LINE_NAME },
                     { 
@@ -93903,6 +94124,8 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                 rightTextFormat=ySpliter.RightTextConfig.Format;
         }
 
+        var bShowMaxMin=this.ChartPaint[0].MaxMinTextConfig.IsShow;
+
         var aryMenu=
         [
             { 
@@ -93984,6 +94207,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                 [
                     { Name:"画图工具", Data:{ ID:JSCHART_MENU_ID.CMD_SHOW_DRAWTOOL_ID, Args:[]}, Checked:this.IsShowDrawToolDialog()},
                     { Name:"盘口分析", Data:{ ID:JSCHART_MENU_ID.CMD_SHOW_BUYSELL_BAR_ID, Args:[!bShowBuySellBar]}, Checked:bShowBuySellBar },
+                    { Name:"显示最大最小值", Data:{ ID:JSCHART_MENU_ID.CMD_SHOW_MAXMIN_ID, Args:[!bShowMaxMin]}, Checked:bShowMaxMin },
 
                     { Name:JSPopMenu.SEPARATOR_LINE_NAME },
 
