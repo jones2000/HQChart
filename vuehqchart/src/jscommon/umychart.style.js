@@ -227,36 +227,41 @@ function GetBlackStyle()
             Info:  //信息地雷
             {
                 Investor:
-                    {
-                        ApiUrl:'/API/NewsInteract', //互动易
-                        IconFont: { Family:'iconfont', Text:'\ue631' , HScreenText:'\ue684', Color:'#1c65db'} //SVG 文本
-                    },
-                    Announcement:                                           //公告
-                    {
-                        ApiUrl:'/API/ReportList',
-                        IconFont: { Family:'iconfont', Text:'\ue633', HScreenText:'\ue685', Color:'#f5a521' }, //SVG 文本
-                        IconFont2: { Family:'iconfont', Text:'\ue634', HScreenText:'\ue686', Color:'#ed7520' } //SVG 文本 //季报
-                    },
-                    Pforecast:  //业绩预告
-                    {
-                        ApiUrl:'/API/StockHistoryDay',
-                        IconFont: { Family:'iconfont', Text:'\ue62e', HScreenText:'\ue687', Color:'#986cad' } //SVG 文本
-                    },
-                    Research:   //调研
-                    {
-                        ApiUrl:'/API/InvestorRelationsList',
-                        IconFont: { Family:'iconfont', Text:'\ue632', HScreenText:'\ue688', Color:'#19b1b7' } //SVG 文本
-                    },
-                    BlockTrading:   //大宗交易
-                    {
-                        ApiUrl:'/API/StockHistoryDay',
-                        IconFont: { Family:'iconfont', Text:'\ue630', HScreenText:'\ue689', Color:'#f39f7c' } //SVG 文本
-                    },
-                    TradeDetail:    //龙虎榜
-                    {
-                        ApiUrl:'/API/StockHistoryDay',
-                        IconFont: { Family:'iconfont', Text:'\ue62f', HScreenText:'\ue68a' ,Color:'#b22626' } //SVG 文本
-                    }
+                {
+                    IconFont: { Family:'iconfont', Text:'\ue631' , HScreenText:'\ue684', Color:'#1c65db' } //SVG 文本
+                },
+                Announcement:                                           //公告
+                {
+                    IconFont: { Family:'iconfont', Text:'\ue633', HScreenText:'\ue685', Color:'#f5a521' }, //SVG 文本
+                    IconFont2: { Family:'iconfont', Text:'\ue634', HScreenText:'\ue686', Color:'#ed7520' } //SVG 文本 //季报
+                },
+                Pforecast:  //业绩预告
+                {
+                    IconFont: { Family:'iconfont', Text:'\ue62e', HScreenText:'\ue687', Color:'#986cad' } //SVG 文本
+                },
+                Research:   //调研
+                {
+                    IconFont: { Family:'iconfont', Text:'\ue632', HScreenText:'\ue688', Color:'#19b1b7' } //SVG 文本
+                },
+                BlockTrading:   //大宗交易
+                {
+                    IconFont: { Family:'iconfont', Text:'\ue630', HScreenText:'\ue689', Color:'#f39f7c' } //SVG 文本
+                },
+                DragonTiger:    //龙虎榜
+                {
+                    IconFont: { Family:'iconfont', Text:'\ue62f', HScreenText:'\ue68a' ,Color:'#b22626' } //SVG 文本
+                },
+                News:   //新闻
+                {
+                    IconFont: { Family:'iconfont', Text:'\ue697', HScreenText:'\ue697' ,Color:'rgb(255,0,255)', Size:5*GetDevicePixelRatio(), Position:2, IsShowNumber:false } //SVG 文本
+                },
+                Dividend:   //除权
+                {
+                    IconFont: { Family:'iconfont', Text:'\ue6eb', HScreenText:'\uf0ca' ,Color:'rgb(220,20,60)', Size:10*GetDevicePixelRatio(), Position:1, IsShowNumber:false } //SVG 文本
+                },
+
+                MinSize:12*GetDevicePixelRatio(),
+                MaxSize:18*GetDevicePixelRatio(),
     
             },
             NumIcon:

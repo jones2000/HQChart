@@ -1692,6 +1692,12 @@ input[type="color"] {
     color: rgb(230,230,230);
 }
 
+.UMyChart_Tooltip_Float_Title_Center_Span
+{
+    text-align: center;
+    display: block;
+}
+
 .UMyChart_Tooltip_Float_Text_Span
 {
     float: right;

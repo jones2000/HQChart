@@ -164,8 +164,8 @@ class KLineChart
             MaxRequestMinuteDayCount:100, //分钟数据获取几天数据  默认取5天数据
             
             //Info:["互动易","大宗交易",'龙虎榜',"调研","业绩预告","公告"],       //信息地雷
-            //Info:["公告"], 
-            //InfoPosition:0,
+            Info:["公告", "新闻", "除权"], 
+            InfoPosition:1, //1=底部 2=顶部 0=K线上
             IsShowTooltip:true,                 //是否显示K线提示信息
             DrawType:0,      //K线类型 0=实心K线柱子 1=收盘价线 2=美国线 3=空心K线柱子 4=收盘价面积图
             //FirstShowDate:20161201,

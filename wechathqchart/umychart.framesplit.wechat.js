@@ -1410,6 +1410,7 @@ function FrameSplitMinutePriceY()
 
     this.YClose;                        //昨收
     this.Data;                          //分钟数据
+    this.MinuteData;
     this.AverageData;                   //分钟均线数据
     this.OverlayChartPaint;
     this.SplitCount = 7;
@@ -1457,27 +1458,53 @@ function FrameSplitMinutePriceY()
         }
     }
 
+    this.GetMinuteMaxMin=function()
+    {
+        var range={ Max:null, Min:null };
+        if (!this.MinuteData || !IFrameSplitOperator.IsNonEmptyArray(this.MinuteData.Data)) return range;
+
+        //价格
+        for(var i=0; i<this.MinuteData.Data.length; ++i)
+        {
+            var minItem=this.MinuteData.Data[i];
+            if (IFrameSplitOperator.IsNumber(minItem.High) && IFrameSplitOperator.IsNumber(minItem.Low))
+            {
+                if (range.Max==null || range.Max<minItem.High) range.Max=minItem.High;
+                if (range.Min==null || range.Min>minItem.Low) range.Min=minItem.Low;
+            }
+            else if (IFrameSplitOperator.IsNumber(minItem.Close))
+            {
+                if (range.Max==null || range.Max<minItem.Close) range.Max=minItem.Close;
+                if (range.Min==null || range.Min>minItem.Close) range.Min=minItem.Close;
+            }
+        }
+
+        //均线
+        if (this.AverageData && IFrameSplitOperator.IsNonEmptyArray(this.AverageData.Data))
+        {
+                for(var i=0; i<this.AverageData.Data.length; ++i)
+                {
+                    var value=this.AverageData.Data[i];
+                    if (!IFrameSplitOperator.IsNumber(value)) continue;
+                    if (range.Max==null || range.Max<value) range.Max=value;
+                    if (range.Min==null|| range.Min>value) range.Min=value;
+                }
+        }
+
+        return range;
+    }
     this.GetMaxMin = function ()   //计算图中所有的数据的最大最小值
     {
         var max = this.YClose;
         var min = this.YClose;
 
-        for (var i in this.Data.Data) 
-        {
-            if (!this.Data.Data[i]) continue;   //价格必须大于0
-            if (max < this.Data.Data[i]) max = this.Data.Data[i];
-            if (min > this.Data.Data[i]) min = this.Data.Data[i];
-        }
-
-        if (this.AverageData) 
-        {
-            for (var i in this.AverageData.Data) 
-            {
-                if (!this.AverageData.Data[i]) continue;    //价格必须大于0
-                if (max < this.AverageData.Data[i]) max = this.AverageData.Data[i];
-                if (min > this.AverageData.Data[i]) min = this.AverageData.Data[i];
-            }
-        }
+         //分钟数据数值范围
+         var minuteMaxMin=this.GetMinuteMaxMin();
+         if (minuteMaxMin)
+         {
+             if (IFrameSplitOperator.IsNumber(minuteMaxMin.Max) && minuteMaxMin.Max>max) max=minuteMaxMin.Max;
+             if (IFrameSplitOperator.IsNumber(minuteMaxMin.Min) && minuteMaxMin.Min<min) min=minuteMaxMin.Min;
+         }
 
         for(var i=0; i<this.OverlayChartPaint.length; ++i)
         {

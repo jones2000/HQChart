@@ -110,24 +110,39 @@ HQData.NetworkFilter=function(data, callback)
             HQData.RequestOverlayHistoryMinuteData(data, callback);
             break;
 
+        //业绩预告
         case "PforecastInfo::RequestData":
             HQData.PforecastInfo_RequestData(data,callback);
             break;
 
+        //互动易
         case "InvestorInfo::RequestData":
             HQData.InvestorInfo_RequestData(data,callback);
             break;
 
+        //机构调研
         case "ResearchInfo::RequestData":
             HQData.ResearchInfo_RequestData(data,callback);
             break;
 
+        //大宗交易
         case "BlockTrading::RequestData":
             HQData.BlockTrading_RequestData(data,callback);
             break;
 
-        case "TradeDetail::RequestData":
-            HQData.TradeDetail_RequestData(data,callback);
+        //龙虎榜
+        case "DragonTigerInfo::RequestData":
+            HQData.DragonTiger_RequestData(data,callback);
+            break;
+
+        //个股除权
+        case "DividendInfo::RequestData":
+            HQData.DividendInfo_RequestData(data, callback);
+            break;
+
+        //个股新闻
+        case "NewsInfo::RequestData":
+            HQData.NewsInfo_RequestData(data, callback);
             break;
 
         case "JSSymbolData::GetFinance":    //财务数据
@@ -1511,7 +1526,7 @@ HQData.PforecastInfo_RequestData=function(data,callback)
     data.PreventDefault=true;
     var symbol=data.Request.Symbol;
 
-    var hqchartData={ symbol:symbol, report:[] };
+    var hqchartData={ symbol:symbol, list:[] };
 
     var kData=data.HQChart.ChartPaint[0].Data;
     for(var i=0, j=1;i<kData.Data.length;++i)
@@ -1519,17 +1534,26 @@ HQData.PforecastInfo_RequestData=function(data,callback)
         var kItem=kData.Data[i];
         if (i%10!=4) continue;
 
-        var year=parseInt(kItem.Date/10000);  //年份
-        var month=parseInt(kItem.Date/100)%100;
-        var reprotDate=0;
-        if (month>10) reprotDate=year*10000+1231;
-        else if (month>6) reprotDate=year*10000+930;
-        else if (month>3) reprotDate=year*10000+630;
-        else reprotDate=year*10000+331;
+        var newItem=
+        { 
+            date:kItem.Date, 
+            reportDate:kItem.Date,  //报告期
+            aryData:
+            [
+                { name:"净利润", text:"大幅上升", content:"1. xxxxxxxx"},
+                { name:"营业收入", text:"预计扭亏", content:"1. xxxxxxxx"}
+            ],
 
-        var itemReport={ date:kItem.Date, time:kItem.Time, title:`业绩预增`, reportdate:reprotDate, fweek:{ week1:0.04, week4:0.02 } }
+            aryText:
+            [
+                {name:"后续涨幅", type:2 },
+                { name:"1日:",  value:0.38, type:1 },
+                { name:"2日:",  value:1.2, type:1 },
+                { name:"3日:",  value:-0.5, type:1 }
+            ] 
+        };
 
-        hqchartData.report.push(itemReport);
+        hqchartData.list.push(newItem);
 
         ++j;
     }
@@ -1541,8 +1565,35 @@ HQData.InvestorInfo_RequestData=function(data,callback)
 {
     data.PreventDefault=true;
     var symbol=data.Request.Symbol;
+    var hqchartData={ symbol:symbol, list:[] };
 
-    callback(TEST_NEWSINTERACT_DATA);
+    var kData=data.HQChart.ChartPaint[0].Data;
+    for(var i=0, j=1;i<kData.Data.length;++i)
+    {
+        var kItem=kData.Data[i];
+        if (i%20!=4) continue;
+
+        var newItem=
+        { 
+            date:kItem.Date, 
+            title:"xxxxxxx(标题)", 
+
+            aryText:
+            [
+                {name:"后续涨幅", type:2 },
+                { name:"1日:",  value:0.48, type:1 },
+                { name:"2日:",  value:1.0, type:1 },
+                { name:"3日:",  value:-0.15, type:1 }
+            ] 
+        };
+
+        hqchartData.list.push(newItem);
+
+        ++j;
+    }
+
+    callback(hqchartData);
+    
 }
 
 HQData.ResearchInfo_RequestData=function(data,callback)
@@ -1558,9 +1609,26 @@ HQData.ResearchInfo_RequestData=function(data,callback)
         var kItem=kData.Data[i];
         if (i%20!=4) continue;
 
-        var itemReport={ researchdate:kItem.Date, id:i, level:[j%4], type:"xxx调研。" };
+        var newItem=
+        { 
+            date:kItem.Date, 
+            title:"现场参观(接待方式)", 
+            researcher:"A机构, B基金(参与人员)",
+            place:"xxxx路xxxx弄(地点)",
+            count:5,
+            receptionist:"小明，小张(接待人员)",
+            startDate:kItem.Date,   //调研日期
 
-        hqchartData.list.push(itemReport);
+            aryText:
+            [
+                {name:"后续涨幅", type:2 },
+                { name:"1日:",  value:0.48, type:1 },
+                { name:"2日:",  value:1.0, type:1 },
+                { name:"3日:",  value:-0.15, type:1 }
+            ] 
+        };
+
+        hqchartData.list.push(newItem);
 
         ++j;
     }
@@ -1572,16 +1640,143 @@ HQData.BlockTrading_RequestData=function(data,callback)
 {
     data.PreventDefault=true;
     var symbol=data.Request.Symbol;
+    var hqchartData={ symbol:symbol, list:[] };
 
-    callback(TEST_BLOCK_TRADING_DATA);
+    var kData=data.HQChart.GetKData();
+    for(var i=0, j=1;i<kData.Data.length;++i)
+    {
+        var kItem=kData.Data[i];
+        if (i%20!=4) continue;
+
+        var newItem=
+        { 
+            date:kItem.Date, 
+            price:kItem.Close,  //成交均价
+            close:kItem.Close,  //收盘价
+            vol:kItem.Vol*0.3,
+            premium:4.2,
+
+            aryText:
+            [
+                {name:"后续涨幅", type:2 },
+                { name:"1周:",  value:0.48, type:1 },
+                { name:"2周:",  value:1.0, type:1 },
+                { name:"3周:",  value:-0.15, type:1 }
+            ] 
+        };
+
+        hqchartData.list.push(newItem);
+
+        ++j;
+    }
+
+    callback(hqchartData);
 }
 
-HQData.TradeDetail_RequestData=function(data,callback)
+HQData.DragonTiger_RequestData=function(data,callback)
 {
     data.PreventDefault=true;
     var symbol=data.Request.Symbol;
+    var hqchartData={ symbol:symbol, list:[] };
 
-    callback(TEST_TRADE_DETAL_DATA);
+    var kData=data.HQChart.GetKData();
+    for(var i=0, j=1;i<kData.Data.length;++i)
+    {
+        var kItem=kData.Data[i];
+        if (i%20!=4) continue;
+
+        var newItem=
+        { 
+            date:kItem.Date, 
+            title:"xxxxxxx(上榜原因)",
+            buyAmount:kItem.Amount*0.2,        //机构买入总额
+            sellAmount:kItem.Amount*0.1,       //机构卖出总额
+            netBuyAmount:kItem.Amount*0.05,     //机构买入净额
+            netBuyRatio:4.2,                //净买额占总成交比
+            amount:kItem.Amount,            //市场总成交额
+
+            aryText:
+            [
+                {name:"上榜后涨幅", type:2 },
+                { name:"1周:",  value:0.48, type:1 },
+                { name:"2周:",  value:1.0, type:1 },
+                { name:"3周:",  value:-0.15, type:1 }
+            ] 
+        };
+
+        hqchartData.list.push(newItem);
+
+        ++j;
+    }
+
+    callback(hqchartData);
+}
+
+HQData.DividendInfo_RequestData=function(data, callback, option)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Symbol;
+    var hqchartData={ symbol:symbol, list:[] };
+
+    var kData=data.HQChart.GetKData();
+    for(var i=0, j=1;i<kData.Data.length;++i)
+    {
+        var kItem=kData.Data[i];
+        if (i%40!=4) continue;
+
+        var newItem=
+        { 
+            date:kItem.Date, 
+            title:"分红送配信息......",
+            ID:i,
+        };
+
+        hqchartData.list.push(newItem);
+
+        ++j;
+    }
+
+    callback(hqchartData);
+}
+
+HQData.NewsInfo_RequestData=function(data, callback)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Symbol;
+    var hqchartData={ symbol:symbol, list:[] };
+
+    var kData=data.HQChart.GetKData();
+    var id=0;
+    var start=kData.Data.length-10;
+    if (start<0) start=0;
+    for(var i=start;i<kData.Data.length;++i)
+    {
+        var kItem=kData.Data[i];
+        
+        var newItem=
+        { 
+            date:kItem.Date, 
+            title:`新闻标题(${id}) AAAAAAA .......`,
+            url:"https://.....",
+            type:1,
+            ID:++id,
+        };
+
+        hqchartData.list.push(newItem);
+
+        var newItem=
+        { 
+            date:kItem.Date, 
+            title:`新闻标题(${id}) BBBBBB .......`,
+            url:"https://.....",
+            type:1,
+            ID:++id,
+        };
+
+        hqchartData.list.push(newItem);
+    }
+
+    callback(hqchartData);
 }
 
 HQData.RequestLatestData=function(data,callback)

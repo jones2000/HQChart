@@ -9,6 +9,7 @@
 
     小程序信息地雷数据
 */
+import { JSConsole } from "./umychart.console.wechat.js"
 
 import {
     g_JSChartResource,
@@ -32,9 +33,10 @@ var KLINE_INFO_TYPE=
 
     RESEARCH:8,                 //调研
     BLOCKTRADING:9,             //大宗交易
-    TRADEDETAIL:10,              //龙虎榜
+    DRAGON_TIGER:10,            //龙虎榜
+    DIVIDEND:12,                //除权
 
-    POLICY:11                   //策略信息
+    POLICY:20                   //策略信息
 }
 
 function KLineInfoData()
@@ -63,8 +65,9 @@ JSKLineInfoMap.Get=function(id)
             ["业绩预告",    {Create:function(){ return new PforecastInfo()}  }],
             ["调研",        {Create:function(){ return new ResearchInfo()}  }],
             ["大宗交易",    {Create:function(){ return new BlockTrading()}  }],
-            ["龙虎榜",      {Create:function(){ return new TradeDetail()}  }],
-            ["策略选股",    {Create: function () { return new PolicyInfo() } }]
+            ["龙虎榜",      {Create:function(){ return new DragonTigerInfo()}  }],
+            ["策略",    {Create: function () { return new PolicyInfo() } }],
+            ['除权',        { Create:function() { return new DividendInfo() }}],
         ]
         );
 
@@ -147,10 +150,23 @@ function IKLineInfo()
         
         return false;
     }
+
+    this.ReadArrayText=function(infoData, recv)
+    {
+        if(!IFrameSplitOperator.IsNonEmptyArray(recv.aryText)) return;
+        if (!infoData.ExtendData) infoData.ExtendData={ };
+        if (!Array.isArray(infoData.ExtendData.AryText)) infoData.ExtendData.AryText=[];
+
+        for(var i=0;i<recv.aryText.length;++i)
+        {
+            var item=recv.aryText[i];
+            infoData.ExtendData.AryText.push({ Name:item.name, Value:item.value, Type:item.type })
+        }
+    }
 }
 
 /*
-    互动易
+    互动易 2.0
 */
 function InvestorInfo()
 {
@@ -169,40 +185,22 @@ function InvestorInfo()
 
         if (this.NetworkFilter(hqChart,obj)) return; //已被上层替换,不调用默认的网络请求
 
-        //请求数据
-        wx.request({
-            url: g_JSChartResource.Domain+g_JSChartResource.KLine.Info.Investor.ApiUrl,
-            data:
-            {
-                "filed": ["question","answerdate","symbol","id"],
-                "symbol": [param.HQChart.Symbol],
-                "querydate":{"StartDate":this.StartDate,"EndDate":this.GetToday()},
-                "start":0,
-                "end":this.MaxRequestDataCount,
-            },
-            method:"post",
-            dataType: "json",
-            success: function (recvData)
-            {
-                self.RecvData(recvData,param);
-            }
-        });
-
-        return true;
+        JSConsole.Chart.Warn("[InvestorInfo::RequestData] NetworkFilter error.");
     }
 
     this.RecvData=function(recvData,param)
     {
         var data=recvData.data;
-        if (!data || !data.list || data.list.length<=0) return;
+        if (!IFrameSplitOperator.IsNonEmptyArray(data.list)) return;
 
-        for (var i in data.list)
+        for(var i=0;i<data.list.length; ++i)
         {
             var item = data.list[i];
             var infoData=new KLineInfoData();
-            infoData.Date=item.answerdate;
-            infoData.Title=item.question;
+            infoData.Date=item.date;
+            infoData.Title=item.title;
             infoData.InfoType=KLINE_INFO_TYPE.INVESTOR;
+            this.ReadArrayText(infoData, item);
             this.Data.push(infoData);
         }
 
@@ -303,7 +301,7 @@ function AnnouncementInfo()
 
 
 /*
-    业绩预告
+    业绩预告 2.0
 */
 function PforecastInfo()
 {
@@ -322,55 +320,32 @@ function PforecastInfo()
 
         if (this.NetworkFilter(hqChart,obj)) return; //已被上层替换,不调用默认的网络请求
 
-        //请求数据
-        wx.request({
-            url: g_JSChartResource.Domain+g_JSChartResource.KLine.Info.Pforecast.ApiUrl,
-            data:
-            {
-                "field": ["pforecast.type","pforecast.reportdate","fweek"],
-                "condition":
-                [
-                    {"item":["pforecast.reportdate","int32","gte",this.StartDate]}
-                ],
-                "symbol": [param.HQChart.Symbol],
-                "start":0,
-                "end":this.MaxRequestDataCount,
-            },
-            method:"post",
-            dataType: "json",
-            success: function (recvData)
-            {
-                self.RecvData(recvData,param);
-            }
-        });
-        return true;
+        JSConsole.Chart.Warn("[PforecastInfo::RequestData] NetworkFilter error.");
     }
 
     this.RecvData=function(recvData,param)
     {
         var data=recvData.data;
-        if (!data.stock || data.stock.length!=1) return;
-        if (!data.stock[0].stockday || data.stock[0].stockday.length<=0) return;
+        if (!IFrameSplitOperator.IsNonEmptyArray(data.list)) return;
 
-        for (var i in data.stock[0].stockday)
+        for(var i=0; i<data.list.length; ++i)
         {
-            var item = data.stock[0].stockday[i];
-            if (item.pforecast.length>0)
+            var item = data.list[i];
+            var infoData=new KLineInfoData();
+            infoData.Date= item.date;
+            infoData.Title=item.title;
+            infoData.ReportDate=item.reportDate;
+            infoData.InfoType=KLINE_INFO_TYPE.PFORECAST;
+            infoData.ExtendData={ AryData:[], AryText:[] };
+            for(var j=0;j<item.aryData.length;++j)
             {
-                var dataItem=item.pforecast[0];
-                var infoData=new KLineInfoData();
-                infoData.Date= item.date;
-                infoData.Title=dataItem.type;
-                infoData.InfoType=KLINE_INFO_TYPE.PFORECAST;
-                infoData.ExtendData={ Type:dataItem.type, ReportDate:dataItem.reportdate}
-                if(item.fweek)  //未来周涨幅
-                {
-                    infoData.ExtendData.FWeek={};
-                    if (item.fweek.week1!=null) infoData.ExtendData.FWeek.Week1=item.fweek.week1;
-                    if (item.fweek.week4!=null) infoData.ExtendData.FWeek.Week4=item.fweek.week4;
-                }
-                this.Data.push(infoData);
+                var dataItem=item.aryData[j];
+                infoData.ExtendData.AryData.push({ Name:dataItem.name, Text:dataItem.text, Content:dataItem.Content});
             }
+
+            this.ReadArrayText(infoData, item);
+            
+            this.Data.push(infoData);
         }
 
         param.HQChart.UpdataChartInfo();
@@ -379,7 +354,7 @@ function PforecastInfo()
 }
 
 /*
-   投资者关系 (调研)
+   投资者关系 (调研) 2.0
 */
 function ResearchInfo()
 {
@@ -399,42 +374,32 @@ function ResearchInfo()
 
         if (this.NetworkFilter(hqChart,obj)) return; //已被上层替换,不调用默认的网络请求
 
-        //请求数据
-        wx.request({
-            url: g_JSChartResource.Domain+g_JSChartResource.KLine.Info.Research.ApiUrl,
-            data:
-            {
-                "filed": ["releasedate","researchdate","level","symbol","id"],
-                "querydate":{"StartDate":this.StartDate,"EndDate":this.GetToday()},
-                "symbol": [param.HQChart.Symbol],
-                "start":0,
-                "end":this.MaxRequestDataCount,
-            },
-            method:"post",
-            dataType: "json",
-            success: function (recvData)
-            {
-                self.RecvData(recvData,param);
-            }
-        });
-
-        return true;
+        JSConsole.Chart.Warn("[PforecastInfo::RequestData] NetworkFilter error.");
     }
 
     this.RecvData=function(recvData,param)
     {
         var data=recvData.data;
-        if (!data) return;
-        if (!data.list || data.list.length<=0) return;
+        if (!IFrameSplitOperator.IsNonEmptyArray(data.list)) return;
 
-        for (var i in data.list)
+        for(var i=0; i<data.list.length; ++i)
         {
             var item = data.list[i];
             var infoData=new KLineInfoData();
             infoData.ID=item.id;
-            infoData.Date= item.researchdate;
+            infoData.Date= item.date;
+            infoData.Title=item.title;
             infoData.InfoType=KLINE_INFO_TYPE.RESEARCH;
-            infoData.ExtendData={ Level:item.level };
+            infoData.ExtendData=
+            { 
+                Researcher:item.researcher,     //调研人员 
+                Place:item.place,               //地点
+                Count:item.count,               //机构个数
+                Receptionist:item.receptionist, //接待人会员
+                Date:item.startDate,            //调研日期
+                AryText:[],
+            };
+            this.ReadArrayText(infoData, item);
             this.Data.push(infoData);
 
         }
@@ -445,7 +410,7 @@ function ResearchInfo()
 }
 
 /*
-    大宗交易
+    大宗交易2.0
 */
 function BlockTrading()
 {
@@ -464,59 +429,29 @@ function BlockTrading()
 
         if (this.NetworkFilter(hqChart,obj)) return; //已被上层替换,不调用默认的网络请求
 
-        //请求数据
-        wx.request({
-            url: g_JSChartResource.Domain+g_JSChartResource.KLine.Info.BlockTrading.ApiUrl,
-            data:
-            {
-                "field": ["blocktrading.price","blocktrading.vol","blocktrading.premium","fweek","price"],
-                "condition":
-                [
-                    {"item":["date","int32","gte",this.StartDate]},
-                    {"item":["blocktrading.vol","int32","gte","0"]}
-                ],
-                "symbol": [param.HQChart.Symbol],
-                "start":0,
-                "end":this.MaxRequestDataCount,
-            },
-            method:"post",
-            dataType: "json",
-            success: function (recvData)
-            {
-                self.RecvData(recvData,param);
-            }
-        });
-
-        return true;
+        JSConsole.Chart.Warn("[ResearchInfo::BlockTrading] NetworkFilter error.");
     }
 
     this.RecvData=function(recvData,param)
     {
         var data=recvData.data;
-        if (!data || !data.stock || data.stock.length!=1) return;
-        if (!data.stock[0].stockday || data.stock[0].stockday.length<=0) return;
+        if (!data || !IFrameSplitOperator.IsNonEmptyArray(data.list)) return;
 
-        for (var i in data.stock[0].stockday)
+        for(var i=0; i<data.list.length; ++i)
         {
-            var item = data.stock[0].stockday[i];
+            var item=data.list[i];
             var infoData=new KLineInfoData();
             infoData.Date= item.date;
             infoData.InfoType=KLINE_INFO_TYPE.BLOCKTRADING;
             infoData.ExtendData=
             {
-                Price:item.blocktrading.price,          //交易价格
-                Premium:item.blocktrading.premium,      //溢价 （百分比%)
-                Vol:item.blocktrading.vol,              //交易金额单位（万元)
-                ClosePrice:item.price,                  //收盘价
+                Price:item.price,          //交易价格
+                Premium:item.premium,      //溢价 （百分比%)
+                Vol:item.vol,              //交易金额单位（万元)
+                ClosePrice:item.close,     //收盘价
             };
 
-            if(item.fweek)  //未来周涨幅
-            {
-                infoData.ExtendData.FWeek={};
-                if (item.fweek.week1!=null) infoData.ExtendData.FWeek.Week1=item.fweek.week1;
-                if (item.fweek.week4!=null) infoData.ExtendData.FWeek.Week4=item.fweek.week4;
-            }
-
+            this.ReadArrayText(infoData, item);
             this.Data.push(infoData);
         }
 
@@ -527,15 +462,15 @@ function BlockTrading()
 
 
 /*
-    龙虎榜
+    龙虎榜 2.0
 */
-function TradeDetail()
+function DragonTigerInfo()
 {
     this.newMethod=IKLineInfo;   //派生
     this.newMethod();
     delete this.newMethod;
 
-    this.ClassName='TradeDetail';
+    this.ClassName='DragonTigerInfo';
     this.Explain='龙虎榜';
 
     this.RequestData=function(hqChart,obj)
@@ -547,60 +482,78 @@ function TradeDetail()
 
         if (this.NetworkFilter(hqChart,obj)) return; //已被上层替换,不调用默认的网络请求
 
-        //请求数据
-        wx.request({
-            url: g_JSChartResource.Domain+g_JSChartResource.KLine.Info.TradeDetail.ApiUrl,
-            data:
-            {
-                "field": ["tradedetail.typeexplain","tradedetail.type","fweek"],
-                "condition":
-                [
-                    {"item":["date","int32","gte",this.StartDate]},
-                    {"item":["tradedetail.type","int32","gte","0"]}
-                ],
-                "symbol": [param.HQChart.Symbol],
-                "start":0,
-                "end":this.MaxRequestDataCount,
-            },
-            method:"post",
-            dataType: "json",
-            success: function (recvData)
-            {
-                self.RecvData(recvData,param);
-            }
-        });
-
-        return true;
+        JSConsole.Chart.Warn("[DragonTigerInfo::RequestData] NetworkFilter error.");
     }
 
     this.RecvData=function(recvData,param)
     {
         var data=recvData.data;
-        if (!data || !data.stock || data.stock.length!=1) return;
-        if (!data.stock[0].stockday || data.stock[0].stockday.length<=0) return;
+        if (!data || !IFrameSplitOperator.IsNonEmptyArray(data.list)) return;
 
-        for (var i in data.stock[0].stockday)
+        for(var i=0; i<data.list.length; ++i)
         {
-            var item = data.stock[0].stockday[i];
+            var item=data.list[i];
 
             var infoData=new KLineInfoData();
             infoData.Date= item.date;
-            infoData.InfoType=KLINE_INFO_TYPE.TRADEDETAIL;
-            infoData.ExtendData={Detail:new Array()};
-
-            for(var j in item.tradedetail)
+            infoData.Title=item.title;
+            infoData.InfoType=KLINE_INFO_TYPE.DRAGON_TIGER;
+            infoData.ExtendData=
             {
-                var tradeItem=item.tradedetail[j]; 
-                infoData.ExtendData.Detail.push({"Type":tradeItem.type,"TypeExplain":tradeItem.typeexplain});
-            }
+                BuyAmount:item.buyAmount,       //机构买入总额
+                SellAmount:item.sellAmount,     //机构卖出总额
+                NetBuyAmount:item.netBuyAmount, //机构买入净额
+                NetBuyRatio:item.netBuyRatio,   //净买额占总成交比
+                Amount:item.amount              //市场总成交额
+            };
+            this.ReadArrayText(infoData, item);
+            this.Data.push(infoData);
+        }
 
-            if(item.fweek)  //未来周涨幅
-            {
-                infoData.ExtendData.FWeek={};
-                if (item.fweek.week1!=null) infoData.ExtendData.FWeek.Week1=item.fweek.week1;
-                if (item.fweek.week4!=null) infoData.ExtendData.FWeek.Week4=item.fweek.week4;
-            }
+        param.HQChart.UpdataChartInfo();
+        param.HQChart.Draw();
+    }
+}
 
+//除权 2.0
+function DividendInfo()
+{
+    this.newMethod=IKLineInfo;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='DividendInfo';
+    this.Explain='除权';
+    
+    this.RequestData=function(hqChart, obj)
+    {
+        var self = this;
+        var param=
+        {
+            HQChart:hqChart
+        };
+
+        this.Data=[];
+        if (this.NetworkFilter(hqChart, obj)) return; //已被上层替换,不调用默认的网络请求
+
+        JSConsole.Chart.Warn("[DividendInfo::RequestData] NetworkFilter error.");
+    }
+
+    this.RecvData=function(recvData,param)
+    {
+        var data=recvData.data;
+        if (!data || !IFrameSplitOperator.IsNonEmptyArray(data.list)) return;
+
+        for(var i=0;i<data.list.length;++i)
+        {
+            var item=data.list[i];
+
+            var infoData=new KLineInfoData();
+            infoData.ID=item.id;
+            infoData.Date= item.date;
+            infoData.InfoType=KLINE_INFO_TYPE.DIVIDEND;
+            infoData.Title=item.title;
+            infoData.ExtendData={ Type:item.type, url:item.url };
             this.Data.push(infoData);
         }
 
@@ -634,64 +587,35 @@ function PolicyInfo()
         this.Data = [];
         var param = { HQChart: hqChart };
 
-        // setTimeout(function () { self.RecvData(null, param); }, 2000); //模拟数据到达
-
         if (this.NetworkFilter(hqChart,obj)) return; //已被上层替换,不调用默认的网络请求
 
-        //请求数据
-        wx.request({
-          url: g_JSChartResource.Domain + g_JSChartResource.KLine.Info.Policy.ApiUrl,
-          data: {
-            "symbol": [param.HQChart.Symbol],
-            field: ["policy"],
-            "condition": [
-              { "item": ["date", "int32", "gte", this.StartDate, "lte", this.GetToday()] }],
-            "start": 0,
-            "end": this.MaxRequestDataCount
-          },
-          method: "post",
-          dataType: "json",
-          success: function (recvData) {
-            self.RecvData(recvData, param);
-          }
-
-        })
-
-        return true;
+        JSConsole.Chart.Warn("[PolicyInfo::RequestData] NetworkFilter error.");
     }
 
     this.RecvData = function (recvData, param) 
     {
-        var data = recvData.data;
-        if (!data.stock || data.stock.length != 1) return;
-        if (!data.stock[0].stockday || data.stock[0].stockday.length <= 0) return;
+        var data=recvData.data;
+        if (!data || !IFrameSplitOperator.IsNonEmptyArray(data.list)) return;
 
-        var setName=new Set();
-        for(var i in this.PolicyList)   //把需要过滤的策略名字放set里, 方便后面过滤
+        for(var i=0;i<data.list.length;++i)
         {
-            setName.add(this.PolicyList[i].Name);
-        }
+            var item=data.list[i];
+            var infoData = new KLineInfoData();
+            infoData.Date = item.date;
+            infoData.InfoType = KLINE_INFO_TYPE.POLICY;
+            infoData.ExtendData ={ AryData:[] };
+            if (!IFrameSplitOperator.IsNonEmptyArray(item.policy)) continue;
 
-        for (var i in data.stock[0].stockday)
-        {
-          var item = data.stock[0].stockday[i];
-          var infoData = new KLineInfoData();
-          infoData.Date = item.date;
-          infoData.InfoType = KLINE_INFO_TYPE.POLICY;
-          infoData.ExtendData = [];
-          for (var j in item.policy)
-          {
-              var name = item.policy[j].name;
-              if (setName.has(name)) infoData.ExtendData.push({ Name: name });
-          }
-
-          if (infoData.ExtendData.length>0) this.Data.push(infoData);
+            for (var j=0;j<item.policy.length;++j)
+            {
+                var name = item.policy[j].name;
+                infoData.ExtendData.AryData.push({ Name: name });
+            }
+            this.Data.push(infoData);
         }
 
         param.HQChart.UpdataChartInfo();
         param.HQChart.Draw();
-
-        if (param.HQChart.UpdateUICallback) param.HQChart.UpdateUICallback('RecvPolicyInfoData', this);
     }
 }
 

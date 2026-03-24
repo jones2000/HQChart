@@ -11712,6 +11712,8 @@ function MinuteChartContainer(uielement)
 
         this.Frame.SubFrame[0].Frame.YSplitOperator.YClose = yClose;
         this.Frame.SubFrame[0].Frame.YSplitOperator.Data = bindData;
+        this.Frame.SubFrame[0].Frame.YSplitOperator.Symbol=this.Symbol;
+        this.Frame.SubFrame[0].Frame.YSplitOperator.MinuteData = minuteData;
 
         this.Frame.Data=this.ChartPaint[0].Data;
         this.Frame.SourceData=minuteData;

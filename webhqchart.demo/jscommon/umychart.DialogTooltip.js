@@ -1141,6 +1141,7 @@ function JSFloatTooltip()
     this.TitleAlign=
     {
         Default:"UMyChart_Tooltip_Float_Title_Span",   //标题默认
+        Center:"UMyChart_Tooltip_Float_Title_Center_Span",
     }
 
     this.AryData=[];    //输出文字信息
@@ -1887,8 +1888,8 @@ function JSFloatTooltip()
                 case KLINE_INFO_TYPE.BLOCKTRADING:
                     this.FormatBlockTradingText(item, defaultfloatPrecision, aryText);
                     break;
-                case KLINE_INFO_TYPE.TRADEDETAIL:
-                    this.FormatTradeDetailText(item,defaultfloatPrecision,aryText);
+                case KLINE_INFO_TYPE.DRAGON_TIGER:
+                    this.FormatDragonTigerText(item,defaultfloatPrecision,aryText);
                     break;
                 case KLINE_INFO_TYPE.RESEARCH:
                     this.FormatResearchText(item, aryText);
@@ -1945,13 +1946,13 @@ function JSFloatTooltip()
     /////////////////////////////////////////////////////////////////////////////////////////////
     // 公告数据格式化
 
-    this.FormatDefaultKLineInfoText=function(item, aryOut)
+    this.FormatDefaultKLineInfoText=function(data, aryOut)
     {
         var title;
-        var strDate=IFrameSplitOperator.FormatDateString(item.Date,"YYYY-MM-DD");
-        if (IFrameSplitOperator.IsNumber(item.Time)) 
+        var strDate=IFrameSplitOperator.FormatDateString(data.Date,"YYYY-MM-DD");
+        if (IFrameSplitOperator.IsNumber(data.Time)) 
         {
-            var strTime=IFrameSplitOperator.FormatTimeString(item.Time);
+            var strTime=IFrameSplitOperator.FormatTimeString(data.Time);
             title=`${strDate} ${strTime}`;
         }
         else
@@ -1962,12 +1963,18 @@ function JSFloatTooltip()
         var item=
         { 
             Title:title,        //日期
-            Text:item.Title,    //标题
+            Text:data.Title,    //标题
             Color:this.ValueColor,
             ClassName:this.ValueAlign.MarginLeft
         };
 
         aryOut.push(item);
+
+        var extendata = data.ExtendData;
+        if (extendata)
+        {
+            this.FormatKLineInfoArrayText(aryOut, extendata.AryText);
+        }
     }
 
     //大宗交易
@@ -1980,121 +1987,157 @@ function JSFloatTooltip()
         aryOut.push(item);
 
         var extendata = data.ExtendData;
-        var item={ Title:"成交价:", Text:extendata.Price.toFixed(floatPrecision), Color:this.ValueColor };
-        aryOut.push(item);
+        if (extendata)
+        {
+            if (IFrameSplitOperator.IsNumber(extendata.Price))
+            {
+                var item={ Title:"成交价:", Text:extendata.Price.toFixed(floatPrecision), Color:this.ValueColor };
+                aryOut.push(item);
+            }
+            
+            if (IFrameSplitOperator.IsNumber(extendata.ClosePrice))
+            {
+                 var item={ Title:"收盘价:", Text:extendata.ClosePrice.toFixed(floatPrecision), Color:this.ValueColor };
+                aryOut.push(item);
+            }
+           
+            if (IFrameSplitOperator.IsNumber(extendata.Premium))
+            {
+                var item={ Title:"溢折价率:", Text:`${extendata.Premium.toFixed(2)}%`, Color:this.GetColor(extendata.Premium,0) };
+                aryOut.push(item);
+            }
+            
+            if (IFrameSplitOperator.IsNumber(extendata.Vol))
+            {
+                var item={ Title:"成交量:", Text:IFrameSplitOperator.FormatValueStringV2(extendata.Vol,0,2,this.LanguageID), Color:this.VolColor };
+                aryOut.push(item);
+            }
 
-        var item={ Title:"收盘价:", Text:extendata.ClosePrice.toFixed(floatPrecision), Color:this.ValueColor };
-        aryOut.push(item);
-
-        var item={ Title:"溢折价率:", Text:extendata.Premium.toFixed(2), Color:this.GetColor(extendata.Premium,0) };
-        aryOut.push(item);
-
-        var item={ Title:"成交量:", Text:IFrameSplitOperator.FormatValueStringV2(extendata.Vol,0,2,this.LanguageID), Color:this.VolColor };
-        aryOut.push(item);
+            this.FormatKLineInfoArrayText(aryOut, extendata.AryText);
+        }
     }
 
     //龙虎榜
-    this.FormatTradeDetailText=function(data, floatPrecision, aryOut)
+    this.FormatDragonTigerText=function(data, floatPrecision, aryOut)
     {
-        if (!data.ExtendData) return;
-        var extendata = data.ExtendData;
-        if (!IFrameSplitOperator.IsNonEmptyArray(extendata.Detail)) return;
-
-        var item={ Title:"日期",Text:IFrameSplitOperator.FormatDateString(data.Date,"YYYY-MM-DD"), Color:this.ValueColor, ClassName:this.ValueAlign.MarginLeft };
+        var item={ Title:"", Text:"龙虎榜", Color:this.TextColor, ClassName:this.ValueAlign.Left };
         aryOut.push(item);
 
-        for(var i=0;i<extendata.Detail.length;++i)
+        var item={ Title:"日期",Text:IFrameSplitOperator.FormatDateString(data.Date,"YYYY-MM-DD"), Color:this.ValueColor};
+        aryOut.push(item);
+
+        var item={ Title:"上榜原因:",Text:data.Title, Color:this.ValueColor };
+        aryOut.push(item);
+
+        var extendata=data.ExtendData;
+        if (extendata)
         {
-            var resItem=extendata.Detail[i];
-            if (i==0)
-                var item={ Title:"上榜原因:",Text:resItem.TypeExplain, Color:this.ValueColor, ClassName:this.ValueAlign.MarginLeft };
+            if (IFrameSplitOperator.IsNumber(extendata.BuyAmount)) 
+                aryOut.push({Title:"机构买入总额:", Text:IFrameSplitOperator.FormatValueStringV2(extendata.BuyAmount,0,2), Color:this.GetColor(extendata.BuyAmount,0)});
+
+            if (IFrameSplitOperator.IsNumber(extendata.SellAmount)) 
+                aryOut.push({Title:"机构卖出总额:", Text:IFrameSplitOperator.FormatValueStringV2(extendata.SellAmount,0,2), Color:this.GetColor(Math.abs(extendata.SellAmount)*-1,0)});
+
+            if (IFrameSplitOperator.IsNumber(extendata.NetBuyAmount)) 
+                aryOut.push({Title:"机构买入净额:", Text:IFrameSplitOperator.FormatValueStringV2(extendata.NetBuyAmount,0,2), Color:this.GetColor(extendata.NetBuyAmount,0)});
+
+            if (IFrameSplitOperator.IsNumber(extendata.Amount)) 
+                aryOut.push({Title:"市场总成交额:", Text:IFrameSplitOperator.FormatValueStringV2(extendata.Amount,0,2), Color:this.ValueColor});
+
+            if (IFrameSplitOperator.IsNumber(extendata.NetBuyRatio)) 
+                aryOut.push({Title:"净买额占总成交比:", Text:`${extendata.NetBuyRatio.toFixed(2)}%`, Color:this.GetColor(extendata.NetBuyRatio,0)});
+
+            this.FormatKLineInfoArrayText(aryOut, extendata.AryText);
+        } 
+    }
+
+    this.FormatKLineInfoArrayText=function(aryOut, aryText)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryText)) return;
+            
+        for(var i=0;i<aryText.length;++i)
+        {
+            var item=aryText[i];
+            if (item.Type===1) //涨幅
+            {
+                var outItem={ Title:item.Name, Text:`${item.Value.toFixed(2)}%`, Color:this.GetColor(item.Value,0) };
+            }
+            else if (item.Type==2)  //单行
+            {
+                var outItem={ Title:"", Text:item.Name, Color:this.TextColor, ClassName:this.ValueAlign.Left };
+            }
             else
-                var item={ Title:"",Text:resItem.TypeExplain, Color:this.ValueColor, ClassName:this.ValueAlign.MarginLeft };
-
-            aryOut.push(item);
-        }
-
-        if (extendata.FWeek)
-        {
-            var value=extendata.FWeek.Week1;
-            if (IFrameSplitOperator.IsNumber(value))
             {
-                var item={ Title:"一周后涨幅:",Text:`${value.toFixed(2)}%`, Color:this.GetColor(value,0), ClassName:this.ValueAlign.MarginLeft };
-                aryOut.push(item);
+                var outItem={ Title:item.Name, Text:item.Text, Color:item.Color };
             }
-
-            var value=extendata.FWeek.Week4;
-            if (IFrameSplitOperator.IsNumber(value))
-            {
-                var item={ Title:"四周后涨幅:",Text:`${value.toFixed(2)}%`, Color:this.GetColor(value,0), ClassName:this.ValueAlign.MarginLeft };
-                aryOut.push(item);
-            }
+            
+            aryOut.push(outItem);
         }
     }
 
     //调研
     this.FormatResearchText=function(data,aryOut)
     {
-        if (!data.ExtendData) return;
-        var extendata = data.ExtendData;
-
-        var item={ Title:"日期",Text:IFrameSplitOperator.FormatDateString(data.Date,"YYYY-MM-DD"), Color:this.ValueColor, ClassName:this.ValueAlign.MarginLeft };
+        var item={ Title:"", Text:"机构调研", Color:this.TextColor, ClassName:this.ValueAlign.Left };
         aryOut.push(item);
 
-        if (IFrameSplitOperator.IsNonEmptyArray(extendata.Level))
-        {
-            var strLevel="";
-            for(var i=0;i<extendata.Level.length;++i)
-            {
-                var value=extendata.Level[i];
-                if (strLevel.length>0) strLevel+=",";
-                if(value==0) strLevel+="证券代表";
-                else if(value==1) strLevel+="董秘";
-                else if(value==2) strLevel+="总经理";
-                else if(value==3) strLevel+="董事长";
-            }
+        var item={ Title:"公告日期",Text:IFrameSplitOperator.FormatDateString(data.Date,"YYYY-MM-DD"), Color:this.ValueColor };
+        aryOut.push(item);
 
-            var item={ Title:"接待人员:",Text:strLevel, Color:this.ValueColor, ClassName:this.ValueAlign.MarginLeft };
-            aryOut.push(item);
-        }
-        else
-        {
-            var item={ Title:"接待人员",Text:"----", Color:this.ValueColor, ClassName:this.ValueAlign.MarginLeft };
-            aryOut.push(item);
-        }
+        var item={ Title:"接待方式", Text:data.Title, Color:this.ValueColor };
+        aryOut.push(item);
 
-        if (extendata.Type)
+        var extendata=data.ExtendData;
+        if (extendata)
         {
-            var item={ Title:"", Text:extendata.Type, Color:this.ValueColor, ClassName:this.ValueAlign.MarginLeft };
-            aryOut.push(item);
-        }
-        
+            if (extendata.Researcher) 
+                aryOut.push({ Title:"参与人员", Text:`${extendata.Researcher}`, Color:this.ValueColor });
+
+            if (IFrameSplitOperator.IsNumber(extendata.Count)) 
+                aryOut.push({ Title:"接待机构数量", Text:`${extendata.Count}`, Color:this.ValueColor });
+
+            if (extendata.Place) 
+                aryOut.push({ Title:"接待地点", Text:`${extendata.Place}`, Color:this.ValueColor });
+
+            if (extendata.Receptionist) 
+                aryOut.push({ Title:"接待人员", Text:`${extendata.Receptionist}`, Color:this.ValueColor });
+
+            if (IFrameSplitOperator.IsNumber(extendata.Date)) 
+                aryOut.push({ Title:"接待日期",Text:IFrameSplitOperator.FormatDateString(extendata.Date,"YYYY-MM-DD"), Color:this.ValueColor });
+
+            this.FormatKLineInfoArrayText(aryOut, extendata.AryText);
+        }        
     }
 
     //业绩预告
     this.FormatPerformanceForecastText=function(data,aryOut)
     {
-        if (!data.ExtendData) return;
-        var extendata = data.ExtendData;
-        var reportDate=extendata.ReportDate;
-        if (!reportDate) return;
-
-        var year=parseInt(reportDate/10000);  //年份
-        var day=reportDate%10000;             //日期
-        var reportType="----";
-        if(day == 1231) reportType = '年报';
-        else if(day == 331) reportType ='一季度报';
-        else if(day == 630) reportType = "半年度报";
-        else if(day == 930) reportType = "三季度报";
-
-        var item={ Title:"业绩预告:",Text:data.Title, Color:this.ValueColor, ClassName:this.ValueAlign.MarginLeft };
+        var item={ Title:"业绩预告",  Color:this.TextColor, IsMergeCell:true ,TitleClassName:this.TitleAlign.Center};
         aryOut.push(item);
 
-        var item={ Title:"年份:",Text:`${year}`, Color:this.ValueColor, ClassName:this.ValueAlign.MarginLeft };
+        var item={ Title:"公告日期",Text:IFrameSplitOperator.FormatDateString(data.Date,"YYYY-MM-DD"), Color:this.ValueColor };
         aryOut.push(item);
 
-        var item={ Title:"类型:",Text:reportType, Color:this.ValueColor, ClassName:this.ValueAlign.MarginLeft };
+        var item={ Title:"报告期:",Text:IFrameSplitOperator.FormatDateString(data.ReportDate,"YYYY-MM-DD"), Color:this.ValueColor };
         aryOut.push(item);
+
+        var extendata=data.ExtendData;
+        if (extendata)
+        {
+            if (IFrameSplitOperator.IsNonEmptyArray(extendata.AryData)) 
+            {
+                var item={ Title:"预测指标",Text:"预告类型", Color:this.ValueColor };
+                aryOut.push(item);
+                for(var i=0;i<extendata.AryData.length;++i)
+                {
+                    var dataItem=extendata.AryData[i];
+                    aryOut.push({ Title:dataItem.Name, Text:dataItem.Text, Color:this.ValueColor });
+                }
+            }
+                
+
+            this.FormatKLineInfoArrayText(aryOut, extendata.AryText);
+        }
     }
 
     

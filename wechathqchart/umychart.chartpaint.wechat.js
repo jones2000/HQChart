@@ -10683,6 +10683,8 @@ function ChartMinutePriceLine()
     delete this.newMethod;
 
     this.YClose;
+    this.Source;            //原始分钟数据
+    this.Symbol;
     this.IsDrawArea = true;    //是否画价格面积图
     this.AreaColor = 'rgba(0,191,255,0.1)';
     this.LastPoint={};  //最后一个点的信息 {X, Y, Data:, Value:, DateTime:YYYYMMDDHHMMSS }
@@ -10841,17 +10843,40 @@ function ChartMinutePriceLine()
 
         range.Min = this.YClose;
         range.Max = this.YClose;
-        for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
+        if (this.Name=="Minute-Line" && this.Source)
         {
-            var value = this.Data.Data[i];
-            if (!value) continue;
+            for(var i=0;i<this.Source.Data.length;++i)
+            {
+                var minItem=this.Source.Data[i];
+                if (!minItem) continue;
 
-            if (range.Max == null) range.Max = value;
-            if (range.Min == null) range.Min = value;
-
-            if (range.Max < value) range.Max = value;
-            if (range.Min > value) range.Min = value;
+                if (IFrameSplitOperator.IsNumber(minItem.High) && IFrameSplitOperator.IsNumber(minItem.Low))
+                {
+                    if (range.Max==null || range.Max<minItem.High) range.Max=minItem.High;
+                    if (range.Min==null || range.Min>minItem.Low) range.Min=minItem.Low;
+                }
+                else if (IFrameSplitOperator.IsNumber(minItem.Close))
+                {
+                    if (range.Max==null || range.Max<minItem.Close) range.Max=minItem.Close;
+                    if (range.Min==null || range.Min>minItem.Close) range.Min=minItem.Close;
+                }
+            }
         }
+        else
+        {
+            for (var i = this.Data.DataOffset, j = 0; i < this.Data.Data.length && j < xPointCount; ++i, ++j) 
+            {
+                var value = this.Data.Data[i];
+                if (!value) continue;
+    
+                if (range.Max == null) range.Max = value;
+                if (range.Min == null) range.Min = value;
+    
+                if (range.Max < value) range.Max = value;
+                if (range.Min > value) range.Min = value;
+            }
+        }
+       
 
         if (range.Max == this.YClose && range.Min == this.YClose) 
         {

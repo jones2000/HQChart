@@ -820,10 +820,10 @@ function DynamicKLineTitlePainting()
         var invesotrCount = 0;    //互动易统计
         var researchCouunt = 0;
         var reportCount = 0;
-        var blockTradeCount = 0;  //大宗交易次数
-        var tradeDetailCount = 0; //龙虎榜上榜次数
+        var blockTradeCount = 0;    //大宗交易次数
+        var dragonTigerCount = 0;   //龙虎榜上榜次数
         var policyData = null;
-        var reportTitle = null, pforecastTitle = null;
+        var reportTitle = null, pforecastTitle = null, dividendTitle=null;
         //console.log(info);
         for (var i in info.Data) {
             var item = info.Data[i];
@@ -849,11 +849,14 @@ function DynamicKLineTitlePainting()
                 case KLINE_INFO_TYPE.BLOCKTRADING:
                     ++blockTradeCount;
                     break;
-                case KLINE_INFO_TYPE.TRADEDETAIL:
-                    ++tradeDetailCount;
+                case KLINE_INFO_TYPE.DRAGON_TIGER:
+                    ++dragonTigerCount;
                     break;
                 case KLINE_INFO_TYPE.POLICY:
                     policyData = item;
+                    break;
+                case KLINE_INFO_TYPE.DIVIDEND:
+                    dividendTitle=item.Title;
                     break;
             }
         }
@@ -877,16 +880,17 @@ function DynamicKLineTitlePainting()
         aryTitle.push(IFrameSplitOperator.FormatDateString(date));
         if (reportTitle) aryTitle.push(reportTitle);        //季报
         if (pforecastTitle) aryTitle.push(pforecastTitle);  //业绩预告  
+        if (dividendTitle) aryTitle.push(dividendTitle);
         if (reportCount > 0) aryTitle.push('公告数量:' + reportCount);
         if (researchCouunt > 0) aryTitle.push('机构调研次数:' + researchCouunt);
-        if (tradeDetailCount > 0) aryTitle.push('龙虎榜上榜次数:' + tradeDetailCount);
+        if (dragonTigerCount > 0) aryTitle.push('龙虎榜上榜次数:' + dragonTigerCount);
         if (invesotrCount > 0) aryTitle.push('互动易数量:' + invesotrCount);
         if (blockTradeCount > 0) aryTitle.push('大宗交易次数:' + blockTradeCount);
-        if (policyData) //策略选股
+        if (policyData && policyData.ExtendData && IFrameSplitOperator.IsNonEmptyArray(policyData.ExtendData.AryData)) //策略选股
         {
-            for (let i in policyData.ExtendData)    //显示满足的策略
+            for (let i=0; i<policyData.ExtendData.AryData.length; ++i)    //显示满足的策略
             {
-                aryTitle.push(policyData.ExtendData[i].Name);
+                aryTitle.push(policyData.ExtendData.AryData[i].Name);
             }
         }
 

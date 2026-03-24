@@ -108,6 +108,14 @@ class HQData
     RequestKLineMinuteData_ID=`${this.ID}-Request-KLineData`;
     RequestKLineMinuteRealtimeData_ID=`${this.ID}-Request-KLineData`;
     RequestKLineFlowCapitalData_ID=`${this.ID}-FlowCapitalData`;
+    
+    RequestKLineMineNews_ID=`${this.ID}-KLineMineNewsData`;
+    RequestKLineMineAnnouncement_ID=`${this.ID}-KLineMineAnnouncementData`;
+    RequestKLineMineDividendInfo_ID=`${this.ID}-KLineMineDividendData`;
+    RequestKLineMineBlockTrading_id=`${this.ID}-KLineMineBlockTradingData`;
+    RequestKLineMineDragonTigerInfo_id=`${this.ID}-KLineMineDragonTigerData`;
+    RequestKLineMineResearch_ID=`${this.ID}-KLineMineResearchData`;
+    RequestKLineMinePforecast_ID=`${this.ID}-KLineMinePforecastData`;
 
     RequestDealData_ID=`$${this.ID}-Request-DealData`;
 
@@ -121,6 +129,8 @@ class HQData
     Counter=1;
 
     MapSelfBlcok = new Map();  //自选股数据缓存
+
+    static Explain="插件数据";
 
     SetSelfBlock(blockSymbol, arySymbol)
     {
@@ -259,6 +269,36 @@ class HQData
             case "JSTReportChartContainer::RequestStockData":          //T型报价数据更新
                 this.TReport_RequestStockData(data, callback, option);
                 break;
+
+            //个股新闻
+            case "NewsInfo::RequestData":
+                this.KLine_NewsInfo(data, callback, option);
+                break;
+            //个股公告
+            case "AnnouncementInfo::RequestData":
+                this.KLine_AnnouncementInfo(data, callback, option);
+                break;
+            //个股除权
+            case "DividendInfo::RequestData":
+                this.KLine_DividendInfo(data, callback, option);
+                break;
+            //大宗交易
+            case "BlockTrading::RequestData":
+                this.KLine_BlockTrading(data, callback, option);
+                break;
+            //龙虎榜
+            case "DragonTigerInfo::RequestData":
+                this.KLine_DragonTigerInfo(data, callback, option);
+                break;
+            //机构调研
+            case "ResearchInfo::RequestData":
+                this.KLine_ResearchInfo(data, callback, option);
+                break;
+            //业绩预告
+            case "PforecastInfo::RequestData":
+                this.KLine_PforecastInfo(data, callback, option);
+                break;
+
         }
     }
 
@@ -3183,6 +3223,507 @@ class HQData
         }
 
         callback(hqchartData);
+    }
+
+    KLine_NewsInfo(data, callback, option)
+    {
+        data.PreventDefault=true;
+        var symbol=data.Request.Symbol;
+        var range=data.Request.DateRange;
+        var start=range.Start;
+        var end=range.End;
+        var period=data.Request.Period;
+
+        if (!MARKET_SUFFIX_NAME.IsSHSZStockA(symbol) && !MARKET_SUFFIX_NAME.IsBJStock(symbol))
+        {
+            console.warn(`[HQData::KLine_NewsInfo] ${symbol} 不支持新闻数据`)
+            return;
+        }
+
+        if (option) option.Symbol=symbol;
+        var extendID=this.Counter++;
+
+        var msg=
+        {
+            MessageID:3,
+            Data:
+            {
+                Type:301,
+                ID:this.RequestKLineMineNews_ID,
+                ArySymbol:[{ Symbol:symbol, Type:[1], Start:start, End:end } ],
+                ExtendData:{ ExtendID:extendID },
+            }
+        };
+
+        var callbackInfo=
+        {
+            ID:this.RequestKLineMineNews_ID,
+            ExtendID:extendID,
+            Callback:(recv)=>
+            {
+                this.KLine_RecvNewsInfo(recv, callback, option);
+            }
+        }
+
+        this.WSClient.Request(msg, callbackInfo);
+    }
+
+    KLine_RecvNewsInfo(recv, callback, option)
+    {
+        var symbol=option.Symbol;
+        var hqchartData={ name:symbol, symbol:symbol, list:[] };
+        for(var i=0;i<recv.AryData.length;++i)
+        {
+            var item=recv.AryData[i];
+            if (item.Symbol==symbol)
+            {
+                for(var j=0;j<item.Data.length;++j)
+                {
+                    var newsItem=item.Data[j];
+                    hqchartData.list.push({ id:newsItem.ID, date:newsItem.Date, title:newsItem.Title, url:newsItem.Url, type:newsItem.Type })
+                }
+                callback(hqchartData);
+                break;
+            }
+        }
+    }
+
+    KLine_AnnouncementInfo(data, callback, option)
+    {
+        data.PreventDefault=true;
+        var symbol=data.Request.Symbol;
+        var range=data.Request.DateRange;
+        var start=range.Start;
+        var end=range.End;
+        var period=data.Request.Period;
+
+        if (!MARKET_SUFFIX_NAME.IsSHSZStockA(symbol) && !MARKET_SUFFIX_NAME.IsBJStock(symbol))
+        {
+            console.warn(`[HQData::KLine_AnnouncementInfo] ${symbol} 不支持公告数据`)
+            return;
+        }
+
+        if (option) option.Symbol=symbol;
+        var extendID=this.Counter++;
+
+        var msg=
+        {
+            MessageID:3,
+            Data:
+            {
+                Type:301,
+                ID:this.RequestKLineMineAnnouncement_ID,
+                ArySymbol:[{ Symbol:symbol, Type:[2], Start:start, End:end } ],
+                ExtendData:{ ExtendID:extendID },
+            }
+        };
+
+        var callbackInfo=
+        {
+            ID:this.RequestKLineMineAnnouncement_ID,
+            ExtendID:extendID,
+            Callback:(recv)=>
+            {
+                this.KLine_RecvAnnouncementInfo(recv, callback, option);
+            }
+        }
+
+        this.WSClient.Request(msg, callbackInfo);
+    }
+
+    KLine_RecvAnnouncementInfo(recv, callback, option)
+    {
+        var symbol=option.Symbol;
+        var hqchartData={ name:symbol, symbol:symbol, report:[] };
+        for(var i=0;i<recv.AryData.length;++i)
+        {
+            var item=recv.AryData[i];
+            if (item.Symbol==symbol)
+            {
+                for(var j=0;j<item.Data.length;++j)
+                {
+                    var newsItem=item.Data[j];
+                    hqchartData.report.push({ id:newsItem.ID, releasedate:newsItem.Date, title:newsItem.Title, url:newsItem.Url })
+                }
+                callback(hqchartData);
+                break;
+            }
+        }
+    }
+
+    KLine_DividendInfo(data, callback, option)
+    {
+        data.PreventDefault=true;
+        var symbol=data.Request.Symbol;
+        var range=data.Request.DateRange;
+        var start=range.Start;
+        var end=range.End;
+        var period=data.Request.Period;
+
+        if (!MARKET_SUFFIX_NAME.IsSHSZStockA(symbol) && !MARKET_SUFFIX_NAME.IsBJStock(symbol))
+        {
+            console.warn(`[HQData::KLine_DividendInfo] ${symbol} 不支持除权数据`)
+            return;
+        }
+
+        if (option) option.Symbol=symbol;
+        var extendID=this.Counter++;
+
+        var msg=
+        {
+            MessageID:3,
+            Data:
+            {
+                Type:301,
+                ID:this.RequestKLineMineDividendInfo_ID,
+                ArySymbol:[{ Symbol:symbol, Type:[50], Start:start, End:end } ],
+                ExtendData:{ ExtendID:extendID },
+            }
+        };
+
+        var callbackInfo=
+        {
+            ID:this.RequestKLineMineDividendInfo_ID,
+            ExtendID:extendID,
+            Callback:(recv)=>
+            {
+                this.KLine_RecvDividendInfo(recv, callback, option);
+            }
+        }
+
+        this.WSClient.Request(msg, callbackInfo);
+    }
+
+    KLine_RecvDividendInfo(recv, callback, option)
+    {
+        var symbol=option.Symbol;
+        var hqchartData={ name:symbol, symbol:symbol, list:[] };
+        for(var i=0;i<recv.AryData.length;++i)
+        {
+            var item=recv.AryData[i];
+            if (item.Symbol==symbol)
+            {
+                for(var j=0;j<item.Data.length;++j)
+                {
+                    var newsItem=item.Data[j];
+                    hqchartData.list.push({ id:newsItem.ID, date:newsItem.Date, title:newsItem.Title })
+                }
+                callback(hqchartData);
+                break;
+            }
+        }
+    }
+
+    KLine_BlockTrading(data, callback, option)
+    {
+        data.PreventDefault=true;
+        var symbol=data.Request.Symbol;
+        var range=data.Request.DateRange;
+        var start=range.Start;
+        var end=range.End;
+        var period=data.Request.Period;
+
+        if (!MARKET_SUFFIX_NAME.IsSHSZStockA(symbol) && !MARKET_SUFFIX_NAME.IsBJStock(symbol))
+        {
+            console.warn(`[HQData::KLine_BlockTrading] ${symbol} 不支持大宗交易数据`)
+            return;
+        }
+
+        if (option) option.Symbol=symbol;
+        var extendID=this.Counter++;
+
+        var msg=
+        {
+            MessageID:3,
+            Data:
+            {
+                Type:301,
+                ID:this.RequestKLineMineBlockTrading_id,
+                ArySymbol:[{ Symbol:symbol, Type:[51], Start:start, End:end } ],
+                ExtendData:{ ExtendID:extendID },
+            }
+        };
+
+        var callbackInfo=
+        {
+            ID:this.RequestKLineMineBlockTrading_id,
+            ExtendID:extendID,
+            Callback:(recv)=>
+            {
+                this.KLine_RecvBlockTrading(recv, callback, option);
+            }
+        }
+
+        this.WSClient.Request(msg, callbackInfo);
+    }
+
+    KLine_RecvBlockTrading(recv, callback, option)
+    {
+        var symbol=option.Symbol;
+        var hqchartData={ name:symbol, symbol:symbol, list:[] };
+        for(var i=0;i<recv.AryData.length;++i)
+        {
+            var stockItem=recv.AryData[i];
+            if (stockItem.Symbol==symbol)
+            {
+                for(var j=0;j<stockItem.Data.length;++j)
+                {
+                    var item=stockItem.Data[j];
+                    var newItem={ date:item.Date, price:item.Price, vol:item.Vol, premium:item.Premium*100, close:item.Close, aryText:[] };
+
+                    if (IFrameSplitOperator.IsNumber(item.Day1)) newItem.aryText.push({ name:"1日:",  value:item.Day1, type:1 });
+                    if (IFrameSplitOperator.IsNumber(item.Day5)) newItem.aryText.push({ name:"5日:",  value:item.Day5, type:1 });
+                    if (IFrameSplitOperator.IsNumber(item.Day10)) newItem.aryText.push({ name:'10日:',  value:item.Day10, type:1 });
+                    if (IFrameSplitOperator.IsNumber(item.Day20)) newItem.aryText.push({ name:'20日:',  value:item.Day20, type:1 });
+
+                    if (IFrameSplitOperator.IsNonEmptyArray(newItem.aryText)) newItem.aryText.unshift({name:"上榜后涨幅", type:2 })
+
+                    hqchartData.list.push(newItem);
+                }
+                callback(hqchartData);
+                break;
+            }
+        }
+    }
+
+    KLine_DragonTigerInfo(data, callback, option)
+    {
+        data.PreventDefault=true;
+        var symbol=data.Request.Symbol;
+        var range=data.Request.DateRange;
+        var start=range.Start;
+        var end=range.End;
+        var period=data.Request.Period;
+
+        if (!MARKET_SUFFIX_NAME.IsSHSZStockA(symbol) && !MARKET_SUFFIX_NAME.IsBJStock(symbol))
+        {
+            console.warn(`[HQData::KLine_DragonTigerInfo] ${symbol} 不支持龙虎榜数据`)
+            return;
+        }
+
+        if (option) option.Symbol=symbol;
+        var extendID=this.Counter++;
+
+        var msg=
+        {
+            MessageID:3,
+            Data:
+            {
+                Type:301,
+                ID:this.RequestKLineMineDragonTigerInfo_id,
+                ArySymbol:[{ Symbol:symbol, Type:[52], Start:start, End:end } ],
+                ExtendData:{ ExtendID:extendID },
+            }
+        };
+
+        var callbackInfo=
+        {
+            ID:this.RequestKLineMineDragonTigerInfo_id,
+            ExtendID:extendID,
+            Callback:(recv)=>
+            {
+                this.KLine_RecvDragonTigerInfo(recv, callback, option);
+            }
+        }
+
+        this.WSClient.Request(msg, callbackInfo);
+    }
+
+    KLine_RecvDragonTigerInfo(recv, callback, option)
+    {
+        var symbol=option.Symbol;
+        var hqchartData={ name:symbol, symbol:symbol, list:[] };
+        for(var i=0;i<recv.AryData.length;++i)
+        {
+            var stockItem=recv.AryData[i];
+            if (stockItem.Symbol==symbol)
+            {
+                for(var j=0;j<stockItem.Data.length;++j)
+                {
+                    var item=stockItem.Data[j];
+                    var newItem=
+                    { 
+                        date:item.Date, 
+                        title:item.Title, 
+                        buyAmount:item.BuyAmount,       //机构买入总额
+                        sellAmount:item.SellAmount,     //机构卖出总额
+                        netBuyAmount:item.NetBuyAmount, //机构买入净额
+                        netBuyRatio:item.NetBuyRatio,   //净买额占总成交比
+                        amount:item.Amount,              //市场总成交额
+
+                        aryText:[] 
+                    };
+
+                    
+                    if (IFrameSplitOperator.IsNumber(item.Day1)) newItem.aryText.push({ name:"1日:",  value:item.Day1, type:1 });
+                    if (IFrameSplitOperator.IsNumber(item.Day5)) newItem.aryText.push({ name:"2日:",  value:item.Day2, type:1 });
+                    if (IFrameSplitOperator.IsNumber(item.Day5)) newItem.aryText.push({ name:"3日:",  value:item.Day3, type:1 });
+                    if (IFrameSplitOperator.IsNumber(item.Day10)) newItem.aryText.push({ name:'5日:',  value:item.Day5, type:1 });
+                    if (IFrameSplitOperator.IsNumber(item.Day20)) newItem.aryText.push({ name:'10日:',  value:item.Day10, type:1 });
+                    if (IFrameSplitOperator.IsNonEmptyArray(newItem.aryText)) newItem.aryText.unshift({name:"上榜后涨幅", type:2 });
+
+                    hqchartData.list.push(newItem);
+                }
+                callback(hqchartData);
+                break;
+            }
+        }
+    }
+
+    KLine_ResearchInfo(data, callback, option)
+    {
+        data.PreventDefault=true;
+        var symbol=data.Request.Symbol;
+        var range=data.Request.DateRange;
+        var start=range.Start;
+        var end=range.End;
+        var period=data.Request.Period;
+
+        if (!MARKET_SUFFIX_NAME.IsSHSZStockA(symbol) && !MARKET_SUFFIX_NAME.IsBJStock(symbol))
+        {
+            console.warn(`[HQData::KLine_ResearchInfo] ${symbol} 不支持机构调研数据`)
+            return;
+        }
+
+        if (option) option.Symbol=symbol;
+        var extendID=this.Counter++;
+
+        var msg=
+        {
+            MessageID:3,
+            Data:
+            {
+                Type:301,
+                ID:this.RequestKLineMineResearch_ID,
+                ArySymbol:[{ Symbol:symbol, Type:[53], Start:start, End:end } ],
+                ExtendData:{ ExtendID:extendID },
+            }
+        };
+
+        var callbackInfo=
+        {
+            ID:this.RequestKLineMineResearch_ID,
+            ExtendID:extendID,
+            Callback:(recv)=>
+            {
+                this.KLine_RecvResearchInfo(recv, callback, option);
+            }
+        }
+
+        this.WSClient.Request(msg, callbackInfo);
+    }
+
+    KLine_RecvResearchInfo(recv, callback, option)
+    {
+        var symbol=option.Symbol;
+        var hqchartData={ name:symbol, symbol:symbol, list:[] };
+        for(var i=0;i<recv.AryData.length;++i)
+        {
+            var stockItem=recv.AryData[i];
+            if (stockItem.Symbol==symbol)
+            {
+                for(var j=0;j<stockItem.Data.length;++j)
+                {
+                    var item=stockItem.Data[j];
+                    var newItem=
+                    { 
+                        date:item.Date, 
+                        title:item.Title, 
+                        researcher:item.Researcher,
+                        place:item.Place,
+                        count:item.Count,
+                        receptionist:item.Receptionist,
+                        startDate:item.StartDate,
+
+                        aryText:[] 
+                    };
+
+                    hqchartData.list.push(newItem);
+                }
+                callback(hqchartData);
+                break;
+            }
+        }
+    }
+
+
+    KLine_PforecastInfo(data, callback, option)
+    {
+        data.PreventDefault=true;
+        var symbol=data.Request.Symbol;
+        var range=data.Request.DateRange;
+        var start=range.Start;
+        var end=range.End;
+        var period=data.Request.Period;
+
+        if (!MARKET_SUFFIX_NAME.IsSHSZStockA(symbol) && !MARKET_SUFFIX_NAME.IsBJStock(symbol))
+        {
+            console.warn(`[HQData::KLine_PforecastInfo] ${symbol} 不支持业绩预告数据`)
+            return;
+        }
+
+        if (option) option.Symbol=symbol;
+        var extendID=this.Counter++;
+
+        var msg=
+        {
+            MessageID:3,
+            Data:
+            {
+                Type:301,
+                ID:this.RequestKLineMinePforecast_ID,
+                ArySymbol:[{ Symbol:symbol, Type:[54], Start:start, End:end } ],
+                ExtendData:{ ExtendID:extendID },
+            }
+        };
+
+        var callbackInfo=
+        {
+            ID:this.RequestKLineMinePforecast_ID,
+            ExtendID:extendID,
+            Callback:(recv)=>
+            {
+                this.KLine_RecvPforecastInfo(recv, callback, option);
+            }
+        }
+
+        this.WSClient.Request(msg, callbackInfo);
+    }
+
+    KLine_RecvPforecastInfo(recv, callback, option)
+    {
+        var symbol=option.Symbol;
+        var hqchartData={ name:symbol, symbol:symbol, list:[] };
+        for(var i=0;i<recv.AryData.length;++i)
+        {
+            var stockItem=recv.AryData[i];
+            if (stockItem.Symbol==symbol)
+            {
+                for(var j=0;j<stockItem.Data.length;++j)
+                {
+                    var item=stockItem.Data[j];
+                    var newItem=
+                    { 
+                        date:item.Date, 
+                        reportDate:null,
+                        aryData:[],
+                        aryText:[] 
+                    };
+
+                    for(var k=0;k<item.AryData.length;++k)
+                    {
+                        var cell=item.AryData[k];
+
+                        newItem.aryData.push({name:cell.IndexName, text:cell.Title, content:cell.Content});
+                        newItem.reportDate=cell.ReportDate;
+                    }
+
+                    hqchartData.list.push(newItem);
+                }
+                callback(hqchartData);
+                break;
+            }
+        }
     }
 
     //获取市场名称
