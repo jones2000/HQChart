@@ -353,7 +353,13 @@ function JSScrollTextChartContainer(uielement)
         
         if (option)
         {
-           
+           if (IFrameSplitOperator.IsNumber(option.LimitCount)) chart.LimitCount=option.LimitCount;
+           if (option.Label)
+           {
+                var item=option.Label;
+                if (IFrameSplitOperator.IsString(item.Text)) chart.Label.Text=item.Text;
+                if (IFrameSplitOperator.IsBool(item.IsShow)) chart.Label.IsShow=item.IsShow;
+           }
         }
 
         this.UIElement.onmousedown=(e)=> { this.UIOnMouseDown(e); }
@@ -663,6 +669,15 @@ function ChartScrollText()
     this.FirstItem=null;              //第一个显示的项
     this.MouseOnItem=null;            //鼠标所在项
 
+    this.LimitCount=15;                   //最多存几条数据
+    this.LabelConfig=
+    { 
+        Color:g_JSChartResource.ScrollText.Label.Color,
+        Font:g_JSChartResource.ScrollText.Label.Font,
+        Margin:CloneData(g_JSChartResource.ScrollText.Label.Margin)
+    };
+    this.Label={ Text:"24H滚动新闻", Width:null, IsShow:true };
+
     this.AryRect=[];
 
     this.TextConfig=
@@ -683,12 +698,17 @@ function ChartScrollText()
     {
         this.TextConfig.Font=g_JSChartResource.ScrollText.Font;
         this.TextConfig.Color=g_JSChartResource.ScrollText.Color;
+        this.TextConfig.MouseOnColor=g_JSChartResource.ScrollText.MouseOnColor;
         this.TextConfig.Spacing=g_JSChartResource.ScrollText.Spacing;
         this.TextConfig.Margin.Top=g_JSChartResource.ScrollText.Margin.Top;
         this.TextConfig.Margin.Bottom=g_JSChartResource.ScrollText.Margin.Bottom;
 
         this.LeftMargin=g_JSChartResource.ScrollText.LeftMargin;    //左边间距
         this.RightMargin=g_JSChartResource.ScrollText.RightMargin;   //右边间距
+
+        this.LabelConfig.Color=g_JSChartResource.ScrollText.Label.Color;
+        this.LabelConfig.Font=g_JSChartResource.ScrollText.Label.Font;
+        this.LabelConfig.Margin=CloneData(g_JSChartResource.ScrollText.Label.Margin);
     }
 
     this.GetDataIndex=function(finderItem)
@@ -723,8 +743,9 @@ function ChartScrollText()
 
     this.GetClientRect=function()
     {
+        var labelWidth=this.GetLabelWidth();
         var border=this.ChartBorder.GetBorder();    
-        var rtClient = { Left:border.Left, Right:border.Right, Top:border.Top, Bottom:border.Bottom };
+        var rtClient = { Left:border.Left+labelWidth, Right:border.Right, Top:border.Top, Bottom:border.Bottom };
         rtClient.Left+=this.LeftMargin;
         rtClient.Right-=this.RightMargin;
         rtClient.Width=rtClient.Right-rtClient.Left;
@@ -733,9 +754,52 @@ function ChartScrollText()
         return rtClient;
     }
 
+    this.DrawLabel=function()
+    {
+        if (!this.Label || !this.Label.IsShow || !this.Label.Text) return;
+
+        var config=this.LabelConfig;
+        this.Canvas.textBaseline="bottom";
+        this.Canvas.textAlign="left";
+        this.Canvas.font=config.Font;
+        this.Canvas.fillStyle=config.Color;
+
+        var border=this.ChartBorder.GetBorder();    
+        var text=this.Label.Text;
+        var textWidth=this.Canvas.measureText(text).width;
+        var cellWidth=textWidth+config.Margin.Left+config.Margin.Right;
+        var x=border.Left+config.Margin.Left;
+        var yText=border.Bottom-config.Margin.Bottom;
+        this.Canvas.fillText(text,x,yText);
+        this.Label.Width=cellWidth;
+
+        this.Canvas.strokeStyle=g_JSChartResource.StatusBar.BorderColor;    //边框线
+        this.Canvas.beginPath();
+        var y=ToFixedPoint(border.Left+cellWidth);
+        this.Canvas.moveTo(y,border.Top);
+        this.Canvas.lineTo(y,border.Bottom);
+        this.Canvas.stroke();
+    }
+
+    this.GetLabelWidth=function()
+    {
+        if (!this.Label || !this.Label.IsShow || !this.Label.Text) return 0;
+        if (IFrameSplitOperator.IsNumber(this.Label.Width)) return this.Label.Width;
+
+        var config=this.LabelConfig;
+        var text=this.Label.Text;
+        var textWidth=this.Canvas.measureText(text).width;
+        var cellWidth=textWidth+config.Margin.Left+config.Margin.Right;
+        this.Label.Width=cellWidth;
+
+        return cellWidth;
+    }
+
     this.Draw=function()
     {
         this.AryRect=[];
+        this.DrawLabel();
+
         if (!this.Data || !IFrameSplitOperator.IsNonEmptyArray(this.Data.AryText)) return;
 
         var rtClient = this.GetClientRect();
@@ -750,19 +814,20 @@ function ChartScrollText()
         var config=this.TextConfig;
         
         var y=rtClient.Bottom;
-        var x=rtClient.Left;
-        var startIndex=-1;
+        var x=rtClient.Right;
+        var startIndex=-1,endIndex=-1;
         if (this.FirstItem) startIndex=this.GetDataIndex(this.FirstItem);
         if (startIndex<0) 
         {
-            this.FirstItem=this.Data.AryText[0];
-            this.FirstItem.Move={ XOffset:0}
-            startIndex=0;
+            var index=this.Data.AryText.length-1;
+            this.FirstItem=this.Data.AryText[index];
+            this.FirstItem.Move={ XOffset:0 };
+            startIndex=index;
         }
 
         if (this.FirstItem.Move && IFrameSplitOperator.IsNumber(this.FirstItem.Move.XOffset)) x-=this.FirstItem.Move.XOffset;
 
-        for(var i=startIndex;i<this.Data.AryText.length;++i)
+        for(var i=startIndex;i>=0;--i)
         {
             var item=this.Data.AryText[i];
             if (!IFrameSplitOperator.IsNonEmptyArray(item.Content)) continue;
@@ -794,19 +859,22 @@ function ChartScrollText()
                 itemWidth+=textWidth
             }
 
+            endIndex=i;
+
             rtText.Right=x;
             this.AryRect.push( { Rect:rtText, Data:item } );
             x+=config.Spacing;
-
-            if (x>=rtClient.Right) break;
 
             if (item==this.FirstItem)
             {
                 item.Move.ContentWidth=itemWidth;
                 item.Move.Width=itemWidth+config.Spacing;
             }
+
+            if (x>=rtClient.Right) break;
         }
 
+        /*
         for(var i=0;i<this.Data.AryText.length;++i)
         {
             if (x>=rtClient.Right) break;
@@ -845,21 +913,43 @@ function ChartScrollText()
 
             x+=config.Spacing;
         }
+        */
        
         this.Canvas.restore();
+
+        this.ResizeDataCount(endIndex);
+    }
+
+    this.ResizeDataCount=function(startIndex)
+    {
+        if (!IFrameSplitOperator.IsNumber(startIndex)) return;
+        if (startIndex<=0) return;
+        if (this.LimitCount<=0) return;
+        if (!this.Data || !IFrameSplitOperator.IsNonEmptyArray(this.Data.AryText)) return;
+        if (this.Data.AryText.length<=this.LimitCount) return;
+
+        var delCount=this.Data.AryText.length-this.LimitCount;
+        for(var i=0; i<delCount && i<startIndex; ++i)
+        {
+            this.Data.AryText.shift();
+        }
     }
 
     this.GetTooltipData=function(x,y,tooltip)
     {
-        for(var i=0;i<this.AryRect.length;++i)
+        var rtClient = this.GetClientRect();
+        if (x>=rtClient.Left && x<=rtClient.Right)
         {
-            var item=this.AryRect[i];
-            if (Path2DHelper.PtInRect(x,y, item.Rect))
+            for(var i=0;i<this.AryRect.length;++i)
             {
-                tooltip.Data=item;
-                tooltip.ChartPaint=this;
-                tooltip.Type=1;
-                return true;
+                var item=this.AryRect[i];
+                if (Path2DHelper.PtInRect(x,y, item.Rect))
+                {
+                    tooltip.Data=item;
+                    tooltip.ChartPaint=this;
+                    tooltip.Type=1;
+                    return true;
+                }
             }
         }
 
@@ -872,14 +962,26 @@ function ChartScrollText()
         if (!this.FirstItem) return false;
         if (this.MouseOnItem) return true;
 
+        var rtClient = this.GetClientRect();
+        var left=rtClient.Left;
+        var right=rtClient.Right;
         var width=this.FirstItem.Move.Width;
         var xOffset=this.FirstItem.Move.XOffset+this.MoveStep;
-        if (xOffset>=width)
+        if (right-xOffset+width<left)
         {
             var startIndex=this.GetDataIndex(this.FirstItem);
-            var nextIndex=(startIndex+1)%this.Data.AryText.length;
-            this.FirstItem=this.Data.AryText[nextIndex];
-            this.FirstItem.Move={ XOffset:xOffset-width }
+            nextIndex=startIndex-1;
+            if (nextIndex<0)
+            {
+                var index=this.Data.AryText.length-1;
+                this.FirstItem=this.Data.AryText[index];
+                this.FirstItem.Move={ XOffset:0 };
+            }
+            else
+            {
+                this.FirstItem=this.Data.AryText[nextIndex];
+                this.FirstItem.Move={ XOffset:xOffset-width }
+            }
         }
         else
         {

@@ -1119,8 +1119,12 @@ function GetBlackStyle()
 
         ScrollText:
         {
-            Color:"rgb(30,144,255)",
-            MouseOnColor:"rgb(255,255,0)",
+            Color:"rgb(200, 200, 200)",
+            MouseOnColor:"rgb(245,253,166)",
+            Label:
+            { 
+                Color:"rgb(220,220,220)", 
+            }
         }
         
     };

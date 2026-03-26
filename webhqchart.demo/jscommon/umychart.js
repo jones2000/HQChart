@@ -80427,13 +80427,20 @@ function JSChartResource()
     this.ScrollText=
     {
         Font:`${12*GetDevicePixelRatio()}px 微软雅黑`,
-        Color:"rgb(30,144,255)",
-        MouseOnColor:"rgb(0,0,205)",
+        Color:"rgb(77,77,77)",
+        MouseOnColor:"rgb(233,85,4)",
         Margin:{ Top:2, Bottom:2 }, 
         Spacing:20,     //间距
         LeftMargin:5*GetDevicePixelRatio(),
         RightMargin:5*GetDevicePixelRatio(),
         MoveStep:4,    //移动步长
+
+        Label:
+        { 
+            Color:"rgb(50,50,50)", 
+            Font:`${13*GetDevicePixelRatio()}px 微软雅黑`, 
+            Margin:{ Left:10*GetDevicePixelRatio(), Bottom:1, Right:10*GetDevicePixelRatio() } 
+        }
     }
 
 
@@ -81427,6 +81434,15 @@ function JSChartResource()
         if (IFrameSplitOperator.IsNumber(style.RightMargin)) dest.RightMargin=style.RightMargin;
         if (IFrameSplitOperator.IsNumber(style.Spacing)) dest.Spacing=style.Spacing; 
         if (IFrameSplitOperator.IsNumber(style.MoveStep)) dest.MoveStep=style.MoveStep; 
+        
+        if (style.Label)
+        {
+            var item=style.Label;
+            var subDest=dest.Label
+            if (item.Color) subDest.Color=item.Color;
+            if (item.Font) subDest.Font=item.Font;
+            if (item.Margin) CopyMarginConfig(subDest.Margin,item.Margin);
+        }
     }
 
     this.SetStatusBar=function(style)
@@ -107788,6 +107804,7 @@ function JSDivFrameToolbar()
         {
             var item=aryDefaultButton[i];
             if (this.FrameID==0 && item.ID==JSCHART_BUTTON_ID.CLOSE_INDEX_WINDOW) continue; //第一个指标窗口不显示关闭按钮
+            if (this.FrameID==0 && item.ID==JSCHART_BUTTON_ID.MAX_MIN_WINDOW) continue; //第一个指标窗口不显示放大缩小按钮
 
             if (item.ID==JSCHART_BUTTON_ID.MODIFY_INDEX_PARAM && frame && frame.ModifyIndex===false) continue;
             if (item.ID==JSCHART_BUTTON_ID.CHANGE_INDEX && frame && frame.ChangeIndex===false) continue;

@@ -126,6 +126,8 @@ class HQData
     RequestTReportListData_ID=`${this.ID}-RequestTReportListData`;
     RequestTReportStockData_ID=`${this.ID}-RequestTReportStockData`;
 
+    RequestScrollTextData_ID=`${this.ID}-RequestScrollTextData`;
+
     Counter=1;
 
     MapSelfBlcok = new Map();  //自选股数据缓存
@@ -3724,6 +3726,58 @@ class HQData
                 break;
             }
         }
+    }
+
+
+    ScrollText_RequestData(data, callback, option)
+    {
+        var symbol="ALL";
+        if (option) option.Symbol=symbol;
+
+        var extendID=this.Counter++;
+
+        var msg=
+        {
+            MessageID:3,
+            Data:
+            {
+                Type:302,
+                ID:this.RequestScrollTextData_ID,
+                ArySymbol:[{ Symbol:symbol, PageSize:20 } ],
+                ExtendData:{ ExtendID:extendID },
+            }
+        };
+
+        var callbackInfo=
+        {
+            ID:this.RequestScrollTextData_ID,
+            ExtendID:extendID,
+            Callback:(recv)=>
+            {
+                this.ScrollText_RecvData(recv, callback, option);
+            }
+        }
+
+        this.WSClient.Request(msg, callbackInfo);
+    }
+
+    ScrollText_RecvData(recv, callback, option)
+    {
+        var symbol=option.Symbol;
+        var hqchartData={ symbol:symbol, AryData:[] };
+        if (IFrameSplitOperator.IsNonEmptyArray(recv.AryData) && recv.AryData[0] && IFrameSplitOperator.IsNonEmptyArray(recv.AryData[0].Data))
+        {
+            var aryData=recv.AryData[0].Data;
+            for(var i=0;i<aryData.length;++i)
+            {
+                var item=aryData[i];
+                hqchartData.AryData.push(item);
+            }
+
+            hqchartData.AryData.sort((left, right)=>{ return left.ID-right.ID; });
+        }
+        
+        callback(hqchartData);
     }
 
     //获取市场名称

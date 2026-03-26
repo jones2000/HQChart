@@ -160,7 +160,7 @@
 
                 var resource=JSChart.GetResource();
                 //resource.BGColor=blackStyle.BGColor;
-                resource.ToolbarButtonStyle=1;
+                //resource.ToolbarButtonStyle=1;
                 resource.FrameLogo.Text+= ` ${HQCHART_VERSION}`;
 
                 this.ChangeStyle(STYLE_TYPE_ID.BLACK_ID);
@@ -282,7 +282,7 @@
                     { Content:[ { Text:"滚动信息8:FC784BDE-038C-4C8D-8858-55A3E8EEE1E5."}, ] },
                     { Content:[ { Text:"滚动信息9:2BB898AF-C4D4-4430-AF60-00852F16B2B0."}, ] },
                 ];
-                this.ScrollTextCtrl.Chart.AddText(AryText);
+                //this.ScrollTextCtrl.Chart.AddText(AryText);
 
                 this.UpdataToolbar(0);
 
@@ -352,6 +352,7 @@
                 if (this.StockInfoCtrl) this.StockInfoCtrl.ReloadResource();
                 if (this.StatusBarCtrl) this.StatusBarCtrl.ReloadResource();
                 if (this.KeyboardCtrl) this.KeyboardCtrl.ReloadResource();
+                if (this.ScrollTextCtrl) this.ScrollTextCtrl.ReloadResource();
                 
             }
 
