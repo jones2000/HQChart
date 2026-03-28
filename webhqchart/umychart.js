@@ -27846,6 +27846,7 @@ function ChartKLine()
                         // 18=订单流样式5
                         // 19=HLC bars
                         // 20=空心K线柱子3(阴实心 阳空心)
+                        // 21=订单流样式6
 
     this.CloseLineColor=g_JSChartResource.CloseLineColor;
     this.CloseLineAreaColor=g_JSChartResource.CloseLineAreaColor;
@@ -28005,12 +28006,36 @@ function ChartKLine()
 
     this.OrderFlow_Style5=
     {
+        BarWidth:g_JSChartResource.OrderFlow_Style5.BarWidth,
+        UpColor:g_JSChartResource.OrderFlow_Style5.UpColor,
+        DownColor:g_JSChartResource.OrderFlow_Style5.DownColor,
+        UnchagneColor:g_JSChartResource.OrderFlow_Style5.UnchagneColor,
+        BorderColor:g_JSChartResource.OrderFlow_Style5.BorderColor,
+
         AskBarColor:g_JSChartResource.OrderFlow_Style5.AskBarColor,  //左
         BidBarColor:g_JSChartResource.OrderFlow_Style5.BidBarColor,    //右
         LeftMargin:g_JSChartResource.OrderFlow_Style5.LeftMargin,
         RightMargin:g_JSChartResource.OrderFlow_Style5.RightMargin,
     }
 
+    this.OrderFlow_Style6=
+    {
+        BarWidth:g_JSChartResource.OrderFlow_Style6.BarWidth,
+        BorderColor:g_JSChartResource.OrderFlow_Style6.BorderColor,
+        MinBarWidth:g_JSChartResource.OrderFlow_Style6.MinBarWidth,
+
+        UpColor:g_JSChartResource.OrderFlow_Style6.UpColor,
+        DownColor:g_JSChartResource.OrderFlow_Style6.DownColor,
+        UnchagneColor:g_JSChartResource.OrderFlow_Style6.UnchagneColor,
+
+        AskBarColor:g_JSChartResource.OrderFlow_Style6.AskBarColor,  //左
+        BidBarColor:g_JSChartResource.OrderFlow_Style6.BidBarColor,    //右
+        LeftMargin:g_JSChartResource.OrderFlow_Style6.LeftMargin,
+        RightMargin:g_JSChartResource.OrderFlow_Style6.RightMargin,
+    }
+
+
+    
     this.IsShowOrderText=false;
 
     this.AryOrderFlowBorder=[]; //订单流边框 临时变量
@@ -30934,6 +30959,10 @@ function ChartKLine()
         {
             this.DrawHLCBars();
         }
+        else if (this.DrawType==21)
+        {
+            this.DrawOrderFlow_Style6();
+        }
         else
         {
             this.DrawKBar();
@@ -32784,10 +32813,11 @@ function ChartKLine()
             chartright=border.BottomEx;
         }
         
-        var upColor=this.OrderFlow_Style2.UpColor;
-        var downColor=this.OrderFlow_Style2.DownColor;
-        var unchagneColor=this.OrderFlow_Style2.UnchagneColor; 
-        var barWidth=ToFixedRect(this.OrderFlow_Style2.BarWidth);
+        var config=this.OrderFlow_Style5;
+        var upColor=config.UpColor;
+        var downColor=config.DownColor;
+        var unchagneColor=config.UnchagneColor; 
+        var barWidth=ToFixedRect(config.BarWidth);
         var textWidth=dataWidth-barWidth;
         if (textWidth/7<barWidth) barWidth=textWidth/7;
         if (barWidth<=1) barWidth=2;
@@ -32848,9 +32878,10 @@ function ChartKLine()
         this.IsShowOrderText=(cellHeight>5 && xKLine.DataWidth>10);
         if (this.OrderFlow.AlwaysShowOrderText) this.IsShowOrderText=true;
 
+        var config=this.OrderFlow_Style5;
         this.Canvas.textBaseline='middle';
-        
         this.Canvas.font=textFont;
+        var aryBorder=[];
         var textWidth=xKLine.DataWidth/2;
         if (orderFlow && IFrameSplitOperator.IsNonEmptyArray(orderFlow.Order))
         {
@@ -32866,11 +32897,216 @@ function ChartKLine()
     
                 if (IFrameSplitOperator.IsNumber(item.Ask.Value))
                 {
-                    var color=this.OrderFlow_Style5.AskBarColor;
+                    var color=config.AskBarColor;
                     if (item.Ask.BG) color=item.Ask.BG;
                     this.Canvas.fillStyle=color;
                     var barWidth=rect.Width*item.Ask.Value/maxValue;
                     this.Canvas.fillRect(ToFixedRect(rect.Right),ToFixedRect(rect.Top),ToFixedRect(-barWidth),ToFixedRect(rect.Height));
+                
+                    var text=null;
+                    if (IFrameSplitOperator.IsString(item.Ask.Text)) text=item.Ask.Text;
+                    else text=item.Ask.Value.toString();
+                    if (text && this.IsShowOrderText)
+                    {
+                        var textColor=this.OrderFlow.Text.Color;
+                        if (item.Ask.Color) textColor=item.Ask.Color;
+
+                        this.Canvas.fillStyle=textColor;
+                        this.Canvas.textAlign='right';
+                        var xText=rect.Right-config.LeftMargin;
+                        if (item.Ask.Font)
+                        {
+                            var itemFont=this.GetDynamicOrderFlowFont(cellHeight, xKLine.DataWidth/2, item.Ask.Font);
+                            this.Canvas.font=itemFont;
+                            this.Canvas.fillText(text,xText,yPrice);
+                            this.Canvas.font=textFont;
+                        }
+                        else
+                        {
+                            this.Canvas.fillText(text,xText,yPrice);
+                        }
+                    }
+                }
+
+    
+                var rect={ Left:xKLine.Center, Right:xKLine.Right, Bottom:yPrice+cellHeight/2, Top:yPrice-cellHeight/2 };
+                rect.Width=rect.Right-rect.Left;
+                rect.Height=rect.Bottom-rect.Top;
+    
+                if (IFrameSplitOperator.IsNumber(item.Bid.Value))
+                {
+                    var color=config.BidBarColor;
+                    if (item.Bid.BG) color=item.Bid.BG;
+                    this.Canvas.fillStyle=color;
+                    var barWidth=rect.Width*item.Bid.Value/maxValue;
+                    this.Canvas.fillRect(ToFixedRect(rect.Left),ToFixedRect(rect.Top),ToFixedRect(barWidth),ToFixedRect(rect.Height));
+
+                    var text=null;
+                    if (IFrameSplitOperator.IsString(item.Bid.Text)) text=item.Bid.Text;
+                    else text=item.Bid.Value.toString();
+                    if (text && this.IsShowOrderText)
+                    {
+                        var textColor=this.OrderFlow.Text.Color;
+                        if (item.Bid.Color)textColor=item.Bid.Color;
+
+                        this.Canvas.fillStyle=textColor;
+                        this.Canvas.textAlign='left';
+                        var xText=rect.Left+config.RightMargin
+                        if (item.Bid.Font)
+                        {
+                            var itemFont=this.GetDynamicOrderFlowFont(cellHeight, xKLine.DataWidth/2, item.Bid.Font);
+                            this.Canvas.font=itemFont;
+                            this.Canvas.fillText(text,xText,yPrice);
+                            this.Canvas.font=textFont;
+                        }
+                        else
+                        {
+                            this.Canvas.fillText(text,xText,yPrice);
+                        }
+                        
+                    }
+                }
+
+                aryBorder.push({ Left:xKLine.Left, Right:xKLine.Right, Y:rect.Top });
+            }
+        }
+
+        if (IFrameSplitOperator.IsNonEmptyArray(aryBorder) && config.BorderColor)
+        {
+            this.Canvas.strokeStyle=config.BorderColor;
+            this.Canvas.beginPath();
+            for(var i=0;i<aryBorder.length;++i)
+            {
+                var item=aryBorder[i];
+
+                this.Canvas.moveTo(ToFixedPoint(item.Left),ToFixedPoint(item.Y));
+                this.Canvas.lineTo(ToFixedPoint(item.Right),ToFixedPoint(item.Y));
+            }
+            this.Canvas.stroke();
+        }
+
+        this.DrawOrderFlowBarHighLow(orderFlow, xKLine, cellHeight);    //绘制最高 最低点文字
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////
+    //订单流样式6
+    this.DrawOrderFlow_Style6=function()
+    {
+        var isHScreen=(this.ChartFrame.IsHScreen===true);
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var border=this.ChartBorder.GetBorder();
+        var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        var chartright=border.RightEx;
+        var xPointCount=this.ChartFrame.XPointCount;
+        this.AryOrderFlowBorder=[];
+
+        if (isHScreen) 
+        {
+            var border=this.ChartBorder.GetHScreenBorder();
+            xOffset=border.TopEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            chartright=border.BottomEx;
+        }
+        
+        var config=this.OrderFlow_Style6;
+        var upColor=config.UpColor;
+        var downColor=config.DownColor;
+        var unchagneColor=config.UnchagneColor; 
+        var barWidth=ToFixedRect(config.BarWidth);
+        var textWidth=dataWidth-barWidth;
+        if (textWidth/7<barWidth) barWidth=textWidth/7;
+        if (barWidth<=3) barWidth=3;
+
+        this.ShowRange.Start=this.Data.DataOffset;
+        this.ShowRange.End=this.ShowRange.Start;
+        this.ShowRange.DataCount=0;
+        this.ShowRange.ShowCount=xPointCount;
+        this.DrawKRange.Start=this.Data.DataOffset;
+
+        this.DrawOrderFlowHBar();   //横向柱子
+
+        //居中K线
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth),++this.ShowRange.DataCount)
+        {
+            var data=this.Data.Data[i];
+            this.ShowRange.End=i;
+            if (data.Open==null || data.High==null || data.Low==null || data.Close==null) continue;
+
+            var left=xOffset;
+            var right=xOffset+dataWidth;
+            if (right>chartright) break;
+            var x=left+(right-left)/2;
+            var yLow=this.GetYFromData(data.Low, false);
+            var yHigh=this.GetYFromData(data.High, false);
+            var yOpen=this.GetYFromData(data.Open, false);
+            var yClose=this.GetYFromData(data.Close, false);
+            var y=yHigh;
+
+            this.DrawKRange.End=i;
+
+            var barTop=Math.min(yOpen,yClose);
+            var barBottom=Math.max(yOpen,yClose);
+            var barLeft=ToFixedRect(x-barWidth/2);
+            var barRight=barLeft+barWidth;
+            var kColor=unchagneColor;
+            if (data.Open<data.Close) kColor=upColor;
+            else if (data.Open>data.Close) kColor=downColor;
+
+            this.Canvas.strokeStyle=kColor;
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(ToFixedPoint(x),ToFixedPoint(yLow));
+            this.Canvas.lineTo(ToFixedPoint(x),ToFixedPoint(yHigh));
+            this.Canvas.stroke();
+
+            this.Canvas.fillStyle=kColor;
+            var barHeight=ToFixedRect(barBottom-barTop);
+            if (barHeight<1) barHeight=1;
+            this.Canvas.fillRect(barLeft,ToFixedRect(barTop),barWidth,barHeight);
+            var rtKLine={ Left:barLeft, Right:barRight, Top:barTop, Bottom:barBottom, Center:x, DataWidth:dataWidth };
+            rtKLine.Width=rtKLine.Right-rtKLine.Left;
+            rtKLine.Height=rtKLine.Bottom-rtKLine.Top;
+
+            var rtCell={ Left:left-distanceWidth/2, Right:right-distanceWidth/2 };
+            rtCell.Width=rtCell.Right-rtCell.Left;
+
+            this.DrawOrderFlowBar_Style6(data.OrderFlow, data, rtKLine, rtCell, isHScreen);
+        }
+    }
+
+    this.DrawOrderFlowBar_Style6=function(orderFlow, kItem, rtKLine, rtCell, isHScreen)
+    {
+        var cellWidth=(rtCell.Width-rtKLine.Width)/2;
+        var cellHeight=0;
+        if (orderFlow && IFrameSplitOperator.IsNumber(orderFlow.PriceOffset)) cellHeight=this.GetPriceYOffset(orderFlow.PriceOffset);
+        var textFont=this.GetDynamicOrderFlowFont(cellHeight,cellWidth);
+        this.IsShowOrderText=(cellHeight>5 && cellWidth>10);
+        if (this.OrderFlow.AlwaysShowOrderText) this.IsShowOrderText=true;
+
+        var config=this.OrderFlow_Style6;
+        this.Canvas.textBaseline='middle';
+        this.Canvas.font=textFont;
+        var minBarWidth=config.MinBarWidth;
+        var aryBorder=[];
+        if (orderFlow && IFrameSplitOperator.IsNonEmptyArray(orderFlow.Order))
+        {
+            var maxValue=orderFlow.MaxValue;
+            for(var i=0;i<orderFlow.Order.length;++i)
+            {
+                var item=orderFlow.Order[i];
+                var yPrice=this.GetYFromData(item.Price, false);
+    
+                //左边
+                var rect={ Left:rtCell.Left, Right:rtKLine.Left-1, Bottom:yPrice+cellHeight/2, Top:yPrice-cellHeight/2 };
+                rect.Width=rect.Right-rect.Left;
+                rect.Height=rect.Bottom-rect.Top;
+    
+                if (IFrameSplitOperator.IsNumber(item.Ask.Value))
+                {
+                    var color=config.AskBarColor;
+                    if (item.Ask.BG) color=item.Ask.BG;
+                    this.Canvas.fillStyle=color;
+                    this.Canvas.fillRect(ToFixedRect(rect.Left+minBarWidth),rect.Top,ToFixedRect(rect.Width-minBarWidth),rect.Height);
+                    aryBorder.push({ Left:rect.Left, Right:rect.Right, Y:rect.Top });
                 
                     var text=null;
                     if (IFrameSplitOperator.IsString(item.Ask.Text)) text=item.Ask.Text;
@@ -32895,20 +33131,27 @@ function ChartKLine()
                             this.Canvas.fillText(text,xText,yPrice);
                         }
                     }
+
+                    if (item.Ask.MinBar && item.Ask.MinBar.Color)
+                    {
+                        var color=item.Ask.MinBar.Color;
+                        var rtMinBar={ Left:rect.Left, Top:rect.Top, Width:minBarWidth-1, Height:rect.Height };
+                        this.Canvas.fillStyle=color;
+                        this.Canvas.fillRect(ToFixedRect(rtMinBar.Left),rtMinBar.Top,ToFixedRect(rtMinBar.Width), rtMinBar.Height);
+                    }
                 }
 
-    
-                var rect={ Left:xKLine.Center, Right:xKLine.Right, Bottom:yPrice+cellHeight/2, Top:yPrice-cellHeight/2 };
+                var rect={ Left:rtKLine.Right+1, Right:rtCell.Right, Bottom:yPrice+cellHeight/2, Top:yPrice-cellHeight/2 };
                 rect.Width=rect.Right-rect.Left;
                 rect.Height=rect.Bottom-rect.Top;
     
                 if (IFrameSplitOperator.IsNumber(item.Bid.Value))
                 {
-                    var color=this.OrderFlow_Style5.BidBarColor;
+                    var color=config.BidBarColor;
                     if (item.Bid.BG) color=item.Bid.BG;
                     this.Canvas.fillStyle=color;
-                    var barWidth=rect.Width*item.Bid.Value/maxValue;
-                    this.Canvas.fillRect(ToFixedRect(rect.Left),ToFixedRect(rect.Top),ToFixedRect(barWidth),ToFixedRect(rect.Height));
+                    this.Canvas.fillRect(ToFixedRect(rect.Left),rect.Top,ToFixedRect(rect.Width-minBarWidth),rect.Height);
+                    aryBorder.push({ Left:rect.Left, Right:rect.Right, Y:rect.Top });
 
                     var text=null;
                     if (IFrameSplitOperator.IsString(item.Bid.Text)) text=item.Bid.Text;
@@ -32934,12 +33177,35 @@ function ChartKLine()
                         }
                         
                     }
+
+                    if (item.Bid.MinBar && item.Bid.MinBar.Color)
+                    {
+                        var color=item.Bid.MinBar.Color;
+                        var rtMinBar={ Left:rect.Right-minBarWidth+1, Top:rect.Top, Width:minBarWidth-1, Height:rect.Height };
+                        this.Canvas.fillStyle=color;
+                        this.Canvas.fillRect(ToFixedRect(rtMinBar.Left),rtMinBar.Top,ToFixedRect(rtMinBar.Width), rtMinBar.Height);
+                    }
                 }
             }
         }
 
-        this.DrawOrderFlowBarHighLow(orderFlow, xKLine, cellHeight);    //绘制最高 最低点文字
+        if (IFrameSplitOperator.IsNonEmptyArray(aryBorder) && config.BorderColor)
+        {
+            this.Canvas.strokeStyle=config.BorderColor;
+            this.Canvas.beginPath();
+            for(var i=0;i<aryBorder.length;++i)
+            {
+                var item=aryBorder[i];
+
+                this.Canvas.moveTo(ToFixedPoint(item.Left),ToFixedPoint(item.Y));
+                this.Canvas.lineTo(ToFixedPoint(item.Right),ToFixedPoint(item.Y));
+            }
+            this.Canvas.stroke();
+        }
+
+        this.DrawOrderFlowBarHighLow(orderFlow, rtKLine, cellHeight);    //绘制最高 最低点文字
     }
+
 
     //////////////////////////////////////////////////////////////
     // high low bar
@@ -79151,8 +79417,30 @@ function JSChartResource()
     
     this.OrderFlow_Style5=
     {
+        UpColor:'rgb(241,55,63)',
+        DownColor:"rgb(75,105,150)",
+        UnchagneColor:"rgb(79,79,79)",
+        BorderColor:"rgb(255,255,255)",
+        BarWidth:10,
+
         AskBarColor:"rgb(176,22,22)",  //左
         BidBarColor:"rgb(98,126,176)",    //右
+        LeftMargin:3,
+        RightMargin:2,
+    };
+
+    this.OrderFlow_Style6=
+    {
+        UpColor:'rgb(241,55,63)',
+        DownColor:"rgb(75,105,150)",
+        UnchagneColor:"rgb(79,79,79)",
+
+        BarWidth:10*GetDevicePixelRatio(),
+        BorderColor:"rgb(255,255,255)",
+        MinBarWidth:3*GetDevicePixelRatio(),
+
+        AskBarColor:"rgb(250, 161, 163)",  //左
+        BidBarColor:"rgb(112, 204, 189)",    //右
         LeftMargin:3,
         RightMargin:2,
     };
@@ -88010,7 +88298,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
         var oldKLineType=this.KLineDrawType;
         this.KLineDrawType=drawType;
-        var setKLineType=new Set([5,7,8,10,11,12,17]);
+        var setKLineType=new Set([5,7,8,10,11,12,17,21]);
 
         if (setKLineType.has(oldKLineType) || setKLineType.has(drawType))
         {
