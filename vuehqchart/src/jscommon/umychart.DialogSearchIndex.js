@@ -784,9 +784,9 @@ JSDialogSearchIndex.GetDefaultIndexData=function()
                 Group:{ ID:"付费指标", Name:"付费指标"} , 
                 AryIndex:
                 [
-                    { Name:"面积图(后台指标)", ID:"API-DRAWBAND", Type:2, Args:null, Lock:{ IsLocked:true } },
-                    { Name:"波段量能跟庄-波段量能", ID:"TEST_INDEX_4AE0_1", Type:0, Lock:{ IsLocked:true } },
-                    { Name:"飞龙八级进-主图", ID:"TEST_INDEX_4AE0_2", Type:0, Lock:{ IsLocked:true } }
+                    { Name:"面积图(后台指标)", ID:"API-DRAWBAND", Type:2, Args:null, IsAuthorization:true },
+                    { Name:"波段量能跟庄-波段量能", ID:"TEST_INDEX_4AE0_1", Type:0, IsAuthorization:true },
+                    { Name:"飞龙八级进-主图", ID:"TEST_INDEX_4AE0_2", Type:0, IsAuthorization:true }
                 ]
             },
             {

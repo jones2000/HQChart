@@ -20857,6 +20857,7 @@ function ScriptIndex(name,script,args,option)
     this.TitleFont=g_JSChartResource.TitleFont;     //标题字体
     this.IsShortTitle=false;                        //是否显示指标参数
     this.IsUsePageData=false;                       //是否使用了K线界面数据
+    this.IsAuthorization=false;                     //是否需要权限认证
 
     this.YAxis=null;    //Y轴刻度设置  { FloatPrecision， StringFormat, EnableRemoveZero }
     
@@ -20886,6 +20887,7 @@ function ScriptIndex(name,script,args,option)
         if (IFrameSplitOperator.IsNumber(option.YSplitType)) this.YSplitType=option.YSplitType;
         if (IFrameSplitOperator.IsBool(option.IsSync)) this.IsSync=option.IsSync;
         if (IFrameSplitOperator.IsNumber(option.MaxRunCount)) this.MaxRunCount=option.MaxRunCount;
+        if (IFrameSplitOperator.IsBool(option.IsAuthorization)) this.IsAuthorization=option.IsAuthorization;
 
         if (option.Debug) 
         {
@@ -21045,9 +21047,24 @@ function ScriptIndex(name,script,args,option)
             return;
         }
 
-        ++this.RunCount;
-        let code=this.Script;
-        let run=JSComplier.Execute(code,option,hqChart.ScriptErrorCallback);
+        function _Temp_ExecuteScript()
+        {
+            ++self.RunCount;
+            let code=self.Script;
+            let run=JSComplier.Execute(code,option,hqChart.ScriptErrorCallback);
+        }
+
+        if (this.IsAuthorization===true && this.RunCount===0)   //权限认证 执行一次
+        {
+            this.RequestAuthorization(hqChart, ()=>
+            {
+                _Temp_ExecuteScript();
+            });
+        }
+        else
+        {
+            _Temp_ExecuteScript();
+        }
     }
 
     //是否符合限制条件
@@ -21061,6 +21078,40 @@ function ScriptIndex(name,script,args,option)
         }
 
         return true;
+    }
+
+    this.RequestAuthorization=function(hqChart, callback)
+    {
+        var reqData={ IndexName:this.Name, IndexID:this.ID, IsOverlayIndex:this.IsOverlayIndex===true };
+
+        var obj=
+        {
+            Name:'ScriptIndex::RequestAuthorization', //类名::
+            Explain:'指标权限验证',
+            Request:{ Data: reqData }, 
+            Self:this,
+            HQChart:hqChart,
+            PreventDefault:false
+        };
+
+        if (hqChart.NetworkFilter)
+        {
+            hqChart.NetworkFilter(obj, (data)=>
+            {
+                this.OnRecvAuthorization(data);
+
+                callback();
+            });
+        }
+        else
+        {
+            JSConsole.JSComplier.Warn("[ScriptIndex::RequestData] NetworkFilter error.");
+        }
+    }
+
+    this.OnRecvAuthorization=function(recv)
+    {
+        if (recv && recv.Lock) this.SetLock(recv.Lock);
     }
 
     //周期是否满足条件
@@ -25354,7 +25405,8 @@ function APIScriptIndex(name,script,args,option, isOverlay)
         var postData =
         { 
             indexname:this.ID,  symbol: hqChart.Symbol, script:this.Script, args:args,
-            period:hqChart.Period, right:hqChart.Right, hqdatatype: hqDataType
+            period:hqChart.Period, right:hqChart.Right, hqdatatype: hqDataType,
+            IsAuthorization:this.IsAuthorization,
         };
 
         if (dateRange) postData.DateRange=dateRange;
@@ -25826,6 +25878,8 @@ function APIScriptIndex(name,script,args,option, isOverlay)
             this.ShowConditionError(param, data.error.message);
             return;
         }
+
+        if (data.Lock) this.SetLock(data.Lock);
 
         if (data.outdata && data.outdata.name) this.Name=data.outdata.name;
 

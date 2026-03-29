@@ -31545,7 +31545,7 @@ function ChartKLine()
                 var data=this.Data.Data[i];
                 if (!data || data.Open==null || data.High==null || data.Low==null || data.Close==null) continue;
 
-                if ([5,7,8,17,18].includes(this.DrawType) && data.OrderFlow && IFrameSplitOperator.IsNumber(data.OrderFlow.PriceOffset))
+                if ([5,7,8,17,18,21].includes(this.DrawType) && data.OrderFlow && IFrameSplitOperator.IsNumber(data.OrderFlow.PriceOffset))
                 {
                     var high=data.High;
                     var low=data.Low;

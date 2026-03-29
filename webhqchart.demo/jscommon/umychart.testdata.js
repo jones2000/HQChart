@@ -225,6 +225,11 @@ HQData.NetworkFilter=function(data, callback)
             HQData.RequestVolumeProfileData(data, callback);
             break;
 
+        //指标权限
+        case "ScriptIndex::RequestAuthorization":
+            HQData.Request_IndexAuthorization(data, callback);
+            break;
+
     }
 }
 
@@ -3867,7 +3872,7 @@ HQData.APIIndex_PARTLINE=function(data, callback)
     data.PreventDefault=true;
     var hqchart=data.HQChart;
     var kData=hqchart.GetKData();
-
+    var bAuthorization=data.Request.Data.IsAuthorization;
 
     var lineData= 
     { 
@@ -3902,6 +3907,11 @@ HQData.APIIndex_PARTLINE=function(data, callback)
         stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
         outdata: { date:kData.GetDate(), time:kData.GetTime(), outvar:[lineData] } 
     };
+
+    if (bAuthorization)
+    {
+        apiData.Lock={ IsLocked:true };
+    }
 
     console.log('[HQData.APIIndex_PARTLINE] apiData ', apiData);
     callback(apiData);
@@ -4839,6 +4849,38 @@ HQData.APIIndex_DRAWNUMBER_FIX=function(data, callback)
 
     console.log('[HQData.APIIndex_PARTLINE] apiData ', apiData);
     callback(apiData);
+}
+
+
+HQData.Request_IndexAuthorization=function(data, callback)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var indexName=data.Request.Data.IndexName;
+    var indexID=data.Request.Data.IndexID;
+
+    var hqchartData=
+    { 
+        indexName:indexName, indexID:indexID, code:0, 
+        Lock:
+        { 
+            IsLocked:true, 
+            //Text:""
+            //BG: ['rgba(245,245,220, 0.5)', "rgb(100,255,100)"],     //锁区域背景色
+            /*
+            Text:
+            [
+                //{ Text:"付费指标", TextMargin:{ Top:2, Bottom:2 }, YOffset:-2, Font:`${25*GetDevicePixelRatio()}px 微软雅黑` },
+                { Image:{ Data:image1, Width:50*GetDevicePixelRatio(), Height:50*GetDevicePixelRatio() }, TextMargin:{ Top:2, Bottom:2 }, YOffset:-2, Align:1, },
+                //{ Text:"\ue611", TextMargin:{ Top:2, Bottom:2 }, YOffset:-2, Align:1, Font:`${40*GetDevicePixelRatio()}px iconfont`, Color:"rgb(100,100,100)" },
+                { Text:"描述信息:XX", TextMargin:{ Top:2, Bottom:2 }, YOffset:-2,},
+                { Text:"\ue611", TextMargin:{ Top:2, Bottom:2 }, YOffset:-2, Align:1, Font:`${40*GetDevicePixelRatio()}px iconfont`, Color:"rgb(100,0,100)" },
+            ], 
+            */
+        }
+    };
+
+    callback(hqchartData);
 }
 
 

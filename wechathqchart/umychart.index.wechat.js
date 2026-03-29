@@ -253,7 +253,9 @@ function ScriptIndex(name, script, args, option)
     this.IsUsePageData=false;                               //是否使用了K线界面数据
     this.IsShow=true;       //是否显示图形
 
-    this.YAxis=null;    //Y轴刻度设置  { FloatPrecision， StringFormat, EnableRemoveZero }
+    this.YAxis=null;        //Y轴刻度设置  { FloatPrecision， StringFormat, EnableRemoveZero }
+    this.RunCount=0;        //已执行次数
+    this.MaxRunCount=-1;    //最大执行次数 -1=无限
 
     if (option) 
     {
@@ -269,6 +271,8 @@ function ScriptIndex(name, script, args, option)
         if (IFrameSplitOperator.IsBool(option.IsShortTitle)) this.IsShortTitle=option.IsShortTitle;
         if (option.OutName) this.OutName=option.OutName;
         if (IFrameSplitOperator.IsNumber(option.YSplitType)) this.YSplitType=option.YSplitType;
+        if (IFrameSplitOperator.IsNumber(option.MaxRunCount)) this.MaxRunCount=option.MaxRunCount;
+        if (IFrameSplitOperator.IsBool(option.IsAuthorization)) this.IsAuthorization=option.IsAuthorization;
     }
 
     if (option && option.Lock) 
@@ -396,8 +400,60 @@ function ScriptIndex(name, script, args, option)
         if (hqDataType===HQ_DATA_TYPE.MULTIDAY_MINUTE_ID) option.DayCount=hqChart.DayCount;
         if (hqChart.NetworkFilter) option.NetworkFilter = hqChart.NetworkFilter;
 
-        let code = this.Script;
-        let run = JSCommonComplier.JSComplier.Execute(code, option, hqChart.ScriptErrorCallback);
+        function _Temp_ExecuteScript()
+        {
+            ++self.RunCount;
+            let code = self.Script;
+            let run = JSCommonComplier.JSComplier.Execute(code, option, hqChart.ScriptErrorCallback);
+        } 
+        
+        if (this.IsAuthorization===true && this.RunCount===0)   //权限认证 执行一次
+        {
+            this.RequestAuthorization(hqChart, ()=>
+            {
+                _Temp_ExecuteScript();
+            });
+        }
+        else
+        {
+            _Temp_ExecuteScript();
+        }
+       
+    }
+
+    this.RequestAuthorization=function(hqChart, callback)
+    {
+        var reqData={ IndexName:this.Name, IndexID:this.ID, IsOverlayIndex:this.IsOverlayIndex===true };
+
+        var obj=
+        {
+            Name:'ScriptIndex::RequestAuthorization', //类名::
+            Explain:'指标权限验证',
+            Request:{ Data: reqData }, 
+            Self:this,
+            HQChart:hqChart,
+            PreventDefault:false
+        };
+
+        if (hqChart.NetworkFilter)
+        {
+            hqChart.NetworkFilter(obj, (data)=>
+            {
+                this.OnRecvAuthorization(data);
+
+                callback();
+            });
+        }
+        else
+        {
+            JSConsole.JSComplier.Warn("[ScriptIndex::RequestData] NetworkFilter error.");
+        }
+    }
+
+    this.OnRecvAuthorization=function(recv)
+    {
+        var data=recv.data;
+        if (data && data.Lock) this.SetLock(data.Lock);
     }
 
     this.RecvResultData=function (outVar, param) 
@@ -3146,7 +3202,8 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
             this.ShowConditionError(param, data.error.message);
             return;
         }
-
+        
+        if (data.Lock) this.SetLock(data.Lock);
         if (data.outdata && data.outdata.name) this.Name = data.outdata.name;
 
         if (data.outdata.args)  //外部修改显示参数

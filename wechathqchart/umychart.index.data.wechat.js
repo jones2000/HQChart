@@ -172,7 +172,8 @@ JSIndexScript.ModifyAttribute=function(indexInfo, attribute)
     if (IFrameSplitOperator.IsNumber(attribute.YSplitType)) indexInfo.YSplitType=attribute.YSplitType;
     if (IFrameSplitOperator.IsBool(attribute.IsShowIndexTitle)) indexInfo.IsShowIndexTitle=attribute.IsShowIndexTitle;
     if (IFrameSplitOperator.IsNumber(attribute.KLineType)) indexInfo.KLineType=attribute.KLineType;
-
+    if (IFrameSplitOperator.IsBool(attribute.IsAuthorization)) indexInfo.IsAuthorization=attribute.IsAuthorization;
+    
     if (attribute.YAxis)
     {
         var item=attribute.YAxis;
@@ -3237,13 +3238,34 @@ JSIndexScript.prototype.TEST = function ()
     let data =
         {
             Name: 'TEST', Description: '测试脚本', IsMainIndex: true,
-            Args: [{ Name: 'M1', Value: 5 },{ Name: 'M2', Value: 10 },{ Name: 'M3', Value: 15 }],
+            Args: [{ Name: 'M1', Value: 5 },{ Name: 'M2', Value: 10 },{ Name: 'M3', Value: 15 },
+                {
+                    Name: "N1",
+                    Value: 5,
+                },
+                {
+                    Name: "N2",
+                    Value: 12,
+                }],
             
             Script: //脚本
                 //"T2:KDJ.J;"+
                 //"收盘价:C;成交量:VOL, SINGLELINE, RGB(100,100,100);"
-                `PARTLINE(CLOSE,CLOSE>OPEN,RGB(255,0,0),CLOSE<OPEN,RGB(0,255,0),1,RGB(0,0,255)),LINETHICK2,DOTLINE,LINEDASH(10,5);`
+                //`PARTLINE(CLOSE,CLOSE>OPEN,RGB(255,0,0),CLOSE<OPEN,RGB(0,255,0),1,RGB(0,0,255)),LINETHICK2,DOTLINE,LINEDASH(10,5);`
+                
+                `T:MA(C,5);
+                //T2:C;
+                //T3:O;
+                T6:DYNAINFO(5);
+                T7:LIANGBI;
+                T4:INDEXC;
+                T5:CAPITAL;
+                //DRAWRECTREL(0,0,500,500,RGB(255,255,0)),RGB(200,200,100);
+                //DRAWICON(C>O, H, 1),RGB(155, 48, 255), FONTSIZE20,VALIGN0,ALIGN2, YMOVE(10);`
+                
                 //"T2:IF(KDJ.J>-10,KDJ.J#WEEK,0);"
+
+                
                 
 
                 /*
