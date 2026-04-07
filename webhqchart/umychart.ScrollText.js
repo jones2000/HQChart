@@ -240,7 +240,9 @@ function JSScrollTextChartContainer(uielement)
     this.UIElement=uielement;
    
     this.IsDestroy=false;        //是否已经销毁了
-    this.ScrollTimer=null;      //滚动定时器
+    this.ScrollTimer=null;       //滚动定时器
+    this.MouseDrag=null;         //拖动数据
+    this.EnableDrag=false;        //是否允许拖动
 
     this.ChartDestroy=function()    //销毁
     {
@@ -263,8 +265,12 @@ function JSScrollTextChartContainer(uielement)
 
         this.ScrollTimer=setInterval(()=>
         {
+            if (this.MouseDrag) return;
+
+            var chart=this.GetScrollTextChart();
+            if (chart && chart.MouseOnItem) return;   //鼠标在上面时不滚动
+
             this.ScrollStep();
-            
         }, 100);
     }
 
@@ -354,6 +360,8 @@ function JSScrollTextChartContainer(uielement)
         if (option)
         {
            if (IFrameSplitOperator.IsNumber(option.LimitCount)) chart.LimitCount=option.LimitCount;
+           if (IFrameSplitOperator.IsBool(option.EnableDrag)) this.EnableDrag=option.EnableDrag;
+
            if (option.Label)
            {
                 var item=option.Label;
@@ -368,15 +376,6 @@ function JSScrollTextChartContainer(uielement)
         this.UIElement.onmouseleave=(e)=>{ this.UIOnMouseleave(e); }
         this.UIElement.oncontextmenu=(e)=> { this.UIOnContextMenu(e); }
 
-        /*
-        this.UIElement.ondblclick=(e)=>{ this.UIOnDblClick(e); }
-        this.UIElement.onmousedown=(e)=> { this.UIOnMouseDown(e); }
-        
-       
-        this.UIElement.onmouseleave=(e)=>{ this.UIOnMouseleave(e); }
-        
-        */
-
         var frequency=500;
         this.ToolbarTimer=setInterval(()=>
         { 
@@ -386,6 +385,7 @@ function JSScrollTextChartContainer(uielement)
 
     this.UIOnMouseDown=function(e)
     {
+        this.MouseDrag=null;
         var pixelTatio = GetDevicePixelRatio();
         this.ClickDownPoint={ X:e.clientX, Y:e.clientY };
         var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
@@ -403,6 +403,63 @@ function JSScrollTextChartContainer(uielement)
                 this.HideAllTooltip();
                 var ptClick={ X:this.ClickDownPoint.X, Y:this.ClickDownPoint.Y };
                 this.TryClickPaintEvent(JSCHART_EVENT_ID.ON_RCLICK_SCROLL_TEXT_ITEM, ptClick, e);
+            }
+        }
+
+        if (this.EnableDrag)
+        {
+            var drag={ Click:{ X:e.clientX, Y:e.clientY }, LastMove:{  X:e.clientX, Y:e.clientY } };
+            this.MouseDrag=drag;
+
+            document.onmousemove=(e)=>{ this.DocOnMouseMove(e); }
+            document.onmouseup=(e)=> { this.DocOnMouseUp(e); }
+        }
+    }
+
+    this.DocOnMouseMove=function(e)
+    {
+        var drag=this.MouseDrag;
+        if (!drag) return;
+
+        var pixelTatio = GetDevicePixelRatio();
+        var moveSetpX=Math.abs(drag.LastMove.X-e.clientX);
+        var moveSetpY=Math.abs(drag.LastMove.Y-e.clientY);
+        if (moveSetpX<5) return;
+
+        this.ScrollStep((drag.LastMove.X-e.clientX)*pixelTatio);
+
+        drag.LastMove.X=e.clientX;
+        drag.LastMove.Y=e.clientY;
+    }
+
+    this.DocOnMouseUp=function(e)
+    {
+        var ptClick={ X:this.ClickDownPoint.X, Y:this.ClickDownPoint.Y };
+
+        //清空事件
+        document.onmousemove=null;
+        document.onmouseup=null;
+
+        this.MouseDrag=null;
+        this.ClickDownPoint=null;
+
+        var pixelTatio = GetDevicePixelRatio();
+        var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
+        var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
+
+        var chart=this.GetScrollTextChart();
+        if (chart) chart.OnMouseMove(x, y, e);
+
+        if (e)   
+        {
+            if (e.button==0)        //左键点击
+            {
+                this.TryClickPaintEvent(JSCHART_EVENT_ID.ON_CLICK_UP_SCROLL_TEXT_ITEM, ptClick, e);
+            }
+            else if (e.button==2)   //右键点击
+            {
+                this.HideAllTooltip();
+                this.TryClickPaintEvent(JSCHART_EVENT_ID.ON_RCLICK_UP_SCROLL_TEXT_ITEM, ptClick, e);
             }
         }
     }
@@ -434,16 +491,27 @@ function JSScrollTextChartContainer(uielement)
 
     this.UIOnMouseMove=function(e)
     {
+        if (this.MouseDrag) return;
+
         var pixelTatio = GetDevicePixelRatio();
         var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
         var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
 
         var chart=this.GetScrollTextChart();
-        if (chart) chart.OnMouseMove(x, y, e);
+        var bDraw=false;
+        if (chart) 
+        {
+            var result=chart.OnMouseMove(x, y, e);
+            if (result && result.Update) bDraw=true;
+        }
+
+        if (bDraw) this.Draw();
     }
 
     this.UIOnMouseOut=function(e)
     {
+        if (this.MouseDrag) return;
+
         var chart=this.GetScrollTextChart();
         if (chart) chart.OnMouseOut(e);
 
@@ -452,6 +520,8 @@ function JSScrollTextChartContainer(uielement)
 
     this.UIOnMouseleave=function(e)
     {
+        if (this.MouseDrag) return;
+
         var chart=this.GetScrollTextChart();
         if (chart) chart.OnMouseOut(e);
 
@@ -557,12 +627,12 @@ function JSScrollTextChartContainer(uielement)
        
     }
 
-    this.ScrollStep=function()
+    this.ScrollStep=function(defaultStep=null)
     {
         var chart=this.GetScrollTextChart();
         if (!chart) return;
 
-        if (chart.ScrollStep())
+        if (chart.ScrollStep(defaultStep))
             this.Draw();
     }
 
@@ -725,6 +795,8 @@ function ChartScrollText()
 
     this.OnMouseMove=function(x, y, e)
     {
+        var result={ Update:false };
+        var oldMouseOnItem=this.MouseOnItem;
         var tooltip={ };
         if (this.GetTooltipData(x,y,tooltip))
         {
@@ -734,11 +806,22 @@ function ChartScrollText()
         {
             this.MouseOnItem=null;
         }
+
+        if (oldMouseOnItem!=this.MouseOnItem) result.Update=true;
+        
+        return result;
     }
 
     this.OnMouseOut=function(e)
     {
-        this.MouseOnItem=null;
+        var result={ Update:false };
+        if (this.MouseOnItem)
+        {
+            this.MouseOnItem=null;
+            result.Update=true;
+        }
+           
+        return result;
     }
 
     this.GetClientRect=function()
@@ -956,17 +1039,18 @@ function ChartScrollText()
         return false;
     }
 
-    this.ScrollStep=function()
+    this.ScrollStep=function(defaultStep)
     {
         if (!this.Data || !IFrameSplitOperator.IsNonEmptyArray(this.Data.AryText)) return false;
         if (!this.FirstItem) return false;
-        if (this.MouseOnItem) return true;
 
+        var moveStep=this.MoveStep;
+        if (IFrameSplitOperator.IsNumber(defaultStep)) moveStep=defaultStep;
         var rtClient = this.GetClientRect();
         var left=rtClient.Left;
         var right=rtClient.Right;
         var width=this.FirstItem.Move.Width;
-        var xOffset=this.FirstItem.Move.XOffset+this.MoveStep;
+        var xOffset=this.FirstItem.Move.XOffset+moveStep;
         if (right-xOffset+width<left)
         {
             var startIndex=this.GetDataIndex(this.FirstItem);

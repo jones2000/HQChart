@@ -20888,6 +20888,7 @@ function ScriptIndex(name,script,args,option)
         if (IFrameSplitOperator.IsBool(option.IsSync)) this.IsSync=option.IsSync;
         if (IFrameSplitOperator.IsNumber(option.MaxRunCount)) this.MaxRunCount=option.MaxRunCount;
         if (IFrameSplitOperator.IsBool(option.IsAuthorization)) this.IsAuthorization=option.IsAuthorization;
+        if (IFrameSplitOperator.IsBool(option.IsShow)) this.IsShow=option.IsShow;
 
         if (option.Debug) 
         {
@@ -22961,7 +22962,7 @@ function ScriptIndex(name,script,args,option)
         chart.Data=hqChart.GetKData();      //绑定K线
         chart.AryTableData=varItem.Draw.DrawData;
         if (IFrameSplitOperator.IsNumber(varItem.Draw.RowCount)) chart.RowCount=varItem.Draw.RowCount;
-        if (IFrameSplitOperator.IsNonEmptyArray(varItem.Draw.RowName)) chart.RowName=varItem.Draw.RowName;
+        if (IFrameSplitOperator.IsNonEmptyArray(varItem.Draw.RowName)) chart.AryLabel=varItem.Draw.RowName;
 
         var config=varItem.Draw.Config;
         chart.SetOption(config);
@@ -22970,10 +22971,16 @@ function ScriptIndex(name,script,args,option)
         this.SetChartIndexName(chart);
         hqChart.ChartPaint.push(chart);
 
-        var titleIndex=windowIndex+1;
-        var titleData=new DynamicTitleData(chart.Data,chart.BarName,chart.BarColor);
-        titleData.DataType="ChartKLineTable";
-        hqChart.TitlePaint[titleIndex].Data[i]=titleData;
+        var bShowTitle=false;
+        if (config && IFrameSplitOperator.IsBool(config.IsShowTitle)) bShowTitle=config.IsShowTitle;
+
+        if (bShowTitle)
+        {
+            var titleIndex=windowIndex+1;
+            var titleData=new DynamicTitleData(chart.Data,chart.BarName,chart.BarColor);
+            titleData.DataType="ChartKLineTable";
+            hqChart.TitlePaint[titleIndex].Data[i]=titleData;
+        }
     }
 
     this.CreateScatterPlot=function(hqChart,windowIndex,varItem,i)
@@ -24821,7 +24828,7 @@ function OverlayScriptIndex(name,script,args,option)
         chart.Data=hqChart.GetKData();      //绑定K线
         chart.AryTableData=varItem.Draw.DrawData;
         if (IFrameSplitOperator.IsNumber(varItem.Draw.RowCount)) chart.RowCount=varItem.Draw.RowCount;
-        if (IFrameSplitOperator.IsNonEmptyArray(varItem.Draw.RowName)) chart.RowName=varItem.Draw.RowName;
+        if (IFrameSplitOperator.IsNonEmptyArray(varItem.Draw.RowName)) chart.AryLabel=varItem.Draw.RowName;
 
         var config=varItem.Draw.Config;
         chart.SetOption(config);
@@ -25406,7 +25413,8 @@ function APIScriptIndex(name,script,args,option, isOverlay)
         { 
             indexname:this.ID,  symbol: hqChart.Symbol, script:this.Script, args:args,
             period:hqChart.Period, right:hqChart.Right, hqdatatype: hqDataType,
-            IsAuthorization:this.IsAuthorization,
+            IsAuthorization:this.IsAuthorization, WindowID:windowIndex,
+            IsOverlayIndex:this.IsOverlayIndex===true,
         };
 
         if (dateRange) postData.DateRange=dateRange;

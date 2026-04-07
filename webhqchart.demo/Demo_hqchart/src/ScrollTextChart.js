@@ -15,6 +15,7 @@ class ScrollTextChart
         Type:'跑马灯',   //创建图形类型
         EnableResize:true,
         LimitCount:13,
+        EnableDrag:true,    //是否允许拖动
 
         Label:
         {
@@ -51,7 +52,7 @@ class ScrollTextChart
         this.Option.EventCallback= 
         [ 
             {   //单击
-                event:JSCHART_EVENT_ID.ON_CLICK_SCROLL_TEXT_ITEM, 
+                event:JSCHART_EVENT_ID.ON_CLICK_UP_SCROLL_TEXT_ITEM, 
                 callback:(event, data, obj)=>{ this.OnClickItem(event, data, obj); }  
             },
            

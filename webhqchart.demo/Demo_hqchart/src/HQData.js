@@ -301,6 +301,13 @@ class HQData
                 this.KLine_PforecastInfo(data, callback, option);
                 break;
 
+            //////////////////////////////////////////////////////////////////////////////////
+            //
+            //
+            case "APIScriptIndex::ExecuteScript":   //后台API指标
+                this.Report_APIIndex(data, callback, option);
+                break;
+
         }
     }
 
@@ -3878,6 +3885,162 @@ class HQData
         var requestID=`${this.ID}-${extendID}`;
 
         return { ID:requestID, ExtendID:extendID };
+    }
+
+    GetRandomTestData(min, max)   //测试数据
+    {
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min + 1)) + min; //含最大值，含最小值 
+    }
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////////
+    //后台指标
+    //
+
+    Report_APIIndex(data, callback, option)
+    {
+        var request=data.Request;
+        if (request.Data.indexname=='API-Delta_KLine_Table')
+            this.APIIndex_Delta_KLine_Table(data, callback, option);
+    }
+
+    APIIndex_Delta_KLine_Table(data, callback, option)
+    {
+        data.PreventDefault=true;
+        var hqchart=data.HQChart;
+        var kData=data.HQChart.GetKData(); //hqchart图形的分钟数据
+        var pixelRatio=GetDevicePixelRatio();
+
+        var TableConfig=
+        {
+            BG:{ IsShow:true },
+            Border:
+            {
+                Vertical:{ IsShow:true  },                  //竖线
+                Horizontal:{ IsShow:true },                 //横线
+            },
+
+            Label:
+            { 
+                Position:4,     //0不显示  1=内左 2=外左 3=内右 4=外右
+                Margin:{ Left:15, Right:15 },
+                XOffset:15, YOffset:4,
+            },
+
+            AryRowName:
+            [
+                {Name:"Delta",TextAlign:"left"}, 
+                {Name:"Delta2",TextAlign:"left"}, 
+                {Name:"Delta.Sum",TextAlign:"left" },
+                {Name:"Delta.Max",TextAlign:"left"},
+                {Name:"Delta.Min",TextAlign:"left"},
+            ],
+
+            Style:2,
+
+            //TextFont:{ Family:'微软雅黑' , FontMaxSize:12*GetDevicePixelRatio() },
+            //ItemMargin:{ Left:5, Right:5, Top:5, Bottom:5 },
+        }
+
+        var tableData= 
+        { 
+            name:'KLINE_TABLE', type:1, 
+            Draw: 
+            { 
+                DrawType:'KLINE_TABLE', 
+                DrawData:[ ] ,                                      //数据  [ [ { Text, Color: BGColor }, ...... ], [],]
+                
+                RowName:TableConfig.AryRowName,
+                RowCount:TableConfig.AryRowName.length,
+
+                Config:
+                {
+                    BG:TableConfig.BG,
+                    Border:TableConfig.Border,
+                    Label:TableConfig.Label,
+                    Style:TableConfig.Style,
+                    TextFont:TableConfig.TextFont,
+                    ItemMargin:TableConfig.ItemMargin,
+                    YOffset:g_JSChartResource.KLine.Info.MaxSize+5, //留给信息地雷的位置
+                }
+            } 
+        };
+
+        var itemBG=['rgb(0,255,255)', 'rgb(255,0,255)', "rgb(255,182,193)", "rgb(245,222,179)", "rgb(127,255,212)" ];
+        var itemBG2=['rgb(127,255,0)', 'rgb(205,205,180)', "rgb(255,255,224)", "rgb(205,92,92)", "rgb(255,231,186)" ];
+        var itemBG3=['rgb(149, 205, 251)', 'rgb(255, 104, 111)', "rgb(120, 115, 255)", "rgb(157, 246, 170)", "rgb(255, 38, 0)" ];
+
+        var itemBG=[];
+        //var itemBG2=[];
+        //var itemBG3=[];
+
+                
+        for(var i=0;i<kData.Data.length;++i)   
+        {
+            var kItem=kData.Data[i];
+            var value=Math.random()*100;
+            var value2=Math.random()*100;
+            var value3=Math.random()*100;
+            var bgColorID=this.GetRandomTestData(0, itemBG.length-1);
+            var bgColor2ID=this.GetRandomTestData(0, itemBG2.length-1);
+            var bgColor3ID=this.GetRandomTestData(0, itemBG3.length-1);
+
+            var item=
+            { 
+                Date:kItem.Date, Time:kItem.Time, 
+                Data:
+                [
+                    {
+                        Text:value.toFixed(2),
+                        Tooltip:
+                        {
+                            AryText:
+                            [
+                                {Title:"日期", Text:`${kItem.Date}`},
+                                {Title:"第1行", Text:`${kItem.High.toFixed(2)}`, TextColor:"rgb(250,0,0)"},
+                                {Title:"最低", Text:`${kItem.Low.toFixed(2)}`,TextColor:"rgb(0,255,0)" },
+                            ]
+                        }
+                    }, 
+                    {Text:value2.toFixed(1), Color:"rgb(250,250,250)", BGColor:"rgb(255,0,0)", TextAlign:"center"},
+                    {Text:value.toFixed(2), Color:"rgb(255,255,255)", BGColor:"rgb(8, 153, 129)", TextAlign:"center"},
+                    {Text:value2.toFixed(2), Color:"rgb(0,0,0)", BGColor:itemBG3[bgColor3ID], TextAlign:"left",
+                        Tooltip:
+                        {
+                            AryText:
+                            [
+                                {Title:"日期", Text:`${kItem.Date}`},
+                                {Title:"第4行", Text:`${kItem.High.toFixed(2)}`, TextColor:"rgb(250,0,0)"},
+                                {Title:"最低", Text:`${kItem.Low.toFixed(2)}`,TextColor:"rgb(0,255,0)" },
+                            ]
+                        }
+                    },
+                    {Text:value.toFixed(2), Color:"rgb(105,105,105)", BGColor:itemBG3[bgColor3ID], TextAlign:"right"}
+                ]
+            }
+            tableData.Draw.DrawData.push(item);
+        }
+
+        var apiData=
+        {
+            code:0, 
+            stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+            outdata: { date:kData.GetDate(), time:kData.GetTime(), outvar:[tableData] } 
+        };
+
+        if (data.Self.IsOverlayIndex)
+        {
+            var id=data.Self.Guid;
+            var config=tableData.Draw.Config;
+            var frame=hqchart.Frame.SubFrame[0].Frame;
+            //var tableHeight=stackedBar.Draw.RowCount*(config.TextFont.FontMaxSize+config.ItemMargin.Top+config.ItemMargin.Bottom);
+            //frame.ChartBorder.BottomSpace=tableHeight+15;
+        }
+
+        console.log('[HQData::APIIndex_Delta_KLine_Table] apiData ', apiData);
+        callback(apiData);
     }
 
 }

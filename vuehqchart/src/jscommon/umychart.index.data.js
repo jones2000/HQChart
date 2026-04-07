@@ -185,6 +185,7 @@ JSIndexScript.ModifyAttribute=function(indexInfo, attribute)
     if (IFrameSplitOperator.IsBool(attribute.IsShowIndexTitle)) indexInfo.IsShowIndexTitle=attribute.IsShowIndexTitle;
     if (IFrameSplitOperator.IsNumber(attribute.KLineType)) indexInfo.KLineType=attribute.KLineType;
     if (IFrameSplitOperator.IsBool(attribute.IsAuthorization)) indexInfo.IsAuthorization=attribute.IsAuthorization;
+    if (IFrameSplitOperator.IsBool(attribute.IsShow)) indexInfo.IsShow=attribute.IsShow;
 
     if (attribute.YAxis)
     {

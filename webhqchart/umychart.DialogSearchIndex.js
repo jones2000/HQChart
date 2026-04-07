@@ -833,6 +833,30 @@ JSDialogSearchIndex.GetDefaultIndexData=function()
                             //KLine:{ Period:5, }
                         }
                     },
+
+                     { 
+                        Name:"Delta", ID:"E828DD1C-D41B-4888-9CB5-4CA1D84F7B70", Type:3, 
+                        TemplateData:
+                        {
+                            Windows:
+                            [
+                               { 
+                                    API:{ Name:"Delta", ID:"API-Delta_KLine_Table", Url:'local' } ,
+                                    AryTemporaryAttribute:
+                                    [
+                                        { Name:JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.BOTTOMSPACE, Value:(14*GetDevicePixelRatio()+6)*5+18*GetDevicePixelRatio()+15 },
+                                    ]
+                                },
+                            ],
+
+                            OverlayIndex: //叠加指标设置
+                            [
+                               
+                            ], 
+                            
+                            //KLine:{ Period:5, }
+                        }
+                    },
                 ]
             }
             

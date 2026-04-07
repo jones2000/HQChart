@@ -1,4 +1,11 @@
 //简单的把K线控件封装下
+
+var CUSTOM_BUTTON_ID=   //自定义按钮ID
+{
+    OVERLAY_INDEX_DRAPDOWN_BUTTON_ID:8889,       //叠加指标下拉菜单按钮
+    MAIN_INDEX_DRAPDOWN_BUTTON_ID:8888,          //主图指标下拉菜单按钮
+}
+
 class KLineChart
 {
     DivKLine=null;
@@ -311,7 +318,19 @@ class KLineChart
             {
                 event:JSCHART_EVENT_ID.ON_CLICK_CHART_PAINT, 
                 callback:(event, data, obj)=>{ this.OnClickChartPaint(event, data, obj); }
-            }
+            },
+            {
+                event:JSCHART_EVENT_ID.ON_CREATE_OVERLAY_FRAME, 
+                callback:(event, data, obj)=>{ this.OnCreateOverlayFrame(event, data, obj); }
+            },
+            {
+                event:JSCHART_EVENT_ID.ON_CREATE_FRAME,
+                callback:(event, data, obj)=>{ this.OnCreateFrame(event, data, obj); }
+            },
+            {
+                event:JSCHART_EVENT_ID.ON_CLICK_TITLE_BUTTON,
+                callback:(event, data, obj)=>{ this.OnClickTitleButton(event, data, obj); }
+            },
         ];
 
         //this.Chart.CreateExtraCanvasElement(JSChart.CorssCursorCanvasKey, { ZIndex:5 }); //十字光标单独一个图层
@@ -337,7 +356,7 @@ class KLineChart
 
     ExecuteScriptError(error)
     {
-         console.warn(`[KLineChart::ExecuteScriptError]`, error);
+        console.warn(`[KLineChart::ExecuteScriptError]`, error);
     }
 
     NetworkFilter(data, callback)
@@ -400,6 +419,41 @@ class KLineChart
 
     ReloadResource()
     {
+        if (this.Chart && this.Chart.JSChartContainer)
+        {
+            var frame=this.Chart.JSChartContainer.Frame;
+            for(var i=0, j=0;i<frame.SubFrame.length;++i)
+            {
+                var subFrame=frame.SubFrame[i];
+                for(j=0;j<subFrame.Frame.CustomToolbar.length;++j)
+                {
+                    var item=subFrame.Frame.CustomToolbar[j];
+                    if (item.ID==CUSTOM_BUTTON_ID.MAIN_INDEX_DRAPDOWN_BUTTON_ID)
+                    {
+                        item.Style.MoveOnColor=g_JSChartResource.Buttons.CloseOverlayIndex.MoveOnColor;
+                        item.Style.Color=g_JSChartResource.Buttons.CloseOverlayIndex.Color;
+                    }
+                }
+
+                for(var j=0;j<subFrame.OverlayIndex.length;++j)
+                {
+                    var overlayItem=subFrame.OverlayIndex[j];
+                    var overlayFrame=overlayItem.Frame;
+
+                    for(var k=0;k<overlayFrame.CustomToolbar.length;++k)
+                    {
+                        var item=overlayFrame.CustomToolbar[k];
+                        if (item.ID==CUSTOM_BUTTON_ID.OVERLAY_INDEX_DRAPDOWN_BUTTON_ID)
+                        {
+                            item.Style.MoveOnColor=g_JSChartResource.Buttons.CloseOverlayIndex.MoveOnColor;
+                            item.Style.Color=g_JSChartResource.Buttons.CloseOverlayIndex.Color;
+                        }
+                    }
+                }
+            }
+        }
+        
+
         if (this.Chart) this.Chart.ReloadResource({ Resource:null, Draw:true , Update:true });  //动态更新颜色配置  
     }
 
@@ -440,6 +494,119 @@ class KLineChart
     {
         if (!this.Chart || !this.Chart.JSChartContainer) return;
         this.Chart.JSChartContainer.ClearRestoreFocusTimer();
+    }
+
+    OnCreateOverlayFrame(event, data, obj)
+    {
+        var mainFrame=data.SubFrame.Frame;
+        var frame=data.OverlayFrame.Frame;
+
+        var button =
+        {
+            ID: CUSTOM_BUTTON_ID.OVERLAY_INDEX_DRAPDOWN_BUTTON_ID,
+            IsLeft:true,
+            Style:  //按钮样式 使用iconfont， 可以放全局的资源配置里面
+            {
+                MoveOnColor:g_JSChartResource.Buttons.CloseOverlayIndex.MoveOnColor,
+                Color: g_JSChartResource.Buttons.CloseOverlayIndex.Color,
+                Family: "iconfont",
+                Text: "\ue691",
+                Size: 13 *GetDevicePixelRatio(),
+                MerginLeft: 2,
+                YMoveOffset:-1,
+            },
+            TooltipText: `指标设置`,
+            Data:{ IndexGuid:data.OverlayFrame.Identify, ID:"DrapDownMenu" }
+        };
+
+        frame.CustomToolbar = [button];   //按钮添加
+    }
+
+    OnCreateFrame(event, data, obj)
+    {
+        var frame=data.SubFrame.Frame;
+
+        var button =
+        {
+            ID: CUSTOM_BUTTON_ID.MAIN_INDEX_DRAPDOWN_BUTTON_ID,
+            IsLeft:true,
+            Style:  //按钮样式 使用iconfont， 可以放全局的资源配置里面
+            {
+                MoveOnColor: g_JSChartResource.Buttons.CloseOverlayIndex.MoveOnColor,
+                Color: g_JSChartResource.Buttons.CloseOverlayIndex.Color,
+                Family: "iconfont",
+                Text: "\ue691",
+                Size: 13 *GetDevicePixelRatio(),
+                MerginLeft: 2,
+                YMoveOffset:-1,
+            },
+            TooltipText: "指标设置",
+            Data:{ FrameID:frame.Identify, ID:"DrapDownMenu" }
+        };
+
+        frame.CustomToolbar = [button];   //按钮添加
+    }
+
+    OnClickTitleButton(event, data, obj)
+    {
+        console.log("[KLineChart::OnClickTitleButton] data=", data);
+        if (!data.Info || !data.Info.Data) return;
+        var rtButton=data.Info.Rect;
+        var e=data.e;
+        if (data.Info.ID==CUSTOM_BUTTON_ID.OVERLAY_INDEX_DRAPDOWN_BUTTON_ID)
+        {
+            var menuData=
+            { 
+                Menu:
+                [ 
+                    this.Chart.JSChartContainer.GetModifyOverlayIndexMenuData(data.Info.Data.IndexGuid),
+                    this.Chart.JSChartContainer.GetShowOverlayIndexMenuData(data.Info.Data.IndexGuid),
+                    this.Chart.JSChartContainer.GetShowOverlayIndexYAxisMenuData(data.Info.Data.IndexGuid),
+                    this.Chart.JSChartContainer.GetOverlayIndexShareYMenuData(data.Info.Data.IndexGuid),
+                    { Name:JSPopMenu.SEPARATOR_LINE_NAME },
+                    { Name:"删除指标",  Data:{ ID: JSCHART_MENU_ID.CMD_DELETE_OVERLAY_INDEX_ID, Args:[data.Info.Data.IndexGuid] } },
+                ],
+
+                Position:JSPopMenu.POSITION_ID.TAB_MENU_ID,
+
+                ClickCallback:(data)=>{ this.OnClickIndexDrapdownMenu(data); }
+            };
+        }
+        else if (data.Info.ID==CUSTOM_BUTTON_ID.MAIN_INDEX_DRAPDOWN_BUTTON_ID)
+        {
+            var menuData=
+            { 
+                Menu:
+                [ 
+                    this.Chart.JSChartContainer.GetShowIndexMenuData(data.Info.FrameID),
+                    this.Chart.JSChartContainer.GetModifyIndexMenuData(data.Info.FrameID),
+                ],
+
+                Position:JSPopMenu.POSITION_ID.TAB_MENU_ID,
+
+                ClickCallback:(data)=>{ this.OnClickIndexDrapdownMenu(data); }
+            };
+        }
+        else
+        {
+            return;
+        }
+
+        this.Chart.PopupMenuByDrapdown(menuData, rtButton);
+
+        if(e.preventDefault) e.preventDefault();
+        if(e.stopPropagation) e.stopPropagation();
+    }
+
+    OnClickIndexDrapdownMenu(menuData)
+    {
+        if (menuData.Data.ID==JSCHART_MENU_ID.CMD_SHOW_INDEX_ID || menuData.Data.ID==JSCHART_MENU_ID.CMD_SHOW_OVERLAY_INDEX_ID || 
+            menuData.Data.ID==JSCHART_MENU_ID.CMD_DELETE_OVERLAY_INDEX_ID || menuData.Data.ID==JSCHART_MENU_ID.CMD_SHOW_OVERLAY_Y_AXIS_ID ||
+            menuData.Data.ID==JSCHART_MENU_ID.CMD_ENABLE_OVERLAY_SHARE_Y_ID ||
+            menuData.Data.ID==JSCHART_MENU_ID.CMD_MODIFY_INDEX_PARAM || menuData.Data.ID==JSCHART_MENU_ID.CMD_MODIFY_OVERLAY_INDEX_PARAM )
+        {
+            this.Chart.JSChartContainer.ExecuteMenuCommand(menuData.Data.ID, menuData.Data.Args);
+        }
     }
 
 }
