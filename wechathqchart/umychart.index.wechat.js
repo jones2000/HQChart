@@ -68,7 +68,9 @@ import {
     ChartPartLine,
     ChartDrawText_Fix,
     ChartDrawNumber_Fix,
-    ChartDrawIconV2
+    ChartDrawIconV2,
+    ChartChannel,
+    ChartTextLine
 } from "./umychart.chartpaint.wechat.js";
 
 import 
@@ -182,7 +184,8 @@ function BaseIndex(name)
 // 图形指标名字
 var SCRIPT_CHART_NAME=
 {
-    OVERLAY_BARS:"OVERLAY_BARS"     //叠加柱子图
+    OVERLAY_BARS:"OVERLAY_BARS",     //叠加柱子图
+    DRAW_CHANNEL:"DRAWCHANNEL",
 }
 
 // 外部对接API指标数据及图形
@@ -1492,6 +1495,61 @@ function ScriptIndex(name, script, args, option)
         hqChart.TitlePaint[titleIndex].Data[i]=titleData;
     }
 
+    this.CreateChannel=function(hqChart,windowIndex,varItem,i)
+    {
+        let chart=new ChartChannel();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        if (varItem.Draw.Config)
+        {
+            var item=varItem.Draw.Config;
+            if (IFrameSplitOperator.IsObjectDefined(item.AreaColor)) chart.AreaColor=item.AreaColor;
+            if (IFrameSplitOperator.IsObjectDefined(item.LineColor)) chart.LineColor=item.LineColor;
+            if (IFrameSplitOperator.IsObjectDefined(item.LineDotted)) chart.LineDotted=item.LineDotted;
+            if (IFrameSplitOperator.IsNumber(item.LineWidth)) chart.LineWidth=item.LineWidth;
+        }
+        else
+        {
+            if(varItem.Draw.AreaColor) chart.AreaColor=varItem.Draw.AreaColor;
+            else if (varItem.Color) chart.AreaColor=this.GetColor(varItem.Color);
+            else chart.AreaColor=this.GetDefaultColor(id);
+
+            if (varItem.Draw.Border)
+            {
+                if (varItem.Draw.Border.Color) chart.LineColor=varItem.Draw.Border.Color;
+                else chart.LineColor=null;
+
+                if (varItem.Draw.Border.Dotted) chart.LineDotted=varItem.Draw.Border.Dotted;
+                if (varItem.Draw.Border.Width>0) chart.LineWidth=varItem.Draw.Border.Width;
+            }
+        }
+
+        //let titleIndex=windowIndex+1;
+        chart.Data.Data=varItem.Draw.DrawData;
+        hqChart.ChartPaint.push(chart);
+    }
+
+    this.CreateTextLine=function(hqChart,windowIndex,varItem,id)
+    {
+        let chart=new ChartTextLine();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+        if (varItem.Draw && varItem.Draw.DrawData)
+        {
+            var drawData=varItem.Draw.DrawData;
+            chart.Text=drawData.Text;
+            chart.Line=drawData.Line;
+            chart.Price=drawData.Price;
+        }
+
+        hqChart.ChartPaint.push(chart);
+    }
+
     this.CreateMultiLine = function (hqChart, windowIndex, varItem, i) 
     {
         let chart = new ChartMultiLine();
@@ -1751,6 +1809,12 @@ function ScriptIndex(name, script, args, option)
                     break;
                 case SCRIPT_CHART_NAME.OVERLAY_BARS:
                     this.CreateStackedBar(hqChart,windowIndex,item,i);
+                    break;
+                case 'DRAWCHANNEL':
+                    this.CreateChannel(hqChart,windowIndex,item,i);
+                    break;
+                case 'DRAWTEXT_LINE':
+                    this.CreateTextLine(hqChart,windowIndex,item,i);
                     break;
                 }
             }
@@ -3485,6 +3549,30 @@ function APIScriptIndex(name, script, args, option, isOverlay)     //后台执�
                     drawItem.Type=draw.Type;
                     drawItem.DrawType=draw.DrawType;
                     drawItem.DrawData=draw.DrawData;    //{ Point: { X: 5,Y: 5 }, Text: "注意(居中):前方高能！！！！！" }
+
+                    outVarItem.Draw=drawItem;
+                    if (draw.Font) outVarItem.Font=draw.Font;
+                    
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType==SCRIPT_CHART_NAME.DRAW_CHANNEL)
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+                    drawItem.DrawType=draw.DrawType;
+
+                    drawItem.DrawData=this.FittingArray(draw.DrawData,date,time,hqChart,1);
+                    drawItem.Config=draw.Config;
+                    outVarItem.Draw=drawItem;
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType=="DRAWTEXT_LINE")
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=draw.DrawData;    //{ Price:,  Text:{ Title:text, Color:textcolor }, Line:{ Type:linetype, Color:linecolor } };
 
                     outVarItem.Draw=drawItem;
                     if (draw.Font) outVarItem.Font=draw.Font;

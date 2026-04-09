@@ -590,6 +590,13 @@ IFrameSplitOperator.IsObjectExist=function(obj)
     return true;
 }
 
+IFrameSplitOperator.IsObjectDefined=function(obj)
+{
+    if (obj===undefined) return false;
+
+    return true;
+}
+
 //是否时bool
 IFrameSplitOperator.IsBool=function(value)
 {

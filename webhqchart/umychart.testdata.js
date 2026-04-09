@@ -9,7 +9,7 @@ function HQData()  { }
 
 HQData.Explain="本地测试数据";
 
-HQData.NetworkFilter=function(data, callback)
+HQData.NetworkFilter=function(data, callback, option)
 {
     console.log(`[HQData::NetworkFilter] ${HQData.Explain}`, data);
 
@@ -145,6 +145,11 @@ HQData.NetworkFilter=function(data, callback)
             HQData.NewsInfo_RequestData(data, callback);
             break;
 
+        //扩展信息
+        case "ExtendInfo::RequestData":
+            HQData.ExtendInfo_RequestData(data, callback, option);
+            break;
+
         case "JSSymbolData::GetFinance":    //财务数据
             //HQChart使用教程30-K线图如何对接第3方数据23- FINANCE函数数据
             HQData.Finance_RequestData(data,callback);
@@ -215,7 +220,7 @@ HQData.NetworkFilter=function(data, callback)
             break;
 
         case "APIScriptIndex::ExecuteScript":   //测试指标
-            HQData.Report_APIIndex(data, callback);
+            HQData.Report_APIIndex(data, callback, option);
             break;
 
 
@@ -1784,6 +1789,72 @@ HQData.NewsInfo_RequestData=function(data, callback)
     callback(hqchartData);
 }
 
+HQData.ExtendInfo_RequestData=function(data, callback, option)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Symbol;
+    var hqchartData={ symbol:symbol, list:[] };
+
+    var kData=data.HQChart.GetKData();
+    var counter=1;
+    for(var i=0;i<kData.Data.length;++i)
+    {
+        var kItem=kData.Data[i];
+        ++counter;
+        var newItem=
+        { 
+            date:kItem.Date, 
+            title:`扩展信息[0]-(${counter})`,
+            infoType:0,
+            type:1,
+            id:counter,
+            data:{ Value:"这里放外部信息"}
+        };
+
+        hqchartData.list.push(newItem);
+
+        ++counter;
+        var newItem=
+        { 
+            date:kItem.Date, 
+            title:`扩展信息[0]-(${counter})`,
+            infoType:0,
+            type:1,
+            id:counter,
+            data:{ Value:"这里放外部信息"}
+        };
+
+        hqchartData.list.push(newItem);
+
+        ++counter;
+        var newItem=
+        { 
+            date:kItem.Date, 
+            title:`扩展信息[1]-(${counter})`,
+            infoType:1,
+            type:1,
+            id:counter,
+            data:{ Value:"这里放外部信息"}
+        };
+        hqchartData.list.push(newItem);
+
+        ++counter;
+        var newItem=
+        { 
+            date:kItem.Date, 
+            title:`扩展信息[2]-(${counter})`,
+            infoType:2,
+            type:1,
+            id:counter,
+            data:{ Value:"这里放外部信息"}
+        };
+
+        hqchartData.list.push(newItem);
+    }
+
+    callback(hqchartData);
+}
+
 HQData.RequestLatestData=function(data,callback)
 {
     data.PreventDefault=true;
@@ -2993,7 +3064,7 @@ HQData.GetMulitDayMinuteDataByDate=function(aryDay, aryDate)
 }
 
 
-HQData.Report_APIIndex=function(data, callback)
+HQData.Report_APIIndex=function(data, callback, option)
 {
     var request=data.Request;
     if (request.Data.indexname=='API-MULTI_POINT')
@@ -3045,6 +3116,10 @@ HQData.Report_APIIndex=function(data, callback)
         HQData.APIIndex_DRAWTEXT_FIX(data, callback);
     else if (request.Data.indexname=="API_DRAWNUMBER_FIX")
         HQData.APIIndex_DRAWNUMBER_FIX(data, callback);
+    else if (request.Data.indexname=='API-Delta_KLine_Table')
+        HQData.APIIndex_Delta_KLine_Table(data, callback, option);
+    else if (request.Data.indexname=="API_DRAWCHANNEL")
+        HQData.APIIndex_DRAWCHANNEL(data, callback, option);
 
     else if (request.Data.indexname=="API_ERRORMESSAGE")
         HQData.APIIndex_ErrorMessage(data, callback);
@@ -4851,6 +4926,312 @@ HQData.APIIndex_DRAWNUMBER_FIX=function(data, callback)
     callback(apiData);
 }
 
+HQData.APIIndex_Delta_KLine_Table=function(data, callback, option)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var kData=data.HQChart.GetKData(); //hqchart图形的分钟数据
+    var pixelRatio=GetDevicePixelRatio();
+
+    var TableConfig=
+    {
+        BG:{ IsShow:true },
+        Border:
+        {
+            Vertical:{ IsShow:true  },                  //竖线
+            Horizontal:{ IsShow:true },                 //横线
+        },
+
+        Label:
+        { 
+            Position:4,     //0不显示  1=内左 2=外左 3=内右 4=外右
+            Margin:{ Left:15, Right:15 },
+            XOffset:15, YOffset:4,
+        },
+
+        AryRowName:
+        [
+            {Name:"Delta",TextAlign:"left"}, 
+            {Name:"Delta2",TextAlign:"left"}, 
+            {Name:"Delta.Sum",TextAlign:"left" },
+            {Name:"Delta.Max",TextAlign:"left"},
+            {Name:"Delta.Min",TextAlign:"left"},
+        ],
+
+        Style:2,
+
+        //TextFont:{ Family:'微软雅黑' , FontMaxSize:12*GetDevicePixelRatio() },
+        //ItemMargin:{ Left:5, Right:5, Top:5, Bottom:5 },
+    }
+
+    var tableData= 
+    { 
+        name:'KLINE_TABLE', type:1, 
+        Draw: 
+        { 
+            DrawType:'KLINE_TABLE', 
+            DrawData:[ ] ,                                      //数据  [ [ { Text, Color: BGColor }, ...... ], [],]
+            
+            RowName:TableConfig.AryRowName,
+            RowCount:TableConfig.AryRowName.length,
+
+            Config:
+            {
+                BG:TableConfig.BG,
+                Border:TableConfig.Border,
+                Label:TableConfig.Label,
+                Style:TableConfig.Style,
+                TextFont:TableConfig.TextFont,
+                ItemMargin:TableConfig.ItemMargin,
+                YOffset:g_JSChartResource.KLine.Info.MaxSize+5, //留给信息地雷的位置
+            }
+        } 
+    };
+
+    var itemBG=['rgb(0,255,255)', 'rgb(255,0,255)', "rgb(255,182,193)", "rgb(245,222,179)", "rgb(127,255,212)" ];
+    var itemBG2=['rgb(127,255,0)', 'rgb(205,205,180)', "rgb(255,255,224)", "rgb(205,92,92)", "rgb(255,231,186)" ];
+    var itemBG3=['rgb(149, 205, 251)', 'rgb(255, 104, 111)', "rgb(120, 115, 255)", "rgb(157, 246, 170)", "rgb(255, 38, 0)" ];
+
+    var itemBG=[];
+    //var itemBG2=[];
+    //var itemBG3=[];
+
+            
+    for(var i=0;i<kData.Data.length;++i)   
+    {
+        var kItem=kData.Data[i];
+        var value=Math.random()*100;
+        var value2=Math.random()*100;
+        var value3=Math.random()*100;
+        var bgColorID=this.GetRandomTestData(0, itemBG.length-1);
+        var bgColor2ID=this.GetRandomTestData(0, itemBG2.length-1);
+        var bgColor3ID=this.GetRandomTestData(0, itemBG3.length-1);
+
+        var item=
+        { 
+            Date:kItem.Date, Time:kItem.Time, 
+            Data:
+            [
+                {
+                    Text:value.toFixed(2),
+                    Tooltip:
+                    {
+                        AryText:
+                        [
+                            {Title:"日期", Text:`${kItem.Date}`},
+                            {Title:"第1行", Text:`${kItem.High.toFixed(2)}`, TextColor:"rgb(250,0,0)"},
+                            {Title:"最低", Text:`${kItem.Low.toFixed(2)}`,TextColor:"rgb(0,255,0)" },
+                        ]
+                    }
+                }, 
+                {Text:value2.toFixed(1), Color:"rgb(250,250,250)", BGColor:"rgb(255,0,0)", TextAlign:"center"},
+                {Text:value.toFixed(2), Color:"rgb(255,255,255)", BGColor:"rgb(8, 153, 129)", TextAlign:"center"},
+                {Text:value2.toFixed(2), Color:"rgb(0,0,0)", BGColor:itemBG3[bgColor3ID], TextAlign:"left",
+                    Tooltip:
+                    {
+                        AryText:
+                        [
+                            {Title:"日期", Text:`${kItem.Date}`},
+                            {Title:"第4行", Text:`${kItem.High.toFixed(2)}`, TextColor:"rgb(250,0,0)"},
+                            {Title:"最低", Text:`${kItem.Low.toFixed(2)}`,TextColor:"rgb(0,255,0)" },
+                        ]
+                    }
+                },
+                {Text:value.toFixed(2), Color:"rgb(105,105,105)", BGColor:itemBG3[bgColor3ID], TextAlign:"right"}
+            ]
+        }
+        tableData.Draw.DrawData.push(item);
+    }
+
+    var apiData=
+    {
+        code:0, 
+        stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+        outdata: { date:kData.GetDate(), time:kData.GetTime(), outvar:[tableData] } 
+    };
+
+    if (data.Self.IsOverlayIndex)
+    {
+        var id=data.Self.Guid;
+        var config=tableData.Draw.Config;
+        var frame=hqchart.Frame.SubFrame[0].Frame;
+        //var tableHeight=stackedBar.Draw.RowCount*(config.TextFont.FontMaxSize+config.ItemMargin.Top+config.ItemMargin.Bottom);
+        //frame.ChartBorder.BottomSpace=tableHeight+15;
+    }
+
+    console.log('[HQData::APIIndex_Delta_KLine_Table] apiData ', apiData);
+    callback(apiData);
+}
+
+
+HQData.APIIndex_DRAWCHANNEL=function(data, callback, option)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var kData=data.HQChart.GetKData(); //hqchart图形的分钟数据
+
+    //背景通道
+    var channelData0=
+    {
+        name:"2-4", type:1, 
+        Draw:
+        { 
+            Name:"DRAWCHANNEL",
+            DrawType:"DRAWCHANNEL",
+            DrawData:[],
+            Config:
+            {
+                AreaColor:"rgb(211,211,211)",
+                LineColor:null,
+            }
+        },
+    }
+
+    var channelData=
+    { 
+        name:"4-6", type:1, 
+        Draw:
+        { 
+            Name:"DRAWCHANNEL",
+            DrawType:"DRAWCHANNEL",
+            DrawData:[],
+            Config:
+            {
+                AreaColor:"rgba(200,0,0,0.5)",
+                LineColor:"rgb(200,0,0)",
+                LineDotted:null
+            }
+        },
+    };
+
+    var channelData2=
+    { 
+        name:"6-8", type:1, 
+        Draw:
+        { 
+            Name:"DRAWCHANNEL",
+            DrawType:"DRAWCHANNEL",
+            DrawData:[],
+            Config:
+            {
+                AreaColor:"rgb(0,250,154)",
+                LineColor:null,
+            }
+        },
+    };
+
+    var channelData3=
+    { 
+        name:"8-10", type:1, 
+        Draw:
+        { 
+            Name:"DRAWCHANNEL",
+            DrawType:"DRAWCHANNEL",
+            DrawData:[],
+            Config:
+            {
+                AreaColor:"rgb(255,215,0)",
+                LineColor:null,
+            }
+        },
+    };
+
+    var channelData4=
+    { 
+        name:"10-12", type:1, 
+        Draw:
+        { 
+            Name:"DRAWCHANNEL",
+            DrawType:"DRAWCHANNEL",
+            DrawData:[],
+            Config:
+            {
+                AreaColor:"rgb(152,251,152)",
+                LineColor:null,
+            }
+        },
+    };
+
+
+    for(var i=0;i<kData.Data.length;++i)
+    {
+        channelData0.Draw.DrawData[i]={ Value:2, Value2:4 };
+        channelData.Draw.DrawData[i]={ Value:4, Value2:6 };
+        channelData2.Draw.DrawData[i]={ Value:6, Value2:8 };
+        channelData3.Draw.DrawData[i]={ Value:8, Value2:10 };
+        channelData4.Draw.DrawData[i]={ Value:10, Value2:12 };
+    }
+
+    //线段
+    var pointData=
+    {
+        Color:'rgb(255,165,0)', 
+        Point:[],
+        Circle:[]
+    }
+
+    var lineData= 
+    { 
+        name:'测试线段1', type:1, 
+        Draw: 
+        { 
+            DrawType:'MULTI_LINE', DrawData:[pointData],
+            LineWidth:2,
+        }, //绘制线段数组
+
+        IsShowTitle:true,
+    };
+
+    for(var i=kData.Data.length-20;i<kData.Data.length;++i)
+    {
+        var item=kData.Data[i];
+        pointData.Point.push({Date:item.Date, Time:item.Time, Value:this.GetRandomTestData(4.5, 12-0.5)});    //线段
+        pointData.Circle.push({Radius:5, Color:"rgb(255,165,0)" }); //点
+    }
+
+    //图标
+    var iconData= 
+    { 
+        name:'MULTI_SVGICON', type:1, 
+        Draw: 
+        { 
+            DrawType:'MULTI_SVGICON', 
+            DrawData: 
+            {
+                Family:'iconfont', 
+                Icon:
+                [
+                    //{ Date:20190916, Value:"High", Symbol:'\ue611', Color:'rgb(240,0,0)', Baseline:2 , YMove:-5},  //0 居中 1 上 2 下
+                    //{ Date:20190919, Value:15.3, Symbol:'\ue615', Color:'rgb(240,240,0)', Baseline:2 },
+                    //{ Date:20190909, Value:15.4, Symbol:'\ue615', Color:'rgb(240,100,30)'}
+                ] 
+            },
+        } //绘制图标数组
+    };
+
+    for(var i=kData.Data.length-10;i<kData.Data.length;++i)
+    {
+        var item=kData.Data[i];
+
+        var iconItem=
+        { 
+            Date:item.Date, Time:item.Time,
+            Value:2, Symbol:'\ue70f', Color:'rgb(240,0,0)', Baseline:2 , YMove:-5
+        }
+
+        iconData.Draw.DrawData.Icon.push(iconItem);
+    }
+
+    var apiData=
+    {
+        code:0, 
+        stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+        outdata: { date:kData.GetDate(), time:kData.GetTime(), outvar:[channelData0, channelData,channelData2,channelData3,channelData4, lineData, iconData] } 
+    };
+
+    console.log('[HQData.APIIndex_DRAWCHANNEL] apiData ', apiData);
+    callback(apiData);
+}
 
 HQData.Request_IndexAuthorization=function(data, callback)
 {

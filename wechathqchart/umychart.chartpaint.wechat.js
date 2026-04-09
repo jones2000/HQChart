@@ -6058,9 +6058,11 @@ function ChartMultiLine()
         for (var i=0; i<this.Lines.length; ++i) 
         {
             var line = this.Lines[i];
-            var drawPoints = { Point: [], Color: line.Color };
+            var drawPoints = { Point: [], Color: line.Color, AryCircle:null };
             var drawArrowPoints={ Start:[], End:[] };
             if (line.BGColor) drawPoints.BGColor=line.BGColor;
+            if (IFrameSplitOperator.IsNonEmptyArray(line.Circle)) drawPoints.AryCircle=line.Circle;
+
             for (var j=0;j<line.Point.length; ++j) 
             {
                 var point = line.Point[j];
@@ -6099,8 +6101,43 @@ function ChartMultiLine()
 
             var item = drawLines[i];
             this.DrawLine(item, arrowLines[i]);
+
+             //绘制圆点
+             if (item.AryCircle) this.DrawCircle(item)
         }
         this.Canvas.restore();
+    }
+
+    this.DrawCircle=function(line)
+    {
+        for(var i=0; i<line.Point.length; ++i)
+        {
+            var item=line.Point[i];
+
+            for(var j=0;j<line.AryCircle.length;++j)
+            {
+                var circleItem=line.AryCircle[j];
+                
+                var type=0;
+                if (IFrameSplitOperator.IsNumber(circleItem.Type)) type=circleItem.Type;
+                
+                this.Canvas.beginPath();
+                this.Canvas.arc(item.X, item.Y, circleItem.Radius, 0, 2 * Math.PI);
+
+                if (type==1)
+                {
+                    if (IFrameSplitOperator.IsPlusNumber(circleItem.LineWidth)) this.Canvas.lineWidth=circleItem.LineWidth;
+                    this.Canvas.strokeStyle=circleItem.Color;
+                    this.Canvas.stroke();
+                }
+                else
+                {
+                    this.Canvas.fillStyle=circleItem.Color;
+                    this.Canvas.fill()
+                }
+                
+            }
+        }
     }
 
     this.DrawLine = function (line, arrow) 
@@ -9744,6 +9781,269 @@ function ChartMultiSVGIconV2()
     }
 }
 
+// 通道面积图 支持横屏
+function ChartChannel()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+    this.IsDrawFirst = true;
+
+    this.ClassName="ChartChannel";
+    this.IsHScreen=false;   //是否是横屏
+    this.PointCount=0;
+    this.DataWidth=0;
+    this.DistanceWidth=0;
+    this.ChartRight=0;      //可以绘制的最右边
+    this.LineColor='RGB(255,0,0)';
+    this.LineDotted=[3,3];
+    this.AreaColor='RGB(255,222,173)';
+    this.LineWidth=1;
+
+    this.CalculateData=function()   //把数据通过nul值分割开, 并计算坐标
+    {
+        var data=[];
+        var lineData=[];
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<this.PointCount;++i,++j)
+        {
+            var item=this.Data.Data[i];
+            if (!item || !IFrameSplitOperator.IsNumber(item.Value) || !IFrameSplitOperator.IsNumber(item.Value2))
+            {
+                if (lineData.length>0) 
+                {
+                    data.push(lineData);
+                    lineData=[];    //创建新的一组数据
+                }
+
+                continue;
+            }
+
+            var x=this.ChartFrame.GetXFromIndex(j);
+            if (x>this.ChartRight) break;
+            var y=this.ChartFrame.GetYFromData(item.Value);
+            var y2=this.ChartFrame.GetYFromData(item.Value2);
+
+            lineData.push({X:x, Y:y,Y2:y2});
+        }
+        
+        if (lineData.length>0) data.push(lineData);
+        return data;
+    }
+
+    this.DrawArea=function(lineData)
+    {
+        if (lineData.length<=0) return;
+        this.Canvas.beginPath();
+
+        var drawCount=0;
+        var firstItem=lineData[0];
+        if (this.IsHScreen) this.Canvas.moveTo(firstItem.Y,firstItem.X);
+        else this.Canvas.moveTo(firstItem.X,firstItem.Y);
+        for(var i=1;i<lineData.length;++i)
+        {
+            var item=lineData[i];
+            if (this.IsHScreen) this.Canvas.lineTo(item.Y,item.X);
+            else this.Canvas.lineTo(item.X,item.Y);
+            ++drawCount;
+        }
+
+        for(var i=lineData.length-1;i>=0;--i)
+        {
+            var item=lineData[i];
+            if (this.IsHScreen) this.Canvas.lineTo(item.Y2,item.X);
+            else this.Canvas.lineTo(item.X,item.Y2);
+            ++drawCount;
+        }
+
+        this.Canvas.closePath();
+        this.Canvas.fillStyle = this.AreaColor;
+        this.Canvas.fill();
+    }
+
+    this.DrawLine=function(lineData)
+    {
+        if (!this.LineColor) return;
+
+        this.Canvas.strokeStyle=this.LineColor;
+        for(var k=0;k<2;++k)
+        {
+            var bFirstPoint=true;
+            var drawCount=0;
+            for(var i=0;i<lineData.length;++i)
+            {
+                var item=lineData[i];
+
+                if (bFirstPoint)
+                {
+                    this.Canvas.beginPath();
+                    if (this.IsHScreen) this.Canvas.moveTo(k===0?item.Y:item.Y2,item.X);
+                    else this.Canvas.moveTo(item.X, k===0?item.Y:item.Y2 );
+                    bFirstPoint=false;
+                }
+                else
+                {
+                    if (this.IsHScreen) this.Canvas.lineTo(k===0?item.Y:item.Y2,item.X);
+                    else this.Canvas.lineTo(item.X,k===0?item.Y:item.Y2);
+                }
+
+                ++drawCount;
+            }
+            if (drawCount>0) this.Canvas.stroke();
+        }
+    }
+
+    this.Draw=function()
+    {
+        if (this.ChartFrame.IsMinSize) return;
+
+        if (this.NotSupportMessage)
+        {
+            this.DrawNotSupportmessage();
+            return;
+        }
+
+        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
+        this.PointCount=this.ChartFrame.XPointCount;
+        this.DataWidth=this.ChartFrame.DataWidth;
+        this.DistanceWidth=this.ChartFrame.DistanceWidth;
+        if (this.IsHScreen) this.ChartRight=this.ChartBorder.GetBottom();
+        else this.ChartRight=this.ChartBorder.GetRight();
+
+        var drawData=this.CalculateData();
+        if (!drawData || drawData.length<=0) return;
+
+        this.Canvas.save();
+        this.Canvas.lineWidth=this.LineWidth;
+        if (IFrameSplitOperator.IsNonEmptyArray()) this.Canvas.setLineDash(this.LineDotted);   //虚线
+        for(var i=0;i<drawData.length;++i)
+        {
+            var lineData=drawData[i];
+            this.DrawArea(lineData);
+            this.DrawLine(lineData);
+        }
+        this.Canvas.restore();
+    }
+
+    this.GetMaxMin=function()
+    {
+        var xPointCount=this.ChartFrame.XPointCount;
+        var range={Min:null, Max:null};
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j)
+        {
+            var value=this.Data.Data[i];
+            if (value==null || value.Value==null || value.Value2 == null) continue;
+            var maxData = value.Value>value.Value2?value.Value:value.Value2;
+            var minData = value.Value<value.Value2?value.Value:value.Value2;
+            if (range.Max==null) 
+                range.Max = maxData;
+            else if (range.Max < maxData)
+                range.Max = maxData;
+            
+            if (range.Min==null)
+                range.Min = minData;
+            else if (range.Min > minData)
+                range.Min = minData; 
+        }
+
+        return range;
+    }
+}
+
+// 文字+线段输出
+function ChartTextLine()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName="ChartTextLine";
+
+    this.Text;  //{ Title:内容, Color:  YOffset:, }
+    this.Line;  //{ Type=线段类型 0=不画 1=直线 2=虚线, Color:, Width:,  LineDash:[] }
+    this.Price;
+
+    this.Draw=function()
+    {
+        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
+        if (!this.Text || !this.Line || !IFrameSplitOperator.IsNumber(this.Price)) return;
+
+        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
+        var left=this.ChartBorder.GetLeft();
+        var right=this.ChartBorder.GetRight();
+        var bottom=this.ChartBorder.GetBottomEx();
+        var top=this.ChartBorder.GetTopEx();
+        var y=this.ChartFrame.GetYFromData(this.Price);
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+
+        this.Canvas.save();
+        this.ClipClient(this.IsHScreen);
+
+        var textWidth=0;
+        if (this.Text.Title)
+        {
+            var xOffset=2;
+            if (IFrameSplitOperator.IsNumber(this.Text.XOffset)) xOffset=this.Text.XOffset;
+
+            if (this.Text.KLineXOffset=="KLine") xOffset+=distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            else if (this.Text.KLineXOffset=="KLineCenter") xOffset+=distanceWidth/2.0+dataWidth/2+g_JSChartResource.FrameLeftMargin;
+
+            var x=left+xOffset;
+            var yText=y;
+            this.Canvas.textAlign = 'left';
+            this.Canvas.textBaseline = 'middle';
+            var offsetY=8;
+            if (y-offsetY<top) 
+            {
+                this.Canvas.textBaseline='top';
+                yText=top;
+            }
+            else if (y+offsetY>bottom) 
+            {
+                this.Canvas.textBaseline='bottom';
+                yText=bottom;
+            }
+            
+            this.Canvas.fillStyle = this.Text.Color;
+            this.Canvas.font = this.Text.Font;
+            this.Canvas.fillText(this.Text.Title, x, yText);
+            textWidth=this.Canvas.measureText(this.Text.Title).width+4+xOffset;
+        }
+
+        if (this.Line.Type>0)
+        {
+            if (this.Line.Type==2)  //虚线
+            {
+                if (IFrameSplitOperator.IsNonEmptyArray(this.Line.LineDash)) this.Canvas.setLineDash(this.Line.LineDash)
+                else this.Canvas.setLineDash([3,5]);   //虚线
+            }
+
+            if (IFrameSplitOperator.IsNumber(this.Line.Width)) this.Canvas.lineWidth=this.Line.Width;
+
+            var x=left+textWidth;
+            this.Canvas.strokeStyle=this.Line.Color;
+            this.Canvas.beginPath();
+            this.Canvas.moveTo(x,ToFixedPoint(y));
+            this.Canvas.lineTo(right,ToFixedPoint(y));
+            this.Canvas.stroke();
+        }
+
+
+        this.Canvas.restore();
+    }
+
+    this.GetMaxMin=function()
+    {
+        var range={Min:null, Max:null};
+        if (IFrameSplitOperator.IsNumber(this.Price))
+        {
+            range.Min=this.Price;
+            range.Max=this.Price;
+        }
+        
+        return range;
+    }
+}
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //十字光标
 function ChartCorssCursor() 
@@ -11338,5 +11638,7 @@ export
     ChartSingleLine,
     ChartPartLine,
     ChartDrawText_Fix,
-    ChartDrawNumber_Fix
+    ChartDrawNumber_Fix,
+    ChartChannel,
+    ChartTextLine,
 };

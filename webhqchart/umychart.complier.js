@@ -20784,6 +20784,7 @@ var SCRIPT_CHART_NAME=
 
     DRAW_KLINE:"DRAWKLINE",
     BASELINE_BAR:"BASELINE_BAR",
+    DRAW_CHANNEL:"DRAWCHANNEL",
 }
 
 
@@ -22717,15 +22718,31 @@ function ScriptIndex(name,script,args,option)
         chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
         chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
 
-        if(varItem.Draw.AreaColor) chart.AreaColor=varItem.Draw.AreaColor;
-        else if (varItem.Color) chart.AreaColor=this.GetColor(varItem.Color);
-        else chart.AreaColor=this.GetDefaultColor(id);
+        if (varItem.Draw.Config)
+        {
+            var item=varItem.Draw.Config;
+            if (IFrameSplitOperator.IsObjectDefined(item.AreaColor)) chart.AreaColor=item.AreaColor;
+            if (IFrameSplitOperator.IsObjectDefined(item.LineColor)) chart.LineColor=item.LineColor;
+            if (IFrameSplitOperator.IsObjectDefined(item.LineDotted)) chart.LineDotted=item.LineDotted;
+            if (IFrameSplitOperator.IsNumber(item.LineWidth)) chart.LineWidth=item.LineWidth;
+        }
+        else
+        {
+            if(varItem.Draw.AreaColor) chart.AreaColor=varItem.Draw.AreaColor;
+            else if (varItem.Color) chart.AreaColor=this.GetColor(varItem.Color);
+            else chart.AreaColor=this.GetDefaultColor(id);
 
-        if (varItem.Draw.Border.Color) chart.LineColor=varItem.Draw.Border.Color;
-        else chart.LineColor=null;
+            if (varItem.Draw.Border)
+            {
+                if (varItem.Draw.Border.Color) chart.LineColor=varItem.Draw.Border.Color;
+                else chart.LineColor=null;
 
-        if (varItem.Draw.Border.Dotted) chart.LineDotted=varItem.Draw.Border.Dotted;
-        if (varItem.Draw.Border.Width>0) chart.LineWidth=varItem.Draw.Border.Width;
+                if (varItem.Draw.Border.Dotted) chart.LineDotted=varItem.Draw.Border.Dotted;
+                if (varItem.Draw.Border.Width>0) chart.LineWidth=varItem.Draw.Border.Width;
+            }
+        }
+
+        
 
         //let titleIndex=windowIndex+1;
         chart.Data.Data=varItem.Draw.DrawData;
@@ -26512,6 +26529,17 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     result.push(outVarItem);
                 }
                 else if (draw.DrawType==SCRIPT_CHART_NAME.DRAW_KLINE)
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+                    drawItem.DrawType=draw.DrawType;
+
+                    drawItem.DrawData=this.FittingArray(draw.DrawData,date,time,hqChart,1);
+                    drawItem.Config=draw.Config;
+                    outVarItem.Draw=drawItem;
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType==SCRIPT_CHART_NAME.DRAW_CHANNEL)
                 {
                     drawItem.Name=draw.Name;
                     drawItem.Type=draw.Type;

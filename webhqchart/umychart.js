@@ -2081,6 +2081,13 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         } 
     }
 
+    //手动更新信息地雷
+    this.UpdateKLineInfo=function(infoName, option)
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.UpdateKLineInfo) == 'function')
+            this.JSChartContainer.UpdateKLineInfo(infoName, option);   
+    }
+
     this.AddOverlayIndex=function(obj) //{WindowIndex:窗口ID, IndexName:指标ID, Identify:叠加指标ID(可选), API}
     {
         if (this.JSChartContainer && typeof(this.JSChartContainer.AddOverlayIndex)=='function') 
@@ -24124,15 +24131,21 @@ var KLINE_INFO_TYPE=
 
     RESEARCH:8,                 //调研
     BLOCKTRADING:9,             //大宗交易
-    DRAGON_TIGER:10,              //龙虎榜
+    DRAGON_TIGER:10,            //龙虎榜
     NEWS:11,                    //新闻
     DIVIDEND:12,                //除权
 
     POLICY:20,                   //策略信息
 
+    
+
     //公告预留类型
     ANNOUNCEMENT_EX_START:100,
     ANNOUNCEMENT_EX_END:200,
+
+    //扩展信息
+    EXTEND_INFO_START:301,
+    EXTEND_INFO_END:399,
 }
 
 function KLineInfoData()
@@ -45638,6 +45651,8 @@ function ChartChannel()
 
     this.DrawLine=function(lineData)
     {
+        if (!this.LineColor) return;
+
         this.Canvas.strokeStyle=this.LineColor;
         for(var k=0;k<2;++k)
         {
@@ -45688,7 +45703,7 @@ function ChartChannel()
 
         this.Canvas.save();
         this.Canvas.lineWidth=this.LineWidth*GetDevicePixelRatio();
-        this.Canvas.setLineDash(this.LineDotted);   //虚线
+        if (IFrameSplitOperator.IsNonEmptyArray()) this.Canvas.setLineDash(this.LineDotted);   //虚线
         for(var i=0;i<drawData.length;++i)
         {
             var lineData=drawData[i];
@@ -46191,6 +46206,8 @@ function ChartTextLine()
         var bottom=this.ChartBorder.GetBottomEx();
         var top=this.ChartBorder.GetTopEx();
         var y=this.ChartFrame.GetYFromData(this.Price);
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
 
         this.Canvas.save();
         this.ClipClient(this.IsHScreen);
@@ -46198,7 +46215,13 @@ function ChartTextLine()
         var textWidth=0;
         if (this.Text.Title)
         {
-            var x=left+2*GetDevicePixelRatio();
+            var xOffset=2*GetDevicePixelRatio();
+            if (IFrameSplitOperator.IsNumber(this.Text.XOffset)) xOffset=this.Text.XOffset;
+
+            if (this.Text.KLineXOffset=="KLine") xOffset+=distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            else if (this.Text.KLineXOffset=="KLineCenter") xOffset+=distanceWidth/2.0+dataWidth/2+g_JSChartResource.FrameLeftMargin;
+
+            var x=left+xOffset;
             var yText=y;
             this.Canvas.textAlign = 'left';
             this.Canvas.textBaseline = 'middle';
@@ -46217,7 +46240,7 @@ function ChartTextLine()
             this.Canvas.fillStyle = this.Text.Color;
             this.Canvas.font = this.Text.Font;
             this.Canvas.fillText(this.Text.Title, x, yText);
-            textWidth=this.Canvas.measureText(this.Text.Title).width+4*GetDevicePixelRatio();
+            textWidth=this.Canvas.measureText(this.Text.Title).width+4*GetDevicePixelRatio()+xOffset;
         }
 
         if (this.Line.Type>0)
@@ -57060,6 +57083,13 @@ IFrameSplitOperator.IsObjectExist=function(obj)
     if (obj===undefined) return false;
     if (obj==null) return false;
     
+    return true;
+}
+
+IFrameSplitOperator.IsObjectDefined=function(obj)
+{
+    if (obj===undefined) return false;
+
     return true;
 }
 
@@ -79561,16 +79591,29 @@ function JSChartResource()
                 IconFont: { Family:'iconfont', Text:'\ue6eb', HScreenText:'\uf0ca' ,Color:'rgb(220,20,60)', Size:10*GetDevicePixelRatio(), Position:1, IsShowNumber:false } //SVG 文本
             },
 
-            //扩展图标库
-            IconLibrary:
+            ExtendInfo: //扩展信息
             {
-                Family:'iconfont',
-                Icon:
+                //默认值
+                Default:{ Family:'iconfont', Text:'\ue6bd', HScreenText:'\ue6bd' ,Color:'rgb(148,0,211)' },
+                //自定义值
+                AryIconFont:
                 [
-                    { Text:'\ue630', HScreenText:'\ue689', Color:'#f39f7c' }, 
-                    { Text:'\ue632', HScreenText:'\ue688', Color:'#19b1b7' },
-                    { Text:'\ue62f', HScreenText:'\ue68a' ,Color:'#b22626' },
-                    { Text:'\ue634', HScreenText:'\ue686', Color:'#ed7520' }
+                    { Family:'iconfont', Text:'\ue6c3', HScreenText:'\ue6c3' ,Color:'rgb(255,165,0)'},
+                    { Family:'iconfont', Text:'\ue6c5', HScreenText:'\ue6c5' ,Color:'rgb(0,191,255)'},
+                    { Family:'iconfont', Text:'\ue6c6', HScreenText:'\uee6c6' ,Color:'rgb(	152,251,152)'},
+                ]
+            },
+
+            //公告扩展图标库信息
+            AnnouncementEx:
+            {
+                Default:{ Family:'iconfont', Text:'\ue633', HScreenText:'\ue685', Color:'#f5a521' },
+                AryIconFont:
+                [
+                    { Family:'iconfont', Text:'\ue630', HScreenText:'\ue689' ,Color:'#f39f7c'},
+                    { Family:'iconfont', Text:'\ue632', HScreenText:'\ue688' ,Color:'#19b1b7'},
+                    { Family:'iconfont', Text:'\ue62f', HScreenText:'\ue68a' ,Color:'#b22626'},
+                    { Family:'iconfont', Text:'\ue634', HScreenText:'\ue686' ,Color:'#ed7520'},
                 ]
             },
 
@@ -89531,6 +89574,54 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         }
     }
 
+    //更新信息地雷数据  Option :{ InsertNew:,  如果没有找到对应的地雷，是否插入新的地雷, Update:是否立即请求数据  }
+    this.UpdateKLineInfo=function(infoName, option)  
+    {
+        var classInfo=JSKLineInfoMap.GetClassInfo(infoName);
+        if (!classInfo)
+        {
+            console.warn("[KLineChartContainer::UpdateKLineInfo] can't find infoname=", infoName);
+            return;
+        }
+
+        var bInsertNew=false, bUpdate=false;
+        if (option)
+        {
+            if (IFrameSplitOperator.IsBoolean(option.InsertNew)) bInsertNew=option.InsertNew;
+            if (IFrameSplitOperator.IsBoolean(option.Update)) bUpdate=option.Update;    
+        }
+        var finder=null;
+        for(var i=0;i<this.ChartInfo.length; ++i)
+        {
+            var item=this.ChartInfo[i];
+            if (item.ClassName==classInfo.ClassName)
+            {
+                finder=item;
+                break;
+            }
+        }
+
+        if (!finder)
+        {
+            if (bInsertNew===true)
+            {
+                var infoItem=JSKLineInfoMap.Get(infoName);
+                if (!infoItem) return;
+
+                var item=infoItem.Create();
+                item.MaxRequestDataCount=this.MaxRequestDataCount;
+                this.ChartInfo.push(item);
+                finder=item;
+            }
+            else
+            {
+                return;
+            }
+        }
+
+        if (bUpdate==true) finder.RequestData(this);  //信息地雷信息
+    }
+
     //删除信息地理
     this.DeleteKLineInfo=function(infoName)
     {
@@ -89541,7 +89632,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             return;
         }
 
-        for(var i in this.ChartInfo)
+        for(var i=0;i<this.ChartInfo.length; ++i)
         {
             var item=this.ChartInfo[i];
             if (item.ClassName==classInfo.ClassName)
@@ -102943,6 +103034,7 @@ JSKLineInfoMap.Get=function(id)
             ["龙虎榜",      {Create:function(){ return new DragonTigerInfo()}  }],
             ["新闻",        { Create:function(){ return new NewsInfo() }}  ],
             ['除权',        { Create:function() { return new DividendInfo() }}],
+            ["扩展信息",    { Create:function(){ return new ExtendInfo() } }],
         ]
         );
 
@@ -102961,6 +103053,7 @@ JSKLineInfoMap.GetClassInfo=function(id)
             ["龙虎榜",      { ClassName:"DragonTigerInfo"}  ],
             ["新闻",        { ClassName:"NewsInfo"}],
             ['除权',        { ClassName:"DividendInfo"}],
+            ["扩展信息",    { ClassName:"ExtendInfo"}],
         ]
         );
 
@@ -102998,20 +103091,6 @@ JSKLineInfoMap.GetIconUrl=function(type)
     }
 }
 
-JSKLineInfoMap.GetIconLibrary=function(index)
-{
-    var iconLib=g_JSChartResource.KLine.Info.IconLibrary;
-    if (!iconLib || !iconLib.Icon) return g_JSChartResource.KLine.Info.Announcement.IconFont;
-
-    if (index>=0 && index<iconLib.Icon.length)
-    {
-        var item=iconLib.Icon[index];
-        var obj={ Text:item.Text, HScreenText:item.HScreenText, Color:item.Color, Family:iconLib.Family };
-        return obj;
-    }
-
-    return g_JSChartResource.KLine.Info.Announcement.IconFont;
-}
 
 JSKLineInfoMap.GetIconFont=function(type)
 {
@@ -103019,7 +103098,21 @@ JSKLineInfoMap.GetIconFont=function(type)
     if (type>=KLINE_INFO_TYPE.ANNOUNCEMENT_EX_START && type<=KLINE_INFO_TYPE.ANNOUNCEMENT_EX_END)
     {
         var index=type-KLINE_INFO_TYPE.ANNOUNCEMENT_EX_START;
-        return JSKLineInfoMap.GetIconLibrary(index);
+        var value=g_JSChartResource.KLine.Info.AnnouncementEx.Defalut;
+        var aryData=g_JSChartResource.KLine.Info.AnnouncementEx.AryIconFont;
+        if (IFrameSplitOperator.IsNonEmptyArray(aryData) && aryData[index]) value=aryData[index];
+
+        return value;
+    }
+
+    if (type>=KLINE_INFO_TYPE.EXTEND_INFO_START && type<=KLINE_INFO_TYPE.EXTEND_INFO_END)
+    {
+        var index=type-KLINE_INFO_TYPE.EXTEND_INFO_START;
+        var value=g_JSChartResource.KLine.Info.ExtendInfo.Default;
+        var aryData=g_JSChartResource.KLine.Info.ExtendInfo.AryIconFont;
+        if (IFrameSplitOperator.IsNonEmptyArray(aryData) && aryData[index]) value=aryData[index];
+
+        return value;
     }
 
     switch(type)
@@ -103065,6 +103158,20 @@ function IKLineInfo()
         var date=new Date();
         var today=date.getFullYear()*10000+(date.getMonth()+1)*100+date.getDate();
         return today;
+    }
+
+    this.RequestData=function(hqChart, obj)
+    {
+        var self = this;
+        var param=
+        {
+            HQChart:hqChart
+        };
+
+        this.Data=[];
+        if (this.NetworkFilter(hqChart, obj)) return; //已被上层替换,不调用默认的网络请求
+
+        JSConsole.Chart.Warn(`[IKLineInfo::RequestData] ${this.ClassName} NetworkFilter error.`);
     }
 
     this.GetRequestData=function(hqChart)
@@ -103153,20 +103260,7 @@ function InvestorInfo()
 
     this.ClassName='InvestorInfo';
     this.Explain='互动易'
-    this.RequestData=function(hqChart, obj)
-    {
-        var self = this;
-        var param=
-        {
-            HQChart:hqChart,
-        };
-
-        this.Data=[];
-        if (this.NetworkFilter(hqChart,obj)) return; //已被上层替换,不调用默认的网络请求
-
-        JSConsole.Chart.Warn("[InvestorInfo::RequestData] NetworkFilter error.");
-    }
-
+    
     this.RecvData=function(recvData,param)
     {
         if (!IFrameSplitOperator.IsNonEmptyArray(recvData.list)) return;
@@ -103322,21 +103416,6 @@ function PforecastInfo()
     this.ClassName='PforecastInfo';
     this.Explain='业绩预告';
 
-    this.RequestData=function(hqChart,obj)
-    {
-        var self = this;
-        var param=
-        {
-            HQChart:hqChart,
-        };
-
-        this.Data=[];
-
-        if (this.NetworkFilter(hqChart, obj)) return; //已被上层替换,不调用默认的网络请求
-
-        JSConsole.Chart.Warn("[PforecastInfo::RequestData] NetworkFilter error.");
-    }
-
     this.RecvData=function(recvData,param)
     {
         if (!IFrameSplitOperator.IsNonEmptyArray(recvData.list)) return;
@@ -103376,22 +103455,6 @@ function ResearchInfo()
 
     this.ClassName='ResearchInfo';
     this.Explain='调研';
-
-    this.RequestData=function(hqChart,obj)
-    {
-        var self = this;
-        var param=
-        {
-            HQChart:hqChart
-        };
-
-        this.Data=[];
-
-        if (this.NetworkFilter(hqChart, obj)) return; //已被上层替换,不调用默认的网络请求
-
-        JSConsole.Chart.Warn("[ResearchInfo::RequestData] NetworkFilter error.");
-        return true;
-    }
 
     this.RecvData=function(recvData,param)
     {
@@ -103437,21 +103500,6 @@ function BlockTrading()
     this.ClassName='BlockTrading';
     this.Explain='大宗交易';
 
-    this.RequestData=function(hqChart,obj)
-    {
-        var self = this;
-        var param=
-        {
-            HQChart:hqChart
-        };
-
-        this.Data=[];
-
-        if (this.NetworkFilter(hqChart, obj)) return; //已被上层替换,不调用默认的网络请求
-
-        JSConsole.Chart.Warn("[ResearchInfo::BlockTrading] NetworkFilter error.");
-    }
-
     this.RecvData=function(recvData,param)
     {
         if (!recvData || !IFrameSplitOperator.IsNonEmptyArray(recvData.list)) return;
@@ -103491,20 +103539,6 @@ function DragonTigerInfo()
 
     this.ClassName='DragonTigerInfo';
     this.Explain='龙虎榜';
-    
-    this.RequestData=function(hqChart, obj)
-    {
-        var self = this;
-        var param=
-        {
-            HQChart:hqChart
-        };
-
-        this.Data=[];
-        if (this.NetworkFilter(hqChart, obj)) return; //已被上层替换,不调用默认的网络请求
-
-        JSConsole.Chart.Warn("[DragonTigerInfo::RequestData] NetworkFilter error.");
-    }
 
     this.RecvData=function(recvData,param)
     {
@@ -103545,20 +103579,6 @@ function NewsInfo()
 
     this.ClassName='NewsInfo';
     this.Explain='新闻';
-    
-    this.RequestData=function(hqChart, obj)
-    {
-        var self = this;
-        var param=
-        {
-            HQChart:hqChart
-        };
-
-        this.Data=[];
-        if (this.NetworkFilter(hqChart, obj)) return; //已被上层替换,不调用默认的网络请求
-
-        JSConsole.Chart.Warn("[NewsInfo::RequestData] NetworkFilter error.");
-    }
 
     this.RecvData=function(recvData,param)
     {
@@ -103593,20 +103613,6 @@ function DividendInfo()
     this.ClassName='DividendInfo';
     this.Explain='除权';
     
-    this.RequestData=function(hqChart, obj)
-    {
-        var self = this;
-        var param=
-        {
-            HQChart:hqChart
-        };
-
-        this.Data=[];
-        if (this.NetworkFilter(hqChart, obj)) return; //已被上层替换,不调用默认的网络请求
-
-        JSConsole.Chart.Warn("[DividendInfo::RequestData] NetworkFilter error.");
-    }
-
     this.RecvData=function(recvData,param)
     {
         if (!recvData || !IFrameSplitOperator.IsNonEmptyArray(recvData.list)) return;
@@ -103628,6 +103634,45 @@ function DividendInfo()
         param.HQChart.Draw();
     }
 }
+
+function ExtendInfo()
+{
+    this.newMethod=IKLineInfo;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ExtendInfo';
+    this.Explain='扩展信息';
+
+    this.RecvData=function(recvData,param)
+    {
+        if (!recvData || !IFrameSplitOperator.IsNonEmptyArray(recvData.list)) return;
+
+        for(var i=0;i<recvData.list.length;++i)
+        {
+            var item=recvData.list[i]; 
+            var infoType=KLINE_INFO_TYPE.EXTEND_INFO_START;
+            if (IFrameSplitOperator.IsNumber(item.infoType))
+            {
+                infoType=KLINE_INFO_TYPE.EXTEND_INFO_START+item.infoType;
+                if (infoType>KLINE_INFO_TYPE.EXTEND_INFO_END) infoType=KLINE_INFO_TYPE.EXTEND_INFO_END;
+            }
+
+            var infoData=new KLineInfoData();
+            infoData.ID=item.id;
+            infoData.Date= item.date;
+            infoData.InfoType=infoType;
+            infoData.Title=item.title;
+            infoData.ExtendData={ Type:item.type, Data:item.data };
+            this.ReadArrayText(infoData, item);
+            this.Data.push(infoData);
+        }
+
+        param.HQChart.UpdataChartInfo();
+        param.HQChart.Draw();
+    }
+}
+
 
 function JSMinuteInfoMap()
 {

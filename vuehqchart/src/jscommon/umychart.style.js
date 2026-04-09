@@ -260,6 +260,31 @@ function GetBlackStyle()
                     IconFont: { Family:'iconfont', Text:'\ue6eb', HScreenText:'\uf0ca' ,Color:'rgb(220,20,60)', Size:10*GetDevicePixelRatio(), Position:1, IsShowNumber:false } //SVG 文本
                 },
 
+                ExtendInfo: //扩展信息
+                {
+                    //默认值
+                    Default:{ Family:'iconfont', Text:'\ue6bd', HScreenText:'\ue6bd' ,Color:'rgb(148,0,211)' },
+                    //自定义值
+                    AryIconFont:
+                    [
+                        { Family:'iconfont', Text:'\ue6c3', HScreenText:'\ue6c3' ,Color:'rgb(255,215,0)', },
+                        { Family:'iconfont', Text:'\ue6c5', HScreenText:'\ue6c5' ,Color:'rgb(0,191,255)'},
+                        { Family:'iconfont', Text:'\ue6c6', HScreenText:'\uee6c6' ,Color:'rgb(	152,251,152)'},
+                    ]
+                },
+
+                AnnouncementEx:
+                {
+                    Default:{ Family:'iconfont', Text:'\ue633', HScreenText:'\ue685', Color:'#f5a521' },
+                    AryIconFont:
+                    [
+                        { Family:'iconfont', Text:'\ue630', HScreenText:'\ue689' ,Color:'#f39f7c'},
+                        { Family:'iconfont', Text:'\ue632', HScreenText:'\ue688' ,Color:'#19b1b7'},
+                        { Family:'iconfont', Text:'\ue62f', HScreenText:'\ue68a' ,Color:'#b22626'},
+                        { Family:'iconfont', Text:'\ue634', HScreenText:'\ue686' ,Color:'#ed7520'},
+                    ]
+                },
+
                 MinSize:12*GetDevicePixelRatio(),
                 MaxSize:18*GetDevicePixelRatio(),
     
