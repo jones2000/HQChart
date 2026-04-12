@@ -119,6 +119,8 @@ class HQData
 
     RequestDealData_ID=`$${this.ID}-Request-DealData`;
 
+    RequestStockChangeData_ID=`${this.ID}-RequestStockChangeData`;
+
     RequestStockInfoData_ID=`${this.ID}-RequestStockInfoData`;
 
     RequestStatusBarData_ID=`${this.I}-RequestStatusBarData`;
@@ -2289,6 +2291,141 @@ class HQData
         callback(hqchartData);
     }
 
+    //异动
+    Deal_StockChange_RequestHistoryData(data, callback, option)
+    {
+        data.PreventDefault=true;
+        var symbol=data.Request.Data.symbol;
+       
+        var extendID=this.Counter++;
+        var requestID=this.RequestStockChangeData_ID;
+        if (option)
+        {
+            
+        }
+
+        var msg=
+        {
+            MessageID:3,
+            Data:
+            {
+                Type:303, 
+                ID:requestID,
+                ArySymbol:[{ Symbol:symbol, PageCount:3 } ], ExtendData:{ ExtendID:extendID },
+            }
+        };
+
+        if (option) 
+        {
+            option.HQChart=data.Self;
+        }
+        
+        var callbackInfo=
+        {
+            ID:requestID,
+            ExtendID:extendID,
+            Callback:(recv)=>
+            {
+                this.Deal_StockChange_RecvData(recv, callback, option);
+            }
+        }
+
+        this.WSClient.Request(msg, callbackInfo);
+    }
+
+    Deal_StockChange_RecvData(recv, callback, option)
+    {
+        var hqchart=null, symbol=null;
+        if (option) hqchart=option.HQChart;
+        if (hqchart) symbol=hqchart.Symbol;
+        var cache=option.Cache;
+
+        if (!option.Update)
+        {
+            cache.Time=-1;
+            cache.Keys.clear();
+        }
+        
+
+        var hqchartData={ symbol:symbol, detail:[], yclose:null, UpdateType:option.Update? 0:1 };   //UpdateType:0 增量更新 1 全量更新
+        if (recv && IFrameSplitOperator.IsNonEmptyArray(recv.AryData) && recv.AryData[0])
+        {
+            var stockItem=recv.AryData[0];
+            if (IFrameSplitOperator.IsNonEmptyArray(stockItem.Data))
+            {
+                stockItem.Data.reverse();
+                for(var i=0;i<stockItem.Data.length;++i)
+                {
+                    var item=stockItem.Data[i];
+                    var key=`${item.Time}-${item.Stock.Symbol}-${item.Name}`;
+
+                    if (option.Update)
+                    {
+                        if (cache.Keys.has(key)) continue;
+                        if (item.Time<cache.Time) continue;
+                    }
+
+                    var newItem=[];
+                    var color="rgb(242,54,69)";
+                    if (item.Color==2) color="rgb(8,153,129)";
+                    newItem[11]=item.Stock.Symbol;
+                    newItem[201]={ Text:IFrameSplitOperator.FormatTimeString(item.Time,"HH:MM:SS"), TextColor:color};
+                    newItem[202]={ Text:item.Stock.Name, TextColor:color };
+                    newItem[203]={ Text:item.Name, TextColor:color};
+                    newItem[204]={ Text:item.Value.Text, TextColor:color};
+
+                    cache.Keys.add(key);
+                    if (item.Time>cache.Time) cache.Time=item.Time;
+
+                    hqchartData.detail.push(newItem);
+                }
+            }
+        }
+
+        callback(hqchartData);
+    }
+
+    Deal_StockChange_RequestUpdateData(data, callback, option)
+    {
+        data.PreventDefault=true;
+        var symbol=data.Request.Data.symbol;
+       
+        var extendID=this.Counter++;
+        var requestID=this.RequestStockChangeData_ID;
+        if (option)
+        {
+            
+        }
+
+        var msg=
+        {
+            MessageID:3,
+            Data:
+            {
+                Type:303, 
+                ID:requestID,
+                ArySymbol:[{ Symbol:symbol } ], ExtendData:{ ExtendID:extendID },
+            }
+        };
+
+        if (option) 
+        {
+            option.HQChart=data.Self;
+        }
+        
+        var callbackInfo=
+        {
+            ID:requestID,
+            ExtendID:extendID,
+            Callback:(recv)=>
+            {
+                this.Deal_StockChange_RecvData(recv, callback, option);
+            }
+        }
+
+        this.WSClient.Request(msg, callbackInfo);
+    }
+
     //成交明细
     Deal_RequestHistoryData(data, callback, option)
     {
@@ -2300,6 +2437,13 @@ class HQData
         {
             if (IFrameSplitOperator.IsNumber(option.Count)) count=option.Count;
             if (IFrameSplitOperator.IsNumber(option.ShowType)) showType=option.ShowType;
+        }
+
+        if (option && option.ChartName=="StockChangeChart")
+        {
+            option.Update=false;
+            this.Deal_StockChange_RequestHistoryData(data, callback, option);
+            return;
         }
 
         if (showType==3 || showType==2)    //分价表
@@ -2358,6 +2502,14 @@ class HQData
         var symbol=data.Request.Data.symbol;
         var showType=0;
         if (option && IFrameSplitOperator.IsNumber(option.ShowType)) showType=option.ShowType;
+
+        if (option && option.ChartName=="StockChangeChart")
+        {
+            option.Update=true;
+            this.Deal_StockChange_RequestUpdateData(data, callback, option);
+            return;
+        }
+
         if (showType==3 || showType==2)    //分价表
         {
             this.Deal_Price_RequestHistoryData(data, callback, option);
@@ -3239,8 +3391,12 @@ class HQData
         data.PreventDefault=true;
         var symbol=data.Request.Symbol;
         var range=data.Request.DateRange;
-        var start=range.Start;
-        var end=range.End;
+        var end=null, start=null;
+        if (range)
+        {
+            start=range.Start;
+            end=range.End;
+        }
         var period=data.Request.Period;
 
         if (!MARKET_SUFFIX_NAME.IsSHSZStockA(symbol) && !MARKET_SUFFIX_NAME.IsBJStock(symbol))
@@ -3302,8 +3458,13 @@ class HQData
         data.PreventDefault=true;
         var symbol=data.Request.Symbol;
         var range=data.Request.DateRange;
-        var start=range.Start;
-        var end=range.End;
+        var end=null, start=null;
+        if (range)
+        {
+            start=range.Start;
+            end=range.End;
+        }
+       
         var period=data.Request.Period;
 
         if (!MARKET_SUFFIX_NAME.IsSHSZStockA(symbol) && !MARKET_SUFFIX_NAME.IsBJStock(symbol))
@@ -3365,8 +3526,12 @@ class HQData
         data.PreventDefault=true;
         var symbol=data.Request.Symbol;
         var range=data.Request.DateRange;
-        var start=range.Start;
-        var end=range.End;
+        var end=null, start=null;
+        if (range)
+        {
+            start=range.Start;
+            end=range.End;
+        }
         var period=data.Request.Period;
 
         if (!MARKET_SUFFIX_NAME.IsSHSZStockA(symbol) && !MARKET_SUFFIX_NAME.IsBJStock(symbol))
@@ -3428,8 +3593,12 @@ class HQData
         data.PreventDefault=true;
         var symbol=data.Request.Symbol;
         var range=data.Request.DateRange;
-        var start=range.Start;
-        var end=range.End;
+        var end=null, start=null;
+        if (range)
+        {
+            start=range.Start;
+            end=range.End;
+        }
         var period=data.Request.Period;
 
         if (!MARKET_SUFFIX_NAME.IsSHSZStockA(symbol) && !MARKET_SUFFIX_NAME.IsBJStock(symbol))
@@ -3500,8 +3669,12 @@ class HQData
         data.PreventDefault=true;
         var symbol=data.Request.Symbol;
         var range=data.Request.DateRange;
-        var start=range.Start;
-        var end=range.End;
+        var end=null, start=null;
+        if (range)
+        {
+            start=range.Start;
+            end=range.End;
+        }
         var period=data.Request.Period;
 
         if (!MARKET_SUFFIX_NAME.IsSHSZStockA(symbol) && !MARKET_SUFFIX_NAME.IsBJStock(symbol))
@@ -3584,8 +3757,12 @@ class HQData
         data.PreventDefault=true;
         var symbol=data.Request.Symbol;
         var range=data.Request.DateRange;
-        var start=range.Start;
-        var end=range.End;
+        var end=null, start=null;
+        if (range)
+        {
+            start=range.Start;
+            end=range.End;
+        }
         var period=data.Request.Period;
 
         if (!MARKET_SUFFIX_NAME.IsSHSZStockA(symbol) && !MARKET_SUFFIX_NAME.IsBJStock(symbol))
@@ -3661,8 +3838,12 @@ class HQData
         data.PreventDefault=true;
         var symbol=data.Request.Symbol;
         var range=data.Request.DateRange;
-        var start=range.Start;
-        var end=range.End;
+        var end=null, start=null;
+        if (range)
+        {
+            start=range.Start;
+            end=range.End;
+        }
         var period=data.Request.Period;
 
         if (!MARKET_SUFFIX_NAME.IsSHSZStockA(symbol) && !MARKET_SUFFIX_NAME.IsBJStock(symbol))
@@ -3904,6 +4085,8 @@ class HQData
         var request=data.Request;
         if (request.Data.indexname=='API-Delta_KLine_Table')
             this.APIIndex_Delta_KLine_Table(data, callback, option);
+        else if (request.Data.indexname=="API_DRAWHORIZONTALCHANNEL")
+            this.APIIndex_DRAWHORIZONTALCHANNEL(data, callback, option);  
     }
 
     APIIndex_Delta_KLine_Table(data, callback, option)
@@ -4040,6 +4223,57 @@ class HQData
         }
 
         console.log('[HQData::APIIndex_Delta_KLine_Table] apiData ', apiData);
+        callback(apiData);
+    }
+
+    APIIndex_DRAWHORIZONTALCHANNEL(data, callback, option)
+    {
+        data.PreventDefault=true;
+        var hqchart=data.HQChart;
+        var kData=data.HQChart.GetKData(); //hqchart图形的分钟数据
+
+        //背景通道
+        var channelData=
+        {
+            name:"Test", type:1, 
+            Draw:
+            { 
+                Name:"DRAWHORIZONTALCHANNEL",
+                DrawType:"DRAWHORIZONTALCHANNEL",
+                DrawData:
+                [
+                    { 
+                        Value:0, Value2:20, Text:"阶段1", AreaColor:"rgb(255,182,193)",  Label:{  Right:{ Name:"炼气期" } },
+                    },
+                    { 
+                        Value:20, Value2:40, Text:"通道2", AreaColor:"rgba(255,105,180,0.8)", Label:{ Right:{ Name:"筑基期"} },
+                    },
+                    { 
+                        Value:40, Value2:60, Text:"通道3", AreaColor:"rgb(0,250,154)", Label:{ Right:{ Name:"结丹期" } },
+                    },
+                    { 
+                        Value:60, Value2:80, Text:"通道4", AreaColor:"rgb(255,215,0)", Label:{ Right:{ Name:"元婴期" } },
+                    },
+                    { 
+                        Value:80, Value2:100, Text:"通道5", AreaColor:"rgb(152,251,152)", Label:{ Right:{ Name:"化神期" } },
+                    },
+                ],
+
+                Config:
+                {
+                    Label:{ Left:{ XOffset:2} }
+                }
+            },
+        }
+
+        var apiData=
+        {
+            code:0, 
+            stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+            outdata: { date:kData.GetDate(), time:kData.GetTime(), outvar:[ channelData] } 
+        };
+
+        console.log('[HQData.APIIndex_DRAWHORIZONTALCHANNEL] apiData ', apiData);
         callback(apiData);
     }
 

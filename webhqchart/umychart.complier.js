@@ -20785,6 +20785,7 @@ var SCRIPT_CHART_NAME=
     DRAW_KLINE:"DRAWKLINE",
     BASELINE_BAR:"BASELINE_BAR",
     DRAW_CHANNEL:"DRAWCHANNEL",
+    DRAW_HORIZONTAL_CHANNEL:"DRAWHORIZONTALCHANNEL",    //水平通道
 }
 
 
@@ -22742,10 +22743,23 @@ function ScriptIndex(name,script,args,option)
             }
         }
 
-        
-
         //let titleIndex=windowIndex+1;
         chart.Data.Data=varItem.Draw.DrawData;
+        hqChart.ChartPaint.push(chart);
+    }
+
+    //创建水平通道
+    this.CreateHorizontalChannel=function(hqChart,windowIndex,varItem,i)
+    {
+        var chart=new ChartHorizontalChannel();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=hqChart.Frame.SubFrame[windowIndex].Frame.ChartBorder;
+        chart.ChartFrame=hqChart.Frame.SubFrame[windowIndex].Frame;
+
+        if (varItem.Draw.Config) chart.SetOption(varItem.Draw.Config);
+
+        chart.AryChannel=varItem.Draw.DrawData;
         hqChart.ChartPaint.push(chart);
     }
 
@@ -23362,6 +23376,9 @@ function ScriptIndex(name,script,args,option)
                     case 'DRAWCHANNEL':
                         this.CreateChannel(hqChart,windowIndex,item,i);
                         break;
+                    case SCRIPT_CHART_NAME.DRAW_HORIZONTAL_CHANNEL:
+                        this.CreateHorizontalChannel(hqChart,windowIndex,item,i);
+                        break;
                     case 'PARTLINE':
                         this.CreatePartLine(hqChart,windowIndex,item,i);
                         break;
@@ -23756,6 +23773,9 @@ function OverlayScriptIndex(name,script,args,option)
                         break;
                     case 'DRAWCHANNEL':
                         this.CreateChannel(hqChart,windowIndex,item,i);
+                        break;
+                    case SCRIPT_CHART_NAME.DRAW_HORIZONTAL_CHANNEL:
+                        this.CreateHorizontalChannel(hqChart,windowIndex,item,i);
                         break;
                     case 'DRAWTEXT_LINE':
                         this.CreateTextLine(hqChart,windowIndex,item,i);
@@ -24872,18 +24892,48 @@ function OverlayScriptIndex(name,script,args,option)
         chart.ChartFrame=frame.Frame;
         chart.Identify=overlayIndex.Identify;
 
-        if(varItem.Draw.AreaColor) chart.AreaColor=varItem.Draw.AreaColor;
-        else if (varItem.Color) chart.AreaColor=this.GetColor(varItem.Color);
-        else chart.AreaColor=this.GetDefaultColor(id);
+        if (varItem.Draw.Config)
+        {
+            var item=varItem.Draw.Config;
+            if (IFrameSplitOperator.IsObjectDefined(item.AreaColor)) chart.AreaColor=item.AreaColor;
+            if (IFrameSplitOperator.IsObjectDefined(item.LineColor)) chart.LineColor=item.LineColor;
+            if (IFrameSplitOperator.IsObjectDefined(item.LineDotted)) chart.LineDotted=item.LineDotted;
+            if (IFrameSplitOperator.IsNumber(item.LineWidth)) chart.LineWidth=item.LineWidth;
+        }
+        else
+        {
+             if(varItem.Draw.AreaColor) chart.AreaColor=varItem.Draw.AreaColor;
+            else if (varItem.Color) chart.AreaColor=this.GetColor(varItem.Color);
+            else chart.AreaColor=this.GetDefaultColor(id);
 
-        if (varItem.Draw.Border.Color) chart.LineColor=varItem.Draw.Border.Color;
-        else chart.LineColor=null;
+            if (varItem.Draw.Border.Color) chart.LineColor=varItem.Draw.Border.Color;
+            else chart.LineColor=null;
 
-        if (varItem.Draw.Border.Dotted) chart.LineDotted=varItem.Draw.Border.Dotted;
-        if (varItem.Draw.Border.Width>0) chart.LineWidth=varItem.Draw.Border.Width;
+            if (varItem.Draw.Border.Dotted) chart.LineDotted=varItem.Draw.Border.Dotted;
+            if (varItem.Draw.Border.Width>0) chart.LineWidth=varItem.Draw.Border.Width;
+        }
 
         //let titleIndex=windowIndex+1;
         chart.Data.Data=varItem.Draw.DrawData;
+        frame.ChartPaint.push(chart);
+    }
+
+    //创建水平通道
+    this.CreateHorizontalChannel=function(hqChart,windowIndex,varItem,i)
+    {
+        var overlayIndex=this.OverlayIndex;
+        var frame=overlayIndex.Frame;
+        let chart=new ChartHorizontalChannel();
+        chart.Canvas=hqChart.Canvas;
+        chart.Name=varItem.Name;
+        chart.ChartBorder=frame.Frame.ChartBorder;
+        chart.ChartFrame=frame.Frame;
+        chart.Identify=overlayIndex.Identify;
+
+        if (varItem.Draw.Config) chart.SetOption(varItem.Draw.Config);
+
+        //let titleIndex=windowIndex+1;
+        chart.AryChannel=varItem.Draw.DrawData;
         frame.ChartPaint.push(chart);
     }
 
@@ -26546,6 +26596,16 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     drawItem.DrawType=draw.DrawType;
 
                     drawItem.DrawData=this.FittingArray(draw.DrawData,date,time,hqChart,1);
+                    drawItem.Config=draw.Config;
+                    outVarItem.Draw=drawItem;
+                    result.push(outVarItem);
+                }
+                else if (draw.DrawType==SCRIPT_CHART_NAME.DRAW_HORIZONTAL_CHANNEL)
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=draw.DrawData;
                     drawItem.Config=draw.Config;
                     outVarItem.Draw=drawItem;
                     result.push(outVarItem);

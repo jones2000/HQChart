@@ -33,6 +33,7 @@ import {
     JSCHART_DATA_FIELD_ID,
     JSCHART_BUTTON_ID,
     JSCHART_CORSSCURSOR_STATUS_ID,
+    JSCHART_TEMPORARY_ATTRIBUTE,
     PhoneDBClick,
     OVERLAY_STATUS_ID,
 } from "./umychart.data.wechat.js";
@@ -533,6 +534,7 @@ function JSChart(element)
             }
 
             chart.SetSubFrameAttribute(chart.Frame.SubFrame[i], item, null);
+            chart.UpdateIndexTemporaryAttribute(i, item.AryTemporaryAttribute); //指标临时属性
         }
 
         //叠加指标
@@ -1136,10 +1138,10 @@ function JSChart(element)
     }
 
     //切换K线指标
-    this.ChangeScriptIndex = function (windowIndex, indexData) 
+    this.ChangeScriptIndex = function (windowIndex, indexData, option) 
     {
         if (this.JSChartContainer && typeof (this.JSChartContainer.ChangeScriptIndex) == 'function')
-            this.JSChartContainer.ChangeScriptIndex(windowIndex, indexData);
+            this.JSChartContainer.ChangeScriptIndex(windowIndex, indexData, option);
     }
 
     //获取当前显示的指标信息
@@ -3467,11 +3469,8 @@ function JSChartContainer(uielement)
             if (IFrameSplitOperator.IsNumber(frameItem.SplitCount)) frame.YSplitOperator.SplitCount = frameItem.SplitCount;
             if (frameItem.Custom) frame.YSplitOperator.Custom = frameItem.Custom;
             if (frameItem.StringFormat) frame.YSplitOperator.StringFormat = frameItem.StringFormat;
-            if (IFrameSplitOperator.IsNumber(frameItem.SplitType)) 
-            {
-                frame.YSplitOperator.SplitType = frameItem.SplitType;
-                frame.YSplitOperator.DefaultSplitType=frameItem.SplitType;
-            }
+            if (IFrameSplitOperator.IsNumber(frameItem.SplitType)) frame.YSplitOperator.SplitType = frameItem.SplitType;
+            
             if (IFrameSplitOperator.IsNumber(frameItem.FilterType)) frame.YSplitOperator.FilterType=frameItem.FilterType;
             if (IFrameSplitOperator.IsNumber(frameItem.FloatPrecision)) frame.YSplitOperator.FloatPrecision = frameItem.FloatPrecision;   //强制指定小数位数(主图有效)
 
@@ -4690,6 +4689,7 @@ function OverlayIndexItem()
     this.ChartPaint=[];
     this.Identify=Guid();
     this.Scprit;        //脚本
+    this.AryTemporaryAttribute=[];   //临时属性，删除指标以后需要还原 { Name:, Value:, BackupValue: }
 
     this.UpdateFrameMaxMin=function()   //调整坐标最大 最小值
     {
@@ -4749,6 +4749,68 @@ function OverlayIndexItem()
         {
             this.Frame.XYSplit=true;
         }
+    }
+
+    this.UpdateTemporaryAttribute=function(mainFrame, aryAttribute)   //更新临时属性
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryAttribute)) return;
+
+        for(var i=0;i<aryAttribute.length;++i)
+        {
+            var item=aryAttribute[i];
+            if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.BOTTOMSPACE)
+            {
+                var backup=mainFrame.ChartBorder.BottomSpace;
+                mainFrame.ChartBorder.BottomSpace=item.Value;
+                this.AryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.TOPSPACE)
+            {
+                var backup=mainFrame.ChartBorder.TopSpace;
+                mainFrame.ChartBorder.TopSpace=item.Value;
+                this.AryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.SHOWLEFTTEXT)
+            {
+                var backup=mainFrame.YSplitOperator.IsShowLeftText;
+                mainFrame.YSplitOperator.IsShowLeftText=item.Value;
+                this.AryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.SHOWRIGHTTEXT)
+            {
+                var backup=mainFrame.YSplitOperator.IsShowRightText;
+                mainFrame.YSplitOperator.IsShowRightText=item.Value;
+                this.AryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
+            }
+        }
+    }
+
+    this.RestoreTemporaryAttribute=function(mainFrame)  //还原临时属性
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.AryTemporaryAttribute)) return;
+        
+        for(var i=0;i<this.AryTemporaryAttribute.length;++i)
+        {
+            var item=this.AryTemporaryAttribute[i];
+            if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.BOTTOMSPACE)
+            {
+                mainFrame.ChartBorder.BottomSpace=item.BackupValue;
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.TOPSPACE)
+            {
+                mainFrame.ChartBorder.TopSpace=item.BackupValue;
+            }
+             else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.SHOWLEFTTEXT)
+            {
+                mainFrame.YSplitOperator.IsShowLeftText=item.BackupValue;
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.SHOWRIGHTTEXT)
+            {
+                mainFrame.YSplitOperator.IsShowRightText=item.BackupValue;
+            }
+        }
+
+        this.AryTemporaryAttribute=[];
     }
 }
 
@@ -5860,7 +5922,8 @@ function KLineChartContainer(uielement)
     delete this.newMethod;
 
     this.ClassName = 'KLineChartContainer';
-    this.WindowIndex = new Array();
+    this.WindowIndex=[];
+    this.IndexTemporaryAttribute=[];    //指标临时属性，切换指标时会清除
     this.ColorIndex;                    //五彩K线
     this.TradeIndex;                    //交易指标/专家系统
     this.Symbol;
@@ -7470,7 +7533,6 @@ function KLineChartContainer(uielement)
 
         subFrame.YSpecificMaxMin = null;          //清空指定最大最小值
         subFrame.YSplitScale = null;              //清空固定刻度
-        subFrame.YSplitOperator.SplitType=subFrame.YSplitOperator.DefaultSplitType;  //还原Y坐标分割模式
 
         this.ChartPaint = paint;
 
@@ -7548,12 +7610,30 @@ function KLineChartContainer(uielement)
         this.Draw();
     }
 
+    this.SetFrameAttribute=function(windowIndex, attr)
+    {
+
+    }
+
     //切换成 脚本指标
-    this.ChangeScriptIndex = function (windowIndex, indexData) 
+    this.ChangeScriptIndex = function (windowIndex, indexData, option) 
     {
         this.DeleteIndexPaint(windowIndex, true);
         this.WindowIndex[windowIndex] = new ScriptIndex(indexData.Name, indexData.Script, indexData.Args, indexData);    //脚本执行
         this.Frame.ClearYCoordinateMaxMin(windowIndex);
+
+        if (option)
+        {
+            if (option.Window) 
+            {
+                this.SetFrameAttribute(windowIndex,option.Window);   //窗口属性
+            }
+
+            if (option.AryTemporaryAttribute)
+            {
+                this.UpdateIndexTemporaryAttribute(windowIndex, option.AryTemporaryAttribute); //指标临时属性
+            }
+        }
 
         var bindData = this.ChartPaint[0].Data;
         this.BindIndexData(windowIndex, bindData);   //执行脚本
@@ -7597,6 +7677,19 @@ function KLineChartContainer(uielement)
         var apiItem = indexData.API;
         this.WindowIndex[windowIndex] = new APIScriptIndex(apiItem.Name, apiItem.Script, apiItem.Args, indexData);
         this.Frame.ClearYCoordinateMaxMin(windowIndex);
+
+        if (indexData)
+        {
+            if (indexData.Window) 
+            {
+                this.SetFrameAttribute(windowIndex,indexData.Window);   //窗口属性
+            }
+
+            if (indexData.AryTemporaryAttribute)
+            {
+                this.UpdateIndexTemporaryAttribute(windowIndex, indexData.AryTemporaryAttribute); //指标临时属性
+            }
+        }
 
         var bindData = this.ChartPaint[0].Data;
         this.BindIndexData(windowIndex, bindData);   //执行脚本
@@ -7722,6 +7815,7 @@ function KLineChartContainer(uielement)
         {
             this.DeleteIndexPaint(i, true);
             var frame = this.Frame.SubFrame[i];
+            this.RestoreIndexTemporaryAttribute(i);   //恢复临时属性
             frame.YSpecificMaxMin = null;
             frame.YSplitScale = null;
         }
@@ -7799,6 +7893,7 @@ function KLineChartContainer(uielement)
             }
 
             this.SetSubFrameAttribute(this.Frame.SubFrame[i], item, frameItem);
+            this.UpdateIndexTemporaryAttribute(windowIndex, item.AryTemporaryAttribute); //指标临时属性
         }
 
         //最后一个显示X轴坐标
@@ -9539,6 +9634,13 @@ function KLineChartContainer(uielement)
         frame.YSplitOperator.GetEventCallback=(id)=> { return this.GetEventCallback(id); };
         frame.YSplitOperator.OverlayIdentify=overlayFrame.Identify;
         
+        if (obj.Frame)
+        {
+            var item=obj.Frame;
+            if (item.Custom) frame.YSplitOperator.Custom=item.Custom;
+            if (IFrameSplitOperator.IsNumber(item.SplitType)) frame.YSplitOperator.SplitType=item.SplitType;
+        }
+
         overlayFrame.Frame=frame;
 
         if (apiItem)
@@ -9563,6 +9665,7 @@ function KLineChartContainer(uielement)
         }
 
         subFrame.OverlayIndex.push(overlayFrame);
+        overlayFrame.UpdateTemporaryAttribute(subFrame.Frame, obj.AryTemporaryAttribute);
         return overlayFrame;
     }
 
@@ -9625,6 +9728,88 @@ function KLineChartContainer(uielement)
         {
             if (this.DeleteStockChipChart) this.DeleteStockChipChart();
         }
+    }
+
+    this.UpdateIndexTemporaryAttribute=function(windowIndex, aryAttribute)
+    {
+        if (windowIndex<0) return;
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryAttribute)) return;
+        if (!this.Frame || !IFrameSplitOperator.IsNonEmptyArray(this.Frame.SubFrame)) return;
+        var mainFrame=this.Frame.SubFrame[windowIndex].Frame;
+
+        this.IndexTemporaryAttribute[windowIndex]=[];
+        var aryTemporaryAttribute=this.IndexTemporaryAttribute[windowIndex];
+
+        for(var i=0;i<aryAttribute.length;++i)
+        {
+            var item=aryAttribute[i];
+            if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.BOTTOMSPACE)
+            {
+                var backup=mainFrame.ChartBorder.BottomSpace;
+                mainFrame.ChartBorder.BottomSpace=item.Value;
+                aryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.TOPSPACE)
+            {
+                var backup=mainFrame.ChartBorder.TopSpace;
+                mainFrame.ChartBorder.TopSpace=item.Value;
+                aryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.SHOWLEFTTEXT)
+            {
+                var backup=mainFrame.YSplitOperator.IsShowLeftText;
+                mainFrame.YSplitOperator.IsShowLeftText=item.Value;
+                aryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.SHOWRIGHTTEXT)
+            {
+                var backup=mainFrame.YSplitOperator.IsShowRightText;
+                mainFrame.YSplitOperator.IsShowRightText=item.Value;
+                aryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.SPLITTYPE)
+            {
+                var backup=mainFrame.YSplitOperator.SplitType;
+                mainFrame.YSplitOperator.SplitType=item.Value;
+                aryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
+            }
+
+        }
+    }
+
+    this.RestoreIndexTemporaryAttribute=function(windowIndex)
+    {
+        if (windowIndex<0) return;
+        if (!this.Frame || !IFrameSplitOperator.IsNonEmptyArray(this.Frame.SubFrame)) return;
+        var aryTemporaryAttribute=this.IndexTemporaryAttribute[windowIndex];
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryTemporaryAttribute)) return;
+        var mainFrame=this.Frame.SubFrame[windowIndex].Frame;
+
+        for(var i=0;i<aryTemporaryAttribute.length;++i)
+        {
+            var item=aryTemporaryAttribute[i];
+            if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.BOTTOMSPACE)
+            {
+                mainFrame.ChartBorder.BottomSpace=item.BackupValue;
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.TOPSPACE)
+            {
+                mainFrame.ChartBorder.TopSpace=item.BackupValue;
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.SHOWLEFTTEXT)
+            {
+                mainFrame.YSplitOperator.IsShowLeftText=item.BackupValue;
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.SHOWRIGHTTEXT)
+            {
+                mainFrame.YSplitOperator.IsShowRightText=item.BackupValue;
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.SPLITTYPE)
+            {
+                mainFrame.YSplitOperator.SplitType=item.BackupValue;
+            }
+        }
+
     }
 }
 
@@ -10440,7 +10625,6 @@ function MinuteChartContainer(uielement)
         //清空指定最大最小值
         subFrame.YSpecificMaxMin = null;
         subFrame.IsLocked = false;          //解除上锁
-        subFrame.YSplitOperator.SplitType=subFrame.YSplitOperator.DefaultSplitType;  //还原Y坐标分割模式
 
         this.ChartPaint = paint;
 
@@ -10513,7 +10697,7 @@ function MinuteChartContainer(uielement)
     }
 
     //切换成 脚本指标
-    this.ChangeScriptIndex = function (windowIndex, indexData) 
+    this.ChangeScriptIndex = function (windowIndex, indexData, option) 
     {
         this.DeleteIndexPaint(windowIndex, true);
         this.WindowIndex[windowIndex] = new ScriptIndex(indexData.Name, indexData.Script, indexData.Args, indexData);    //脚本执行
@@ -11861,6 +12045,7 @@ function MinuteChartContainer(uielement)
         {
             var item=obj.Frame;
             if (item.Custom) frame.YSplitOperator.Custom=item.Custom;
+            if (IFrameSplitOperator.IsNumber(item.SplitType)) frame.YSplitOperator.SplitType=item.SplitType;
         }
         
         overlayFrame.Frame=frame;
@@ -13994,6 +14179,7 @@ var JSCommon=
     JSCHART_EVENT_ID:JSCHART_EVENT_ID,
     JSCHART_DATA_FIELD_ID:JSCHART_DATA_FIELD_ID,
     JSCHART_OPERATOR_ID:JSCHART_OPERATOR_ID,
+    JSCHART_TEMPORARY_ATTRIBUTE:JSCHART_TEMPORARY_ATTRIBUTE,
 };
 
 export

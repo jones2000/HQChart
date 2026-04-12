@@ -89,6 +89,17 @@ function IKLineInfo()
         return today;
     }
 
+    this.RequestData=function(hqChart, obj)
+    {
+        var self = this;
+        var param={ HQChart:hqChart };
+        this.Data=[];
+
+        if (this.NetworkFilter(hqChart,obj)) return; //已被上层替换,不调用默认的网络请求
+
+        JSConsole.Chart.Warn(`[InvestorInfo::RequestData] ${this.ClassName} NetworkFilter error.`);
+    }
+
     this.GetRequestData=function(hqChart)
     {
         var obj=
@@ -176,17 +187,6 @@ function InvestorInfo()
 
     this.ClassName="InvestorInfo";
     this.Explain="互动易";
-
-    this.RequestData=function(hqChart, obj)
-    {
-        var self = this;
-        var param={ HQChart:hqChart };
-        this.Data=[];
-
-        if (this.NetworkFilter(hqChart,obj)) return; //已被上层替换,不调用默认的网络请求
-
-        JSConsole.Chart.Warn("[InvestorInfo::RequestData] NetworkFilter error.");
-    }
 
     this.RecvData=function(recvData,param)
     {
@@ -312,17 +312,6 @@ function PforecastInfo()
     this.ClassName='PforecastInfo';
     this.Explain='业绩预告';
 
-    this.RequestData=function(hqChart,obj)
-    {
-        var self = this;
-        this.Data = [];
-        var param={ HQChart:hqChart };
-
-        if (this.NetworkFilter(hqChart,obj)) return; //已被上层替换,不调用默认的网络请求
-
-        JSConsole.Chart.Warn("[PforecastInfo::RequestData] NetworkFilter error.");
-    }
-
     this.RecvData=function(recvData,param)
     {
         var data=recvData.data;
@@ -364,18 +353,6 @@ function ResearchInfo()
 
     this.ClassName='ResearchInfo';
     this.Explain='投资者关系';
-
-    this.RequestData=function(hqChart,obj)
-    {
-        var self = this;
-        var param= { HQChart:hqChart };
-
-        this.Data=[];
-
-        if (this.NetworkFilter(hqChart,obj)) return; //已被上层替换,不调用默认的网络请求
-
-        JSConsole.Chart.Warn("[PforecastInfo::RequestData] NetworkFilter error.");
-    }
 
     this.RecvData=function(recvData,param)
     {
@@ -421,17 +398,6 @@ function BlockTrading()
     this.ClassName='BlockTrading';
     this.Explain='大宗交易';
 
-    this.RequestData=function(hqChart,obj)
-    {
-        var self = this;
-        var param={ HQChart:hqChart,};
-        this.Data=[];
-
-        if (this.NetworkFilter(hqChart,obj)) return; //已被上层替换,不调用默认的网络请求
-
-        JSConsole.Chart.Warn("[ResearchInfo::BlockTrading] NetworkFilter error.");
-    }
-
     this.RecvData=function(recvData,param)
     {
         var data=recvData.data;
@@ -473,18 +439,6 @@ function DragonTigerInfo()
     this.ClassName='DragonTigerInfo';
     this.Explain='龙虎榜';
 
-    this.RequestData=function(hqChart,obj)
-    {
-        var self = this;
-        var param={ HQChart:hqChart };
-
-        this.Data=[];
-
-        if (this.NetworkFilter(hqChart,obj)) return; //已被上层替换,不调用默认的网络请求
-
-        JSConsole.Chart.Warn("[DragonTigerInfo::RequestData] NetworkFilter error.");
-    }
-
     this.RecvData=function(recvData,param)
     {
         var data=recvData.data;
@@ -525,20 +479,6 @@ function DividendInfo()
     this.ClassName='DividendInfo';
     this.Explain='除权';
     
-    this.RequestData=function(hqChart, obj)
-    {
-        var self = this;
-        var param=
-        {
-            HQChart:hqChart
-        };
-
-        this.Data=[];
-        if (this.NetworkFilter(hqChart, obj)) return; //已被上层替换,不调用默认的网络请求
-
-        JSConsole.Chart.Warn("[DividendInfo::RequestData] NetworkFilter error.");
-    }
-
     this.RecvData=function(recvData,param)
     {
         var data=recvData.data;
@@ -579,17 +519,6 @@ function PolicyInfo()
         {
             this.PolicyList.push({Name:aryPolicy[i]});
         }
-    }
-
-    this.RequestData = function (hqChart,obj) 
-    {
-        var self = this;
-        this.Data = [];
-        var param = { HQChart: hqChart };
-
-        if (this.NetworkFilter(hqChart,obj)) return; //已被上层替换,不调用默认的网络请求
-
-        JSConsole.Chart.Warn("[PolicyInfo::RequestData] NetworkFilter error.");
     }
 
     this.RecvData = function (recvData, param) 

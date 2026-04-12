@@ -9949,6 +9949,247 @@ function ChartChannel()
     }
 }
 
+//水平通道
+function ChartHorizontalChannel()
+{
+    this.newMethod=IChartPainting;   //派生
+    this.newMethod();
+    delete this.newMethod;
+    this.IsDrawFirst = true;
+
+    this.ClassName="ChartHorizontalChannel";
+    this.IsHScreen=false;   //是否是横屏
+    this.AryChannel=[];  //{ Value:, Value2:, AreaColor:, Label:{ Left:{ Name:, Position:}, Right:{ Name:, Position: } } }
+    this.LabelConfig=
+    { 
+        Color:g_JSChartResource.ChartHorizontalChannel.Label.Color, 
+        Font:g_JSChartResource.ChartHorizontalChannel.Label.Font, 
+        Left:{ XOffset:2, YOffset:0, Position:1 }, Right:{ XOffset:2, YOffset:0, Position:1 } 
+    };
+
+    this.SetOption=function(option)
+    {
+        if (!option) return;
+
+        if (option.Label)
+        {
+            var item=option.Label;
+            if (item.Color) this.LabelConfig.Color=item.Color;
+            if (item.Font) this.LabelConfig.Color=item.Font;
+            if (item.Left)
+            {
+                var subItem=item.Left;
+                var subDest=this.LabelConfig.Left;
+                if (IFrameSplitOperator.IsNumber(subItem.Position)) subDest.Position=subItem.Position;
+                if (IFrameSplitOperator.IsNumber(subItem.XOffset)) subDest.XOffset=subItem.XOffset;
+                if (IFrameSplitOperator.IsNumber(subItem.YOffset)) subDest.YOffset=subItem.YOffset;
+            }
+            if (item.Right)
+            {
+                var subItem=item.Right;
+                var subDest=this.LabelConfig.Right;
+                if (IFrameSplitOperator.IsNumber(subItem.Position)) subDest.Position=subItem.Position;
+                if (IFrameSplitOperator.IsNumber(subItem.XOffset)) subDest.XOffset=subItem.XOffset;
+                if (IFrameSplitOperator.IsNumber(subItem.YOffset)) subDest.YOffset=subItem.YOffset;
+            }
+        }
+    }
+
+    this.ReloadResource=function(resource)
+    {
+        this.LabelConfig.Color=resource.ChartHorizontalChannel.Label.Color;
+        this.LabelConfig.Font=resource.ChartHorizontalChannel.Label.Font;
+    }
+
+    this.Draw=function()
+    {
+        if (!this.IsShow || this.ChartFrame.IsMinSize) return;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.AryChannel)) return;
+
+        this.IsHScreen=(this.ChartFrame.IsHScreen===true);
+        var border=this.ChartFrame.GetBorder();
+
+        var left=border.Left;
+        var right=border.Right;
+        if (this.IsHScreen)
+        {
+            left=border.Top;
+            right=border.Bottom;
+        }
+
+        this.Canvas.textAlign='left';
+        this.Canvas.textBaseline='bottom';
+
+        for(var i=0;i<this.AryChannel.length;++i)
+        {
+            var item=this.AryChannel[i];
+            // 绘制水平通道
+            if (!IFrameSplitOperator.IsNumber(item.Value) || ! IFrameSplitOperator.IsNumber(item.Value2)) continue;
+
+            var y=this.ChartFrame.GetYFromData(item.Value);
+            var y2 = this.ChartFrame.GetYFromData(item.Value2);
+
+            if (this.IsHScreen)
+            {
+                var rtChannel={ Top:left, Bottom:right, Left:Math.min(y,y2), Right:Math.max(y,y2) };
+                rtChannel.Width=rtChannel.Right-rtChannel.Left;
+                rtChannel.Height=rtChannel.Bottom-rtChannel.Top;
+            }
+            else
+            {
+                var rtChannel={ Left:left, Right:right, Top:Math.min(y,y2), Bottom:Math.max(y,y2) };
+                rtChannel.Width=rtChannel.Right-rtChannel.Left;
+                rtChannel.Height=rtChannel.Bottom-rtChannel.Top;
+            }
+
+            if (item.AreaColor) //绘制面积
+            {
+                this.Canvas.fillStyle=item.AreaColor;
+                this.Canvas.fillRect(rtChannel.Left, rtChannel.Top, rtChannel.Width, rtChannel.Height);
+            }
+
+            if (item.Label)
+            {
+                if (item.Label.Left) this.DrawLabel(rtChannel, item.Label.Left, true);
+                if (item.Label.Right) this.DrawLabel(rtChannel, item.Label.Right, false);
+            }
+        }   
+    }
+
+    this.DrawLabel=function(rtChannel, labelItem, bLeft)
+    {
+        if (!labelItem.Name) return;
+
+        var config=this.LabelConfig;
+
+        var color=config.Color;
+        var font=config.Font;
+        if (labelItem.Color) color=labelItem.Color;
+        if (labelItem.Font) font=labelItem.Font;
+       
+        this.Canvas.font=font;
+        this.Canvas.fillStyle=color;
+
+        var textHeight=this.GetFontHeight();
+        var textWidth=this.Canvas.measureText(labelItem.Name).width;
+        
+        if (bLeft)
+        {
+            var yOffset=config.Left.YOffset;
+            var xOffset=config.Left.XOffset;
+            if (IFrameSplitOperator.IsNumber(labelItem.YOffset)) yOffset=labelItem.YOffset;
+            if (IFrameSplitOperator.IsNumber(labelItem.XOffset)) xOffset=labelItem.XOffset;
+            var position=config.Left.Position;
+            if (IFrameSplitOperator.IsNumber(labelItem.Position)) position=labelItem.Position;
+
+            if (this.IsHScreen)
+            {
+                var x=rtChannel.Left+(rtChannel.Width/2)-textHeight/2;
+                x+=yOffset;
+                if (position===1) //外部
+                {
+                    var y=rtChannel.Top-textWidth;
+                    y-=xOffset;
+                }
+                else
+                {
+                    var y=rtChannel.Top;
+                    y+=xOffset;
+                }
+            }
+            else
+            {
+                var y=rtChannel.Top+(rtChannel.Height/2)+textHeight/2;
+                y+=yOffset;
+                if (position===1) //外部
+                {
+                    var x=rtChannel.Left-textWidth;
+                    x-=xOffset;
+                }
+                else    //内部
+                {
+                    var x=rtChannel.Left;
+                    x+=xOffset;
+                }
+            }
+        }
+        else
+        {
+            
+            var yOffset=config.Right.YOffset;
+            var xOffset=config.Right.XOffset;
+            if (IFrameSplitOperator.IsNumber(labelItem.YOffset)) yOffset=labelItem.YOffset;
+            if (IFrameSplitOperator.IsNumber(labelItem.XOffset)) xOffset=labelItem.XOffset;
+            var position=config.Right.Position;
+            if (IFrameSplitOperator.IsNumber(labelItem.Position)) position=labelItem.Position;
+
+            if (this.IsHScreen)
+            {
+                var x=rtChannel.Left+(rtChannel.Width/2)-textHeight/2;
+                x+=yOffset;
+                if (position===1) //外部
+                {
+                    var y=rtChannel.Bottom;
+                    y+=xOffset;
+                }
+                else
+                {
+                    var y=rtChannel.Bottom-textWidth;
+                    y-=xOffset;
+                }
+            }
+            else
+            {
+                var y=rtChannel.Top+(rtChannel.Height/2)+textHeight/2;
+                y+=yOffset;
+                if (position===1) //外部
+                {
+                    var x=rtChannel.Right;
+                    x+=xOffset;
+                }
+                else    //内部
+                {
+                    var x=rtChannel.Right-textWidth;
+                    x-=xOffset;
+                }
+            }
+        }
+
+        if (this.IsHScreen)
+        {
+            this.Canvas.save();
+            this.Canvas.translate(x, y);
+            this.Canvas.rotate(90 * Math.PI / 180);
+            this.Canvas.fillText(labelItem.Name, 0, 0);
+            this.Canvas.restore();
+        }
+        else
+        {
+            this.Canvas.fillText(labelItem.Name,x,y);
+        }
+        
+    }
+
+    this.GetMaxMin=function()
+    {
+        var range={ Min:null, Max:null };
+        if (IFrameSplitOperator.IsNonEmptyArray(this.AryChannel))
+        {
+            for(var i=0;i<this.AryChannel.length;++i)
+            {
+                var item=this.AryChannel[i];
+                if (!IFrameSplitOperator.IsNumber(item.Value) || ! IFrameSplitOperator.IsNumber(item.Value2)) continue;
+                var max=Math.max(item.Value, item.Value2);
+                var min=Math.min(item.Value, item.Value2);
+                if (range.Max==null || range.Max<max) range.Max=max;
+                if (range.Min==null || range.Min>min) range.Min=min;
+            }
+        }
+
+        return range;
+    }
+}
+
 // 文字+线段输出
 function ChartTextLine()
 {
@@ -11640,5 +11881,6 @@ export
     ChartDrawText_Fix,
     ChartDrawNumber_Fix,
     ChartChannel,
+    ChartHorizontalChannel,
     ChartTextLine,
 };

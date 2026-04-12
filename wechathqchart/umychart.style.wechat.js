@@ -196,6 +196,14 @@ function GetBlackStyle()
             DayInfoColor:'rgb(0,0,0)', //周期颜色内文字颜色
         },
 
+        ChartHorizontalChannel:
+        {
+            Label:
+            {
+                Color:"rgb(250,250,250)",
+            }
+        },
+
         TooltipPaint:   //Tooltip
         {
             BGColor: 'rgba(20,20,20,0.8)',          //背景色

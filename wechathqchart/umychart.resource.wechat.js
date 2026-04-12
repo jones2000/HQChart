@@ -410,6 +410,15 @@ function JSChartResource()
         DownColor:"rgb(0,199,65)"
     }
 
+    this.ChartHorizontalChannel=
+    {
+        Label:
+        {
+            Color:"rgb(0,0,0)",
+            Font:`12px 微软雅黑`,
+        }
+    }
+
     this.StockChip=
     {
         InfoColor:'rgb(0,0,0)', //文字颜色
@@ -983,8 +992,20 @@ function JSChartResource()
         if (style.IndexLock) this.SetIndexLock(style.IndexLock);
         if (style.LatestPointFlash) this.SetLatestPointFlash(style.LatestPointFlash);
         if (style.ChartPointDot) this.SetChartPointDot(style.ChartPointDot);
+        if (style.ChartHorizontalChannel) this.SetChartHorizontalChannel(style.ChartHorizontalChannel);
     }
 
+    this.SetChartHorizontalChannel=function(style)
+    {
+        var dest=this.ChartHorizontalChannel;
+        var subItem=style.Label;
+        if (subItem)
+        {
+            if (subItem.Color) dest.Label.Color=subItem.Color;
+            if (subItem.Font) dest.Label.Font=subItem.Font;
+        }
+    }
+    
     this.SetChartPointDot=function(style)
     {
         var dest=this.ChartPointDot;

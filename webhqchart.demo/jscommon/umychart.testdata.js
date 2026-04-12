@@ -3120,7 +3120,8 @@ HQData.Report_APIIndex=function(data, callback, option)
         HQData.APIIndex_Delta_KLine_Table(data, callback, option);
     else if (request.Data.indexname=="API_DRAWCHANNEL")
         HQData.APIIndex_DRAWCHANNEL(data, callback, option);
-
+    else if (request.Data.indexname=="API_DRAWHORIZONTALCHANNEL")
+        HQData.APIIndex_DRAWHORIZONTALCHANNEL(data, callback, option);  
     else if (request.Data.indexname=="API_ERRORMESSAGE")
         HQData.APIIndex_ErrorMessage(data, callback);
 
@@ -5104,6 +5105,35 @@ HQData.APIIndex_DRAWCHANNEL=function(data, callback, option)
         },
     };
 
+    //通道名称
+    var channelName= 
+    { 
+        name:'DRAWTEXT_LINE', type:1, 
+        Draw: 
+        { 
+            DrawType:'DRAWTEXT_LINE', 
+            DrawData: 
+            {
+                Price:5,
+                Text:
+                { 
+                    Title:`通道1`, 
+                    Color:"rgb(255, 165, 0)",
+                    KLineXOffset:"KLineCenter",
+                    XOffset:1,
+                }, 
+
+                Line:
+                { 
+                    Type:0,  //Type 0=不画 1=直线 2=虚线
+                    //LineDash:[10,10],
+                    //Color:"rgb(200,200,0)", 
+                    //Width:1,
+                },   
+            }
+        } 
+    };
+
     var channelData2=
     { 
         name:"6-8", type:1, 
@@ -5118,6 +5148,33 @@ HQData.APIIndex_DRAWCHANNEL=function(data, callback, option)
                 LineColor:null,
             }
         },
+    };
+
+    var channelName2= 
+    { 
+        name:'DRAWTEXT_LINE', type:1, 
+        Draw: 
+        { 
+            DrawType:'DRAWTEXT_LINE', 
+            DrawData: 
+            {
+                Price:7,
+                Text:
+                { 
+                    Title:`通道2`, 
+                    Color:"rgb(255, 165, 0)",
+                    XOffset:6,
+                }, 
+
+                Line:
+                { 
+                    Type:0,  //Type 0=不画 1=直线 2=虚线
+                    //LineDash:[10,10],
+                    //Color:"rgb(200,200,0)", 
+                    //Width:1,
+                },   
+            }
+        } 
     };
 
     var channelData3=
@@ -5226,10 +5283,74 @@ HQData.APIIndex_DRAWCHANNEL=function(data, callback, option)
     {
         code:0, 
         stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
-        outdata: { date:kData.GetDate(), time:kData.GetTime(), outvar:[channelData0, channelData,channelData2,channelData3,channelData4, lineData, iconData] } 
+        outdata: { date:kData.GetDate(), time:kData.GetTime(), outvar:[channelData0, channelData,channelData2,channelData3,channelData4, channelName, channelName2, lineData, iconData] } 
     };
 
     console.log('[HQData.APIIndex_DRAWCHANNEL] apiData ', apiData);
+    callback(apiData);
+}
+
+HQData.APIIndex_DRAWHORIZONTALCHANNEL=function(data, callback, option)
+{
+    data.PreventDefault=true;
+    var hqchart=data.HQChart;
+    var kData=data.HQChart.GetKData(); //hqchart图形的分钟数据
+
+    //背景通道
+    var channelData=
+    {
+        name:"Test", type:1, 
+        Draw:
+        { 
+            Name:"DRAWHORIZONTALCHANNEL",
+            DrawType:"DRAWHORIZONTALCHANNEL",
+            DrawData:
+            [
+                
+                { 
+                    Value:0, Value2:20, Text:"通道1", AreaColor:"rgb(255,182,193)", 
+                    Label:{ Left:{ Name:"左通道1", Color:"rgb(220,20,60)", Position:1 }, Right:{ Name:"右通道1" } },
+                },
+
+                { 
+                    Value:20, Value2:40, Text:"通道2", AreaColor:"rgba(255,105,180,0.8)",
+                    Label:{ Left:{ Name:"左通道2", Color:"rgb(220,20,60)", Position:0 }, Right:{ Name:"右通道2",Position:0 } },
+                },
+                { 
+                    Value:40, Value2:60, Text:"通道3", AreaColor:"rgb(0,250,154)", 
+                    Label:{ Left:{ Name:"左通道3",  }, Right:{ Name:"右通道3" } },
+                },
+                { 
+                    Value:60, Value2:80, Text:"通道4", AreaColor:"rgb(255,215,0)",
+                    Label:{ Left:{ Name:"左通道4",  }, Right:{ Name:"右通道4" } },
+                },
+                { 
+                    Value:80, Value2:100, Text:"通道5", AreaColor:"rgb(152,251,152)", 
+                    Label:{ Left:{ Name:"左通道5",  }, Right:{ Name:"右通道5" } },
+                },
+            ],
+            Config:
+            {
+                Label:{ Left:{ XOffset:2} }
+            }
+        },
+    }
+
+    var lineData={ name:'线段', type:0, data:[], color:"rgb(5,105,225)" };
+
+    for(var i=0;i<kData.Data.length;++i)
+    {
+        lineData.data.push(this.GetRandomTestData(0.5, 100-0.5));
+    }
+
+    var apiData=
+    {
+        code:0, 
+        stock:{ name:hqchart.Name, symbol:hqchart.Symbol }, 
+        outdata: { date:kData.GetDate(), time:kData.GetTime(), outvar:[ channelData, lineData] } 
+    };
+
+    console.log('[HQData.APIIndex_DRAWHORIZONTALCHANNEL] apiData ', apiData);
     callback(apiData);
 }
 

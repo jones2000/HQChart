@@ -2375,6 +2375,18 @@ var JSCHART_CORSSCURSOR_STATUS_ID=
     BOTTOM_TEXT_ID:32,
 }
 
+var JSCHART_TEMPORARY_ATTRIBUTE=
+{
+    MAINFRAME:
+    {
+        BOTTOMSPACE:"MainFrame-BottomSpace",   //主图底部预留空间,单位像素
+        TOPSPACE:"MainFrame-TopSpace",         //主图顶部预留空间,单位像素
+        SHOWLEFTTEXT:"MainFrame-ShowLeftText",
+        SHOWRIGHTTEXT:"MainFrame-ShowRightText",
+        SPLITTYPE:"MainFrame-SplitType",           //0=自动分割  1=数据的最大最小值分割 2=堆积图(0-100)
+    }
+}
+
 function PhoneDBClick()
 {
     this.Start=[];
@@ -2591,6 +2603,7 @@ export
     PhoneDBClick,
     HQ_DATA_TYPE,
     OVERLAY_STATUS_ID,
+    JSCHART_TEMPORARY_ATTRIBUTE,
     CloneData,
     Path2DHelper,
 };

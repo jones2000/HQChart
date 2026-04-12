@@ -664,6 +664,14 @@ function GetBlackStyle()
             Text:{ Color: "rgb(0,0,0)" , Family:'Arial', FontMaxSize:18, FontMinSize:6 },  //文字
         },
 
+        ChartHorizontalChannel:
+        {
+            Label:
+            {
+                Color:"rgb(250,250,250)",
+            }
+        },
+
         ChartDrawTVLongPosition:
         {
             TopArea:

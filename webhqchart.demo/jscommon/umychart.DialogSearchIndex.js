@@ -311,12 +311,14 @@ function JSDialogSearchIndex()
             {
                 var indexData={ ID:indexItem.ID, Name:indexItem.Name, Script:indexItem.Script, Args:indexItem.Args };
                 if (indexItem.Lock) indexData.Lock=indexItem.Lock;
+                if (IFrameSplitOperator.IsNonEmptyArray(indexItem.AryTemporaryAttribute)) indexData.AryTemporaryAttribute=indexItem.AryTemporaryAttribute;
                 this.HQChart.ChangeScriptIndex(this.OpData.WindowIndex, indexData);
             }
             else if (indexItem.Type==2) //api指标
             {
                 var indexData={ API: { ID:indexItem.ID, Name:indexItem.Name, Args:indexItem.Args, Url:'local'} };
                 if (indexItem.Lock) indexData.Lock=indexItem.Lock;
+                if (IFrameSplitOperator.IsNonEmptyArray(indexItem.AryTemporaryAttribute)) indexData.AryTemporaryAttribute=indexItem.AryTemporaryAttribute;
                 this.HQChart.ChangeAPIIndex(this.OpData.WindowIndex, indexData);
             }
             else if (indexItem.Type==3) //指标模板
@@ -339,12 +341,16 @@ function JSDialogSearchIndex()
             {
                 var obj={ WindowIndex:this.OpData.WindowIndex, IndexName:indexItem.ID, Name:indexItem.Name, Script:indexItem.Script, Args:indexItem.Args };
                 if (indexItem.Lock) obj.Lock=indexItem.Lock;
+                if (IFrameSplitOperator.IsNonEmptyArray(indexItem.AryTemporaryAttribute)) obj.AryTemporaryAttribute=indexItem.AryTemporaryAttribute;
+                if (indexItem.OverlayFrame) obj.Frame=indexItem.OverlayFrame;
                 this.HQChart.AddOverlayIndex(obj);
             }
             else if (indexItem.Type==2) //api指标
             {
                 var obj={ WindowIndex:this.OpData.WindowIndex, API: { ID:indexItem.ID, Name:indexItem.Name, Args:indexItem.Args, Url:'local'} };
                 if (indexItem.Lock) obj.Lock=indexItem.Lock;
+                if (IFrameSplitOperator.IsNonEmptyArray(indexItem.AryTemporaryAttribute)) obj.AryTemporaryAttribute=indexItem.AryTemporaryAttribute;
+                if (indexItem.OverlayFrame) obj.Frame=indexItem.OverlayFrame;
                 this.HQChart.AddOverlayIndex(obj);
             }
             else if (indexItem.Type==3) //指标模板
@@ -777,7 +783,17 @@ JSDialogSearchIndex.GetDefaultIndexData=function()
                 [
                     { Name:"收盘线(后台指标)", ID:"API-DRAWTEXTREL", Type:2, Args:null },
                     { Name:"高低均价(自定义脚本)", ID:"HIGH_LOW_AV", Type:1, Script:"均价:(H+L)/2;高:H;低:L;", Args:[ { Name:'N', Value:20}, { Name:'M', Value:6}]},
-                    { Name:"指标异常(后台指标)", ID:"API_ERRORMESSAGE", Type:2, Args:null,}
+                    { Name:"指标异常(后台指标)", ID:"API_ERRORMESSAGE", Type:2, Args:null,},
+                    { 
+                        Name:"水平通道(后台指标)", ID:"API_DRAWHORIZONTALCHANNEL", Type:2, Args:null,
+                        AryTemporaryAttribute:
+                        [
+                            { Name:JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.SHOWLEFTTEXT, Value:false },
+                            { Name:JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.SHOWRIGHTTEXT, Value:false },
+                            { Name:JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.SPLITTYPE, Value:1 },
+                        ],
+                        OverlayFrame: { SplitType:1 }
+                    }
                 ]
             },
             {

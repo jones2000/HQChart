@@ -326,3 +326,5 @@ class MinDealChart extends DealChart
         return this.DivDeal.style["display"]!="none";
     }
 }
+
+
