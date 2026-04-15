@@ -52,7 +52,7 @@ class StockChangeChart
         var data=
         [
             {Type:DEAL_COLUMN_ID.RESERVE_STRING1_ID, Title:"时间", MaxText:"88:88:88" },
-            {Type:DEAL_COLUMN_ID.RESERVE_STRING2_ID, Title:"名称",TextAlign:"center", ChartTooltip:{ Enable:true, Type:20 }, MaxText:"擎擎擎擎擎" },
+            {Type:DEAL_COLUMN_ID.RESERVE_STRING2_ID, Title:"名称",TextAlign:"center", ChartTooltip:{ Enable:true, Type:20 }, MaxText:"擎擎擎擎-W" },
             {Type:DEAL_COLUMN_ID.RESERVE_STRING3_ID, Title:"类型", TextAlign:"center", MaxText:"擎擎擎擎擎擎" },
             {Type:DEAL_COLUMN_ID.RESERVE_STRING4_ID, Title:"相关信息" , ColorType:1, MaxText:"100.00擎"},
         ];

@@ -176,7 +176,13 @@ class HQData
                 //HQChart使用教程29-走势图如何对接第3方数据7-叠加股票最新分时数据
                 this.Minute_RequestOverlayMinuteData(data, callback, option);
                 break;
-
+                //HQChart使用教程29-走势图如何对接第3方数据4-异动提示信息
+            case "MarketEventInfo::RequestData":
+                this.Minute_RequestMarketEventInfo(data, callback, option);
+                break;
+            case "MinuteNewsInfo::RequestData":                         //分时图新闻
+                this.Minute_RequestNewsInfoData(data, callback, option);
+                break;
 
             /////////////////////////////////////////////////////////////
             //K线图
@@ -933,6 +939,160 @@ class HQData
         callback(hqchartData);
     }
 
+    //分时图异动信息
+    Minute_RequestMarketEventInfo(data, callback, option)
+    {
+        data.PreventDefault=true;
+        var symbol=data.Request.Data.Symbol;
+        var date=data.Request.Data.Date;
+       
+        var extendID=this.Counter++;
+        var requestID=this.RequestStockChangeData_ID;
+        if (option) 
+        {
+            option.HQChart=data.HQChart;
+            option.EventInfo=data.Self;
+            option.Date=date;
+        }
+        
+        var msg=
+        {
+            MessageID:3,
+            Data:
+            {
+                Type:303, 
+                ID:requestID,
+                ArySymbol:[{ Symbol:symbol, PageSize:40 } ], ExtendData:{ ExtendID:extendID },
+            }
+        };
+
+        var callbackInfo=
+        {
+            ID:requestID,
+            ExtendID:extendID,
+            Callback:(recv)=>
+            {
+                this.Minute_StockChange_RecvData(recv, callback, option);
+            }
+        }
+
+        this.WSClient.Request(msg, callbackInfo);
+
+    }
+
+    Minute_StockChange_RecvData(recv, callback, option)
+    {
+        var hqchart=null;
+        if (option && option.HQChart) hqchart=option.HQChart;
+        var symbol=hqchart.Symbol;
+        var date=option.Date;
+        var hqchartData={ code:0, name:symbol, symbol:symbol, list:[], ver:3.0 };
+        for(var i=0;i<recv.AryData.length;++i)
+        {
+            var item=recv.AryData[i];
+            if (item.Symbol==symbol)
+            {
+                if (IFrameSplitOperator.IsNonEmptyArray(item.Data))
+                {
+                    for(var j=0;j<item.Data.length;++j)                   
+                    {
+                        var subItem=item.Data[j];
+                        var eventItem={ Date:date, Time:parseInt(subItem.Time/100), Title:subItem.Name, Time2:subItem.Time };
+                        var color="rgb(242,54,69)";
+                        if (subItem.Color==2) color="rgb(8,153,129)";
+                        eventItem.Color=color;
+                        eventItem.AryText=
+                        [
+                            { Name:subItem.Name, Text:subItem.Value.Text, Type:0, Color:color }
+                        ]
+                        hqchartData.list.push(eventItem);
+                    }
+                }
+            }
+        }
+
+        callback(hqchartData);
+    }
+
+
+    Minute_RequestNewsInfoData(data, callback, option)
+    {
+        data.PreventDefault=true;
+        var symbol=data.Request.Data.Symbol;
+        var date=data.Request.Data.Date;
+        var range=data.DateRange;
+        var end=null, start=null;
+        if (range)
+        {
+            start=range.Start;
+            end=range.End;
+        }
+
+        if (!MARKET_SUFFIX_NAME.IsSHSZStockA(symbol) && !MARKET_SUFFIX_NAME.IsBJStock(symbol))
+        {
+            console.warn(`[HQData::Minute_RequestNewsInfoData] ${symbol} 不支持新闻数据`)
+            return;
+        }
+
+        if (option) 
+        {
+            option.HQChart=data.HQChart;
+            option.Date=date;
+        }
+        var extendID=this.Counter++;
+
+        var msg=
+        {
+            MessageID:3,
+            Data:
+            {
+                Type:301,
+                ID:this.RequestKLineMineNews_ID,
+                ArySymbol:[{ Symbol:symbol, Type:[1], Start:start, End:end } ],
+                ExtendData:{ ExtendID:extendID },
+            }
+        };
+
+        var callbackInfo=
+        {
+            ID:this.RequestKLineMineNews_ID,
+            ExtendID:extendID,
+            Callback:(recv)=>
+            {
+                this.Minute_RecvNewsInfoData(recv, callback, option);
+            }
+        }
+
+        this.WSClient.Request(msg, callbackInfo);
+    }
+
+
+    Minute_RecvNewsInfoData(recv, callback, option)
+    {
+        var hqchart=option.HQChart;
+        var symbol=hqchart.Symbol;
+        var date=option.Date;
+        var hqchartData={ name:symbol, symbol:symbol, list:[] };
+        for(var i=0;i<recv.AryData.length;++i)
+        {
+            var item=recv.AryData[i];
+            if (item.Symbol==symbol)
+            {
+                for(var j=0;j<item.Data.length;++j)
+                {
+                    var newsItem=item.Data[j];
+                    if (newsItem.Date!=date) continue;
+
+                    var time=940;   //有些新闻没有时间,先写死9：40
+                    if (newsItem.Time>93000) time=parseInt(newsItem.Time/100);
+                    
+                    hqchartData.list.push({ ID:newsItem.ID, Date:newsItem.Date, Time:time, Title:newsItem.Title })
+                }
+                callback(hqchartData);
+                break;
+            }
+        }
+    }
 
 
     KLine_RequestHistoryData(data, callback, option)
@@ -2368,9 +2528,11 @@ class HQData
                     var newItem=[];
                     var color="rgb(242,54,69)";
                     if (item.Color==2) color="rgb(8,153,129)";
+                    var name=item.Stock.Name;
+                    if (name.length>4) name=name.slice(0,4);
                     newItem[11]=item.Stock.Symbol;
                     newItem[201]={ Text:IFrameSplitOperator.FormatTimeString(item.Time,"HH:MM:SS"), TextColor:color};
-                    newItem[202]={ Text:item.Stock.Name, TextColor:color };
+                    newItem[202]={ Text:name, TextColor:color };
                     newItem[203]={ Text:item.Name, TextColor:color};
                     newItem[204]={ Text:item.Value.Text, TextColor:color};
 

@@ -194,34 +194,6 @@ function JSChartResource()
                 Color2: 'rgb(255,133,3)',  //三角图形颜色
                 TextColor: '#197de9',
                 TextBGColor: 'rgba(220,220,220,0.5)',
-                Investor:
-                {
-                    ApiUrl: '/API/NewsInteract', //互动易
-                },
-                Announcement:                                           //公告
-                {
-                    ApiUrl: '/API/ReportList',
-                },
-                Pforecast:  //业绩预告
-                {
-                    ApiUrl: '/API/StockHistoryDay',
-                },
-                Research:   //调研
-                {
-                    ApiUrl: '/API/InvestorRelationsList',
-                },
-                BlockTrading:   //大宗交易
-                {
-                    ApiUrl: '/API/StockHistoryDay',
-                },
-                TradeDetail:    //龙虎榜
-                {
-                    ApiUrl: '/API/StockHistoryDay',
-                },
-                Policy: //策略
-                {
-                    ApiUrl: '/API/StockHistoryDay',
-                }
             }
         };
 

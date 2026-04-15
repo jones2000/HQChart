@@ -6122,7 +6122,10 @@ function ChartMultiLine()
                 if (IFrameSplitOperator.IsNumber(circleItem.Type)) type=circleItem.Type;
                 
                 this.Canvas.beginPath();
-                this.Canvas.arc(item.X, item.Y, circleItem.Radius, 0, 2 * Math.PI);
+                if (this.IsHScreen)
+                    this.Canvas.arc(item.Y, item.X, circleItem.Radius, 0, 2 * Math.PI);
+                else
+                    this.Canvas.arc(item.X, item.Y, circleItem.Radius, 0, 2 * Math.PI);
 
                 if (type==1)
                 {
@@ -9802,9 +9805,28 @@ function ChartChannel()
 
     this.CalculateData=function()   //把数据通过nul值分割开, 并计算坐标
     {
+        var bHScreen=(this.ChartFrame.IsHScreen===true);
+        var bMinute=this.IsMinuteFrame();
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var xPointCount=this.ChartFrame.XPointCount;
+
+        if (bHScreen)
+        {
+            var border=this.ChartBorder.GetHScreenBorder();
+            var chartright=border.BottomEx;
+            var xOffset=border.TopEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+        }
+        else
+        {
+            var border=this.ChartBorder.GetBorder();
+            var xOffset=border.LeftEx+distanceWidth/2.0+g_JSChartResource.FrameLeftMargin;
+            var chartright=border.RightEx;
+        }
+
         var data=[];
         var lineData=[];
-        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<this.PointCount;++i,++j)
+        for(var i=this.Data.DataOffset,j=0;i<this.Data.Data.length && j<xPointCount;++i,++j,xOffset+=(dataWidth+distanceWidth))
         {
             var item=this.Data.Data[i];
             if (!item || !IFrameSplitOperator.IsNumber(item.Value) || !IFrameSplitOperator.IsNumber(item.Value2))
@@ -9818,8 +9840,20 @@ function ChartChannel()
                 continue;
             }
 
-            var x=this.ChartFrame.GetXFromIndex(j);
+            if (bMinute)
+            {
+                var x=this.ChartFrame.GetXFromIndex(j);
+            }
+            else
+            {
+                var left=xOffset;
+                var right=xOffset+dataWidth;
+                if (right>chartright) break;
+                var x=left+(right-left)/2;
+            }
+
             if (x>this.ChartRight) break;
+
             var y=this.ChartFrame.GetYFromData(item.Value);
             var y2=this.ChartFrame.GetYFromData(item.Value2);
 
@@ -10209,10 +10243,20 @@ function ChartTextLine()
         if (!this.Text || !this.Line || !IFrameSplitOperator.IsNumber(this.Price)) return;
 
         this.IsHScreen=(this.ChartFrame.IsHScreen===true);
-        var left=this.ChartBorder.GetLeft();
-        var right=this.ChartBorder.GetRight();
-        var bottom=this.ChartBorder.GetBottomEx();
-        var top=this.ChartBorder.GetTopEx();
+        var border=this.ChartFrame.GetBorder();
+        var left=border.Left;
+        var right=border.Right;
+        var bottom=border.BottomEx;
+        var top=border.TopEx;
+
+        if (this.IsHScreen)
+        {
+            left=border.Top;
+            right=border.Bottom;
+            bottom=border.LeftEx;
+            top=border.RightEx;
+        }
+
         var y=this.ChartFrame.GetYFromData(this.Price);
         var dataWidth=this.ChartFrame.DataWidth;
         var distanceWidth=this.ChartFrame.DistanceWidth;
@@ -10231,27 +10275,43 @@ function ChartTextLine()
 
             var x=left+xOffset;
             var yText=y;
-            this.Canvas.textAlign = 'left';
-            this.Canvas.textBaseline = 'middle';
-            var offsetY=8;
-            if (y-offsetY<top) 
+            if (this.IsHScreen)
             {
-                this.Canvas.textBaseline='top';
-                yText=top;
-            }
-            else if (y+offsetY>bottom) 
+                this.Canvas.textAlign = 'left';
+                this.Canvas.textBaseline = 'middle';
+                this.Canvas.fillStyle = this.Text.Color;
+                this.Canvas.font = this.Text.Font;
+                this.Canvas.save();
+                this.Canvas.translate(yText, x);
+                this.Canvas.rotate(90 * Math.PI / 180);
+                this.Canvas.fillText(this.Text.Title, 0, 0);
+                this.Canvas.restore();
+            }   
+            else
             {
-                this.Canvas.textBaseline='bottom';
-                yText=bottom;
+                this.Canvas.textAlign = 'left';
+                this.Canvas.textBaseline = 'middle';
+                var offsetY=8;
+                if (y-offsetY<top) 
+                {
+                    this.Canvas.textBaseline='top';
+                    yText=top;
+                }
+                else if (y+offsetY>bottom) 
+                {
+                    this.Canvas.textBaseline='bottom';
+                    yText=bottom;
+                }
+                
+                this.Canvas.fillStyle = this.Text.Color;
+                this.Canvas.font = this.Text.Font;
+                this.Canvas.fillText(this.Text.Title, x, yText);
             }
             
-            this.Canvas.fillStyle = this.Text.Color;
-            this.Canvas.font = this.Text.Font;
-            this.Canvas.fillText(this.Text.Title, x, yText);
             textWidth=this.Canvas.measureText(this.Text.Title).width+4+xOffset;
         }
 
-        if (this.Line.Type>0)
+        if (this.Line.Type>0 && this.Line.Color)
         {
             if (this.Line.Type==2)  //虚线
             {
@@ -10264,8 +10324,16 @@ function ChartTextLine()
             var x=left+textWidth;
             this.Canvas.strokeStyle=this.Line.Color;
             this.Canvas.beginPath();
-            this.Canvas.moveTo(x,ToFixedPoint(y));
-            this.Canvas.lineTo(right,ToFixedPoint(y));
+            if (this.IsHScreen)
+            {
+                this.Canvas.moveTo(ToFixedPoint(y),x);
+                this.Canvas.lineTo(ToFixedPoint(y),right,);
+            }
+            else
+            {
+                this.Canvas.moveTo(x,ToFixedPoint(y));
+                this.Canvas.lineTo(right,ToFixedPoint(y));
+            }
             this.Canvas.stroke();
         }
 

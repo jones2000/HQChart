@@ -1555,8 +1555,62 @@ function JSFloatTooltip()
         this.ShowTooltip(data);
     }
 
-    //分时图异动信息
+    //分时图信息地雷
     this.UpdateMinuteInfoTooltip=function(data)
+    {
+        if (!data || !data.Tooltip || !data.Tooltip.Data) return;
+
+        var type=data.Tooltip.Data.Type;
+        if (type===0) this.UpdateMinuteEventInfoTooltip(data);
+        else if (type===1) this.UpdateMinuteNewsInfoTooltip(data);
+    }
+
+    //分时图新闻
+    this.UpdateMinuteNewsInfoTooltip=function(data)
+    {
+        var tooltipData=data.Tooltip;
+        if (!tooltipData.Data || !tooltipData.Data.Data || !tooltipData.Data.Data.Item || !IFrameSplitOperator.IsNonEmptyArray(tooltipData.Data.Data.Item.Data)) return;
+
+        var aryData=tooltipData.Data.Data.Item.Data;
+        var aryText=[]; //输出内容
+        for(var i=0;i<aryData.length;++i)
+        {
+            var item=aryData[i];
+            this.FormatDefaultMinuteInfoText(item, aryText);
+        }
+
+
+        this.AryText=aryText;
+        this.UpdateTableDOM();
+        this.ShowTooltip(data);
+    }
+
+    this.FormatDefaultMinuteInfoText=function(data, aryOut)
+    {
+        var strDate=IFrameSplitOperator.FormatDateString(data.Date,"YYYY-MM-DD");
+        var strTime=IFrameSplitOperator.FormatTimeString(data.Time, "HH:MM");
+        if (IFrameSplitOperator.IsNumber(data.Time2)) strTime=IFrameSplitOperator.FormatTimeString(data.Time2, "HH:MM:SS");
+        var title=`${strDate} ${strTime}`;
+
+        var item=
+        { 
+            Title:title,        //日期
+            Text:data.Title,    //标题
+            Color:this.ValueColor,
+            ClassName:this.ValueAlign.MarginLeft
+        };
+
+        var extendata = data.ExtendData;
+        if (extendata)
+        {
+            this.FormatMinuteInfoArrayText(aryOut, extendata.AryText);
+        }
+
+        aryOut.push(item);
+    }
+
+    //分时图异动信息
+    this.UpdateMinuteEventInfoTooltip=function(data)
     {
         var tooltipData=data.Tooltip;
         if (!tooltipData.Data || !tooltipData.Data.Data || !tooltipData.Data.Data.Item) return;
@@ -1566,17 +1620,51 @@ function JSFloatTooltip()
         var rowItem={ Title:"日期",Text:IFrameSplitOperator.FormatDateString(item.Date,"YYYY-MM-DD"), Color:this.ValueColor };
         aryText.push(rowItem);
 
-        var format="HH:MM";
-        var rowItem={ Title:"时间",Text:IFrameSplitOperator.FormatTimeString(item.Time,format), Color:this.ValueColor };
-        aryText.push(rowItem);
+        if (IFrameSplitOperator.IsNumber(item.Time2))
+        {
+            var rowItem={ Title:"时间",Text:IFrameSplitOperator.FormatTimeString(item.Time2,"HH:MM:SS"), Color:this.ValueColor };
+            aryText.push(rowItem);
+        }
+        else
+        {
+            var rowItem={ Title:"时间",Text:IFrameSplitOperator.FormatTimeString(item.Time,"HH:MM"), Color:this.ValueColor };
+            aryText.push(rowItem);
+        }
 
-        var rowItem={ Title:"异动", Text:item.Title, Color:this.ValueColor };
-        aryText.push(rowItem);
-        
+        if (item.Item && item.Item.ExtendData && IFrameSplitOperator.IsNonEmptyArray(item.Item.ExtendData.AryText))
+        {
+            this.FormatMinuteInfoArrayText(aryText, item.Item.ExtendData.AryText);
+        }
+        else
+        {
+            var rowItem={ Title:"异动", Text:item.Title, Color:this.ValueColor };
+            aryText.push(rowItem);
+        }
+       
         this.AryText=aryText;
         this.UpdateTableDOM();
 
         this.ShowTooltip(data);
+    }
+
+    this.FormatMinuteInfoArrayText=function(aryOut, aryText)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryText)) return;
+            
+        for(var i=0;i<aryText.length;++i)
+        {
+            var item=aryText[i];
+            if (item.Type==2)  //单行
+            {
+                var outItem={ Title:"", Text:item.Name, Color:this.TextColor, ClassName:this.ValueAlign.Left };
+            }
+            else
+            {
+                var outItem={ Title:item.Name, Text:item.Text, Color:item.Color };
+            }
+            
+            aryOut.push(outItem);
+        }
     }
 
     //ChartMultiSVGIconV2 图标信息

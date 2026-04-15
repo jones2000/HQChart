@@ -45,7 +45,7 @@ class ReportChart
         
         FixedColumn:2,      //固定列
 
-        SortInfo:{ Field:2, Sort: 1 },   //默认排序信息
+        //SortInfo:{ Field:2, Sort: 1 },   //默认排序信息
 
         //IsShowHeader:false,
 

@@ -38,6 +38,8 @@ class MinuteChart
 
         LatestPointFlash:{ Enable:true, Frequency:500 },
 
+        Info:[ "大盘异动","新闻" ],	//设置异动数据,
+
         //BeforeOpen:{ IsShow:true, Width:120, IsShowMultiDay:true, MulitiDayWidth:100 },
         //AfterClose:{IsShow:true, Width:100, IsShowMultiDay:true, MulitiDayWidth:50},
 

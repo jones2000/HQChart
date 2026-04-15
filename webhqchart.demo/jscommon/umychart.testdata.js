@@ -38,6 +38,10 @@ HQData.NetworkFilter=function(data, callback, option)
             //HQChart使用教程29-走势图如何对接第3方数据2-最新分时数据  格式跟这个一样
             HQData.Minute_RequestPopMinuteData(data, callback);
             break;
+        
+        case "MinuteNewsInfo::RequestData":                         //分时图新闻
+            HQData.Minute_RequestNewsInfoData(data, callback, option);
+            break;
 
         //HQChart使用教程30-K线图如何对接第3方数据1
         case 'KLineChartContainer::RequestHistoryData':                 //日线全量数据下载
@@ -847,6 +851,48 @@ HQData.Minute_RequestPopMinuteData=function(data, callback)
 
         callback(hqchartData);
     }, 50);
+}
+
+
+HQData.Minute_RequestNewsInfoData=function(data, callback, option)
+{
+    data.PreventDefault=true;
+    var symbol=data.Request.Data.Symbol;             //请求的股票代码
+    var kData=data.HQChart.GetKData();
+    var hqchartData={ symbol:symbol, list:[] };
+
+    var id=0;
+    for(var i=0;i<kData.Data.length;++i)
+    {
+        if (i%20!=5) continue;
+
+        var kItem=kData.Data[i];
+        var newItem=
+        { 
+            Date:kItem.Date, 
+            Time:kItem.Time,
+            Time2:kItem.Time*100+2,
+            Title:`新闻标题(${id}) AAAAAAA .......`,
+            Type:1,
+            ID:++id,
+        };
+
+        hqchartData.list.push(newItem);
+
+        var newItem=
+        { 
+            Date:kItem.Date, 
+            Time:kItem.Time,
+            Time2:kItem.Time*100+5,
+            Title:`新闻标题(${id}) BBBBBB .......`,
+            Type:1,
+            ID:++id,
+        };
+
+        hqchartData.list.push(newItem);
+    }
+
+    callback(hqchartData);
 }
 
 
@@ -5125,7 +5171,7 @@ HQData.APIIndex_DRAWCHANNEL=function(data, callback, option)
 
                 Line:
                 { 
-                    Type:0,  //Type 0=不画 1=直线 2=虚线
+                    Type:1,  //Type 0=不画 1=直线 2=虚线
                     //LineDash:[10,10],
                     //Color:"rgb(200,200,0)", 
                     //Width:1,
@@ -5168,9 +5214,9 @@ HQData.APIIndex_DRAWCHANNEL=function(data, callback, option)
 
                 Line:
                 { 
-                    Type:0,  //Type 0=不画 1=直线 2=虚线
+                    Type:1,  //Type 0=不画 1=直线 2=虚线
                     //LineDash:[10,10],
-                    //Color:"rgb(200,200,0)", 
+                    Color:"rgb(200,200,0)", 
                     //Width:1,
                 },   
             }

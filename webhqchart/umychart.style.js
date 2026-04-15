@@ -557,11 +557,11 @@ function GetBlackStyle()
         //走势图 信息地雷
         MinuteInfo:
         {
-            TextColor: 'rgb(84,143,255)',
+            TextColor: 'rgb(220,220,220)',
             Font: 14*GetDevicePixelRatio() +'px 微软雅黑',
             PointColor:'rgb(38,113,254)',
             LineColor:'rgb(120,167,255)',
-            TextBGColor:'rgba(255,255,255,1)'
+            TextBGColor:'rgba(40, 42, 44,0.8)'
         },
 
         DepthMapPaint:
