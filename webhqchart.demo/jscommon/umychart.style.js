@@ -92,8 +92,8 @@ function GetBlackStyle()
 
             BuySellBar:
             {
-                BuyColor:"rgb(102, 33, 33)",
-                SellColor:"rgb(20, 63, 31)",
+                BuyColor:"rgb(255,0,0)",
+                SellColor:"rgb(0,255,0)",
                 Font:`${12*GetDevicePixelRatio()}px 微软雅黑`,
                 TextColor:"rgb(220,220,220)",
             }

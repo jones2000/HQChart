@@ -73,6 +73,7 @@ function JSStockInfoChart(divElement)
 
         if (option.EnableResize==true) this.CreateResizeListener();
         if (option.EnablePopMenuV2===true) chart.InitalPopMenu();
+        if (option.FloatTooltip && option.FloatTooltip.Enable) chart.InitalFloatTooltip(option.FloatTooltip);   //提示信息
 
         if (option.Symbol)
         {
@@ -275,9 +276,12 @@ function JSStockInfoChartContainer(uielement)
     this.AutoUpdateFrequency=15000;             //15秒更新一次数据
 
     this.JSPopMenu;             //内置菜单
+    this.FloatTooltip;          //提示浮框
 
     this.UIElement=uielement;
-   
+    
+    this.LastMouseStatus={ MoveStatus:null, TooltipStatus:null, MouseOnStatus:null };
+
     this.IsDestroy=false;        //是否已经销毁了
 
     this.ChartDestroy=function()    //销毁
@@ -286,6 +290,58 @@ function JSStockInfoChartContainer(uielement)
         this.StopAutoUpdate();
 
         this.DestroyPopMenu();
+        this.DestroyFloatTooltip();
+    }
+
+    //内置提示信息
+    this.HideFloatTooltip=function()
+    {
+        if (!this.FloatTooltip) return;
+
+        this.FloatTooltip.Hide();
+    }
+
+    this.DestroyFloatTooltip=function()
+    {
+        if (!this.FloatTooltip) return;
+
+        this.FloatTooltip.Destroy();
+        this.FloatTooltip=null;
+    }
+
+    this.InitalFloatTooltip=function(option)
+    {
+        if (this.FloatTooltip) return;
+
+        this.FloatTooltip=new JSFloatTooltip();
+        this.FloatTooltip.Inital(this, option);
+        this.FloatTooltip.Create();
+    }
+
+     this.DrawFloatTooltip=function(point,toolTip)
+    {
+        if (!this.FloatTooltip) return;
+
+        this.UpdateFloatTooltip(point, toolTip)
+    }
+
+    this.UpdateFloatTooltip=function(point, toolTip)
+    {
+        if (!this.FloatTooltip) return;
+
+        var sendData=
+        {
+            Tooltip:toolTip,
+            Point:point,
+            DataType:6,
+        };
+
+        this.FloatTooltip.Update(sendData);
+    }
+
+    this.HideAllTooltip=function()
+    {
+        this.HideFloatTooltip();
     }
 
     //设置事件回调
@@ -656,11 +712,39 @@ function JSStockInfoChartContainer(uielement)
         var x = (e.clientX-this.UIElement.getBoundingClientRect().left)*pixelTatio;
         var y = (e.clientY-this.UIElement.getBoundingClientRect().top)*pixelTatio;
 
+        this.LastMouseStatus.OnMouseMove={ X:x, Y:y };
+         
+        var bDrawTooltip=false;
+        if (this.LastMouseStatus.TooltipStatus) bDrawTooltip=true;
+        this.LastMouseStatus.TooltipStatus=null;
+
         var option={ Update:false };
 
         this.OnChartMouseMove(x,y,e,option);
 
+        var tooltipData=this.GetChartTooltipData(x, y);
+        if (tooltipData && tooltipData.Data)
+        {
+            var item=tooltipData.Data;
+            if (item.Data && item.Data.Type==3) //5档买卖盘名字
+            {
+                this.LastMouseStatus.TooltipStatus={ X:x, Y:y, Data:tooltipData, ClientX:e.clientX, ClientY:e.clientY };
+                bDrawTooltip=true;
+            }
+        }
+
         if (option.Update===true) this.Draw();
+
+        if (this.LastMouseStatus.TooltipStatus)
+        {
+            var xTooltip = e.clientX-this.UIElement.getBoundingClientRect().left;
+            var yTooltip = e.clientY-this.UIElement.getBoundingClientRect().top;
+            this.DrawFloatTooltip({X:xTooltip, Y:yTooltip, YMove:20/pixelTatio},this.LastMouseStatus.TooltipStatus.Data);
+        }
+        else
+        {
+            this.HideFloatTooltip();
+        }
     }
 
     this.OnChartMouseMove=function(x, y, e, option)
@@ -675,6 +759,20 @@ function JSStockInfoChartContainer(uielement)
         }
 
         return false;
+    }
+
+    this.GetChartTooltipData=function(x, y)
+    {
+        var toolTip=new TooltipData();
+        for(var i=0;i<this.ChartPaint.length;++i)
+        {
+            var item=this.ChartPaint[i];
+            if (item.GetTooltipData(x,y,toolTip))
+            {
+                return toolTip;
+            }
+        }
+        return null;
     }
 
     this.TryClickPaintEvent=function(eventID, ptClick, e)
@@ -714,6 +812,8 @@ function JSStockInfoChartContainer(uielement)
         this.ChartClearMouseOnData(option);
 
         if (option.Update===true) this.Draw();
+
+        this.HideAllTooltip();
     }
 
     this.UIOnMounseOut=function(e)
@@ -724,7 +824,7 @@ function JSStockInfoChartContainer(uielement)
 
         if (option.Update===true) this.Draw();
 
-        //this.HideAllTooltip();
+        this.HideAllTooltip();
     }
 
     this.ChartClearMouseOnData=function(option)
@@ -1244,7 +1344,7 @@ function ChartStockData()
         {
             xText=left;
             var item=this.Data.Sells[i];
-            this.DrawBuySellItem(item, xText, yText, cellWidth, cellHeight, { Type:1, Index:i});
+            this.DrawBuySellItem(item, xText, yText, cellWidth, cellHeight, { Type:2, Index:i});
             if (IFrameSplitOperator.IsNumber(item.Vol)) sellVol+=item.Vol;
             yText+=cellHeight;
         }
@@ -1263,7 +1363,7 @@ function ChartStockData()
         {
             xText=left;
             var item=this.Data.Buys[i];
-            this.DrawBuySellItem(item, xText, yText, cellWidth, cellHeight, { Type:2, Index:i});
+            this.DrawBuySellItem(item, xText, yText, cellWidth, cellHeight, { Type:1, Index:i});
             if (IFrameSplitOperator.IsNumber(item.Vol)) buyVol+=item.Vol;
             yText+=cellHeight;
         }
@@ -1339,6 +1439,13 @@ function ChartStockData()
         {
             this.Canvas.fillStyle=config.TitleColor;
             this.Canvas.fillText(item.Name,xText+config.CellMargin.Left,yBottom);
+            var textWidth=this.Canvas.measureText(item.Name).width+2;
+            var rtCell={ Left:xText+config.CellMargin.Left, Top:top, Height:cellHeight,  Width:textWidth };
+            rtCell.Right=rtCell.Left+rtCell.Width;
+            rtCell.Bottom=rtCell.Top+rtCell.Height;
+
+            var key=`${itemInfo.Type==1?"BUY":"SELL"}_NAME_${itemInfo.Index}`;
+            this.AryCellRect.push({ Rect:rtCell, Data:{ Type:3, Key:key, Value:{ Index:itemInfo.Index, Type:itemInfo.Type, YClose:this.GetYClose(), AryData:itemInfo.Type==1?this.Data.Buys:this.Data.Sells } }});
         }
         xText+=cellWidth;
 
@@ -1557,18 +1664,20 @@ function ChartStockData()
 
     this.GetPriceColor=function(price)
     {
+        var yClose=this.GetYClose();
+        if (!IFrameSplitOperator.IsNumber(yClose)) return  this.UnchangeColor;
+        return this.GetUpDownColor(price, yClose);
+    }
+
+    this.GetYClose=function()
+    {
         var upperSymbol=null;
         if (this.Data.Symbol) upperSymbol=this.Data.Symbol.toUpperCase();
-        if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol))
-        {
-            if (!IFrameSplitOperator.IsNumber(this.Data.YFClose)) return  this.UnchangeColor;
-            return this.GetUpDownColor(price, this.Data.YFClose);
-        }
-        else
-        {
-            if (!IFrameSplitOperator.IsNumber(this.Data.YClose)) return this.UnchangeColor;
-            return this.GetUpDownColor(price, this.Data.YClose);
-        }
+        var price=null;
+        if (MARKET_SUFFIX_NAME.IsChinaFutures(upperSymbol)) price=this.Data.YFClose;
+        else price=this.Data.YClose;
+
+        return price;
     }
 
     this.GetUpDownColor=function(price, price2)

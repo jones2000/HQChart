@@ -19,6 +19,8 @@ class StockInfoChart
         EnableResize:true,
         EnablePopMenuV2:true,
 
+        FloatTooltip:{ Enable:true },
+
         Column:
         [
             [{ Name:"现价", Key:"Price", ColorType:3, FloatPrecision:-1 }, { Name:"今开",  Key:"Open",ColorType:3, FloatPrecision:-1 }],

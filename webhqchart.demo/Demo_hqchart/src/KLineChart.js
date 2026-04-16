@@ -38,6 +38,16 @@ class KLineChart
             */
 
             { Index:"MA", Overlay:true, AddIndexWindow:true, Export:true, IsSync:true,IndexHelp:true },
+
+            /*
+            { 
+                API:{ Name:"Delta", ID:"API-Delta_KLine_Table", Url:'local' } ,
+                AryTemporaryAttribute:
+                [
+                    { Name:JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.BOTTOMSPACE, Value:(14*GetDevicePixelRatio()+6)*5+18*GetDevicePixelRatio()+15 },
+                ]
+            },
+            */
             { Index:"VOL", Overlay:true, Export:true, IsSync:true, IndexHelp:true},
             { Index:"MACD", Overlay:true, Export:true, IsSync:true, IndexHelp:true},
 

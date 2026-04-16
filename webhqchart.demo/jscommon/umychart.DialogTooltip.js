@@ -1309,7 +1309,7 @@ function JSFloatTooltip()
         if (!this.DivDialog) return;
         this.LanguageID=this.HQChart.LanguageID;
 
-        if (data.DataType==1)
+        if (data.DataType==1)   //K线图|分时图
         {
             var tooltipData=data.Tooltip;
             if (!tooltipData) return;
@@ -1397,6 +1397,10 @@ function JSFloatTooltip()
             {
                 this.DealItemTooltip(data);
             }
+        }
+        else if (data.DataType==6)  //五档买卖盘
+        {
+            this.StockInfoTooltip(data);
         }
     }
 
@@ -1818,6 +1822,54 @@ function JSFloatTooltip()
 
         this.UpdateTableDOM();
 
+        this.ShowTooltip(data);
+    }
+
+    this.StockInfoTooltip=function(data)
+    {
+        var tooltipData=data.Tooltip;
+        var cellData=null;
+        if (tooltipData.Data && tooltipData.Data.Data) cellData=tooltipData.Data.Data;
+        if (!cellData) return;
+        if (cellData.Type!=3) return;
+        var aryData=null;   //买卖5档数据
+        if (cellData.Value && cellData.Value.AryData) aryData=cellData.Value.AryData;
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryData)) return;
+
+        var aryText=[]; //输出内容
+        var totalVol=0, totalAmount=0;
+        for(var i=0;i<aryData.length && i<=cellData.Value.Index;++i)
+        {
+            var item=aryData[i];
+            if (IFrameSplitOperator.IsNumber(item.Vol) && IFrameSplitOperator.IsNumber(item.Price))
+            {
+                totalVol+=item.Vol;
+                totalAmount+=item.Price*item.Vol;
+            }
+        }
+
+        var strPrice="--.---";   //均价
+        var avPrice=null;
+        if (totalVol>0) 
+        {
+            avPrice=totalAmount/totalVol;
+            strPrice=avPrice.toFixed(3);
+        }
+
+        var strIncrease='--.--%' //涨幅
+        if (IFrameSplitOperator.IsNumber(avPrice) && IFrameSplitOperator.IsPlusNumber(cellData.Value.YClose))
+        {
+            var value=(avPrice-cellData.Value.YClose)/cellData.Value.YClose*100;
+            strIncrease=`${value.toFixed(2)}%`;
+        }
+        
+
+        var text=` 前${cellData.Value.Index+1}档 幅度:${strIncrease} 委托总量:${totalVol} 均价:${strPrice} `;
+        var item={ Title:text,  Color:this.TextColor, IsMergeCell:true ,TitleClassName:this.TitleAlign.Center };
+        aryText.push(item);
+
+        this.AryText=aryText;
+        this.UpdateTableDOM();
         this.ShowTooltip(data);
     }
  

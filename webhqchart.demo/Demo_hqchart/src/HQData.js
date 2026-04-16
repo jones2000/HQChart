@@ -778,10 +778,15 @@ class HQData
     Minute_RequestMinuteData(data, callback, option)
     {
         data.PreventDefault=true;
-        var symbol=data.Request.Data.symbol[0];             //请求的股票代码
-        console.log(`[HQData::Minute_RequestMinuteData] Symbol=${symbol}, Update=${data.Self.DataStatus.LatestDay}`);
+        var symbol=data.Request.Data.symbol[0];                 //请求的股票代码
+        var bShowBuySellBar=data.Request.Data.IsShowBuySellBar; //五档买卖盘
+        console.log(`[HQData::Minute_RequestMinuteData] Symbol=${symbol}, Update=${data.Self.DataStatus.LatestDay}, IsShowBuySellBar=${bShowBuySellBar}`);
 
-        if (option) option.HQChart=data.Self;
+        if (option) 
+        {
+            option.HQChart=data.Self;
+            option.IsShowBuySellBar=bShowBuySellBar;
+        }
 
         var extendID=this.Counter++;
         var bCache=false;
@@ -794,7 +799,7 @@ class HQData
             {
                 Type:3,
                 ID:this.RequestMinuteData_ID,
-                ArySymbol:[{ Symbol:symbol, Cache:bCache } ],
+                ArySymbol:[{ Symbol:symbol, Cache:bCache, BuySell:bShowBuySellBar } ],
                 ExtendData:{ ExtendID:extendID },
             }
         };
@@ -829,30 +834,61 @@ class HQData
                 //var aryMinute=FillMinuteJsonData(item.Symbol, item.YClose, item.Data);
                 var aryMinute=item.Data;
                 var stockItem={ date:item.Date, minute:[], yclose:item.YClose, symbol:item.Symbol, name:item.Name };
-                for(var j=0;j<aryMinute.length;++j)
+                if (IFrameSplitOperator.IsNonEmptyArray(aryMinute))
                 {
-                    var subItem=aryMinute[j];
-                    var minItem=
+                    for(var j=0;j<aryMinute.length;++j)
                     {
-                        date:subItem.Date,
-                        time:subItem.Time,
-                        price:subItem.Price,
-                        avprice:subItem.AvPrice,
-                        open:subItem.Price,
-                        low:subItem.Price,
-                        high:subItem.Price,
-                        vol:subItem.Vol,
-                        amount:subItem.Amount
-                    };
+                        var subItem=aryMinute[j];
+                        var minItem=
+                        {
+                            date:subItem.Date,
+                            time:subItem.Time,
+                            price:subItem.Price,
+                            avprice:subItem.AvPrice,
+                            open:subItem.Price,
+                            low:subItem.Price,
+                            high:subItem.Price,
+                            vol:subItem.Vol,
+                            amount:subItem.Amount
+                        };
 
-                    if (IFrameSplitOperator.IsNumber(subItem.Position)) minItem.position=subItem.Position;
+                        if (IFrameSplitOperator.IsNumber(subItem.Position)) minItem.position=subItem.Position;
 
-                    stockItem.minute.push(minItem);
+                        stockItem.minute.push(minItem);
+                    }
                 }
+                
+
+                if (option.IsShowBuySellBar && item.BaseData)    //5档数据
+                {
+                    var baseData=item.BaseData;
+                    stockItem.BuySellData={ AryBuy:[], ArySell:[] };
+                    if (IFrameSplitOperator.IsNonEmptyArray(baseData.Buys))
+                    {
+                        for(var j=0;j<baseData.Buys.length;++j)
+                        {
+                            var subItem=baseData.Buys[j];
+                            stockItem.BuySellData.AryBuy.push( { Price:subItem.Price, Vol:subItem.Vol });
+                        }
+                    }
+
+                    if (IFrameSplitOperator.IsNonEmptyArray(baseData.Sells))
+                    {
+                        for(var j=0;j<baseData.Sells.length;++j)
+                        {
+                            var subItem=baseData.Sells[j];
+                            stockItem.BuySellData.ArySell.push( { Price:subItem.Price, Vol:subItem.Vol });
+                        }
+                    }
+                }
+
+
 
                 hqchartData.stock.push(stockItem);
             }
         }
+
+        
 
         callback(hqchartData);
     }

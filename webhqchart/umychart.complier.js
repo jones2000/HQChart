@@ -27033,6 +27033,16 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     outVarItem.Draw=drawItem;
                     result.push(outVarItem);
                 }
+                else if (draw.DrawType==SCRIPT_CHART_NAME.DRAW_HORIZONTAL_CHANNEL)
+                {
+                    drawItem.Name=draw.Name;
+                    drawItem.Type=draw.Type;
+                    drawItem.DrawType=draw.DrawType;
+                    drawItem.DrawData=draw.DrawData;
+                    drawItem.Config=draw.Config;
+                    outVarItem.Draw=drawItem;
+                    result.push(outVarItem);
+                }
                 else
                 {
                     var find=g_ScriptIndexChartFactory.Get(draw.DrawType);  //外部挂接

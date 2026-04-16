@@ -35,6 +35,12 @@ class StockChangeChart
         IsShowHeader:true,
         EnableSelected:true,
 
+        MinuteChartTooltip:
+        { 
+            Enable:true,
+            Option:{ EnableResize:false }
+        },
+
         //KeyDown:false,  //禁止键盘
         //Wheel:false,    //禁止滚轴
         
