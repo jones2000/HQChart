@@ -811,6 +811,7 @@ function JSChart(element)
             }
 
             chart.SetSubFrameAttribute(chart.Frame.SubFrame[index], item, null);
+            if (item) chart.UpdateIndexTemporaryAttribute(i, item.AryTemporaryAttribute); //指标临时属性
         }
 
         //叠加指标
@@ -4060,9 +4061,9 @@ function JSChartContainer(uielement)
             var item = this.WindowIndex[i];
             if (!item) continue;
 
-            var info = { Name: item.Name, WindowIndex:i, IsOverlay:false };
+            var info = { Name: item.Name, WindowIndex:i, IsOverlay:false, IsAuthorization:item.IsAuthorization };
             if (item.ID) info.ID = item.ID;
-
+            if (item.ClassName=="APIScriptIndex") info.API={ Url:item.ApiUrl, Name:item.Name, ID:item.ID };
             if (IFrameSplitOperator.IsNonEmptyArray(item.Arguments)) //参数
             {
                 info.Args=[];
@@ -4071,6 +4072,7 @@ function JSChartContainer(uielement)
                     var argItem=item.Arguments[j];
                     info.Args.push( { Name:argItem.Name, Value:argItem.Value} );
                 }
+                if (info.API) info.API.Args=info.Args;
             }
 
             aryIndex.push(info);
@@ -4094,8 +4096,8 @@ function JSChartContainer(uielement)
                 var overlayItem=item.OverlayIndex[j];
                 if (!overlayItem.Script) continue;
                 var indexData=overlayItem.Script;
-                var info={ Name:indexData.Name, ID:indexData.ID, WindowIndex:i, IsOverlay:true, Identify:overlayItem.Identify };
-
+                var info={ Name:indexData.Name, ID:indexData.ID, WindowIndex:i, IsOverlay:true, Identify:overlayItem.Identify, IsAuthorization:indexData.IsAuthorization};
+                if (indexData.ClassName=="APIScriptIndex") info.API={ Url:indexData.ApiUrl, Name:indexData.Name, ID:indexData.ID };
                 if (IFrameSplitOperator.IsNonEmptyArray(indexData.Arguments)) //参数
                 {
                     info.Args=[];
@@ -4104,6 +4106,7 @@ function JSChartContainer(uielement)
                         var argItem=indexData.Arguments[k];
                         info.Args.push( { Name:argItem.Name, Value:argItem.Value} );
                     }
+                    if (info.API) info.API.Args=info.Args;
                 }
 
                 aryIndex.push(info);
@@ -4456,6 +4459,87 @@ function JSChartContainer(uielement)
         event.Callback(event, sendData, this);
 
         return true;
+    }
+
+    this.UpdateIndexTemporaryAttribute=function(windowIndex, aryAttribute)
+    {
+        if (windowIndex<0) return;
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryAttribute)) return;
+        if (!this.Frame || !IFrameSplitOperator.IsNonEmptyArray(this.Frame.SubFrame)) return;
+        var mainFrame=this.Frame.SubFrame[windowIndex].Frame;
+
+        this.IndexTemporaryAttribute[windowIndex]=[];
+        var aryTemporaryAttribute=this.IndexTemporaryAttribute[windowIndex];
+
+        for(var i=0;i<aryAttribute.length;++i)
+        {
+            var item=aryAttribute[i];
+            if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.BOTTOMSPACE)
+            {
+                var backup=mainFrame.ChartBorder.BottomSpace;
+                mainFrame.ChartBorder.BottomSpace=item.Value;
+                aryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.TOPSPACE)
+            {
+                var backup=mainFrame.ChartBorder.TopSpace;
+                mainFrame.ChartBorder.TopSpace=item.Value;
+                aryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.SHOWLEFTTEXT)
+            {
+                var backup=mainFrame.YSplitOperator.IsShowLeftText;
+                mainFrame.YSplitOperator.IsShowLeftText=item.Value;
+                aryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.SHOWRIGHTTEXT)
+            {
+                var backup=mainFrame.YSplitOperator.IsShowRightText;
+                mainFrame.YSplitOperator.IsShowRightText=item.Value;
+                aryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.SPLITTYPE)
+            {
+                var backup=mainFrame.YSplitOperator.SplitType;
+                mainFrame.YSplitOperator.SplitType=item.Value;
+                aryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
+            }
+
+        }
+    }
+
+    this.RestoreIndexTemporaryAttribute=function(windowIndex)
+    {
+        if (windowIndex<0) return;
+        if (!this.Frame || !IFrameSplitOperator.IsNonEmptyArray(this.Frame.SubFrame)) return;
+        var aryTemporaryAttribute=this.IndexTemporaryAttribute[windowIndex];
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryTemporaryAttribute)) return;
+        var mainFrame=this.Frame.SubFrame[windowIndex].Frame;
+
+        for(var i=0;i<aryTemporaryAttribute.length;++i)
+        {
+            var item=aryTemporaryAttribute[i];
+            if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.BOTTOMSPACE)
+            {
+                mainFrame.ChartBorder.BottomSpace=item.BackupValue;
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.TOPSPACE)
+            {
+                mainFrame.ChartBorder.TopSpace=item.BackupValue;
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.SHOWLEFTTEXT)
+            {
+                mainFrame.YSplitOperator.IsShowLeftText=item.BackupValue;
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.SHOWRIGHTTEXT)
+            {
+                mainFrame.YSplitOperator.IsShowRightText=item.BackupValue;
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.SPLITTYPE)
+            {
+                mainFrame.YSplitOperator.SplitType=item.BackupValue;
+            }
+        }
     }
 
 }
@@ -9729,88 +9813,6 @@ function KLineChartContainer(uielement)
             if (this.DeleteStockChipChart) this.DeleteStockChipChart();
         }
     }
-
-    this.UpdateIndexTemporaryAttribute=function(windowIndex, aryAttribute)
-    {
-        if (windowIndex<0) return;
-        if (!IFrameSplitOperator.IsNonEmptyArray(aryAttribute)) return;
-        if (!this.Frame || !IFrameSplitOperator.IsNonEmptyArray(this.Frame.SubFrame)) return;
-        var mainFrame=this.Frame.SubFrame[windowIndex].Frame;
-
-        this.IndexTemporaryAttribute[windowIndex]=[];
-        var aryTemporaryAttribute=this.IndexTemporaryAttribute[windowIndex];
-
-        for(var i=0;i<aryAttribute.length;++i)
-        {
-            var item=aryAttribute[i];
-            if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.BOTTOMSPACE)
-            {
-                var backup=mainFrame.ChartBorder.BottomSpace;
-                mainFrame.ChartBorder.BottomSpace=item.Value;
-                aryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
-            }
-            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.TOPSPACE)
-            {
-                var backup=mainFrame.ChartBorder.TopSpace;
-                mainFrame.ChartBorder.TopSpace=item.Value;
-                aryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
-            }
-            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.SHOWLEFTTEXT)
-            {
-                var backup=mainFrame.YSplitOperator.IsShowLeftText;
-                mainFrame.YSplitOperator.IsShowLeftText=item.Value;
-                aryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
-            }
-            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.SHOWRIGHTTEXT)
-            {
-                var backup=mainFrame.YSplitOperator.IsShowRightText;
-                mainFrame.YSplitOperator.IsShowRightText=item.Value;
-                aryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
-            }
-            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.SPLITTYPE)
-            {
-                var backup=mainFrame.YSplitOperator.SplitType;
-                mainFrame.YSplitOperator.SplitType=item.Value;
-                aryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
-            }
-
-        }
-    }
-
-    this.RestoreIndexTemporaryAttribute=function(windowIndex)
-    {
-        if (windowIndex<0) return;
-        if (!this.Frame || !IFrameSplitOperator.IsNonEmptyArray(this.Frame.SubFrame)) return;
-        var aryTemporaryAttribute=this.IndexTemporaryAttribute[windowIndex];
-        if (!IFrameSplitOperator.IsNonEmptyArray(aryTemporaryAttribute)) return;
-        var mainFrame=this.Frame.SubFrame[windowIndex].Frame;
-
-        for(var i=0;i<aryTemporaryAttribute.length;++i)
-        {
-            var item=aryTemporaryAttribute[i];
-            if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.BOTTOMSPACE)
-            {
-                mainFrame.ChartBorder.BottomSpace=item.BackupValue;
-            }
-            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.TOPSPACE)
-            {
-                mainFrame.ChartBorder.TopSpace=item.BackupValue;
-            }
-            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.SHOWLEFTTEXT)
-            {
-                mainFrame.YSplitOperator.IsShowLeftText=item.BackupValue;
-            }
-            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.SHOWRIGHTTEXT)
-            {
-                mainFrame.YSplitOperator.IsShowRightText=item.BackupValue;
-            }
-            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.SPLITTYPE)
-            {
-                mainFrame.YSplitOperator.SplitType=item.BackupValue;
-            }
-        }
-
-    }
 }
 
 //API 返回数据 转化为array[]
@@ -10069,7 +10071,8 @@ function MinuteChartContainer(uielement)
     delete this.newMethod;
 
     this.ClassName = 'MinuteChartContainer';
-    this.WindowIndex = new Array();
+    this.WindowIndex = [];
+    this.IndexTemporaryAttribute=[];    //指标临时属性，切换指标时会清除
     this.Symbol;
     this.Name;
     this.SourceData;                          //原始的历史数据
@@ -10700,7 +10703,16 @@ function MinuteChartContainer(uielement)
     this.ChangeScriptIndex = function (windowIndex, indexData, option) 
     {
         this.DeleteIndexPaint(windowIndex, true);
+        this.RestoreIndexTemporaryAttribute(windowIndex);   //恢复临时属性
         this.WindowIndex[windowIndex] = new ScriptIndex(indexData.Name, indexData.Script, indexData.Args, indexData);    //脚本执行
+
+        if (option)
+        {
+            if (option.AryTemporaryAttribute)
+            {
+                this.UpdateIndexTemporaryAttribute(windowIndex, option.AryTemporaryAttribute); //指标临时属性
+            }
+        }
 
         var bindData = this.SourceData;
         this.BindIndexData(windowIndex, bindData);   //执行脚本
@@ -10714,9 +10726,18 @@ function MinuteChartContainer(uielement)
     this.ChangeAPIIndex=function(windowIndex,indexData)
     {
         this.DeleteIndexPaint(windowIndex, true);
+        this.RestoreIndexTemporaryAttribute(windowIndex);   //恢复临时属性
         //使用API挂接指标数据 API:{ Name:指标名字, Script:指标脚本可以为空, Args:参数可以为空, Url:指标执行地址 }
         var apiItem=indexData.API;
         this.WindowIndex[windowIndex]=new APIScriptIndex(apiItem.Name,apiItem.Script,apiItem.Args,indexData);
+
+        if (indexData)
+        {
+            if (indexData.AryTemporaryAttribute)
+            {
+                this.UpdateIndexTemporaryAttribute(windowIndex, indexData.AryTemporaryAttribute); //指标临时属性
+            }
+        }
 
         var bindData=this.ChartPaint[0].Data;
         this.BindIndexData(windowIndex,bindData);   //执行脚本
@@ -10770,7 +10791,7 @@ function MinuteChartContainer(uielement)
         var bRefreshData= (dayCount!=null);
 
         //清空所有的指标图型
-        for(var i=0;i<windows.length;++i)
+        for(var i=0;i<currentLength;++i)
         {
             this.DeleteIndexPaint(i);
             var frame=this.Frame.SubFrame[i];
@@ -10855,8 +10876,13 @@ function MinuteChartContainer(uielement)
                     }
                 }
             }
+            else
+            {
+                this.WindowIndex[windowIndex]=null; //清空指标
+            }
            
             this.SetSubFrameAttribute(this.Frame.SubFrame[windowIndex], item, frameItem);
+            if (item) this.UpdateIndexTemporaryAttribute(windowIndex, item.AryTemporaryAttribute); //指标临时属性
         }
 
         //清空叠加指标

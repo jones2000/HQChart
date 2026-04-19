@@ -3995,6 +3995,7 @@ HQData.APIIndex_PARTLINE=function(data, callback)
     var hqchart=data.HQChart;
     var kData=hqchart.GetKData();
     var bAuthorization=data.Request.Data.IsAuthorization;
+    var bFirst=data.Request.Data.IsFirst;
 
     var lineData= 
     { 
@@ -4030,7 +4031,7 @@ HQData.APIIndex_PARTLINE=function(data, callback)
         outdata: { date:kData.GetDate(), time:kData.GetTime(), outvar:[lineData] } 
     };
 
-    if (bAuthorization)
+    if (bAuthorization && bFirst)   //首次请求鉴权
     {
         apiData.Lock={ IsLocked:true };
     }
@@ -5413,6 +5414,7 @@ HQData.Request_IndexAuthorization=function(data, callback)
         Lock:
         { 
             IsLocked:true, 
+            IsFullFrame:true,
             //Text:""
             //BG: ['rgba(245,245,220, 0.5)', "rgb(100,255,100)"],     //锁区域背景色
             /*

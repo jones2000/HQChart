@@ -967,7 +967,7 @@ class HQData
 
                     stockItem.minute.push(minItem);
                 }
-
+                if (item.Name) hqchartData.name=item.Name;
                 hqchartData.data.push(stockItem);
             }
         }

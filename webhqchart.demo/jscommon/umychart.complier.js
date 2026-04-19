@@ -21085,7 +21085,7 @@ function ScriptIndex(name,script,args,option)
 
     this.RequestAuthorization=function(hqChart, callback)
     {
-        var reqData={ IndexName:this.Name, IndexID:this.ID, IsOverlayIndex:this.IsOverlayIndex===true };
+        var reqData={ IndexName:this.Name, IndexID:this.ID, IsOverlayIndex:this.IsOverlayIndex===true, Symbol:hqChart.Symbol };
 
         var obj=
         {
@@ -25480,7 +25480,9 @@ function APIScriptIndex(name,script,args,option, isOverlay)
         { 
             indexname:this.ID,  symbol: hqChart.Symbol, script:this.Script, args:args,
             period:hqChart.Period, right:hqChart.Right, hqdatatype: hqDataType,
-            IsAuthorization:this.IsAuthorization, WindowID:windowIndex,
+            IsAuthorization:this.IsAuthorization,    //是否需要鉴权
+            IsFirst:this.RunCount===0,               //指标是否首次请求数据
+            WindowID:windowIndex, 
             IsOverlayIndex:this.IsOverlayIndex===true,
         };
 

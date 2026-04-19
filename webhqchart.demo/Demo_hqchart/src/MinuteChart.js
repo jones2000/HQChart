@@ -123,6 +123,7 @@ class MinuteChart
             //IsAlwaysShowLastData:true,
             IsTitleShowLatestData:true,
 
+            OverlayTitleName:["MTitle-Close", "MTitle-Increase"],
             //ShowPostion:{ Type:0, Margin:{ Bottom:10 } }
         },
 

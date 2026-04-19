@@ -1166,6 +1166,8 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
                     if (IFrameSplitOperator.IsNumber(subItem.Margin.Bottom)) chartTitle.ShowPositionConfig.Margin.Bottom=subItem.Margin.Bottom;
                 }
             }
+
+            if (IFrameSplitOperator.IsNonEmptyArray(item.OverlayTitleName)) chartTitle.AryOverlayTitleName=item.OverlayTitleName.slice();
         }
 
         if (IFrameSplitOperator.IsBool(option.CorssCursorTouchEnd)) chart.CorssCursorTouchEnd = option.CorssCursorTouchEnd;
@@ -4421,7 +4423,11 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         if (this.TryClickLock)
         {
             //JSConsole.Chart.Log('[uielement.onmousedown] left, top ',e.clientX, e.clientY, this.getBoundingClientRect().left,this.getBoundingClientRect().top);
-            if (this.TryClickLock(x,y)) return;
+            if (this.TryClickLock(x,y)) 
+            {
+                this.IsOnTouch=false;
+                return;
+            }
         }
 
         this.HideSelectRect();
@@ -11458,8 +11464,9 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             var item=this.WindowIndex[i];
             if (!item) continue;
             
-            var info={ Name:item.Name, WindowIndex:i, IsOverlay:false };
+            var info={ Name:item.Name, WindowIndex:i, IsOverlay:false, IsAuthorization:item.IsAuthorization };
             if (item.ID) info.ID=item.ID;
+            if (item.ClassName=="APIScriptIndex") info.API={ Url:item.ApiUrl, Name:item.Name, ID:item.ID };
             if (IFrameSplitOperator.IsNonEmptyArray(item.Arguments)) //参数
             {
                 info.Args=[];
@@ -11468,6 +11475,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                     var argItem=item.Arguments[j];
                     info.Args.push( { Name:argItem.Name, Value:argItem.Value} );
                 }
+
+                if (info.API) info.API.Args=info.Args;
             }
 
             aryIndex.push(info);
@@ -11491,8 +11500,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 var overlayItem=item.OverlayIndex[j];
                 if (!overlayItem.Script) continue;
                 var indexData=overlayItem.Script;
-                var info={ Name:indexData.Name, ID:indexData.ID, WindowIndex:i, IsOverlay:true, Identify:overlayItem.Identify };
-
+                var info={ Name:indexData.Name, ID:indexData.ID, WindowIndex:i, IsOverlay:true, Identify:overlayItem.Identify, IsAuthorization:indexData.IsAuthorization };
+                if (indexData.ClassName=="APIScriptIndex") info.API={ Url:indexData.ApiUrl, Name:indexData.Name, ID:indexData.ID };
                 if (IFrameSplitOperator.IsNonEmptyArray(indexData.Arguments)) //参数
                 {
                     info.Args=[];
@@ -11501,6 +11510,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                         var argItem=indexData.Arguments[k];
                         info.Args.push( { Name:argItem.Name, Value:argItem.Value} );
                     }
+
+                    if (info.API) info.API.Args=info.Args;
                 }
 
                 aryIndex.push(info);
@@ -64358,6 +64369,7 @@ function DynamicMinuteTitlePainting()
     this.MultiDayAfterCloseData;    //多日分时图 收盘数据
 
     this.TimeFormat;                //显示时间格式 "HH:MM:SS", "hh:MM", "HH:MM:SS.fff"
+    this.AryOverlayTitleName=[];    //["MTitle-Close", "MTitle-Increase"];
     
 
     this.CallAuctionShowTitle=new Set(
@@ -64651,18 +64663,69 @@ function DynamicMinuteTitlePainting()
         {
             for(var i=0; i<this.OverlayChartPaint.length; ++i)
             {
-                var item=this.OverlayChartPaint[i];
-                if (!item.Symbol || !item.Title) continue;
+                var overlayItem=this.OverlayChartPaint[i];
+                if (!overlayItem.Symbol || !overlayItem.Title) continue;
 
-                var clrText=item.Color;
-                var text=`[${item.Title}]`;
+                var clrText=overlayItem.Color;
+                var text=`${overlayItem.Title}`;
 
-                aryText.push({Text:text, Color:clrText});
+                var arySubText=[{Text:"[", Color:clrText}];
+
+                arySubText.push({Text:text, Color:clrText});
+
+                //分钟数据
+                if (IFrameSplitOperator.IsNonEmptyArray(this.AryOverlayTitleName))
+                {
+                    var minItem=this.GetMinuteItemByDateTime(overlayItem.Data, { Date:item.Date, Time:item.Time});
+                    if (minItem)
+                    {
+                        var dec=GetfloatPrecision(overlayItem.Symbol);   //价格小数位数
+                        for(var j=0;j<this.AryOverlayTitleName.length;++j)
+                        {
+                            var titleName=this.AryOverlayTitleName[j];
+                            if (titleName=="MTitle-Close")
+                            {
+                                if (IFrameSplitOperator.IsNumber(minItem.Close) && IFrameSplitOperator.IsNumber(minItem.YClose))
+                                var color=this.GetColor(minItem.Close,minItem.YClose);
+                                var text=g_JSChartLocalization.GetText(titleName,this.LanguageID)+minItem.Close.toFixed(dec);
+                                arySubText.push({Text:text, Color:color});
+                            }
+                            else if (titleName="MTitle-Increase")
+                            {
+                                if (IFrameSplitOperator.IsNumber(minItem.Increase))
+                                {
+                                    var color=this.GetColor(minItem.Increase,0);
+                                    var text=g_JSChartLocalization.GetText(titleName,this.LanguageID)+minItem.Increase.toFixed(2)+'%';
+                                    arySubText.push({Text:text, Color:color});
+                                }
+                            }
+                        }
+                    }
+                }
+
+                arySubText.push({Text:"]", Color:clrText});
+
+                aryText.push(...arySubText);
             }
         }
        
-
         return { AryText:aryText };
+    }
+
+    this.GetMinuteItemByDateTime=function(data, dateTime)
+    {
+        if (!dateTime || !data || !IFrameSplitOperator.IsNonEmptyArray(data.Data)) return null;
+
+        for(var i=0;i<data.Data.length;++i)
+        {
+            var item=data.Data[i];
+            if (item.Date===dateTime.Date && item.Time===dateTime.Time)
+            {
+                return item;
+            }
+        }
+
+        return null;
     }
 
     this.DrawItem=function(item, isLastOne)    //isLastOne 是否是最后一个数据
@@ -96482,7 +96545,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         var bRefreshData= (dayCount!=null || symbol!=null);
 
         //清空所有的指标图型
-        for(var i=0;i<windows.length;++i)
+        for(var i=0;i<currentLength;++i)
         {
             this.DeleteIndexPaint(i);
             var frame=this.Frame.SubFrame[i];
@@ -96571,9 +96634,13 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                     }
                 }
             }
+            else
+            {
+                this.WindowIndex[windowIndex]=null; //清空指标
+            }
            
             this.SetSubFrameAttribute(this.Frame.SubFrame[windowIndex], item, frameItem);
-            this.UpdateIndexTemporaryAttribute(windowIndex, item.AryTemporaryAttribute); //指标临时属性
+            if (item) this.UpdateIndexTemporaryAttribute(windowIndex, item.AryTemporaryAttribute); //指标临时属性
         }
 
         //清空叠加指标
