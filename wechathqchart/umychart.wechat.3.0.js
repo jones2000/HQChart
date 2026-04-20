@@ -3462,7 +3462,7 @@ function JSChartContainer(uielement)
             if (IFrameSplitOperator.IsBool(windowItem.IsSinlgeLine)) frame.IsSinlgeLine=windowItem.IsSinlgeLine;
             if (IFrameSplitOperator.IsNumber(windowItem.TitleHeight)) frame.ChartBorder.TitleHeight = windowItem.TitleHeight;
             if (IFrameSplitOperator.IsBool(windowItem.IsShowIndexName)) frame.IsShowIndexName = windowItem.IsShowIndexName;
-            if (!IFrameSplitOperator.IsUndefined(windowItem.HorizontalReserved)) frame.HorizontalReserved=windowItem.HorizontalReserved;
+            
         }
 
         if (frameItem)
@@ -3490,7 +3490,7 @@ function JSChartContainer(uielement)
           
             if (IFrameSplitOperator.IsNumber(frameItem.BorderLine)) frame.BorderLine=frameItem.BorderLine;
             if (IFrameSplitOperator.IsNumber(frameItem.YTextBaseline)) frame.YTextBaseline=frameItem.YTextBaseline;
-
+            if (!IFrameSplitOperator.IsUndefined(frameItem.HorizontalReserved)) frame.HorizontalReserved=frameItem.HorizontalReserved;
             //分时图
             if (frameItem.RightText && frame.YSplitOperator.RightTextConfig) //主图右侧坐标设置
             {
@@ -4504,6 +4504,18 @@ function JSChartContainer(uielement)
                 mainFrame.YSplitOperator.SplitType=item.Value;
                 aryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
             }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.HRESERVED)
+            {
+                var backup=mainFrame.HorizontalReserved;
+                mainFrame.HorizontalReserved=item.Value;
+                aryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.TITLEHEIGHT)
+            {
+                var backup=mainFrame.ChartBorder.TitleHeight;
+                mainFrame.ChartBorder.TitleHeight=item.Value;
+                aryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
+            }
 
         }
     }
@@ -4538,6 +4550,14 @@ function JSChartContainer(uielement)
             else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.SPLITTYPE)
             {
                 mainFrame.YSplitOperator.SplitType=item.BackupValue;
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.HRESERVED)
+            {
+                mainFrame.HorizontalReserved=item.BackupValue;
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.TITLEHEIGHT)
+            {
+                mainFrame.ChartBorder.TitleHeight=item.BackupValue;
             }
         }
     }
@@ -4866,6 +4886,18 @@ function OverlayIndexItem()
                 mainFrame.YSplitOperator.IsShowRightText=item.Value;
                 this.AryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
             }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.HRESERVED)
+            {
+                var backup=mainFrame.HorizontalReserved;
+                mainFrame.HorizontalReserved=item.Value;
+                this.AryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.TITLEHEIGHT)
+            {
+                var backup=mainFrame.ChartBorder.TitleHeight;
+                mainFrame.ChartBorder.TitleHeight=item.Value;
+                this.AryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
+            }
         }
     }
 
@@ -4891,6 +4923,15 @@ function OverlayIndexItem()
             else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.SHOWRIGHTTEXT)
             {
                 mainFrame.YSplitOperator.IsShowRightText=item.BackupValue;
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.HRESERVED)
+            {
+                mainFrame.HorizontalReserved=item.BackupValue;
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.TITLEHEIGHT)
+            {
+                mainFrame.ChartBorder.TitleHeight=item.BackupValue;
+                this.AryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
             }
         }
 

@@ -11748,7 +11748,7 @@ function JSDraw(errorHandler,symbolData)
         for(var i=0;i<this.SymbolData.Data.Data.length;++i)
         {
             var item=this.SymbolData.Data.Data[i];
-            drawData.Data[i]={ High:item.High, Low:item.Low };
+            drawData.Data[i]={ High:item.High, Low:item.Low, Close:item.Close };
         }
         
         return drawData;

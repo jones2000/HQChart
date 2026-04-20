@@ -242,7 +242,10 @@ class MinuteChart
 
     ChangeDayCount(count)
     {
-        if (this.Chart) this.Chart.JSChartContainer.ChangeDayCount(count);
+        if (!this.Chart) return;
+        if (this.Chart.JSChartContainer.DayCount===count) return;
+
+        this.Chart.JSChartContainer.ChangeDayCount(count);
     }
 
     ReloadResource()

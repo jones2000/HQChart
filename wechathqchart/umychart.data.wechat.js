@@ -2384,6 +2384,8 @@ var JSCHART_TEMPORARY_ATTRIBUTE=
         SHOWLEFTTEXT:"MainFrame-ShowLeftText",
         SHOWRIGHTTEXT:"MainFrame-ShowRightText",
         SPLITTYPE:"MainFrame-SplitType",           //0=自动分割  1=数据的最大最小值分割 2=堆积图(0-100)
+        HRESERVED:"MainFrame-HorizontalReserved",   //上下预留空间 { Top:, Bottom: }
+        TITLEHEIGHT:"MainFrame-TitleHeight",        //标题栏高度
     }
 }
 

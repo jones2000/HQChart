@@ -3083,6 +3083,8 @@ var JSCHART_TEMPORARY_ATTRIBUTE=
         SHOWLEFTTEXT:"MainFrame-ShowLeftText",
         SHOWRIGHTTEXT:"MainFrame-ShowRightText",
         SPLITTYPE:"MainFrame-SplitType",           //0=自动分割  1=数据的最大最小值分割 2=堆积图(0-100)
+        HRESERVED:"MainFrame-HorizontalReserved",   //上下预留空间 { Top:, Bottom: }
+        TITLEHEIGHT:"MainFrame-TitleHeight",        //标题栏高度
     }
 }
 
@@ -10542,7 +10544,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             if (IFrameSplitOperator.IsBool(windowItem.IsShowOverlayIndexName)) frame.IsShowOverlayIndexName=windowItem.IsShowOverlayIndexName;
             if (IFrameSplitOperator.IsNumber(windowItem.IndexParamSpace)) frame.IndexParamSpace=windowItem.IndexParamSpace;
             if (IFrameSplitOperator.IsNumber(windowItem.IndexTitleSpace)) frame.IndexTitleSpace=windowItem.IndexTitleSpace;
-            if (!IFrameSplitOperator.IsUndefined(windowItem.HorizontalReserved)) frame.HorizontalReserved=windowItem.HorizontalReserved;    //Y轴上下预留
+            
            
             if (windowItem.OverlayIndexType)
             {
@@ -10602,8 +10604,10 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 if (subItem && IFrameSplitOperator.IsNumber(subItem.Right)) frame.ToolbarConfig.Margin.Right=subItem.Right;
             }
 
+            if (!IFrameSplitOperator.IsUndefined(frameItem.HorizontalReserved)) frame.HorizontalReserved=frameItem.HorizontalReserved;    //Y轴上下预留
+
             //分时图属性
-            if (IFrameSplitOperator.IsBool(frameItem.CloseBeforeButton)) frameItem.IsShowCloseButton=frameItem.CloseBeforeButton;
+            if (IFrameSplitOperator.IsBool(frameItem.CloseBeforeButton)) frame.IsShowCloseButton=frameItem.CloseBeforeButton;
             if (frame.YSplitOperator.RightTextConfig)   //主图右侧坐标设置
             {
                 if (IFrameSplitOperator.IsNumber(frameItem.RightTextFormat))     //废弃(兼容版本)
@@ -12931,6 +12935,18 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 mainFrame.YSplitOperator.SplitType=item.Value;
                 aryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
             }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.HRESERVED)
+            {
+                var backup=mainFrame.HorizontalReserved;
+                mainFrame.HorizontalReserved=item.Value;
+                aryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.TITLEHEIGHT)
+            {
+                var backup=mainFrame.ChartBorder.TitleHeight;
+                mainFrame.ChartBorder.TitleHeight=item.Value;
+                aryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
+            }
 
         }
     }
@@ -12965,6 +12981,14 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.SPLITTYPE)
             {
                 mainFrame.YSplitOperator.SplitType=item.BackupValue;
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.HRESERVED)
+            {
+                mainFrame.HorizontalReserved=item.BackupValue;
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.TITLEHEIGHT)
+            {
+                mainFrame.ChartBorder.TitleHeight=item.BackupValue;
             }
         }
 
@@ -21939,6 +21963,19 @@ function OverlayIndexItem()
                 mainFrame.YSplitOperator.IsShowRightText=item.Value;
                 this.AryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
             }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.HRESERVED)
+            {
+                var backup=mainFrame.HorizontalReserved;
+                mainFrame.HorizontalReserved=item.Value;
+                this.AryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.TITLEHEIGHT)
+            {
+                var backup=mainFrame.ChartBorder.TitleHeight;
+                mainFrame.ChartBorder.TitleHeight=item.Value;
+                this.AryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
+            }
+            
         }
     }
 
@@ -21964,6 +22001,15 @@ function OverlayIndexItem()
             else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.SHOWRIGHTTEXT)
             {
                 mainFrame.YSplitOperator.IsShowRightText=item.BackupValue;
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.HRESERVED)
+            {
+                mainFrame.HorizontalReserved=item.BackupValue;
+            }
+            else if (item.Name==JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.TITLEHEIGHT)
+            {
+                mainFrame.ChartBorder.TitleHeight=item.BackupValue;
+                this.AryTemporaryAttribute.push({ Name:item.Name, Value:item.Value, BackupValue:backup });
             }
         }
 
@@ -88885,6 +88931,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         }
     }
 
+    //TODO:准备废弃
     this.SetFrameAttribute=function(windowIndex, attr)
     {
         if (!this.Frame.SubFrame[windowIndex] || !this.Frame.SubFrame[windowIndex].Frame) return;
@@ -88896,6 +88943,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         if (IFrameSplitOperator.IsNumber(attr.TitleHeight)) frame.ChartBorder.TitleHeight=attr.TitleHeight;                 //指标标题高度
     }
 
+    //TODO:准备废弃
     this.ResetFrameAttribute=function(windowIndex)
     {
         if (!this.Frame.SubFrame[windowIndex] || !this.Frame.SubFrame[windowIndex].Frame) return;
