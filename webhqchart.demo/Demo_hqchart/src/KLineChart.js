@@ -38,6 +38,16 @@ class KLineChart
             */
 
             { Index:"MA", Overlay:true, AddIndexWindow:true, Export:true, IsSync:true,IndexHelp:true },
+
+            /*
+            { 
+                API:{ Name:"Delta", ID:"API-Delta_KLine_Table", Url:'local' } ,
+                AryTemporaryAttribute:
+                [
+                    { Name:JSCHART_TEMPORARY_ATTRIBUTE.MAINFRAME.BOTTOMSPACE, Value:(14*GetDevicePixelRatio()+6)*5+18*GetDevicePixelRatio()+15 },
+                ]
+            },
+            */
             { Index:"VOL", Overlay:true, Export:true, IsSync:true, IndexHelp:true},
             { Index:"MACD", Overlay:true, Export:true, IsSync:true, IndexHelp:true},
 
@@ -574,18 +584,38 @@ class KLineChart
         }
         else if (data.Info.ID==CUSTOM_BUTTON_ID.MAIN_INDEX_DRAPDOWN_BUTTON_ID)
         {
-            var menuData=
-            { 
-                Menu:
-                [ 
-                    this.Chart.JSChartContainer.GetShowIndexMenuData(data.Info.FrameID),
-                    this.Chart.JSChartContainer.GetModifyIndexMenuData(data.Info.FrameID),
-                ],
+            var script=this.Chart.JSChartContainer.WindowIndex[data.Info.FrameID];
+            if (!script)
+            {
+                var menuData=
+                { 
+                    Menu:
+                    [ 
+                        this.Chart.JSChartContainer.GetShowChangeIndexDialogMenuData(data.Info.FrameID),
+                    ],
 
-                Position:JSPopMenu.POSITION_ID.TAB_MENU_ID,
+                    Position:JSPopMenu.POSITION_ID.TAB_MENU_ID,
 
-                ClickCallback:(data)=>{ this.OnClickIndexDrapdownMenu(data); }
-            };
+                    ClickCallback:(data)=>{ this.OnClickIndexDrapdownMenu(data); }
+                };
+            }
+            else
+            {
+                var menuData=
+                { 
+                    Menu:
+                    [ 
+                        this.Chart.JSChartContainer.GetShowIndexMenuData(data.Info.FrameID),
+                        this.Chart.JSChartContainer.GetModifyIndexMenuData(data.Info.FrameID),
+                        { Name:JSPopMenu.SEPARATOR_LINE_NAME },
+                        { Name:"删除指标", Data:{ ID:JSCHART_MENU_ID.CMD_DELETE_INDEX_ID , Args:[data.Info.FrameID, { Draw:true }]} },
+                    ],
+
+                    Position:JSPopMenu.POSITION_ID.TAB_MENU_ID,
+
+                    ClickCallback:(data)=>{ this.OnClickIndexDrapdownMenu(data); }
+                };
+            }
         }
         else
         {
@@ -603,7 +633,8 @@ class KLineChart
         if (menuData.Data.ID==JSCHART_MENU_ID.CMD_SHOW_INDEX_ID || menuData.Data.ID==JSCHART_MENU_ID.CMD_SHOW_OVERLAY_INDEX_ID || 
             menuData.Data.ID==JSCHART_MENU_ID.CMD_DELETE_OVERLAY_INDEX_ID || menuData.Data.ID==JSCHART_MENU_ID.CMD_SHOW_OVERLAY_Y_AXIS_ID ||
             menuData.Data.ID==JSCHART_MENU_ID.CMD_ENABLE_OVERLAY_SHARE_Y_ID ||
-            menuData.Data.ID==JSCHART_MENU_ID.CMD_MODIFY_INDEX_PARAM || menuData.Data.ID==JSCHART_MENU_ID.CMD_MODIFY_OVERLAY_INDEX_PARAM )
+            menuData.Data.ID==JSCHART_MENU_ID.CMD_MODIFY_INDEX_PARAM || menuData.Data.ID==JSCHART_MENU_ID.CMD_MODIFY_OVERLAY_INDEX_PARAM ||
+            menuData.Data.ID==JSCHART_MENU_ID.CMD_SHOW_CHANGE_INDEX_DIALOG_ID || menuData.Data.ID==JSCHART_MENU_ID.CMD_DELETE_INDEX_ID)
         {
             this.Chart.JSChartContainer.ExecuteMenuCommand(menuData.Data.ID, menuData.Data.Args);
         }

@@ -76,6 +76,8 @@ function JSPopMenu()
         for(var i=0;i<data.Menu.length;++i)
         {
             var item=data.Menu[i];
+            if (!item) continue;
+            
             if (item.Name==JSPopMenu.SEPARATOR_LINE_NAME)
             {
                 var trSeparator=this.CreateSeparatorTr();

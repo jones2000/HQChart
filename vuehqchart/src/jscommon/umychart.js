@@ -708,7 +708,11 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
         for(var i=0;i<option.Windows.length;++i)
         {
             var item=option.Windows[i];
-            if (item.Script)
+            if (!item)  //没有配置指标
+            {
+
+            }
+            else if (item.Script)
             {
                 chart.WindowIndex[i]=new ScriptIndex(item.Name,item.Script,item.Args,item);    //脚本执行
             }
@@ -750,7 +754,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             }
 
             chart.SetSubFrameAttribute(chart.Frame.SubFrame[i],item, null);
-            chart.UpdateIndexTemporaryAttribute(i, item.AryTemporaryAttribute); //指标临时属性
+            if (item) chart.UpdateIndexTemporaryAttribute(i, item.AryTemporaryAttribute); //指标临时属性
         }
         
         //叠加指标宽度
@@ -1186,9 +1190,11 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             {
                 var index=i;
                 var item=windows[i];
-                if (!item) continue;
+                if (!item)
+                {
 
-                if (item.Script)
+                }
+                else if (item.Script)
                 {
                     chart.WindowIndex[index]=new ScriptIndex(item.Name,item.Script,item.Args,item);    //脚本执行
                 }
@@ -1218,7 +1224,7 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
                 }
 
                 chart.SetSubFrameAttribute(chart.Frame.SubFrame[index],item, null);
-                chart.UpdateIndexTemporaryAttribute(i, item.AryTemporaryAttribute); //指标临时属性
+                if (item) chart.UpdateIndexTemporaryAttribute(i, item.AryTemporaryAttribute); //指标临时属性
             }
         }
 
@@ -3038,6 +3044,7 @@ var JSCHART_MENU_ID=
     CMD_CHANGE_MINUTE_INFO_ID:67,     //切换分时图信息地雷
     CMD_DELETE_ALL_MINUTE_INFO_ID:68,
     CMD_MODIFY_MINUTE_INFO_PROPERTY_ID:69,
+    CMD_SHOW_CHANGE_INDEX_DIALOG_ID:70, //切换指标对话框
 
 
     CMD_REPORT_CHANGE_BLOCK_ID:100,      //报价列表 切换板块ID
@@ -11616,9 +11623,12 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 if (this.ChangeIndex && param!=null && aryArgs[1]) 
                     this.ChangeIndex(param,aryArgs[1]);
                 break;
+            case JSCHART_MENU_ID.CMD_SHOW_CHANGE_INDEX_DIALOG_ID:
+                if (srcParam) this.ShowChangeIndexDialog(srcParam);
+                break;
             case JSCHART_MENU_ID.CMD_DELETE_INDEX_ID:
                 if (this.DeleteIndex && param!=null) 
-                    this.DeleteIndex(param);
+                    this.DeleteIndex(param, aryArgs[1]);
                 break;
             case JSCHART_MENU_ID.CMD_CHANGE_API_INDEX_ID:
                 if (this.ChangeAPIIndex && param!=null && aryArgs[1]) 
@@ -12064,6 +12074,13 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         return data;
     }
 
+    this.GetShowChangeIndexDialogMenuData=function(windowIndex, showType)
+    {
+        var option={ e:{}, WindowIndex:windowIndex,OpType:1 }
+        var data= { Name:"选择指标",  Data:{ ID: JSCHART_MENU_ID.CMD_SHOW_CHANGE_INDEX_DIALOG_ID, Args:[option] } };
+        return data;
+    }
+
     this.GetModifyIndexMenuData=function(windowIndex)
     {
         var data= { Name:"参数修改",  Data:{ ID: JSCHART_MENU_ID.CMD_MODIFY_INDEX_PARAM, Args:[windowIndex] } };
@@ -12270,11 +12287,13 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         this.ChartDragSelectRect.Draw();
     }
 
-    this.DeleteIndex=function(windowIndex)
+    this.DeleteIndex=function(windowIndex, option)
     {
         if (windowIndex<0 || windowIndex>=this.Frame.SubFrame.length) return false;
         this.WindowIndex[windowIndex]=null;
         this.DeleteIndexPaint(windowIndex);             //删除主指标
+
+        if (option && option.Draw===true) this.Draw();
 
         return true;
     }

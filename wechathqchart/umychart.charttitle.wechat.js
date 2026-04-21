@@ -1332,6 +1332,18 @@ function DynamicChartTitlePainting()
         UnchangeColor:g_JSChartResource.IndexTitle.UpDownArrow.UnchangeColor
     };
 
+    //option={ DynamicTitle:true/false }
+    this.Clear=function(option)
+    {
+        this.Data=[];
+        this.Title=null;
+        if (option)
+        {
+            if (option.DynamicTitle===true) this.DynamicTitle={ OutName:null, OutValue:null };  //主图胴动态标题
+            if (option.ArgumentsText===true) this.ArgumentsText=null;
+        }
+    }
+
     this.ReloadResource=function()
     {
         this.BGColor=g_JSChartResource.IndexTitleBGColor;   //指标名字背景颜色

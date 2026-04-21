@@ -502,7 +502,11 @@ function JSChart(element)
         for (var i=0; i<option.Windows.length; ++i) //创建子窗口的指标
         {
             var item = option.Windows[i];
-            if (item.Script) 
+            if (!item)
+            {
+
+            }
+            else if (item.Script) 
             {
                 chart.WindowIndex[i] = new ScriptIndex(item.Name, item.Script, item.Args, item);    //脚本执行
             }
@@ -534,7 +538,7 @@ function JSChart(element)
             }
 
             chart.SetSubFrameAttribute(chart.Frame.SubFrame[i], item, null);
-            chart.UpdateIndexTemporaryAttribute(i, item.AryTemporaryAttribute); //指标临时属性
+            if (item) chart.UpdateIndexTemporaryAttribute(i, item.AryTemporaryAttribute); //指标临时属性
         }
 
         //叠加指标
@@ -780,8 +784,11 @@ function JSChart(element)
         {
             var index=i;
             var item = windows[i];
-            if (!item) continue;
-            if (item.Script) 
+            if (!item)
+            {
+
+            }
+            else if (item.Script) 
             {
                 chart.WindowIndex[index] = new ScriptIndex(item.Name, item.Script, item.Args, item);    //脚本执行
             }
@@ -4562,6 +4569,18 @@ function JSChartContainer(uielement)
         }
     }
 
+    //删除主图指标
+    this.DeleteIndex=function(windowIndex, option)
+    {
+        if (windowIndex<0 || windowIndex>=this.Frame.SubFrame.length) return false;
+        this.WindowIndex[windowIndex]=null;
+        this.DeleteIndexPaint(windowIndex);             //删除主指标
+
+        if (option && option.Draw===true) this.Draw();
+
+        return true;
+    }
+
 }
 
 function ToFixed(number, precision) 
@@ -7663,8 +7682,8 @@ function KLineChartContainer(uielement)
 
         //清空东条标题
         var titleIndex = windowIndex + 1;
-        this.TitlePaint[titleIndex].Data = [];
-        this.TitlePaint[titleIndex].Title = null;
+        var chartTitle=this.TitlePaint[titleIndex];
+        if (chartTitle) chartTitle.Clear( {DynamicTitle:true , ArgumentsText:true })
     }
 
   
@@ -10674,8 +10693,8 @@ function MinuteChartContainer(uielement)
 
         //清空东条标题
         var titleIndex = windowIndex + 1;
-        this.TitlePaint[titleIndex].Data = [];
-        this.TitlePaint[titleIndex].Title = null;
+        var chartTitle=this.TitlePaint[titleIndex];
+        if (chartTitle) chartTitle.Clear( {DynamicTitle:true , ArgumentsText:true })
     }
 
     this.CreateStockInfo = function () {
