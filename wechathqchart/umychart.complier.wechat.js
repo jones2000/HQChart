@@ -8418,9 +8418,9 @@ function JSAlgorithm(errorHandler, symbolData)
     this.CallCustomFunction=function(name, args, symbolData, node)
     {
         var functionInfo=g_JSComplierResource.CustomFunction.Data.get(name);
-        var dwonloadData=symbolData.GetStockCacheData({ CustomName:name, Node:node });
-        if (!functionInfo.Invoke)
-            return { Out: dwonloadData }
+        var dwonloadData=null;
+        if (functionInfo.IsDownload) dwonloadData=symbolData.GetStockCacheData({ CustomName:name, Node:node });
+        if (!functionInfo.Invoke) return { Out: dwonloadData }
 
         JSConsole.Complier.Log('[JSAlgorithm::CallCustomFunction] call custom function functionInfo=',functionInfo);
 
