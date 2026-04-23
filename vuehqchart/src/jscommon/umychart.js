@@ -5528,7 +5528,9 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
     this.PtInChartPaintTooltip=function(x,y, toolTip)
     {
-        for(var i=0;i<this.ChartPaint.length;++i)
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.ChartPaint)) return null;
+        //最后画的先检测
+        for(var i=this.ChartPaint.length-1; i>=0; --i)
         {
             var item=this.ChartPaint[i];
             if (item.GetTooltipData(x,y,toolTip))
@@ -38232,9 +38234,7 @@ function ChartScatterPlotV2()
         {
             var item=this.TooltipData[i];
             
-            this.Canvas.beginPath();
-            this.Canvas.arc(item.X, item.Y, item.Radius, 0, 2 * Math.PI);
-            if (this.Canvas.isPointInPath(x,y))
+            if (Path2DHelper.PtInPoint(x, y, item, item.Radius))
             {
                 JSConsole.Chart.Log('[ChartScatterPlotV2::GetTooltipData] point', item);
                 tooltip.Data=item;
@@ -38243,6 +38243,8 @@ function ChartScatterPlotV2()
                 return true;
             }
         }
+
+        return false;
     }
    
 }
