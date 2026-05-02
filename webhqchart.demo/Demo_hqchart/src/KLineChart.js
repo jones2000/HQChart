@@ -330,6 +330,10 @@ class KLineChart
                 callback:(event, data, obj)=>{ this.OnClickChartPaint(event, data, obj); }
             },
             {
+                event:JSCHART_EVENT_ID.DBCLICK_KLINE, 
+                callback:(event, data, obj)=>{ this.OnDBClick(event, data, obj); }
+            },
+            {
                 event:JSCHART_EVENT_ID.ON_CREATE_OVERLAY_FRAME, 
                 callback:(event, data, obj)=>{ this.OnCreateOverlayFrame(event, data, obj); }
             },
@@ -425,6 +429,15 @@ class KLineChart
         {
             this.Chart.ChangeSymbol(symbol, option);
         }
+    }
+
+    GetGraphicsDescription(option)
+    {
+        if (!this.Chart) return null;
+
+        var data=this.Chart.GetGraphicsDescription(option);
+
+        return data;
     }
 
     ReloadResource()
@@ -639,5 +652,11 @@ class KLineChart
             this.Chart.JSChartContainer.ExecuteMenuCommand(menuData.Data.ID, menuData.Data.Args);
         }
     }
+
+    OnDBClick(event, data, obj)
+    {
+        console.log('[KLineChart::OnDBClick] event, data', event , data); //打印信息
+    }
+
 
 }

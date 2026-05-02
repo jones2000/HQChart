@@ -20835,6 +20835,8 @@ function ScriptIndex(name,script,args,option)
     this.Arguments=[];
     this.OutVar=[];
     this.ID;                //指标ID
+    this.Description;       //指标描述
+    this.FullDescription;   //完整的描述信息,给AI看的
     this.FloatPrecision=2;  //小数位数
     this.StringFormat;
     this.IsShowIndexTitle=true; //是否显示指标标题
@@ -20892,6 +20894,8 @@ function ScriptIndex(name,script,args,option)
         if (IFrameSplitOperator.IsNumber(option.MaxRunCount)) this.MaxRunCount=option.MaxRunCount;
         if (IFrameSplitOperator.IsBool(option.IsAuthorization)) this.IsAuthorization=option.IsAuthorization;
         if (IFrameSplitOperator.IsBool(option.IsShow)) this.IsShow=option.IsShow;
+        if (option.Description) this.Description=option.Description;
+        if (option.FullDescription) this.FullDescription=option.FullDescription
 
         if (option.Debug) 
         {

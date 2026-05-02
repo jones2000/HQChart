@@ -2325,6 +2325,15 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             return this.JSChartContainer.ExecuteMenuCommand(cmdID, aryArgs);
         }
     }
+
+    this.GetGraphicsDescription=function(option)
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.GetGraphicsDescription)=='function')
+        {
+            JSConsole.Chart.Log('[JSChart:GetGraphicsDescription] ');
+            return this.JSChartContainer.GetGraphicsDescription(option);
+        }
+    }
 }
 
 JSChart.LastVersion=null;   //最新的版本号
@@ -11366,7 +11375,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
         var range=null;
         var aryKData=mainData.Data;   //K线/分时数据
-        if (option.Start && option.End) range=mainData.GetDataRange(option.Start, option.End);
+        if (option && option.Start && option.End) range=mainData.GetDataRange(option.Start, option.End);
         var aryData=this.ExportMainData(mainData, range);   //导出K线/分时
         if (!aryData) return null;
 
@@ -11383,7 +11392,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 for(var j=0;j<data.length;++j)
                 {
                     var subItem=data[j];
-                    if (item.IndexName) aryData.push({Name:`${subItem.Name}(${item.IndexName})`, Data:subItem.Data});
+                    if (item.IndexName) aryData.push({Name:`${subItem.Name}(${item.IndexName})`, Data:subItem.Data, Description:subItem.Description, Type:1 });
                     else aryData.push(subItem);
                 }
             }
@@ -11393,7 +11402,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         for(var i=0;i<this.OverlayChartPaint.length;++i)
         {
             var item=this.OverlayChartPaint[i];
-            if (!item.Data || !IFrameSplitOperator.IsNonEmptyArray(chart.Data.Data)) continue;
+            if (!item.Data || !IFrameSplitOperator.IsNonEmptyArray(item.Data.Data)) continue;
             var data=this.ExportMainData(item.Data, { IsOverlay:true });   
 
             if (data && IFrameSplitOperator.IsNonEmptyArray(data))
@@ -11401,7 +11410,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 for(var j=0;j<data.length;++j)
                 {
                     var subItem=data[j];
-                    aryData.push({ Name:`${subItem.Name}(${item.Symbol})`, Data:subItem.Data} );
+                    aryData.push({ Name:`${subItem.Name}(${item.Symbol})`, Data:subItem.Data,Type:2 } );
                 }
             }
         }
@@ -11426,7 +11435,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                             for(var index=0;index<data.length;++index)
                             {
                                 var subItem=data[index];
-                                if (chart.IndexName) aryData.push({Name:`${subItem.Name}(${chart.IndexName})`, Data:subItem.Data});
+                                if (chart.IndexName) aryData.push({Name:`${subItem.Name}(${chart.IndexName})`, Data:subItem.Data, Description:subItem.Description, Type:3});
                                 else aryData.push(subItem);
                             }
                         }
@@ -13013,6 +13022,225 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             }
         }
 
+    }
+
+    //把图形数据格式化导出, 给AI分析
+    this.GetGraphicsDescription=function(option)
+    {
+        var data=this.GetGraphicsRawDescription(option);
+        if (!data || !IFrameSplitOperator.IsNonEmptyArray(data.AryData)) return null;
+
+        var strTitle=data.Title;
+        strTitle+="包含以下数据:\r\n";
+        strContent="";
+        for(var i=0;i<data.AryData.length;++i)
+        {
+            var item=data.AryData[i];
+            strTitle+=`${i+1}. ${item.Title}\r\n`;
+
+            strContent+=item.Content;
+        }
+
+        var date=new Date();
+        strTitle+=`数据创建时间:${date}\r\n`;
+
+        var strDescription=strTitle+"\r\n\r\n====================完整数据部分========================\r\n\r\n\r\n"+strContent;
+
+        return { Symbol:this.Symbol, Name:this.Name, Data:strDescription};
+    }
+
+    //获取原始数据, 给AI分析
+    this.GetGraphicsRawDescription=function(option)
+    {
+        JSConsole.Chart.Warn(`[JSChartContainer::GetGraphicsRawDescription]  ${name}::GetGraphicsRawDescription not implemented.`);
+        return null;
+    }
+
+    //指标数据
+    this.GetIndexDataDescription=function(option)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.WindowIndex)) return null;
+        var kData=this.GetKData();
+        if (!kData || !IFrameSplitOperator.IsNonEmptyArray(kData.Data)) return null;
+        var range=null;
+        if (option && option.Start && option.End) range=kData.GetDataRange(option.Start, option.End);
+        var aryKData=kData.Data;
+
+        var mapIndex=new Map();  //key=id, value={ IndexName:, ID:, AryData:[] }
+        for(var i=0; i<this.ChartPaint.length; ++i)
+        {
+            var item=this.ChartPaint[i];
+            if (!item || !item.ExportData) continue;
+            if (["Main-KLine","Minute-Line","Minute-Average-Line","Minute-Vol-Bar","Minute-BuySell-Bar"].includes(item.Identify)) continue;
+
+            var guid=item.Identify;
+            var data=item.ExportData(aryKData, range);
+            if (!IFrameSplitOperator.IsNonEmptyArray(data)) conintue;
+
+            var indexData=null;
+            if (mapIndex.has(guid))
+            {
+                indexData=mapIndex.get(guid);
+            }
+            else
+            {
+                indexData={ Guid:guid, Name:item.IndexName, ID:item.IndexID, AryData:[] };
+                mapIndex.set(guid, indexData);
+            }
+
+            for(var j=0;j<data.length;++j)
+            {
+                var subItem=data[j];
+                var outName="未定义名字";
+                if (subItem.Name) outName=subItem.Name;
+                indexData.AryData.push({Name:`${outName}`, Data:subItem.Data, Description:subItem.Description });
+            }
+        }
+
+        //叠加指标
+        for(var i=0, j=0, k=0;i<this.Frame.SubFrame.length;++i)
+        {
+            var item=this.Frame.SubFrame[i];
+            for(j=0; j<item.OverlayIndex.length; ++j)
+            {
+                var overlayItem=item.OverlayIndex[j];
+                if (!IFrameSplitOperator.IsNonEmptyArray(overlayItem.ChartPaint)) continue;
+
+                for(k=0;k<overlayItem.ChartPaint.length;++k)
+                {
+                    var chart=overlayItem.ChartPaint[k];
+                    var guid=chart.Identify;
+                    if (!chart || !chart.ExportData) continue;
+                    var data=chart.ExportData(aryKData, range);
+                    if (!IFrameSplitOperator.IsNonEmptyArray(data)) continue;
+                    
+                    var indexData=null;
+                    if (mapIndex.has(guid))
+                    {
+                        indexData=mapIndex.get(guid);
+                    }
+                    else
+                    {
+                        indexData={ Guid:guid, Name:chart.IndexName, ID:chart.IndexID, AryData:[] };
+                        mapIndex.set(guid, indexData);
+                    }
+
+                    for(var index=0;index<data.length;++index)
+                    {
+                        var subItem=data[index];
+                        var outName="未定义名字";
+                        if (subItem.Name) outName=subItem.Name;
+                        indexData.AryData.push({Name:`${outName}`, Data:subItem.Data, Description:subItem.Description });
+                    }
+                }
+            }
+        }
+
+        if (mapIndex.size<=0) return null;
+
+        var aryData=[];
+        var bMinutePeriod=ChartData.IsMinutePeriod(this.Period,true);
+        var startIndex=0, endIndex=0;
+        if (range)
+        {
+            startIndex=range.Start.Index;
+            endIndex=range.End.Index;
+        }
+
+        for(var i=0;i<this.WindowIndex.length;++i)
+        {
+            var item=this.WindowIndex[i];
+            if (!item) continue;
+            var guid=item.Guid;
+            if (!mapIndex.has(guid)) continue;
+            var indexData=mapIndex.get(guid);
+
+            var data=this.GetIndexItemDescription(aryKData, indexData, item, range);
+            if (data) aryData.push(data);
+        }
+
+        for(var i=0, j=0, k=0;i<this.Frame.SubFrame.length;++i)
+        {
+            var item=this.Frame.SubFrame[i];
+            for(j=0; j<item.OverlayIndex.length; ++j)
+            {
+                var overlayItem=item.OverlayIndex[j];
+                var indexInfo=overlayItem.Script
+                var guid=overlayItem.Identify;
+                if (!mapIndex.has(guid)) continue;
+
+                var indexData=mapIndex.get(guid);
+                var data=this.GetIndexItemDescription(aryKData, indexData, indexInfo, range);
+                if (data) aryData.push(data);
+            }
+        }
+        
+        return aryData;
+    }
+
+    this.GetIndexItemDescription=function(aryKData, indexData, indexInfo, range)
+    {
+        var bMinuteChart=this.IsMinuteContainer();
+        var bMinutePeriod=false;
+        if (bMinuteChart) bMinutePeriod=true;
+        else bMinutePeriod=ChartData.IsMinutePeriod(this.Period,true);
+        
+        var startIndex=0, endIndex=aryKData.length-1;
+        if (range)
+        {
+            startIndex=range.Start.Index;
+            endIndex=range.End.Index;
+        }
+
+        var strTitle=`${this.Name} ${this.Symbol} ${indexInfo.Name}指标数据`;
+        var strText=`【${strTitle}】\r\n`;
+        var strValue=null;
+        if (indexInfo.Description) strValue=indexInfo.Description;
+        if (indexInfo.FullDescription) strValue=indexInfo.FullDescription;
+        strText+=`指标解释:${strValue}\r\n`;
+        if (indexInfo.Script) strText+=`指标公式:\r\n----------------------\r\n${indexInfo.Script}\r\n------------------------\r\n`;
+        if (IFrameSplitOperator.IsNonEmptyArray(indexInfo.Arguments)) //参数
+        {
+            strValue="";
+            for(var i=0;i<indexInfo.Arguments.length;++i)
+            {
+                var argItem=indexInfo.Arguments[i];
+                strValue+=`${argItem.Name}=${argItem.Value},`;
+            }
+            strText+=`指标参数:${strValue}\r\n`;
+        }
+
+        strText+="字段说明\r\n";
+        strText+="1. Date:日期 格式YYYYMMDD\r\n";
+        strText+="2. Time:时间 格式hhmm\r\n";
+        strText+="原始数据如下\r\n";
+        strText+="Date,Time";
+        for(var i=0;i<indexData.AryData.length;++i)
+        {
+            var indexItem=indexData.AryData[i];
+            strText+=`,${indexItem.Name}`;
+        }
+        strText+="\r\n";
+            
+        for(var i=startIndex; i<=endIndex && i<aryKData.length; ++i)
+        {
+            var kItem=aryKData[i];
+            var time=null;
+            if (bMinutePeriod) time=kItem.Time;
+            strText+=`${kItem.Date},${time}`;
+            for(var j=0;j<indexData.AryData.length;++j)
+            {
+                var indexItem=indexData.AryData[j];
+                var value=null;
+                if (indexItem.Data) value=indexItem.Data[i];
+                strText+=`,${value}`;
+            }
+            strText+="\r\n";
+        }
+
+        strText+="\r\n\r\n";
+
+        return { Title:strTitle, Content:strText, Type:"指标数据" };
     }
 }
 
@@ -26760,40 +26988,61 @@ function ChartData()
     {
         if (!IFrameSplitOperator.IsNonEmptyArray(this.Data)) return null;
 
-        var range={  }; //{Start:{Date, Time, Index,}, End:{Date, Time, Index}}
+        var firstItem=this.Data[0];
+        var endItem=this.Data[this.Data.length-1];
+        var range=
+        {  
+            Start:{Index:0, Date:firstItem.Date, Time:firstItem.Time },
+            End:{ Index:this.Data.length-1, Date:endItem.Date, Time:endItem.Time }
+        };  //{Start:{Date, Time, Index,}, End:{Date, Time, Index}}
 
+        //查找起始位置
         for(var i=0; i<this.Data.length; ++i)
         {
             var item=this.Data[i];
-            if (item.Date==start.Date)
+            var bFind=false;
+            if (IFrameSplitOperator.IsNumber(start.Time))   //日期+时间
             {
-                if (IFrameSplitOperator.IsNumber(start.Time))
-                {
-                    if (item.Time==start.Time)  range.Start={ Index:i, Date:item.Date, Time:item.Time };
-                }
-                else
-                {
-                    range.Start={ Index:i, Date:item.Date };
-                }
+                if (item.Date>start.Date || (item.Date===start.Date && item.Time>=start.Time))
+                    bFind=true;
+            }
+            else
+            {
+                if (item.Date>=start.Date)
+                    bFind=true;
             }
 
-            if (item.Date=end.Date)
+            if (bFind)
             {
-                if (IFrameSplitOperator.IsNumber(end.Time))
-                {
-                    if (item.Time==end.Time)  range.End={ Index:i, Date:item.Date, Time:item.Time };
-                }
-                else
-                {
-                    range.End={ Index:i, Date:item.Date };
-                }
-                
+                range.Start={ Index:i, Date:item.Date };
+                break;
             }
-
-            if (range.Start && range.End) return range;
         }
 
-        return null;
+        //查结束位置
+        for(var i=this.Data.length-1; i>=0; --i)
+        {
+            var item=this.Data[i];
+            var bFind=false;
+            if (IFrameSplitOperator.IsNumber(end.Time))   //日期+时间
+            {
+                if (item.Date<end.Date || (item.Date===end.Date && item.Time<=end.Time))
+                    bFind=true;
+            }
+            else
+            {
+                if (item.Date<=end.Date)
+                    bFind=true;
+            }
+
+            if (bFind)
+            {
+                range.End={ Index:i, Date:item.Date };
+                break;
+            }
+        }
+
+        return range;
     }
 
     //导出单数组数据
@@ -26886,15 +27135,15 @@ function ChartData()
             }
         }
 
-        var result=[  {Name:"Date", Data:aryDate} ];
+        var result=[  {Name:"Date", Data:aryDate, Description:"日期"} ];
 
         if (ChartData.IsMinutePeriod(this.Period,true) || ChartData.IsSecondPeriod(this.Period) || ChartData.IsMilliSecondPeriod(this.Period))
-            result.push({ Name:"Time", Data:aryTime} );
+            result.push({ Name:"Time", Data:aryTime, Description:"时间"} );
 
         result.push
         (
-            {Name:"Open", Data:aryOpen }, {Name:"High", Data:aryHigh }, {Name:"Low", Data:aryLow}, {Name:"Close", Data:aryClose },
-            {Name:"Vol", Data:aryVol}, { Name:"Amount", Data:aryAmount}
+            {Name:"Open", Data:aryOpen, Description:"开盘价" }, {Name:"High", Data:aryHigh, Description:"最高价" }, {Name:"Low", Data:aryLow,   Description:"最低价"}, 
+            {Name:"Close", Data:aryClose,Description:"收盘价" }, {Name:"Vol", Data:aryVol,Description:"成交量"}, { Name:"Amount", Data:aryAmount,Description:"成交金额"}
         );
 
         return result;
@@ -27200,6 +27449,8 @@ function IChartPainting()
 
     this.IsFullRangeMaxMin=false;   //this.GetMaxMin() true=计算全部的最大最小值 false=计算可视范围的最大最小值
     this.IsExcludeYValue=false;     //不参与Y轴计算
+
+    this.Description;           //图形描述信息
 
     this.Draw=function()
     {
@@ -27968,13 +28219,13 @@ function IChartPainting()
     this.ExportArrayData=function(aryKData, option)
     {
         var data=this.Data.ExportArrayData(aryKData, option);
-        return [ { Name:this.Name, Data:data }];
+        return [ { Name:this.Name, Data:data, Description:this.Description }];
     }
 
     this.ExportBoolData=function(aryKData, option)
     {
         var data=this.Data.ExportBoolData(aryKData, option);
-        return [ { Name:this.Name, Data:data }];
+        return [ { Name:this.Name, Data:data, Description:this.Description }];
     }
 
     //获取单数组的数据某一个数据 indexData={ Index:数据索引 }
@@ -37132,6 +37383,7 @@ function ChartLine()
     delete this.newMethod;
 
     this.ClassName='ChartLine';    //类名
+    this.Description="线段";
     this.Color="rgb(255,193,37)";   //线段颜色
     this.LineWidth;                 //线段宽度
     this.DrawType=0;                //画图方式  0=无效数平滑  1=无效数不画断开
@@ -39290,6 +39542,7 @@ function ChartVolStick()
     this.KLineDrawType=0;
     
     this.ClassName='ChartVolStick';
+    this.Description="柱子"
 
     this.BarWidth;                  //固定宽度 目前只支持宽度为1
     this.BarType;                   //柱子状态 1=实心 0=空心 2=涨实跌空 如果设置了这个属性， 属性KLineDrawType无效 
@@ -93189,6 +93442,333 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
         this.Draw();
     }
+
+    this.GetGraphicsRawDescription=function(option)
+    {
+        var strTitle='K线图及其指标数据.\r\n';
+        strTitle+=`K线周期:${this.GetPeriodName()}\r\n`;
+
+        var aryData=[];
+
+        //K线
+        var data=this.GetKDataDescription(option);
+        if (data) aryData.push(data);
+
+        //指标数据
+        var data=this.GetIndexDataDescription(option);
+        if (IFrameSplitOperator.IsNonEmptyArray(data)) aryData.push(...data);
+
+        //信息地雷
+        var data=this.GetMinesInfoDescription(option);
+        if (IFrameSplitOperator.IsNonEmptyArray(data)) aryData.push(...data);
+
+        //叠加股票 
+        var data=this.GetOverlaySymbolDescription(option);
+        if (IFrameSplitOperator.IsNonEmptyArray(data)) aryData.push(...data);
+
+        return { AryData:aryData, Title:strTitle };
+    }
+
+    //K线信息
+    this.GetKDataDescription=function(option)
+    {
+        var kData=this.GetKData();
+        if (!kData || !IFrameSplitOperator.IsNonEmptyArray(kData.Data)) return null;
+        var startIndex=0, endIndex=kData.Data.length-1;
+
+        if (option)
+        {
+            if (option.Start && option.End) //某一段时间的
+            {
+                var range=kData.GetDataRange(option.Start, option.End);
+                if (!range) return null;
+                startIndex=range.Start.Index;
+                endIndex=range.End.Index;
+            }
+        }
+
+        var strTitle=`${this.Name} ${this.Symbol} K线数据`;
+
+        var strDescription=`【${strTitle}】\r\n`;
+        strDescription+="字段说明\r\n";
+        strDescription+="1. Date:日期 格式YYYYMMDD\r\n";
+        strDescription+="2. Time:时间 格式hhmm\r\n";
+        strDescription+="3. Open:开盘价\r\n";
+        strDescription+="4. Close:收盘价\r\n";
+        strDescription+="5. High:最高价\r\n";
+        strDescription+="6. Low:最低价\r\n";
+        strDescription+="7. Amount:成交金额\r\n";
+        strDescription+="8. Vol:成交量\r\n";
+        strDescription+="原始数据如下\r\n"
+
+        var bMinutePeriod=ChartData.IsMinutePeriod(this.Period,true);
+        strText="Date,Time,Open,High,Low,Close,Vol,Amount\r\n";
+        for(var i=startIndex; i<kData.Data.length && i<=endIndex; ++i)
+        {
+            var kItem=kData.Data[i];
+            var time=null;
+            if (bMinutePeriod) time=kItem.Time;
+            strText+=`${kItem.Date},${time},${kItem.Open},${kItem.High},${kItem.Low},${kItem.Close},${kItem.Vol},${kItem.Amount}\r\n`
+        }
+
+        strDescription+=strText;
+        strDescription+="\r\n\r\n";
+
+        return { Title:strTitle, Content:strDescription, Type:"K线数据" };
+    }
+
+    //叠加股票信息
+    this.GetOverlaySymbolDescription=function()
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.OverlayChartPaint)) return null;
+
+        var aryData=[];
+        var strDescription="";
+        var bMinutePeriod=ChartData.IsMinutePeriod(this.Period,true);
+        for(var i=0;i<this.OverlayChartPaint.length;++i)
+        {
+            var item=this.OverlayChartPaint[i];
+            if (!item) continue;
+            var kData=item.Data;
+            if (!kData || !IFrameSplitOperator.IsNonEmptyArray(kData.Data)) continue;
+
+            var strTitle=`${item.Title} ${item.Symbol} K线数据`;
+
+            var strText=`【${strTitle}】\r\n`;
+            strText+="字段说明\r\n";
+            strText+="1. Date:日期 格式YYYYMMDD\r\n";
+            strText+="2. Time:时间 hhmm\r\n";
+            strText+="3. Open:开盘价\r\n";
+            strText+="4. Close:收盘价\r\n";
+            strText+="5. Low:最低价\r\n";
+            strText+="6. High:最高价\r\n";
+            strText+="7. Amount:成交金额\r\n";
+            strText+="8. Vol:成交量\r\n";
+            strText+="原始数据如下\r\n";
+           
+            strText+="Date,Time,Open,High,Low,Close,Vol,Amount\r\n";
+            for(var j=0;j<kData.Data.length;++j)
+            {
+                var kItem=kData.Data[j];
+                var time=null;
+                if (bMinutePeriod) time=kItem.Time;
+                strText+=`${kItem.Date},${time},${kItem.Open},${kItem.High},${kItem.Low},${kItem.Close},${kItem.Vol},${kItem.Amount}\r\n`
+            }
+            strText+="\r\n\r\n";
+
+            aryData.push({ Title:strTitle, Content:strText, Type:"叠加股票" });
+        }
+
+        return aryData;
+    }
+
+    //信息地雷
+    this.GetMinesInfoDescription=function(option)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.ChartInfo)) return null;
+
+        var aryData=[];
+        var strText="", strTitle="";
+        for(var i=0;i<this.ChartInfo.length; ++i)
+        {
+            var item=this.ChartInfo[i];
+            if (item.ClassName=="BlockTrading")
+            {
+                if (!IFrameSplitOperator.IsNonEmptyArray(item.Data)) continue;
+
+                strTitle=`${this.Name} ${this.Symbol} 大宗交易数据`;
+                strText=`【${strTitle}】\r\n`;
+                strText+="字段说明\r\n";
+                strText+="1. Date:日期 格式YYYYMMDD\r\n";
+                strText+="2. Price:交易价格\r\n";
+                strText+="3. Vol:交易金额\r\n";
+                strText+="原始数据如下\r\n";
+                strText+="Date,Price,Vol\r\n"
+                
+                for(var j=0;j<item.Data.length;++j)
+                {
+                    var dataItem=item.Data[j];
+                    if (!dataItem || !dataItem.ExtendData || !IFrameSplitOperator.IsNumber(dataItem.Date)) continue;
+                    var price=null, vol=null;
+                    var extendData=dataItem.ExtendData;
+                    if (IFrameSplitOperator.IsNumber(extendData.Price)) price=extendData.Price;
+                    if (IFrameSplitOperator.IsNumber(extendData.Vol)) vol=extendData.Vol;
+                    strText+=`${dataItem.Date},${price},${vol}\r\n`;
+                }
+
+                strText+="\r\n\r\n";
+                aryData.push({ Title:strTitle, Content:strText, Type:"大宗交易" });
+            }
+            else if (item.ClassName=="DragonTigerInfo")
+            {
+                if (!IFrameSplitOperator.IsNonEmptyArray(item.Data)) continue;
+
+                strTitle=`${this.Name} ${this.Symbol} 龙虎榜数据`
+                strText=`【${strTitle}】\r\n`;
+                strText+="字段说明\r\n";
+                strText+="1. Date:日期 格式YYYYMMDD\r\n";
+                strText+="2. Title:上榜原因\r\n";
+                strText+="3. BuyAmount:机构买入总金额\r\n";
+                strText+="4. SellAmount:机构卖出总金额\r\n";
+                strText+="5. NetBuyAmount:机构买入净金额\r\n";
+                strText+="6. NetBuyRatio:净买金额占总成交比\r\n";
+                strText+="7. Amount:市场总成交金额\r\n";
+                strText+="原始数据如下\r\n";
+                strText+="Date,Title,BuyAmount,SellAmount,NetBuyAmount,NetBuyRatio,Amount\r\n";
+                
+                for(var j=0;j<item.Data.length;++j)
+                {
+                    var dataItem=item.Data[j];
+                    if (!dataItem || !dataItem.ExtendData || !IFrameSplitOperator.IsNumber(dataItem.Date)) continue;
+                    var price=null, vol=null;
+                    var extendData=dataItem.ExtendData;
+                    strText+=`${dataItem.Date},${dataItem.Title},${extendData.BuyAmount},${extendData.SellAmount},${extendData.NetBuyAmount},${extendData.NetBuyRatio},${extendData.Amount}\r\n`;
+                }
+            
+
+                strText+="\r\n\r\n";
+                aryData.push({ Title:strTitle, Content:strText, Type:"龙虎榜" });
+            }
+            else if (item.ClassName=="DividendInfo")
+            {
+                if (!IFrameSplitOperator.IsNonEmptyArray(item.Data)) continue;
+
+                strTitle=`${this.Name} ${this.Symbol} 除权除息数据`;
+                strText=`【${strTitle}】\r\n`;
+                strText+="字段说明\r\n";
+                strText+="1. Date:日期 格式YYYYMMDD\r\n";
+                strText+="2. Title:除权除息方案\r\n";
+                strText+="原始数据如下\r\n";
+                strText+="Date,Title\r\n";
+                
+                for(var j=0;j<item.Data.length;++j)
+                {
+                    var dataItem=item.Data[j];
+                    if (!dataItem || !IFrameSplitOperator.IsNumber(dataItem.Date)) continue;
+                    strText+=`${dataItem.Date},${dataItem.Title}\r\n`;
+                }
+
+                strText+="\r\n\r\n";
+                aryData.push({ Title:strTitle, Content:strText, Type:"除权除息"});
+            }
+            else if (item.ClassName=="NewsInfo")
+            {
+                if (!IFrameSplitOperator.IsNonEmptyArray(item.Data)) continue;
+
+                strTitle=`${this.Name} ${this.Symbol} 新闻列表数据`
+                strText=`【${strTitle}】\r\n`;
+                strText+="字段说明\r\n";
+                strText+="1. Date:日期 格式YYYYMMDD\r\n";
+                strText+="2. Title:标题\r\n";
+                strText+="3. Url:原文链接\r\n";
+                strText+="原始数据如下\r\n";
+                strText+="Date,Title,Url\r\n";
+                
+                for(var j=0;j<item.Data.length;++j)
+                {
+                    var dataItem=item.Data[j];
+                    if (!dataItem || !IFrameSplitOperator.IsNumber(dataItem.Date)) continue;
+                    var url=null;
+                    if (dataItem.ExtendData && dataItem.ExtendData.Url) url=dataItem.ExtendData.Url;
+                    strText+=`${dataItem.Date},${dataItem.Title},${url}\r\n`;
+                }
+
+                strText+="\r\n\r\n";
+                aryData.push({ Title:strTitle, Content:strText, Type:"新闻列表" });
+            }
+            else if (item.ClassName=="ResearchInfo")
+            {
+                if (!IFrameSplitOperator.IsNonEmptyArray(item.Data)) continue;
+
+                strTitle=`${this.Name} ${this.Symbol} 公司调研数据`
+                strText=`【${strTitle}】\r\n`;
+                strText+="字段说明\r\n";
+                strText+="1. Date:日期 格式YYYYMMDD\r\n";
+                strText+="2. Title:调研内容\r\n";
+                strText+="原始数据如下\r\n";
+                strText+="Date,Title,Url\r\n";
+                
+                for(var j=0;j<item.Data.length;++j)
+                {
+                    var dataItem=item.Data[j];
+                    if (!dataItem || !IFrameSplitOperator.IsNumber(dataItem.Date)) continue;
+                    strText+=`${dataItem.Date},${dataItem.Title}\r\n`;
+                }
+                
+                strText+="\r\n\r\n";
+                aryData.push({ Title:strTitle, Content:strText, Type:"公司调研"  });
+            }
+            else if (item.ClassName=="PforecastInfo")
+            {
+                if (!IFrameSplitOperator.IsNonEmptyArray(item.Data)) continue;
+
+                strTitle=`${this.Name} ${this.Symbol} 业绩预告数据`;
+                strText=`【${strTitle}】\r\n`;
+                strText+="字段说明\r\n";
+                strText+="1. Date:日期 格式YYYYMMDD\r\n";
+                strText+="2. ReportDate:报告日期 格式YYYYMMDD\r\n"
+                strText+="3. Content:内容\r\n"
+                strText+="原始数据如下\r\n";
+                strText+="Date,Title,Url\r\n";
+                
+                for(var j=0;j<item.Data.length;++j)
+                {
+                    var dataItem=item.Data[j];
+                    if (!dataItem || !IFrameSplitOperator.IsNumber(dataItem.Date)) continue;
+                    var content="";
+                    if (dataItem.ExtendData && IFrameSplitOperator.IsNonEmptyArray(dataItem.ExtendData.AryData))
+                    {
+                        for(var k=0;k<dataItem.ExtendData.AryData.length;++k)
+                        {
+                            var subItem=dataItem.ExtendData.AryData[k];
+                            content+=`预测指标:${subItem.Name} 预告类型:${subItem.Text}.`
+                        }
+                    }
+                    strText+=`${dataItem.Date},${dataItem.Title},${content}\r\n`;
+                }
+                
+                strText+="\r\n\r\n";
+                aryData.push({ Title:strTitle, Content:strText, Type:"业绩预告"  });
+            }
+            else if (item.ClassName=="AnnouncementInfo")
+            {
+                if (!IFrameSplitOperator.IsNonEmptyArray(item.Data)) continue;
+
+                strTitle=`${this.Name} ${this.Symbol} 公告数据`;
+                strText=`【${strTitle}】\r\n`;
+                strText+="字段说明\r\n";
+                strText+="1. Date:公告日期 格式YYYYMMDD\r\n";
+                strText+="2. Title:公告标题\r\n"
+                strText+="原始数据如下\r\n";
+                strText+="Date,Title\r\n";
+            
+                for(var j=0;j<item.Data.length;++j)
+                {
+                    var dataItem=item.Data[j];
+                    if (!dataItem || !IFrameSplitOperator.IsNumber(dataItem.Date)) continue;
+                    strText+=`${dataItem.Date},${dataItem.Title}\r\n`;
+                }
+                
+                strText+="\r\n\r\n";
+                aryData.push({ Title:strTitle, Content:strText, Type:"公告数据" });
+            }
+        }
+
+        return aryData;
+    }
+
+    this.GetPeriodName=function()
+    {
+        var mapName=new Map(
+        [
+            [0, '日线'],[1, '周线'],[2, '月线'],[3, '年线'],[9, '季线'], [21,'双周'],[22,"半年"],
+            [4, '1分'], [5, '5分'], [6, '15分'],[7, '30分'],[8, '60分'],[11, '2小时'],[12, '4小时'],
+        ]);
+
+        if (mapName.has(this.Period)) return mapName.get(this.Period);
+
+        return null;
+    }
 }
 
 //API 返回数据 转化为array[]
@@ -100107,6 +100687,189 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         return false;
     }
 
+    this.GetGraphicsRawDescription=function(option)
+    {
+        var strTitle='分时图及其指标数据.\r\n';
+
+        var aryData=[];
+
+        //分钟线
+        var data=this.GetMinuteDataDescription(option);
+        if (data) aryData.push(data);
+
+        //指标数据
+        var data=this.GetIndexDataDescription(option);
+        if (IFrameSplitOperator.IsNonEmptyArray(data)) aryData.push(...data);
+
+        var data=this.GetMinesInfoDescription(option);
+        if (IFrameSplitOperator.IsNonEmptyArray(data)) aryData.push(...data);
+
+        //叠加股票 
+        var data=this.GetOverlaySymbolDescription(option);
+        if (IFrameSplitOperator.IsNonEmptyArray(data)) aryData.push(...data);
+
+        return { AryData:aryData, Title:strTitle };
+    }
+
+    //分时数据信息
+    this.GetMinuteDataDescription=function(option)
+    {
+        var kData=this.GetKData();
+        if (!kData || !IFrameSplitOperator.IsNonEmptyArray(kData.Data)) return null;
+        var startIndex=0, endIndex=kData.Data.length-1;
+
+        if (option)
+        {
+            if (option.Start && option.End) //某一段时间的
+            {
+                var range=kData.GetDataRange(option.Start, option.End);
+                if (!range) return null;
+                startIndex=range.Start.Index;
+                endIndex=range.End.Index;
+            }
+        }
+
+        function __Temp_GetNumberValue(value, defValue=null)
+        {
+            if (IFrameSplitOperator.IsNumber(value)) return value;
+            return defValue;
+        }
+
+        var strTitle=`${this.Name} ${this.Symbol} 分时数据`;
+
+        var strDescription=`【${strTitle}】\r\n`;
+        strDescription+="字段说明\r\n";
+        strDescription+="1. Date:日期 格式YYYYMMDD\r\n";
+        strDescription+="2. Time:时间 格式hhmm\r\n";
+        strDescription+="3. Open:这一分钟起始价格\r\n";
+        strDescription+="4. Close:这一分钟最后的价格\r\n";
+        strDescription+="5. High:这一分钟内最高价\r\n";
+        strDescription+="6. Low:这一分钟内最低价\r\n";
+        strDescription+="7. Amount:这一分钟内总的成交金额\r\n";
+        strDescription+="8. Vol:这一分钟内总的成交量\r\n";
+        strDescription+="9. AvPrice:均价\r\n";
+        strDescription+="10. YClose:昨收价\r\n";
+        strDescription+="11. YClearing:昨结算价\r\n";
+        strDescription+="12. Position:持仓量\r\n";
+        strDescription+="原始数据如下\r\n"
+
+        strText="Date,Time,Open,High,Low,Close,Vol,Amount,AvPrice,YClose,YClearing,Position,\r\n";
+        for(var i=startIndex; i<kData.Data.length && i<=endIndex; ++i)
+        {
+            var kItem=kData.Data[i];
+            strText+=`${kItem.Date},${kItem.Time},${kItem.Open},${kItem.High},${kItem.Low},${kItem.Close},${kItem.Vol},${kItem.Amount},${__Temp_GetNumberValue(kItem.AvPrice)},${__Temp_GetNumberValue(kItem.YClose)},${__Temp_GetNumberValue(kItem.YClearing)},${__Temp_GetNumberValue(kItem.Position)}\r\n`
+        }
+
+        strDescription+=strText;
+        strDescription+="\r\n\r\n";
+
+        return { Title:strTitle, Content:strDescription, Type:"分时数据" };
+    }
+
+    //叠加股票信息
+    this.GetOverlaySymbolDescription=function()
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.OverlayChartPaint)) return null;
+
+        var aryData=[];
+        var strDescription="";
+        for(var i=0;i<this.OverlayChartPaint.length;++i)
+        {
+            var item=this.OverlayChartPaint[i];
+            if (!item) continue;
+            var kData=item.Data;
+            if (!kData || !IFrameSplitOperator.IsNonEmptyArray(kData.Data)) continue;
+
+            var strTitle=`${item.Title} ${item.Symbol} 分时数据`;
+
+            var strText=`【${strTitle}】\r\n`;
+            strText+="字段说明\r\n";
+            strText+="1. Date:日期 格式YYYYMMDD\r\n";
+            strText+="2. Time:时间 hhmm\r\n";
+            strText+="3. Close:这一分钟最后的价格\r\n";
+            strText+="4. Amount:这一分钟内总的成交金额\r\n";
+            strText+="5. Vol:这一分钟内总的成交量\r\n";
+            strText+="原始数据如下\r\n";
+           
+            strText+="Date,Time,Close,Vol,Amount\r\n";
+            for(var j=0;j<kData.Data.length;++j)
+            {
+                var kItem=kData.Data[j];
+                strText+=`${kItem.Date},${kItem.Time},${kItem.Close},${kItem.Vol},${kItem.Amount}\r\n`
+            }
+            strText+="\r\n\r\n";
+
+            aryData.push({ Title:strTitle, Content:strText, Type:"叠加股票" });
+        }
+
+        return aryData;
+
+    }
+
+     //信息地雷
+    this.GetMinesInfoDescription=function(option)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.ChartInfo)) return null;
+
+        var aryData=[];
+        for(var i=0;i<this.ChartInfo.length;++i)
+        {
+            var item=this.ChartInfo[i];
+            if (!item) continue;
+
+            if (item.ClassName=="MarketEventInfo")  //异动信息
+            {
+                if (!IFrameSplitOperator.IsNonEmptyArray(item.Data)) continue;
+                strTitle=`${this.Name} ${this.Symbol} 异动数据`;
+                strText+="字段说明\r\n";
+                strText+="1. Date:日期 格式YYYYMMDD\r\n";
+                strText+="2. Time:时间 格式hhmm\r\n";
+                strText+="3. Title:异动内容\r\n";
+                strText+="原始数据如下\r\n";
+                strText+="Date,Time,Title\r\n";
+
+                for(var j=0;j<item.Data.length;++j)
+                {
+                    var dataItem=item.Data[j];
+                    if (!dataItem || !IFrameSplitOperator.IsNumber(dataItem.Date)) continue;
+                    strText+=`${dataItem.Date},${dataItem.Time},${dataItem.Title}\r\n`;
+                }
+
+                strText+="\r\n\r\n";
+                aryData.push({ Title:strTitle, Content:strText, Type:"异动数据" });
+            }
+            else if (item.ClassName=="MinuteNewsInfo")  //新闻
+            {
+                if (!IFrameSplitOperator.IsNonEmptyArray(item.Data)) continue;
+
+                strTitle=`${this.Name} ${this.Symbol} 新闻列表数据`;
+                strText=`【${strTitle}】\r\n`;
+                strText+="字段说明\r\n";
+                strText+="1. Date:日期 格式YYYYMMDD\r\n";
+                strText+="2. Time:时间 格式hhmm\r\n";
+                strText+="3. Title:标题\r\n";
+                strText+="4. Url:原文地址\r\n";
+                strText+="原始数据如下\r\n";
+                strText+="Date,Time,Title,Url\r\n"
+                
+                for(var j=0;j<item.Data.length;++j)
+                {
+                    var dataItem=item.Data[j];
+                    if (!dataItem || !IFrameSplitOperator.IsNumber(dataItem.Date)) continue;
+                    var url=null;
+                    var extendData=dataItem.ExtendData;
+                    if (extendData && extendData.Url) url=extendData.Url;
+                    strText+=`${dataItem.Date},${dataItem.Time},${dataItem.Title},${url}\r\n`;
+                }
+
+                strText+="\r\n\r\n";
+                aryData.push({ Title:strTitle, Content:strText, Type:"新闻列表" });
+            }
+        }
+
+        return aryData;
+    }
+
 }
 
 //盘前数据
@@ -104341,7 +105104,7 @@ function NewsInfo()
             infoData.Date= item.date;
             infoData.InfoType=KLINE_INFO_TYPE.NEWS;
             infoData.Title=item.title;
-            infoData.ExtendData={ Type:item.type, url:item.url };
+            infoData.ExtendData={ Type:item.type, Url:item.url };
             this.Data.push(infoData);
         }
 
@@ -104374,7 +105137,7 @@ function DividendInfo()
             infoData.Date= item.date;
             infoData.InfoType=KLINE_INFO_TYPE.DIVIDEND;
             infoData.Title=item.title;
-            infoData.ExtendData={ Type:item.type, url:item.url };
+            infoData.ExtendData={ Type:item.type, Url:item.url };
             this.Data.push(infoData);
         }
 
@@ -104611,8 +105374,14 @@ function MinuteNewsInfo()
             var item=recvData.list[i]; 
 
             var info={ Date:item.Date, Time:item.Time, Title:item.Title, Type:1, ID:item.ID };
-            if (item.Data) info.ExtendData={ Data:item.Data };
             if (IFrameSplitOperator.IsNumber(item.Time2)) info.Time2=item.Time2;    //hhmmss
+
+            if (item.Data || item.Url) 
+            {
+                info.ExtendData={ };
+                if (item.Data) info.ExtendData.Data=item.Data;
+                if (item.Url) info.ExtendData.Url=item.Url;
+            }
 
             this.Data.push(info);
         }

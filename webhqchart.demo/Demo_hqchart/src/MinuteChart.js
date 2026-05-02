@@ -269,6 +269,15 @@ class MinuteChart
         var data={ Left:!bShow, MultiDay:{ Left:!bShow }};
         hqchart.ExecuteMenuCommand(JSCHART_MENU_ID.CMD_SHOW_CALLCATION_ID,[data]);
     }
+
+    GetGraphicsDescription(option)
+    {
+        if (!this.Chart) return null;
+
+        var data=this.Chart.GetGraphicsDescription(option);
+
+        return data;
+    }
 }
 
 
