@@ -17,8 +17,15 @@
 
 <body>
 
-    <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
+    
     <script src="../jscommon/umychart.resource/js/webfont.js"></script>
+    <!-- 引入解析库 -->
+    <script src="../jscommon/umychart.resource/js/marked.min.js"></script>
+    <!-- XSS 安全过滤 -->
+    <script src="../jscommon/umychart.resource/js/purify.min.js"></script>
+    <!-- jquery -->
+    <script src="../jscommon/umychart.resource/js/jquery.min.js"></script>
+
     <script src='../jscommon/umychart.console.js'></script> <!-- 日志输出 -->
     <script src="../jscommon/umychart.network.js"></script> <!-- 网络请求分装 -->
     <script src="../jscommon/umychart.js"></script> <!-- K线图形 -->
@@ -55,6 +62,8 @@
     <script src="./src/HQData.js"></script>
     <script src="./src/CozeAICharDialog.js"></script>
 
+   
+
 
     <div id="FullDemo">
         <div id="LeftPanel">
@@ -83,10 +92,10 @@
                 <div id="BeforeOpen" class="TabItem" style="display: none;">竞价</div>
                 <div id="DrawTool" class="TabItem">画线</div>
                 <div id="Settings" class="TabItem">设置</div>
-                <div id="AIContent" class="TabItem">AI分析</div>
 
                 <div id="WhiteStyle" class="TabItem">白色风格</div>
                 <div id="BlackStyle" class="TabItem">黑色风格</div>
+                <div id="AIData" class="TabItem">原始数据</div>
             </div>
 
             <div id="ChartContainer">
@@ -182,6 +191,7 @@
                 this.ChangeStyle(STYLE_TYPE_ID.BLACK_ID);
 
                 this.KLineCtrl.Create(document.getElementById('KLineCtrl'));
+                this.KLineCtrl.SelectedDataAnalyzeCallback=(data)=>{ this.SelectedDataAnalyze(data); }
                 this.MinuteCtrl.Create(document.getElementById('MinuteCtrl'));
                 this.MinDealCtrl.Create(document.getElementById('DealCtrl'));
                 this.MinMinuteCtrl.Create(document.getElementById('MinMinuteCtrl'));
@@ -276,6 +286,8 @@
 
                 document.getElementById('WhiteStyle').onmousedown = (e) => { this.ChangeStyle(STYLE_TYPE_ID.WHITE_ID); }
                 document.getElementById('BlackStyle').onmousedown = (e) => { this.ChangeStyle(STYLE_TYPE_ID.BLACK_ID); }
+                document.getElementById('AIData').onmousedown = (e) => { this.DownloadAIData(); }
+                
 
                 document.getElementById('StockChip').onmousedown = (e) => { this.EnableStockChip(); }
                 document.getElementById('DrawTool').onmousedown = (e) => { this.ShowDrawTool(); }
@@ -376,6 +388,40 @@
                 if (this.ScrollTextCtrl) this.ScrollTextCtrl.ReloadResource();
                 if (this.StockChangeCtrl) this.StockChangeCtrl.ReloadResource();
 
+            }
+
+            //下载给AI分析的原始数据
+            DownloadAIData()
+            {
+                var divKLine = document.getElementById('KLine');
+                var divMinute = document.getElementById('Minute');
+
+                var data=null;
+                if (divKLine.style["display"]=="block") data=this.KLineCtrl.GetGraphicsDescription( { DataRange:{ Count:5 }} );
+                else if (divMinute.style["display"]=="block") data=this.MinuteCtrl.GetGraphicsDescription();
+                
+                if (!data) return;
+
+                console.log("[OnAIAnalyze] data=", data);
+
+                // 下载测试用
+                const element = document.createElement('a');
+  
+                // 将文本转成 blob，再生成下载链接
+                const blob = new Blob([data.Data], { type: 'text/plain' });
+                element.href = URL.createObjectURL(blob);
+                
+                // 设置文件名
+                var filename=`${data.Symbol}数据.txt`;
+                element.download = filename;
+                
+                // 模拟点击下载
+                document.body.appendChild(element);
+                element.click();
+                
+                // 清理
+                document.body.removeChild(element);
+                URL.revokeObjectURL(element.href);
             }
 
             EnableStockChip() {
@@ -634,10 +680,52 @@
                 if (!option) return null;
 
                 var data=null;
-                if (option.Type=="KLine") data=this.KLineCtrl.GetGraphicsDescription(option);
-                else if (option.Type=="Minute") data=this.MinuteCtrl.GetGraphicsDescription(option);
+                if (option.Type=="KLine") 
+                {
+                    data=this.KLineCtrl.GetGraphicsDescription({ DataRange:{ Count:200 }});  //取最近200条K线，节省token
+                }
+                else if (option.Type=="Minute") 
+                {
+                    data=this.MinuteCtrl.GetGraphicsDescription(option);
+                }
 
                 return data;
+            }
+
+            //区间分析
+            SelectedDataAnalyze(data)
+            {
+                var seletedData=data.Args[0];
+                if (!seletedData || !seletedData.Data) return;
+                var kData=seletedData.Data;
+                if (!IFrameSplitOperator.IsNonEmptyArray(kData.Data)) return;
+                var startItem=kData.Data[seletedData.Start];
+                var endItem=kData.Data[seletedData.End];
+
+                var option=
+                {
+                    DataRange:
+                    { 
+                        Date:
+                        { 
+                            Start:{Date:startItem.Date, Time:startItem.Time},
+                            End:{ Date:endItem.Date, Time:endItem.Time}
+                        } 
+                    }
+                }
+
+                var data=this.KLineCtrl.GetGraphicsDescription(option);
+                if (!data) return;
+
+                this.AICharV2.Show();
+
+                // 设置文件名
+                var content=data.Data;
+                var date=new Date();
+                var fileName = `${data.Symbol} 区间数据-${date.getHours()*1000000+date.getMinutes()*100+date.getSeconds()}.txt`;
+                var file={ Content:data.Data, Name:fileName, Message:`上传【${data.Name} ${data.Symbol}】区间数据`};
+
+                this.AICharV2.SendMessage("分析区间数据文件,总结下这个股票表现.", file);
             }
 
             OnClickBottomToolbar(data, obj) {
@@ -1073,7 +1161,7 @@
         width: 60px;
         height: 60px;
         border-radius: 50%;
-        background: #4e6ef2;
+        background: rgba(78,110,242,0.6);
         color: white;
         display: flex;
         align-items: center;
@@ -1118,6 +1206,20 @@
         align-items: center;
     }
 
+    .HQChart_AI_Clear_Button
+    {
+        cursor: pointer;
+        font-size: 18px;
+        user-select:none;
+    }
+
+    .HQChart_AI_Header_Buttons 
+    {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
     .HQChart_AI_Close_Button 
     {
         cursor: pointer;
@@ -1157,6 +1259,14 @@
     {
         align-self: flex-start;
         background: white;
+        color: #333;
+        border: 1px solid #e5e6eb;
+    }
+    
+    .HQChart_AI_AI_Reasoning_Item
+    {
+        align-self: flex-start;
+        background: rgb(220,220,220);
         color: #333;
         border: 1px solid #e5e6eb;
     }
@@ -1209,7 +1319,7 @@
 
     .HQChart_AI_Minute_Analyze:hover::after
     {
-        content: "当前分时图分析";
+        content: "上传分时图";
         position: absolute;
         /* 关键：显示在按钮右侧 */
         left: calc(100% + 8px); 
@@ -1227,7 +1337,7 @@
 
     .HQChart_AI_KLine_Analyze:hover::after
     {
-        content: "当前K线图分析";
+        content: "上传K线图";
         position: absolute;
         /* 关键：显示在按钮右侧 */
         left: calc(100% + 8px); 

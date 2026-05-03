@@ -3493,7 +3493,11 @@ HQData.APIIndex_MULTI_SVGICON=function(data, callback)
                     //{ Date:20190909, Value:15.4, Symbol:'\ue615', Color:'rgb(240,100,30)'}
                 ] 
             },
-
+            Config:
+            {
+                //IconSize: {Max:40, Min:20 },
+                //Color:"rgb(200,100,100)"
+            }
            
         } //绘制图标数组
     };
@@ -3592,6 +3596,7 @@ HQData.APIIndex_MULTI_SVGICON=function(data, callback)
             */
         }
 
+        //iconItem.Size=50;
         iconData.Draw.DrawData.Icon.push(iconItem);
         ++j;
     }
@@ -4223,7 +4228,7 @@ HQData.APIIndex_SCATTER_PLOT_V2=function(data, callback)
     {
         var kItem=kData.Data[i];
         
-        var item={ Date:kItem.Date, Time:kItem.Time, Value:kItem.High, Color:"rgb(0,0,0)", IsEmpty:true };
+        var item={ Date:kItem.Date, Time:kItem.Time, Value:kItem.High, Color:"rgb(0,0,0)", IsEmpty:true, Radius2:5 };
         if (kItem.Close>kItem.Open) 
         {
             item.ColorBorder="rgb(0,250,0)";
@@ -4245,6 +4250,7 @@ HQData.APIIndex_SCATTER_PLOT_V2=function(data, callback)
         item.Tooltip=
         [
             {Title:"日期", Text:`${kItem.Date}`},
+            {Title:"Time", Text:`${kItem.Time}`},
             {Title:"最高", Text:`${kItem.High.toFixed(2)}`, TextColor:"rgb(250,0,0)"},
             {Title:"最低", Text:`${kItem.Low.toFixed(2)}`,TextColor:"rgb(0,255,0)" },
         ]

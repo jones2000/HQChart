@@ -6,6 +6,27 @@
   "description": "hqchart画图工具",
   "glyphs": [
     {
+      "icon_id": "265327",
+      "name": " attachment",
+      "font_class": "attachment",
+      "unicode": "e6a9",
+      "unicode_decimal": 59049
+    },
+    {
+      "icon_id": "18260553",
+      "name": "走势图",
+      "font_class": "zoushitu",
+      "unicode": "e604",
+      "unicode_decimal": 58884
+    },
+    {
+      "icon_id": "42575800",
+      "name": "k线图-copy",
+      "font_class": "kxiantu",
+      "unicode": "e623",
+      "unicode_decimal": 58915
+    },
+    {
       "icon_id": "36812847",
       "name": "画笔",
       "font_class": "Vector",

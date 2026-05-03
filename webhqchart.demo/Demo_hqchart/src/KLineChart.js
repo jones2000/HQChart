@@ -14,6 +14,8 @@ class KLineChart
 
     JSPopMenu=null;
     Symbol=null;
+
+    SelectedDataAnalyzeCallback=null;
     
     //K线配置信息
     Option= 
@@ -345,6 +347,10 @@ class KLineChart
                 event:JSCHART_EVENT_ID.ON_CLICK_TITLE_BUTTON,
                 callback:(event, data, obj)=>{ this.OnClickTitleButton(event, data, obj); }
             },
+            {
+                event:JSCHART_EVENT_ID.ON_MENU_COMMAND,
+                callback:(event, data, obj)=>{ this.OnMenuCommand(event, data, obj); }
+            },
         ];
 
         //this.Chart.CreateExtraCanvasElement(JSChart.CorssCursorCanvasKey, { ZIndex:5 }); //十字光标单独一个图层
@@ -656,6 +662,14 @@ class KLineChart
     OnDBClick(event, data, obj)
     {
         console.log('[KLineChart::OnDBClick] event, data', event , data); //打印信息
+    }
+
+    OnMenuCommand(event, data, obj)
+    {
+        if (data.CommandID==JSCHART_MENU_ID.CMD_SELECTED_DATA_ANALYZE_ID)
+        {
+            if (this.SelectedDataAnalyzeCallback) this.SelectedDataAnalyzeCallback(data);
+        }
     }
 
 

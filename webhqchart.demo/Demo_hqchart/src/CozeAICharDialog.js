@@ -17,8 +17,26 @@ class CozeAICharDialogV2
 
     GetHQChartDataCallback=null;
 
-    KLineAnalyzeConfig={ Prompt:"分析文件，并总结近半年的走势", Text:"读取K线图,并且分析下这个股票近半年的走势" };
-    MinuteAnalyzeConfig={ Prompt:"分析文件，总结这个股票",  Text:"分析下这个股票" };
+    KLineAnalyzeConfig=
+    { 
+        AryQuestion:
+        [
+            "总结这个股票近2个月的走势。",
+            "总结这个股票近2个月的新闻。",
+            "统计近半年十日均线上穿五日均线的日期。"
+        ]
+    };
+
+    MinuteAnalyzeConfig=
+    { 
+        AryQuestion:
+        [
+            "分析下这个股票。",
+            "这个股票今天上涨了吗?"
+        ]
+    };
+
+    AryUploadFileCache=[];  //{ FildID:, FileName: }
 
     Create()
     {
@@ -37,6 +55,13 @@ class CozeAICharDialogV2
         const header = document.createElement('div');
         header.className = 'HQChart_AI_Chat_Header';
         header.innerHTML = `<span>${this.Title}</span><span class="HQChart_AI_Close_Button">×</span>`;
+        header.innerHTML = `
+            <span>${this.Title}</span>
+            <div class="HQChart_AI_Header-Buttons">
+            <span class="HQChart_AI_Clear_Button" title="清空聊天">🗑</span>
+            <span class="HQChart_AI_Close_Button">×</span>
+            </div>
+        `;
 
         // 消息列表
         const msgList = document.createElement('div');
@@ -69,6 +94,7 @@ class CozeAICharDialogV2
 
         // 元素获取
         const closeBtn = header.querySelector('.HQChart_AI_Close_Button');
+        const clearBtn= header.querySelector('.HQChart_AI_Clear_Button');
         const uploadBtn = inputArea.querySelector('.HQChart_AI_Upload_Button');
         const fileInput = inputArea.querySelector('#AI_File_Input');
         const input = inputArea.querySelector('.HQChart_AI_input');
@@ -87,6 +113,7 @@ class CozeAICharDialogV2
         this.DivSendButton.onclick=(e)=>{ this.OnClickSend() }
         header.onmousedown=(e)=>{ this.OnMouseDownTitle(e); }
         closeBtn.onclick = () => { this.Close(); }
+        clearBtn.onclick=()=>{ this.ClearMessageList(); }
         //uploadBtn.onclick = () => fileInput.click();
 
         klineAnalyzeBtn.onclick=(e)=>{ this.OnClinKLineAnalyze() };
@@ -103,6 +130,14 @@ class CozeAICharDialogV2
     {
         if (!this.DivDialog) return;
         this.DivDialog.style.display = 'flex';
+    }
+
+
+    ClearMessageList()
+    {
+        this.DivMessageList.innerHTML="";
+        this.AryUploadFileCache=[];
+        this.ConversationID=null;
     }
 
     AddMessage(text, role, imgUrl = null)
@@ -124,23 +159,6 @@ class CozeAICharDialogV2
 
         this.DivMessageList.appendChild(div);
         this.DivMessageList.scrollTop = this.DivMessageList.scrollHeight;
-    }
-
-    RemoveThinking(cache)
-    {
-        if (!cache || !cache.DivThinking) return;
-        cache.DivThinking.remove();
-        cache.DivThinking=null;
-    }
-
-    ShowThinking(cache)
-    {
-        var thinkingEl = document.createElement('div');
-        thinkingEl.className = 'HQChart_AI_Thinking';
-        thinkingEl.innerHTML = `思考中<span class="HQChart_AI_Thinking_Dot"></span><span class="HQChart_AI_Thinking_Dot"></span><span class="HQChart_AI_Thinking_Dot"></span>`;
-        this.DivMessageList.appendChild(thinkingEl);
-        this.DivMessageList.scrollTop = this.DivMessageList.scrollHeight;
-        cache.DivThinking=thinkingEl;
     }
 
     OnMouseDownTitle(e)
@@ -191,38 +209,16 @@ class CozeAICharDialogV2
         this.InputDOM.value='';
         this.AddMessage(text, 'user');
         
-        this.SendMessage(null, null, text);
+        this.SendMessage(text);
     }
 
-    CreateAIAnswerDiv()
-    {
-        const div = document.createElement('div');
-        div.className = 'HQChart_AI_Message_Item HQChart_AI_AI_Message_Item';
-        this.DivMessageList.appendChild(div);
-        return div;
-    }
-
-    WriteAIAnswer(answer, bEnd, cache)
-    {
-        this.RemoveThinking(cache);
-
-        if (!cache.DivAnswer) cache.DivAnswer=this.CreateAIAnswerDiv();
-
-        cache.DivAnswer.innerText = answer;
-        if (!bEnd) cache.DivAnswer.innerHTML += '<span class="HQChart_AI_Typing_cursor"></span>';
-        this.DivMessageList.scrollTop = this.DivMessageList.scrollHeight;
-    }
+    
 
     async OnClinKLineAnalyze()
     {
         if (!this.GetHQChartDataCallback) return;
 
-        var date=new Date();
-        var endDate=date.getFullYear()*10000+(date.getMonth()+1)+date.getFullYear();
-        date.setDate(date.setDate()-250); // 近1年
-        var startDate=date.getFullYear()*10000+(date.getMonth()+1)+date.getFullYear();
-
-        var data=this.GetHQChartDataCallback({ Type:"KLine", Start:{ Date:startDate}, End:{ Date:endDate } });
+        var data=this.GetHQChartDataCallback({ Type:"KLine" });
         if (!data) return;
 
         console.log("[OnClinKLineAnalyze] data=", data);
@@ -230,12 +226,10 @@ class CozeAICharDialogV2
 
         // 设置文件名
         var content=data.Data;
-        var fileName = `${data.Symbol} K线图数据.txt`;
+        var date=new Date();
+        var fileName = `${data.Symbol} K线图数据-${date.getHours()*1000000+date.getMinutes()*100+date.getSeconds()}.txt`;
 
-        var text=`${data.Symbol}\n${config.Text}`;
-        this.AddMessage(text, 'user');
-
-        this.SendMessage(content, fileName, config.Prompt);
+        this.SendFileData(`上传【${data.Name} ${data.Symbol}】K线图`, content, fileName, config.AryQuestion);
     }
 
     async OnClinMinuteAnalyze()
@@ -249,15 +243,13 @@ class CozeAICharDialogV2
         var config=this.MinuteAnalyzeConfig;
         // 设置文件名
         var content=data.Data;
-        var fileName = `${data.Symbol} 分时图数据.txt`;
+        var date=new Date();
+        var fileName = `${data.Symbol} 分时图数据-${date.getHours()*1000000+date.getMinutes()*100+date.getSeconds()}.txt`;
 
-        var text=`${data.Symbol}\n${config.Text}`;
-        this.AddMessage(text, 'user');
-
-        this.SendMessage(content, fileName, config.Prompt);
+        this.SendFileData(`上传【${data.Name} ${data.Symbol}】分时图`, content, fileName, config.AryQuestion);
     }
 
-    async SendMessage(content, fileName, prompt)
+    async SendMessage(prompt, file)
     {
         var token=this.GetToken();
         var botId=this.GetBotID();
@@ -270,38 +262,46 @@ class CozeAICharDialogV2
         var cache=this.CreateAnswerCache();
         try 
         {
-            if (content && fileName)
+            if (file && file.Content && file.Name)
             {
-                // 步骤1：上传文件
-                this.AddMessage(`上传文件'${fileName}`, 'user');
-                var updateResult = await this.UploadFile(content, fileName);
+                //上传文件
+                if (file.Message) this.AddMessage(`${file.Message}`, 'user');
+                else this.AddMessage(`上传文件'${file.Name}`, 'user');
+                var updateResult = await this.UploadFile(file.Content, file.Name);
                 var fileId=updateResult.FileID;
+                this.AryUploadFileCache.push({ FileID:fileId, FileName:file.Name }); //放入缓存 对话的时候用
             }
             
-            // 步骤2：创建会话
-            if (!this.ConversationId)
+            //创建会话
+            if (!this.ConversationID)
             {
                 //this.AddStep('创建会话...', 'active');
                 var createResult = await this.CreateConversation();
-                this.ConversationId=createResult.ConversationID;
+                this.ConversationID=createResult.ConversationID;
                 // this.AddStep(`会话创建成功，ID:${this.ConversationId}`, 'done');
             }
             
-            // 步骤3：发起流式对话
-            var conversationId= this.ConversationId;
-            var response = await this.StreamChat(conversationId, prompt, fileId);
+            //发起流式对话
+            var conversationId= this.ConversationID;
+            var response = await this.StreamChat(conversationId, prompt);
             cache.Response=response;
-            this.ShowThinking(cache);
-           
+            this.CreateAIAnswserDOM(cache);
 
-            // 步骤4：读取流式结果
+            //读取流式结果
             //this.AddStep('AI分析中...', 'active');
             var answer = await this.ReadStream(cache);
             //this.AddStep('AI分析完成', 'done');
             
             // 显示最终结果
-            if (answer) this.WriteAIAnswer(answer, true, cache);
-            else this.WriteAIAnswer("AI未返回有效回答", true, cache);
+            if (answer) 
+            {
+                this.WriteAIAnswerMakedown(answer,cache);
+                this.AryUploadFileCache=[];
+            }
+            else 
+            {
+                this.WriteAIAnswer("AI未返回有效回答", true, cache);
+            }
         }
         catch (e) 
         {
@@ -316,8 +316,117 @@ class CozeAICharDialogV2
 
     CreateAnswerCache()
     {
-        var item={ ID:Guid(), DivAnswer:null, DivThinking:null, Response:null };
+        //DivAnswer=回答 DivThinking=思考 DivReasoning=推理
+        var item={ ID:Guid(), DivAnswer:null, DivThinking:null, DivReasoning:null, Response:null };
         return item;
+    }
+
+    RemoveThinking(cache)
+    {
+        if (!cache || !cache.DivThinking) return;
+        cache.DivThinking.remove();
+        cache.DivThinking=null;
+    }
+
+    CreateAIAnswserDOM(cache)
+    {
+        const thinkingEl = document.createElement('div');
+        thinkingEl.className = 'HQChart_AI_Thinking';
+        thinkingEl.innerHTML = `思考中<span class="HQChart_AI_Thinking_Dot"></span><span class="HQChart_AI_Thinking_Dot"></span><span class="HQChart_AI_Thinking_Dot"></span>`;
+
+        const reasoningEl = document.createElement('div');
+        reasoningEl.className = 'HQChart_AI_Message_Item HQChart_AI_AI_Reasoning_Item';
+        reasoningEl.style.display = 'none';
+
+        const answerEl = document.createElement('div');
+        answerEl.className = 'HQChart_AI_Message_Item HQChart_AI_AI_Message_Item';
+        answerEl.style.display = 'none';
+       
+        this.DivMessageList.appendChild(reasoningEl);
+        this.DivMessageList.appendChild(thinkingEl);
+        this.DivMessageList.appendChild(answerEl);
+        this.DivMessageList.scrollTop = this.DivMessageList.scrollHeight;
+       
+        cache.DivReasoning=reasoningEl;
+        cache.DivThinking=thinkingEl;
+        cache.DivAnswer=answerEl;
+    }
+
+    WriteAIAnswer(answer, bEnd, cache)
+    {
+        this.RemoveThinking(cache);
+        if (!cache.DivAnswer) return;
+
+        cache.DivAnswer.innerText = answer;
+        cache.DivAnswer.style.display="block";
+        if (!bEnd) cache.DivAnswer.innerHTML += '<span class="HQChart_AI_Typing_cursor"></span>';
+        this.DivMessageList.scrollTop = this.DivMessageList.scrollHeight;
+    }
+
+    WriteAIAnswerMakedown(answer, cache)
+    {
+        this.RemoveThinking(cache);
+        if (!cache.DivAnswer) return;
+        
+        const rawHtml = marked.parse(answer);           //解析 Markdown 为 HTML
+        const safeHtml = DOMPurify.sanitize(rawHtml);   //安全过滤 + 渲染到 div
+        cache.DivAnswer.innerHTML=safeHtml;
+        this.DivMessageList.scrollTop = this.DivMessageList.scrollHeight;
+    }
+
+    WriterAIReasoning(answer, cache)
+    {
+        this.RemoveThinking(cache);
+        if (!cache.DivReasoning) return;
+
+        cache.DivReasoning.innerText = answer;
+        cache.DivReasoning.style.display="block";
+        cache.DivReasoning.innerHTML += '<span class="HQChart_AI_Typing_cursor"></span>';
+        this.DivMessageList.scrollTop = this.DivMessageList.scrollHeight;
+    }
+
+    async SendFileData(message, content, fileName, aryDemoQuestion)
+    {
+        var token=this.GetToken();
+        var botId=this.GetBotID();
+        if (!token || !botId)
+        {
+            alert("没有配置扣子token,或botId");
+            return;
+        }
+
+        if (!content || !fileName) return;
+        
+        try
+        {
+            //上传文件
+            this.AddMessage(message, 'user');
+            var updateResult = await this.UploadFile(content, fileName);
+            var fileId=updateResult.FileID;
+            var answerMessage="文件上传完成.请输入问题.\r\n";
+            if (IFrameSplitOperator.IsNonEmptyArray(aryDemoQuestion))
+            {
+                answerMessage+="如:\n";
+                for(var i=0;i<aryDemoQuestion.length;++i)
+                {
+                    answerMessage+=aryDemoQuestion[i];
+                    answerMessage+="\n";
+                }
+            }
+            this.AddMessage(answerMessage, 'ai');
+
+            this.AryUploadFileCache.push({ FileID:fileId, FileName:fileName }); //放入缓存 对话的时候用
+        }
+        catch (e) 
+        {
+            this.AddMessage("文件上传失败.", 'ai');
+            //this.SetStatus('错误: ' + e.message, true);
+            console.error(e);
+        } 
+        finally 
+        {
+            
+        }
     }
     
     ///////////////////////////////////////////////////////////////////////////////
@@ -375,16 +484,21 @@ class CozeAICharDialogV2
     }
 
     //流式对话 带文件
-    async StreamChat(conversationId, prompt, fileId) 
+    async StreamChat(conversationId, prompt) 
     {
         var content, contentType;
-        if (fileId) 
+        if (IFrameSplitOperator.IsNonEmptyArray(this.AryUploadFileCache)) 
         {
-            content = JSON.stringify(
-            [
-                { type: 'text', text: prompt },
-                { type: 'file', file_id: fileId }
-            ]);
+            var aryContent=[];
+            aryContent.push({ type: 'text', text: prompt });
+
+            for(var i=0;i<this.AryUploadFileCache.length;++i)
+            {
+                var item=this.AryUploadFileCache[i];
+                aryContent.push({ type: 'file', file_id: item.FileID })
+            }
+           
+            content = JSON.stringify(aryContent);
             contentType = 'object_string';
         } 
         else 
@@ -395,7 +509,9 @@ class CozeAICharDialogV2
 
         var token=this.GetToken();
         var botId=this.GetBotID();
-        const response = await fetch(this.CHAT_URL, 
+        var url=this.CHAT_URL;
+        if (conversationId) url=`${this.CHAT_URL}?conversation_id=${conversationId}`;
+        const response = await fetch(url, 
         {
             method: 'POST',
             headers: {
@@ -406,7 +522,7 @@ class CozeAICharDialogV2
             {
                 bot_id: botId,
                 user_id: 'user_001',
-                conversation_id: conversationId,
+                //conversation_id: conversationId,
                 stream: true,
                 auto_save_history: true,
                 additional_messages: 
@@ -435,6 +551,7 @@ class CozeAICharDialogV2
         var reader = response.body.getReader();
         var decoder = new TextDecoder('utf-8');
         var answer = '';
+        var reasoning="";
         var buffer = '';
 
         while (true) 
@@ -461,13 +578,20 @@ class CozeAICharDialogV2
                             var jsonStr = line.substring(5).trim();
                             var data = JSON.parse(jsonStr);
 
-                            // 提取AI回答内容
-                            if (data.type === 'answer' && data.content) 
+                            
+                            if (data.type === 'answer' && data.content)     //回答内容
                             {
                                 answer += data.content;
 
                                 // 实时更新显示
                                 this.WriteAIAnswer(answer, false, cahce);
+                            }
+                            else if (data.type === 'answer' && data.reasoning_content)  //推理
+                            {
+                                reasoning += data.reasoning_content;
+
+                                // 实时更新显示
+                                this.WriterAIReasoning(reasoning, cahce);
                             }
                         } 
                         catch (e) 

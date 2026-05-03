@@ -22917,6 +22917,8 @@ function ScriptIndex(name,script,args,option)
         chart.Data=hqChart.GetKData();//绑定K线
         chart.Family=varItem.Draw.DrawData.Family;
         chart.AryIcon= varItem.Draw.DrawData.Icon;
+        if (varItem.Draw.Config) chart.SetOption(varItem.Draw.Config);
+
         chart.BuildCacheData();
         this.SetChartIndexName(chart);
         hqChart.ChartPaint.push(chart);
@@ -25137,6 +25139,7 @@ function OverlayScriptIndex(name,script,args,option)
         chart.Data=hqChart.GetKData();//绑定K线
         chart.Family=varItem.Draw.DrawData.Family;
         chart.AryIcon= varItem.Draw.DrawData.Icon;
+        if (varItem.Draw.Config) chart.SetOption(varItem.Draw.Config);
         chart.BuildCacheData();
         this.SetChartIndexName(chart);
         frame.ChartPaint.push(chart);
@@ -26396,6 +26399,7 @@ function APIScriptIndex(name,script,args,option, isOverlay)
                     drawItem.Name=draw.Name;
                     drawItem.DrawType=draw.DrawType;
                     drawItem.DrawData={ Icon:draw.DrawData.Icon, Family:draw.DrawData.Family };
+                    if (draw.Config) drawItem.Config=draw.Config;
                     outVarItem.Draw=drawItem;
 
                     result.push(outVarItem);

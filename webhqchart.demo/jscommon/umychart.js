@@ -3055,6 +3055,8 @@ var JSCHART_MENU_ID=
     CMD_MODIFY_MINUTE_INFO_PROPERTY_ID:69,
     CMD_SHOW_CHANGE_INDEX_DIALOG_ID:70, //切换指标对话框
 
+    CMD_SELECTED_DATA_ANALYZE_ID:71,    //区间选择数据分析
+
 
     CMD_REPORT_CHANGE_BLOCK_ID:100,      //报价列表 切换板块ID
     CMD_REPORT_COLUMN_SORT_ID:101,       //报价列表 表头排序  Arg[列序号, 排序方向]
@@ -5301,7 +5303,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             aryMenu=
             [
                 { Name:"区间统计", Data:{ ID:JSCHART_MENU_ID.CMD_SELECTED_SUMMARY_ID, Args:[e,selectData] }},
-                { Name:"区间放大", Data:{ ID:JSCHART_MENU_ID.CMD_SELECTED_ZOOM_ID, Args:[selectData] }}
+                { Name:"区间放大", Data:{ ID:JSCHART_MENU_ID.CMD_SELECTED_ZOOM_ID, Args:[selectData] }},
+                { Name:"区间分析", Data:{ ID:JSCHART_MENU_ID.CMD_SELECTED_DATA_ANALYZE_ID, Args:[selectData] }}
             ];
         }
         
@@ -11375,7 +11378,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
         var range=null;
         var aryKData=mainData.Data;   //K线/分时数据
-        if (option && option.Start && option.End) range=mainData.GetDataRange(option.Start, option.End);
+        if (option && option.DataRange) range=mainData.GetDataRange(option.DataRange);
         var aryData=this.ExportMainData(mainData, range);   //导出K线/分时
         if (!aryData) return null;
 
@@ -12653,7 +12656,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 aryMenu=
                 [
                     { Name:"区间统计", Data:{ ID:JSCHART_MENU_ID.CMD_SELECTED_SUMMARY_ID, Args:[e,selectData] }},
-                    { Name:"区间放大", Data:{ ID:JSCHART_MENU_ID.CMD_SELECTED_ZOOM_ID, Args:[selectData] }}
+                    { Name:"区间放大", Data:{ ID:JSCHART_MENU_ID.CMD_SELECTED_ZOOM_ID, Args:[selectData] }},
+                    { Name:"区间分析", Data:{ ID:JSCHART_MENU_ID.CMD_SELECTED_DATA_ANALYZE_ID, Args:[selectData] }}
                 ];
             }
            
@@ -13046,7 +13050,12 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
         var strDescription=strTitle+"\r\n\r\n====================完整数据部分========================\r\n\r\n\r\n"+strContent;
 
-        return { Symbol:this.Symbol, Name:this.Name, Data:strDescription};
+        var result={ Symbol:this.Symbol, Name:this.Name, Data:strDescription, ChartType:data.ChartType };
+        if (IFrameSplitOperator.IsNumber(data.Period)) result.Period=data.Period;
+        if (IFrameSplitOperator.IsNumber(data.Right)) result.Right=data.Right;
+        if (IFrameSplitOperator.IsNumber(data.DayCount)) result.DayCount=data.DayCount;
+
+        return result;
     }
 
     //获取原始数据, 给AI分析
@@ -13062,9 +13071,12 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         if (!IFrameSplitOperator.IsNonEmptyArray(this.WindowIndex)) return null;
         var kData=this.GetKData();
         if (!kData || !IFrameSplitOperator.IsNonEmptyArray(kData.Data)) return null;
-        var range=null;
-        if (option && option.Start && option.End) range=kData.GetDataRange(option.Start, option.End);
         var aryKData=kData.Data;
+        var range=null;
+        if (option && option.DataRange)
+        {
+            range=kData.GetDataRange(option.DataRange);
+        }
 
         var mapIndex=new Map();  //key=id, value={ IndexName:, ID:, AryData:[] }
         for(var i=0; i<this.ChartPaint.length; ++i)
@@ -26983,8 +26995,27 @@ function ChartData()
         return result;
     }
 
-    //获取K线的索引范围 start={ Date, Time };
-    this.GetDataRange=function(start, end)
+    this.GetDataRangeByCount=function(count)
+    {
+        if (!IFrameSplitOperator.IsPlusNumber(count)) return null;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.Data)) return null;
+
+        var endItem=this.Data[this.Data.length-1];
+        var endIndex=this.Data.length-1;
+        var startIndex=endIndex-count;
+        if (startIndex<0) startIndex=0;
+        var startItem=this.Data[startIndex];
+
+        var range=
+        {  
+            Start:{Index:startIndex, Date:startItem.Date, Time:startItem.Time },
+            End:{ Index:endIndex, Date:endItem.Date, Time:endItem.Time }
+        };
+        
+        return range;
+    }
+
+    this.GetDataRangeByDateTime=function(start, end)
     {
         if (!IFrameSplitOperator.IsNonEmptyArray(this.Data)) return null;
 
@@ -27043,6 +27074,20 @@ function ChartData()
         }
 
         return range;
+    }
+
+    //获取K线的索引范围 
+    // { Date:{ start={ Date, Time }, End:{Date:,Time: } },  //日期范围
+    // Count:  最新的几条
+    this.GetDataRange=function(option)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.Data)) return null;
+
+        if (!option) return null;
+        if (option.Date) return this.GetDataRangeByDateTime(option.Date.Start, option.Date.End);
+        else if (IFrameSplitOperator.IsNumber(option.Count)) return this.GetDataRangeByCount(option.Count);
+
+        return null;
     }
 
     //导出单数组数据
@@ -48274,6 +48319,25 @@ function ChartMultiSVGIconV2()
     this.MapCache=null; //key=date/date-time  value={ Data:[] }
     this.GetKValue=ChartData.GetKValue;
 
+    this.SetOption=function(option)
+    {
+        if (!option) return;
+
+        if (option.IconSize)
+        {
+            var item=option.IconSize;
+            if (IFrameSplitOperator.IsNumber(item.Max)) this.IconSize.Max=item.Max;
+            if (IFrameSplitOperator.IsNumber(item.Min)) this.IconSize.Min=item.Min;
+            if (item.Zoom)
+            {
+                var subItem=item.Zoom;
+                if (IFrameSplitOperator.IsNumber(subItem.Type)) this.IconSize.Zoom.Type=subItem.Type;
+                if (IFrameSplitOperator.IsNumber(subItem.Value)) this.IconSize.Zoom.Value=subItem.Value;
+            }
+        }
+
+        if (option.Color) this.Color=option.Color;
+    }
 
     this.BuildKey=function(item)
     {
@@ -48454,9 +48518,14 @@ function ChartMultiSVGIconV2()
                 if (item.Color)  this.Canvas.fillStyle = item.Color;
                 else this.Canvas.fillStyle = this.Color;
     
+                var iconSize=fontSize;
+                if (IFrameSplitOperator.IsNumber(item.Size)) iconSize=item.Size;
+                    
                 //var textWidth=this.Canvas.measureText(item.Symbol).width;
+
+                this.Canvas.font=`${iconSize}px ${this.Family}`;
                 this.Canvas.textAlign='center';
-                var rtIcon=new Rect(x-fontSize/2,y-fontSize/2,fontSize,fontSize);
+                var rtIcon=new Rect(x-iconSize/2,y-iconSize/2,iconSize,iconSize);
                  
                 if (item.Baseline==1) 
                 {
@@ -48466,12 +48535,12 @@ function ChartMultiSVGIconV2()
                 else if (item.Baseline==2) 
                 {
                     this.Canvas.textBaseline='bottom';
-                    rtIcon.Y=y-fontSize;
+                    rtIcon.Y=y-iconSize;
                 }
                 else 
                 {
                     this.Canvas.textBaseline = 'middle';
-                    rtIcon.Y=y-fontSize/2;
+                    rtIcon.Y=y-iconSize/2;
                 } 
     
                 if (this.IsHScreen)
@@ -86895,7 +86964,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         var aryMenu=
         [
             { Name:"区间统计", Data:{ ID:JSCHART_MENU_ID.CMD_SELECTED_SUMMARY_ID, Args:[e,selectData] }},
-            { Name:"区间放大", Data:{ ID:JSCHART_MENU_ID.CMD_SELECTED_ZOOM_ID, Args:[selectData] }}
+            { Name:"区间放大", Data:{ ID:JSCHART_MENU_ID.CMD_SELECTED_ZOOM_ID, Args:[selectData] }},
+            { Name:"区间分析", Data:{ ID:JSCHART_MENU_ID.CMD_SELECTED_DATA_ANALYZE_ID, Args:[selectData] }}
         ];
 
         var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_DRAG_SELECT_RECT_MOUSEUP);
@@ -91694,7 +91764,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         var aryMenu=
         [
             { Name:"区间统计", Data:{ ID:JSCHART_MENU_ID.CMD_SELECTED_SUMMARY_ID, Args:[e,data.SelectData] }},
-            { Name:"区间放大", Data:{ ID:JSCHART_MENU_ID.CMD_SELECTED_ZOOM_ID, Args:[data.SelectData] }}
+            { Name:"区间放大", Data:{ ID:JSCHART_MENU_ID.CMD_SELECTED_ZOOM_ID, Args:[data.SelectData] }},
+            { Name:"区间分析", Data:{ ID:JSCHART_MENU_ID.CMD_SELECTED_DATA_ANALYZE_ID, Args:[selectData] }}
         ];
         
         var menuData={ Menu:aryMenu, Position:JSPopMenu.POSITION_ID.RIGHT_MENU_ID };
@@ -93443,11 +93514,42 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         this.Draw();
     }
 
+    this.GetDataRangeDescription=function(option)
+    {
+        var kData=this.GetKData();
+        if (!kData || !IFrameSplitOperator.IsNonEmptyArray(kData.Data)) return null;
+        var startIndex=0, endIndex=kData.Data.length-1;
+        if (option && option.DataRange) //某一段时间的
+        {
+            var range=kData.GetDataRange(option.DataRange);
+            if (!range) return null;
+            startIndex=range.Start.Index;
+            endIndex=range.End.Index;
+        }
+
+        var endItem=kData.Data[endIndex];
+        var startItem=kData.Data[startIndex];
+        var text=null;
+        var bMinutePeriod=ChartData.IsMinutePeriod(this.Period,true);
+        if (bMinutePeriod)
+        {
+            text=`${IFrameSplitOperator.FormatDateString(startItem.Date,"YYYY-MM-DD")} ${IFrameSplitOperator.FormatTimeString(startItem.Time,"HH:MM")} - ${IFrameSplitOperator.FormatDateString(endItem.Date,"YYYY-MM-DD")} ${IFrameSplitOperator.FormatTimeString(endItem.Time,"HH:MM")}`;
+        }
+        else
+        {
+            text=`${IFrameSplitOperator.FormatDateString(startItem.Date,"YYYY-MM-DD")} - ${IFrameSplitOperator.FormatDateString(endItem.Date,"YYYY-MM-DD")}`;
+        }
+        
+
+        return text;
+    }
+
     this.GetGraphicsRawDescription=function(option)
     {
         var strTitle='K线图及其指标数据.\r\n';
         strTitle+=`K线周期:${this.GetPeriodName()}\r\n`;
-
+        strTitle+=`数据范围:${this.GetDataRangeDescription(option)}\r\n`
+        
         var aryData=[];
 
         //K线
@@ -93466,7 +93568,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         var data=this.GetOverlaySymbolDescription(option);
         if (IFrameSplitOperator.IsNonEmptyArray(data)) aryData.push(...data);
 
-        return { AryData:aryData, Title:strTitle };
+        return { AryData:aryData, Title:strTitle, Period:this.Period, Right:this.Right, ChartType:"KLine" };
     }
 
     //K线信息
@@ -93478,9 +93580,9 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
         if (option)
         {
-            if (option.Start && option.End) //某一段时间的
+            if (option.DataRange) //某一段时间的
             {
-                var range=kData.GetDataRange(option.Start, option.End);
+                var range=kData.GetDataRange(option.DataRange);
                 if (!range) return null;
                 startIndex=range.Start.Index;
                 endIndex=range.End.Index;
@@ -93503,18 +93605,20 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
         var bMinutePeriod=ChartData.IsMinutePeriod(this.Period,true);
         strText="Date,Time,Open,High,Low,Close,Vol,Amount\r\n";
+        var count=0;
         for(var i=startIndex; i<kData.Data.length && i<=endIndex; ++i)
         {
             var kItem=kData.Data[i];
             var time=null;
             if (bMinutePeriod) time=kItem.Time;
-            strText+=`${kItem.Date},${time},${kItem.Open},${kItem.High},${kItem.Low},${kItem.Close},${kItem.Vol},${kItem.Amount}\r\n`
+            strText+=`${kItem.Date},${time},${kItem.Open},${kItem.High},${kItem.Low},${kItem.Close},${kItem.Vol},${kItem.Amount}\r\n`;
+            ++count;
         }
 
         strDescription+=strText;
         strDescription+="\r\n\r\n";
 
-        return { Title:strTitle, Content:strDescription, Type:"K线数据" };
+        return { Title:strTitle, Content:strDescription, Type:"K线数据", Count:count };
     }
 
     //叠加股票信息
@@ -93565,7 +93669,11 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
     //信息地雷
     this.GetMinesInfoDescription=function(option)
     {
+        var kData=this.GetKData();
+        if (!kData || !IFrameSplitOperator.IsNonEmptyArray(kData.Data)) return null;
         if (!IFrameSplitOperator.IsNonEmptyArray(this.ChartInfo)) return null;
+        var range=null;
+        if (option && option.DataRange) range=kData.GetDataRange(option.DataRange);
 
         var aryData=[];
         var strText="", strTitle="";
@@ -93575,7 +93683,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             if (item.ClassName=="BlockTrading")
             {
                 if (!IFrameSplitOperator.IsNonEmptyArray(item.Data)) continue;
-
+                
                 strTitle=`${this.Name} ${this.Symbol} 大宗交易数据`;
                 strText=`【${strTitle}】\r\n`;
                 strText+="字段说明\r\n";
@@ -93585,24 +93693,29 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                 strText+="原始数据如下\r\n";
                 strText+="Date,Price,Vol\r\n"
                 
+                var count=0;
                 for(var j=0;j<item.Data.length;++j)
                 {
                     var dataItem=item.Data[j];
                     if (!dataItem || !dataItem.ExtendData || !IFrameSplitOperator.IsNumber(dataItem.Date)) continue;
+                    if (range && (dataItem.Date<range.Start.Date || dataItem.Date>range.End.Date)) continue;
                     var price=null, vol=null;
                     var extendData=dataItem.ExtendData;
                     if (IFrameSplitOperator.IsNumber(extendData.Price)) price=extendData.Price;
                     if (IFrameSplitOperator.IsNumber(extendData.Vol)) vol=extendData.Vol;
                     strText+=`${dataItem.Date},${price},${vol}\r\n`;
+                    ++count;
                 }
 
+                if (count<=0) continue;
+
                 strText+="\r\n\r\n";
-                aryData.push({ Title:strTitle, Content:strText, Type:"大宗交易" });
+                aryData.push({ Title:strTitle, Content:strText, Type:"大宗交易", Count:count });
             }
             else if (item.ClassName=="DragonTigerInfo")
             {
                 if (!IFrameSplitOperator.IsNonEmptyArray(item.Data)) continue;
-
+                
                 strTitle=`${this.Name} ${this.Symbol} 龙虎榜数据`
                 strText=`【${strTitle}】\r\n`;
                 strText+="字段说明\r\n";
@@ -93616,18 +93729,22 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                 strText+="原始数据如下\r\n";
                 strText+="Date,Title,BuyAmount,SellAmount,NetBuyAmount,NetBuyRatio,Amount\r\n";
                 
+                var count=0;
                 for(var j=0;j<item.Data.length;++j)
                 {
                     var dataItem=item.Data[j];
                     if (!dataItem || !dataItem.ExtendData || !IFrameSplitOperator.IsNumber(dataItem.Date)) continue;
+                    if (range && (dataItem.Date<range.Start.Date || dataItem.Date>range.End.Date)) continue;
                     var price=null, vol=null;
                     var extendData=dataItem.ExtendData;
                     strText+=`${dataItem.Date},${dataItem.Title},${extendData.BuyAmount},${extendData.SellAmount},${extendData.NetBuyAmount},${extendData.NetBuyRatio},${extendData.Amount}\r\n`;
+                    ++count;
                 }
             
+                if (count<=0) continue;
 
                 strText+="\r\n\r\n";
-                aryData.push({ Title:strTitle, Content:strText, Type:"龙虎榜" });
+                aryData.push({ Title:strTitle, Content:strText, Type:"龙虎榜", Count:count });
             }
             else if (item.ClassName=="DividendInfo")
             {
@@ -93641,15 +93758,20 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                 strText+="原始数据如下\r\n";
                 strText+="Date,Title\r\n";
                 
+                var count=0;
                 for(var j=0;j<item.Data.length;++j)
                 {
                     var dataItem=item.Data[j];
                     if (!dataItem || !IFrameSplitOperator.IsNumber(dataItem.Date)) continue;
+                    if (range && (dataItem.Date<range.Start.Date || dataItem.Date>range.End.Date)) continue;
                     strText+=`${dataItem.Date},${dataItem.Title}\r\n`;
+                    ++count;
                 }
 
+                if (count<=0) continue;
+
                 strText+="\r\n\r\n";
-                aryData.push({ Title:strTitle, Content:strText, Type:"除权除息"});
+                aryData.push({ Title:strTitle, Content:strText, Type:"除权除息", Count:count});
             }
             else if (item.ClassName=="NewsInfo")
             {
@@ -93664,17 +93786,22 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                 strText+="原始数据如下\r\n";
                 strText+="Date,Title,Url\r\n";
                 
+                var count=0;
                 for(var j=0;j<item.Data.length;++j)
                 {
                     var dataItem=item.Data[j];
                     if (!dataItem || !IFrameSplitOperator.IsNumber(dataItem.Date)) continue;
+                    if (range && (dataItem.Date<range.Start.Date || dataItem.Date>range.End.Date)) continue;
                     var url=null;
                     if (dataItem.ExtendData && dataItem.ExtendData.Url) url=dataItem.ExtendData.Url;
                     strText+=`${dataItem.Date},${dataItem.Title},${url}\r\n`;
+                    ++count;
                 }
 
+                if (count<=0) continue;
+
                 strText+="\r\n\r\n";
-                aryData.push({ Title:strTitle, Content:strText, Type:"新闻列表" });
+                aryData.push({ Title:strTitle, Content:strText, Type:"新闻列表", Count:count });
             }
             else if (item.ClassName=="ResearchInfo")
             {
@@ -93688,15 +93815,20 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                 strText+="原始数据如下\r\n";
                 strText+="Date,Title,Url\r\n";
                 
+                var count=0;
                 for(var j=0;j<item.Data.length;++j)
                 {
                     var dataItem=item.Data[j];
                     if (!dataItem || !IFrameSplitOperator.IsNumber(dataItem.Date)) continue;
+                    if (range && (dataItem.Date<range.Start.Date || dataItem.Date>range.End.Date)) continue;
                     strText+=`${dataItem.Date},${dataItem.Title}\r\n`;
+                    ++count;
                 }
                 
+                if (count<=0) continue;
+
                 strText+="\r\n\r\n";
-                aryData.push({ Title:strTitle, Content:strText, Type:"公司调研"  });
+                aryData.push({ Title:strTitle, Content:strText, Type:"公司调研", Count:count  });
             }
             else if (item.ClassName=="PforecastInfo")
             {
@@ -93711,10 +93843,12 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                 strText+="原始数据如下\r\n";
                 strText+="Date,Title,Url\r\n";
                 
+                var count=0;
                 for(var j=0;j<item.Data.length;++j)
                 {
                     var dataItem=item.Data[j];
                     if (!dataItem || !IFrameSplitOperator.IsNumber(dataItem.Date)) continue;
+                    if (range && (dataItem.Date<range.Start.Date || dataItem.Date>range.End.Date)) continue;
                     var content="";
                     if (dataItem.ExtendData && IFrameSplitOperator.IsNonEmptyArray(dataItem.ExtendData.AryData))
                     {
@@ -93725,10 +93859,13 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                         }
                     }
                     strText+=`${dataItem.Date},${dataItem.Title},${content}\r\n`;
+                    ++count;
                 }
                 
+                if (count<=0) continue;
+
                 strText+="\r\n\r\n";
-                aryData.push({ Title:strTitle, Content:strText, Type:"业绩预告"  });
+                aryData.push({ Title:strTitle, Content:strText, Type:"业绩预告", Count:count });
             }
             else if (item.ClassName=="AnnouncementInfo")
             {
@@ -93742,15 +93879,20 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                 strText+="原始数据如下\r\n";
                 strText+="Date,Title\r\n";
             
+                var count=0;
                 for(var j=0;j<item.Data.length;++j)
                 {
                     var dataItem=item.Data[j];
                     if (!dataItem || !IFrameSplitOperator.IsNumber(dataItem.Date)) continue;
+                    if (range && (dataItem.Date<range.Start.Date || dataItem.Date>range.End.Date)) continue;
                     strText+=`${dataItem.Date},${dataItem.Title}\r\n`;
+                    ++count;
                 }
                 
+                if (count<=0) continue;
+
                 strText+="\r\n\r\n";
-                aryData.push({ Title:strTitle, Content:strText, Type:"公告数据" });
+                aryData.push({ Title:strTitle, Content:strText, Type:"公告数据", Count:count });
             }
         }
 
@@ -93762,7 +93904,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         var mapName=new Map(
         [
             [0, '日线'],[1, '周线'],[2, '月线'],[3, '年线'],[9, '季线'], [21,'双周'],[22,"半年"],
-            [4, '1分'], [5, '5分'], [6, '15分'],[7, '30分'],[8, '60分'],[11, '2小时'],[12, '4小时'],
+            [4, '1分钟'], [5, '5分钟'], [6, '15分钟'],[7, '30分钟'],[8, '60分钟'],[11, '2小时'],[12, '4小时'],
         ]);
 
         if (mapName.has(this.Period)) return mapName.get(this.Period);
@@ -100708,7 +100850,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         var data=this.GetOverlaySymbolDescription(option);
         if (IFrameSplitOperator.IsNonEmptyArray(data)) aryData.push(...data);
 
-        return { AryData:aryData, Title:strTitle };
+        return { AryData:aryData, Title:strTitle, DayCount:this.DayCount, ChartType:"Minute" };
     }
 
     //分时数据信息
@@ -100720,9 +100862,9 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
         if (option)
         {
-            if (option.Start && option.End) //某一段时间的
+            if (option.DataRange) //某一段时间的
             {
-                var range=kData.GetDataRange(option.Start, option.End);
+                var range=kData.GetDataRange(option.DataRange);
                 if (!range) return null;
                 startIndex=range.Start.Index;
                 endIndex=range.End.Index;
@@ -100812,6 +100954,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         if (!IFrameSplitOperator.IsNonEmptyArray(this.ChartInfo)) return null;
 
         var aryData=[];
+        var strText="",strText="";
         for(var i=0;i<this.ChartInfo.length;++i)
         {
             var item=this.ChartInfo[i];
@@ -100821,6 +100964,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
             {
                 if (!IFrameSplitOperator.IsNonEmptyArray(item.Data)) continue;
                 strTitle=`${this.Name} ${this.Symbol} 异动数据`;
+                strText=`【${strTitle}】\r\n`;
                 strText+="字段说明\r\n";
                 strText+="1. Date:日期 格式YYYYMMDD\r\n";
                 strText+="2. Time:时间 格式hhmm\r\n";
