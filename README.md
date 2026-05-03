@@ -42,7 +42,9 @@ uniapp 版本:
   
 纯前端， 需要安装数据插件[https://github.com/jones2000/HQChartData](https://github.com/jones2000/HQChartData)  
 
-## 行情页面
+## 行情页面(支持AI智能体分析)
+![示例](/小程序行情模块用例/image/fullDemo_ai.gif)  
+![示例](/小程序行情模块用例/image/fullDemo_ai2.gif)  
 ![示例](/小程序行情模块用例/image/fulldem_1.png)  
 页面地址: [https://jones2000.github.io/HQChart/webhqchart.demo/Demo_hqchart/hqchart_demo.html](https://jones2000.github.io/HQChart/webhqchart.demo/Demo_hqchart/hqchart_demo.html)  
 
