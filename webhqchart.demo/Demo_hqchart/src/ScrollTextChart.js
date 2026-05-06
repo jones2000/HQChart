@@ -14,7 +14,7 @@ class ScrollTextChart
     {
         Type:'跑马灯',   //创建图形类型
         EnableResize:true,
-        LimitCount:13,
+        LimitCount:100,
         EnableDrag:true,    //是否允许拖动
 
         Label:
@@ -98,8 +98,20 @@ class ScrollTextChart
             var item=recv.AryData[i];
             if (item.ID<=this.LatestID) continue;
 
-            var time=IFrameSplitOperator.FormatTimeString(item.Time,"HH:MM:SS")
-            aryData.push({ Content:[ {Text:`${time} ` },{ Text:item.Title}]});
+            var time=IFrameSplitOperator.FormatTimeString(item.Time,"HH:MM:SS");
+            var newItem=
+            { 
+                Content:
+                [ 
+                    {Text:`${time} ` },
+                    { Text:item.Title}
+                ],
+                Date:item.Date,
+                Time:item.Time,
+                Url:item.Url,
+                Title:item.Title,
+            };
+            aryData.push(newItem);
             latestID=item.ID;
         }
 
@@ -107,5 +119,14 @@ class ScrollTextChart
 
         this.LatestID=latestID;
         this.Chart.AddText(aryData);
+    }
+
+    GetGraphicsDescription(option)
+    {
+        if (!this.Chart) return null;
+
+        var data=this.Chart.GetGraphicsDescription(option);
+
+        return data;
     }
 }

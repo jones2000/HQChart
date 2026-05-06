@@ -555,6 +555,9 @@ class HQData
                     if (IFrameSplitOperator.IsNonEmptyArray(aryTime)) minMaxCount=aryTime.length;
 
                     var newData={ Data:minData.AryClose, DrawType:1, Max:null, Min:null, Count:Math.max(minMaxCount,minData.AryClose.length), YClose:minData.YClose };
+                    newData.Date=minData.Date;
+                    newData.Time=aryTime;
+
                     for(var j=0;j<newData.Data.length;++j)
                     {
                         var value=newData.Data[j];

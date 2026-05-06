@@ -95,7 +95,8 @@
 
                 <div id="WhiteStyle" class="TabItem">白色风格</div>
                 <div id="BlackStyle" class="TabItem">黑色风格</div>
-                <div id="AIData" class="TabItem">原始数据</div>
+                <div id="ChartData" class="TabItem">图形数据</div>
+                <div id="SelfReportData" class="TabItem">自选股数据</div>
             </div>
 
             <div id="ChartContainer">
@@ -286,7 +287,8 @@
 
                 document.getElementById('WhiteStyle').onmousedown = (e) => { this.ChangeStyle(STYLE_TYPE_ID.WHITE_ID); }
                 document.getElementById('BlackStyle').onmousedown = (e) => { this.ChangeStyle(STYLE_TYPE_ID.BLACK_ID); }
-                document.getElementById('AIData').onmousedown = (e) => { this.DownloadAIData(); }
+                document.getElementById('ChartData').onmousedown = (e) => { this.DownloadChartData(); }
+                document.getElementById('SelfReportData').onmousedown = (e) => { this.DownloadSelfReportData(); }
                 
 
                 document.getElementById('StockChip').onmousedown = (e) => { this.EnableStockChip(); }
@@ -390,30 +392,16 @@
 
             }
 
-            //下载给AI分析的原始数据
-            DownloadAIData()
+            DownloadTextFile(content,fileName)
             {
-                var divKLine = document.getElementById('KLine');
-                var divMinute = document.getElementById('Minute');
-
-                var data=null;
-                if (divKLine.style["display"]=="block") data=this.KLineCtrl.GetGraphicsDescription( { DataRange:{ Count:5 }} );
-                else if (divMinute.style["display"]=="block") data=this.MinuteCtrl.GetGraphicsDescription();
-                
-                if (!data) return;
-
-                console.log("[OnAIAnalyze] data=", data);
-
-                // 下载测试用
                 const element = document.createElement('a');
   
                 // 将文本转成 blob，再生成下载链接
-                const blob = new Blob([data.Data], { type: 'text/plain' });
+                const blob = new Blob([content], { type: 'text/plain' });
                 element.href = URL.createObjectURL(blob);
                 
                 // 设置文件名
-                var filename=`${data.Symbol}数据.txt`;
-                element.download = filename;
+                element.download = fileName;
                 
                 // 模拟点击下载
                 document.body.appendChild(element);
@@ -422,6 +410,38 @@
                 // 清理
                 document.body.removeChild(element);
                 URL.revokeObjectURL(element.href);
+            }
+
+            DownloadSelfReportData()
+            {
+                if (!this.SelfReport) return null;
+
+                var option= 
+                { 
+                    //AryField:[ { Title:"股票代码", Type:REPORT_COLUMN_ID.SYMBOL_ID }],  //指定输出字段
+                }
+                var data=this.SelfReport.GetGraphicsDescription(option);
+                if (!data) return;
+                console.log("[DownloadSelfReportData] data=", data);
+
+                this.DownloadTextFile(data.Data, `自选股数据.txt`);
+            }
+
+            //下载给AI分析的原始数据
+            DownloadChartData()
+            {
+                var divKLine = document.getElementById('KLine');
+                var divMinute = document.getElementById('Minute');
+
+                var data=null;
+                if (divKLine.style["display"]=="block") data=this.KLineCtrl.GetGraphicsDescription( { DataRange:{ Count:300 }} );
+                else if (divMinute.style["display"]=="block") data=this.MinuteCtrl.GetGraphicsDescription({ DataRange:{ Count:10 }});
+                
+                if (!data) return;
+
+                console.log("[OnAIAnalyze] data=", data);
+
+                this.DownloadTextFile(data.Data, `${data.Symbol}_图形数据.txt`);
             }
 
             EnableStockChip() {
@@ -688,6 +708,14 @@
                 {
                     data=this.MinuteCtrl.GetGraphicsDescription(option);
                 }
+                else if (option.Type=="ScrollText")
+                {
+                    data=this.ScrollTextCtrl.GetGraphicsDescription(option);
+                }
+                else if (option.Type=="SelfReport")
+                {
+                    data=this.SelfReport.GetGraphicsDescription(option);
+                }
 
                 return data;
             }
@@ -725,6 +753,7 @@
                 var fileName = `${data.Symbol} 区间数据-${date.getHours()*1000000+date.getMinutes()*100+date.getSeconds()}.txt`;
                 var file={ Content:data.Data, Name:fileName, Message:`上传【${data.Name} ${data.Symbol}】区间数据`};
 
+                this.AICharV2.AddMessage("分析区间数据,总结下这个股票表现", 'user');
                 this.AICharV2.SendMessage("分析区间数据文件,总结下这个股票表现.", file);
             }
 
@@ -1317,6 +1346,11 @@
         color: #ff3333 !important;
     }
 
+    .HQChart_AI_ScrollText_Analyze
+    {
+        color:rgb(255,165,0)
+    }
+
     .HQChart_AI_Minute_Analyze:hover::after
     {
         content: "上传分时图";
@@ -1352,6 +1386,43 @@
         z-index: 10;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
+
+    .HQChart_AI_SelfReport_Analyze:hover::after
+    {
+        content: "上传自选股";
+        position: absolute;
+        /* 关键：显示在按钮右侧 */
+        left: calc(100% + 8px); 
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgb(220,220,220);
+        color: rgb(0,0,0);
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        white-space: nowrap;
+        z-index: 10;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .HQChart_AI_ScrollText_Analyze:hover::after
+    {
+        content: "上传底部滚动新闻";
+        position: absolute;
+        /* 关键：显示在按钮右侧 */
+        left: calc(100% + 8px); 
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgb(220,220,220);
+        color: rgb(0,0,0);
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        white-space: nowrap;
+        z-index: 10;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
 
     .HQChart_AI_input
     {

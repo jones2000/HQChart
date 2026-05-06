@@ -6,6 +6,13 @@
   "description": "hqchart画图工具",
   "glyphs": [
     {
+      "icon_id": "12842815",
+      "name": "w_新闻",
+      "font_class": "w_xinwen",
+      "unicode": "e67e",
+      "unicode_decimal": 59006
+    },
+    {
       "icon_id": "265327",
       "name": " attachment",
       "font_class": "attachment",

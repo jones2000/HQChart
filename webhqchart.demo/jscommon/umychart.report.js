@@ -366,6 +366,15 @@ function JSReportChart(divElement)
             this.JSChartContainer.Draw();
         }
     }
+
+    this.GetGraphicsDescription=function(option)
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.GetGraphicsDescription)=='function')
+        {
+            JSConsole.Chart.Log('[JSReportChart:GetGraphicsDescription] ');
+            return this.JSChartContainer.GetGraphicsDescription(option);
+        }
+    }
 }
 
 
@@ -4871,6 +4880,235 @@ function JSReportChartContainer(uielement)
         chart.IsShow=bShow;
 
         return true;
+    }
+
+    //把图形数据格式化导出, 给AI分析
+    //option: { AryField:[{ Type, Title:"列名"}] }  AryField指定输出的字段, 不指定则输出全部字段
+    this.GetGraphicsDescription=function(option)
+    {
+        var data=this.GetGraphicsRawDescription(option);
+        if (!data || !IFrameSplitOperator.IsNonEmptyArray(data.AryData)) return null;
+
+        var strTitle=data.Title;
+        strTitle+="包含以下数据:\r\n";
+        strContent="";
+        for(var i=0;i<data.AryData.length;++i)
+        {
+            var item=data.AryData[i];
+            var strCount="";
+            if (IFrameSplitOperator.IsNumber(item.Count)) strCount=`${item.Count}条`
+            strTitle+=`${i+1}. ${item.Title} ${strCount}\r\n`;
+
+            strContent+=item.Content;
+        }
+
+        var date=new Date();
+        strTitle+=`数据创建时间:${date}\r\n`;
+
+        var strDescription=strTitle+"\r\n\r\n====================完整数据部分========================\r\n\r\n\r\n"+strContent;
+
+        var result={ Symbol:this.Symbol, Name:this.Name, Data:strDescription, ChartType:data.ChartType };
+
+        return result;
+    }
+
+    //获取原始数据, 给AI分析
+    this.GetGraphicsRawDescription=function(option)
+    {
+        var chart=this.GetReportChart();
+        if (!chart) return null;
+
+        var strTitle=`【${this.Name}】列表数据.\r\n`;
+        var aryData=[];
+
+        var data=this.GetReportDataDescription(option);
+        if (IFrameSplitOperator.IsNonEmptyArray(data)) aryData.push(...data);
+
+        return { AryData:aryData, Title:strTitle, ChartType:"Report" };
+    }
+
+    this.GetReportDataDescription=function(option)
+    {
+        var chart=this.GetReportChart();
+        if (!chart) return null;
+        if (!chart.Data || !IFrameSplitOperator.IsNonEmptyArray(chart.Data.Data)) return null;
+        if (!IFrameSplitOperator.IsNonEmptyArray(chart.Column)) return null;
+
+        //图形字段
+        const MAP_CHART_FILED=new Map(
+        [
+            [REPORT_COLUMN_ID.CLOSE_LINE_ID, { Type:REPORT_COLUMN_ID.CLOSE_LINE_ID, Title:"走势图" }],
+        ]);
+
+        var aryData=[];
+        var aryField=[];
+        var aryChartField=[];
+
+        function _Temp_Push_Field(colItem)
+        {
+            if (!colItem) return;
+
+            if (colItem.Type==REPORT_COLUMN_ID.SYMBOL_NAME_ID)
+            {
+                aryField.push({ Title:"股票代码", Type:REPORT_COLUMN_ID.SYMBOL_ID });
+                aryField.push({ Title:"股票名称", Type:REPORT_COLUMN_ID.NAME_ID });
+            }
+            else if (colItem.Type==REPORT_COLUMN_ID.MULTI_LINE_CONTAINER)
+            {
+                if (IFrameSplitOperator.IsNonEmptyArray(colItem.AryField))
+                {
+                    for(var j=0;j<colItem.AryField.length;++j)
+                    {
+                        var item=colItem.AryField[j];
+                        if (!item) continue;
+                        if (MAP_CHART_FILED.has(item.Type))
+                        {
+                            aryChartField.push(MAP_CHART_FILED.get(item.Type));
+                        }
+                        else
+                        {
+                            aryField.push({ Title:item.Title, Type:item.Type });
+                        }
+                    }
+                }
+            }
+            if (MAP_CHART_FILED.has(colItem.Type))
+            {
+                aryChartField.push(MAP_CHART_FILED.get(colItem.Type));
+            }
+            else
+            {
+                aryField.push({ Title:colItem.Title, Type:colItem.Type });
+            }
+        }
+
+        if (option && IFrameSplitOperator.IsNonEmptyArray(option.AryField)) //外部指定输出列
+        {
+            for(var i=0;i<option.AryField.length;++i)
+            {
+                var item=option.AryField[i];
+                _Temp_Push_Field(item);
+            }
+        }
+        else
+        {
+            for(var i=0;i<chart.Column.length;++i)
+            {
+                var colItem=chart.Column[i];
+                _Temp_Push_Field(colItem);
+            }
+        }
+        
+
+        var data=this.GetReportTextDescription(aryField);
+        if (data) aryData.push(data);
+
+        var data=this.GetReportChartDescription(aryChartField);
+        if (IFrameSplitOperator.IsNonEmptyArray(data)) aryData.push(...data);
+
+        return aryData;
+    }
+
+    //文字字段转描述
+    this.GetReportTextDescription=function(aryFiled)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryFiled)) return null;
+        var chart=this.GetReportChart();
+        if (!chart.Data || !IFrameSplitOperator.IsNonEmptyArray(chart.Data.Data)) return null;
+
+        var strTitle=`${this.Name} 表格数据`;
+        var strText=`【${strTitle}】\r\n`;
+        strText+="原始数据如下\r\n";
+        for(var i=0;i<aryFiled.length;++i)
+        {
+            var item=aryFiled[i];
+            strText+=`${IFrameSplitOperator.ReadStringValue(item.Title,"未定义字段")}`;
+            if (i==aryFiled.length-1) strText+="\r\n";
+            else strText+=",";        
+        }
+
+        var count=0;
+        for(var i=0;i<chart.Data.Data.length;++i)
+        {
+            var symbol=chart.Data.Data[i];
+            var stock=this.GetStockData(symbol);
+            if (!stock) continue;
+            for(var j=0;j<aryFiled.length;++j)
+            {
+                var colItem=aryFiled[j];
+                value=null;
+                if (MAP_COLUMN_FIELD.has(colItem.Type))
+                {
+                    var fieldName=MAP_COLUMN_FIELD.get(colItem.Type);
+                    var value=stock[fieldName];
+                    if (value==null || value==undefined) value=null;
+                }
+                if (j>0) strText+=",";
+                strText+=`${value}`;
+            }
+            ++count;
+            strText+="\r\n";
+        }
+
+        strText+="\r\n\r\n";
+        return { Title:strTitle, Content:strText, Type:"表格数据", Count:count };
+    }
+
+    //图新字段转描述
+    this.GetReportChartDescription=function(aryFiled)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(aryFiled)) return null;
+        var chart=this.GetReportChart();
+        if (!chart.Data || !IFrameSplitOperator.IsNonEmptyArray(chart.Data.Data)) return null;
+
+        var aryData=[];
+        for(var i=0;i<aryFiled.length;++i)
+        {
+            var colItem=aryFiled[i];
+            if (colItem.Type==REPORT_COLUMN_ID.CLOSE_LINE_ID)
+            {
+                for(var j=0;j<chart.Data.Data.length;++j)
+                {
+                    var symbol=chart.Data.Data[j];
+                    var data=this.GetCloseLineDescription(symbol);
+                    if (data) aryData.push(data);
+                }
+            }
+        }
+
+        return aryData;
+    }
+
+    this.GetCloseLineDescription=function(symbol)
+    {
+        var stock=this.GetStockData(symbol);
+        if (!stock || !stock.CloseLine) return null;
+        var stockItem=stock.CloseLine;
+        if (!IFrameSplitOperator.IsNonEmptyArray(stockItem.Data)) return null;
+        if (!IFrameSplitOperator.IsNonEmptyArray(stockItem.Time)) return null;
+
+        var strTitle=`${stock.Name}(${stock.Symbol}) 走势图数据`;
+        var strText=`【${strTitle}】\r\n`;
+        if (IFrameSplitOperator.IsNumber(stockItem.Date))
+            strText+=`日期:${IFrameSplitOperator.FormatDateString(stockItem.Date,"YYYY-MM-DD")}\r\n`;
+        strText+=`昨收价:${stockItem.YClose}\r\n`;
+        strText+=`字段说明\r\n`;
+        strText+="1. Time:时间 格式hhmm\r\n";
+        strText+="2. Price:收盘价\r\n";
+        strText+="原始数据如下\r\n";
+        strText+="Time,Price\r\n";  
+        
+        var count=0;
+        for(var i=0;i<stockItem.Data.length;++i)
+        {
+            var time=stockItem.Time[i];
+            var price=stockItem.Data[i];
+            strText+=`${IFrameSplitOperator.ReadNumberValue(time)},${IFrameSplitOperator.ReadNumberValue(price)}\r\n`;
+            ++count;
+        }
+
+        strText+="\r\n\r\n";
+        return { Title:strTitle, Content:strText, Type:this.Data.Name, Count:count };
     }
 }
 

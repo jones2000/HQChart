@@ -183,6 +183,15 @@ function JSScrollTextChart(divElement)
             this.JSChartContainer.AddText(aryData, option);
         }
     }
+
+    this.GetGraphicsDescription=function(option)
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.GetGraphicsDescription)=='function')
+        {
+            JSConsole.Chart.Log('[JSScrollTextChart:GetGraphicsDescription] ');
+            return this.JSChartContainer.GetGraphicsDescription(option);
+        }
+    }
 }
 
 JSScrollTextChart.Init=function(divElement)
@@ -217,12 +226,13 @@ function JSScrollTextChartContainer(uielement)
     this.NetworkFilter;                                 //数据回调接口
     this.Data=
     { 
-        AryText:[]      //{ AryText:[ { Text:, Color:, Font: },] }
+        AryText:[],      //{ AryText:[ { Text:, Color:, Font: },] }
+        Name:"滚动新闻"
 
         /*
         AryText:
         [
-            { Content:[ { Text:"滚动信息1:36238347-D299-42DA-BAA2-3A3C1B5A8ACB" } ] },
+            { Content:[ { Text:"滚动信息1:36238347-D299-42DA-BAA2-3A3C1B5A8ACB" } ], Url:, Date, Time, Title: },
             { Content:[ { Text:"滚动信息2:358D6F13-C845-4AD1-8415-A9C3A62C1F1E."}, ] },
             { Content:[ { Text:"滚动信息3:144F91C3-6181-4C47-A620-62AAFA3BB377."}, ] },
             { Content:[ { Text:"滚动信息4:BCC78A08-84B3-4A10-8CE8-13C64C72972D."}, ] },
@@ -634,6 +644,75 @@ function JSScrollTextChartContainer(uielement)
 
         if (chart.ScrollStep(defaultStep))
             this.Draw();
+    }
+
+    //把图形数据格式化导出, 给AI分析
+    this.GetGraphicsDescription=function(option)
+    {
+        var data=this.GetGraphicsRawDescription(option);
+        if (!data || !IFrameSplitOperator.IsNonEmptyArray(data.AryData)) return null;
+
+        var strTitle=data.Title;
+        strTitle+="包含以下数据:\r\n";
+        strContent="";
+        for(var i=0;i<data.AryData.length;++i)
+        {
+            var item=data.AryData[i];
+            var strCount="";
+            if (IFrameSplitOperator.IsNumber(item.Count)) strCount=`${item.Count}条`
+            strTitle+=`${i+1}. ${item.Title} ${strCount}\r\n`;
+
+            strContent+=item.Content;
+        }
+
+        var date=new Date();
+        strTitle+=`数据创建时间:${date}\r\n`;
+
+        var strDescription=strTitle+"\r\n\r\n====================完整数据部分========================\r\n\r\n\r\n"+strContent;
+
+        var result={ Data:strDescription, ChartType:data.ChartType };
+        return result;
+    }
+
+    //获取原始数据, 给AI分析
+    this.GetGraphicsRawDescription=function(option)
+    {
+        var chart=this.GetScrollTextChart();
+        if (!chart) return null;
+
+        var strTitle=`${chart.Label.Text}数据.\r\n`;
+        var aryData=[];
+
+        var data=this.GetDataDescription();
+        if (data) aryData.push(data);
+
+        return { AryData:aryData, Title:strTitle, ChartType:"ScrollText" };
+    }
+
+    this.GetDataDescription=function()
+    {
+        if (!this.Data || !IFrameSplitOperator.IsNonEmptyArray(this.Data.AryText)) return null;
+
+        var strTitle=`新闻数据`;
+        strText=`【${strTitle}】\r\n`;
+        strText+="字段说明\r\n";
+        strText+="1. Date:日期 格式YYYYMMDD\r\n";
+        strText+="2. Time:时间 格式hhmmss\r\n";
+        strText+="3. Title:标题\r\n";
+        strText+="4. Url:原文地址\r\n";
+        strText+="原始数据如下\r\n";
+        strText+="Date,Time,Title,Url\r\n";
+
+        var count=0;
+        for(var i=0;i<this.Data.AryText.length;++i)
+        {
+            var item=this.Data.AryText[i];
+            strText+=`${item.Date},${item.Time},"${IFrameSplitOperator.ReadStringValue(item.Title)}",${IFrameSplitOperator.ReadStringValue(item.Url)}\r\n`;
+            ++count;
+        }
+
+        strText+="\r\n\r\n";
+        return { Title:strTitle, Content:strText, Type:this.Data.Name, Count:count };
     }
 
 }

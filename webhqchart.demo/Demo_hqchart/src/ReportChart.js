@@ -36,8 +36,8 @@ class ReportChart
                 Title:"涨幅",TextAlign:"center", MaxText:"1000.88%",TextAlign:"right",
                 AryField:
                 [ 
-                    { Type:REPORT_COLUMN_ID.PRICE_ID },
-                    { Type:REPORT_COLUMN_ID.INCREASE_ID, DynamicFormat:"{Value}%" }
+                    { Type:REPORT_COLUMN_ID.PRICE_ID, Title:"现价" },
+                    { Type:REPORT_COLUMN_ID.INCREASE_ID, DynamicFormat:"{Value}%", Title:"涨幅" }
                 ],
                 TextColor:"rgb(250,250,250)",
             },
@@ -256,6 +256,15 @@ class ReportChart
     ReloadResource()
     {
         if (this.Chart) this.Chart.ReloadResource({ Resource:null, Draw:true });  //动态更新颜色配置  
+    }
+
+    GetGraphicsDescription(option)
+    {
+        if (!this.Chart) return null;
+
+        var data=this.Chart.GetGraphicsDescription(option);
+
+        return data;
     }
 
 }

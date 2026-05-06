@@ -36,6 +36,24 @@ class CozeAICharDialogV2
         ]
     };
 
+    ScrollTextAnalyzeConfig=
+    {
+        AryQuestion:
+        [
+            "总结下新闻",
+            "整理新闻,列出对股票市场可能产生负面的新闻."
+        ]
+    };
+
+    SelfReportAnalyzeConfig=
+    {
+        AryQuestion:
+        [
+            "总结我的自选股",
+            "统计下我的自选股表现最好的前三名和最差的三名。"
+        ]
+    }
+
     AryUploadFileCache=[];  //{ FildID:, FileName: }
 
     Create()
@@ -77,6 +95,12 @@ class CozeAICharDialogV2
                 <i class="hqchart_drawtool icon-attachment"></i>
             </button>
             --!>
+            <button class="HQChart_AI_Upload_Button HQChart_AI_SelfReport_Analyze" id="SelfReport_Analyze">
+                <i class="hqchart_drawtool icon-bianji"></i>
+            </button>
+            <button class="HQChart_AI_Upload_Button HQChart_AI_ScrollText_Analyze" id="ScrollText_Analyze">
+                <i class="hqchart_drawtool icon-w_xinwen"></i>
+            </button>
             <button class="HQChart_AI_Upload_Button HQChart_AI_Minute_Analyze" id="Minute_Analyze">
                 <i class="hqchart_drawtool icon-zoushitu"></i>
             </button>
@@ -101,7 +125,8 @@ class CozeAICharDialogV2
         const sendBtn = inputArea.querySelector('.HQChart_AI_Send-Button');
         const klineAnalyzeBtn= inputArea.querySelector('#KLine_Analyze');
         const minuteAnalyzeBtn=inputArea.querySelector('#Minute_Analyze');
-
+        const scrollTextAnalyzeBtn=inputArea.querySelector('#ScrollText_Analyze');    //滚动新闻
+        const selfReportAnalyzeBtn=inputArea.querySelector('#SelfReport_Analyze');
         this.DivAIButton=floatBtn;
         this.DivMessageList=msgList;
         this.InputDOM=input;
@@ -111,13 +136,17 @@ class CozeAICharDialogV2
         // 3. 交互逻辑
         this.DivAIButton.onclick = () => { this.Show(); }
         this.DivSendButton.onclick=(e)=>{ this.OnClickSend() }
+        this.InputDOM.addEventListener('keydown', e => e.key === 'Enter' && this.OnClickSend());
+
         header.onmousedown=(e)=>{ this.OnMouseDownTitle(e); }
         closeBtn.onclick = () => { this.Close(); }
         clearBtn.onclick=()=>{ this.ClearMessageList(); }
         //uploadBtn.onclick = () => fileInput.click();
 
         klineAnalyzeBtn.onclick=(e)=>{ this.OnClinKLineAnalyze() };
-        minuteAnalyzeBtn.onclick=(e)=>{ this.OnClinMinuteAnalyze() };
+        minuteAnalyzeBtn.onclick=(e)=>{ this.OnClinkMinuteAnalyze() };
+        scrollTextAnalyzeBtn.onclick=(e)=>{ this.OnClickScrollTextAnalyze(); }
+        selfReportAnalyzeBtn.onclick=(e)=>{ this.OnClickSelfReportAnalyze(); }
     }
 
     Close()
@@ -232,14 +261,14 @@ class CozeAICharDialogV2
         this.SendFileData(`上传【${data.Name} ${data.Symbol}】K线图`, content, fileName, config.AryQuestion);
     }
 
-    async OnClinMinuteAnalyze()
+    async OnClinkMinuteAnalyze()
     {
         if (!this.GetHQChartDataCallback) return;
 
         var data=this.GetHQChartDataCallback({ Type:"Minute" });
         if (!data) return;
 
-        console.log("[OnClinMinuteAnalyze] data=", data);
+        console.log("[OnClinkMinuteAnalyze] data=", data);
         var config=this.MinuteAnalyzeConfig;
         // 设置文件名
         var content=data.Data;
@@ -247,6 +276,38 @@ class CozeAICharDialogV2
         var fileName = `${data.Symbol} 分时图数据-${date.getHours()*1000000+date.getMinutes()*100+date.getSeconds()}.txt`;
 
         this.SendFileData(`上传【${data.Name} ${data.Symbol}】分时图`, content, fileName, config.AryQuestion);
+    }
+
+    async OnClickScrollTextAnalyze()
+    {
+        if (!this.GetHQChartDataCallback) return;
+
+        var data=this.GetHQChartDataCallback({ Type:"ScrollText" });
+        if (!data) return;
+
+        console.log("[OnClickScrollTextAnalyze] data=", data);
+        var config=this.ScrollTextAnalyzeConfig;
+        // 设置文件名
+        var content=data.Data;
+        var date=new Date();
+        var fileName = `滚动新闻数据-${date.getHours()*1000000+date.getMinutes()*100+date.getSeconds()}.txt`;
+
+        this.SendFileData(`上传滚动新闻数据`, content, fileName, config.AryQuestion);
+    }
+
+    async OnClickSelfReportAnalyze()
+    {
+        if (!this.GetHQChartDataCallback) return;
+        var data=this.GetHQChartDataCallback({ Type:"SelfReport" });
+        if (!data) return;
+
+        console.log("[OnClickSelfReportAnalyze] data=", data);
+        var config=this.SelfReportAnalyzeConfig;
+        // 设置文件名
+        var content=data.Data;
+        var date=new Date();
+        var fileName = `自选股列表数据-${date.getHours()*1000000+date.getMinutes()*100+date.getSeconds()}.txt`;
+        this.SendFileData(`上传自选股列表数据`, content, fileName, config.AryQuestion);
     }
 
     async SendMessage(prompt, file)
