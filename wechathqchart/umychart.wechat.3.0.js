@@ -4580,7 +4580,11 @@ function JSChartContainer(uielement)
 
         return true;
     }
-
+    //获取品种小数位数
+    this.GetSymbolDecimal=function()
+    {
+        return GetfloatPrecision(this.Symbol);
+    }
 }
 
 function ToFixed(number, precision) 
@@ -6368,6 +6372,7 @@ function KLineChartContainer(uielement)
             titlePaint.Canvas = this.Canvas;
             titlePaint.LanguageID = this.LanguageID;
             titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+            titlePaint.GetSymbolDecimalCallback=()=>{ return this.GetSymbolDecimal(); };
             this.Frame.SubFrame[i].Frame.TitlePaint = titlePaint;
             this.TitlePaint.push(titlePaint);
         }
@@ -7991,6 +7996,7 @@ function KLineChartContainer(uielement)
                 titlePaint.Canvas = this.Canvas;
                 titlePaint.LanguageID = this.LanguageID;
                 titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+                titlePaint.GetSymbolDecimalCallback=()=>{ return this.GetSymbolDecimal(); };
                 this.TitlePaint[i + 1] = titlePaint;
             }
         }
@@ -8148,6 +8154,7 @@ function KLineChartContainer(uielement)
                 titlePaint.Canvas=this.Canvas;
                 titlePaint.LanguageID=this.LanguageID;
                 titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+                titlePaint.GetSymbolDecimalCallback=()=>{ return this.GetSymbolDecimal(); };
                 titlePaint.SelectedChart=this.SelectedChart;
                 titlePaint.HQChart=this;
                 this.TitlePaint[i+1]=titlePaint;
@@ -10499,6 +10506,7 @@ function MinuteChartContainer(uielement)
             titlePaint.Canvas = this.Canvas;
             titlePaint.LanguageID = this.LanguageID;
             titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+            titlePaint.GetSymbolDecimalCallback=()=>{ return this.GetSymbolDecimal(); };
             this.TitlePaint.push(titlePaint);
         }
 
@@ -10888,6 +10896,7 @@ function MinuteChartContainer(uielement)
                 titlePaint.Canvas=this.Canvas;
                 titlePaint.LanguageID=this.LanguageID;
                 titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+                titlePaint.GetSymbolDecimalCallback=()=>{ return this.GetSymbolDecimal(); };
                 titlePaint.SelectedChart=this.SelectedChart;
                 this.TitlePaint[i+1]=titlePaint;
             } 
@@ -11046,6 +11055,7 @@ function MinuteChartContainer(uielement)
                 titlePaint.Canvas=this.Canvas;
                 titlePaint.LanguageID=this.LanguageID;
                 titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+                titlePaint.GetSymbolDecimalCallback=()=>{ return this.GetSymbolDecimal(); };
                 titlePaint.SelectedChart=this.SelectedChart;
                 titlePaint.MainTitlePaint=this.TitlePaint[0];
                 titlePaint.HQChart=this;
@@ -13068,6 +13078,7 @@ function KLineChartHScreenContainer(uielement)
             titlePaint.Frame = this.Frame.SubFrame[i].Frame;
             titlePaint.Canvas = this.Canvas;
             titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+            titlePaint.GetSymbolDecimalCallback=()=>{ return this.GetSymbolDecimal(); };
             this.TitlePaint.push(titlePaint);
         }
     }
@@ -13231,6 +13242,7 @@ function MinuteChartHScreenContainer(uielement)
             titlePaint.Frame = this.Frame.SubFrame[i].Frame;
             titlePaint.Canvas = this.Canvas;
             titlePaint.GetEventCallback=(id)=> { return this.GetEventCallback(id); }
+            titlePaint.GetSymbolDecimalCallback=()=>{ return this.GetSymbolDecimal(); };
             this.TitlePaint.push(titlePaint);
         }
 

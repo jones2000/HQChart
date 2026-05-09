@@ -10,6 +10,11 @@
     指标基类及定制指标
 */
 
+import
+{
+    DECIMAL_ID,
+} from "./umychart.define.wechat.js"
+
 import {
     g_JSChartResource,
 } from './umychart.resource.wechat.js'
@@ -267,7 +272,7 @@ function ScriptIndex(name, script, args, option)
 
     if (option) 
     {
-        if (option.FloatPrecision >= 0) this.FloatPrecision = option.FloatPrecision;
+        if (IFrameSplitOperator.IsNumber(option.FloatPrecision)) this.FloatPrecision = option.FloatPrecision;
         if (option.StringFormat > 0) this.StringFormat = option.StringFormat;
         if (IFrameSplitOperator.IsBool(option.IsShowIndexTitle)) this.IsShowIndexTitle=option.IsShowIndexTitle;
         if (option.ID) this.ID = option.ID;
@@ -1874,7 +1879,9 @@ function ScriptIndex(name, script, args, option)
             if (titlePaint && titlePaint.Data && i < titlePaint.Data.length) //设置标题数值 小数位数和格式
             {
                 if (this.StringFormat > 0) titlePaint.Data[i].StringFormat = this.StringFormat;
-                if (this.FloatPrecision >= 0) titlePaint.Data[i].FloatPrecision = this.FloatPrecision;
+
+                const DEF_DECIMAL=[DECIMAL_ID.SYMBOL_DECIMAL, DECIMAL_ID.SYMBOL_DECIMAL1];
+                if (this.FloatPrecision >= 0 || DEF_DECIMAL.includes(this.FloatPrecision)) titlePaint.Data[i].FloatPrecision = this.FloatPrecision;
 
                 if (this.OutName && this.OutName.length>0 && this.Arguments && this.Arguments.length>0)
                 {

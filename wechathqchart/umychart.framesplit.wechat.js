@@ -335,6 +335,12 @@ IFrameSplitOperator.FormatValueThousandsString=function(value,floatPrecision)
 //数据输出格式化 floatPrecision=小数位数
 IFrameSplitOperator.FormatValueString=function(value, floatPrecision,languageID)
 {
+    return IFrameSplitOperator.FormatValueStringV2(value, floatPrecision, floatPrecision, languageID);
+}
+
+//数据输出格式化 floatPrecision=原始小数位数 floatPrecision2=转换成'万','亿'..的小数位
+IFrameSplitOperator.FormatValueStringV2=function(value, floatPrecision, floatPrecision2, languageID)
+{
     if (value==null || isNaN(value))
     {
         if (floatPrecision>0)
@@ -359,35 +365,37 @@ IFrameSplitOperator.FormatValueString=function(value, floatPrecision,languageID)
         if (absValue < 10000)
             return value.toFixed(floatPrecision);
         else if (absValue < 1000000)
-            return (value/1000).toFixed(floatPrecision)+"K";
+            return (value/1000).toFixed(floatPrecision2)+"K";
         else if (absValue < 1000000000)
-            return (value/1000000).toFixed(floatPrecision)+"M";
+            return (value/1000000).toFixed(floatPrecision2)+"M";
         else if (absValue < 1000000000000)
-            return (value/1000000000).toFixed(floatPrecision)+"B";
+            return (value/1000000000).toFixed(floatPrecision2)+"B";
         else 
-            return (value/1000000000000).toFixed(floatPrecision)+"T";
+            return (value/1000000000000).toFixed(floatPrecision2)+"T";
     }
     else if (languageID===JSCHART_LANGUAGE_ID.LANGUAGE_TRADITIONAL_CHINESE_ID)  //繁体
     {
         if (absValue < 10000)
             return value.toFixed(floatPrecision);
         else if (absValue < 100000000)
-            return (value/10000).toFixed(floatPrecision)+"萬";
+            return (value/10000).toFixed(floatPrecision2)+"萬";
         else if (absValue < 1000000000000)
-            return (value/100000000).toFixed(floatPrecision)+"億";
+            return (value/100000000).toFixed(floatPrecision2)+"億";
         else
-            return (value/1000000000000).toFixed(floatPrecision)+"萬億";
+            return (value/1000000000000).toFixed(floatPrecision2)+"萬億";
     }
     else
     {
         if (absValue < 10000)
             return value.toFixed(floatPrecision);
+        else if (absValue<1000000)
+            return (value/10000).toFixed(floatPrecision2)+"万";
         else if (absValue < 100000000)
-            return (value/10000).toFixed(floatPrecision)+"万";
+            return (value/10000).toFixed(floatPrecision2)+"万";
         else if (absValue < 1000000000000)
-            return (value/100000000).toFixed(floatPrecision)+"亿";
+            return (value/100000000).toFixed(floatPrecision2)+"亿";
         else
-            return (value/1000000000000).toFixed(floatPrecision)+"万亿";
+            return (value/1000000000000).toFixed(floatPrecision2)+"万亿";
     }
 
     return '';

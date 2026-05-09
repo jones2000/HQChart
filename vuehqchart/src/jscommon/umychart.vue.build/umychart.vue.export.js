@@ -119,6 +119,7 @@ export default {
         JSCHART_TRADE_STATUS_ID:JSCHART_TRADE_STATUS_ID,        //交易状态
         JSCHART_CORSSCURSOR_STATUS_ID:JSCHART_CORSSCURSOR_STATUS_ID,    //十字光标状态
         CONDITION_PERIOD:CONDITION_PERIOD,          //指标周期条件枚举
+        DECIMAL_ID:DECIMAL_ID,                      //指标标题栏 显示小数位数枚举
     },
 
 

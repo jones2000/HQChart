@@ -192,8 +192,10 @@
                 this.ChangeStyle(STYLE_TYPE_ID.BLACK_ID);
 
                 this.KLineCtrl.Create(document.getElementById('KLineCtrl'));
-                this.KLineCtrl.SelectedDataAnalyzeCallback=(data)=>{ this.SelectedDataAnalyze(data); }
+                this.KLineCtrl.SelectedDataAnalyzeCallback=(data)=>{ this.KLineSelectedDataAnalyze(data); }
+                this.KLineCtrl.IndexDataAnalyzeCallback=(data, hqchart)=>{ this.IndexDataAnalyze(data, hqchart); }
                 this.MinuteCtrl.Create(document.getElementById('MinuteCtrl'));
+                this.MinuteCtrl.SelectedDataAnalyzeCallback=(data)=>{ this.MinuteSelectedDataAnalyze(data); }
                 this.MinDealCtrl.Create(document.getElementById('DealCtrl'));
                 this.MinMinuteCtrl.Create(document.getElementById('MinMinuteCtrl'));
                 this.StockInfoCtrl.Create(document.getElementById('StockBaseData'));
@@ -434,7 +436,13 @@
                 var divMinute = document.getElementById('Minute');
 
                 var data=null;
-                if (divKLine.style["display"]=="block") data=this.KLineCtrl.GetGraphicsDescription( { DataRange:{ Count:300 }} );
+                if (divKLine.style["display"]=="block") data=this.KLineCtrl.GetGraphicsDescription( 
+                    { 
+                        DataRange:{ Count:300 }, 
+                        //AryWindow:[ ], 
+                        //AryInfo:[{ Name:"除权"}]
+                    } );
+
                 else if (divMinute.style["display"]=="block") data=this.MinuteCtrl.GetGraphicsDescription({ DataRange:{ Count:10 }});
                 
                 if (!data) return;
@@ -721,7 +729,7 @@
             }
 
             //区间分析
-            SelectedDataAnalyze(data)
+            KLineSelectedDataAnalyze(data)
             {
                 var seletedData=data.Args[0];
                 if (!seletedData || !seletedData.Data) return;
@@ -743,6 +751,72 @@
                 }
 
                 var data=this.KLineCtrl.GetGraphicsDescription(option);
+                if (!data) return;
+
+                this.AICharV2.Show();
+
+                // 设置文件名
+                var content=data.Data;
+                var date=new Date();
+                var fileName = `${data.Symbol} 区间数据-${date.getHours()*1000000+date.getMinutes()*100+date.getSeconds()}.txt`;
+                var file={ Content:data.Data, Name:fileName, Message:`上传【${data.Name} ${data.Symbol}】区间数据`};
+
+                this.AICharV2.AddMessage("分析区间数据,总结下这个股票表现", 'user');
+                this.AICharV2.SendMessage("分析区间数据文件,总结下这个股票表现.", file);
+            }
+
+            //指标分析
+            IndexDataAnalyze(data, hqchart)
+            {
+                var WindowIndex=data.WindowIndex;   //窗口索引
+                var indexInfo=data.IndexInfo;
+                var option=
+                {
+                    DataRange:{ Count:300},
+                    AryWindow:[ { Index:WindowIndex}], 
+                    AryInfo:[],
+                    AryOverlaySymbol:[]
+                };
+                
+                var data=hqchart.GetGraphicsDescription(option);
+                if (!data) return;
+
+                this.AICharV2.Show();
+
+                // 设置文件名
+                var content=data.Data;
+                var date=new Date();
+                var fileName = `${data.Symbol} ${indexInfo.Name}指标数据-${date.getHours()*1000000+date.getMinutes()*100+date.getSeconds()}.txt`;
+                var file={ Content:data.Data, Name:fileName, Message:`上传【${data.Name} ${data.Symbol}】'${indexInfo.Name}'指标数据`};
+
+                var prompt=`结合指标${indexInfo.Name}数据, 分析下【${data.Name}】近期表现`;
+                this.AICharV2.AddMessage(prompt, 'user');
+                this.AICharV2.SendMessage(prompt, file);
+            }
+
+            //区间分析
+            MinuteSelectedDataAnalyze(data)
+            {
+                var seletedData=data.Args[0];
+                if (!seletedData || !seletedData.Data) return;
+                var kData=seletedData.Data;
+                if (!IFrameSplitOperator.IsNonEmptyArray(kData.Data)) return;
+                var startItem=kData.Data[seletedData.Start];
+                var endItem=kData.Data[seletedData.End];
+
+                var option=
+                {
+                    DataRange:
+                    { 
+                        Date:
+                        { 
+                            Start:{Date:startItem.Date, Time:startItem.Time},
+                            End:{ Date:endItem.Date, Time:endItem.Time}
+                        } 
+                    }
+                }
+
+                var data=this.MinuteCtrl.GetGraphicsDescription(option);
                 if (!data) return;
 
                 this.AICharV2.Show();

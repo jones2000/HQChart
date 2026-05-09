@@ -8,6 +8,7 @@ class MinuteChart
     Chart=null; //JSChart.Init(divKLine, false, false);   //把K线图绑定到一个Div上
     HQData=new HQData();            //数据
     Symbol=null;
+    SelectedDataAnalyzeCallback=null; //区间数据分析回调
 
     //分时图配置
     Option= {
@@ -86,6 +87,29 @@ class MinuteChart
             Enable:true,
             ShowMode:2,
             EnableLButton:true,
+        },
+
+        //区间选择菜单
+        SelectRectMenu:
+        {
+            Mark:
+            { 
+                Command:null, 
+                AryMenu:
+                [ 
+                    { Name:"区间统计", ID:JSCHART_MENU_ID.CMD_SELECTED_SUMMARY_ID },
+                    { Name:"区间AI分析", ID:JSCHART_MENU_ID.CMD_SELECTED_DATA_ANALYZE_ID,}
+                ] 
+            }, 
+            Mouse:
+            { 
+                Command:null, 
+                AryMenu:
+                [ 
+                    { Name:"区间统计", ID:JSCHART_MENU_ID.CMD_SELECTED_SUMMARY_ID } ,
+                    { Name:"区间AI分析", ID:JSCHART_MENU_ID.CMD_SELECTED_DATA_ANALYZE_ID,}
+                ] 
+            } 
         },
 
         SelectRectDialog:{ Enable:true },
@@ -205,6 +229,14 @@ class MinuteChart
         this.Option.NetworkFilter=(data, callback)=>{  this.NetworkFilter(data, callback); }
         this.Option.OnCreatedCallback=(chart)=>{ this.OnCreateHQChart(chart); }
 
+        this.Option.EventCallback=
+        [
+            {
+                event:JSCHART_EVENT_ID.ON_MENU_COMMAND,
+                callback:(event, data, obj)=>{ this.OnMenuCommand(event, data, obj); }
+            },
+        ]
+
         this.Chart.SetOption(this.Option);  //设置K线配置
     }
 
@@ -277,6 +309,14 @@ class MinuteChart
         var data=this.Chart.GetGraphicsDescription(option);
 
         return data;
+    }
+
+    OnMenuCommand(event, data, obj)
+    {
+        if (data.CommandID==JSCHART_MENU_ID.CMD_SELECTED_DATA_ANALYZE_ID)
+        {
+            if (this.SelectedDataAnalyzeCallback) this.SelectedDataAnalyzeCallback(data);
+        }
     }
 }
 

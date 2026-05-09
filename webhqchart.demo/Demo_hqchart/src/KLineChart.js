@@ -15,7 +15,8 @@ class KLineChart
     JSPopMenu=null;
     Symbol=null;
 
-    SelectedDataAnalyzeCallback=null;
+    SelectedDataAnalyzeCallback=null;   //区间选择数据分析
+    IndexDataAnalyzeCallback=null;  //指标分析回调
     
     //K线配置信息
     Option= 
@@ -39,7 +40,7 @@ class KLineChart
             },
             */
 
-            { Index:"MA", Overlay:true, AddIndexWindow:true, Export:true, IsSync:true,IndexHelp:true },
+            { Index:"MA", Overlay:true, AddIndexWindow:true, Export:true, IsSync:true,IndexHelp:true, IndexAIAnalyze:true,},
 
             /*
             { 
@@ -50,8 +51,8 @@ class KLineChart
                 ]
             },
             */
-            { Index:"VOL", Overlay:true, Export:true, IsSync:true, IndexHelp:true},
-            { Index:"MACD", Overlay:true, Export:true, IsSync:true, IndexHelp:true},
+            { Index:"VOL", Overlay:true, Export:true, IsSync:true, IndexHelp:true, IndexAIAnalyze:true },
+            { Index:"MACD", Overlay:true, Export:true, IsSync:true, IndexHelp:true, IndexAIAnalyze:true },
 
             //{ Name:"测试", FloatPrecision:4, Script:
                 //"T:=DYNAINFO(3);T2:=DYNAINFO(37);"
@@ -239,9 +240,34 @@ class KLineChart
         {
             Enable:true,
             ShowMode:2,
-            EnableRButton:false,    //左键区间选择
-            EnableLButton:false,     //右键区间选择
+            EnableRButton:true,    //右键区间选择
+            EnableLButton:false,     //左键区间选择
             //ZIndex:3,
+        },
+
+        //区间选择菜单
+        SelectRectMenu:
+        {
+            Mark:
+            { 
+                Command:null, 
+                AryMenu:
+                [ 
+                    { Name:"区间统计", ID:JSCHART_MENU_ID.CMD_SELECTED_SUMMARY_ID },
+                    { Name:"区间放大", ID:JSCHART_MENU_ID.CMD_SELECTED_ZOOM_ID },
+                    { Name:"区间AI分析", ID:JSCHART_MENU_ID.CMD_SELECTED_DATA_ANALYZE_ID,}
+                ] 
+            }, 
+            Mouse:
+            { 
+                Command:null, 
+                AryMenu:
+                [ 
+                    { Name:"区间统计", ID:JSCHART_MENU_ID.CMD_SELECTED_SUMMARY_ID } ,
+                    { Name:"区间放大", ID:JSCHART_MENU_ID.CMD_SELECTED_ZOOM_ID },
+                    { Name:"区间AI分析", ID:JSCHART_MENU_ID.CMD_SELECTED_DATA_ANALYZE_ID,}
+                ] 
+            } 
         },
 
         KLineCountDown:
@@ -276,7 +302,7 @@ class KLineChart
             },
 
             {  IsShowLeftText:false, },
-            {  IsShowLeftText:false, }
+            {  IsShowLeftText:false, SplitType: 1}
         ],
 
         ExtendChart:    //扩展图形
@@ -351,6 +377,10 @@ class KLineChart
                 event:JSCHART_EVENT_ID.ON_MENU_COMMAND,
                 callback:(event, data, obj)=>{ this.OnMenuCommand(event, data, obj); }
             },
+            {
+                event:JSCHART_EVENT_ID.ON_CLICK_FRAME_TOOLBAR,
+                callback:(event, data, obj)=>{ this.OnClickFrameToolbar(event, data, obj); }
+            }
         ];
 
         //this.Chart.CreateExtraCanvasElement(JSChart.CorssCursorCanvasKey, { ZIndex:5 }); //十字光标单独一个图层
@@ -672,5 +702,21 @@ class KLineChart
         }
     }
 
+
+    OnClickFrameToolbar(event, data, obj)
+    {
+        console.log('[KLineChart::OnClickFrameToolbar] event, data', event , data); //打印信息
+        var frameID=data.Info.FrameID;
+        var commandID=data.Info.ID;
+
+        if (commandID==JSCHART_BUTTON_ID.INDEX_AI_ANALYZE)   //点击AI分析按钮
+        {
+            var indexInfo=obj.WindowIndex[frameID];
+            if (!indexInfo) return;
+
+            var data={ IndexInfo:{ Name:indexInfo.Name, ID:indexInfo.ID }, WindowIndex:frameID, StockInfo:{ Symbol:obj.Symbol, Name:obj.Name } };
+            if (this.IndexDataAnalyzeCallback) this.IndexDataAnalyzeCallback(data, obj);
+        }
+    }
 
 }

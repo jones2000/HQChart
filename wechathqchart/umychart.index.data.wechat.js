@@ -10,6 +10,12 @@
     系统录入的指标
 */
 
+import
+{
+    DECIMAL_ID,
+    CONDITION_PERIOD
+} from "./umychart.define.wechat.js"
+
 import 
 { 
     IFrameSplitOperator,
@@ -31,24 +37,7 @@ import
     YAxis:{ FloatPrecision:小数位数, StringFormat:， EnableRemoveZero }    //Y轴刻度输出格式
 */
 
-//周期条件枚举
-var CONDITION_PERIOD =
-{
-    MINUTE_ID: 101,            //分钟      走势图
-    MULTIDAY_MINUTE_ID: 102,   //多日分钟  走势图
-    HISTORY_MINUTE_ID: 103,    //历史分钟  走势图
 
-    //K线周期
-    KLINE_DAY_ID: 0,
-    KLINE_WEEK_ID: 1,
-    KLINE_MONTH_ID: 2,
-    KLINE_YEAR_ID: 3,
-    KLINE_MINUTE_ID: 4,
-    KLINE_5_MINUTE_ID: 5,
-    KLINE_15_MINUTE_ID: 6,
-    KLINE_30_MINUTE_ID: 7,
-    KLINE_60_MINUTE_ID: 8
-};
 
 //自定义的指标脚本
 function CustomIndexScript() 
@@ -205,7 +194,7 @@ JSIndexScript.prototype.MA=function()
 {
     let data=
     {
-        Name: 'MA', Description: '均线', IsMainIndex: true, StringFormat:2,
+        Name: 'MA', Description: '均线', IsMainIndex: true, StringFormat:2, FloatPrecision:DECIMAL_ID.SYMBOL_DECIMAL,
         Args:[ { Name:'M1', Value:5}, { Name:'M2', Value:10 }, { Name:'M3', Value:20} ],
         OutName:[ {Name:'MA1',DynamicName:"MA{M1}" },  {Name:'MA2',DynamicName:"MA{M2}" },{Name:'MA3',DynamicName:"MA{M3}" }],
         Script: //脚本
@@ -221,7 +210,7 @@ MA3:MA(CLOSE,M3);'
 JSIndexScript.prototype.MA4 = function () {
     let data =
     {
-        Name: 'MA', Description: '均线', IsMainIndex: true, StringFormat: 2,
+        Name: 'MA', Description: '均线', IsMainIndex: true, StringFormat: 2, FloatPrecision:DECIMAL_ID.SYMBOL_DECIMAL,
         Args: [{ Name: 'M1', Value: 5 }, { Name: 'M2', Value: 10 }, { Name: 'M3', Value: 20 }, { Name: 'M4', Value: 60 }],
         OutName:[ {Name:'MA1',DynamicName:"MA{M1}" },  {Name:'MA2',DynamicName:"MA{M2}" },{Name:'MA3',DynamicName:"MA{M3}" },{Name:'MA4',DynamicName:"MA{M4}" } ],
         Script: //脚本
@@ -238,7 +227,7 @@ MA4:MA(CLOSE,M4);'
 JSIndexScript.prototype.MA5 = function () {
     let data =
     {
-        Name: 'MA', Description: '均线', IsMainIndex: true, StringFormat: 2,
+        Name: 'MA', Description: '均线', IsMainIndex: true, StringFormat: 2, FloatPrecision:DECIMAL_ID.SYMBOL_DECIMAL,
         Args: [{ Name: 'M1', Value: 5 }, { Name: 'M2', Value: 10 }, { Name: 'M3', Value: 20 }, { Name: 'M4', Value: 60 }, { Name: 'M5', Value: 0 }],
         OutName:[ {Name:'MA1',DynamicName:"MA{M1}" },  {Name:'MA2',DynamicName:"MA{M2}" },{Name:'MA3',DynamicName:"MA{M3}" },{Name:'MA4',DynamicName:"MA{M4}" },{Name:'MA5',DynamicName:"MA{M5}" } ],
         Script: //脚本
@@ -256,7 +245,7 @@ MA5:MA(CLOSE,M5);'
 JSIndexScript.prototype.MA6 = function () {
     let data =
     {
-        Name: 'MA', Description: '均线', IsMainIndex: true, StringFormat: 2,
+        Name: 'MA', Description: '均线', IsMainIndex: true, StringFormat: 2, FloatPrecision:DECIMAL_ID.SYMBOL_DECIMAL,
         Args:
             [
                 { Name: 'M1', Value: 5 }, { Name: 'M2', Value: 10 }, { Name: 'M3', Value: 20 }, { Name: 'M4', Value: 60 },
@@ -283,7 +272,7 @@ MA6:MA(CLOSE,M6);'
 JSIndexScript.prototype.MA7 = function () {
     let data =
     {
-        Name: 'MA', Description: '均线', IsMainIndex: true, StringFormat: 2,
+        Name: 'MA', Description: '均线', IsMainIndex: true, StringFormat: 2, FloatPrecision:DECIMAL_ID.SYMBOL_DECIMAL,
         Args:
         [
             { Name: 'M1', Value: 5 }, { Name: 'M2', Value: 10 }, { Name: 'M3', Value: 20 }, { Name: 'M4', Value: 60 },
@@ -311,7 +300,7 @@ MA7:MA(CLOSE,M7);'
 JSIndexScript.prototype.MA8 = function () {
     let data =
     {
-        Name: 'MA', Description: '均线', IsMainIndex: true, StringFormat: 2,
+        Name: 'MA', Description: '均线', IsMainIndex: true, StringFormat: 2, FloatPrecision:DECIMAL_ID.SYMBOL_DECIMAL,
         Args:
         [
             { Name: 'M1', Value: 5 }, { Name: 'M2', Value: 10 }, { Name: 'M3', Value: 20 }, { Name: 'M4', Value: 60 },
@@ -341,7 +330,7 @@ JSIndexScript.prototype.EMA3=function()
 {
     let data=
     {
-        Name:'EMA', Description:'指数移动平均值', IsMainIndex:true, StringFormat:2,
+        Name:'EMA', Description:'指数移动平均值', IsMainIndex:true, StringFormat:2, FloatPrecision:DECIMAL_ID.SYMBOL_DECIMAL,
         Args:
         [ 
             { Name:'M1', Value:5}, { Name:'M2', Value:10 }, { Name:'M3', Value:20}
@@ -362,7 +351,7 @@ JSIndexScript.prototype.EMA4=function()
 {
     let data=
     {
-        Name:'EMA', Description:'指数移动平均值', IsMainIndex:true, StringFormat:2,
+        Name:'EMA', Description:'指数移动平均值', IsMainIndex:true, StringFormat:2, FloatPrecision:DECIMAL_ID.SYMBOL_DECIMAL,
         Args:
         [ 
             { Name:'M1', Value:5}, { Name:'M2', Value:10 }, { Name:'M3', Value:20} , { Name:'M4', Value:60} 
@@ -384,7 +373,7 @@ JSIndexScript.prototype.EMA5=function()
 {
     let data=
     {
-        Name:'EMA', Description:'指数移动平均值', IsMainIndex:true, StringFormat:2,
+        Name:'EMA', Description:'指数移动平均值', IsMainIndex:true, StringFormat:2, FloatPrecision:DECIMAL_ID.SYMBOL_DECIMAL,
         Args:
         [ 
             { Name:'M1', Value:5}, { Name:'M2', Value:10 }, { Name:'M3', Value:20} , { Name:'M4', Value:60} ,
@@ -409,7 +398,7 @@ JSIndexScript.prototype.EMA6=function()
 {
     let data=
     {
-        Name:'EMA', Description:'指数移动平均值', IsMainIndex:true, StringFormat:2,
+        Name:'EMA', Description:'指数移动平均值', IsMainIndex:true, StringFormat:2, FloatPrecision:DECIMAL_ID.SYMBOL_DECIMAL,
         Args:
         [ 
             { Name:'M1', Value:5}, { Name:'M2', Value:10 }, { Name:'M3', Value:20} , { Name:'M4', Value:60} ,
@@ -3501,7 +3490,7 @@ var JSCommonIndexScript=
 export
 {
     JSCommonIndexScript,
-    JSIndexScript
+    JSIndexScript,
 };
 
 /*

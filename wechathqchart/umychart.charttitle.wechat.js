@@ -10,6 +10,11 @@
     标题画法
 */
 
+import
+{
+    DECIMAL_ID,
+} from "./umychart.define.wechat.js"
+
 import 
 {
     g_JSChartResource,
@@ -1248,6 +1253,7 @@ var STRING_FORMAT_TYPE =
 {
     DEFAULT: 1,     //默认 2位小数 单位自动转化 (万 亿)
     ORIGINAL: 2,     //原始数据
+    INTEGER:3,      //整形数据输出 如果不是整形使用 DEFAULT
     THOUSANDS: 21,   //千分位分割
 };
 
@@ -1324,6 +1330,7 @@ function DynamicChartTitlePainting()
     this.IsKLineFrame=false;    //是否是K线框架标题
     this.IsMinuteFrame=false;
     this.IsLocked=false;        //上锁的指标区域
+    this.GetSymbolDecimalCallback=null; //获取品种小数位数
 
     this.UpDownArrowConfig=
     {
@@ -1463,12 +1470,23 @@ function DynamicChartTitlePainting()
 
     this.FormatValue = function (value, item) 
     {
+        if (item.FloatPrecision==DECIMAL_ID.SYMBOL_DECIMAL || item.FloatPrecision==DECIMAL_ID.SYMBOL_DECIMAL1) //品种小数位数
+        {
+            var dec=2;
+            if (this.GetSymbolDecimalCallback) dec=this.GetSymbolDecimalCallback(value,item);
+            if (item.FloatPrecision==DECIMAL_ID.SYMBOL_DECIMAL1) ++dec; //11品种小数位数+1
+            if (IFrameSplitOperator.IsNumber(value)) return `${value.toFixed(dec)}`;
+            else return `${value}`;
+        }
+
         if (item.StringFormat == STRING_FORMAT_TYPE.DEFAULT)
-            return IFrameSplitOperator.FormatValueString(value, item.FloatPrecision, this.LanguageID);
+            return IFrameSplitOperator.FormatValueStringV2(value, item.FloatPrecision, 2, this.LanguageID);
         else if (item.StringFormat == STRING_FORMAT_TYPE.THOUSANDS)
             return IFrameSplitOperator.FormatValueThousandsString(value, item.FloatPrecision);
         else if (item.StringFormat == STRING_FORMAT_TYPE.ORIGINAL)
             return value.toFixed(item.FloatPrecision).toString();
+        else if (item.StringFormat==STRING_FORMAT_TYPE.INTEGER)
+            return IFrameSplitOperator.FromatIntegerString(value,item.FloatPrecision,this.LanguageID);
     }
 
     this.FormatMultiReport = function (data, format) 
