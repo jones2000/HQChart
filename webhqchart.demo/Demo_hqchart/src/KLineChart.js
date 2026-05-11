@@ -16,7 +16,7 @@ class KLineChart
     Symbol=null;
 
     SelectedDataAnalyzeCallback=null;   //区间选择数据分析
-    IndexDataAnalyzeCallback=null;  //指标分析回调
+    SendAIMessageCallback=null;
     
     //K线配置信息
     Option= 
@@ -687,6 +687,88 @@ class KLineChart
         {
             this.Chart.JSChartContainer.ExecuteMenuCommand(menuData.Data.ID, menuData.Data.Args);
         }
+        else if (menuData.Data.ID=="ANALYZE_NEWS_DATA")
+        {
+            var item=menuData.Data.Args[0];
+            var option=
+            {
+                KLine:false,
+                DataRange:{ Count:300},
+                AryWindow:[], 
+                AryInfo:[{ Name:"新闻"} ],
+                AryOverlaySymbol:[]
+            };
+                
+            var data=this.Chart.GetGraphicsDescription(option);
+            if (!data) return;
+
+            var prompt=`读取最新的5篇新闻原始内容, 分析下对【${item.StockInfo.Name}】的影响`;
+            var date=new Date();
+            var fileName = `${item.StockInfo.Symbol} 新闻列表数据-${date.getHours()*1000000+date.getMinutes()*100+date.getSeconds()}.txt`;
+            var aiData=
+            {
+                File:{ Content:data.Data, Name:fileName, Message:`上传【${item.StockInfo.Name} ${item.StockInfo.Symbol}】新闻列表数据`},
+                Prompt:prompt,
+                Message:prompt,
+            };
+
+            if (this.SendAIMessageCallback) this.SendAIMessageCallback(aiData);
+        }
+        else if (menuData.Data.ID=="ANALYZE_ANNOUNCEMENT_DATA")
+        {
+            var item=menuData.Data.Args[0];
+            var option=
+            {
+                KLine:false,
+                DataRange:{ Count:300},
+                AryWindow:[], 
+                AryInfo:[ {Name:"公告"} ],
+                AryOverlaySymbol:[]
+            };
+                
+            var data=this.Chart.GetGraphicsDescription(option);
+            if (!data) return;
+
+            var prompt=`读取最新的5篇公告原始内容, 分析下对【${item.StockInfo.Name}】的影响`;
+            var date=new Date();
+            var fileName = `${item.StockInfo.Symbol} 公告列表数据-${date.getHours()*1000000+date.getMinutes()*100+date.getSeconds()}.txt`;
+            var aiData=
+            {
+                File:{ Content:data.Data, Name:fileName, Message:`上传【${item.StockInfo.Name} ${item.StockInfo.Symbol}】公告列表数据`},
+                Prompt:prompt,
+                Message:prompt,
+            };
+
+            if (this.SendAIMessageCallback) this.SendAIMessageCallback(aiData);
+        }
+        else if (menuData.Data.ID=="ANALYZE_INDEX_DATA")
+        {
+            var item=menuData.Data.Args[0];
+            var windowIndex=item.WindowIndex;   //窗口索引
+            var indexName=item.IndexInfo.Name;
+            var option=
+            {
+                DataRange:{ Count:300},
+                AryWindow:[{ Index:windowIndex}], 
+                AryInfo:[],
+                AryOverlaySymbol:[]
+            };
+                
+            var data=this.Chart.GetGraphicsDescription(option);
+            if (!data) return;
+
+            var prompt=`结合指标${indexName}数据, 分析下【${item.StockInfo.Name}】近期表现`;
+            var date=new Date();
+            var fileName = `${item.StockInfo.Symbol} ${indexName}指标数据-${date.getHours()*1000000+date.getMinutes()*100+date.getSeconds()}.txt`;
+            var aiData=
+            {
+                File:{ Content:data.Data, Name:fileName, Message:`上传【${item.StockInfo.Name} ${item.StockInfo.Symbol}】'${indexName}'指标数据`},
+                Prompt:prompt,
+                Message:prompt,
+            };
+
+            if (this.SendAIMessageCallback) this.SendAIMessageCallback(aiData);
+        }
     }
 
     OnDBClick(event, data, obj)
@@ -714,8 +796,39 @@ class KLineChart
             var indexInfo=obj.WindowIndex[frameID];
             if (!indexInfo) return;
 
-            var data={ IndexInfo:{ Name:indexInfo.Name, ID:indexInfo.ID }, WindowIndex:frameID, StockInfo:{ Symbol:obj.Symbol, Name:obj.Name } };
-            if (this.IndexDataAnalyzeCallback) this.IndexDataAnalyzeCallback(data, obj);
+            if (frameID==0)
+            {
+                var stockInfo={ Symbol:obj.Symbol, Name:obj.Name}
+                var menuData=
+                { 
+                    Menu:
+                    [ 
+                        { Name:`分析'${indexInfo.Name}'指标`,  Data:{ ID: "ANALYZE_INDEX_DATA", Args:[{ WindowIndex:frameID, StockInfo:stockInfo, IndexInfo:{ Name:indexInfo.Name } }] } },
+                        { Name:`新闻分析`,  Data:{ ID: "ANALYZE_NEWS_DATA", Args:[{ StockInfo:stockInfo, }] } },
+                        { Name:`公告分析`,  Data:{ ID: "ANALYZE_ANNOUNCEMENT_DATA", Args:[{ StockInfo:stockInfo, }] } },
+                    ],
+
+                    Position:JSPopMenu.POSITION_ID.TAB_MENU_ID,
+
+                    ClickCallback:(data)=>{ this.OnClickIndexDrapdownMenu(data); }
+                };
+
+                var e=data.e;
+                data.PreventDefault=true;
+                var rtButton=data.Info.Rect;
+                obj.PopupMenuByDrapdown(menuData, rtButton);
+
+                if(e.preventDefault) e.preventDefault();
+                if(e.stopPropagation) e.stopPropagation();
+
+            }
+            else
+            { 
+                var stockInfo={ Symbol:obj.Symbol, Name:obj.Name}
+                var indexInfo=obj.WindowIndex[frameID]; 
+                var menuItem={ Data:{ ID: "ANALYZE_INDEX_DATA", Args:[{ WindowIndex:frameID, StockInfo:stockInfo, IndexInfo:{ Name:indexInfo.Name } }] } } ;
+                this.OnClickIndexDrapdownMenu(menuItem);
+            }   
         }
     }
 

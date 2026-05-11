@@ -33,7 +33,15 @@ var CONDITION_PERIOD =
 var DECIMAL_ID=
 {
     SYMBOL_DECIMAL: -10,   //品种小数位数
-    SYMBOL_DECIMAL1: -11   //11品种小数位数+1
+    SYMBOL_DECIMAL1: -11,   //品种小数位数+1
+    SYMBOL_DECIMAL2: -12,   //品种小数位数+2
+
+    Includes:function(value) 
+    {
+        if (value==this.SYMBOL_DECIMAL || value==this.SYMBOL_DECIMAL1 || value==this.SYMBOL_DECIMAL2) return true;
+
+        return false;
+    }
 }
 
 

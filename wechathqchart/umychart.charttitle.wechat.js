@@ -1470,11 +1470,12 @@ function DynamicChartTitlePainting()
 
     this.FormatValue = function (value, item) 
     {
-        if (item.FloatPrecision==DECIMAL_ID.SYMBOL_DECIMAL || item.FloatPrecision==DECIMAL_ID.SYMBOL_DECIMAL1) //品种小数位数
+        if (DECIMAL_ID.Includes(item.FloatPrecision)) //品种小数位数
         {
             var dec=2;
             if (this.GetSymbolDecimalCallback) dec=this.GetSymbolDecimalCallback(value,item);
-            if (item.FloatPrecision==DECIMAL_ID.SYMBOL_DECIMAL1) ++dec; //11品种小数位数+1
+            if (item.FloatPrecision==DECIMAL_ID.SYMBOL_DECIMAL1) ++dec; //品种小数位数+1
+            if (item.FloatPrecision==DECIMAL_ID.SYMBOL_DECIMAL2) dec+=2; //品种小数位数+2
             if (IFrameSplitOperator.IsNumber(value)) return `${value.toFixed(dec)}`;
             else return `${value}`;
         }

@@ -193,9 +193,12 @@
 
                 this.KLineCtrl.Create(document.getElementById('KLineCtrl'));
                 this.KLineCtrl.SelectedDataAnalyzeCallback=(data)=>{ this.KLineSelectedDataAnalyze(data); }
-                this.KLineCtrl.IndexDataAnalyzeCallback=(data, hqchart)=>{ this.IndexDataAnalyze(data, hqchart); }
+                this.KLineCtrl.SendAIMessageCallback=(data)=>{ this.OnSendAIMessage(data); }
+
                 this.MinuteCtrl.Create(document.getElementById('MinuteCtrl'));
                 this.MinuteCtrl.SelectedDataAnalyzeCallback=(data)=>{ this.MinuteSelectedDataAnalyze(data); }
+                this.MinuteCtrl.SendAIMessageCallback=(data)=>{ this.OnSendAIMessage(data); }
+
                 this.MinDealCtrl.Create(document.getElementById('DealCtrl'));
                 this.MinMinuteCtrl.Create(document.getElementById('MinMinuteCtrl'));
                 this.StockInfoCtrl.Create(document.getElementById('StockBaseData'));
@@ -765,33 +768,18 @@
                 this.AICharV2.SendMessage("分析区间数据文件,总结下这个股票表现.", file);
             }
 
-            //指标分析
-            IndexDataAnalyze(data, hqchart)
+            OnSendAIMessage(data)
             {
-                var WindowIndex=data.WindowIndex;   //窗口索引
-                var indexInfo=data.IndexInfo;
-                var option=
-                {
-                    DataRange:{ Count:300},
-                    AryWindow:[ { Index:WindowIndex}], 
-                    AryInfo:[],
-                    AryOverlaySymbol:[]
-                };
-                
-                var data=hqchart.GetGraphicsDescription(option);
                 if (!data) return;
 
                 this.AICharV2.Show();
 
-                // 设置文件名
-                var content=data.Data;
-                var date=new Date();
-                var fileName = `${data.Symbol} ${indexInfo.Name}指标数据-${date.getHours()*1000000+date.getMinutes()*100+date.getSeconds()}.txt`;
-                var file={ Content:data.Data, Name:fileName, Message:`上传【${data.Name} ${data.Symbol}】'${indexInfo.Name}'指标数据`};
+                var file=null;
+                if (data.File) file=data.File;
+                var prompt=data.Prompt;
 
-                var prompt=`结合指标${indexInfo.Name}数据, 分析下【${data.Name}】近期表现`;
-                this.AICharV2.AddMessage(prompt, 'user');
-                this.AICharV2.SendMessage(prompt, file);
+                this.AICharV2.AddMessage(data.Message, 'user');
+                this.AICharV2.SendMessage(data.Prompt, file);
             }
 
             //区间分析

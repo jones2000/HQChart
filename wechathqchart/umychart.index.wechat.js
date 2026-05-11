@@ -1879,9 +1879,7 @@ function ScriptIndex(name, script, args, option)
             if (titlePaint && titlePaint.Data && i < titlePaint.Data.length) //设置标题数值 小数位数和格式
             {
                 if (this.StringFormat > 0) titlePaint.Data[i].StringFormat = this.StringFormat;
-
-                const DEF_DECIMAL=[DECIMAL_ID.SYMBOL_DECIMAL, DECIMAL_ID.SYMBOL_DECIMAL1];
-                if (this.FloatPrecision >= 0 || DEF_DECIMAL.includes(this.FloatPrecision)) titlePaint.Data[i].FloatPrecision = this.FloatPrecision;
+                if (this.FloatPrecision >= 0 || DECIMAL_ID.includes(this.FloatPrecision)) titlePaint.Data[i].FloatPrecision = this.FloatPrecision;
 
                 if (this.OutName && this.OutName.length>0 && this.Arguments && this.Arguments.length>0)
                 {

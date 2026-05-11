@@ -65884,11 +65884,12 @@ function DynamicChartTitlePainting()
 
     this.FormatValue=function(value,item)
     {
-        if (item.FloatPrecision==DECIMAL_ID.SYMBOL_DECIMAL || item.FloatPrecision==DECIMAL_ID.SYMBOL_DECIMAL1) //品种小数位数
+        if (DECIMAL_ID.Includes(item.FloatPrecision)) //品种小数位数
         {
             var dec=2;
             if (this.GetSymbolDecimalCallback) dec=this.GetSymbolDecimalCallback(value,item);
-            if (item.FloatPrecision==DECIMAL_ID.SYMBOL_DECIMAL1) ++dec; //11品种小数位数+1
+            if (item.FloatPrecision==DECIMAL_ID.SYMBOL_DECIMAL1) ++dec; //品种小数位数+1
+            if (item.FloatPrecision==DECIMAL_ID.SYMBOL_DECIMAL2) dec+=2; //品种小数位数+2
             if (IFrameSplitOperator.IsNumber(value)) return `${value.toFixed(dec)}`;
             else return `${value}`;
         }
@@ -93190,7 +93191,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_FRAME_TOOLBAR);
         if (event && event.Callback)
         {
-            var data={ Info:button, PreventDefault:false  };    //PreventDefault 是否阻止内置的点击处理
+            var data={ Info:button, PreventDefault:false, e:e };    //PreventDefault 是否阻止内置的点击处理
             event.Callback(event,data,this);
             if (data.PreventDefault) return;
         }
@@ -93736,6 +93737,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
     //K线信息
     this.GetKDataDescription=function(option)
     {
+        if (option && option.KLine===false) return null;
+
         var kData=this.GetKData();
         if (!kData || !IFrameSplitOperator.IsNonEmptyArray(kData.Data)) return null;
         var startIndex=0, endIndex=kData.Data.length-1;
