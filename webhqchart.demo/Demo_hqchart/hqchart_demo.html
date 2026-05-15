@@ -154,6 +154,9 @@
                     <label for="coze_token">扣子token</label>
                     <input type="text" id="coze_token" name="coze_token" placeholder="请输入扣子token">
 
+                    <label for="AliAI_APIKey">千问API Key</label>
+                    <input type="text" id="AliAI_APIKey" name="AliAI_APIKey" placeholder="千问API Key">
+
                 </div>
                 <div class="btn-group">
                     <button type="button" class="btn btn-cancel" id="cancelBtn">取消</button>
@@ -179,7 +182,7 @@
             StockChangeCtrl = new StockChangeChart();
             Symbol = "002371.sz";
 
-            AICharV2=new CozeAICharDialogV2();
+            AICharV2=new AICharDialogV2();
 
             Create() {
                 HQChartWSClient.NetworkStatusCallback = (data) => { this.UpdateNetworkStatus(data); }
@@ -673,11 +676,13 @@
                 const input = document.getElementById('extendID');
                 const cozeBotid = document.getElementById('coze_botid');
                 const cozeToken = document.getElementById('coze_token');
+                const aliAPIKey=document.getElementById("AliAI_APIKey");
                 if (!modalMask) return;
 
                 input.value = EnvironmentVariable.TargetExtensionID;
                 cozeBotid.value = EnvironmentVariable.CozeAI.BotID;
                 cozeToken.value = EnvironmentVariable.CozeAI.Token;
+                aliAPIKey.value=EnvironmentVariable.AliAI.ApiKey;
 
                 cancelBtn.onclick = (e) => {
                     modalMask.style.display = 'none';
@@ -693,6 +698,9 @@
 
                     var value = cozeToken.value.trim();
                     EnvironmentVariable.CozeAI.Token = value;
+
+                    var value = aliAPIKey.value.trim();
+                    EnvironmentVariable.AliAI.ApiKey = value;
 
                     EnvironmentVariable.Save();
 
@@ -1295,6 +1303,33 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        cursor: move;
+        gap: 10px;
+    }
+
+    .HQChart_AI_Header-Left 
+    {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    /* 模型下拉框样式 */
+    .HQChart_AI_Model_Select 
+    {
+        padding: 3px 6px;
+        border-radius: 6px;
+        border: none;
+        outline: none;
+        font-size: 12px;
+        background: rgba(255,255,255,0.25);
+        color: #fff;
+        cursor: pointer;
+    }
+
+    .HQChart_AI_Model_Select option 
+    {
+        color: #333;
     }
 
     .HQChart_AI_Clear_Button
@@ -1327,6 +1362,65 @@
         flex-direction: column;
         gap: 10px;
         white-space: pre-wrap !important;
+    }
+
+    /* 单条消息容器（头像 + 推理 + 回答） */
+    .HQChart_AI_Message_Wrap 
+    {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    /* AI头像 */
+    .HQchart_AI_Avatar
+    {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #f2533d;
+        color: #fff;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    /* 右侧内容容器：推理+回答上下排列 */
+    .HQChart_AI_Content_Wrap 
+    {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    /* 推理过程框 */
+    .HQChart_AI_Reason_Box 
+    {
+        padding: 10px 12px;
+        background: #f0f1f3;
+        border-radius: 10px;
+        font-size: 13px;
+        color: #666;
+        line-height: 1.5;
+        white-space: pre-wrap;
+    }
+
+    /* 正式回答气泡 */
+    .HQChart_AI_AI_Message
+    {
+        max-width: 80%;
+        padding: 8px 12px;
+        border-radius: 14px;
+        line-height: 1.6;
+        font-size: 14px;
+        word-break: break-all;
+        white-space: pre-wrap !important;
+        background: white;
+        color: #333;
+        border: 1px solid #e5e6eb;
+        align-self: flex-start;
     }
 
     .HQChart_AI_Message_Item 

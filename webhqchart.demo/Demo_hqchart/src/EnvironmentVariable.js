@@ -10,10 +10,19 @@ class EnvironmentVariable
     static COZEAI_BOT_ID_KEY="COZE_BOT_ID";
     static COZEAI_TOKEN_ID_KEY="COZE_TOKEN_ID";
 
+    static ALIAI_API_KEY="ALIAI_API_KEY";
+    static ALIAI_APP_ID_KEY="ALIAI_APP_ID";
+
     static CozeAI=
     {
         BotID:"7632366331311996978",
         Token:""
+    }
+
+    static AliAI=
+    {
+        ApiKey:"",
+        AppID:"",
     }
 
     static Load()
@@ -26,13 +35,22 @@ class EnvironmentVariable
 
         value = localStorage.getItem(EnvironmentVariable.COZEAI_TOKEN_ID_KEY);
         if (value) EnvironmentVariable.CozeAI.Token=value;
+
+        value = localStorage.getItem(EnvironmentVariable.ALIAI_API_KEY);
+        if (value) EnvironmentVariable.AliAI.ApiKey=value;
+
+        value = localStorage.getItem(EnvironmentVariable.ALIAI_APP_ID_KEY);
+        if (value) EnvironmentVariable.AliAI.AppID=value;
     }
 
     static Save()
     {
         // 保存到本地 localStorage
         localStorage.setItem(EnvironmentVariable.EXTENSION_ID_KEY, EnvironmentVariable.TargetExtensionID);
+
         localStorage.setItem(EnvironmentVariable.COZEAI_BOT_ID_KEY, EnvironmentVariable.CozeAI.BotID);
         localStorage.setItem(EnvironmentVariable.COZEAI_TOKEN_ID_KEY, EnvironmentVariable.CozeAI.Token);
+
+        localStorage.setItem(EnvironmentVariable.ALIAI_API_KEY, EnvironmentVariable.AliAI.ApiKey);
     }
 }
