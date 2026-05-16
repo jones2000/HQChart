@@ -4260,6 +4260,11 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
     this.TryClickButton=function(x, y, e)
     {
+        if (this.TryClickIndexTitle)
+        {
+            if (this.TryClickIndexTitle(x, y, e)) return true;
+        } 
+
         var button=this.Frame.PtInButtons(x,y);
         if (button && this.ClickFrameButton)
         {
@@ -5820,7 +5825,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         if (this.TryClickLock || this.TryClickIndexTitle) //指标枷锁区域 , 指标标题点击
         {
             if (this.TryClickLock && this.TryClickLock(x, y)) return true;
-            if (this.TryClickIndexTitle && this.TryClickIndexTitle(x,y)) return true;
+            if (this.TryClickIndexTitle && this.TryClickIndexTitle(x,y,e)) return true;
         }
 
         if (this.ClickFrameButton)
@@ -13335,6 +13340,28 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     {
         return GetfloatPrecision(this.Symbol);
     }
+
+    this.TryClickIndexTitle=function(x,y, e)
+    {
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.TitlePaint)) return false;
+
+        for(var i=0; i<this.TitlePaint.length; ++i)
+        {
+            var item=this.TitlePaint[i];
+            if (!item || !item.IsClickTitle) continue;
+            if (!item.IsClickTitle(x,y)) continue;
+
+            var data={ Point:{X:x, Y:y}, Title:item.Title, FrameID:item.Frame.Identify, Rect:item.TitleRect, e:e };
+            JSConsole.Chart.Log('[JSChartContainer::TryClickIndexTitle] click title ', data);
+
+            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_INDEXTITLE);
+            if (event && event.Callback) event.Callback(event,data,this);
+            
+            return true;
+        }
+
+        return false;
+    }
 }
 
 function GetDevicePixelRatio()
@@ -17202,6 +17229,9 @@ function MinuteFrame()
     this.IndexHelp=g_JSChartResource.MinuteToolbar.IndexHelp;
     this.IndexAIAnalyze=g_JSChartResource.MinuteToolbar.IndexAIAnalyze;
 
+    this.IsDrawTitleBG=g_JSChartResource.MinuteToolbar.IsDrawTitleBG;
+    this.IsShowNameArrow=g_JSChartResource.MinuteToolbar.IsShowNameArrow;
+
     this.IsShowPositionTitle=false; //是否显示持仓标题
 
     this.LastCalculateStatus={ Width:0, XPointCount:0 };    //最后一次计算宽度的状态
@@ -19572,8 +19602,8 @@ function KLineFrame()
     this.LastCalculateStatus={ Width:0, XPointCount:0 };    //最后一次计算宽度的状态
 
     this.CustomHorizontalInfo=[];   //定制Y轴刻度
-    this.IsDrawTitleBG=false;
-    this.IsShowNameArrow=false;
+    this.IsDrawTitleBG=g_JSChartResource.KLineToolbar.IsDrawTitleBG;
+    this.IsShowNameArrow=g_JSChartResource.KLineToolbar.IsShowNameArrow;
 
     this.CustomVerticalInfo=[];     //定制X轴刻度 Type:0,  Date:, Time: ,        Line:{ Color:线段颜色, Type:线段类型 0 直线 1 虚线 }
                                     //           Type:1,  Space: 第几个空白间距,  Line:{ Color:线段颜色, Type:线段类型 0 直线 1 虚线 }
@@ -80292,6 +80322,9 @@ function JSChartResource()
 
         IsShowOverlayToolbar:true,      //是否显示叠加坐标工具栏按钮
         IsShowOverlayFrame:true,        //是否显示右侧叠加坐标
+
+        IsDrawTitleBG:false,            //是否绘制指标名字背景色
+        IsShowNameArrow:false,          //指标名字前 下拉箭头
     }
 
     //全局分时图窗口按钮配置
@@ -80307,6 +80340,9 @@ function JSChartResource()
         AddIndexWindow:false,   //增加指标窗口
         IndexHelp:false,    //指标帮助
         IndexAIAnalyze:false,
+
+        IsDrawTitleBG:false,        //是否绘制指标名字背景色
+        IsShowNameArrow:false,      //指标名字前 下拉箭头
     }
 
     this.TooltipBGColor="rgb(255, 255, 255)"; //背景色
@@ -90395,26 +90431,6 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         }
     }
 
-    this.TryClickIndexTitle=function(x,y)
-    {
-        for(var i in this.TitlePaint)
-        {
-            var item=this.TitlePaint[i];
-            if (!item.IsClickTitle) continue;
-            if (!item.IsClickTitle(x,y)) continue;
-
-            var data={ Point:{X:x, Y:y}, Title:item.Title, FrameID:item.Frame.Identify };
-            JSConsole.Chart.Log('[KLineChartContainer::TryClickIndexTitle] click title ', data);
-
-            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_INDEXTITLE);
-            if (event && event.Callback) event.Callback(event,data,this);
-            
-            return true;
-        }
-
-        return false;
-    }
-
     this.SetSizeChange=function(bChanged)
     {
         this.Frame.SetSizeChage(bChanged);
@@ -95773,7 +95789,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                 var x = pt.X;
                 var y = pt.Y;
                 if (this.TryClickLock && this.TryClickLock(x, y)) return;
-                if (this.TryClickIndexTitle && this.TryClickIndexTitle(x,y)) return;
+                if (this.TryClickIndexTitle && this.TryClickIndexTitle(x, y, e)) return;
             }
 
             if (this.ClickFrameButton)
@@ -97306,8 +97322,8 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
 
         //清空东条标题
         var titleIndex=windowIndex+1;
-        this.TitlePaint[titleIndex].Data=[];
-        this.TitlePaint[titleIndex].Title=null;
+        var chartTitle=this.TitlePaint[titleIndex];
+        if (chartTitle) chartTitle.Clear({ DynamicTitle:true , ArgumentsText:true});
     }
 
     this.CreateStockInfo=function()
@@ -100725,26 +100741,6 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         this.DrawDynamicInfo();
     }
 
-    this.TryClickIndexTitle=function(x,y)
-    {
-        for(var i=0; i<this.TitlePaint.length; ++i)
-        {
-            var item=this.TitlePaint[i];
-            if (!item.IsClickTitle) continue;
-            if (!item.IsClickTitle(x,y)) continue;
-
-            var data={ Point:{X:x, Y:y}, Title:item.Title, FrameID:item.Frame.Identify };
-            JSConsole.Chart.Log('[MinuteChartContainer::TryClickIndexTitle] click title ', data);
-
-            var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_CLICK_INDEXTITLE);
-            if (event && event.Callback) event.Callback(event,data,this);
-            
-            return true;
-        }
-
-        return false;
-    }
-
     this.ClearSelectedXBorder=function()
     {
         if (!this.GlobalOption || !this.GlobalOption.SelectedXBorder) return;
@@ -102843,26 +102839,6 @@ function KLineChartHScreenContainer(uielement)
             var pt=this.PointAbsoluteToRelative(touches[0].clientX, touches[0].clientY, true);
 
             if (this.TryPhoneClickButton(pt.X,pt.Y,e)) return;
-
-            /*
-            if (this.TryClickLock || this.TryClickIndexTitle) //指标枷锁区域, 指标标题点击
-            {
-                var x = pt.X;
-                var y = pt.Y;
-                if (this.TryClickLock && this.TryClickLock(x, y)) return;
-                if (this.TryClickIndexTitle && this.TryClickIndexTitle(x,y)) return;
-            }
-
-            if (this.ClickFrameButton)
-            {
-                var button=this.Frame.PtInButtons(pt.X,pt.Y);
-                if (button)
-                {
-                    this.ClickFrameButton(button, e);
-                    return;
-                }
-            }
-            */
 
             if (this.EnableVerticalDrag )
             {

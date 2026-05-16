@@ -40,7 +40,7 @@ class KLineChart
             },
             */
 
-            { Index:"MA", Overlay:true, AddIndexWindow:true, Export:true, IsSync:true,IndexHelp:true, IndexAIAnalyze:true,},
+            { Index:"MA", Overlay:true, AddIndexWindow:true, Export:true, IsSync:true,IndexHelp:true, IndexAIAnalyze:true },
 
             /*
             { 
@@ -380,6 +380,10 @@ class KLineChart
             {
                 event:JSCHART_EVENT_ID.ON_CLICK_FRAME_TOOLBAR,
                 callback:(event, data, obj)=>{ this.OnClickFrameToolbar(event, data, obj); }
+            },
+            {
+                event:JSCHART_EVENT_ID.ON_CLICK_INDEXTITLE, 
+                callback:(event, data, obj)=>{ this.OnClickIndexTitle(event, data, obj); }
             }
         ];
 
@@ -675,6 +679,12 @@ class KLineChart
 
         if(e.preventDefault) e.preventDefault();
         if(e.stopPropagation) e.stopPropagation();
+    }
+
+
+    OnClickIndexTitle(event, data, obj)
+    {
+        console.log("[KLineChart::OnClickIndexTitle] data=", data);
     }
 
     OnClickIndexDrapdownMenu(menuData)

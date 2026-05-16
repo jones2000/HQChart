@@ -2,7 +2,7 @@
   "name": "hqchart",
   "description": "stock chart",
   "author": "jones2000",
-  "version": "1.1.12585",
+  "version": "1.1.12693",
   "main": "lib/main.js",
   "private": false,
   "license": "Apache License 2.0",
@@ -12,7 +12,9 @@
     "build": "rimraf dist && webpack -p --progress --hide-modules",
     "lib": "babel src/jscommon/umychart.vue --out-dir lib",
     "lib2": "babel src/jscommon/umychart*.js --out-dir lib2",
-    "unilib": "babel src/jscommon/umychart.uniapp.h5/umychart*.js --out-dir uniapp_lib"
+    "unilib": "babel src/jscommon/umychart.uniapp.h5/umychart*.js --out-dir uniapp_lib",
+    "testdata": "babel src/jscommon/umychart.vue.testdata --out-dir src/jscommon/umychart.vue.testdataV2",
+    "min":"terser src/jscommon/umychart/umychart.js -o src/jscommon/umychart/umychart.min.js -c"
   },
   "dependencies": {
     "axios": "^0.16.2",
@@ -22,8 +24,8 @@
     "qs": "^6.5.0",
     "vue": "^2.6.9",
     "vue-plugin-timers": "^0.1.6",
-    "webpack": "^3.0",
-    "vue-router": "^2.8.1"
+    "vue-router": "^2.8.1",
+    "webpack": "^3.0"
   },
   "engines": {
     "node": ">=6"
@@ -32,7 +34,7 @@
     "autoprefixer": "^6.6.0",
     "babel-cli": "^6.26.0",
     "babel-core": "^6.24.1",
-    "babel-loader": "^6.4.0",
+    "babel-loader": "^7.1.5",
     "babel-plugin-transform-runtime": "^6.23.0",
     "babel-preset-es2015": "^6.24.1",
     "babel-preset-vue-app": "^1.2.0",
@@ -40,7 +42,7 @@
     "css-loader": "^0.27.3",
     "file-loader": "^0.10.1",
     "html-webpack-plugin": "^2.24.1",
-    "jquery": "^3.3.1",
+    "jquery": "^3.7.1",
     "js-md5": "^0.7.3",
     "less": "^3.9.0",
     "less-loader": "^4.1.0",
@@ -49,6 +51,7 @@
     "style-loader": "^0.13.2",
     "stylus": "^0.54.5",
     "stylus-loader": "^3.0.2",
+    "terser": "^5.47.1",
     "url-loader": "^0.5.8",
     "vue-loader": "^11.1.4",
     "vue-template-compiler": "^2.6.9",

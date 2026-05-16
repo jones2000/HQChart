@@ -18,7 +18,7 @@ class MinuteChart
         Windows: //窗口指标
         [
             //{ Index:"AMO", YAxis:{StringFormat:1} },
-            { Index:"MACD", AddIndexWindow:true,IsSync:true, IndexHelp:true, },
+            { Index:"MACD", AddIndexWindow:true,IsSync:true, IndexHelp:true, IsDrawTitleBG:true, IsShowNameArrow:true },
             
         ], 
 
@@ -235,6 +235,10 @@ class MinuteChart
                 event:JSCHART_EVENT_ID.ON_MENU_COMMAND,
                 callback:(event, data, obj)=>{ this.OnMenuCommand(event, data, obj); }
             },
+            {
+                event:JSCHART_EVENT_ID.ON_CLICK_INDEXTITLE, 
+                callback:(event, data, obj)=>{ this.OnClickIndexTitle(event, data, obj); }
+            }
         ]
 
         this.Chart.SetOption(this.Option);  //设置K线配置
@@ -316,6 +320,63 @@ class MinuteChart
         if (data.CommandID==JSCHART_MENU_ID.CMD_SELECTED_DATA_ANALYZE_ID)
         {
             if (this.SelectedDataAnalyzeCallback) this.SelectedDataAnalyzeCallback(data);
+        }
+    }
+
+    OnClickIndexTitle(event, data, obj)
+    {
+        console.log("[MinuteChart::OnClickIndexTitle] data=", data);
+
+        var script=this.Chart.JSChartContainer.WindowIndex[data.FrameID];
+        if (!script)
+        {
+            var menuData=
+            { 
+                Menu:
+                [ 
+                    this.Chart.JSChartContainer.GetShowChangeIndexDialogMenuData(data.FrameID),
+                ],
+
+                Position:JSPopMenu.POSITION_ID.TAB_MENU_ID,
+
+                ClickCallback:(data)=>{ this.OnClickIndexDrapdownMenu(data); }
+            };
+        }
+        else
+        {
+            var menuData=
+            { 
+                Menu:
+                [ 
+                    this.Chart.JSChartContainer.GetShowIndexMenuData(data.FrameID),
+                    this.Chart.JSChartContainer.GetModifyIndexMenuData(data.FrameID),
+                    { Name:JSPopMenu.SEPARATOR_LINE_NAME },
+                    { Name:"删除指标", Data:{ ID:JSCHART_MENU_ID.CMD_DELETE_INDEX_ID , Args:[data.FrameID, { Draw:true }]} },
+                ],
+
+                Position:JSPopMenu.POSITION_ID.TAB_MENU_ID,
+
+                ClickCallback:(data)=>{ this.OnClickIndexDrapdownMenu(data); }
+            };
+        }
+
+        var rtButton=data.Rect;
+        var e=data.e;
+        this.Chart.PopupMenuByDrapdown(menuData, rtButton);
+
+        if(e.preventDefault) e.preventDefault();
+        if(e.stopPropagation) e.stopPropagation();
+    }
+
+    OnClickIndexDrapdownMenu(menuData)
+    {
+        if (menuData.Data.ID==JSCHART_MENU_ID.CMD_SHOW_INDEX_ID || menuData.Data.ID==JSCHART_MENU_ID.CMD_SHOW_OVERLAY_INDEX_ID || 
+            menuData.Data.ID==JSCHART_MENU_ID.CMD_DELETE_OVERLAY_INDEX_ID || menuData.Data.ID==JSCHART_MENU_ID.CMD_SHOW_OVERLAY_Y_AXIS_ID ||
+            menuData.Data.ID==JSCHART_MENU_ID.CMD_ENABLE_OVERLAY_SHARE_Y_ID ||
+            menuData.Data.ID==JSCHART_MENU_ID.CMD_MODIFY_INDEX_PARAM || menuData.Data.ID==JSCHART_MENU_ID.CMD_MODIFY_OVERLAY_INDEX_PARAM ||
+            menuData.Data.ID==JSCHART_MENU_ID.CMD_SHOW_CHANGE_INDEX_DIALOG_ID || menuData.Data.ID==JSCHART_MENU_ID.CMD_DELETE_INDEX_ID)
+        {
+            this.Chart.JSChartContainer.ExecuteMenuCommand(menuData.Data.ID, menuData.Data.Args);
         }
     }
 }
