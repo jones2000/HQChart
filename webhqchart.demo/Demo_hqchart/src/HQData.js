@@ -3052,6 +3052,12 @@ class HQData
     {
         var hqchartData={ data:[] };
         if (!IFrameSplitOperator.IsNonEmptyArray(recv.AryData)) return hqchartData;
+
+        function _Temp_ReadNumber(value, defValue="--.--")
+        {
+            if (IFrameSplitOperator.IsNumber(value)) return { Value:value };
+            else return { Text:"--.--"};
+        }
         
         for(var i=0;i<recv.AryData.length;++i)
         {
@@ -3060,10 +3066,13 @@ class HQData
             item.YClose=stockItem.YClose;
             
             item.Data.push({ Key:"Name", Value:{ Text:stockItem.Name} });          //名称
-            item.Data.push({ Key:"Increase", Value:{ Value:stockItem.Increase} });  //涨幅%
-            item.Data.push({ Key:"UpDown", Value:{ Value:stockItem.UpDown} });      //涨跌
-            item.Data.push({ Key:"Amount", Value:{ Value:stockItem.Amount} });      //成交额
-            item.Data.push({ Key:"Price", Value:{ Value:stockItem.Close} });        //价格
+
+            item.Data.push({ Key:"Increase", Value:_Temp_ReadNumber(stockItem.Increase) });  //涨幅%
+
+            item.Data.push({ Key:"UpDown", Value:_Temp_ReadNumber(stockItem.UpDown) });      //涨跌
+            item.Data.push({ Key:"Amount", Value:_Temp_ReadNumber(stockItem.Amount) });      //成交额
+
+            item.Data.push({ Key:"Price", Value:_Temp_ReadNumber(stockItem.Close) });        //价格
             
             hqchartData.data.push(item);
         }

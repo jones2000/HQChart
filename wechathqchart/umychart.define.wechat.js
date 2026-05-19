@@ -26,7 +26,7 @@ var CONDITION_PERIOD =
     KLINE_5_MINUTE_ID: 5,
     KLINE_15_MINUTE_ID: 6,
     KLINE_30_MINUTE_ID: 7,
-    KLINE_60_MINUTE_ID: 8
+    KLINE_60_MINUTE_ID: 8,
 };
 
 //显示小数位数枚举
@@ -48,5 +48,5 @@ var DECIMAL_ID=
 export
 {
     DECIMAL_ID,
-    CONDITION_PERIOD
+    CONDITION_PERIOD,
 };
