@@ -249,7 +249,13 @@ function GetBlackStyle()
                 },
                 DragonTiger:    //龙虎榜
                 {
-                    IconFont: { Family:'iconfont', Text:'\ue62f', HScreenText:'\ue68a' ,Color:'#b22626' } //SVG 文本
+                    IconFont: { Family:'iconfont', Text:'\ue62f', HScreenText:'\ue68a' ,Color:'#b22626' }, //SVG 文本
+
+                    AryIconFont:
+                    [
+                        { Family:'iconfont', Text:'\ue6c3', HScreenText:'\ue6c3' ,Color:'rgb(255,165,0)'},
+                        { Family:'iconfont', Text:'\ue6c5', HScreenText:'\ue6c5' ,Color:'rgb(0,191,255)'},
+                    ]
                 },
                 News:   //新闻
                 {
@@ -1164,7 +1170,17 @@ function GetBlackStyle()
             { 
                 Color:"rgb(220,220,220)", 
             }
-        }
+        },
+
+        OrderList:
+        {
+            BorderColor:'rgba(192,192,192,0.45)',    //边框线
+
+            Header:
+            {
+                Color:"RGB(120,120,120)",
+            },
+        },
         
     };
     

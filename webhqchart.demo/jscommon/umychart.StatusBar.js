@@ -1076,9 +1076,9 @@ function ChartStatusBarStockData()
                         break;
                 }
             }
-        }
 
-        if (column.StringFormat && text) text=column.StringFormat.replace('{Value}',text);
+            if (column.StringFormat && text) text=column.StringFormat.replace('{Value}',text);
+        }
 
         return text;
     }

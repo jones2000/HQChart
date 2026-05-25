@@ -2038,7 +2038,10 @@ function JSFloatTooltip()
                     this.FormatPerformanceForecastText(item,aryText);
                     break;
                 default:
-                    this.FormatDefaultKLineInfoText(item, aryText);
+                    if (infoType>=KLINE_INFO_TYPE.DRAGON_TIGER_EX_START && infoType<=KLINE_INFO_TYPE.DRAGON_TIGER_EX_END)
+                        this.FormatDragonTigerText(item,defaultfloatPrecision,aryText);
+                    else 
+                        this.FormatDefaultKLineInfoText(item, aryText);
                     break;
             }
         }

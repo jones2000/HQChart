@@ -2860,6 +2860,12 @@ var JSCHART_EVENT_ID=
 
     ON_CLICK_UP_SCROLL_TEXT_ITEM:383,
     ON_RCLICK_UP_SCROLL_TEXT_ITEM:384,
+
+    //价格列表
+    ON_CLICK_ORDER_CELL:401,
+    ON_RCLICK_ORDER_CELL:402,
+    ON_DBCLICK_ORDER_ROW:403,
+    ON_MOVEON_ORDER_CELL:404,  //鼠标在单元格
 }
 
 var JSCHART_OPERATOR_ID=
@@ -24671,6 +24677,10 @@ var KLINE_INFO_TYPE=
     //扩展信息
     EXTEND_INFO_START:301,
     EXTEND_INFO_END:399,
+
+    //龙虎榜预留类型
+    DRAGON_TIGER_EX_START:401,
+    DRAGON_TIGER_EX_END:499,
 }
 
 function KLineInfoData()
@@ -80701,7 +80711,15 @@ function JSChartResource()
             },
             DragonTiger:    //龙虎榜
             {
-                IconFont: { Family:'iconfont', Text:'\ue62f', HScreenText:'\ue68a' ,Color:'#b22626' } //SVG 文本
+                //默认值
+                IconFont: { Family:'iconfont', Text:'\ue62f', HScreenText:'\ue68a' ,Color:'#b22626' }, //SVG 文本
+
+                //自定义值
+                AryIconFont:
+                [
+                    { Family:'iconfont', Text:'\ue6c3', HScreenText:'\ue6c3' ,Color:'rgb(255,165,0)'},
+                    { Family:'iconfont', Text:'\ue6c5', HScreenText:'\ue6c5' ,Color:'rgb(0,191,255)'},
+                ]
             },
             News:   //新闻
             {
@@ -82195,6 +82213,52 @@ function JSChartResource()
         }
     }
 
+    this.OrderList=
+    {
+        BorderColor:'rgba(192,192,192, 0.3)',    //边框线
+
+        Header:
+        {
+            Color:"RGB(60,60,60)",
+            Margin:{ Left:5, Right:5, Top:2, Bottom:4 },
+            Font:{ Size:14, Name:"微软雅黑" }
+        },
+
+        Item:
+        {
+            Margin:{ Top:2, Bottom:4,Left:5, Right:5 }, //单元格四周间距
+            Font:{ Size:15, Name:"微软雅黑"},
+        },
+
+        FieldColor:
+        {
+            Text:"rgb(60,60,60)",   //默认文本
+        },
+
+        UpTextColor:"rgb(238,21,21)",      //上涨文字颜色
+        DownTextColor:"rgb(25,158,0)",     //下跌文字颜色
+        UnchagneTextColor:"rgb(0,0,0)",     //平盘文字颜色
+
+        Selected:
+        {
+            BGColor:"rgb(180,240,240)",
+            LineColor:"rgb(128,128,128)",
+            LineWidth:2,
+        },
+
+        MoveOn:
+        {
+            LineColor:"rgb(55, 131, 250)",
+            LineWidth:2,
+        },
+
+        //自定义颜色
+        AryColor:
+        [
+
+        ]
+    }
+
 
     //自定义风格
     this.SetStyle=function(style)
@@ -83158,7 +83222,68 @@ function JSChartResource()
         if (style.StatusBar) this.SetStatusBar(style.StatusBar);
         if (style.ScrollText) this.SetScrollText(style.ScrollText);
         if (style.MinuteInfo) this.SetMinuteInfo(style.MinuteInfo);
+        if (style.OrderList) this.SetOrderList(style.OrderList);
 
+    }
+
+    this.SetOrderList=function(style)
+    {
+        var dest=this.OrderList;
+        if (style.BorderColor) dest.BorderColor=style.BorderColor;
+
+        if (style.UpTextColor) dest.UpTextColor=style.UpTextColor;
+        if (style.DownTextColor) dest.DownTextColor=style.DownTextColor;
+        if (style.UnchangeTextColor) dest.UnchangeTextColor=style.UnchangeTextColor;
+
+        if (style.Header)
+        {
+            var subItem=style.Header;
+            var subDest=this.OrderList.Header;
+            if (subItem.Color) subDest.Color=subItem.Color;
+            if (subItem.Margin) CopyMarginConfig(subDest.Margin,subItem.Margin);
+            if (subItem.Font)
+            {
+                if (IFrameSplitOperator.IsNumber(subItem.Font.Size)) subDest.Font.Size=subItem.Font.Size;
+                if (subItem.Font.Name) subDest.Font.Name=subItem.Font.Name;
+            }
+        }
+
+        if (style.Item)
+        {
+            var subItem=style.Item;
+            var subDest=this.OrderList.Item;
+            if (subItem.Margin) CopyMarginConfig(subDest.Margin,subItem.Margin);
+            if (subItem.Font)
+            {
+                if (IFrameSplitOperator.IsNumber(subItem.Font.Size)) subDest.Font.Size=subItem.Font.Size;
+                if (subItem.Font.Name) subDest.Font.Name=subItem.Font.Name;
+            }
+        }
+
+        if (style.FieldColor)
+        {
+            var subItem=style.Item;
+            var subDest=this.OrderList.Item;
+            if (subItem.Text) subDest.Text=subItem.Text;
+        }
+
+        if (style.Selected)
+        {
+            var subItem=style.Selected;
+            var subDest=this.OrderList.Selected;
+            if (subItem.BGColor) subDest.BGColor=subItem.BGColor;
+
+            if (subItem.LineColor) subDest.LineColor=subItem.LineColor;
+            if (IFrameSplitOperator.IsNumber(subItem.LineWidth)) subDest.LineWidth=subItem.LineWidth;
+        }
+
+        if (style.MoveOn)
+        {
+            var subItem=style.MoveOn;
+            var subDest=this.OrderList.MoveOn;
+            if (subItem.LineColor) subDest.LineColor=subItem.LineColor;
+            if (IFrameSplitOperator.IsNumber(subItem.LineWidth)) subDest.LineWidth=subItem.LineWidth;
+        }
     }
 
     this.SetMinuteInfo=function(style)
@@ -101118,7 +101243,7 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         strDescription+="5. High:这一分钟内最高价\r\n";
         strDescription+="6. Low:这一分钟内最低价\r\n";
         strDescription+="7. Amount:这一分钟内总的成交金额\r\n";
-        strDescription+="8. Vol:这一分钟内总的成交量\r\n";
+        strDescription+="8. Vol:这一分钟内总的成交量(股)\r\n";
         strDescription+="9. AvPrice:均价\r\n";
         strDescription+="10. YClose:昨收价\r\n";
         strDescription+="11. YClearing:昨结算价\r\n";
@@ -104969,7 +105094,7 @@ JSKLineInfoMap.GetClassInfo=function(id)
     return JSKLineInfoMap.Get(id);
 }
 
-JSKLineInfoMap.GetIconUrl=function(type)
+JSKLineInfoMap.GetIconUrl=function(type, item)
 {     
     switch(type)
     {
@@ -105019,6 +105144,16 @@ JSKLineInfoMap.GetIconFont=function(type)
         var index=type-KLINE_INFO_TYPE.EXTEND_INFO_START;
         var value=g_JSChartResource.KLine.Info.ExtendInfo.Default;
         var aryData=g_JSChartResource.KLine.Info.ExtendInfo.AryIconFont;
+        if (IFrameSplitOperator.IsNonEmptyArray(aryData) && aryData[index]) value=aryData[index];
+
+        return value;
+    }
+
+    if (type>=KLINE_INFO_TYPE.DRAGON_TIGER_EX_START && type<=KLINE_INFO_TYPE.DRAGON_TIGER_EX_END)
+    {
+        var index=type-KLINE_INFO_TYPE.DRAGON_TIGER_EX_START;
+        var value=g_JSChartResource.KLine.Info.DragonTiger.IconFont;
+        var aryData=g_JSChartResource.KLine.Info.DragonTiger.AryIconFont;
         if (IFrameSplitOperator.IsNonEmptyArray(aryData) && aryData[index]) value=aryData[index];
 
         return value;
@@ -105469,7 +105604,15 @@ function DragonTigerInfo()
             var infoData=new KLineInfoData();
             infoData.Date= item.date;
             infoData.Title=item.title;
-            infoData.InfoType=KLINE_INFO_TYPE.DRAGON_TIGER;
+            var infoType=KLINE_INFO_TYPE.DRAGON_TIGER;
+            if (IFrameSplitOperator.IsNumber(item.infoType))
+            {
+                infoType=KLINE_INFO_TYPE.DRAGON_TIGER_EX_START+item.infoType;
+                if (infoType>KLINE_INFO_TYPE.DRAGON_TIGER_EX_END) infoType=KLINE_INFO_TYPE.DRAGON_TIGER_EX_END;
+            }
+            infoData.InfoType=infoType;
+            if (item.color) infoData.Color=item.color;  //图标颜色
+
             infoData.ExtendData=
             {
                 BuyAmount:item.buyAmount,       //机构买入总额
@@ -110548,6 +110691,8 @@ function JSDivFrameToolbar()
 
     this.Destroy=function()
     {
+        this.HideTooltip();
+
         if (this.DivToolbar) 
         {
             if (this.DivHQChart.removeChild) this.DivHQChart.removeChild(this.DivToolbar);

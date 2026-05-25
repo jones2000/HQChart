@@ -1750,6 +1750,8 @@ HQData.DragonTiger_RequestData=function(data,callback)
             netBuyAmount:kItem.Amount*0.05,     //机构买入净额
             netBuyRatio:4.2,                //净买额占总成交比
             amount:kItem.Amount,            //市场总成交额
+            //color:"rgb(100,100,0)",
+            //infoType:1,
 
             aryText:
             [
