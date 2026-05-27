@@ -206,6 +206,8 @@ function JSTooltipKLineChart()
         if (!this.DivDialog) return;
         if (this.DivDialog.style.visibility!='hidden')
             this.DivDialog.style.visibility='hidden';
+
+        if (this.KLine.JSChart) this.KLine.JSChart.HideDivFrameToolbar()
     }
 
 
@@ -291,8 +293,8 @@ JSTooltipKLineChart.GetKLineOption=function()
         Type:'历史K线图',   //创建图形类型
         Windows: //窗口指标
         [
-            { Index:"MA",Change:false, Modify:false },
-            { Index:"MACD", Close:false, Change:false, Modify:false,MaxMin:false,TitleWindow:false },
+            { Index:"MA", Change:false, Modify:false, TitleWindow:false },
+            { Index:"MACD", Close:false, Change:false, Modify:false, MaxMin:false, TitleWindow:false },
         ], 
 
         //Language:'EN',

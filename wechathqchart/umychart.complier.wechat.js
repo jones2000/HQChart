@@ -11266,33 +11266,16 @@ function JSSymbolData(ast,option,jsExecute)
             };
             this.NetworkFilter(obj, function(recvData) 
             { 
-                self.RecvStockValue(recvData,jobItem,key,0);
+                self.RecvStockValue(recvData.data,jobItem,key,0);
                 self.Execute.RunNextJob();
             });
 
             if (obj.PreventDefault==true) return;   //已被上层替换,不调用默认的网络请求
         }
 
-        var apiDownload=new DownloadFinanceData( 
-            {
-                Job:jobItem, 
-                Symbol:this.Symbol, 
-                Url:this.StockHistoryDayApiUrl, 
-                RealtimeUrl:this.RealtimeApiUrl,
-                Args:aryArgs,
-                DataKey:key,
-                Callback:function(recvData, jobItem, key) 
-                { 
-                    self.RecvStockValue(recvData, jobItem, key,0);
-                    self.Execute.RunNextJob();
-                },
-                ErrorCallback:function(strError)
-                {
-                    self.AddStockValueError(key,strError);
-                }
-            });
-
-        apiDownload.Download();
+        var errorMessage=`[JSSymbolData::GetFinance] GetFinance(${lID}), 请对接外部数据.`;
+        this.AddStockValueError(key,errorMessage);
+        this.Execute.RunNextJob();
     }
 
     this.GetVariantData=function(jobItem)

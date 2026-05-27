@@ -2364,6 +2364,15 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             return this.JSChartContainer.GetGraphicsDescription(option);
         }
     }
+
+    this.HideDivFrameToolbar=function()
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.HideDivFrameToolbar)=='function')
+        {
+            JSConsole.Chart.Log('[JSChart:HideDivFrameToolbar] ');
+            return this.JSChartContainer.HideDivFrameToolbar();
+        }
+    }
 }
 
 JSChart.LastVersion=null;   //最新的版本号
@@ -13368,6 +13377,11 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
         return false;
     }
+
+    this.HideDivFrameToolbar=function()
+    {
+        this.Frame.HideDivFrameToolbar();
+    }
 }
 
 function GetDevicePixelRatio()
@@ -17371,8 +17385,15 @@ function MinuteFrame()
         if (g_JSChartResource.IsDOMFrameToolbar===true) bDraw=false;
         if (!this.DivFrameToolbar) return;
 
-        if (!bDraw) this.HideToolbar();
-        else this.DivFrameToolbar.Show(this.Identify);
+        if (!bDraw) 
+        {
+            this.HideToolbar();
+        }
+        else 
+        {
+            if (this.DivFrameToolbar.IsParentShow()) this.DivFrameToolbar.Show(this.Identify);
+            else this.HideToolbar();
+        }
     }
 
     //手绘,不用DOM,使用DOM太麻烦了
@@ -19629,8 +19650,15 @@ function KLineFrame()
         if (g_JSChartResource.IsDOMFrameToolbar===true) bDraw=false;
         if (!this.DivFrameToolbar) return;
 
-        if (!bDraw) this.HideToolbar();
-        else this.DivFrameToolbar.Show(this.Identify);
+        if (!bDraw) 
+        {
+            this.HideToolbar();
+        }
+        else
+        {
+            if (this.DivFrameToolbar.IsParentShow()) this.DivFrameToolbar.Show(this.Identify);
+            else this.HideToolbar();
+        }
     }
 
     //手绘,不用DOM,使用DOM太麻烦了
@@ -24113,6 +24141,20 @@ function HQTradeFrame()
 
             if (IFrameSplitOperator.IsNumber(obj.Left)) item.Frame.ChartBorder.MultiDayMinute.Left=obj.Left;
             if (IFrameSplitOperator.IsNumber(obj.Right)) item.Frame.ChartBorder.MultiDayMinute.Right=obj.Right;
+        }
+    }
+
+
+    this.HideDivFrameToolbar=function()
+    {
+        for(var i=0;i<this.SubFrame.length;++i)
+        {
+            var item=this.SubFrame[i];
+            if (!item.Frame) continue;
+            if (item.Frame.ToolbarButtonStyle==1) continue;
+            if (!item.Frame.DivFrameToolbar) continue;
+
+            item.Frame.DivFrameToolbar.Hide();
         }
     }
 }
@@ -31878,7 +31920,7 @@ function ChartKLine()
         var iconTop=item.YMax+1*pixelTatio;
         var iconBottom=item.YMin+1*pixelTatio+iconSize;
         var drawTop=true;
-        var yOffset=0;
+        var yOffset=0, yTopOffset=0;
         for(var i in infoData.Data)
         {
             var infoItem=infoData.Data[i];
@@ -31914,35 +31956,41 @@ function ChartKLine()
                     if (infoPosition===1) //底部
                     {
                         var yBottom=bottom+yOffset;
-                        this.Canvas.fillText(icon.Text,item.XCenter,yBottom,iconSize);
                         var iconRect=new Rect(item.XCenter-iconSize/2,yBottom-iconSize,iconSize,iconSize);
+                        this.DrawInfoIcon(item, icon, iconRect);
+                        
                         var infoCache={ Data:new Array(infoItem), Rect:iconRect, Type:infoItem.InfoType, TextRect:{X:item.XCenter, Y:yBottom}, IsShowNumber:bShowNumber };
                         mapImage.set(infoItem.InfoType,infoCache);
                         yOffset-=iconSize;
                     }
                     else if (infoPosition===2)  //顶部
                     {
-                        var yBottom=topTitle+iconSize+1;
-                        this.Canvas.fillText(icon.Text,item.XCenter,yBottom,iconSize);
+                        var yBottom=topTitle+iconSize+1+yTopOffset;
                         var iconRect=new Rect(item.XCenter-iconSize/2,yBottom-iconSize,iconSize,iconSize);
+                        this.DrawInfoIcon(item, icon, iconRect);
+                        
                         var infoCache={ Data:new Array(infoItem), Rect:iconRect, Type:infoItem.InfoType, TextRect:{X:item.XCenter, Y:yBottom}, IsShowNumber:bShowNumber };
                         mapImage.set(infoItem.InfoType,infoCache);
+
+                        yTopOffset+=iconSize;
                     }
                     else
                     {
-                        if (drawTop)
+                        if (drawTop)    //K线上面
                         {
-                            this.Canvas.fillText(icon.Text,item.XCenter,iconTop,iconSize);
                             var iconRect=new Rect(item.XCenter-iconSize/2,iconTop-iconSize,iconSize,iconSize);
+                            this.DrawInfoIcon(item, icon, iconRect);
+                            
                             var infoCache={ Data:new Array(infoItem), Rect:iconRect, Type:infoItem.InfoType, TextRect:{X:item.XCenter, Y:iconTop}, IsShowNumber:bShowNumber };
                             mapImage.set(infoItem.InfoType,infoCache);
                             iconTop-=iconSize;
                             if (iconTop-iconSize<top ) drawTop=false;
                         }
-                        else    //上面显示不下,就显示在下面
+                        else    //上面显示不下,就显示在K线下面
                         {
-                            this.Canvas.fillText(icon.Text,item.XCenter,iconBottom,iconSize);
                             var iconRect=new Rect(item.XCenter-iconSize/2,iconBottom-iconSize,iconSize,iconSize);
+                            this.DrawInfoIcon(item, icon, iconRect);
+                            
                             var infoCache={ Data:new Array(infoItem), Rect:iconRect, Type:infoItem.InfoType, TextRect:{X:item.XCenter, Y:iconBottom} , IsShowNumber:bShowNumber};
                             mapImage.set(infoItem.InfoType,infoCache);
                             iconBottom+=iconSize;
@@ -31980,6 +32028,18 @@ function ChartKLine()
         this.Canvas.restore();
         this.Canvas.save();
         this.ClipClient(isHScreen);
+    }
+
+    this.DrawInfoIcon=function(item, iconItem, rtIcon)
+    {
+        if (iconItem.BGColor)
+        {
+            this.Canvas.fillStyle=iconItem.BGColor;
+            this.Canvas.fillRect(rtIcon.X, rtIcon.Y, rtIcon.Width, rtIcon.Height);
+        }
+
+        this.Canvas.fillStyle=iconItem.Color;
+        this.Canvas.fillText(iconItem.Text,item.XCenter,rtIcon.Y+rtIcon.Height, rtIcon.Width);
     }
 
     //画交易图标
@@ -90834,25 +90894,44 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         if (bUpdate==true) this.ReqeustKLineInfoData({ FunctionName:"SetKLineInfo" });
     }
 
+
+    //option={ ClassName:, Name: }
+    this.GetKLineInfo=function(option)
+    {
+        if (!option) return null;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.ChartInfo)) return null;
+
+        var className=null;
+        if (option.Name)
+        {
+            var classInfo=JSKLineInfoMap.GetClassInfo(option.Name);
+            if (classInfo) className=classInfo.ClassName;
+        }
+
+        if (!className) return null;
+
+        for(var i=0; i<this.ChartInfo.length; ++i)
+        {
+            var item=this.ChartInfo[i];
+            if (item.ClassName==className)    //已经存在
+                return item;
+        }
+
+        return null;
+    }
+
     //添加信息地雷
     this.AddKLineInfo=function(infoName,bUpdate)
     {
-        var classInfo=JSKLineInfoMap.GetClassInfo(infoName);
-        if (!classInfo)
-        {
-            console.warn("[KLineChartContainer::AddKLineInfo] can't find infoname=", infoName);
-            return;
-        }
-
-        for(var i in this.ChartInfo)
-        {
-            var item=this.ChartInfo[i];
-            if (item.ClassName==classInfo.ClassName)    //已经存在
-                return;
-        }
+        var item=this.GetKLineInfo({ Name:infoName });
+        if (item) return;
 
         var infoItem=JSKLineInfoMap.Get(infoName);
-        if (!infoItem) return;
+        if (!infoItem) 
+        {
+            console.warn(`[KLineChartContainer::AddKLineInfo] can't find infoName=${infoName}`);
+            return;
+        }
 
         var item=infoItem.Create();
         item.MaxRequestDataCount=this.MaxRequestDataCount;
@@ -90864,39 +90943,28 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         }
     }
 
-    //更新信息地雷数据  Option :{ InsertNew:,  如果没有找到对应的地雷，是否插入新的地雷, Update:是否立即请求数据  }
+    //更新信息地雷列表 Option :{ InsertNew:,  如果没有找到对应的地雷，是否插入新的地雷, Update:是否立即请求数据  }
     this.UpdateKLineInfo=function(infoName, option)  
     {
-        var classInfo=JSKLineInfoMap.GetClassInfo(infoName);
-        if (!classInfo)
-        {
-            console.warn("[KLineChartContainer::UpdateKLineInfo] can't find infoname=", infoName);
-            return;
-        }
-
         var bInsertNew=false, bUpdate=false;
         if (option)
         {
             if (IFrameSplitOperator.IsBoolean(option.InsertNew)) bInsertNew=option.InsertNew;
             if (IFrameSplitOperator.IsBoolean(option.Update)) bUpdate=option.Update;    
         }
-        var finder=null;
-        for(var i=0;i<this.ChartInfo.length; ++i)
-        {
-            var item=this.ChartInfo[i];
-            if (item.ClassName==classInfo.ClassName)
-            {
-                finder=item;
-                break;
-            }
-        }
 
+        var finder=this.GetKLineInfo({ Name:infoName });
+       
         if (!finder)
         {
             if (bInsertNew===true)
             {
                 var infoItem=JSKLineInfoMap.Get(infoName);
-                if (!infoItem) return;
+                if (!infoItem) 
+                {
+                    console.warn(`[KLineChartContainer::UpdateKLineInfo] can't find infoname=${infoName}`);
+                    return;
+                }
 
                 var item=infoItem.Create();
                 item.MaxRequestDataCount=this.MaxRequestDataCount;
@@ -105708,7 +105776,7 @@ function ExtendInfo()
 
     this.RecvData=function(recvData,param)
     {
-        if (!recvData || !IFrameSplitOperator.IsNonEmptyArray(recvData.list)) return;
+        if (!recvData || !IFrameSplitOperator.IsArray(recvData.list)) return;
 
         for(var i=0;i<recvData.list.length;++i)
         {
@@ -110574,7 +110642,6 @@ Path2DHelper.PtInRect=function(x, y, rect)
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-
 function JSDivFrameToolbar()
 {
     this.DivToolbar=null;
@@ -110725,6 +110792,15 @@ function JSDivFrameToolbar()
             this.HQChart.JSToolbarTooltip.DivHQChart=this.DivHQChart;
             this.HQChart.JSToolbarTooltip.Create();
         }
+    }
+
+    this.IsParentShow=function()
+    {
+        if (!this.DivHQChart) return false;
+        const style=window.getComputedStyle(this.DivHQChart);
+
+        // 判断：display 不是 none，且 visibility 不是 hidden，且 opacity 不是 0
+        return style.display !== 'none' && style.visibility !== 'hidden' && parseFloat(style.opacity) !== 0;
     }
 
     this.UpdateStyle=function()
