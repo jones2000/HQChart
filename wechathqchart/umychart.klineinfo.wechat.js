@@ -36,7 +36,19 @@ var KLINE_INFO_TYPE=
     DRAGON_TIGER:10,            //龙虎榜
     DIVIDEND:12,                //除权
 
-    POLICY:20                   //策略信息
+    POLICY:20,                   //策略信息
+
+    //公告预留类型
+    ANNOUNCEMENT_EX_START:100,
+    ANNOUNCEMENT_EX_END:200,
+
+    //扩展信息
+    EXTEND_INFO_START:301,
+    EXTEND_INFO_END:399,
+
+    //龙虎榜预留类型
+    DRAGON_TIGER_EX_START:401,
+    DRAGON_TIGER_EX_END:499,
 }
 
 function KLineInfoData()
@@ -60,18 +72,79 @@ JSKLineInfoMap.Get=function(id)
 {
     var infoMap=new Map(
         [
-            ["互动易",      {Create:function(){ return new InvestorInfo()}  }],
-            ["公告",        {Create:function(){ return new AnnouncementInfo()}  }],
-            ["业绩预告",    {Create:function(){ return new PforecastInfo()}  }],
-            ["调研",        {Create:function(){ return new ResearchInfo()}  }],
-            ["大宗交易",    {Create:function(){ return new BlockTrading()}  }],
-            ["龙虎榜",      {Create:function(){ return new DragonTigerInfo()}  }],
-            ["策略",    {Create: function () { return new PolicyInfo() } }],
-            ['除权',        { Create:function() { return new DividendInfo() }}],
+            ["互动易",      { Create:function(){ return new InvestorInfo()}, ClassName:"InvestorInfo"  }],
+            ["公告",        { Create:function(){ return new AnnouncementInfo()}, ClassName:"AnnouncementInfo" }],
+            ["业绩预告",    {Create:function(){ return new PforecastInfo()}, ClassName:"PforecastInfo"  }],
+            ["调研",        {Create:function(){ return new ResearchInfo()}, ClassName:"ResearchInfo"  }],
+            ["大宗交易",    {Create:function(){ return new BlockTrading()}, ClassName:"BlockTrading"  }],
+            ["龙虎榜",      {Create:function(){ return new DragonTigerInfo()}, ClassName:"DragonTigerInfo"  }],
+            ["策略",    {Create: function () { return new PolicyInfo() }, ClassName:"PolicyInfo" }],
+            ['除权',        { Create:function() { return new DividendInfo() }, ClassName:"DividendInfo"}],
+            ["扩展信息",    { Create:function(){ return new ExtendInfo() }, ClassName:"ExtendInfo"  }],
         ]
         );
 
     return infoMap.get(id);
+}
+
+JSKLineInfoMap.GetIcon=function(type)
+{
+    //公告扩展数据
+    if (type>=KLINE_INFO_TYPE.ANNOUNCEMENT_EX_START && type<=KLINE_INFO_TYPE.ANNOUNCEMENT_EX_END)
+    {
+        var index=type-KLINE_INFO_TYPE.ANNOUNCEMENT_EX_START;
+        var value=g_JSChartResource.KLine.Info.AnnouncementEx.Default;
+        var aryData=g_JSChartResource.KLine.Info.AnnouncementEx.AryIcon;
+        if (IFrameSplitOperator.IsNonEmptyArray(aryData) && aryData[index]) value=aryData[index];
+
+        return value;
+    }
+
+    if (type>=KLINE_INFO_TYPE.EXTEND_INFO_START && type<=KLINE_INFO_TYPE.EXTEND_INFO_END)
+    {
+        var index=type-KLINE_INFO_TYPE.EXTEND_INFO_START;
+        var value=g_JSChartResource.KLine.Info.ExtendInfo.Default;
+        var aryData=g_JSChartResource.KLine.Info.ExtendInfo.AryIcon;
+        if (IFrameSplitOperator.IsNonEmptyArray(aryData) && aryData[index]) value=aryData[index];
+
+        return value;
+    }
+
+    if (type>=KLINE_INFO_TYPE.DRAGON_TIGER_EX_START && type<=KLINE_INFO_TYPE.DRAGON_TIGER_EX_END)
+    {
+        var index=type-KLINE_INFO_TYPE.DRAGON_TIGER_EX_START;
+        var value=g_JSChartResource.KLine.Info.DragonTiger.Icon;
+        var aryData=g_JSChartResource.KLine.Info.DragonTiger.AryIcon;
+        if (IFrameSplitOperator.IsNonEmptyArray(aryData) && aryData[index]) value=aryData[index];
+
+        return value;
+    }
+
+    switch(type)
+    {
+        case KLINE_INFO_TYPE.INVESTOR:
+            return g_JSChartResource.KLine.Info.Investor.Icon;
+            break;
+        case KLINE_INFO_TYPE.PFORECAST:
+            return g_JSChartResource.KLine.Info.Pforecast.Icon;
+        case KLINE_INFO_TYPE.ANNOUNCEMENT:
+            return g_JSChartResource.KLine.Info.Announcement.Icon;
+        case KLINE_INFO_TYPE.ANNOUNCEMENT_QUARTER_1:
+        case KLINE_INFO_TYPE.ANNOUNCEMENT_QUARTER_2:
+        case KLINE_INFO_TYPE.ANNOUNCEMENT_QUARTER_3:
+        case KLINE_INFO_TYPE.ANNOUNCEMENT_QUARTER_4:
+            return g_JSChartResource.KLine.Info.Announcement.Icon2;
+        case KLINE_INFO_TYPE.RESEARCH:
+            return g_JSChartResource.KLine.Info.Research.Icon;
+        case KLINE_INFO_TYPE.BLOCKTRADING:
+            return g_JSChartResource.KLine.Info.BlockTrading.Icon;
+        case KLINE_INFO_TYPE.DRAGON_TIGER:
+            return g_JSChartResource.KLine.Info.DragonTiger.Icon;
+        case KLINE_INFO_TYPE.DIVIDEND:
+            return g_JSChartResource.KLine.Info.Dividend.Icon;
+        default:
+            return g_JSChartResource.KLine.Info.Announcement.Icon;
+    }
 }
 
 function IKLineInfo()
@@ -97,7 +170,7 @@ function IKLineInfo()
 
         if (this.NetworkFilter(hqChart,obj)) return; //已被上层替换,不调用默认的网络请求
 
-        JSConsole.Chart.Warn(`[InvestorInfo::RequestData] ${this.ClassName} NetworkFilter error.`);
+        JSConsole.Chart.Warn(`[IKLineInfo::RequestData] ${this.ClassName} NetworkFilter error.`);
     }
 
     this.GetRequestData=function(hqChart)
@@ -236,36 +309,15 @@ function AnnouncementInfo()
         }
 
         if (this.NetworkFilter(hqChart, obj)) return; //已被上层替换,不调用默认的网络请求
-        
-        //请求数据
-        wx.request({
-            url: g_JSChartResource.Domain+g_JSChartResource.KLine.Info.Announcement.ApiUrl,
-            data:
-            {
-                "filed": ["title","releasedate","symbol","id"],
-                "symbol": [param.HQChart.Symbol],
-                "querydate":{"StartDate":this.StartDate,"EndDate":this.GetToday()},
-                "start":0,
-                "end":this.MaxRequestDataCount,
-            },
-            method:"post",
-            dataType: "json",
-            success: function (recvData)
-            {
-                self.RecvData(recvData,param);
-            }
-        });
-
-        return true;
     }
 
     this.RecvData=function(recvData,param)
     {
         var data=recvData.data;
         if (!data) return;
-        if (!data.report || data.report.length<=0) return;
-
-        for (var i in data.report)
+        if (!IFrameSplitOperator.IsNonEmptyArray(data.report)) return;
+       
+        for (var i=0;i<data.report.length; ++i)
         {
             var item = data.report[i];
             var infoData=new KLineInfoData();
@@ -291,6 +343,15 @@ function AnnouncementInfo()
                         break;
                 }
             }
+
+            //目前只支持1个类型
+            for(var j in item.typeex)
+            {
+                var id=item.typeex[j];
+                infoData.InfoType=KLINE_INFO_TYPE.ANNOUNCEMENT_EX_START+id;
+                break;
+            }
+
             this.Data.push(infoData);
         }
 
@@ -451,7 +512,13 @@ function DragonTigerInfo()
             var infoData=new KLineInfoData();
             infoData.Date= item.date;
             infoData.Title=item.title;
-            infoData.InfoType=KLINE_INFO_TYPE.DRAGON_TIGER;
+            var infoType=KLINE_INFO_TYPE.DRAGON_TIGER;
+            if (IFrameSplitOperator.IsNumber(item.infoType))
+            {
+                infoType=KLINE_INFO_TYPE.DRAGON_TIGER_EX_START+item.infoType;
+                if (infoType>KLINE_INFO_TYPE.DRAGON_TIGER_EX_END) infoType=KLINE_INFO_TYPE.DRAGON_TIGER_EX_END;
+            }
+            infoData.InfoType=infoType;
             infoData.ExtendData=
             {
                 BuyAmount:item.buyAmount,       //机构买入总额
@@ -540,6 +607,44 @@ function PolicyInfo()
                 var name = item.policy[j].name;
                 infoData.ExtendData.AryData.push({ Name: name });
             }
+            this.Data.push(infoData);
+        }
+
+        param.HQChart.UpdataChartInfo();
+        param.HQChart.Draw();
+    }
+}
+
+function ExtendInfo()
+{
+    this.newMethod=IKLineInfo;   //派生
+    this.newMethod();
+    delete this.newMethod;
+
+    this.ClassName='ExtendInfo';
+    this.Explain='扩展信息';
+
+    this.RecvData=function(recvData,param)
+    {
+        if (!recvData || !IFrameSplitOperator.IsArray(recvData.list)) return;
+
+        for(var i=0;i<recvData.list.length;++i)
+        {
+            var item=recvData.list[i]; 
+            var infoType=KLINE_INFO_TYPE.EXTEND_INFO_START;
+            if (IFrameSplitOperator.IsNumber(item.infoType))
+            {
+                infoType=KLINE_INFO_TYPE.EXTEND_INFO_START+item.infoType;
+                if (infoType>KLINE_INFO_TYPE.EXTEND_INFO_END) infoType=KLINE_INFO_TYPE.EXTEND_INFO_END;
+            }
+
+            var infoData=new KLineInfoData();
+            infoData.ID=item.id;
+            infoData.Date= item.date;
+            infoData.InfoType=infoType;
+            infoData.Title=item.title;
+            infoData.ExtendData={ Type:item.type, Data:item.data };
+            this.ReadArrayText(infoData, item);
             this.Data.push(infoData);
         }
 

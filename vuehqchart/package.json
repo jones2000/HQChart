@@ -14,7 +14,7 @@
     "lib2": "babel src/jscommon/umychart*.js --out-dir lib2",
     "unilib": "babel src/jscommon/umychart.uniapp.h5/umychart*.js --out-dir uniapp_lib",
     "testdata": "babel src/jscommon/umychart.vue.testdata --out-dir src/jscommon/umychart.vue.testdataV2",
-    "min":"terser src/jscommon/umychart/umychart.js -o src/jscommon/umychart/umychart.min.js -c"
+    "min": "terser src/jscommon/umychart/umychart.js -o src/jscommon/umychart/umychart.min.js -c"
   },
   "dependencies": {
     "axios": "^0.16.2",
@@ -31,6 +31,10 @@
     "node": ">=6"
   },
   "devDependencies": {
+    "@babel/cli": "^7.29.7",
+    "@babel/core": "^7.29.7",
+    "@babel/plugin-proposal-class-properties": "^7.18.6",
+    "@babel/preset-env": "^7.29.7",
     "autoprefixer": "^6.6.0",
     "babel-cli": "^6.26.0",
     "babel-core": "^6.24.1",

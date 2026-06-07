@@ -43,6 +43,8 @@ import
 import { JSConsole } from "./umychart.console.wechat.js";
 import { Path2DHelper } from "./umychart.data.wechat.js"
 
+import { JSKLineInfoMap } from "./umychart.klineinfo.wechat.js"
+
 //配色
 function JSChartPaintResource() 
 {
@@ -325,9 +327,6 @@ function ChartKLine()
     this.IsShowMaxMinPrice = true;                 //是否显示最大最小值
     this.TextFont = g_JSChartResource.KLine.MaxMin.Font;
     this.TextColor = g_JSChartResource.KLine.MaxMin.Color;
-    this.InfoPointColor = g_JSChartResource.KLine.Info.Color;
-    this.InfoPointColor2 = g_JSChartResource.KLine.Info.Color2;
-    this.InfoDrawType = 0;    //0=在底部画远点  1=在最低价画三角
 
     this.PtMax;     //最大值的位置
     this.PtMin;     //最小值的位置
@@ -351,6 +350,7 @@ function ChartKLine()
     this.AryPriceGapCache=[];   //缺口数据 { }
     this.OneLimitBarType=0;    //一字板颜色类型 4个价格全部都在同一个价位上 0=使用平盘颜色 1=跟昨收比较
     this.EnableColorBar=false;  //K线柱子是否支持自定义颜色
+    this.InfoPosition=0;    // 0=K线上 1 底部 2=顶部
 
     this.DrawAKLine = function ()  //美国线
     {
@@ -1957,51 +1957,191 @@ function ChartKLine()
         this.Canvas.fillText(text, 0, 0);
         this.Canvas.restore();
     }
+    this.DrawInfo=function(item)
+    {
+        if (!this.InfoData || this.InfoData.size<=0) return;
+        var key=`${item.DayData.Date}`;
+        var infoData=this.InfoData.get(key);
+        if (!infoData || infoData.Data.length<=0) return;
+
+        var bHScreen = (this.ChartFrame.IsHScreen === true);
+        var dataWidth=this.ChartFrame.DataWidth;
+        var distanceWidth=this.ChartFrame.DistanceWidth;
+        var border=this.ChartFrame.GetBorder();
+        var bottom=border.Bottom;
+        var top=border.Top
+        var topTitle=border.TopTitle;
+        if (bHScreen)
+        {
+            top=border.Right;
+            topTitle=border.RightTitle;
+            bottom=border.Left;
+        }
+       
+        var mapImage=new Map();
+        var yBottomOffset=0, yTopOffset=0, yKTopOffset=0, yKBottomOffset=0;
+        var drawTop=true;
+        for(var i=0;i<infoData.Data.length;++i)
+        {
+            var infoItem=infoData.Data[i];
+            var imageInfo=mapImage.get(infoItem.InfoType);
+            if (!imageInfo)
+            {
+                var icon=JSKLineInfoMap.GetIcon(infoItem.InfoType);
+                if (!icon)
+                {
+                    var nnn=10;
+                }
+                var infoPosition=this.InfoPosition;
+                if (IFrameSplitOperator.IsNumber(icon.Position)) infoPosition=icon.Position;    //输出位置
+
+                if (icon.Type===0)  //圆点
+                {
+                    var radius = dataWidth / 2;
+                    if (radius > 3) radius = 3;
+                    var x = item.X;
+                    if (infoPosition===1)   //底部
+                    {
+                        if (bHScreen)
+                        {
+                            var y=bottom+yBottomOffset+radius+2;
+                            yBottomOffset+=radius*2
+                        }
+                        else
+                        {
+                            var y=bottom+yBottomOffset-radius-2;
+                            yBottomOffset-=radius*2
+                        }
+                    }
+                    else if (infoPosition===2)  //顶部
+                    {
+                        if (bHScreen)
+                        {
+                            var y=topTitle+yTopOffset-radius-2;
+                            yTopOffset-=radius*2;
+                        }
+                        else
+                        {
+                            var y=topTitle+yTopOffset+radius+2;
+                            yTopOffset+=radius*2;
+                        }
+                    }
+                    else    //K线上面
+                    {
+                        if (drawTop)    //K线上面
+                        {
+                            if (bHScreen)
+                            {
+                                var y=item.YMax+yKTopOffset+radius+2;
+                                yKTopOffset+=radius*2;
+                                if (item.YMax+yKTopOffset+2+radius*2>topTitle ) drawTop=false;
+                            }
+                            else
+                            {
+                                var y=item.YMax+yKTopOffset-radius-2;
+                                yKTopOffset-=radius*2;
+                                if (item.YMax+yKTopOffset-2-radius*2<topTitle ) drawTop=false;
+                            }
+                        }
+                        else
+                        {
+                            if (bHScreen)
+                            {
+                                var y=item.YMin+yKBottomOffset-radius-2;
+                                yKBottomOffset-=radius*2;
+                            }
+                            else
+                            {
+                                var y=item.YMin+yKBottomOffset+radius+2;
+                                yKBottomOffset+=radius*2;
+                            }
+                        }
+                    }
+                    
+                    this.Canvas.fillStyle = icon.Color;
+                    this.Canvas.beginPath();
+                    if (bHScreen) this.Canvas.arc(y, x, radius, 0, Math.PI * 2, true);
+                    else this.Canvas.arc(ToFixedPoint(x), y, radius, 0, Math.PI * 2, true);
+                    this.Canvas.closePath();
+                    this.Canvas.fill();
+                }
+                else if (icon.Type===1 && icon.Data)   //图片
+                {
+                    var iconSize=icon.Data.Size;
+                    var x = item.X-iconSize/2;
+                    if (infoPosition===1)   //底部
+                    {
+                        if (bHScreen)
+                        {
+                            var y=bottom+yBottomOffset+iconSize+2;
+                            yBottomOffset+=iconSize;
+                        }
+                        else
+                        {
+                            var y=bottom+yBottomOffset-iconSize-2;
+                            yBottomOffset-=iconSize;
+                        }
+                    }
+                    else if (infoPosition===2)  //顶部
+                    {
+                        if (bHScreen)
+                        {
+                            var y=topTitle+yTopOffset-iconSize-2;
+                            yTopOffset-=iconSize;
+                        }
+                        else
+                        {
+                            var y=topTitle+yTopOffset+iconSize+2;
+                            yTopOffset+=iconSize;
+                        }
+                    }
+                    else    //K线上面
+                    {
+                        if (drawTop)    //K线上面
+                        {
+                            if (bHScreen)
+                            {
+                                var y=item.YMax+yKTopOffset+iconSize+2;
+                                yKTopOffset+=iconSize;
+                                if (item.YMax+yKTopOffset+2+iconSize>topTitle ) drawTop=false;
+                            }
+                            else
+                            {
+                                var y=item.YMax+yKTopOffset-iconSize-2;
+                                yKTopOffset-=iconSize;
+                                if (item.YMax+yKTopOffset-2-iconSize<topTitle ) drawTop=false;
+                            }
+                        }
+                        else
+                        {
+                            if (bHScreen)
+                            {
+                                var y=item.YMin+yKBottomOffset-iconSize-2;
+                                yKBottomOffset-=iconSize;
+                            }
+                            else
+                            {
+                                var y=item.YMin+yKBottomOffset+iconSize+2;
+                                yKBottomOffset+=iconSize;
+                            }
+                        }
+                    }
+                    
+                    this.Canvas.drawImage(icon.Data.Image, x, y,iconSize, iconSize);
+                }
+            }
+            else
+            {
+                imageInfo.Data.push(infoItem);
+            }
+        }
+
+    }
 
     //画某一天的信息地雷 画在底部
-    this.DrawInfoDiv = function (item) {
-        if (!this.InfoData || this.InfoData.size <= 0) return;
-
-        var dataWidth = this.ChartFrame.DataWidth;
-        var distanceWidth = this.ChartFrame.DistanceWidth;
-
-        var infoData = this.InfoData.get(item.DayData.Date.toString());
-        if (!infoData || infoData.Data.length <= 0) return;
-        var bHScreen = (this.ChartFrame.IsHScreen === true);
-        if (this.InfoDrawType === 1) {
-            this.Canvas.font = this.GetDynamicFont(dataWidth);
-            this.Canvas.fillStyle = this.InfoPointColor2;
-            this.Canvas.textAlign = 'center';
-            this.Canvas.textBaseline = 'top';
-            if (bHScreen) {
-                var xText = item.YMin;
-                var yText = item.X;
-                this.Canvas.save();
-                this.Canvas.translate(xText, yText);
-                this.Canvas.rotate(90 * Math.PI / 180);
-                this.Canvas.fillText('▲', 0, 0);
-                this.Canvas.restore();
-            }
-            else {
-                var left = ToFixedPoint(item.X);
-                this.Canvas.fillText('▲', left, item.YMin);
-            }
-        }
-        else {
-            var dataWidth = this.ChartFrame.DataWidth;
-            var radius = dataWidth / 2;
-            if (radius > 3) radius = 3;
-            var x = item.X;
-            var y = this.ChartFrame.ChartBorder.GetBottom() - 2 - radius;
-            if (bHScreen) y = this.ChartFrame.ChartBorder.GetLeft() + 2 + radius;
-
-            this.Canvas.fillStyle = this.InfoPointColor;
-            this.Canvas.beginPath();
-            if (bHScreen) this.Canvas.arc(y, x, radius, 0, Math.PI * 2, true);
-            else this.Canvas.arc(ToFixedPoint(x), y, radius, 0, Math.PI * 2, true);
-            this.Canvas.closePath();
-            this.Canvas.fill();
-        }
+    this.DrawInfoDiv = function (item) 
+    {
+        this.DrawInfo(item);
     }
 
     this.GetTooltipData = function (x, y, tooltip) {

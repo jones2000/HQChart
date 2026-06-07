@@ -386,8 +386,8 @@ function JSChart(element)
 
                 JSConsole.Chart.Log(`[JSChart:CreateKLineChartContainer] PageSize=${option.KLine.PageSize}, MaxPageSize=${maxPageSize}`, );
             }
-            if (option.KLine.InfoDrawType) chart.ChartPaint[0].InfoDrawType = option.KLine.InfoDrawType;
             if (IFrameSplitOperator.IsNumber(item.OneLimitBarType)) klineChart.OneLimitBarType=item.OneLimitBarType;
+            if (IFrameSplitOperator.IsNumber(option.KLine.InfoPosition)) klineChart.InfoPosition=option.KLine.InfoPosition;
         }
 
         if (option.DragDownload)
@@ -8542,34 +8542,87 @@ function KLineChartContainer(uielement)
         if (bUpdate == true) this.ReqeustKLineInfoData({ FunctionName:"SetKLineInfo" });
     }
 
+    //option={ ClassName:, Name: }
+    this.GetKLineInfo=function(option)
+    {
+        if (!option) return null;
+        if (!IFrameSplitOperator.IsNonEmptyArray(this.ChartInfo)) return null;
+
+        var className=null;
+        if (option.Name)
+        {
+            var classInfo=JSKLineInfoMap.GetClassInfo(option.Name);
+            if (classInfo) className=classInfo.ClassName;
+        }
+
+        if (!className) return null;
+
+        for(var i=0; i<this.ChartInfo.length; ++i)
+        {
+            var item=this.ChartInfo[i];
+            if (item.ClassName==className)    //已经存在
+                return item;
+        }
+
+        return null;
+    }
+
+
     //添加信息地雷
     this.AddKLineInfo=function(infoName, bUpdate)
     {
-        var classInfo=JSKLineInfoMap.GetClassInfo(infoName);
-        if (!classInfo)
+        var item=this.GetKLineInfo({ Name:infoName });
+        if (item) return;
+
+        var infoItem=JSKLineInfoMap.Get(infoName);
+        if (!infoItem)
         {
             console.warn("[KLineChartContainer::AddKLineInfo] can't find infoname=", infoName);
             return;
         }
 
-        for(var i=0; i<this.ChartInfo.length; ++i)
-        {
-            var item=this.ChartInfo[i];
-            if (item.ClassName==classInfo.ClassName)    //已经存在
-                return;
-        }
-
-        var infoItem=JSKLineInfoMap.Get(infoName);
-        if (!infoItem) return;
-
         var item=infoItem.Create();
         item.MaxRequestDataCount=this.MaxRequestDataCount;
         this.ChartInfo.push(item);
 
-        if (bUpdate==true) 
+        if (bUpdate==true) item.RequestData(this);  //这个页面全部刷新
+    }
+
+    //更新信息地雷列表 Option :{ InsertNew:,  如果没有找到对应的地雷，是否插入新的地雷, Update:是否立即请求数据  }
+    this.UpdateKLineInfo=function(infoName, option)  
+    {
+        var bInsertNew=false, bUpdate=false;
+        if (option)
         {
-            item.RequestData(this);  //这个页面全部刷新
+            if (IFrameSplitOperator.IsBoolean(option.InsertNew)) bInsertNew=option.InsertNew;
+            if (IFrameSplitOperator.IsBoolean(option.Update)) bUpdate=option.Update;    
         }
+
+        var finder=this.GetKLineInfo({ Name:infoName });
+       
+        if (!finder)
+        {
+            if (bInsertNew===true)
+            {
+                var infoItem=JSKLineInfoMap.Get(infoName);
+                if (!infoItem) 
+                {
+                    console.warn(`[KLineChartContainer::UpdateKLineInfo] can't find infoname=${infoName}`);
+                    return;
+                }
+
+                var item=infoItem.Create();
+                item.MaxRequestDataCount=this.MaxRequestDataCount;
+                this.ChartInfo.push(item);
+                finder=item;
+            }
+            else
+            {
+                return;
+            }
+        }
+
+        if (bUpdate==true) finder.RequestData(this);  //信息地雷信息
     }
 
     //删除信息地理

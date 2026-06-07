@@ -130,6 +130,8 @@ class HQData
 
     RequestScrollTextData_ID=`${this.ID}-RequestScrollTextData`;
 
+    RequestOrderInfoData_ID=`${this.ID}-RequestOrderInfoData`;
+
     Counter=1;
 
     MapSelfBlcok = new Map();  //自选股数据缓存
@@ -314,6 +316,16 @@ class HQData
             //
             case "APIScriptIndex::ExecuteScript":   //后台API指标
                 this.Report_APIIndex(data, callback, option);
+                break;
+
+
+            ////////////////////////////////////////////////////////////////////////////////////////////////////
+            //订单列表
+            case "JSOrderChartContainer::RequestOrderData":
+                this.Order_RequestOrderData(data, callback, option);
+                break;
+            case "JSOrderChartContainer::RequestOrderUpdateData":
+                this.Order_RequestOrderUpdateData(data, callback, option);
                 break;
 
         }
@@ -4178,6 +4190,315 @@ class HQData
         callback(hqchartData);
     }
 
+
+    Order_RequestOrderData(data, callback, option)
+    {
+        data.PreventDefault=true;
+        var symbol=data.Request.Data.symbol;
+        
+        if (option)
+        {
+            option.HQChart=data.Self;
+        }
+
+        var extendID=this.Counter++;
+        var requestID=this.RequestOrderInfoData_ID;
+        
+        var msg=
+        {
+            MessageID:3,
+            Data:
+            {
+                Type:2,
+                ID:requestID,
+                ArySymbol:[{ Symbol:symbol} ],   
+                ExtendData:{ ExtendID:extendID },
+            }
+        };
+
+        var callbackInfo=
+        {
+            ID:requestID,
+            ExtendID:extendID,
+            Callback:(recv)=>
+            {
+                this.Order_RecvOrderData(recv, callback, option);
+            }
+        }
+
+        this.WSClient.Request(msg, callbackInfo);
+    }
+
+    Order_RecvOrderData_GetPriceColor(basePrice, price)
+    {
+        if (basePrice>price)
+        {
+            return { ColorID:1}
+        }
+        else if (basePrice==price)
+        {
+            return { ColorID:2 }
+        }
+        else
+        {
+            return { ColorID:0 }
+        }
+    }
+
+    Order_RecvOrderData(recv, callback, option)
+    {
+        var hqchart=null, symbol=null;
+        if (option) hqchart=option.HQChart;
+        if (hqchart) symbol=hqchart.Symbol;
+
+        var basePrice=null;
+        var hqchartData={ symbol:symbol, data:[] };
+        var mapBuy=new Map(), mapSell=new Map();
+        var buyVol=0, sellVol=0, vol=0;
+        if (recv && IFrameSplitOperator.IsNonEmptyArray(recv.AryData))
+        {
+            for(var i=0;i<recv.AryData.length;++i)
+            {
+                var stockItem=recv.AryData[i];
+                if (stockItem.Symbol==symbol)
+                {
+                    if (IFrameSplitOperator.IsNumber(stockItem.Price)) hqchartData.basePrice=stockItem.Price;
+                    var upperSymbol=null;
+                    if (symbol) upperSymbol=symbol.toUpperCase();
+                    if (stockItem.Name) hqchartData.name=stockItem.Name;
+                    var volBase=1;
+                    if (MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol)) volBase=100;
+
+                    if (IFrameSplitOperator.IsNonEmptyArray(stockItem.Buys))
+                    {
+                        var aryValue=[];
+                        for(var j=0;j<stockItem.Buys.length;++j)
+                        {
+                            var item=stockItem.Buys[j];
+                            if (IFrameSplitOperator.IsPlusNumber(item.Price)) 
+                            {
+                                vol=item.Vol/volBase;
+                                mapBuy.set(item.Price,{ Price:item.Price, Vol:vol } );
+                                buyVol+=vol;
+                            }
+                        }
+                    }
+
+                    if (IFrameSplitOperator.IsNonEmptyArray(stockItem.Sells))
+                    {
+                        var aryValue=[];
+                        for(var j=0;j<stockItem.Sells.length;++j)
+                        {
+                            var item=stockItem.Sells[j];
+                            if (IFrameSplitOperator.IsPlusNumber(item.Price)) 
+                            {
+                                vol=item.Vol/volBase;
+                                mapSell.set(item.Price, { Price:item.Price, Vol:vol });
+                                sellVol+=vol;
+                            }
+                        }
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        if (IFrameSplitOperator.IsNumber(hqchartData.basePrice))
+        {
+            basePrice=hqchartData.basePrice;
+            var step=0.01;
+
+            var price=basePrice;
+            for(var i=0; i<200; ++i, price+=step)
+            {
+                price=Math.round(price * 100) / 100;
+                var item=[];
+                var priceColor=this.Order_RecvOrderData_GetPriceColor(basePrice, price);
+                if (mapBuy.has(price))
+                {
+                    var buyItem=mapBuy.get(price);
+                    item[202]={ Value:buyItem.Vol, ColorID:3 };
+                }
+
+                if (mapSell.has(price))
+                {
+                    var sellItem=mapSell.get(price);
+                    item[203]={ Value:sellItem.Vol, ColorID:3 };
+                }
+
+                var rowItem={ Price:price, ColorID:priceColor.ColorID, Data:item };
+                hqchartData.data.push(rowItem);
+            }
+
+            var price=basePrice-step;
+            for(var i=0; i<200; ++i, price-=step)
+            {
+                price=Math.round(price * 100) / 100;
+                var item=[];
+                var priceColor=this.Order_RecvOrderData_GetPriceColor(basePrice, price);
+                var rowItem={ Price:price, ColorID:priceColor.ColorID, Data:item };
+
+                if (mapBuy.has(price))
+                {
+                    var buyItem=mapBuy.get(price);
+                    item[202]={ Value:buyItem.Vol, ColorID:3 };
+                }
+
+                if (mapSell.has(price))
+                {
+                    var sellItem=mapSell.get(price);
+                    item[203]={ Value:sellItem.Vol, ColorID:3 };
+                }
+
+                hqchartData.data.push(rowItem);
+            }
+        }
+
+        hqchartData.footer=
+        { 
+            left:
+            [
+                null,
+                { BGColorID:4, Text:` ${buyVol} `, ColorID:2 },
+            ], 
+            right:
+            [
+                { BGColorID:5, Text:` ${sellVol} `, ColorID:2 },
+                null,
+            ] 
+        }
+
+        callback(hqchartData);
+    }
+
+    Order_RequestOrderUpdateData(data, callback, option)
+    {
+        data.PreventDefault=true;
+        var symbol=data.Request.Data.symbol;
+        
+        if (option)
+        {
+            option.HQChart=data.Self;
+        }
+
+        var extendID=this.Counter++;
+        var requestID=this.RequestOrderInfoData_ID;
+        
+        var msg=
+        {
+            MessageID:3,
+            Data:
+            {
+                Type:2,
+                ID:requestID,
+                ArySymbol:[{ Symbol:symbol} ],   
+                ExtendData:{ ExtendID:extendID },
+            }
+        };
+
+        var callbackInfo=
+        {
+            ID:requestID,
+            ExtendID:extendID,
+            Callback:(recv)=>
+            {
+                this.Order_RecvOrderUpdateData(recv, callback, option);
+            }
+        }
+
+        this.WSClient.Request(msg, callbackInfo);
+    }
+
+    Order_RecvOrderUpdateData(recv, callback, option)
+    {
+        var hqchart=null, symbol=null;
+        if (option) hqchart=option.HQChart;
+        if (hqchart) symbol=hqchart.Symbol;
+
+        var basePrice=null;
+        var hqchartData={ symbol:symbol, data:[], ClearData:{ AryColumn:[ { Type:ORDER_COLUMN_ID.RESERVE_NUMBER2_ID }, { Type:ORDER_COLUMN_ID.RESERVE_NUMBER3_ID}] } };
+        var mapBuy=new Map(), mapSell=new Map();
+        var buyVol=0, sellVol=0, vol=0;
+        if (recv && IFrameSplitOperator.IsNonEmptyArray(recv.AryData))
+        {
+            for(var i=0;i<recv.AryData.length;++i)
+            {
+                var stockItem=recv.AryData[i];
+                if (stockItem.Symbol==symbol)
+                {
+                    if (IFrameSplitOperator.IsNumber(stockItem.Price)) hqchartData.basePrice=stockItem.Price;
+                    var upperSymbol=null;
+                    if (symbol) upperSymbol=symbol.toUpperCase();
+                    if (stockItem.Name) hqchartData.name=stockItem.Name;
+                    var volBase=1;
+                    if (MARKET_SUFFIX_NAME.IsSHSZ(upperSymbol)) volBase=100;
+
+                    if (IFrameSplitOperator.IsNonEmptyArray(stockItem.Buys))
+                    {
+                        for(var j=0;j<stockItem.Buys.length;++j)
+                        {
+                            var buyItem=stockItem.Buys[j];
+                            if (!IFrameSplitOperator.IsPlusNumber(buyItem.Price)) continue;
+                            
+                            var item=[];
+                            var price=buyItem.Price;
+                            vol=buyItem.Vol/volBase;
+                            var priceColor=this.Order_RecvOrderData_GetPriceColor(basePrice, price);
+                            var rowItem={ Price:price, ColorID:priceColor.ColorID, Data:item };
+                            item[202]={ Value:vol, ColorID:3 };
+                            hqchartData.data.push(rowItem);
+                            
+                            buyVol+=vol;
+                        }
+                    }
+
+                    if (IFrameSplitOperator.IsNonEmptyArray(stockItem.Sells))
+                    {
+                        for(var j=0;j<stockItem.Sells.length;++j)
+                        {
+                            var sellItem=stockItem.Sells[j];
+                            if (!IFrameSplitOperator.IsPlusNumber(sellItem.Price)) continue;
+                            
+                            var item=[];
+                            var price=sellItem.Price;
+                            vol=sellItem.Vol/volBase;
+                            var priceColor=this.Order_RecvOrderData_GetPriceColor(basePrice, price);
+                            var rowItem={ Price:price, ColorID:priceColor.ColorID, Data:item };
+                            item[203]={ Value:vol, ColorID:3 };
+                            hqchartData.data.push(rowItem);
+                            
+                            sellVol+=vol;
+                        }
+                    }
+
+                    break;
+                }
+            }
+        }
+
+
+        
+        hqchartData.footer=
+        { 
+            left:
+            [
+                null,
+                { BGColorID:4, Text:` ${buyVol} `, ColorID:2 },
+            ], 
+            right:
+            [
+                { BGColorID:5, Text:` ${sellVol} `, ColorID:2 },
+                null,
+            ] 
+        }
+        
+
+        callback(hqchartData);
+    }
+    
+
+
     //获取市场名称
     GetMarketName(symbol)
     {
@@ -4486,6 +4807,7 @@ class HQData
         console.log('[HQData.APIIndex_DRAWHORIZONTALCHANNEL] apiData ', apiData);
         callback(apiData);
     }
+
 
 }
 

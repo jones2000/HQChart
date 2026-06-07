@@ -1269,7 +1269,7 @@ function ChartStockData()
             {
                 var item=this.HeaderColumn[i];
                 var text="--.--";
-                color=config.TextColor;
+                var color=config.TextColor;
                 if (item.DefaultText) text=item.DefaultText;
                 var subConfig=config.AryCell[i];
                 if (this.Data.MapData && this.Data.MapData.has(item.Key))
@@ -1551,7 +1551,7 @@ function ChartStockData()
                 if (this.Data.MapData && this.Data.MapData.has(item.Key))
                 {
                     var dataItem=this.Data.MapData.get(item.Key);
-                    color=config.TextColor;
+                    var color=config.TextColor;
 
                     var text=this.FormatValue(item, dataItem);
                     

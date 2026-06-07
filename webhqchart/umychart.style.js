@@ -1174,13 +1174,62 @@ function GetBlackStyle()
 
         OrderList:
         {
-            BorderColor:'rgba(192,192,192,0.45)',    //边框线
+            BorderColor:'rgb(61,61,61)',    //边框线
 
             Header:
             {
-                Color:"RGB(120,120,120)",
+                Color:"RGB(140,140,140)",
             },
-        },
+
+            Item:
+            {
+                
+            },
+
+            FieldColor:
+            {
+                Text:"rgb(180,180,180)",   //默认文本
+            },
+
+            Footer:
+            {
+                Margin:{ Top:4, Bottom:4 },
+                Font:{ Size:14, Name:"微软雅黑" },
+                ItemMargin:{ Top:2, Bottom:4,Left:5, Right:5 },
+
+                ResetButton:
+                { 
+                    Icon: { LockedText:'\ue6ce', Text:"\ue6e6", Color:'rgb(180,180,180)', Family:"iconfont", Size:18 },
+                    //BGColor:"rgb(30,144,255)", 
+                    ArcColor:"rgb(89,58,27)",
+                    MoveOnColor:"rgb(46,46,46)",
+                    Size:20,
+                }
+            },
+
+            UpTextColor:"rgb(238,21,21)",      //上涨文字颜色
+            DownTextColor:"rgb(25,158,0)",     //下跌文字颜色
+            UnchagneTextColor:"rgb(0,0,0)",     //平盘文字颜色
+
+            Selected:
+            {
+                BGColor:"rgb(46,46,46)",
+                LineColor:"rgb(140,140,140)",
+                LineWidth:2,
+            },
+
+            MoveOn:
+            {
+                LineColor:"rgb(55, 131, 250)",
+                LineWidth:2,
+            },
+
+            //自定义颜色
+            AryColor:
+            [
+
+            ]
+        }
         
     };
     

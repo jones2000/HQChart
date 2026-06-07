@@ -405,7 +405,7 @@ class KLineChart
 
     OnCreateHQChart(chart)
     {
-        
+       
     }
 
     ExecuteScriptError(error)
@@ -467,6 +467,7 @@ class KLineChart
     {
         if (this.Chart) 
         {
+            this.Chart.JSChartContainer.KLineSize.DataWidth=10;
             this.Chart.ChangeSymbol(symbol, option);
         }
     }
@@ -840,6 +841,11 @@ class KLineChart
                 this.OnClickIndexDrapdownMenu(menuItem);
             }   
         }
+    }
+
+    SetSystemHorizontalInfo(windowIndex, infoItem, option)
+    {
+        this.Chart.JSChartContainer.SetSystemHorizontalInfo(windowIndex, infoItem, option);
     }
 
 }

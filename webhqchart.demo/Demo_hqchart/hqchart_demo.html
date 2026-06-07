@@ -46,6 +46,7 @@
     <script src="../jscommon/umychart.StockInfo.js"></script>
     <script src="../jscommon/umychart.StatusBar.js"></script>
     <script src="../jscommon/umychart.ScrollText.js"></script>
+    <script src="../jscommon/umychart.order.js"></script>
     <script src="../jscommon/umychart.version.js"></script>
 
     <script src="./src/MessageData.js"></script>
@@ -61,6 +62,7 @@
     <script src="./src/EnvironmentVariable.js"></script>
     <script src="./src/HQData.js"></script>
     <script src="./src/CozeAICharDialog.js"></script>
+    <script src="./src//OrderChart.js"></script>
 
    
 
@@ -92,6 +94,7 @@
                 <div id="BeforeOpen" class="TabItem" style="display: none;">竞价</div>
                 <div id="DrawTool" class="TabItem">画线</div>
                 <div id="Settings" class="TabItem">设置</div>
+                <div id="Trade" class="TabItem">交易</div>
 
                 <div id="WhiteStyle" class="TabItem">白色风格</div>
                 <div id="BlackStyle" class="TabItem">黑色风格</div>
@@ -108,6 +111,14 @@
                 </div>
             </div>
 
+        </div>
+        <div id="OrderPanel">
+            <div id="OrderPanel_Title">
+                <div>
+                    <span id="OrderPanel_Close_Button">×</span>
+                </div>
+            </div>
+            <div id="OrderCtrl"></div>
         </div>
 
         <div id="RightPanel">
@@ -180,7 +191,9 @@
             ScrollTextCtrl = new ScrollTextChart();
             KeyboardCtrl = new KeyboardChart();
             StockChangeCtrl = new StockChangeChart();
+            OrderCtrl=new OrderChart();
             Symbol = "002371.sz";
+            StyleType=STYLE_TYPE_ID.BLACK_ID;
 
             AICharV2=new AICharDialogV2();
 
@@ -189,7 +202,7 @@
 
                 var resource = JSChart.GetResource();
                 //resource.BGColor=blackStyle.BGColor;
-                //resource.ToolbarButtonStyle=1;
+                resource.ToolbarButtonStyle=1;
                 resource.FrameLogo.Text += ` ${HQCHART_VERSION}`;
 
                 this.ChangeStyle(STYLE_TYPE_ID.BLACK_ID);
@@ -201,6 +214,9 @@
                 this.MinuteCtrl.Create(document.getElementById('MinuteCtrl'));
                 this.MinuteCtrl.SelectedDataAnalyzeCallback=(data)=>{ this.MinuteSelectedDataAnalyze(data); }
                 this.MinuteCtrl.SendAIMessageCallback=(data)=>{ this.OnSendAIMessage(data); }
+
+                this.OrderCtrl.Create(document.getElementById('OrderCtrl'));
+                this.OrderCtrl.MoveOnCellCallback=(data, obj)=>{ this.MoveOnOrderCell(data, obj); }
 
                 this.MinDealCtrl.Create(document.getElementById('DealCtrl'));
                 this.MinMinuteCtrl.Create(document.getElementById('MinMinuteCtrl'));
@@ -303,13 +319,16 @@
                 document.getElementById('DrawTool').onmousedown = (e) => { this.ShowDrawTool(); }
                 document.getElementById('BeforeOpen').onmousedown = (e) => { this.EnableBeforeOpen(); }
                 document.getElementById('Settings').onmousedown = (e) => { this.OnSettings(); }
-
+                document.getElementById("Trade").onmousedown = (e) => { this.OpenTradePanel(); }
+                document.getElementById("OrderPanel_Close_Button").onmousedown=(e)=>{ this.CloseTradePanel(); }
 
                 document.getElementById('DealList').onmousedown = (e) => { this.OnClickStockInfoTab("DealList"); }
                 document.getElementById('DealPriceList').onmousedown = (e) => { this.OnClickStockInfoTab("DealPriceList"); }
                 document.getElementById('StockMinChart').onmousedown = (e) => { this.OnClickStockInfoTab("StockMinChart"); }
                 document.getElementById('IndexMinChart').onmousedown = (e) => { this.OnClickStockInfoTab("IndexMinChart"); }
                 document.getElementById('StockChangeChart').onmousedown = (e) => { this.OnClickStockInfoTab("StockChangeChart"); }
+
+               
 
                 /*
                 var AryText=
@@ -334,7 +353,7 @@
                 this.OnSize();
 
                 //this.ChangeSymbol("300750.sz");
-                this.ChangeSymbol("603256.sh");
+                this.ChangeSymbol("600000.sh");
                 //this.ChangeSymbol("10010723.sho")
 
                 window.addEventListener('storage', (event) => { this.OnRecvPageMessage(event); });
@@ -375,14 +394,17 @@
                 }
             }
 
-            ChangeStyle(value) {
+            ChangeStyle(value) 
+            {
+                this.StyleType=value;
+
                 var style = HQChartStyle.GetStyleConfig(value); //读取风格配置
                 JSChart.SetCSSStyle(value);
                 JSChart.SetStyle(style);
 
                 var pixelRatio = GetDevicePixelRatio();
                 var resource = JSChart.GetResource();
-                resource.ToolbarButtonStyle = 1;
+                //resource.ToolbarButtonStyle = 1;
                 resource.Report.Item.Font.Size = 12;
                 resource.Report.Item.Mergin.Top = 8 * pixelRatio;
                 resource.Report.Item.Mergin.Bottom = 8 * pixelRatio;
@@ -392,6 +414,31 @@
 
                 //resource.MinuteToolbar.IsDrawTitleBG=true;
                 //resource.MinuteToolbar.IsShowNameArrow=true;
+
+                if (value==STYLE_TYPE_ID.BLACK_ID)
+                {
+                    resource.OrderList.AryColor=[];
+                    resource.OrderList.AryColor.push("rgb(235,53,67)");     //涨=0
+                    resource.OrderList.AryColor.push("rgb(50,205,50)");     //跌=1
+                    resource.OrderList.AryColor.push("rgb(220,220,220)");   //平=2
+                    resource.OrderList.AryColor.push("rgb(255,165,0)");     //量=3
+                    resource.OrderList.AryColor.push("rgb(235,53,67)");      //买背景=4
+                    resource.OrderList.AryColor.push("rgb(50,205,50)")       //卖背景=5
+                    resource.OrderList.AryColor.push("rgb(235,53,67)");     //买边框=6
+                    resource.OrderList.AryColor.push("rgb(50,205,50)");     //卖边框=7
+                }
+                else
+                {
+                    resource.OrderList.AryColor=[];
+                    resource.OrderList.AryColor.push("rgb(235,53,67)");     //涨=0
+                    resource.OrderList.AryColor.push("rgb(40,96,249)");     //跌=1
+                    resource.OrderList.AryColor.push("rgb(120,120,120)");   //平=2
+                    resource.OrderList.AryColor.push("rgb(121,122,123)");   //量=3
+                    resource.OrderList.AryColor.push("rgb(227,239,253)");      //买背景=4
+                    resource.OrderList.AryColor.push("rgb(255,235,236)")       //卖背景=5
+                    resource.OrderList.AryColor.push("rgb(41,89,220)");     //买边框=6
+                    resource.OrderList.AryColor.push("rgb(242,54,69)");     //卖边框=7
+                }
 
                 if (this.MinuteCtrl) this.MinuteCtrl.ReloadResource();  //动态更新颜色配置  
                 if (this.KLineCtrl) this.KLineCtrl.ReloadResource();    //动态更新颜色配置  
@@ -403,6 +450,7 @@
                 if (this.KeyboardCtrl) this.KeyboardCtrl.ReloadResource();
                 if (this.ScrollTextCtrl) this.ScrollTextCtrl.ReloadResource();
                 if (this.StockChangeCtrl) this.StockChangeCtrl.ReloadResource();
+                if (this.OrderCtrl) this.OrderCtrl.ReloadResource();
 
             }
 
@@ -497,6 +545,44 @@
             OnClickReportRow(data, obj) {
                 var symbol = data.Data.Symbol;
                 this.ChangeSymbol(symbol);
+            }
+
+            MoveOnOrderCell(data, obj)
+            {
+                var infoItem=new CoordinateInfo();
+                infoItem.ID="8888-01";
+                infoItem.Type=1;
+               
+                infoItem.LineDash=[5,5];
+                var bgColor='rgb(255,255,255)';
+                if (this.StyleType==STYLE_TYPE_ID.BLACK_ID) bgColor="rgb(0,0,0)";
+
+                if (data.Data)
+                {
+                    var dec=JSChart.GetfloatPrecision(obj.Symbol);
+                    var cell=data.Data.CellInfo;
+                    var price=data.Data.Price;
+                    infoItem.Value=price;
+                    infoItem.IsShow=true;
+                    if (cell.Type===1) //买
+                    {
+                        var color="rgba(235,53,67,0.5)"
+                        infoItem.LineColor=color;
+                        infoItem.Message[1]=[ { Text:` ${price.toFixed(dec)} `, BGColor:bgColor, TextColor:color, Border:{ Color:color } } ];
+                    }
+                    else if(cell.Type===2) //卖
+                    {
+                        var color="rgba(50,205,50,0.5)"
+                        infoItem.LineColor=color;
+                        infoItem.Message[1]=[ { Text:` ${price.toFixed(dec)} `, BGColor:bgColor, TextColor:color, Border:{ Color:color } } ];
+                    }
+                }
+                else
+                {
+                    infoItem.IsShow=false
+                }
+                
+                this.KLineCtrl.SetSystemHorizontalInfo(0, infoItem, { Redraw:true })
             }
 
             OnClickStockInfoTab(id) {
@@ -611,6 +697,7 @@
                 }
 
                 if (this.StockInfoCtrl) this.StockInfoCtrl.ChangeSymbol(symbol);
+                if (this.OrderCtrl) this.OrderCtrl.ChangeSymbol(symbol);
             }
 
             //整体布局
@@ -620,7 +707,15 @@
 
                 var leftWidth = 250;
                 var rightWidth = 300;
-                var centerWidth = width - 250 - 300;
+                var orderPanelWidth=0;
+                var orderPanel=document.getElementById('OrderPanel');
+                if (orderPanel.style.display=="block")
+                {
+                    orderPanelWidth=350+4;
+                    orderPanel.style.width="350px";
+                }
+
+                var centerWidth = width-250-300-orderPanelWidth;
 
                 var centerPanel = document.getElementById('CenterPanel')
                 centerPanel.style.width = centerWidth + 'px';
@@ -719,6 +814,22 @@
 
             }
 
+            OpenTradePanel()
+            {
+                var orderPanel=document.getElementById('OrderPanel');
+                orderPanel.style.display="block";
+                orderPanel.style.width = '350px';
+
+                this.OnSize();
+            }
+
+            CloseTradePanel()
+            {
+                var orderPanel=document.getElementById('OrderPanel');
+                orderPanel.style.display="none";
+
+                this.OnSize();
+            }
 
             GetHQChartData(option)
             {
@@ -727,7 +838,7 @@
                 var data=null;
                 if (option.Type=="KLine") 
                 {
-                    data=this.KLineCtrl.GetGraphicsDescription({ DataRange:{ Count:200 }});  //取最近200条K线，节省token
+                    data=this.KLineCtrl.GetGraphicsDescription({ DataRange:{ Count:500 }});  //取最近200条K线，节省token
                 }
                 else if (option.Type=="Minute") 
                 {
@@ -972,6 +1083,43 @@
         border-left: solid 1px var(--BorderColor);
     }
 
+    #OrderPanel
+    {
+        width:350px;
+        height: 100%;
+        border-left: solid 1px var(--BorderColor);
+        display: none;
+    }
+
+    #OrderCtrl
+    {
+        width: 100%;
+        height: calc(100% - 35px);;
+        position: relative;
+    }
+
+    #OrderPanel_Title
+    {
+        width: 100%;
+        height: 20px;
+        color:var(--TabTextColor);
+        border-bottom: solid 1px var(--BorderColor);
+        display: flex;
+    }
+
+    #OrderPanel_Close_Button
+    {
+        font-size: 20px;
+        margin-left: 5px;
+        cursor: default; /* 普通箭头 */
+    }
+
+    #OrderPanel_Close_Button:hover 
+    {
+        color:var(--TabTextColor_hover);
+    }
+
+
     #PeriodTab {
         display: flex;
         width: 100%;
@@ -1094,6 +1242,7 @@
         --TabItemBG: rgb(242, 242, 242);
         --BorderColor: rgb(206, 206, 206);
         --TabTextColor: rgb(90, 90, 90);
+        --TabTextColor_hover:rgb(0,0,0);
     }
 
     /*
@@ -1105,6 +1254,7 @@
         --TabItemBG: rgb(242, 242, 242);
         --BorderColor: rgb(206, 206, 206);
         --TabTextColor: rgb(90, 90, 90);
+        --TabTextColor_hover:rgb(10,10,10);
     }
 
     /*
@@ -1115,6 +1265,7 @@
         --TabItemBG: rgb(38, 38, 38);
         --BorderColor: rgb(74, 74, 74);
         --TabTextColor: rgb(204, 204, 204);
+        --TabTextColor_hover:rgb(255,255,255);
     }
 
 
@@ -1289,8 +1440,8 @@
         position: fixed;
         bottom: 100px;
         right: 30px;
-        width: 480px;
-        height: 640px;
+        width: 650px;
+        height: 800px;
         background: white;
         border-radius: 12px;
         box-shadow: 0 8px 24px rgba(0,0,0,0.15);

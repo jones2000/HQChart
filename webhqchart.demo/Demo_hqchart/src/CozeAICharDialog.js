@@ -742,9 +742,12 @@ class CozeAICore extends AICore
             var lines = buffer.split('\n');
             buffer = lines.pop(); // 最后一行可能不完整，留着下次拼
 
+            var dataType=null;
             for (var i = 0; i < lines.length; i++) 
             {
                 var line = lines[i].trim();
+                if (line && line.startsWith('event:')) dataType=line;
+
                 if (!line || !line.startsWith('event:')) 
                 {
                     // 检查是否是data行
@@ -755,8 +758,12 @@ class CozeAICore extends AICore
                             var jsonStr = line.substring(5).trim();
                             var data = JSON.parse(jsonStr);
 
-                            
-                            if (data.type === 'answer' && data.content)     //回答内容
+                            if (dataType.indexOf("conversation.message.completed")>0)   //完整的回答内容
+                            {
+                                if (data.type === 'answer' && data.content)     
+                                    answer=data.content;
+                            }
+                            else if (data.type === 'answer' && data.content)     //回答内容
                             {
                                 answer += data.content;
 
@@ -773,7 +780,7 @@ class CozeAICore extends AICore
                         } 
                         catch (e) 
                         {
-                            // JSON解析失败，忽略
+                            //JSON解析失败，忽略
                         }
                     }
                     continue;

@@ -105,34 +105,60 @@ function GetBlackStyle()
                 Color: 'rgb(205,149,12)',
                 TextColor: '#afc0da',
                 TextBGColor: '#1a283e',
+                
+                //Type 0=圆点 2=图片
                 Investor:
-                {
-                    ApiUrl: '/API/NewsInteract', //互动易
+                { 
+                    Icon:{ Type:0, Color:"rgb(28,101,219)", } 
                 },
-                Announcement:                                           //公告
-                {
-                    ApiUrl: '/API/ReportList',
+                Announcement:
+                { 
+                    Icon:{ Type:0, Color:"rgb(245,165,33)", },
+                    Icon2:{ Type:0, Color:"rgb(237,117,32)", }  //季报
                 },
-                Pforecast:  //业绩预告
-                {
-                    ApiUrl: '/API/StockHistoryDay',
+                Pforecast:
+                { 
+                    Icon:{ Type:0, Color:"rgb(152,108,173)", }
                 },
-                Research:   //调研
-                {
-                    ApiUrl: '/API/InvestorRelationsList',
+                Research:
+                { 
+                    Icon:{ Type:0, Color:"rgb(25,177,183)", }
                 },
-                BlockTrading:   //大宗交易
-                {
-                    ApiUrl: '/API/StockHistoryDay',
+                BlockTrading:
+                { 
+                    Icon:{ Type:0, Color:"rgb(243,159,124)", }
                 },
-                TradeDetail:    //龙虎榜
-                {
-                    ApiUrl: '/API/StockHistoryDay',
+                DragonTiger:
+                { 
+                    Icon:{ Type:0, Color:"rgb(178,38,38)", },
+                    AryIcon:[ ]
                 },
-                Policy: //策略
+                News:
+                { 
+                    Icon:{ Type:0, Color:"rgb(255,0,255)", }
+                },
+                Dividend:
+                { 
+                    Icon:{ Type:0, Color:"rgb(220,20,60)", }
+                },
+                ExtendInfo:
+                { 
+                    Default:{ Type:0, Color:"rgb(148,0,211)",},
+                    AryIcon:
+                    [
+                        { Type:0, Color:"rgb(255,165,0)", }
+                    ]
+                },
+
+                //公告扩展图标库信息
+                AnnouncementEx:
                 {
-                    ApiUrl: '/API/StockHistoryDay',
-                }
+                    Default:{ Type:0, Color:"rgb(205,149,12)", },
+                    AryIcon:
+                    [
+                        { Type:0, Color:"rgb(205,149,12)", }
+                    ]
+                },
             }
         },
 

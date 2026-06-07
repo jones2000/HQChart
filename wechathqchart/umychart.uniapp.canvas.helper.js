@@ -85,6 +85,14 @@ JSUniAppCanvasHelper.MeasureText=function(text, canvas)
 	return width * fontSize / 10;
 }
 
+JSUniAppCanvasHelper.CreateImage_Wechat=function(strBase64)
+{
+    const canvas = wx.createOffscreenCanvas({type: '2d', width: 300, height: 150})
+    var image=canvas.createImage();
+    image.src=strBase64;
+    return image;
+}
+
 //导出统一使用JSCommon命名空间名
 var JSCommonUniApp=
 {

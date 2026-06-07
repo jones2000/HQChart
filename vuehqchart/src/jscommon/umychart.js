@@ -16168,6 +16168,11 @@ function AverageWidthFrame()
                     var outItem={ Text:text[i].Text, Width:value+2*pixelTatio };
                     if (item.TextColor) outItem.TextColor=item.TextColor;
                     if (item.BGColor) outItem.BGColor=item.BGColor;
+                    if (item.Border && item.Border.Color)
+                    {
+                        outItem.Border={ Color:item.Border.Color };
+                        if (IFrameSplitOperator.IsNumber(item.Border.Width)) outItem.Border.Width=item.Border.Width;
+                    }
                     if (IFrameSplitOperator.IsBool(item.EnableBGColor)) outItem.EnableBGColor=item.EnableBGColor;   //是否启用背景色
                     aryText.push(outItem);
                 }
@@ -16751,6 +16756,12 @@ function AverageWidthFrame()
                                 if (itemText.BGColor) textBGColor=itemText.BGColor;
                                 this.Canvas.fillStyle=textBGColor;
                                 this.Canvas.fillRect(textLeft,bgTop,itemText.Width,textHeight);
+                                if (itemText.Border && itemText.Border.Color)
+                                {
+                                    this.Canvas.strokeStyle=itemText.Border.Color;
+                                    this.Canvas.strokeRect(ToFixedPoint(textLeft),ToFixedPoint(bgTop),ToFixedRect(itemText.Width+1),ToFixedRect(textHeight));
+                                }
+
                                 if (itemText.TextColor) this.Canvas.fillStyle=itemText.TextColor;
                                 else this.Canvas.fillStyle = item.TextColor;
                                 this.Canvas.fillText(itemText.Text, textLeft + 1*pixelTatio, yText);
@@ -19629,6 +19640,7 @@ function KLineFrame()
     this.LastCalculateStatus={ Width:0, XPointCount:0 };    //最后一次计算宽度的状态
 
     this.CustomHorizontalInfo=[];   //定制Y轴刻度
+    this.SystemHorizontalInfo=[];   //外部联动系统Y轴刻度
     this.IsDrawTitleBG=g_JSChartResource.KLineToolbar.IsDrawTitleBG;
     this.IsShowNameArrow=g_JSChartResource.KLineToolbar.IsShowNameArrow;
 
@@ -20559,26 +20571,44 @@ function KLineFrame()
     {
         if (this.IsMinSize) return;
         if (this.ChartBorder.IsShowTitleOnly) return;
-        if (!IFrameSplitOperator.IsNonEmptyArray(this.CustomHorizontalInfo)) return;
 
-        var aryHorizontal=this.CustomHorizontalInfo.slice();
-        aryHorizontal.sort((left, right)=>{ return right.Value-left.Value; });
-        var mapTextRect=new Map();  //key=position(1=左外 2=左内, 3=右外 4=右内), value:{ Rect:, Item: }  
-        for(var i=0; i<aryHorizontal.length; ++i)
+        if (IFrameSplitOperator.IsNonEmptyArray(this.CustomHorizontalInfo))
         {
-            var item=aryHorizontal[i];
-            switch(item.Type)
+            var aryHorizontal=this.CustomHorizontalInfo.slice();
+            aryHorizontal.sort((left, right)=>{ return right.Value-left.Value; });
+            var mapTextRect=new Map();  //key=position(1=左外 2=左内, 3=右外 4=右内), value:{ Rect:, Item: }  
+            for(var i=0; i<aryHorizontal.length; ++i)
             {
-                case 0: //最新价格刻度
-                case 1: //固定价格刻度
-                    this.DrawCustomItem(item, mapTextRect);  
+                var item=aryHorizontal[i];
+                switch(item.Type)
+                {
+                    case 0: //最新价格刻度
+                    case 1: //固定价格刻度
+                        this.DrawCustomItem(item, mapTextRect);  
+                        break;
+                    case 2: //当前屏最后一个K线价格刻度
+                    case 3: //主图K线涨幅刻度
+                    case 4: //叠加K线涨幅刻度
+                    case 10://自定义的
+                        this.DrawCustomItem(item, mapTextRect);  
+                        break;
+                }
+            }
+        }
+
+        //外部联动Y轴刻度显示
+        if (IFrameSplitOperator.IsNonEmptyArray(this.SystemHorizontalInfo)) 
+        {
+            for(var i=0;i<this.SystemHorizontalInfo.length;++i)
+            {
+                var item=this.SystemHorizontalInfo[i];
+                if (!item.IsShow) continue;
+                switch(item.Type)
+                {
+                    case 1: //固定价格刻度
+                        this.DrawCustomItem(item, mapTextRect);
                     break;
-                case 2: //当前屏最后一个K线价格刻度
-                case 3: //主图K线涨幅刻度
-                case 4: //叠加K线涨幅刻度
-                case 10://自定义的
-                    this.DrawCustomItem(item, mapTextRect);  
-                    break;
+                }
             }
         }
     }
@@ -20760,6 +20790,33 @@ function KLineFrame()
         }
 
         return mapX;
+    }
+
+    this.SetSystemHorizontalInfo=function(infoItem)
+    {
+        if (!infoItem || !infoItem.ID) return false;
+
+        var finder=null;
+        for(var i=0;i<this.SystemHorizontalInfo.length;++i)
+        {
+            var item=this.SystemHorizontalInfo[i];
+            if (item.ID===infoItem.ID)
+            {
+                finder=item;
+                break;
+            }
+        }
+
+        if (!finder) 
+        {
+            this.SystemHorizontalInfo.push(infoItem);
+        }
+        else
+        {
+            Object.assign(finder, infoItem);    //合并
+        }
+
+        return true;
     }
 }
 
@@ -24156,6 +24213,15 @@ function HQTradeFrame()
 
             item.Frame.DivFrameToolbar.Hide();
         }
+    }
+
+    this.SetSystemHorizontalInfo=function(windowIndex, infoItem)
+    {
+        if (windowIndex<0 || windowIndex>=this.SubFrame.length) return false;
+
+        var item=this.SubFrame[windowIndex];
+        if (!item || !item.Frame) return false;
+        return item.Frame.SetSystemHorizontalInfo(infoItem);
     }
 }
 
@@ -80630,7 +80696,7 @@ function JSChartResource()
 
     this.FrameLogo=
     {
-        TextColor:'rgb(178,34,34)',
+        TextColor:'rgba(178,34,34,0.6)',
         Font:"bold "+ 16*GetDevicePixelRatio() +"px 微软雅黑",
         Text:"*仅学习使用*",     //不要修改声明, 任何修改声明产生的任何法律责任由修改者自行独立承担，与HQChart插件作者无关。
         BGColor:"rgba(230,230,230, 0.5)",
@@ -82295,14 +82361,30 @@ function JSChartResource()
             Text:"rgb(60,60,60)",   //默认文本
         },
 
+        Footer:
+        {
+            Margin:{ Top:4, Bottom:4 },
+            Font:{ Size:14, Name:"微软雅黑" },
+            ItemMargin:{ Top:2, Bottom:4,Left:5, Right:5 },
+
+            ResetButton:
+            { 
+                Icon: { LockedText:'\ue6ce', Text:"\ue6e6", Color:'rgb(0,0,0)', Family:"iconfont", Size:18 },
+                //BGColor:"rgb(30,144,255)", 
+                ArcColor:"rgba(255,224,178,0.8)",
+                MoveOnColor:"rgb(242,242,242)",
+                Size:20,
+            }
+        },
+
         UpTextColor:"rgb(238,21,21)",      //上涨文字颜色
         DownTextColor:"rgb(25,158,0)",     //下跌文字颜色
         UnchagneTextColor:"rgb(0,0,0)",     //平盘文字颜色
 
         Selected:
         {
-            BGColor:"rgb(180,240,240)",
-            LineColor:"rgb(128,128,128)",
+            BGColor:"rgb(242,242,242)",
+            LineColor:"rgb(46,46,46)",
             LineWidth:2,
         },
 
@@ -83341,6 +83423,47 @@ function JSChartResource()
         {
             var subItem=style.MoveOn;
             var subDest=this.OrderList.MoveOn;
+            if (subItem.LineColor) subDest.LineColor=subItem.LineColor;
+            if (IFrameSplitOperator.IsNumber(subItem.LineWidth)) subDest.LineWidth=subItem.LineWidth;
+        }
+
+        if (style.Footer)
+        {
+            var subItem=style.Footer;
+            var subDest=this.OrderList.Footer;
+
+            if (subItem.Margin) CopyMarginConfig(subDest.Margin,subItem.Margin);
+            if (subItem.ItemMargin) CopyMarginConfig(subDest.ItemMargin,subItem.ItemMargin);
+            if (subItem.Font)
+            {
+                if (IFrameSplitOperator.IsNumber(subItem.Font.Size)) subDest.Font.Size=subItem.Font.Size;
+                if (subItem.Font.Name) subDest.Font.Name=subItem.Font.Name;
+            }
+
+            if (subItem.ResetButton)
+            {
+                if (subItem.ResetButton.ArcColor) subDest.ResetButton.ArcColor=subItem.ResetButton.ArcColor;
+                if (subItem.ResetButton.MoveOnColor) subDest.ResetButton.MoveOnColor=subItem.ResetButton.MoveOnColor;
+                if (IFrameSplitOperator.IsNumber(subItem.ResetButton.Size)) subDest.ResetButton.Size=subItem.ResetButton.Size;
+                if (subItem.ResetButton.Icon)
+                {
+                    var item=subItem.ResetButton.Icon;
+                    var destItem=subDest.ResetButton.Icon;
+                    if (item.LockedText) destItem.LockedText=item.LockedText;
+                    if (item.Text) destItem.Text=item.Text;
+                    if (item.Color) destItem.Color=item.Color;
+                    if (item.Family) destItem.Family=item.Family;
+                    if (IFrameSplitOperator.IsNumber(item.Size)) destItem.Size=item.Size;
+                }
+            }
+        }
+
+        if (style.Selected)
+        {
+            var subItem=style.Selected;
+            var subDest=this.OrderList.Selected;
+
+            if (subItem.BGColor) subDest.BGColor=subItem.BGColor;
             if (subItem.LineColor) subDest.LineColor=subItem.LineColor;
             if (IFrameSplitOperator.IsNumber(subItem.LineWidth)) subDest.LineWidth=subItem.LineWidth;
         }
@@ -94329,6 +94452,19 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
 
         return null;
     }
+
+    this.SetSystemHorizontalInfo=function(windowIndex, infoItem, option)
+    {
+        var result=this.Frame.SetSystemHorizontalInfo(windowIndex, infoItem);
+
+        if (option)
+        {
+            if (option.Redraw) this.Draw();
+            else if (option.RedrawDynamic) this.DrawDynamicInfo();
+        }
+
+        return result;
+    }
 }
 
 //API 返回数据 转化为array[]
@@ -105200,7 +105336,7 @@ JSKLineInfoMap.GetIconFont=function(type)
     if (type>=KLINE_INFO_TYPE.ANNOUNCEMENT_EX_START && type<=KLINE_INFO_TYPE.ANNOUNCEMENT_EX_END)
     {
         var index=type-KLINE_INFO_TYPE.ANNOUNCEMENT_EX_START;
-        var value=g_JSChartResource.KLine.Info.AnnouncementEx.Defalut;
+        var value=g_JSChartResource.KLine.Info.AnnouncementEx.Default;
         var aryData=g_JSChartResource.KLine.Info.AnnouncementEx.AryIconFont;
         if (IFrameSplitOperator.IsNonEmptyArray(aryData) && aryData[index]) value=aryData[index];
 

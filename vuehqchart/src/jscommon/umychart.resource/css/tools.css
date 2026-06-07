@@ -860,6 +860,7 @@ input[type="color"] {
     border: 1px solid;
     border-color:rgb(116, 112, 112);
     background-color: #fff;
+    color:rgb(0,0,0);
     visibility:hidden;
     font-size: 12px;
     font-family: "微软雅黑";

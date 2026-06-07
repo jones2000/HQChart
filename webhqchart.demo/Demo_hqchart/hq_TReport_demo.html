@@ -292,6 +292,7 @@
                     {
                         var item=periodData.AryData[i];
                         var pItem=this.PeriodCtrl.AryPeriod[i];
+                        if (!pItem) continue;
                         pItem.Title=item.Period;
                         pItem.IsShow=true;
                         pItem.Data=item;

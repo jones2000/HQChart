@@ -306,7 +306,7 @@ class FullReportChart
 
         KLineChartTooltip:
         { 
-            Enable:false,
+            Enable:true,
             Option:{ EnableResize:false }
         },
 
