@@ -1209,7 +1209,7 @@ function GetBlackStyle()
 
             UpTextColor:"rgb(238,21,21)",      //上涨文字颜色
             DownTextColor:"rgb(25,158,0)",     //下跌文字颜色
-            UnchagneTextColor:"rgb(0,0,0)",     //平盘文字颜色
+            UnchangeTextColor:"rgb(220,220,220)",     //平盘文字颜色
 
             Selected:
             {
@@ -1229,6 +1229,43 @@ function GetBlackStyle()
             [
 
             ]
+        },
+
+        //日历
+        Calendar:
+        {
+            Title:
+            { 
+                Color:'rgb(240,240,240)',
+                Arrow:{ Color:"rgb(136, 136, 136)" },
+                MoveOn:{ BGColor:"rgb(220,220,220)", Color:"rgb(0,0,0)" },
+            }, // HRate=高度占比
+
+            WeekTitle:
+            { 
+               Color:'rgb(240,240,240)',
+            },  
+
+            Day:
+            { 
+                Text:{ Color:["rgb(240, 240, 240)", "rgb(128,128,128)", "rgb(105,105,105)"] },
+                //MoveOn:{ BGColor:"rgb(220,220,220)", Color:"rgb(0,0,0)" },
+                //Today:{ Enable:true, BGColor:"rgb(0,103,192)", Color:"rgb(250,250,250)" },
+                Selected:{ BorderColor:["rgb(0,103,192)", "rgb(0,0,0)"] }
+            }, 
+
+            MarkDay:
+            {
+                //Dots:{ Color:"rgb(165,42,42)" }
+            },
+
+            Month:
+            {
+                Text:{ Color:["rgb(240, 240, 240)", "rgb(128,128,128)","rgb(105,105,105)"] },
+                //MoveOn:{ BGColor:"rgb(220,220,220)", Color:"rgb(0,0,0)" },
+                //Today:{ Enable:true, BGColor:"rgb(0,103,192)", Color:"rgb(250,250,250)" },
+                //Font:{ SizeRate:0.3, Family:"微软雅黑"}
+            }
         }
         
     };

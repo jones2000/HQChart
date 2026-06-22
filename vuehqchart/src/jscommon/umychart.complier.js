@@ -10665,7 +10665,7 @@ function JSDraw(errorHandler,symbolData)
         } 
 
         var icon=g_JSComplierResource.GetDrawIcon(type);
-        if (!icon) g_JSComplierResource.GetDrawTextIcon(type);
+        if (!icon) icon=g_JSComplierResource.GetDrawTextIcon(type);
         if (!icon) icon={Symbol:'🚩'};
 
         let drawData=[];

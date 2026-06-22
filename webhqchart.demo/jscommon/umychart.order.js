@@ -613,6 +613,8 @@ class JSOrderChartContainer
                         var merged=Object.assign({}, priceItem.Data, item.Data);    //合并
                         priceItem.Data=merged;
                     }
+                    if (IFrameSplitOperator.IsNumber(item.ColorID)) priceItem.ColorID=item.ColorID;
+                    if (item.Color) priceItem.Color=item.Color;
                     bUpdate=true;
                 }
                 else
@@ -1481,10 +1483,13 @@ class ChartOrderList
     SizeChange=true;
 
     //涨跌颜色
-    UpColor=g_JSChartResource.OrderList.UpTextColor;
-    DownColor=g_JSChartResource.OrderList.DownTextColor;
-    UnchangeColor=g_JSChartResource.OrderList.UnchagneTextColor; 
-
+    PriceConfig=
+    {
+        Up:{ Color:g_JSChartResource.OrderList.UpTextColor, ColorID:g_JSChartResource.OrderList.UpTextColorID },
+        Down:{ Color:g_JSChartResource.OrderList.DownTextColor, ColorID:g_JSChartResource.OrderList.DownTextColorID },
+        Unchange:{ Color:g_JSChartResource.OrderList.UnchangeTextColor, ColorID:g_JSChartResource.OrderList.UnchangeTextColorID }
+    }
+    
     BorderColor=g_JSChartResource.OrderList.BorderColor;    //边框线
 
     SelectedConfig={ BGColor:g_JSChartResource.OrderList.Selected.BGColor, LineColor:g_JSChartResource.OrderList.Selected.LineColor, LineWidth:g_JSChartResource.OrderList.Selected.LineWidth };
@@ -1578,10 +1583,14 @@ class ChartOrderList
 
     ReloadResource(resource)
     {
-        this.UpColor=g_JSChartResource.OrderList.UpTextColor;
-        this.DownColor=g_JSChartResource.OrderList.DownTextColor;
-        this.UnchangeColor=g_JSChartResource.OrderList.UnchagneTextColor; 
-    
+       //涨跌颜色
+        PriceConfig=
+        {
+            Up:{ Color:g_JSChartResource.OrderList.UpTextColor, ColorID:g_JSChartResource.OrderList.UpTextColorID },
+            Down:{ Color:g_JSChartResource.OrderList.DownTextColor, ColorID:g_JSChartResource.OrderList.DownTextColorID },
+            Unchange:{ Color:g_JSChartResource.OrderList.UnchangeTextColor, ColorID:g_JSChartResource.OrderList.UnchangeTextColorID }
+        }
+
         this.BorderColor=g_JSChartResource.OrderList.BorderColor;    //边框线
 
         //表头配置
@@ -2223,8 +2232,27 @@ class ChartOrderList
         }
     }
 
+
+    GetPriceColor(price)
+    {
+        var config=this.PriceConfig;
+
+        if (!this.Data || !IFrameSplitOperator.IsNumber(this.Data.BasePrice) || !IFrameSplitOperator.IsNumber(price)) return config.Unchange;
+
+        if (price>this.Data.BasePrice) return config.Up;
+        else if (price<this.Data.BasePrice) return config.Down;
+        else return config.Unchange
+    }
+
     FormatCenterItem(column, data, drawInfo)
     {
+        var config=this.GetPriceColor(data.Price);
+        if (config)
+        {
+            if (config.Color) drawInfo.Color=config.Color;
+            if (IFrameSplitOperator.IsNumber(config.ColorID)) drawInfo.Color=this.GetColorByID(config.ColorID);
+        }
+
         if (data.Color) drawInfo.Color=data.Color;
         if (data.BGColor) drawInfo.BGColor=data.BGColor;
         if (IFrameSplitOperator.IsNumber(data.ColorID)) drawInfo.Color=this.GetColorByID(data.ColorID);

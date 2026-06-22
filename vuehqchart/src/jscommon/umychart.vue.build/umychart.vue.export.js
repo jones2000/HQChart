@@ -71,6 +71,7 @@ export default {
     JSStockInfoChart:JSStockInfoChart,      //5档买卖
     JSStatusBarChart:JSStatusBarChart,      //底部状态栏
     JSScrollTextChart:JSScrollTextChart,    //跑马灯
+    JSCalendarChart:JSCalendarChart,
 
     //图形基类导出
     IChartPainting:IChartPainting,              //图形

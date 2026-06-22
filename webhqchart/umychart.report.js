@@ -7406,10 +7406,12 @@ function ChartReport()
             column.Type==REPORT_COLUMN_ID.RISING_SPEED_10M_ID || column.Type==REPORT_COLUMN_ID.RISING_SPEED_15M_ID )
         {
             var fieldName=MAP_COLUMN_FIELD.get(column.Type);
+            var dec=data.Decimal;
+            if (column.Type==REPORT_COLUMN_ID.INCREASE_ID || column.Type==REPORT_COLUMN_ID.AMPLITUDE_ID) dec=2; //涨幅,振幅是百分比
             if (stock && IFrameSplitOperator.IsNumber(stock[fieldName]))
             {
                 var value=stock[fieldName];
-                drawInfo.Text=value.toFixed(2);
+                drawInfo.Text=value.toFixed(data.Decimal);
                 drawInfo.TextColor=this.GetUpDownColor(value,0);
             }
 

@@ -2875,6 +2875,10 @@ var JSCHART_EVENT_ID=
     ON_RCLICK_ORDER_CELL:402,
     ON_DBCLICK_ORDER_ROW:403,
     ON_MOVEON_ORDER_CELL:404,  //鼠标在单元格
+
+    ON_CLICK_CALENDAR_DAY_CELL:501, //日历图 点击
+    ON_RCLICK_CALENDAR_DAY_CELL:502,
+
 }
 
 var JSCHART_OPERATOR_ID=
@@ -7242,9 +7246,13 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         var data=this.InvokeBeforeDrawSplashScreenCallback();
         if (data && data.PreventDefault===true) return;
 
-        if (this.Frame.ScreenImageData==null && !this.CacheCanvas) return;
-
-        if (this.Frame.ScreenImageData)
+        if (this.Frame.ScreenImageData==null && !this.CacheCanvas)
+        {
+            this.Canvas.clearRect(0,0,this.UIElement.width,this.UIElement.height);
+            this.Frame.ClearCoordinateText();
+            this.Frame.Draw( { IsEnableSplash:this.ChartSplashPaint.IsEnableSplash} );
+        }
+        else if (this.Frame.ScreenImageData)
         {
             this.Canvas.putImageData(this.Frame.ScreenImageData,0,0);
         }
@@ -10591,7 +10599,11 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
         this.ChartSplashPaint.EnableSplash(enable);
 
-        if (option && option.Draw===false) return;
+        if (option)
+        {
+            if (option.Draw===false) return;
+            if (option.ClearSnapshot===true) this.Frame.ScreenImageData=true;   //清空缓存
+        }
 
         if (enable) this.DrawSplashScreen(option);
         else this.Draw();
@@ -13579,6 +13591,40 @@ function CopyMarginConfig(dest,src)
     if (IFrameSplitOperator.IsNumber(src.Top)) dest.Top=src.Top;
     if (IFrameSplitOperator.IsNumber(src.Right)) dest.Right=src.Right;
     if (IFrameSplitOperator.IsNumber(src.Bottom)) dest.Bottom=src.Bottom;
+}
+
+function MergeObject(dest, src, option)
+{
+    if (!dest || !src) return;
+
+    for (const key in dest) 
+    {
+        if (!dest.hasOwnProperty(key)) continue;
+        // src 无该字段，跳过不处理
+        if (!src.hasOwnProperty(key)) continue;
+
+        const destVal = dest[key];
+        const srcVal = src[key];
+
+        //去掉函数
+        if (typeof destVal === "function" || typeof srcVal === "function") continue;
+
+        //两边都是数组 → slice
+        if (Array.isArray(destVal) && Array.isArray(srcVal)) 
+        {
+            dest[key]=srcVal.slice();
+            continue;
+        }
+
+        //两边都是普通对象（非null、非数组）→ 递归内层合并
+        if ( typeof destVal === 'object' && destVal !== null && typeof srcVal === 'object' && srcVal !== null && !Array.isArray(destVal) )
+        {
+            MergeObject(destVal, srcVal, option);
+            continue;
+        }
+
+        dest[key]=srcVal;
+    }
 }
 
 //兼容老版本
@@ -82379,7 +82425,7 @@ function JSChartResource()
 
         UpTextColor:"rgb(238,21,21)",      //上涨文字颜色
         DownTextColor:"rgb(25,158,0)",     //下跌文字颜色
-        UnchagneTextColor:"rgb(0,0,0)",     //平盘文字颜色
+        UnchangeTextColor:"rgb(0,0,0)",     //平盘文字颜色
 
         Selected:
         {
@@ -82399,6 +82445,49 @@ function JSChartResource()
         [
 
         ]
+    }
+
+    //日历
+    this.Calendar=
+    {
+        Title:
+        { 
+            IsShow:true, HRate:0.12, Color:'rgb(0,0,0)',
+            BGMargin:{ Left:10, Right:0, Top:10, Bottom:10 }, 
+            Arrow:{ Color:"rgb(120,120,120)", Scale:0.45 },
+            MoveOn:{ BGColor:"rgb(220,220,220)", Color:'rgb(0,0,0)', Type:0, RoundRect:{ Radius:[5*GetDevicePixelRatio()] } },
+            Font:{ SizeRate:0.45, Family:"微软雅黑" }
+        }, // HRate=高度占比
+
+        WeekTitle:
+        { 
+            Color:'rgb(0,0,0)',
+            HRate:0.08, 
+            Type:1,      //Type 0=1-7 1=1-5
+            Font:{ SizeRate:0.5, Family:"微软雅黑"}
+        },  
+
+        Day:
+        { 
+            Text:{ Color:["rgb(0,0,0)", "rgb(192,192,192)", "rgb(220,220,220)"], YOffset:2  },
+            MoveOn:{ BGColor:"rgb(220,220,220)", Color:"rgb(0,0,0)", RadiusRate:0.4 },
+            Today:{ Enable:true, BGColor:"rgb(0,103,192)", Color:"rgb(250,250,250)", RadiusRate:0.42 },
+            Font:{ SizeRate:0.4, Family:"微软雅黑"},
+            Selected:{ BorderColor:["rgb(0,103,192)", "rgb(220,220,220)"], RadiusRate:0.4 }
+        }, 
+
+        MarkDay:
+        {
+            Dots:{ Radius:5, YOffset:5, Color:"rgb(220,20,60)" }
+        },
+
+        Month:
+        {
+            Text:{ Color:["rgb(0,0,0)", "rgb(192,192,192)", "rgb(220,220,220)"], YOffset:2 },
+            MoveOn:{ BGColor:"rgb(220,220,220)", Color:"rgb(0,0,0)" },
+            Today:{ Enable:true, BGColor:"rgb(0,103,192)", Color:"rgb(250,250,250)" },
+            Font:{ SizeRate:0.3, Family:"微软雅黑"}
+        }
     }
 
 
@@ -83365,7 +83454,14 @@ function JSChartResource()
         if (style.ScrollText) this.SetScrollText(style.ScrollText);
         if (style.MinuteInfo) this.SetMinuteInfo(style.MinuteInfo);
         if (style.OrderList) this.SetOrderList(style.OrderList);
+        if (style.Calendar) this.SetCalendar(style.Calendar);
 
+    }
+
+    this.SetCalendar=function(style)
+    {
+        var dest=this.Calendar;
+        MergeObject(dest, style);
     }
 
     this.SetOrderList=function(style)
@@ -83376,6 +83472,11 @@ function JSChartResource()
         if (style.UpTextColor) dest.UpTextColor=style.UpTextColor;
         if (style.DownTextColor) dest.DownTextColor=style.DownTextColor;
         if (style.UnchangeTextColor) dest.UnchangeTextColor=style.UnchangeTextColor;
+
+        if (IFrameSplitOperator.IsNumber(style.UpTextColorID)) dest.UpTextColorID=style.UpTextColorID;
+        if (IFrameSplitOperator.IsNumber(style.DownTextColorID)) dest.DownTextColor=style.DownTextColorID;
+        if (IFrameSplitOperator.IsNumber(style.UnchangeTextColorID)) dest.UnchangeTextColor=style.UnchangeTextColorID;
+
 
         if (style.Header)
         {
@@ -109043,122 +109144,128 @@ function FuturesTimeData()
         },
     ];
 
-    this.MAP_TWOWORDS=new Map([
-        //大连商品交易所
-        [MARKET_SUFFIX_NAME.DCE + '-JD', {Time:0,Decimal:0,Name:"鸡蛋"}],
-        [MARKET_SUFFIX_NAME.DCE + '-FB', {Time:0,Decimal:2,Name:"纤板"}],
-        [MARKET_SUFFIX_NAME.DCE + '-BB', {Time:0,Decimal:2,Name:"胶板"}],
-        [MARKET_SUFFIX_NAME.DCE + '-PP', {Time:6,Decimal:0,Name:"丙烯"}],
-        [MARKET_SUFFIX_NAME.DCE + '-JM', {Time:6,Decimal:1,Name:'焦煤'}],
-        [MARKET_SUFFIX_NAME.DCE + '-EG', {Time:6,Decimal:0,Name:'乙二醇'}],
-        [MARKET_SUFFIX_NAME.DCE + '-EB', {Time:6,Decimal:0,Name:'苯乙烯'}],
-        [MARKET_SUFFIX_NAME.DCE + '-CS', {Time:6,Decimal:0,Name:'淀粉'}],
-        [MARKET_SUFFIX_NAME.DCE + '-PG', {Time:6,Decimal:0,Name:'液化气'}],
-        [MARKET_SUFFIX_NAME.DCE + '-RR', {Time:6,Decimal:0,Name:'梗米'}],
-        [MARKET_SUFFIX_NAME.DCE + '-LH', {Time:0,Decimal:0,Name:'生猪'}],
+    this.MAP_TWOWORDS=new Map();
+    this.MAP_ONEWORD=new Map();
 
-        //上期所
-        [MARKET_SUFFIX_NAME.SHFE + '-CU', {Time:4,Decimal:0,Name:"沪铜"}],
-        [MARKET_SUFFIX_NAME.SHFE + '-AL', {Time:4,Decimal:0,Name:"沪铝"}],
-        [MARKET_SUFFIX_NAME.SHFE + '-NI', {Time:4,Decimal:0,Name:"沪镍"}],
-        [MARKET_SUFFIX_NAME.SHFE + '-SN', {Time:4,Decimal:0,Name:'沪锡'}],
-        [MARKET_SUFFIX_NAME.SHFE + '-ZN', {Time:4,Decimal:0,Name:"沪锌"}],
-        [MARKET_SUFFIX_NAME.SHFE + '-PB', {Time:4,Decimal:0,Name:'沪铅'}],
-        [MARKET_SUFFIX_NAME.SHFE + '-RU', {Time:6,Decimal:0,Name:"天然橡胶"}],
-        [MARKET_SUFFIX_NAME.SHFE + '-FU', {Time:6,Decimal:0,Name:"燃料油"}],
-        [MARKET_SUFFIX_NAME.SHFE + '-RB', {Time:6,Decimal:0,Name:"螺纹钢"}],
-        [MARKET_SUFFIX_NAME.SHFE + '-BU', {Time:6,Decimal:0,Name:'石油沥青'}],
-        [MARKET_SUFFIX_NAME.SHFE + '-HC', {Time:6,Decimal:0,Name:"热轧卷板"}],
-        [MARKET_SUFFIX_NAME.SHFE + '-SP', {Time:6,Decimal:0,Name:"纸浆"}],
-        [MARKET_SUFFIX_NAME.SHFE + '-WR', {Time:0,Decimal:0,Name:"线材"}],
-        [MARKET_SUFFIX_NAME.SHFE + '-AG', {Time:5,Decimal:0,Name:"白银"}],
-        [MARKET_SUFFIX_NAME.SHFE + '-AU', {Time:5,Decimal:2,Name:"黄金"}],
-        [MARKET_SUFFIX_NAME.SHFE + '-SS', {Time:4,Decimal:0,Name:'不锈钢'}],
-        [MARKET_SUFFIX_NAME.SHFE + '-AO', {Time:4,Decimal:0,Name:'氧化铝'}],
-        [MARKET_SUFFIX_NAME.SHFE + '-BR', {Time:6,Decimal:0,Name:'合成橡胶'}],
-        [MARKET_SUFFIX_NAME.SHFE + '-AD', {Time:4,Decimal:0,Name:"铝合金"}],
-        [MARKET_SUFFIX_NAME.SHFE + '-OP', {Time:6,Decimal:0,Name:"胶版印刷纸"}],
+    this.BuildTimeDataMap=function()
+    {
+        this.MAP_TWOWORDS=new Map([
+            //大连商品交易所
+            [MARKET_SUFFIX_NAME.DCE + '-JD', {Time:0,Decimal:0,Name:"鸡蛋"}],
+            [MARKET_SUFFIX_NAME.DCE + '-FB', {Time:0,Decimal:2,Name:"纤板"}],
+            [MARKET_SUFFIX_NAME.DCE + '-BB', {Time:0,Decimal:2,Name:"胶板"}],
+            [MARKET_SUFFIX_NAME.DCE + '-PP', {Time:6,Decimal:0,Name:"丙烯"}],
+            [MARKET_SUFFIX_NAME.DCE + '-JM', {Time:6,Decimal:1,Name:'焦煤'}],
+            [MARKET_SUFFIX_NAME.DCE + '-EG', {Time:6,Decimal:0,Name:'乙二醇'}],
+            [MARKET_SUFFIX_NAME.DCE + '-EB', {Time:6,Decimal:0,Name:'苯乙烯'}],
+            [MARKET_SUFFIX_NAME.DCE + '-CS', {Time:6,Decimal:0,Name:'淀粉'}],
+            [MARKET_SUFFIX_NAME.DCE + '-PG', {Time:6,Decimal:0,Name:'液化气'}],
+            [MARKET_SUFFIX_NAME.DCE + '-RR', {Time:6,Decimal:0,Name:'梗米'}],
+            [MARKET_SUFFIX_NAME.DCE + '-LH', {Time:0,Decimal:0,Name:'生猪'}],
 
-        //上期所-能源
-        [MARKET_SUFFIX_NAME.SHFE + '-NR', {Time:6,Decimal:1,Name:'20号胶'}],
-        [MARKET_SUFFIX_NAME.SHFE + '-SC', {Time:5,Decimal:1,Name:'原油'}],
-        [MARKET_SUFFIX_NAME.SHFE + '-LU', {Time:6,Decimal:0,Name:'低硫燃油'}],
-        [MARKET_SUFFIX_NAME.SHFE + '-BC', {Time:4,Decimal:0,Name:'国际铜'}],
-        [MARKET_SUFFIX_NAME.SHFE + '-EC', {Time:0,Decimal:0,Name:'集运指数'}],
+            //上期所
+            [MARKET_SUFFIX_NAME.SHFE + '-CU', {Time:4,Decimal:0,Name:"沪铜"}],
+            [MARKET_SUFFIX_NAME.SHFE + '-AL', {Time:4,Decimal:0,Name:"沪铝"}],
+            [MARKET_SUFFIX_NAME.SHFE + '-NI', {Time:4,Decimal:0,Name:"沪镍"}],
+            [MARKET_SUFFIX_NAME.SHFE + '-SN', {Time:4,Decimal:0,Name:'沪锡'}],
+            [MARKET_SUFFIX_NAME.SHFE + '-ZN', {Time:4,Decimal:0,Name:"沪锌"}],
+            [MARKET_SUFFIX_NAME.SHFE + '-PB', {Time:4,Decimal:0,Name:'沪铅'}],
+            [MARKET_SUFFIX_NAME.SHFE + '-RU', {Time:6,Decimal:0,Name:"天然橡胶"}],
+            [MARKET_SUFFIX_NAME.SHFE + '-FU', {Time:6,Decimal:0,Name:"燃料油"}],
+            [MARKET_SUFFIX_NAME.SHFE + '-RB', {Time:6,Decimal:0,Name:"螺纹钢"}],
+            [MARKET_SUFFIX_NAME.SHFE + '-BU', {Time:6,Decimal:0,Name:'石油沥青'}],
+            [MARKET_SUFFIX_NAME.SHFE + '-HC', {Time:6,Decimal:0,Name:"热轧卷板"}],
+            [MARKET_SUFFIX_NAME.SHFE + '-SP', {Time:6,Decimal:0,Name:"纸浆"}],
+            [MARKET_SUFFIX_NAME.SHFE + '-WR', {Time:0,Decimal:0,Name:"线材"}],
+            [MARKET_SUFFIX_NAME.SHFE + '-AG', {Time:5,Decimal:0,Name:"白银"}],
+            [MARKET_SUFFIX_NAME.SHFE + '-AU', {Time:5,Decimal:2,Name:"黄金"}],
+            [MARKET_SUFFIX_NAME.SHFE + '-SS', {Time:4,Decimal:0,Name:'不锈钢'}],
+            [MARKET_SUFFIX_NAME.SHFE + '-AO', {Time:4,Decimal:0,Name:'氧化铝'}],
+            [MARKET_SUFFIX_NAME.SHFE + '-BR', {Time:6,Decimal:0,Name:'合成橡胶'}],
+            [MARKET_SUFFIX_NAME.SHFE + '-AD', {Time:4,Decimal:0,Name:"铝合金"}],
+            [MARKET_SUFFIX_NAME.SHFE + '-OP', {Time:6,Decimal:0,Name:"胶版印刷纸"}],
 
-        //上海国际能源交易中心 独立的一个市场
-        [MARKET_SUFFIX_NAME.INE + '-NR', {Time:6,Decimal:1,Name:'20号胶'}],
-        [MARKET_SUFFIX_NAME.INE + '-SC', {Time:5,Decimal:1,Name:'原油'}],
-        [MARKET_SUFFIX_NAME.INE + '-LU', {Time:6,Decimal:0,Name:'低硫燃油'}],
-        [MARKET_SUFFIX_NAME.INE + '-BC', {Time:4,Decimal:0,Name:'国际铜'}],
-        [MARKET_SUFFIX_NAME.INE + '-EC', {Time:0,Decimal:0,Name:'集运指数'}],
-       
-        //郑州期货交易所
-        [MARKET_SUFFIX_NAME.CZCE + '-CF', {Time:6,Decimal:0,Name:"棉花"}],
-        [MARKET_SUFFIX_NAME.CZCE + '-SR', {Time:6,Decimal:0,Name:"白糖"}],
-        [MARKET_SUFFIX_NAME.CZCE + '-MA', {Time:6,Decimal:0,Name:"甲醇"}],
-        [MARKET_SUFFIX_NAME.CZCE + '-ZC', {Time:6,Decimal:1,Name:'动力煤'}],
-        [MARKET_SUFFIX_NAME.CZCE + '-TA', {Time:6,Decimal:0,Name:"精对苯二甲酸(PTA)"}],
-        [MARKET_SUFFIX_NAME.CZCE + '-RM', {Time:6,Decimal:0,Name:'菜籽粕'}],
-        [MARKET_SUFFIX_NAME.CZCE + '-OI', {Time:6,Decimal:0,Name:"菜籽油"}],
-        [MARKET_SUFFIX_NAME.CZCE + '-ME', {Time:3,Decimal:0,Name:"甲醇(老)"}],
-        [MARKET_SUFFIX_NAME.CZCE + '-FG', {Time:6,Decimal:0,Name:'平板玻璃'}],
-        [MARKET_SUFFIX_NAME.CZCE + '-WS', {Time:0,Decimal:0}],
-        [MARKET_SUFFIX_NAME.CZCE + '-WT', {Time:0,Decimal:0}],
-        [MARKET_SUFFIX_NAME.CZCE + '-GN', {Time:0,Decimal:0}],
-        [MARKET_SUFFIX_NAME.CZCE + '-RO', {Time:0,Decimal:0}],
-        [MARKET_SUFFIX_NAME.CZCE + '-RS', {Time:0,Decimal:0,Name:"菜籽"}],
-        [MARKET_SUFFIX_NAME.CZCE + '-ER', {Time:0,Decimal:0}],
-        [MARKET_SUFFIX_NAME.CZCE + '-RI', {Time:0,Decimal:0,Name:"早籼稻"}],
-        [MARKET_SUFFIX_NAME.CZCE + '-WH', {Time:0,Decimal:0,Name:"强麦"}],
-        [MARKET_SUFFIX_NAME.CZCE + '-AP', {Time:0,Decimal:0,Name:"苹果"}],
-        [MARKET_SUFFIX_NAME.CZCE + '-PM', {Time:0,Decimal:0,Name:"普麦"}],
-        [MARKET_SUFFIX_NAME.CZCE + '-QM', {Time:0,Decimal:0}],
-        [MARKET_SUFFIX_NAME.CZCE + '-TC', {Time:0,Decimal:0}],
-        [MARKET_SUFFIX_NAME.CZCE + '-JR', {Time:0,Decimal:0,Name:"粳稻"}],
-        [MARKET_SUFFIX_NAME.CZCE + '-LR', {Time:0,Decimal:0,Name:"晚籼稻"}],
-        [MARKET_SUFFIX_NAME.CZCE + '-SF', {Time:0,Decimal:0,Name:"硅铁"}],
-        [MARKET_SUFFIX_NAME.CZCE + '-SM', {Time:0,Decimal:0,Name:"锰硅"}],
-        [MARKET_SUFFIX_NAME.CZCE + '-CJ', {Time:0,Decimal:2, Name:"红枣"}],
-        [MARKET_SUFFIX_NAME.CZCE + '-CY', {Time:6,Decimal:0, Name:"棉纱"}],
-        [MARKET_SUFFIX_NAME.CZCE + '-UR', {Time:0,Decimal:0, Name:"尿素"}],
-        [MARKET_SUFFIX_NAME.CZCE + '-SA', {Time:6,Decimal:0, Name:"纯碱"}],
-        [MARKET_SUFFIX_NAME.CZCE + '-PF', {Time:6,Decimal:0, Name:"短纤"}],
-        [MARKET_SUFFIX_NAME.CZCE + '-PK', {Time:0,Decimal:0, Name:"花生"}],
-        [MARKET_SUFFIX_NAME.CZCE + '-PR', {Time:6,Decimal:0, Name:"瓶片"}],
+            //上期所-能源
+            [MARKET_SUFFIX_NAME.SHFE + '-NR', {Time:6,Decimal:1,Name:'20号胶'}],
+            [MARKET_SUFFIX_NAME.SHFE + '-SC', {Time:5,Decimal:1,Name:'原油'}],
+            [MARKET_SUFFIX_NAME.SHFE + '-LU', {Time:6,Decimal:0,Name:'低硫燃油'}],
+            [MARKET_SUFFIX_NAME.SHFE + '-BC', {Time:4,Decimal:0,Name:'国际铜'}],
+            [MARKET_SUFFIX_NAME.SHFE + '-EC', {Time:0,Decimal:0,Name:'集运指数'}],
+
+            //上海国际能源交易中心 独立的一个市场
+            [MARKET_SUFFIX_NAME.INE + '-NR', {Time:6,Decimal:1,Name:'20号胶'}],
+            [MARKET_SUFFIX_NAME.INE + '-SC', {Time:5,Decimal:1,Name:'原油'}],
+            [MARKET_SUFFIX_NAME.INE + '-LU', {Time:6,Decimal:0,Name:'低硫燃油'}],
+            [MARKET_SUFFIX_NAME.INE + '-BC', {Time:4,Decimal:0,Name:'国际铜'}],
+            [MARKET_SUFFIX_NAME.INE + '-EC', {Time:0,Decimal:0,Name:'集运指数'}],
+        
+            //郑州期货交易所
+            [MARKET_SUFFIX_NAME.CZCE + '-CF', {Time:6,Decimal:0,Name:"棉花"}],
+            [MARKET_SUFFIX_NAME.CZCE + '-SR', {Time:6,Decimal:0,Name:"白糖"}],
+            [MARKET_SUFFIX_NAME.CZCE + '-MA', {Time:6,Decimal:0,Name:"甲醇"}],
+            [MARKET_SUFFIX_NAME.CZCE + '-ZC', {Time:6,Decimal:1,Name:'动力煤'}],
+            [MARKET_SUFFIX_NAME.CZCE + '-TA', {Time:6,Decimal:0,Name:"精对苯二甲酸(PTA)"}],
+            [MARKET_SUFFIX_NAME.CZCE + '-RM', {Time:6,Decimal:0,Name:'菜籽粕'}],
+            [MARKET_SUFFIX_NAME.CZCE + '-OI', {Time:6,Decimal:0,Name:"菜籽油"}],
+            [MARKET_SUFFIX_NAME.CZCE + '-ME', {Time:3,Decimal:0,Name:"甲醇(老)"}],
+            [MARKET_SUFFIX_NAME.CZCE + '-FG', {Time:6,Decimal:0,Name:'平板玻璃'}],
+            [MARKET_SUFFIX_NAME.CZCE + '-WS', {Time:0,Decimal:0}],
+            [MARKET_SUFFIX_NAME.CZCE + '-WT', {Time:0,Decimal:0}],
+            [MARKET_SUFFIX_NAME.CZCE + '-GN', {Time:0,Decimal:0}],
+            [MARKET_SUFFIX_NAME.CZCE + '-RO', {Time:0,Decimal:0}],
+            [MARKET_SUFFIX_NAME.CZCE + '-RS', {Time:0,Decimal:0,Name:"菜籽"}],
+            [MARKET_SUFFIX_NAME.CZCE + '-ER', {Time:0,Decimal:0}],
+            [MARKET_SUFFIX_NAME.CZCE + '-RI', {Time:0,Decimal:0,Name:"早籼稻"}],
+            [MARKET_SUFFIX_NAME.CZCE + '-WH', {Time:0,Decimal:0,Name:"强麦"}],
+            [MARKET_SUFFIX_NAME.CZCE + '-AP', {Time:0,Decimal:0,Name:"苹果"}],
+            [MARKET_SUFFIX_NAME.CZCE + '-PM', {Time:0,Decimal:0,Name:"普麦"}],
+            [MARKET_SUFFIX_NAME.CZCE + '-QM', {Time:0,Decimal:0}],
+            [MARKET_SUFFIX_NAME.CZCE + '-TC', {Time:0,Decimal:0}],
+            [MARKET_SUFFIX_NAME.CZCE + '-JR', {Time:0,Decimal:0,Name:"粳稻"}],
+            [MARKET_SUFFIX_NAME.CZCE + '-LR', {Time:0,Decimal:0,Name:"晚籼稻"}],
+            [MARKET_SUFFIX_NAME.CZCE + '-SF', {Time:0,Decimal:0,Name:"硅铁"}],
+            [MARKET_SUFFIX_NAME.CZCE + '-SM', {Time:0,Decimal:0,Name:"锰硅"}],
+            [MARKET_SUFFIX_NAME.CZCE + '-CJ', {Time:0,Decimal:2, Name:"红枣"}],
+            [MARKET_SUFFIX_NAME.CZCE + '-CY', {Time:6,Decimal:0, Name:"棉纱"}],
+            [MARKET_SUFFIX_NAME.CZCE + '-UR', {Time:0,Decimal:0, Name:"尿素"}],
+            [MARKET_SUFFIX_NAME.CZCE + '-SA', {Time:6,Decimal:0, Name:"纯碱"}],
+            [MARKET_SUFFIX_NAME.CZCE + '-PF', {Time:6,Decimal:0, Name:"短纤"}],
+            [MARKET_SUFFIX_NAME.CZCE + '-PK', {Time:0,Decimal:0, Name:"花生"}],
+            [MARKET_SUFFIX_NAME.CZCE + '-PR', {Time:6,Decimal:0, Name:"瓶片"}],
 
 
-        //中期所 
-        [MARKET_SUFFIX_NAME.CFFEX + '-TF', {Time:1,Decimal:3,Name:"二债"}],
-        [MARKET_SUFFIX_NAME.CFFEX + '-TS', {Time:1,Decimal:3,Name:"五债"}],
-        [MARKET_SUFFIX_NAME.CFFEX + '-IH', {Time:2,Decimal:1,Name:'上证股指期货'}],
-        [MARKET_SUFFIX_NAME.CFFEX + '-IC', {Time:2,Decimal:1,Name:'中证股指期货'}],
-        [MARKET_SUFFIX_NAME.CFFEX + '-IF', {Time:2,Decimal:1,Name:'沪深股指期货'}],
-        [MARKET_SUFFIX_NAME.CFFEX + '-IM', {Time:2,Decimal:1,Name:'中证1000股指期货'}],
-        [MARKET_SUFFIX_NAME.CFFEX + '-IO', {Time:2,Decimal:1,Name:'沪深300股指期权'}],
-        [MARKET_SUFFIX_NAME.CFFEX + '-MO', {Time:2,Decimal:1,Name:'中证1000股指期权'}],
-        [MARKET_SUFFIX_NAME.CFFEX + '-HO', {Time:2,Decimal:1,Name:'上证50股指期权'}],
+            //中期所 
+            [MARKET_SUFFIX_NAME.CFFEX + '-TF', {Time:1,Decimal:3,Name:"二债"}],
+            [MARKET_SUFFIX_NAME.CFFEX + '-TS', {Time:1,Decimal:3,Name:"五债"}],
+            [MARKET_SUFFIX_NAME.CFFEX + '-IH', {Time:2,Decimal:1,Name:'上证股指期货'}],
+            [MARKET_SUFFIX_NAME.CFFEX + '-IC', {Time:2,Decimal:1,Name:'中证股指期货'}],
+            [MARKET_SUFFIX_NAME.CFFEX + '-IF', {Time:2,Decimal:1,Name:'沪深股指期货'}],
+            [MARKET_SUFFIX_NAME.CFFEX + '-IM', {Time:2,Decimal:1,Name:'中证1000股指期货'}],
+            [MARKET_SUFFIX_NAME.CFFEX + '-IO', {Time:2,Decimal:1,Name:'沪深300股指期权'}],
+            [MARKET_SUFFIX_NAME.CFFEX + '-MO', {Time:2,Decimal:1,Name:'中证1000股指期权'}],
+            [MARKET_SUFFIX_NAME.CFFEX + '-HO', {Time:2,Decimal:1,Name:'上证50股指期权'}],
 
-        //广州期货交易所
-        [MARKET_SUFFIX_NAME.GZFE+'-SI', {Time:0,Decimal:2,Name:"工业硅"}],
-        [MARKET_SUFFIX_NAME.GZFE+'-LC', {Time:0,Decimal:2,Name:"碳酸锂"}]
-    ]);
+            //广州期货交易所
+            [MARKET_SUFFIX_NAME.GZFE+'-SI', {Time:0,Decimal:2,Name:"工业硅"}],
+            [MARKET_SUFFIX_NAME.GZFE+'-LC', {Time:0,Decimal:2,Name:"碳酸锂"}]
+        ]);
 
-    this.MAP_ONEWORD=new Map([
-        //大连商品交易所
-        [MARKET_SUFFIX_NAME.DCE + '-C', {Time:6,Decimal:0,Name:"玉米"}],
-        [MARKET_SUFFIX_NAME.DCE + '-L', {Time:6,Decimal:0,Name:"乙烯"}],
-        [MARKET_SUFFIX_NAME.DCE + '-V', {Time:6,Decimal:0,Name:"PVC"}],
-        [MARKET_SUFFIX_NAME.DCE + '-A', {Time:6,Decimal:0,Name:"豆一"}],
-        [MARKET_SUFFIX_NAME.DCE + '-B', {Time:6,Decimal:0,Name:"豆二"}],
-        [MARKET_SUFFIX_NAME.DCE + '-M', {Time:6,Decimal:0,Name:"豆粕"}],
-        [MARKET_SUFFIX_NAME.DCE + '-Y', {Time:6,Decimal:0,Name:"豆油"}],
-        [MARKET_SUFFIX_NAME.DCE + '-P', {Time:6,Decimal:0,Name:"棕榈"}],
-        [MARKET_SUFFIX_NAME.DCE + '-J', {Time:6,Decimal:1,Name:'焦炭'}],
-        [MARKET_SUFFIX_NAME.DCE + '-I', {Time:6,Decimal:1,Name:"铁矿"}],
-        //中期所 
-        [MARKET_SUFFIX_NAME.CFFEX + '-T', {Time:1,Decimal:3,Name:"十债"}],
-    ]);
+        this.MAP_ONEWORD=new Map([
+            //大连商品交易所
+            [MARKET_SUFFIX_NAME.DCE + '-C', {Time:6,Decimal:0,Name:"玉米"}],
+            [MARKET_SUFFIX_NAME.DCE + '-L', {Time:6,Decimal:0,Name:"乙烯"}],
+            [MARKET_SUFFIX_NAME.DCE + '-V', {Time:6,Decimal:0,Name:"PVC"}],
+            [MARKET_SUFFIX_NAME.DCE + '-A', {Time:6,Decimal:0,Name:"豆一"}],
+            [MARKET_SUFFIX_NAME.DCE + '-B', {Time:6,Decimal:0,Name:"豆二"}],
+            [MARKET_SUFFIX_NAME.DCE + '-M', {Time:6,Decimal:0,Name:"豆粕"}],
+            [MARKET_SUFFIX_NAME.DCE + '-Y', {Time:6,Decimal:0,Name:"豆油"}],
+            [MARKET_SUFFIX_NAME.DCE + '-P', {Time:6,Decimal:0,Name:"棕榈"}],
+            [MARKET_SUFFIX_NAME.DCE + '-J', {Time:6,Decimal:1,Name:'焦炭'}],
+            [MARKET_SUFFIX_NAME.DCE + '-I', {Time:6,Decimal:1,Name:"铁矿"}],
+            //中期所 
+            [MARKET_SUFFIX_NAME.CFFEX + '-T', {Time:1,Decimal:3,Name:"十债"}],
+        ]);
+    }
 
     //添加新品种
     this.AddNewFutures=function(obj)    //{ Suffix:后缀, Symbol:品种代码, Time:交易时间段, Decimal:小数位数, Name:名字 }
@@ -110590,6 +110697,8 @@ function IPETimeData()
 var g_MinuteTimeStringData = new MinuteTimeStringData();
 var g_MinuteCoordinateData = new MinuteCoordinateData();
 var g_FuturesTimeData = new FuturesTimeData();
+g_FuturesTimeData.BuildTimeDataMap();
+
 var g_NYMEXTimeData=new NYMEXTimeData();
 var g_COMEXTimeData=new COMEXTimeData();
 var g_NYBOTTimeData=new NYBOTTimeData();

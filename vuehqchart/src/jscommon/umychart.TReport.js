@@ -658,7 +658,8 @@ function JSTReportChartContainer(uielement)
             if (option.Name) this.Name=option.Name;
         }
 
-        this.RequestStockListData();
+        if (this.Symbol) this.RequestStockListData();
+        else this.Draw();
     }
 
     this.CancelAutoUpdate=function()    //关闭停止更新
