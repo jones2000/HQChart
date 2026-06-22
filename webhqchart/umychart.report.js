@@ -7411,7 +7411,7 @@ function ChartReport()
             if (stock && IFrameSplitOperator.IsNumber(stock[fieldName]))
             {
                 var value=stock[fieldName];
-                drawInfo.Text=value.toFixed(data.Decimal);
+                drawInfo.Text=value.toFixed(dec);
                 drawInfo.TextColor=this.GetUpDownColor(value,0);
             }
 
