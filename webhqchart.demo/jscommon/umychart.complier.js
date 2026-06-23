@@ -23052,13 +23052,15 @@ function ScriptIndex(name,script,args,option)
         chart.AryPoint=varItem.Draw.DrawData;
 
         var config=varItem.Draw.Config;
-        if (config)
-        {
-            if (config.Color) chart.Color=config.Color;
-            if (IFrameSplitOperator.IsNumber(config.Radius)) chart.Radius=config.Radius;
-            if (config.TextColor) chart.TextColor=config.TextColor;
-            if (config.Font) chart.Font=config.Font;
-        }
+        chart.SetOption(config);
+
+        //if (config)
+        //{
+        //    if (config.Color) chart.Color=config.Color;
+        //    if (IFrameSplitOperator.IsNumber(config.Radius)) chart.Radius=config.Radius;
+        //    if (config.TextColor) chart.TextColor=config.TextColor;
+        //    if (config.Font) chart.Font=config.Font;
+        //}
         
         chart.BuildCacheData();
         this.SetChartIndexName(chart);

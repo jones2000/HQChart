@@ -27851,7 +27851,7 @@ function IChartPainting()
         return this.ChartBorder.GetBorder();
     }
 
-    this.ClipClient=function(isHScreen)          //裁剪客户端
+    this.ClipClient=function(isHScreen, option)          //裁剪客户端
     {
         if (isHScreen==true)
         {
@@ -27866,6 +27866,13 @@ function IChartPainting()
             var right=this.ChartBorder.GetRight();
             var top=this.ChartBorder.GetTopEx()-1;
             var bottom=this.ChartBorder.GetBottomEx();
+
+            if (option && option.Clip)
+            {
+                var item=option.Clip;
+                if (IFrameSplitOperator.IsNumber(item.LeftOffset)) left+=item.LeftOffset;       //左侧
+                if (IFrameSplitOperator.IsNumber(item.RightOffset)) right+=item.RightOffset;     //右侧
+            }
         }
 
         this.Canvas.beginPath();
@@ -38534,6 +38541,8 @@ function ChartScatterPlotV2()
     this.Radius=g_JSChartResource.ChartScatterPlotV2.Radius;   
     this.Font=g_JSChartResource.ChartScatterPlotV2.Font;                          //半径
 
+    this.ClipConfig={ LeftOffset:0, RightOffset:0 };
+
     this.TooltipData=[];
     this.MapCache=null; //key=date/date-time  value={ Data:[] }
     this.AryPoint=[ ];  //[{ Value:, Radius:半径(可选), Radius2:固定半径(可选), Color:颜色(可选),ColorBorder:边框颜色(可选),
@@ -38550,6 +38559,22 @@ function ChartScatterPlotV2()
         this.TextColor=g_JSChartResource.ChartScatterPlotV2.TextColor;
         this.Radius=g_JSChartResource.ChartScatterPlotV2.Radius;   
         this.Font=g_JSChartResource.ChartScatterPlotV2.Font;    
+    }
+
+    this.SetOption=function(option)
+    {
+        if (!option) return;
+        
+        if (option.Color) this.Color=option.Color;
+        if (IFrameSplitOperator.IsNumber(option.Radius)) this.Radius=option.Radius;
+        if (option.TextColor) this.TextColor=option.TextColor;
+        if (option.Font) this.Font=option.Font;
+        if (option.Clip)
+        {
+            var subItem=option.Clip;
+            if (IFrameSplitOperator.IsNumber(subItem.LeftOffset)) this.ClipConfig.LeftOffset=subItem.LeftOffset;
+            if (IFrameSplitOperator.IsNumber(subItem.RightOffset)) this.ClipConfig.RightOffset=subItem.RightOffset;
+        }
     }
 
     this.BuildCacheData=function()
@@ -38618,7 +38643,7 @@ function ChartScatterPlotV2()
         }
 
         this.Canvas.save();
-        this.ClipClient(bHScreen);
+        this.ClipClient(bHScreen, { Clip:this.ClipConfig } );
 
         this.Canvas.font=this.Font;
         this.Canvas.textAlign = "left";
