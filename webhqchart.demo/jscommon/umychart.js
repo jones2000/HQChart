@@ -395,6 +395,14 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
                 var subItem=item.SelectedBorder;
                 if (IFrameSplitOperator.IsNumber(subItem.Mode)) chart.GlobalOption.SelectedBorder.Mode=subItem.Mode;
             }
+
+            if (item.DecimalPlaces)
+            {
+                var subItem=item.DecimalPlaces;
+                chart.GlobalOption.DecimalPlaces={ Name:subItem.Name, ID:subItem.ID };
+                if (IFrameSplitOperator.IsNumber(subItem.Decimal)) chart.GlobalOption.DecimalPlaces.Decimal=subItem.Decimal;
+                if (IFrameSplitOperator.IsNumber(subItem.Denominator)) chart.GlobalOption.DecimalPlaces.Denominator=subItem.Denominator;
+            }
             
         }
 
@@ -970,6 +978,14 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             var item=option.GlobalOption;
             if (IFrameSplitOperator.IsBool(item.IsValueFullRange)) chart.GlobalOption.IsValueFullRange=item.IsValueFullRange;
             if (IFrameSplitOperator.IsNumber(item.XDateFormat)) chart.GlobalOption.XDateFormat=item.XDateFormat;
+
+            if (item.DecimalPlaces)
+            {
+                var subItem=item.DecimalPlaces;
+                chart.GlobalOption.DecimalPlaces={ Name:subItem.Name, ID:subItem.ID };
+                if (IFrameSplitOperator.IsNumber(subItem.Decimal)) chart.GlobalOption.DecimalPlaces.Decimal=subItem.Decimal;
+                if (IFrameSplitOperator.IsNumber(subItem.Denominator)) chart.GlobalOption.DecimalPlaces.Denominator=subItem.Denominator;
+            }
         }
 
         if (option.DisplayLatest)
@@ -3106,6 +3122,7 @@ var JSCHART_MENU_ID=
     CMD_SHOW_CHANGE_INDEX_DIALOG_ID:70, //切换指标对话框
 
     CMD_SELECTED_DATA_ANALYZE_ID:71,    //区间选择数据分析
+    CMD_SET_DECIMAL_PLACES_ID:72,       //价格小数位数设置 { Name:"1/4", ID:"1/4", Decimal:6, Denominator: null }
 
 
     CMD_REPORT_CHANGE_BLOCK_ID:100,      //报价列表 切换板块ID
@@ -3383,6 +3400,8 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         LatestPoint:null,   //最新的点位置 { X:, Y: }
 
         EnableXShortDate:true,
+
+        DecimalPlaces:null,         //{ Name:"1/4", ID:"1/4", Decimal:6, Denominator: null }, //小数位数  { Name:, ID:, Decimal:小数位数, Denominator: 特殊分母 }
     };  
 
     this.VerticalDrag;              //通过X轴左右拖动数据(手势才有)
@@ -10602,7 +10621,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
         if (option)
         {
             if (option.Draw===false) return;
-            if (option.ClearSnapshot===true) this.Frame.ScreenImageData=true;   //清空缓存
+            if (option.ClearSnapshot===true) this.Frame.ScreenImageData=null;   //清空缓存
         }
 
         if (enable) this.DrawSplashScreen(option);
@@ -12173,6 +12192,12 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 if (!srcParam) return false;
                 if (this.EnableZoomYCoordinate) this.EnableZoomYCoordinate(srcParam);
                 break;
+            case JSCHART_MENU_ID.CMD_SET_DECIMAL_PLACES_ID: //小数位数
+                if (srcParam===null) this.GlobalOption.DecimalPlaces=null;
+                else if (srcParam) this.GlobalOption.DecimalPlaces=srcParam;
+                this.ResetFrameXYSplit();
+                this.Draw();
+                break;
         }
     }
 
@@ -13393,6 +13418,84 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
     this.HideDivFrameToolbar=function()
     {
         this.Frame.HideDivFrameToolbar();
+    }
+
+    //获取 品种小数位数 { Type:0, Dec: }
+    this.GetSymbolDecimalV2=function(symbol=this.Symbol)
+    {
+        if (this.GlobalOption && this.GlobalOption.DecimalPlaces)
+        {
+            var result={ Type:0, Decimal:2 };
+            var item=this.GlobalOption.DecimalPlaces;
+            if (IFrameSplitOperator.IsPlusNumber(item.Decimal)) result.Decimal=item.Decimal;
+
+            if (IFrameSplitOperator.IsNumber(item.Denominator))
+            {
+                result.Type=1;
+                result.Denominator=item.Denominator;
+            }
+
+            return result;
+        }
+        else
+        {
+            var dec=GetfloatPrecision(symbol);
+
+            return { Type:0, Decimal:dec };
+        }
+    }
+
+    //strDefault 默认值
+    this.FormatPriceString=function(value, dec, strDefault="")
+    {
+        if (!IFrameSplitOperator.IsNumber(value)) return strDefault;
+        if (!dec) return `${value}`;
+
+        if (dec.Type==1)
+        {
+            var intValue=Math.floor(value); //整数
+
+            var floatValue=value-intValue;
+            var decValue=parseInt(floatValue/(1/dec.Denominator));
+            //固定小数位数
+            var strDec=decValue.toString();
+            var zeroCount = dec.Decimal - strDec.length;
+            if (zeroCount > 0) strDec += '0'.repeat(zeroCount);
+
+            return `${intValue}'${strDec}`;
+        }
+        else
+        {
+            return value.toFixed(dec.Decimal);
+        }
+    }
+
+    this.GetDecimalPlacesMenu=function()
+    {
+        var decimalPlaces=this.GlobalOption.DecimalPlaces;
+
+        var decimalMenu=
+        { 
+            Name:"价格小数位数", 
+            SubMenu:
+            [
+                { Name:"默认", Data:{ ID:JSCHART_MENU_ID.CMD_SET_DECIMAL_PLACES_ID, Args:[null] }, Checked:decimalPlaces===null },
+            ]
+        };
+
+        if (this.DecimalPlacesConfig && IFrameSplitOperator.IsNonEmptyArray(this.DecimalPlacesConfig.Data))
+        {
+            for(var i=0;i<this.DecimalPlacesConfig.Data.length;++i)
+            {
+                var item=this.DecimalPlacesConfig.Data[i];
+                if (!item) continue;
+                var bChecked=false;
+                if (decimalPlaces && decimalPlaces.ID==item.ID) bChecked=true;
+                decimalMenu.SubMenu.push({ Name:item.Name, Data:{ ID:JSCHART_MENU_ID.CMD_SET_DECIMAL_PLACES_ID, Args:[item ] }, Checked:bChecked },)
+            }
+        }
+
+        return decimalMenu;
     }
 }
 
@@ -52299,6 +52402,8 @@ function MinuteLeftTooltipPaint()
     this.Font=g_JSChartResource.PCTooltipPaint.TitleFont;
     this.HQChart;
 
+    this.DecimalConfig;     //价格小数位数
+
      //设置参数接口
     this.SetOption=function(option)
     {
@@ -52419,6 +52524,7 @@ function MinuteLeftTooltipPaint()
         var upperSymbol;
         if (this.HQChart.Symbol) upperSymbol=this.HQChart.Symbol.toUpperCase();
         var defaultfloatPrecision=GetfloatPrecision(upperSymbol);//价格小数位数
+        this.DecimalConfig=this.HQChart.GetSymbolDecimalV2(this.Symbol);
         if (upperSymbol) isFutures=MARKET_SUFFIX_NAME.IsFutures(upperSymbol);    //国内期货, 纽约期货交易所
         var unit=MARKET_SUFFIX_NAME.GetVolUnit(upperSymbol);
 
@@ -52435,10 +52541,10 @@ function MinuteLeftTooltipPaint()
             var titleItem=this.ForamtTime(item.Time,"HH:MM",'PCTooltip-Time');
             if (titleItem) aryText.push(titleItem);
 
-            var titleItem=this.ForamtPrice(item.Close,defaultfloatPrecision,'PCTooltip-Price');
+            var titleItem=this.ForamtPrice(item.Close,'PCTooltip-Price');
             if (titleItem) aryText.push(titleItem);
 
-            var titleItem=this.ForamtPrice(item.AvPrice,defaultfloatPrecision,'PCTooltip-AvPrice');
+            var titleItem=this.ForamtPrice(item.AvPrice,'PCTooltip-AvPrice');
             if (titleItem) aryText.push(titleItem);
 
             var titleItem=this.ForamtIncrease(item.Close,"PCTooltip-Increase");
@@ -52483,7 +52589,7 @@ function MinuteLeftTooltipPaint()
             var titleItem=this.ForamtTime(item.Time,timeForamt,'PCTooltip-Time');
             if (titleItem) aryText.push(titleItem);
            
-            var titleItem=this.ForamtPrice(item.Price,defaultfloatPrecision,'PCTooltip-AC-Price');
+            var titleItem=this.ForamtPrice(item.Price,'PCTooltip-AC-Price');
             if (titleItem) aryText.push(titleItem);
 
             var titleItem=this.ForamtIncrease(item.Price,"PCTooltip-AC-Increase");
@@ -52539,15 +52645,17 @@ function MinuteLeftTooltipPaint()
         return titleItem;
     }
 
-    this.ForamtPrice=function(price, defaultfloatPrecision, TitleID)
+    this.ForamtPrice=function(price, TitleID)
     {
+        if (!this.DecimalConfig) this.DecimalConfig=this.HQChart.GetSymbolDecimalV2(this.Symbol);
         if (!IFrameSplitOperator.IsNumber(price)) return null;
 
+        var strPrice=this.HQChart.FormatPriceString(price, this.DecimalConfig, "--");
         var titleItem=
         { 
             Title:g_JSChartLocalization.GetText(TitleID, this.LanguageID),
             TitleColor:this.TitleColor,
-            Text:price.toFixed(defaultfloatPrecision),
+            Text:strPrice,
             TextColor:this.GetColor(price, this.YClose)
         };
 
@@ -56900,6 +57008,7 @@ function FrameButtomToolbarPaint()
     this.DrawPriority=IExtendChartPainting.DRAW_PRIORITY_ID.LEVEL_25;
 
     this.AryButton=[];      // { Title:, ID:, Data:数据, TooltipText:提示信息 }
+    this.AryRButton=[];     // 右侧按钮数据
     this.SelectedID=null;   // 选中按钮ID
     this.AryRectButton=[];
 
@@ -56930,6 +57039,10 @@ function FrameButtomToolbarPaint()
     ];
     this.SelectedID="A1"
     */
+
+    //缓存
+    this.FontCache;
+    this.SVGFontCache;
     
     this.ReloadResource=function(resource)
     {
@@ -56946,6 +57059,7 @@ function FrameButtomToolbarPaint()
             if (IFrameSplitOperator.IsNumber(option.FrameID))  this.FrameID=option.FrameID;
             if (option.FrameGuid)  this.FrameGuid=option.FrameGuid;
             if (IFrameSplitOperator.IsNonEmptyArray(option.AryButton)) this.AryButton=option.AryButton.slice();
+            if (IFrameSplitOperator.IsNonEmptyArray(option.AryRButton)) this.AryRButton=option.AryRButton.slice();
             if (option.SelectedID) this.SelectedID=option.SelectedID;
         }
     }
@@ -56978,16 +57092,18 @@ function FrameButtomToolbarPaint()
             this.Canvas.fillRect(rtBG.Left,rtBG.Top,rtBG.Width,rtBG.Height);
         }
 
-        var font=this.GetTitleFont(rtBG.Height-this.ButtonConfig.Mergin.Top-this.ButtonConfig.Mergin.Bottom);
-        var svgFont=this.GetSVGFont(rtBG.Height-this.ButtonConfig.Mergin.Top-this.ButtonConfig.Mergin.Bottom);
+        this.FontCache=this.GetTitleFont(rtBG.Height-this.ButtonConfig.Mergin.Top-this.ButtonConfig.Mergin.Bottom);
+        this.SVGFontCache=this.GetSVGFont(rtBG.Height-this.ButtonConfig.Mergin.Top-this.ButtonConfig.Mergin.Bottom);
+
         this.Canvas.textBaseline='middle';
         this.Canvas.textAlign='center';
-        this.Canvas.font=font;
+        this.Canvas.font=this.FontCache;
+
         var xBotton=rtBG.Left;
         for(var i=0;i<this.AryButton.length;++i)
         {
             var item=this.AryButton[i];
-            if (!item.Title && !(item.SVGButton && item.SVGButton.Symbol)) return;
+            if (!item.Title && !(item.SVGButton && item.SVGButton.Symbol)) continue;
 
             var textWidth=0;
             if (item.Title)
@@ -57000,12 +57116,20 @@ function FrameButtomToolbarPaint()
             {
                 svgButtonWidth=this.ButtonConfig.SVG.Size;
                 if (textWidth>0) svgButtonWidth+=this.ButtonConfig.SVG.MerginLeft;
-                
             }
 
             var buttonWidth=textWidth+svgButtonWidth+this.ButtonConfig.Mergin.Left+this.ButtonConfig.Mergin.Right;
             var rtButton={ Left:xBotton, Top:rtBG.Top, Bottom:rtBG.Bottom, Height:rtBG.Height, Width:buttonWidth };
             rtButton.Right=rtButton.Left+rtButton.Width;
+            rtButton.SVGButtonWidth=svgButtonWidth;
+
+            var rtSVG=null;
+            if (item.SVGButton && item.SVGButton.Symbol) 
+            {
+                rtSVG={Left:rtButton.Right-this.ButtonConfig.Mergin.Right-this.ButtonConfig.SVG.Size, Top:rtButton.Top, Width:this.ButtonConfig.SVG.Size, Height:this.ButtonConfig.SVG.Size};
+                rtSVG.Right=rtSVG.Left+rtSVG.Width;
+                rtSVG.Bottom=rtSVG.Top+rtSVG.Height;
+            }
 
             //鼠标是否在按钮上
             var bgColor=this.ButtonConfig.BGColor.Default;
@@ -57024,44 +57148,7 @@ function FrameButtomToolbarPaint()
                 titleColor=this.ButtonConfig.TitleColor.Selected;
             }
             
-
-            if (bgColor)
-            {
-                this.Canvas.fillStyle=bgColor;
-                this.Canvas.fillRect(rtButton.Left,rtButton.Top,rtButton.Width,rtButton.Height);
-            }
-            
-            if (this.ButtonConfig.BorderColor)
-            {
-                this.Canvas.strokeStyle=this.ButtonConfig.BorderColor;
-                this.Canvas.beginPath();
-                this.Canvas.moveTo(ToFixedPoint(rtButton.Right),rtButton.Top);
-                this.Canvas.lineTo(ToFixedPoint(rtButton.Right),rtButton.Bottom);
-                this.Canvas.stroke();
-            }
-
-            if (item.Title)
-            {
-                this.Canvas.fillStyle=titleColor;
-                var xText=rtButton.Left+(rtButton.Width-svgButtonWidth)/2;   //居中
-                var yText=rtButton.Top+this.ButtonConfig.Mergin.Top+(rtButton.Height-this.ButtonConfig.Mergin.Top-this.ButtonConfig.Mergin.Bottom)/2;
-                this.Canvas.fillText(item.Title,xText,yText);
-            }
-           
-
-            var rtSVG=null;
-            if (item.SVGButton && item.SVGButton.Symbol) 
-            {
-                this.Canvas.font=svgFont;
-                this.Canvas.fillStyle=titleColor;
-                var xText=rtButton.Right-this.ButtonConfig.SVG.Size/2-this.ButtonConfig.Mergin.Right;
-                this.Canvas.fillText(item.SVGButton.Symbol,xText,yText);
-                this.Canvas.font=font;
-
-                rtSVG={Left:rtButton.Right-this.ButtonConfig.Mergin.Right-this.ButtonConfig.SVG.Size, Top:rtButton.Top, Width:this.ButtonConfig.SVG.Size, Height:this.ButtonConfig.SVG.Size};
-                rtSVG.Right=rtSVG.Left+rtSVG.Width;
-                rtSVG.Bottom=rtSVG.Top+rtSVG.Height;
-            }
+            this.DrawButtom(rtButton, item, bgColor, titleColor);
 
             //{ Rect:rtButton, ID:item.ID, Data:item, RectSVG:rtSVG }
             if (textWidth>0 && svgButtonWidth>0)
@@ -57083,9 +57170,83 @@ function FrameButtomToolbarPaint()
                 this.AryRectButton.push(cacheItem);
             }
             
-            
-
             xBotton+=buttonWidth+1;
+        }
+
+
+        var xRButton=rtBG.Right;    //右边
+        for(var i=0;i<this.AryRButton.length;++i)
+        {
+            var item=this.AryRButton[i];
+            if (!item.Title && !(item.SVGButton && item.SVGButton.Symbol)) continue;
+
+
+            var textWidth=0;
+            if (item.Title)
+            {
+                textWidth=this.Canvas.measureText(item.Title).width+2;
+            }
+            
+            var svgButtonWidth=0;
+            if (item.SVGButton && item.SVGButton.Symbol) 
+            {
+                svgButtonWidth=this.ButtonConfig.SVG.Size;
+                if (textWidth>0) svgButtonWidth+=this.ButtonConfig.SVG.MerginLeft;
+            }
+
+            var buttonWidth=textWidth+svgButtonWidth+this.ButtonConfig.Mergin.Left+this.ButtonConfig.Mergin.Right;
+            var rtButton={ Right:xRButton, Top:rtBG.Top, Bottom:rtBG.Bottom, Height:rtBG.Height, Width:buttonWidth };
+            rtButton.Left=rtButton.Right-rtButton.Width;
+            rtButton.SVGButtonWidth=svgButtonWidth;
+
+            var rtSVG=null;
+            if (item.SVGButton && item.SVGButton.Symbol) 
+            {
+                rtSVG={Left:rtButton.Right-this.ButtonConfig.Mergin.Right-this.ButtonConfig.SVG.Size, Top:rtButton.Top, Width:this.ButtonConfig.SVG.Size, Height:this.ButtonConfig.SVG.Size};
+                rtSVG.Right=rtSVG.Left+rtSVG.Width;
+                rtSVG.Bottom=rtSVG.Top+rtSVG.Height;
+            }
+
+            //鼠标是否在按钮上
+            var bgColor=this.ButtonConfig.BGColor.Default;
+            var titleColor=this.ButtonConfig.TitleColor.Default;
+            if (moveonPoint && (moveonPoint.X>=rtButton.Left && moveonPoint.X<rtButton.Right && moveonPoint.Y>=rtButton.Top && moveonPoint.Y<=rtButton.Bottom))
+            {
+                bgColor=this.ButtonConfig.BGColor.MoveOn;
+                titleColor=this.ButtonConfig.TitleColor.MoveOn;
+                if (mouseStatus)
+                    mouseStatus.MouseOnToolbar={ Rect:rtButton, Item:item, Frame:frame, Point:{X:moveonPoint.X, Y:moveonPoint.Y}, ID:"TitleButton" };
+            }
+
+            if (this.SelectedID && this.SelectedID==item.ID)
+            {
+                bgColor=this.ButtonConfig.BGColor.Selected;
+                titleColor=this.ButtonConfig.TitleColor.Selected;
+            }
+            
+            this.DrawButtom(rtButton, item, bgColor, titleColor, 1);
+
+            //{ Rect:rtButton, ID:item.ID, Data:item, RectSVG:rtSVG }
+            if (textWidth>0 && svgButtonWidth>0)
+            {
+                var rtText={ Left:rtButton.Left, Top:rtButton.Top, Bottom:rtButton.Bottom };
+                rtText.Right=rtText.Left+textWidth+this.ButtonConfig.Mergin.Left+this.ButtonConfig.SVG.MerginLeft/2;
+                var cacheItem={ Rect:rtText, ID:item.ID, Data:item, RectCell:rtButton, ButtonType:0 };  
+                this.AryRectButton.push(cacheItem);
+
+                var rtSVG={Left:rtText.Right, Right:rtButton.Right, Top:rtButton.Top, Bottom:rtButton.Bottom };
+                var cacheItem={ Rect:rtSVG, ID:item.ID, Data:item, RectCell:rtButton, ButtonType:1 };  
+                this.AryRectButton.push(cacheItem);
+            }
+            else
+            {
+                var cacheItem={ Rect:rtButton, ID:item.ID, Data:item, RectCell:rtButton };  //RectCell 全部的大小
+                if (textWidth>0) cacheItem.ButtonType=0;
+                else if (svgButtonWidth>0) cacheItem.ButtonType=1;
+                this.AryRectButton.push(cacheItem);
+            }
+            
+            xRButton-=buttonWidth+1;
         }
 
         if (this.BorderColor)
@@ -57095,6 +57256,54 @@ function FrameButtomToolbarPaint()
             this.Canvas.moveTo(border.Left,ToFixedPoint(border.BottomEx));
             this.Canvas.lineTo(border.Right,ToFixedPoint(border.BottomEx));
             this.Canvas.stroke();
+        }
+    }
+
+    //type 0=左按钮 1=右按钮
+    this.DrawButtom=function(rtButton, item, bgColor, titleColor, type=0)
+    {
+        var svgButtonWidth=rtButton.SVGButtonWidth;
+
+        if (bgColor)
+        {
+            this.Canvas.fillStyle=bgColor;
+            this.Canvas.fillRect(rtButton.Left,rtButton.Top,rtButton.Width,rtButton.Height);
+        }
+        
+        if (this.ButtonConfig.BorderColor)
+        {
+            this.Canvas.strokeStyle=this.ButtonConfig.BorderColor;
+            this.Canvas.beginPath();
+
+            if (type===1)
+            {
+                this.Canvas.moveTo(ToFixedPoint(rtButton.Left),rtButton.Top);
+                this.Canvas.lineTo(ToFixedPoint(rtButton.Left),rtButton.Bottom);
+            }
+            else
+            {
+                this.Canvas.moveTo(ToFixedPoint(rtButton.Right),rtButton.Top);
+                this.Canvas.lineTo(ToFixedPoint(rtButton.Right),rtButton.Bottom);
+            }
+
+            this.Canvas.stroke();
+        }
+
+        if (item.Title)
+        {
+            this.Canvas.fillStyle=titleColor;
+            var xText=rtButton.Left+(rtButton.Width-svgButtonWidth)/2;   //居中
+            var yText=rtButton.Top+this.ButtonConfig.Mergin.Top+(rtButton.Height-this.ButtonConfig.Mergin.Top-this.ButtonConfig.Mergin.Bottom)/2;
+            this.Canvas.fillText(item.Title,xText,yText);
+        }
+        
+        if (item.SVGButton && item.SVGButton.Symbol) 
+        {
+            this.Canvas.font=this.SVGFontCache;
+            this.Canvas.fillStyle=titleColor;
+            var xText=rtButton.Right-this.ButtonConfig.SVG.Size/2-this.ButtonConfig.Mergin.Right;
+            this.Canvas.fillText(item.SVGButton.Symbol,xText,yText);
+            this.Canvas.font=this.FontCache;
         }
     }
 
@@ -58475,6 +58684,8 @@ function FrameSplitKLinePriceY()
 
     this.PercentageTextFormat=0;    //0=显示第1行  1=单行格式: 价格/百分比, 2=显示2行 3=2行显示(json格式)
 
+    this.DecimalConfig;     //价格小数位数
+
     this.IsEnableDragY=function()
     {
         return this.CoordinateType==0 || this.CoordinateType==1;
@@ -58530,6 +58741,7 @@ function FrameSplitKLinePriceY()
         var width=this.Frame.ChartBorder.GetChartWidth();   //画布的宽度
         var isPhoneModel=width<450*pixelTatio;
         var defaultfloatPrecision=GetfloatPrecision(this.Symbol);
+        this.DecimalConfig=this.HQChart.GetSymbolDecimalV2(this.Symbol);
         if (isPhoneModel && MARKET_SUFFIX_NAME.IsSHSZIndex(this.Symbol)) defaultfloatPrecision = 0;    //手机端指数不显示小数位数,太长了
         if (this.FloatPrecision!=null) defaultfloatPrecision=this.FloatPrecision;
         JSConsole.Chart.Log(`[FrameSplitKLinePriceY::Operator] Max=${splitData.Max} Min=${splitData.Min} Count=${splitData.Count} isPhoneModel=${isPhoneModel} defaultfloatPrecision=${defaultfloatPrecision} `);
@@ -58554,9 +58766,9 @@ function FrameSplitKLinePriceY()
             switch(this.CoordinateType)
             {
                 case 1:
-                    if (!this.SplitPercentage(splitData,defaultfloatPrecision,isFixedMaxMin))
+                    if (!this.SplitPercentage(splitData,isFixedMaxMin))
                     {
-                        this.SplitDefault(splitData,defaultfloatPrecision,isFixedMaxMin);
+                        this.SplitDefault(splitData,isFixedMaxMin);
                     }
                     else
                     {
@@ -58566,7 +58778,7 @@ function FrameSplitKLinePriceY()
                     break;
                 case 3: //等比坐标 +10%/-10% 涨幅分割
                     if (!this.SplitIncrease(splitData,defaultfloatPrecision))
-                        this.SplitDefault(splitData,defaultfloatPrecision);
+                        this.SplitDefault(splitData);
                     else
                         bFilter=false;
                     break;
@@ -58585,7 +58797,7 @@ function FrameSplitKLinePriceY()
                     }
                     else
                     {
-                        this.SplitDefault(splitData,defaultfloatPrecision);
+                        this.SplitDefault(splitData);
                     }
                     break;
                 default:
@@ -58601,7 +58813,7 @@ function FrameSplitKLinePriceY()
                     }
                     else 
                     {
-                        this.SplitDefault(splitData,defaultfloatPrecision,isFixedMaxMin);
+                        this.SplitDefault(splitData,isFixedMaxMin);
                     }
                     break;
             }
@@ -58642,9 +58854,9 @@ function FrameSplitKLinePriceY()
         switch(this.CoordinateType)
         {
             case 1: //百分比
-                if (!this.SplitPercentage(splitData,floatPrecision,splitData.IsFixedMaxMin))
+                if (!this.SplitPercentage(splitData,splitData.IsFixedMaxMin))
                 {
-                    this.SplitDefault(splitData,floatPrecision,splitData.IsFixedMaxMin);
+                    this.SplitDefault(splitData,splitData.IsFixedMaxMin);
                 }
                 else
                 {
@@ -58659,7 +58871,7 @@ function FrameSplitKLinePriceY()
                 }
                 else 
                 {
-                    this.SplitDefault(splitData, floatPrecision, splitData.IsFixedMaxMin);
+                    this.SplitDefault(splitData,splitData.IsFixedMaxMin);
                 }
         }
     }
@@ -58679,7 +58891,7 @@ function FrameSplitKLinePriceY()
         }
     }
 
-    this.SplitPercentage=function(splitData,floatPrecision,isFixedMaxMin)    //百分比坐标
+    this.SplitPercentage=function(splitData,isFixedMaxMin)    //百分比坐标
     {
         var firstOpenPrice=this.GetFirstOpenPrice();
         if (!IFrameSplitOperator.IsNumber(firstOpenPrice)) return false;
@@ -58705,7 +58917,7 @@ function FrameSplitKLinePriceY()
             var price=(value+1)*firstOpenPrice;
             var item=new CoordinateInfo();
             item.Value=price;
-            this.FormatPercentageItem(item, value, floatPrecision,textColor);
+            this.FormatPercentageItem(item, value,textColor);
             aryHorizontal.push(item);
         }
 
@@ -58716,7 +58928,7 @@ function FrameSplitKLinePriceY()
 
             var item=new CoordinateInfo();
             item.Value=price;
-            this.FormatPercentageItem(item, value, floatPrecision,textColor);
+            this.FormatPercentageItem(item, value,textColor);
             aryHorizontal.push(item);
         }
 
@@ -58732,10 +58944,10 @@ function FrameSplitKLinePriceY()
         return true;
     }
 
-    this.FormatPercentageItem=function(item, percentage, floatPrecision, textColor)
+    this.FormatPercentageItem=function(item, percentage, textColor)
     {
         var price=item.Value;
-        var strPrice=price.toFixed(floatPrecision);
+        var strPrice=this.HQChart.FormatPriceString(price, this.DecimalConfig, "--");
         if (this.IsShowLeftText) item.Message[0]=strPrice;   //左边价格坐标  
 
         if (this.IsShowRightText)   //右侧 价格/百分比
@@ -58917,7 +59129,7 @@ function FrameSplitKLinePriceY()
         return true;
     }
 
-    this.SplitDefault=function(splitData,floatPrecision,isFixedMaxMin)       //默认坐标
+    this.SplitDefault=function(splitData,isFixedMaxMin)       //默认坐标
     {
         //固定最大最小值 不自动调整范围
         if (!isFixedMaxMin) this.IntegerCoordinateSplit(splitData);
@@ -58927,8 +59139,12 @@ function FrameSplitKLinePriceY()
         {
             this.Frame.HorizontalInfo[i]= new CoordinateInfo();
             this.Frame.HorizontalInfo[i].Value=value;
-            if (this.IsShowLeftText)  this.Frame.HorizontalInfo[i].Message[0]=value.toFixed(floatPrecision);
-            if (this.IsShowRightText)  this.Frame.HorizontalInfo[i].Message[1]=value.toFixed(floatPrecision);
+            if (this.IsShowLeftText || this.IsShowRightText)
+            {
+                var text=this.HQChart.FormatPriceString(value, this.DecimalConfig, "--");
+                if (this.IsShowLeftText)  this.Frame.HorizontalInfo[i].Message[0]=text;
+                if (this.IsShowRightText)  this.Frame.HorizontalInfo[i].Message[1]=text;
+            }
         }
     }
 
@@ -59065,7 +59281,7 @@ function FrameSplitKLinePriceY()
         info.Value=latestItem.Close;
         info.TextColor=g_JSChartResource.FrameLatestPrice.TextColor;
         info.LineType=2;    //虚线
-        var strPrice=latestItem.Close.toFixed(floatPrecision);
+        var strPrice=this.HQChart.FormatPriceString(latestItem.Close, this.DecimalConfig, "--");
 
         //颜色
         if (latestItem.Close>latestItem.Open) info.LineColor=g_JSChartResource.FrameLatestPrice.UpBarColor;
@@ -60235,6 +60451,8 @@ function FrameSplitMinutePriceY()
     this.FixedYMaxMin;      //{ Max, Min} 固定Y轴最大最小值
     this.EnableZoomUpDown=false;
 
+    this.DecimalConfig;     //价格小数位数
+
     this.IsEnableDragY=function()
     {
         return true;
@@ -60257,6 +60475,8 @@ function FrameSplitMinutePriceY()
         {
             range=this.GetMaxMin();
         }
+
+        this.DecimalConfig=this.HQChart.GetSymbolDecimalV2(this.Symbol);
 
         if (this.Symbol && MARKET_SUFFIX_NAME.IsUSA(this.Symbol.toUpperCase()))
         {
@@ -60323,7 +60543,7 @@ function FrameSplitMinutePriceY()
         info.TextColor=g_JSChartResource.FrameLatestPrice.TextColor;
         info.LineType=2;    //虚线
 
-        var strPrice=price.toFixed(floatPrecision);
+        var strPrice=this.HQChart.FormatPriceString(price, this.DecimalConfig, "--");
         if (option.DateTime=='HH:MM')
         {
             var latestItem=this.Frame.Data.Data[this.Frame.Data.Data.length-1];
@@ -60642,7 +60862,7 @@ function FrameSplitMinutePriceY()
             if (this.YClose && price==this.YClose) continue;
             var coordinate=new CoordinateInfo();
             coordinate.Value=price;
-            this.FormatCoordinate(coordinate,defaultfloatPrecision);
+            this.FormatCoordinate(coordinate);
             this.Frame.HorizontalInfo.push(coordinate);
         }
 
@@ -60653,7 +60873,7 @@ function FrameSplitMinutePriceY()
             coordinate.LineType=2;//中间的线画虚线
             if (g_JSChartResource.FrameDotSplitPen) coordinate.LineColor=g_JSChartResource.FrameDotSplitPen;
 
-            var strPrice=this.YClose.toFixed(defaultfloatPrecision);  //价格刻度字符串
+            var strPrice=this.HQChart.FormatPriceString(this.YClose, this.DecimalConfig, "--");  //价格刻度字符串
             if (this.IsShowLeftText) coordinate.Message[0]=strPrice;
 
             if (this.IsShowRightText) 
@@ -60717,7 +60937,7 @@ function FrameSplitMinutePriceY()
         {
             var coordinate=new CoordinateInfo();
             coordinate.Value=price;
-            this.FormatCoordinate(coordinate,defaultfloatPrecision);
+            this.FormatCoordinate(coordinate);
             aryCoordinate.push(coordinate);
         }
 
@@ -60725,7 +60945,7 @@ function FrameSplitMinutePriceY()
         {
             var coordinate=new CoordinateInfo();
             coordinate.Value=price;
-            this.FormatCoordinate(coordinate,defaultfloatPrecision);
+            this.FormatCoordinate(coordinate);
             aryCoordinate.push(coordinate);
         }
 
@@ -60736,10 +60956,10 @@ function FrameSplitMinutePriceY()
         this.Frame.HorizontalMin=min;
     }
 
-    this.FormatCoordinate=function(coordinate, defaultfloatPrecision)
+    this.FormatCoordinate=function(coordinate)
     {
         var price=coordinate.Value;
-        var strPrice=price.toFixed(defaultfloatPrecision);  //价格刻度字符串
+        var strPrice=this.HQChart.FormatPriceString(price, this.DecimalConfig, "--");
         if (this.IsShowLeftText) coordinate.Message[0]=strPrice;
 
         if (IFrameSplitOperator.IsNumber(this.YClose) && this.YClose!=0)
@@ -63306,11 +63526,17 @@ function HQPriceStringFormat()
         var defaultfloatPrecision=this.DecimalsConfig.Value;     //价格小数位数 
         if (this.FrameID==0)    //第1个窗口显示原始价格
         {
-            var defaultfloatPrecision=GetfloatPrecision(this.Symbol);
+            
             if (this.PriceFormatType==1)
+            {
+                var defaultfloatPrecision=GetfloatPrecision(this.Symbol);
                 this.Text=IFrameSplitOperator.FormatValueThousandsString(this.Value,defaultfloatPrecision);
-            else 
-                this.Text=this.Value.toFixed(defaultfloatPrecision);
+            }
+            else
+            {
+                var decConfig=this.HQChart.GetSymbolDecimalV2(this.Symbol);
+                this.Text=this.HQChart.FormatPriceString(this.Value, decConfig, "--");
+            }
 
             if (this.TextStyleConfig.Right.Type==2)
             {
@@ -64538,6 +64764,7 @@ function IChartTitlePainting()
     this.DrawStatus;
     this.GetEventCallback;
     this.GlobalOption;
+    this.HQChart;
 
     this.ReloadResource=function()
     {
@@ -64585,7 +64812,9 @@ function DynamicKLineTitlePainting()
     this.ShowPositionConfig={ Margin:{ Bottom:2, Left:2 } };        //显示位置高级配置 { Type:1 左对齐, Margin:{ Left, Right, Bottom } }
     this.OnDrawEvent;
     this.OnMouseMoveEvent;
-    this.HQChart;
+
+    //缓存
+    this.DecimalConfig;         //小数位数信息
 
     //十字线是否显示
     this.IsShowCorssLine=function()
@@ -64629,11 +64858,19 @@ function DynamicKLineTitlePainting()
         return item;
     }
 
+    this.FormatPriceString=function(value)
+    {
+        if (!this.DecimalConfig) this.DecimalConfig=this.HQChart.GetSymbolDecimalV2(this.Symbol);
+
+        return this.HQChart.FormatPriceString(value, this.DecimalConfig, "--");
+    }
+
     this.GetFormatTitle=function(data)
     {
         if (!data || !data.Data) return;
 
         var defaultfloatPrecision=GetfloatPrecision(this.Symbol);//价格小数位数
+        this.DecimalConfig=this.HQChart.GetSymbolDecimalV2(this.Symbol);
         var upperSymbol=this.Symbol.toUpperCase();
         var item=data.Data;
         var aryText=[];
@@ -64695,7 +64932,7 @@ function DynamicKLineTitlePainting()
         if (isTickPeriod)
         {
             var color=this.GetColor(item.Open,item.YClose);
-            var text=g_JSChartLocalization.GetText('KTitle-Price',this.LanguageID)+item.Open.toFixed(defaultfloatPrecision);
+            var text=g_JSChartLocalization.GetText('KTitle-Price',this.LanguageID)+this.FormatPriceString(item.Open);
             aryText.push({ Text:text, Color:color});
 
             if (IFrameSplitOperator.IsNumber(item.YClose) && item.YClose!=0)
@@ -64717,7 +64954,7 @@ function DynamicKLineTitlePainting()
         if (IFrameSplitOperator.IsNumber(item.Open))
         {
             var color=this.GetColor(item.Open,item.YClose);
-            var text=g_JSChartLocalization.GetText('KTitle-Open',this.LanguageID)+item.Open.toFixed(defaultfloatPrecision);
+            var text=g_JSChartLocalization.GetText('KTitle-Open',this.LanguageID)+this.FormatPriceString(item.Open);
             if (item.Open==item.YClose && eventUnchangeKLine)
             {
                 var sendData={ Item:item, TitleName:"KTitle-Open", DefaultColor:color, TitleColor:null };
@@ -64730,7 +64967,7 @@ function DynamicKLineTitlePainting()
         if (IFrameSplitOperator.IsNumber(item.High))
         {
             var color=this.GetColor(item.High,item.YClose);
-            var text=g_JSChartLocalization.GetText('KTitle-High',this.LanguageID)+item.High.toFixed(defaultfloatPrecision);
+            var text=g_JSChartLocalization.GetText('KTitle-High',this.LanguageID)+this.FormatPriceString(item.High);
             if (item.High==item.YClose && eventUnchangeKLine)
             {
                 var sendData={ Item:item, TitleName:"KTitle-High", DefaultColor:color, TitleColor:null };
@@ -64742,7 +64979,7 @@ function DynamicKLineTitlePainting()
         if (IFrameSplitOperator.IsNumber(item.Low))
         {
             var color=this.GetColor(item.Low,item.YClose);
-            var text=g_JSChartLocalization.GetText('KTitle-Low',this.LanguageID)+item.Low.toFixed(defaultfloatPrecision);
+            var text=g_JSChartLocalization.GetText('KTitle-Low',this.LanguageID)+this.FormatPriceString(item.Low);
             if (item.Low==item.YClose && eventUnchangeKLine)
             {
                 var sendData={ Item:item, TitleName:"KTitle-Low", DefaultColor:color, TitleColor:null };
@@ -64754,7 +64991,7 @@ function DynamicKLineTitlePainting()
         if (IFrameSplitOperator.IsNumber(item.Close))
         {
             var color=this.GetColor(item.Close,item.YClose);
-            var text=g_JSChartLocalization.GetText('KTitle-Close',this.LanguageID)+item.Close.toFixed(defaultfloatPrecision);
+            var text=g_JSChartLocalization.GetText('KTitle-Close',this.LanguageID)+this.FormatPriceString(item.Close);
             if (item.Close==item.YClose && eventUnchangeKLine)
             {
                 var sendData={ Item:item, TitleName:"KTitle-Close", DefaultColor:color, TitleColor:null };
@@ -65306,6 +65543,7 @@ function DynamicMinuteTitlePainting()
 
         var upperSymbol=this.Symbol.toUpperCase();
         var defaultfloatPrecision=GetfloatPrecision(this.Symbol);   //价格小数位数
+        this.DecimalConfig=this.HQChart.GetSymbolDecimalV2(this.Symbol);
         var isFutures=MARKET_SUFFIX_NAME.IsFutures(upperSymbol);    //国内期货, 纽约期货交易所
         var unit=MARKET_SUFFIX_NAME.GetVolUnit(upperSymbol);
         
@@ -65360,7 +65598,7 @@ function DynamicMinuteTitlePainting()
         if (IFrameSplitOperator.IsNumber(close))
         {
             var color=this.GetColor(close,yClose);
-            var text=g_JSChartLocalization.GetText('MTitle-Close',this.LanguageID)+close.toFixed(defaultfloatPrecision);
+            var text=g_JSChartLocalization.GetText('MTitle-Close',this.LanguageID)+this.FormatPriceString(close);
             aryText.push({Text:text, Color:color});
         }
 
@@ -65379,7 +65617,7 @@ function DynamicMinuteTitlePainting()
         if (IFrameSplitOperator.IsNumber(item.AvPrice) && isShowAvPrice && this.IsShowAveragePrice)
         {
             var color=this.GetColor(item.AvPrice,yClose);
-            var text=g_JSChartLocalization.GetText('MTitle-AvPrice',this.LanguageID)+item.AvPrice.toFixed(defaultfloatPrecision);
+            var text=g_JSChartLocalization.GetText('MTitle-AvPrice',this.LanguageID)+this.FormatPriceString(item.AvPrice);
             aryText.push({Text:text, Color:color});
         }
 
@@ -65530,6 +65768,7 @@ function DynamicMinuteTitlePainting()
         var aryText=[] //{ Color: Text: }
 
         var defaultfloatPrecision=GetfloatPrecision(this.Symbol);//价格小数位数
+        this.DecimalConfig=this.HQChart.GetSymbolDecimalV2(this.Symbol);
         var upperSymbol=this.Symbol.toUpperCase();
         var unit=MARKET_SUFFIX_NAME.GetVolUnit(upperSymbol);
         //股票名称
@@ -65555,7 +65794,7 @@ function DynamicMinuteTitlePainting()
                 var color=this.GetColor(item.Price,yClose);
                 var filedName='MTitle-AC-Price';
                 if (data.Ver==1.0) filedName="MTitle-Close";
-                var text=g_JSChartLocalization.GetText(filedName,this.LanguageID)+item.Price.toFixed(defaultfloatPrecision);
+                var text=g_JSChartLocalization.GetText(filedName,this.LanguageID)+this.FormatPriceString(item.Price);
                 aryText.push({Text:text, Color:color});
             }
 
@@ -65574,7 +65813,7 @@ function DynamicMinuteTitlePainting()
             if (IFrameSplitOperator.IsNumber(item.AvPrice) && this.CallAuctionShowTitle.has("MTitle-AC-AvPrice"))
             {
                 var color=this.GetColor(item.AvPrice,yClose);
-                var text=g_JSChartLocalization.GetText('MTitle-AC-AvPrice',this.LanguageID)+item.AvPrice.toFixed(defaultfloatPrecision);
+                var text=g_JSChartLocalization.GetText('MTitle-AC-AvPrice',this.LanguageID)+this.FormatPriceString(item.AvPrice)
                 aryText.push({Text:text, Color:color});
             }
 
@@ -80972,6 +81211,25 @@ function JSChartResource()
         }
     };
 
+    this.AryDecimalPlaces=
+    [
+        { Name:"1/1", ID:"1/1", Decimal:0, Denominator: null },
+        { Name:"1/10", ID:"1/10", Decimal:1, Denominator: null },
+        { Name:"1/100", ID:"1/100", Decimal:2, Denominator: null },
+        { Name:"1/1000", ID:"1/1000", Decimal:3, Denominator: null },
+        { Name:"1/10000", ID:"1/10000", Decimal:4, Denominator: null },
+        { Name:"1/100000", ID:"1/100000", Decimal:5, Denominator: null },
+        { Name:"1/1000000", ID:"1/1000000", Decimal:6, Denominator: null },
+
+        { Name:"1/2", ID:"1/2", Decimal:1, Denominator: 2 },
+        { Name:"1/4", ID:"1/4", Decimal:1, Denominator: 4 },
+        { Name:"1/8", ID:"1/8", Decimal:1, Denominator: 8 },
+        { Name:"1/16", ID:"1/16", Decimal:2, Denominator: 16 },
+        { Name:"1/32", ID:"1/32", Decimal:2, Denominator: 32 },
+        { Name:"1/64", ID:"1/64", Decimal:2, Denominator: 64 },
+        { Name:"1/128", ID:"1/128", Decimal:3, Denominator: 128 },
+    ];
+
     this.VirtualKLine=
     {
         Color:'rgb(100,100,100)', 
@@ -85700,6 +85958,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
     ]
 
     this.KLineDragConfig={ EnableShfit:false };  //是否启动Shift+鼠标拖动K线
+
+    this.DecimalPlacesConfig={ Data:g_JSChartResource.AryDecimalPlaces.slice() };
 
     this.GetKLineCalulate=function()
     {
@@ -92028,6 +92288,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         var klineChart=this.ChartPaint[0];
         if (klineChart) bShowMaxMin=klineChart.IsShowMaxMinPrice;
 
+        var decimalMenu=this.GetDecimalPlacesMenu();
+
         var aryMenu=
         [
             { 
@@ -92230,6 +92492,8 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                     { Name:"拖动Y轴", Data:{ ID:JSCHART_MENU_ID.CMD_ENABLE_ZOOM_Y_ID, Args:[{FrameID:0, Enable:!bZoomYCoordinate }, ]}, Checked:bZoomYCoordinate}, 
 
                     { Name:"显示最大最小值", Data:{ ID:JSCHART_MENU_ID.CMD_SHOW_MAXMIN_ID, Args:[!bShowMaxMin]}, Checked:bShowMaxMin },
+
+                    decimalMenu,
 
                     { Name:JSPopMenu.SEPARATOR_LINE_NAME },
                     { 
@@ -95072,7 +95336,9 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
     [ 
         //SecondKeyID 1=shiftKey 2=ctrlKey 3=altKey 
         { KeyID:87, SecondKeyID:3, CMD:JSCHART_MENU_ID.CMD_FULLSCREEN_SUMMARY_ID, Args:null, Description:"Alt+W	全屏区间统计" },
-    ]
+    ];
+
+    this.DecimalPlacesConfig={ Data:g_JSChartResource.AryDecimalPlaces.slice() };
 
     this.KLineIncreaseCustomHorizontal=function()
     {
@@ -96948,6 +97214,8 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
         var chart=this.GetChartMinuteInfo();
         if (chart) minInfoPosition=chart.MinInfoConfig.Position;
 
+        var decimalPlacesMenu=this.GetDecimalPlacesMenu();
+
         var aryMenu=
         [
             { 
@@ -97049,6 +97317,8 @@ function MinuteChartContainer(uielement,offscreenElement,cacheElement)
                     { Name:"显示最大最小值", Data:{ ID:JSCHART_MENU_ID.CMD_SHOW_MAXMIN_ID, Args:[!bShowMaxMin]}, Checked:bShowMaxMin },
 
                     { Name:JSPopMenu.SEPARATOR_LINE_NAME },
+
+                    decimalPlacesMenu, 
 
                     { 
                         Name:"主图右侧坐标",

@@ -67,6 +67,8 @@ function JSDialogTooltip()
 
     this.RestoreFocusDelay=800;
 
+    this.DecimalConfig;     //价格小数位数
+
     this.Inital=function(hqchart, option)
     {
         this.HQChart=hqchart;
@@ -573,6 +575,8 @@ function JSDialogTooltip()
     this.GetFormatKLineTooltipText=function(data)
     {
         var defaultfloatPrecision=GetfloatPrecision(this.HQChart.Symbol);//价格小数位数
+        this.DecimalConfig=this.HQChart.GetSymbolDecimalV2(this.Symbol);
+
         var upperSymbol=this.HQChart.Symbol.toUpperCase();
         var unit=MARKET_SUFFIX_NAME.GetVolUnit(upperSymbol);
         var priceFormat=0;
@@ -588,10 +592,10 @@ function JSDialogTooltip()
         var yClose=data.YClose; //昨收价|昨结算价
         var aryText=
         [
-            this.ForamtPrice(data.Open,yClose, defaultfloatPrecision,'DialogTooltip-Open',priceFormat),
-            this.ForamtPrice(data.High,yClose, defaultfloatPrecision,'DialogTooltip-High',priceFormat),
-            this.ForamtPrice(data.Low,yClose, defaultfloatPrecision,'DialogTooltip-Low',priceFormat),
-            this.ForamtPrice(data.Close,yClose, defaultfloatPrecision,'DialogTooltip-Close',priceFormat),
+            this.ForamtPriceV2(data.Open,yClose,'DialogTooltip-Open',priceFormat),
+            this.ForamtPriceV2(data.High,yClose,'DialogTooltip-High',priceFormat),
+            this.ForamtPriceV2(data.Low,yClose,'DialogTooltip-Low',priceFormat),
+            this.ForamtPriceV2(data.Close,yClose,'DialogTooltip-Close',priceFormat),
             this.FormatVol(data.Vol/unit,'DialogTooltip-Vol' ),
             this.FormatAmount(data.Amount,'DialogTooltip-Amount' ),
             this.FormatIncrease(data.Close,yClose,defaultfloatPrecision,'DialogTooltip-Increase',priceFormat),
@@ -604,7 +608,7 @@ function JSDialogTooltip()
             var rowItem=null;
             if (item.Extend.FrameID==0)
             {
-                rowItem=this.ForamtPrice(item.Value,null, defaultfloatPrecision,'DialogTooltip-Value',2);
+                rowItem=this.ForamtPriceV2(item.Value,null,'DialogTooltip-Value',2);
             }
             else
             {
@@ -705,6 +709,7 @@ function JSDialogTooltip()
     this.GetFormatMinuteTooltipText=function(data)
     {
         var defaultfloatPrecision=GetfloatPrecision(this.HQChart.Symbol);//价格小数位数
+        this.DecimalConfig=this.HQChart.GetSymbolDecimalV2(this.Symbol);
         var upperSymbol=this.HQChart.Symbol.toUpperCase();
         var unit=MARKET_SUFFIX_NAME.GetVolUnit(upperSymbol);
         var aryText=[];
@@ -717,8 +722,8 @@ function JSDialogTooltip()
             [
                 this.ForamtDate(item.Date,this.Style==1?"MM/DD/W":"YYYY/MM/DD/W",'DialogTooltip-Date' ),
                 this.FormatTime(item.Time, null, "HH:MM", 'DialogTooltip-Time'),
-                this.ForamtPrice(item.Close,item.YClose, defaultfloatPrecision,'DialogTooltip-Price', 1),
-                this.ForamtPrice(item.AvPrice,item.YClose, defaultfloatPrecision,'DialogTooltip-AvPrice', 1),
+                this.ForamtPriceV2(item.Close,item.YClose,'DialogTooltip-Price', 1),
+                this.ForamtPriceV2(item.AvPrice,item.YClose,'DialogTooltip-AvPrice', 1),
                 this.FormatRisefall(item.Close,item.YClose, defaultfloatPrecision,'DialogTooltip-Risefall'),
                 this.FormatIncrease(item.Close,item.YClose,defaultfloatPrecision,'DialogTooltip-Increase', 1),
                 this.FormatVol(item.Vol/unit,'DialogTooltip-Vol' ),
@@ -731,7 +736,7 @@ function JSDialogTooltip()
                 var rowItem=null;
                 if (item.Extend.FrameID==0)
                 {
-                    rowItem=this.ForamtPrice(item.Value,null, defaultfloatPrecision,'DialogTooltip-Value',2);
+                    rowItem=this.ForamtPriceV2(item.Value,null,'DialogTooltip-Value',2);
                 }
                 else
                 {
@@ -752,7 +757,7 @@ function JSDialogTooltip()
                 [
                     this.ForamtDate(item.Date,this.Style==1?"MM/DD/W":"YYYY/MM/DD/W",'DialogTooltip-Date' ),
                     this.FormatTime(item.Time, null, timeForamt, 'DialogTooltip-Time'),
-                    this.ForamtPrice(item.Price,item.YClose, defaultfloatPrecision,'DialogTooltip-AC-Price',1),
+                    this.ForamtPriceV2(item.Price,item.YClose,'DialogTooltip-AC-Price',1),
                     this.FormatIncrease(item.Price,item.YClose,defaultfloatPrecision,'DialogTooltip-AC-Increase',1),
                     this.FormatVol(item.Vol[0]/unit,'DialogTooltip-AC-Vol'),
                 ];
@@ -764,7 +769,7 @@ function JSDialogTooltip()
                 [
                     this.ForamtDate(item.Date,this.Style==1?"MM/DD/W":"YYYY/MM/DD/W",'DialogTooltip-Date' ),
                     this.FormatTime(item.Time, null, timeForamt, 'DialogTooltip-Time'),
-                    this.ForamtPrice(item.Price,item.YClose, defaultfloatPrecision,'DialogTooltip-AC-Price',1),
+                    this.ForamtPriceV2(item.Price,item.YClose,'DialogTooltip-AC-Price',1),
                     this.FormatIncrease(item.Price,item.YClose,defaultfloatPrecision,'DialogTooltip-AC-Increase',1),
                     this.FormatVol(item.Vol[0]/unit,'DialogTooltip-AC-Vol', 2),
                 ];
@@ -776,7 +781,7 @@ function JSDialogTooltip()
                 [
                     this.ForamtDate(item.Date,this.Style==1?"MM/DD/W":"YYYY/MM/DD/W",'DialogTooltip-Date' ),
                     this.FormatTime(item.Time, null, timeForamt, 'DialogTooltip-Time'),
-                    this.ForamtPrice(item.Price,item.YClose, defaultfloatPrecision,'DialogTooltip-AC-Price',1),
+                    this.ForamtPriceV2(item.Price,item.YClose,'DialogTooltip-AC-Price',1),
                     this.FormatIncrease(item.Price,item.YClose,defaultfloatPrecision,'DialogTooltip-AC-Increase',1),
                     this.FormatVol(item.Vol[0]/unit,'DialogTooltip-AC-Vol', 2),
                     this.FormatVol(item.Vol[1]/unit,'DialogTooltip-AC-NotMatchVol', 2),
@@ -855,6 +860,8 @@ function JSDialogTooltip()
     //数据格式化 format=0  点差+涨幅 1=涨幅
     this.ForamtPrice=function(price, yClose, defaultfloatPrecision, TitleID, format)
     {
+        if (!this.DecimalConfig) this.DecimalConfig=this.HQChart.GetSymbolDecimalV2(this.Symbol);
+
         var item=
         { 
             Title:g_JSChartLocalization.GetText(TitleID, this.LanguageID),
@@ -882,6 +889,45 @@ function JSDialogTooltip()
         }
 
         
+        item.Color=this.GetColor(price, yClose);
+
+        return item;
+    }
+
+        /////////////////////////////////////////////////////////////////////////////////////////////
+    //数据格式化 format=0  点差+涨幅 1=涨幅
+    this.ForamtPriceV2=function(price, yClose, TitleID, format)
+    {
+        if (!this.DecimalConfig) this.DecimalConfig=this.HQChart.GetSymbolDecimalV2(this.Symbol);
+
+        var item=
+        { 
+            Title:g_JSChartLocalization.GetText(TitleID, this.LanguageID),
+            Text:"--.--",
+            Color:this.ValueColor
+        };
+
+        if (!IFrameSplitOperator.IsNumber(price)) return item;
+
+        var strPrice=this.HQChart.FormatPriceString(price, this.DecimalConfig, "--");
+
+        if (format==2)
+        {
+            item.Text=strPrice;
+            item.Color=this.ValueColor;
+            return item;
+        }
+
+        if (IFrameSplitOperator.IsNumber(yClose) && format!=1 && yClose!=0)
+        {
+            var value=(price-yClose)/yClose*100;
+            item.Text=`${strPrice}(${value.toFixed(2)}%)`;
+        }
+        else
+        {
+            item.Text=strPrice;
+        }
+
         item.Color=this.GetColor(price, yClose);
 
         return item;
@@ -1149,6 +1195,7 @@ function JSFloatTooltip()
 
     this.KItemCache=null;   //{ Symbol:, Item:, Name }
     this.KItemCacheID=null;
+    this.DecimalConfig=null;    //价格小数位数
 
     this.Inital=function(hqchart, option)
     {
@@ -1945,6 +1992,8 @@ function JSFloatTooltip()
         if (symbol) upperSymbol=symbol.toUpperCase();
         
         var defaultfloatPrecision=GetfloatPrecision(symbol);//价格小数位数
+        this.DecimalConfig=this.HQChart.GetSymbolDecimalV2(symbol);
+
         var unit=MARKET_SUFFIX_NAME.GetVolUnit(upperSymbol);
 
         //日期
@@ -1969,11 +2018,11 @@ function JSFloatTooltip()
         var yClose=data.YClose; //昨收价|昨结算价
         var aryText=
         [
-            this.ForamtPrice(data.Open,yClose, defaultfloatPrecision,'FloatTooltip-Open'),
-            this.ForamtPrice(data.High,yClose, defaultfloatPrecision,'FloatTooltip-High'),
-            this.ForamtPrice(data.Low,yClose, defaultfloatPrecision,'FloatTooltip-Low'),
-            this.ForamtPrice(data.Close,yClose, defaultfloatPrecision,'FloatTooltip-Close'),
-            this.ForamtPrice(data.YClose,data.YClose, defaultfloatPrecision,'FloatTooltip-YClose'),
+            this.ForamtPriceV2(data.Open,yClose,'FloatTooltip-Open'),
+            this.ForamtPriceV2(data.High,yClose,'FloatTooltip-High'),
+            this.ForamtPriceV2(data.Low,yClose,'FloatTooltip-Low'),
+            this.ForamtPriceV2(data.Close,yClose,'FloatTooltip-Close'),
+            this.ForamtPriceV2(data.YClose,data.YClose,'FloatTooltip-YClose'),
             this.FormatVol(data.Vol/unit,'FloatTooltip-Vol' ),
             this.FormatAmount(data.Amount,'FloatTooltip-Amount' ),
             this.FormatIncrease(data.Close,yClose,defaultfloatPrecision,'FloatTooltip-Increase'),
@@ -2298,6 +2347,23 @@ function JSFloatTooltip()
         if (!IFrameSplitOperator.IsNumber(price)) return item;
         
         item.Text=price.toFixed(defaultfloatPrecision);
+        item.Color=this.GetColor(price, yClose);
+
+        return item;
+    }
+
+    this.ForamtPriceV2=function(price, yClose, TitleID)
+    {
+        var item=
+        { 
+            Title:g_JSChartLocalization.GetText(TitleID, this.LanguageID),
+            Text:"--.--",
+            Color:this.ValueColor
+        };
+
+        if (!IFrameSplitOperator.IsNumber(price)) return item;
+        
+        item.Text=this.HQChart.FormatPriceString(price, this.DecimalConfig, "--");
         item.Color=this.GetColor(price, yClose);
 
         return item;

@@ -4229,22 +4229,6 @@ class HQData
         this.WSClient.Request(msg, callbackInfo);
     }
 
-    Order_RecvOrderData_GetPriceColor(basePrice, price)
-    {
-        if (basePrice>price)
-        {
-            return { ColorID:1}
-        }
-        else if (basePrice==price)
-        {
-            return { ColorID:2 }
-        }
-        else
-        {
-            return { ColorID:0 }
-        }
-    }
-
     Order_RecvOrderData(recv, callback, option)
     {
         var hqchart=null, symbol=null;
@@ -4314,7 +4298,6 @@ class HQData
             {
                 price=Math.round(price * 100) / 100;
                 var item=[];
-                var priceColor=this.Order_RecvOrderData_GetPriceColor(basePrice, price);
                 if (mapBuy.has(price))
                 {
                     var buyItem=mapBuy.get(price);
@@ -4327,7 +4310,7 @@ class HQData
                     item[203]={ Value:sellItem.Vol, ColorID:3 };
                 }
 
-                var rowItem={ Price:price, ColorID:priceColor.ColorID, Data:item };
+                var rowItem={ Price:price, Data:item };
                 hqchartData.data.push(rowItem);
             }
 
@@ -4336,8 +4319,7 @@ class HQData
             {
                 price=Math.round(price * 100) / 100;
                 var item=[];
-                var priceColor=this.Order_RecvOrderData_GetPriceColor(basePrice, price);
-                var rowItem={ Price:price, ColorID:priceColor.ColorID, Data:item };
+                var rowItem={ Price:price, Data:item };
 
                 if (mapBuy.has(price))
                 {
@@ -4427,7 +4409,11 @@ class HQData
                 var stockItem=recv.AryData[i];
                 if (stockItem.Symbol==symbol)
                 {
-                    if (IFrameSplitOperator.IsNumber(stockItem.Price)) hqchartData.basePrice=stockItem.Price;
+                    if (IFrameSplitOperator.IsNumber(stockItem.Price)) 
+                    {
+                        hqchartData.basePrice=stockItem.Price;
+                        basePrice=stockItem.Price;
+                    }
                     var upperSymbol=null;
                     if (symbol) upperSymbol=symbol.toUpperCase();
                     if (stockItem.Name) hqchartData.name=stockItem.Name;
@@ -4444,8 +4430,7 @@ class HQData
                             var item=[];
                             var price=buyItem.Price;
                             vol=buyItem.Vol/volBase;
-                            var priceColor=this.Order_RecvOrderData_GetPriceColor(basePrice, price);
-                            var rowItem={ Price:price, ColorID:priceColor.ColorID, Data:item };
+                            var rowItem={ Price:price, Data:item };
                             item[202]={ Value:vol, ColorID:3 };
                             hqchartData.data.push(rowItem);
                             
@@ -4463,8 +4448,7 @@ class HQData
                             var item=[];
                             var price=sellItem.Price;
                             vol=sellItem.Vol/volBase;
-                            var priceColor=this.Order_RecvOrderData_GetPriceColor(basePrice, price);
-                            var rowItem={ Price:price, ColorID:priceColor.ColorID, Data:item };
+                            var rowItem={ Price:price, Data:item };
                             item[203]={ Value:vol, ColorID:3 };
                             hqchartData.data.push(rowItem);
                             
