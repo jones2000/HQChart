@@ -13460,7 +13460,7 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
             //固定小数位数
             var strDec=decValue.toString();
             var zeroCount = dec.Decimal - strDec.length;
-            if (zeroCount > 0) strDec += '0'.repeat(zeroCount);
+            if (zeroCount > 0) strDec= '0'.repeat(zeroCount)+strDec;
 
             return `${intValue}'${strDec}`;
         }
@@ -31899,12 +31899,24 @@ function ChartKLine()
         if (!ptMax || !ptMin) return null;
         if (!IFrameSplitOperator.IsNumber(ptMax.Value) || !IFrameSplitOperator.IsNumber(ptMin.Value)) return null;
 
-        var defaultfloatPrecision=GetfloatPrecision(this.Symbol);   //小数位数
-        var title=
-        { 
-            High:ptMax.Value.toFixed(defaultfloatPrecision), 
-            Low:ptMin.Value.toFixed(defaultfloatPrecision) 
-        };
+        if (this.ChartFrame.HQChart)
+        {
+            var decConfig=this.ChartFrame.HQChart.GetSymbolDecimalV2(this.Symbol);
+            var title=
+            { 
+                High:this.HQChart.FormatPriceString(ptMax.Value, decConfig, ""),
+                Low:this.HQChart.FormatPriceString(ptMin.Value, decConfig, ""),
+            };
+        }
+        else
+        {
+            var defaultfloatPrecision=GetfloatPrecision(this.Symbol);   //小数位数
+            var title=
+            { 
+                High:ptMax.Value.toFixed(defaultfloatPrecision), 
+                Low:ptMin.Value.toFixed(defaultfloatPrecision) 
+            };
+        }
        
         if (!this.GetEventCallback) return title;
         var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_FORMAT_KLINE_HIGH_LOW_TITLE);
@@ -57179,7 +57191,6 @@ function FrameButtomToolbarPaint()
         {
             var item=this.AryRButton[i];
             if (!item.Title && !(item.SVGButton && item.SVGButton.Symbol)) continue;
-
 
             var textWidth=0;
             if (item.Title)
@@ -87462,6 +87473,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             frame.GlobalOption=this.GlobalOption;
             frame.CreateDivFrameToolbar(this, i, this.UIElement.parentNode);
             frame.CreateLockPaint();
+            frame.HQChart=this;
 
             frame.HorizontalMax=20;
             frame.HorizontalMin=10;
@@ -87564,6 +87576,7 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         frame.XSplitOperator.Period=this.Period;
         frame.CreateDivFrameToolbar(this, id, this.UIElement.parentNode);
         frame.CreateLockPaint();
+        frame.HQChart=this;
 
         //K线数据绑定
         var xPointCouont=this.Frame.SubFrame[0].Frame.XPointCount;
@@ -103956,6 +103969,7 @@ function KLineChartHScreenContainer(uielement)
             frame.GetEventCallback=(id)=> { return this.GetEventCallback(id); };
             frame.GlobalOption=this.GlobalOption;
             frame.CreateLockPaint();
+            frame.HQChart=this;
 
             frame.HorizontalMax=20;
             frame.HorizontalMin=10;
