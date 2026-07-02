@@ -2,8 +2,25 @@
 HQChart 所有数据都通过NetwrokFilter数据拦截回调, 图形显示了什么数据就会触发NetwrokFilter来获取数据, 图形没有使用的数据是不会触发NetwrokFilter.
 NetwrokFilter回调函数是通过SetOption函数来设置的
 
+## 1.1 NetwrokFilter回调函数参数说明
+```javascript
 
-## 1.1 最简示例（原生 JS）
+//data 请求的品种信息, 如品种代码 复权，周期等信息
+//callback 把数据给HQChart插件的回调函数
+function(data, callback)
+{
+    //1. 从data获取需要请求的种代码 复权，周期等信息
+    //2. 请求数据 并把数据转成HQChart数据格式
+    //3. 通过callback回调把数据在传给HQChart插件。
+}
+
+```
+
+
+
+
+
+## 1.2 最简示例（原生 JS）
 
 ```javascript
 
