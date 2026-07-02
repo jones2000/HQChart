@@ -72,13 +72,13 @@ chart.SetOption(option);
 
 |数据名称|说明|数据格式|
 |----|----|----|
-|KLineChartContainer::RequestHistoryData|日线全量数据下载| |
-|KLineChartContainer::RequestRealtimeData|日线实时数据更新| |
-|KLineChartContainer::ReqeustHistoryMinuteData|分钟全量数据下载| |
-|KLineChartContainer::RequestMinuteRealtimeData|分钟增量数据更新| |
-|KLineChartContainer::RequestFlowCapitalData| 流通股本 | |
-|KLineChartContainer::RequestOverlayHistoryData|叠加股票日线| |
-|KLineChartContainer::RequestOverlayHistoryMinuteData| 分钟K叠加股票| |
+|"KLineChartContainer::RequestHistoryData"|日线全量数据下载| |
+|"KLineChartContainer::RequestRealtimeData"|日线实时数据更新| |
+|"KLineChartContainer::ReqeustHistoryMinuteData"|分钟全量数据下载| |
+|"KLineChartContainer::RequestMinuteRealtimeData"|分钟增量数据更新| |
+|"KLineChartContainer::RequestFlowCapitalData"| 流通股本 | |
+|"KLineChartContainer::RequestOverlayHistoryData"|叠加股票日线| |
+|"KLineChartContainer::RequestOverlayHistoryMinuteData"| 分钟K叠加股票| |
 
 
 # 二、数据格式详解
@@ -105,6 +105,16 @@ chart.SetOption(option);
 |14| 是否是非交易日 (可选)| bool ||
 |15| 流通股本 (可选)| 浮点||
 |66| 指定K线颜色 (可选)| object| {<br> Type:0=空心 1=实心, <br>Line:{ Color:'上下线颜色'}, <br>Border:{Color:柱子边框颜色}, <br>BarColor:柱子颜色<br>} |
+
+callback数据格式
+```javascript
+{ 
+    symbol:"品种代码",
+    name:"品种名称", 
+    data:[] //K线数据  
+}
+```
+
 
 
 ### 示例
