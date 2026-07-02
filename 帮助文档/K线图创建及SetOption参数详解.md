@@ -59,7 +59,7 @@ import HQChart from 'hqchart'
 
 // 1. 创建图表实例
 var divKLine=document.getElementById('KLineCtrl');
-var chart=JSChart.Init(divKLine, false, true);
+var chart=JSChart.Init(divKLine, false, true);  //注意:  原生不要添加头HQChart.Chart.， 这个是在npm方式引入才需要
 
 // 2. 配置图表基础参数
 var option = 
