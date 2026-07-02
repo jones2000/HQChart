@@ -72,8 +72,8 @@ chart.SetOption(option);
 
 |数据名称|说明|数据格式|
 |----|----|----|
-|"KLineChartContainer::RequestHistoryData"|日线全量数据下载| |
-|"KLineChartContainer::RequestRealtimeData"|日线实时数据更新| |
+|"KLineChartContainer::RequestHistoryData"|日线全量数据下载| 详见2.1 日线全量数据下载 |
+|"KLineChartContainer::RequestRealtimeData"|日线实时数据更新| 详见2.2 日线实时数据更新 |
 |"KLineChartContainer::ReqeustHistoryMinuteData"|分钟全量数据下载| |
 |"KLineChartContainer::RequestMinuteRealtimeData"|分钟增量数据更新| |
 |"KLineChartContainer::RequestFlowCapitalData"| 流通股本 | |
@@ -117,7 +117,7 @@ callback数据格式
 
 
 
-### 示例
+### 示例 日线全量数据下载
 
 ```javascript
 
@@ -150,4 +150,64 @@ function Process_KLine_RequestHistoryData(data, callback, option)
 
 ```
 
+
+## 2.2 日线实时数据更新 KLineChartContainer::RequestRealtimeData
+
+日线实时数据格式与上面的日线全量数据格式是一样的
+自动更新数据， 必须是在SetOption里面开启IsAutoUpdate:true, 并且时间在这个品种交易时间段内，才会触发。
+
+
+callback数据格式
+```javascript
+{ 
+    stock:
+    [ 
+        { 
+            name:"品种代码", symbol:"品种名称", 
+            data:[]    //K线数据
+        }
+    ],  //
+    Ver: 3      //必须是3.0的数据格式
+}
+```
+
+### 示例 日线实时数据更新
+
+```javascript
+
+//定义一个处理函数 在NetworkFilter回调里面，调用
+function Process_KLine_RequestRealtimeData(data, callback, option)
+{
+    data.PreventDefault=true;   //通知插件数据已经外部出来好了, 不需要在内部处理了
+
+    //获取图形需要请求 股票代码，复权，周期 信息
+    var symbol=data.Request.Data.symbol[0];    //请求的股票代码
+    var right=data.Request.Data.right;      //复权
+    var period=data.Request.Data.period;    //周期
+    var dateRange=data.Request.Data.dateRange;  //本地K线的数据范围
+
+    //请求k线信息
+
+    //把网络数据转成HQChart插件格式
+    var hqchartData=
+    {
+        "Ver": 3,
+        stock:
+        [
+            { 
+                symbol: "600000.sh",
+                name: "浦发银行",
+                data: 
+                [
+                    [20260701,8.61,8.58,8.75,8.54,8.65,53417700,45678],
+                    [20260702,8.65,8.71,8.84,8.56,8.7,71137600,56734]
+                ]
+            }
+        ]
+    }   
+
+    callback(hqchartData);  //把数据通过回调函数回传给HQChart插件
+}
+
+```
 
