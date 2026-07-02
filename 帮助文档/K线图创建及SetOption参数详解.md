@@ -121,6 +121,7 @@ chart.SetOption(option);
 |DragSelectRect| 详见3.13 区间选择参数详解| 区间选择 (可选)| object |
 |PopMinuteChart| 详见3.14 双击弹出分时图参数详解| 双击弹出分时图 (可选)| object |
 |EnableZoomIndexWindow| true/false | 双击附图放大图形  (可选)| bool |
+|NetworkFilter| 如:NetworkFilter:(data, callback)=>{ //TODO:处理各种不同的K线数据 }  | 数据拦截回调|  回调函数|
 |手机端属性|
 |CorssCursorTouchEnd| true/false |手离开屏幕十字光标自动隐藏 | bool|
 |IsClickShowCorssCursor| true/false | 手势点击出现十字光标| bool|

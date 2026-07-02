@@ -1,6 +1,6 @@
 # 一、k线数据对接流程
-HQChart 所有数据都通过NetwrokFilter回调函数触发, 图形显示了什么数据就会触发NetwrokFilter来获取数据, 图形没有使用的数据是不会触发NetwrokFilter.
-NetwrokFilter回调函数是通过Setoption函数来设置的
+HQChart 所有数据都通过NetwrokFilter数据拦截回调, 图形显示了什么数据就会触发NetwrokFilter来获取数据, 图形没有使用的数据是不会触发NetwrokFilter.
+NetwrokFilter回调函数是通过SetOption函数来设置的
 
 
 ## 1.1 最简示例（原生 JS）
