@@ -195,8 +195,11 @@ chart.SetOption(this.Option);
 |EnableZoomUpDown| EnableZoomUpDown:{ <br>Wheel:true/false 滚轴上下缩放K线,  <br>Keyboard:true/false 键盘上下键缩放K线,  <br>Touch:true/false 手势缩放k线 },| 允许缩放K线 | object|
 |DragSelectRect| 详见3.13 区间选择参数详解| 区间选择 (可选)| object |
 |PopMinuteChart| 详见3.14 双击弹出分时图参数详解| 双击弹出分时图 (可选)| object |
-|EnableZoomIndexWindow| true/false | 双击附图放大图形  (可选)| bool |
+|EnableZoomIndexWindow| true/false | 双击附图放大图形  (可选)| bool |、
+|SearchIndexDialog| 如: SearchIndexDialog:{ Enable:true, } <br> Enable:是否启用 | 启动内置指标选择和搜索对话框 | object |
+|ModifyIndexParamDialog| 如: ModifyIndexParamDialog:{ Enable:true, EnableRestoreParam:false }<br> Enable:是否启用<br> EnableRestoreParam:是否显示回原设置按钮 | 启用指标参数修改对话框|object|
 |NetworkFilter| 如:NetworkFilter:(data, callback)=>{ //TODO:处理各种不同的K线数据 }  | 数据拦截回调|  回调函数|
+|EventCallback| 详见3.17 注册事件回调 | 注册多个事件回调数组 | 数组 |
 |手机端属性|
 |CorssCursorTouchEnd| true/false |手离开屏幕十字光标自动隐藏 | bool|
 |IsClickShowCorssCursor| true/false | 手势点击出现十字光标| bool|
@@ -204,6 +207,15 @@ chart.SetOption(this.Option);
 |图形选中和拖动| 
 |SelectedChart| SelectedChart:{ EnableSelected: true, EnableMoveOn:true }<br>EnableSelected 图形是否可以选中<br>EnableMoveOn 鼠标在图形上是否变成手形状 | 图形选中 | object|
 |EnableIndexChartDrag| true/false | 是否开始图形拖动功能 | bool|
+|K线信息弹框和浮框|
+|TooltipDialog| 详见3.15 K线信息弹框参数详解| K线信息弹框| object|
+|FloatTooltip| 如: FloatTooltip:{ Enable:true  }<br> Enable:是否启用浮框2.0样式 | 使用浮框2.0样式, 建议开启.<br> K线信息,信息地雷信息等等都会用到. | object |
+|KLineTooltip| 详见3.16 K线信息浮框参数详解| K线信息浮框, 鼠标在K线上显示这根k线信息的浮框 | object |
+|右键菜单| 
+|EnablePopMenuV2| true/false | 使用内置菜单2.0, 建议开启 | bool |
+|IsShowRightMenu| true/false | 是否显示右键菜单 | bool |
+
+
 
 
 
@@ -568,3 +580,84 @@ var option=
 }
 ```
 
+# 3.15 K线信息弹框参数详解 TooltipDialog
+
+参数|取值|说明|类型|
+|----|----|---- |----|
+|Enable| true/false | 是否启动K线信息弹框 |bool|
+|Style| 0 简单样式<br> 1 价格后面会显示对应的涨幅 | 弹框样式 (可选) | 数值|
+|IndexTitle| 如: IndexTitle:{ Enable:true }<br> Enable:是否显示指标信息 | 指标信息是否显示 (可选)| object |
+|MaxRowCount|  | 弹框最大显示几条数据,包含指标信息  (可选) | 数值|
+
+
+# 3.16 K线信息浮框参数详解 KLineTooltip
+
+参数|取值|说明|类型|
+|----|----|---- |----|
+|Enable| true/false | 是否启动K线信息浮框 | bool|
+|EnableKeyDown| true/false | 键盘左右移动十字光标是否显示K线信息浮框 | bool|
+
+
+# 3.17 注册事件回调 EventCallback
+
+## 事件ID 
+在JSCHART_EVENT_ID这个枚举里面, 如果是js原生可以直接使用, 如果是npm 导入的插件，需要增加前缀 HQChart.Chart.
+
+## 回调函数参数 
+```javascript
+function (event, data, obj)
+```
+- event 事件注册的信息 不能修改
+- data 触发事件时, 当前的状态信息. 不同的事件, 会返回不同的数据.
+- obj  事件触发的插件实例. 一些额外的信息可以从这个获取
+
+## 数组格式:
+```javascript
+
+var option=
+{
+    //其他配置 ......... 
+
+    //可以注册多个事件
+    EventCallback:
+    [
+        { 
+            event: JSCHART_EVENT_ID.ON_TITLE_DRAW, //事件ID
+            callback:(event, data, obj)=>
+            { 
+                // 事件处理
+            }
+        }
+    ]
+}
+
+```
+
+## 示例 注册k线全量数据下载完成事件
+
+```javascript
+
+var option=
+{
+    //其他配置 ......... 
+
+    //可以注册多个事件
+    EventCallback:
+    [
+        { 
+            event: JSCHART_EVENT_ID.RECV_HISTROY_DATA, //事件ID
+            callback:(event, data, obj)=>
+            { 
+                OnRecvHisotryData(event, data, obj);
+            }
+        }
+    ]
+}
+
+
+function OnRecvHisotryData(event, data, obj)
+{
+
+}
+
+```
