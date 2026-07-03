@@ -4,8 +4,17 @@
 ## 1.1 CDN 直接引入（纯 HTML 项目）
 ```html
 
+<!-- 
+    HQChart插件内置样式和iconfont图标文件
+-->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hqchart/src/jscommon/umychart.resource/css/tools.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hqchart/src/jscommon/umychart.resource/font/iconfont.css" />
+
+
 <script src="https://cdn.jsdelivr.net/npm/hqchart/src/jscommon/umychart.resource/js/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/hqchart/src/jscommon/umychart.resource/js/webfont.js"></script>
+
+<!-- HQChart源码地址 -->
 <script src="https://cdn.jsdelivr.net/npm/hqchart/src/jscommon/umychart/umychart.min.js"></script>
 
 ```
@@ -28,6 +37,8 @@ pnpm add hqchart
 ```javascript
 
 import HQChart from 'hqchart'
+import 'hqchart/src/jscommon/umychart.resource/font/drawtool/iconfont.css';     //HQChart插件内部使用的iconfont图标
+import 'hqchart/src/jscommon/umychart.resource/css/tools.css'   //HQChart插件内置样式
 
 ```
 
@@ -87,6 +98,70 @@ var option =
 }
 
 chart.SetOption(option);
+
+```
+
+
+## 2.1 最简示例（Vue2）
+
+```javascript
+
+<template>
+    <div id="KLine" ref='KLine' style="width:100%;height:100%">
+        <div id="KLineChart" ref="KLineChart"></div>
+    </div>
+</template>
+
+<script type="text/javascript">
+
+import HQChart from 'hqchart';
+import 'hqchart/src/jscommon/umychart.resource/font/drawtool/iconfont.css';
+import 'hqchart/src/jscommon/umychart.resource/css/tools.css'
+
+
+// 1. 创建图表实例
+var chart=HQChart.Chart.JSChart.Init(this.$refs.KLineChart);
+
+// 2. 配置图表基础参数
+var option = 
+{
+    Type:'历史K线图', //"历史K线图", "历史K线图横屏"
+    Windows: //窗口指标
+    [
+        { Index:"MA"},
+        { Index:"VOL", },
+        { Index:"MACD",  },
+    ], 
+    Symbol: '000001.sh',
+
+    KLine:  //K线设置
+    {
+        Right:0,    //复权 0 不复权 1 前复权 2 后复权
+        Period:0,   //周期 0 日线 1 周线 2 月线 3 年线 
+    },
+
+    NetworkFilter:(data, callback)=>
+    { 
+        //TODO:对接K线数据 
+    }
+    
+}
+
+chart.SetOption(this.Option);
+
+</script>
+
+<style>
+
+#KLineChart
+{
+    left:0px;
+    top:0px;
+    position: relative;
+    width:100%;
+    height:100%;
+}
+</style>
 
 ```
 

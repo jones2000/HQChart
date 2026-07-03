@@ -68,6 +68,80 @@ chart.SetOption(option);
 
 ```
 
+## 1.2 最简示例（Vu2）
+
+```javascript
+
+<template>
+    <div id="KLine" ref='KLine' style="width:100%;height:100%">
+        <div id="KLineChart" ref="KLineChart"></div>
+    </div>
+</template>
+
+<script type="text/javascript">
+
+import HQChart from 'hqchart';
+import 'hqchart/src/jscommon/umychart.resource/font/drawtool/iconfont.css';
+import 'hqchart/src/jscommon/umychart.resource/css/tools.css'
+
+
+// 1. 创建图表实例
+var chart=HQChart.Chart.JSChart.Init(this.$refs.KLineChart);
+
+// 2. 配置图表基础参数
+var option = 
+{
+    Type:'历史K线图', //"历史K线图", "历史K线图横屏"
+    Windows: //窗口指标
+    [
+        { Index:"MA"},
+        { Index:"VOL", },
+        { Index:"MACD",  },
+    ], 
+    Symbol: '000001.sh',
+
+    KLine:  //K线设置
+    {
+        Right:0,    //复权 0 不复权 1 前复权 2 后复权
+        Period:0,   //周期 0 日线 1 周线 2 月线 3 年线 
+    },
+
+    NetworkFilter:(data, callback)=>
+    { 
+        console.log(`[NetworkFilter] ${data.Name} - ${data.Explain}`);
+        //根据不同的data.Name(数据名称) 请求不同的接口数据,数据名称详见“数据名称详解”表格
+        switch(data.Name) 
+        {
+            //K线图
+            case 'KLineChartContainer::RequestHistoryData':                 //日线全量数据下载
+                //调用 K线日线全量数据处理函数
+                break;
+            case 'KLineChartContainer::RequestRealtimeData':                //日线实时数据更新
+                break;
+            //..........................
+        }
+    }
+    
+}
+
+chart.SetOption(this.Option);
+
+</script>
+
+<style>
+
+#KLineChart
+{
+    left:0px;
+    top:0px;
+    position: relative;
+    width:100%;
+    height:100%;
+}
+</style>
+
+```
+
 ## 数据名称详解
 
 |数据名称|说明|数据格式|
