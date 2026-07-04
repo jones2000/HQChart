@@ -147,7 +147,7 @@ var option =
     
 }
 
-chart.SetOption(this.Option);
+chart.SetOption(option);
 
 </script>
 

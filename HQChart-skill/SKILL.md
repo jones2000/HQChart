@@ -6,101 +6,104 @@ version: 1.0
 author: jones2000
 tags: ["HQChart","K线图","行情图表","前端图表","分时图","技术指标","Canvas"]
 
-# 权威官方参考文档（AI必须优先查阅）
-ref_docs:
-  - title: K线图表创建SetOption参数详解
-    url: https://github.com/jones2000/HQChart/blob/master/HQChart-skill/K线图创建及SetOption参数详解.md
-  - title: K线图表数据格式详解
-    url: https://github.com/jones2000/HQChart/blob/master/HQChart-skill/K线图数据格式详解.md
-  - title: K线图操作接口函数详情
-    url: https://github.com/jones2000/HQChart/blob/master/HQChart-skill/K线图操作接口函数详情.md 
-  - title: K线图配色和样式参数详解
-    url: https://github.com/jones2000/HQChart/blob/master/HQChart-skill/K线图配色和样式参数详解.md
-
 ---
 
 
-# 一、权威参考约束（最高优先级）
+# 一.权威参考约束（最高优先级）
 所有图表创建、配置、绘图逻辑必须参考【K线图创建及SetOption参数详解】
 所有K线历史数据、分时数据、合约数据结构、回调入参必须参考【K线图数据格式详解】
 所有K线图操作接口函数必须参考【K线图操作接口函数详情】
 所有K线图配色、样式、指标参数必须参考【K线图配色和样式参数详解】
 输出代码、参数说明、数据结构示例、问题排查全部以4份文档为唯一标准，不使用非官方自定义写法。
 
-# 二、技能功能范围
-专门处理 HQChart 前端行情图表插件相关所有需求，包含：
-1. HQChart 基础引入、初始化完整代码（Vue2/Vue3/原生JS）
-2. K线主图、副图指标编写（MACD/MA/BOLL/RSI/自定义指标）
-3. 分时图、多周期切换（1分/5分/15分/日线/周线/月线）
-4. 自定义绘图：线段、矩形、文字标记、网格、趋势线、买卖点标注
-5. 合约数据渲染：股票、期货合约代码解析、K线数据格式适配
-6. 图层控制、缩放、鼠标交互、十字光标配置
-7. 行情数据对接、历史K线数据结构、接口回调处理
-8. HQChart 常见报错修复、参数调试、DOM容器适配
-9. 自定义配色、网格线、坐标轴、图例样式修改
-10. 多图联动、多周期同屏、复权设置
+## 1.1 权威官方参考文档（AI必须优先查阅）
+
+使用本技能时，必须先读取 `references/` 目录下的对应文档：
+
+- **K线图表创建SetOption参数详解**：`references/K线图创建及SetOption参数详解.md`
+  - 适用场景：创建K线图、配置参数、指标窗口、十字光标、K线样式等
+  - 包含：Type、Windows、Symbol、KLine、CorssCursorInfo、NetworkFilter 等全部参数说明
+
+- **K线图表数据格式详解**：`references/K线图数据格式详解.md`
+  - 适用场景：数据对接、NetworkFilter回调、K线数据格式、分时数据格式等
+  - 包含：日线全量数据、实时数据、分钟数据、流通股本等数据结构定义
+
+- **K线图操作接口函数详情**：`references/K线图操作接口函数详情.md`
+  - 适用场景：调用图表API、动态修改参数、获取数据、刷新图表等
+  - 包含：ChangePeriod,ChangeSymbol 等接口函数说明
+
+## 1.2 使用规范
+
+### 1.2.1 初始化方式
+
+**原生 JS 方式（CDN引入）**：
+```javascript
+// 注意：原生不要添加 HQChart.Chart. 前缀，这是在npm方式引入才需要
+var divKLine = document.getElementById('KLineCtrl');
+var chart = JSChart.Init(divKLine, false, true);
+```
+
+**NPM 方式（Vue/React工程）**：
+```javascript
+import HQChart from 'hqchart';
+import 'hqchart/src/jscommon/umychart.resource/font/drawtool/iconfont.css';     //HQChart插件内部使用的iconfont图标
+import 'hqchart/src/jscommon/umychart.resource/css/tools.css'   //HQChart插件内置样式
+
+var chart = HQChart.Chart.JSChart.Init(this.$refs.KLineChart);
+```
+
+### 1.2.2 CDN 引入顺序（必须严格按顺序）
+
+```html
+<!-- HQChart插件内置样式和iconfont图标文件 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hqchart/src/jscommon/umychart.resource/css/tools.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hqchart/src/jscommon/umychart.resource/font/iconfont.css" />
+<script src="https://cdn.jsdelivr.net/npm/hqchart/src/jscommon/umychart.resource/js/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hqchart/src/jscommon/umychart.resource/js/webfont.js"></script>
+<!-- HQChart源码地址 -->
+<script src="https://cdn.jsdelivr.net/npm/hqchart/src/jscommon/umychart/umychart.min.js"></script>
+```
+
+## 1.2.3 NPM 安装（Vue/React 工程）
+
+```bash
+
+# npm
+npm install hqchart --save
+# yarn
+yarn add hqchart
+# pnpm
+pnpm add hqchart
+
+```
 
 
-# 三、入参规范
-| 参数名 | 类型 | 必填 | 默认值 | 说明 |
-|--------|------|------|--------|------|
-| demand | string | 是 | 无 | HQChart具体需求，如：Vue2创建期货K线+MACD副图、K线绘制矩形区间、组装日线历史数据 |
-| frame | string | 否 | native | 框架：native原生JS / vue2 / vue3 |
-| product | string | 否 | stock | 品种：stock股票 / future期货 |
-| code | string | 否 | 无 | 示例合约代码 |
-| need_comment | boolean | 否 | true | 代码是否添加详细注释 |
+## 二.常见问题排查
 
-# 四、强制执行流程
-1. 先区分需求类型：图表创建配置 / 数据对接组装 / 绘图 / 报错修复 / 参数讲解
-2. 【图表创建/SetOption配置类需求】
-   全程参照 SetOption 参数官方文档，所有配置项、属性名、枚举值、层级结构严格对齐文档，不自创参数。
-3. 【数据对接/历史K线/分时数据需求】
-   严格按照数据格式文档标准结构输出数据模板，包含日期、开高低收、成交量、指标数组标准字段。
-4. 输出完整可运行代码，不省略容器挂载、引入、初始化、数据赋值完整逻辑。
-5. 代码后附加说明：对应官方文档哪一块、可修改参数、数据结构注意事项。
-6. 报错修复场景：对照三份文档排查配置错误、数据字段缺失、参数层级错误，给出修正代码。
-7. 用户需求模糊时，主动询问框架、品种、是否需要指标/自定义绘图。
+### HQChart 加载失败
+1. 检查 CDN 路径是否正确（使用 `cdn.jsdelivr.net/npm/hqchart`）
+2. 检查 JS 文件加载顺序（jquery → webfont → umychart.min.js）
+3. 检查 CSS 文件是否正确引入（tools.css + iconfont.css）
+4. 确认 DOM 容器设置了 `position: relative`
 
-# 五、输出格式规范
-## 场景1：创建图表、SetOption配置、绘图
-1. 说明：本次配置参考官方《K线图表创建SetOption参数详解》文档
-2. 需求拆解 + 关键配置说明
-3. 完整可运行代码块（区分框架）
-4. 补充：可自定义修改项、官方文档对应配置章节
+### 图表不显示
+1. 检查 DOM 容器是否有明确的宽高
+2. 检查 NetworkFilter 回调是否正确返回数据
+3. 检查数据格式是否符合官方规范
+4. 检查 `data.PreventDefault = true` 是否已设置
 
-## 场景2：行情数据对接、组装K线数据
-1. 说明：数据结构完全遵循官方《K线图表数据格式详解》文档
-2. 标准数据结构模板（数组/对象完整示例）
-3. 数据赋值给图表的完整代码
-4. 字段含义注释、期货/股票数据差异说明
+### 数据格式错误
+1. 日期必须是 yyyymmdd 格式的整数（如 20260702）
+2. 每条 K 线数据至少包含 8 个字段
+3. 数据必须按日期升序排列
+4. 成交量、成交金额单位需与官方文档一致
 
-## 场景3：报错/渲染异常修复
-1. 根因：对照两份官方文档定位配置/数据格式错误
-2. 修复关键点
-3. 修正后完整代码
+## 资源说明
 
-## 场景4：参数概念讲解
-分点说明，附带官方文档对应的参数链接+极简代码片段
+### references/
+包含 HQChart 官方参考文档：
+- `K线图创建及SetOption参数详解.md` - SetOption 全部参数说明
+- `K线图数据格式详解.md` - 所有数据格式定义
+- `K线图操作接口函数详情.md` - API 接口函数说明
+- `K线图配色和样式参数详解.md` - 配色、样式参数说明
 
-# 六、异常处理规则
-1. 需求与HQChart无关：提示「请输入HQChart图表、SetOption配置、K线数据对接、绘图相关需求」
-2. 未指定框架默认输出原生JS，并标注Vue2/Vue3修改方案
-3. 用户提供残缺K线数据：按官方数据文档补全标准结构模板
-4. 需求只说“写图表”：主动询问框架、品种、是否需要指标/绘图
-
-# 七、调用示例
-## 示例1
-输入：/hqchart Vue2 创建期货日线K线，配置MA5 MA10均线，添加MACD副图
-输出：基于SetOption官方文档的完整Vue2初始化代码，附带标准期货K线数据结构（遵循数据格式文档）
-
-## 示例2
-输入：/hqchart 在K线上绘制趋势线段和高低点文字标记
-输出：参照绘图配置文档的图层绘图完整代码
-
-## 示例3
-输入：/hqchart 给我标准5分钟期货K线数据模板
-输出：严格匹配数据格式文档的标准数组结构+赋值代码
-
-## 示例4
-输入：/hqchart 切换路由后图表空白修复
-输出：DOM销毁重建、配置与数据校验修复方案，对照两份文档排查配置问题
