@@ -637,6 +637,14 @@ IFrameSplitOperator.IsNonEmptyArray=function(ary)
     return ary.length>0;
 }
 
+IFrameSplitOperator.IsArray=function(ary)
+{
+    if (!ary) return false;
+    if (!Array.isArray(ary)) return false;
+
+    return true;
+}
+
 IFrameSplitOperator.IsUndefined=function(value)
 {
     return value===undefined;

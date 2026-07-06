@@ -1379,6 +1379,26 @@ function JSChart(element)
             return this.JSChartContainer.UpdateWindowIndexV2(aryIndex, option);
     }
 
+    this.DeleteKLineInfo=function(infoName)
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.DeleteKLineInfo) == 'function') this.JSChartContainer.DeleteKLineInfo(infoName);
+    }
+    
+    this.ClearKLineInfo=function()
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.ClearKLineInfo) == 'function') this.JSChartContainer.ClearKLineInfo();
+    }
+
+    this.AddKLineInfo=function(infoName, bUpdate)
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.AddKLineInfo) == 'function') this.JSChartContainer.AddKLineInfo(infoName,bUpdate);
+    }
+
+    //手动更新信息地雷
+    this.UpdateKLineInfo=function(infoName, option)
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.UpdateKLineInfo) == 'function') this.JSChartContainer.UpdateKLineInfo(infoName, option);   
+    }
 }
 
 JSChart.LastVersion=null;   //最新的版本号
