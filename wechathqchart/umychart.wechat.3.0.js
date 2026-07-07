@@ -1859,6 +1859,7 @@ function JSChartContainer(uielement)
             var touches = this.GetToucheData(e, jsChart.IsForceLandscape);
             var pt={ X:touches[0].clientX, Y:touches[0].clientY };
             if (this.TryPhoneClickButton(pt.X,pt.Y,e)) return;
+            if (this.TryPhoneClickMineInfo && this.TryPhoneClickMineInfo(pt.X, pt.Y, e)) return;
 
             //长按2秒,十字光标
             if (this.TouchTimer != null) clearTimeout(this.TouchTimer);
@@ -9951,6 +9952,34 @@ function KLineChartContainer(uielement)
         else if (button.ID==JSCHART_BUTTON_ID.CHIP_CLOSE)
         {
             if (this.DeleteStockChipChart) this.DeleteStockChipChart();
+        }
+    }
+
+    //点击信息地理
+    this.TryPhoneClickMineInfo=function(x, y, e)
+    {
+        var event=this.GetEventCallback(JSCHART_EVENT_ID.ON_TOUCH_MINE_INFO);
+        if (!event && event.Callback) return false;
+
+        var klineChart=this.ChartPaint[0];
+        if (!klineChart) return false;
+
+        var toolTip=new TooltipData();
+        var result=klineChart.GetTooltipData(x, y, toolTip);
+        if (result) 
+        {
+            if (toolTip.Data && toolTip.Type===1)  //信息地雷
+            {
+                var data= { X:x, Y:y, Tooltip:toolTip };
+                event.Callback(event, data, this);
+                return true;
+            }
+
+            return false;
+        }
+        else
+        {
+            return false;
         }
     }
 }

@@ -150,4 +150,57 @@ ChangeStyle( styleID )
 |IndexTitleBorderMoveOnColor| 指标名字边框颜色(鼠标在上面)| color | |
 |IndexTitleBorderStyle| 指标名字边框样式<br> 0 直角边框<br> 1 圆角边框  | 数值 |  |
 |IndexTitleColor| 指标名字颜色| color| |
+|KLineToolbar|全局K线指标栏工具栏配置| object| 详见 2.2 指标栏工具栏参数详解|
+|TooltipBGColor| 浮框背景色| color | |
+|TooltipAlpha| 浮框背景色透明度 | 数值 | |                  //透明度
+|SplashScreen| 数据下载提示信息配置 | object | 详见 2.3 数据下载提示信息参数详解 |
+|HLCArea | K线'HLC Area'图形配置| object | 详见 2.4 K线'HLC Area'图形参数详解|
+|HLCBar| K线'HLC Bar'图形配置 | object | 详见 2.5 K线'HLC Bar'图形参数详解|
 
+
+## 2.2 指标栏工具栏参数详解 KLineToolbar
+
+|字段名|字段说明|类型|格式|
+|----|----|----|----|
+|ModifyIndex| 是否显示修改指标参数按钮 | bool| |
+|ChangeIndex| 是否显示切换指标按钮| bool| |
+|CloseIndex | 是否显示关闭窗口按钮| bool| |
+|OverlayIndex| 是否显示叠加指标按钮 | bool| |
+|MaxMinWindow| 是否显示最大最小化窗口按钮 | bool| |
+|TitleWindow |  是否显示标题模式按钮| bool | |
+|ExportData | 是否显示数据导出按钮| bool | |
+|AddIndexWindow| 是否显示增加指标窗口按钮| bool | |
+|IndexHelp| 是否显示指标帮助按钮| bool | |
+|IndexAIAnalyze| 是否显示AI分析按钮| bool | |
+|IsShowOverlayToolbar| 是否显示叠加坐标工具栏按钮| bool | |
+|IsShowOverlayFrame|是否显示右侧叠加坐标 | bool | |
+|IsDrawTitleBG | 是否绘制指标名字背景色 | bool | |
+|IsShowNameArrow | 指标名字后是否显示下拉箭头 | bool | |
+
+## 2.3 数据下载提示信息配置 SplashScreen
+
+|字段名|字段说明|类型|格式|
+|----|----|----|----|
+|BGColor|背景色 | color | |
+|Title | 提示信息 | 字符串| |
+|TextColor| 文字颜色 | color | |
+|Font | 文字字体 | 字符串 | '14px 微软雅黑' |
+
+
+## 2.4 K线'HLC Area'图形参数详解 HLCArea
+
+|字段名|字段说明|类型|格式|
+|----|----|----|----|
+|HighLineColor| 最高价线段颜色| color| |
+|LowLineColor|最低价线段颜色| color| |
+|CloseLineColor|收盘价线段颜色| color | |
+|LineWidth| 线段宽度| 数值| |
+|UpAreaColor| 上涨面积颜色| color | |
+|DownAreaColor| 下跌面积颜色| color | |
+
+## 2.5 K线'HLC Bar'图形参数详解 HLCBar
+
+|字段名|字段说明|类型|格式|
+|----|----|----|----|
+|Color| 柱子颜色 | color | |
+|Width| 线段宽度 | 数值 | |

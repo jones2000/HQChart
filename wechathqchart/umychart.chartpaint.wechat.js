@@ -351,6 +351,7 @@ function ChartKLine()
     this.OneLimitBarType=0;    //一字板颜色类型 4个价格全部都在同一个价位上 0=使用平盘颜色 1=跟昨收比较
     this.EnableColorBar=false;  //K线柱子是否支持自定义颜色
     this.InfoPosition=0;    // 0=K线上 1 底部 2=顶部
+    this.InfoTooltipRect=[];
 
     this.DrawAKLine = function ()  //美国线
     {
@@ -1801,6 +1802,7 @@ function ChartKLine()
         this.ChartFrame.ChartKLine = { Max: null, Min: null };   //保存K线上 显示最大最小值坐标
         this.DrawKRange={ Start:null, End:null }; 
         this.AryPriceGapCache=[];
+        this.InfoTooltipRect=[];
 
         if (this.IsShow == false) return;
 
@@ -1988,10 +1990,7 @@ function ChartKLine()
             if (!imageInfo)
             {
                 var icon=JSKLineInfoMap.GetIcon(infoItem.InfoType);
-                if (!icon)
-                {
-                    var nnn=10;
-                }
+                if (!icon) continue;
                 var infoPosition=this.InfoPosition;
                 if (IFrameSplitOperator.IsNumber(icon.Position)) infoPosition=icon.Position;    //输出位置
 
@@ -2128,6 +2127,15 @@ function ChartKLine()
                     }
                     
                     this.Canvas.drawImage(icon.Data.Image, x, y,iconSize, iconSize);
+
+                    var rtIcon={ Left:x, Top:y, Width:iconSize, Height:iconSize };
+                    rtIcon.Right=rtIcon.Left+rtIcon.Width;
+                    rtIcon.Bottom=rtIcon.Top+rtIcon.Height;
+
+                    var infoCache={ Data:[infoItem], Rect:rtIcon, Type:infoItem.InfoType };
+                    mapImage.set(infoItem.InfoType, infoCache);
+
+                    this.InfoTooltipRect.push(infoCache);
                 }
             }
             else
@@ -2144,7 +2152,26 @@ function ChartKLine()
         this.DrawInfo(item);
     }
 
-    this.GetTooltipData = function (x, y, tooltip) {
+    this.GetTooltipData = function (x, y, tooltip) 
+    {
+        if (IFrameSplitOperator.IsNonEmptyArray(this.InfoTooltipRect))
+        {
+            for(var i=0; i<this.InfoTooltipRect.length; ++i)
+            {
+                var item=this.InfoTooltipRect[i];
+                if (!item.Rect) continue;
+                var rect=item.Rect;
+                if (x>=rect.Left && x<=rect.Right && y>=rect.Top && y<=rect.Bottom)
+                {
+                    //JSConsole.Chart.Log('[ChartKLine::GetTooltipData] info ', item);
+                    tooltip.Data=item;
+                    tooltip.ChartPaint=this;
+                    tooltip.Type=1; //信息地雷
+                    return true;
+                }
+            }
+        }
+
         return false;
     }
 

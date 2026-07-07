@@ -2323,6 +2323,8 @@ var JSCHART_EVENT_ID =
     ON_CLICK_CROSSCURSOR_BOTTOM:170,            //十字光标底部文字点击   
     ON_CLICK_INDEX_LOCK:178,            //点击指标锁
     ON_CORSSCURSOR_STATUS_CHANGE:179,   //十字光标状态改变
+
+    ON_TOUCH_MINE_INFO:180,     //点击信息地雷
 }
 
 var JSCHART_DATA_FIELD_ID=
