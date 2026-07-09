@@ -626,11 +626,12 @@ function ExtendInfo()
 
     this.RecvData=function(recvData,param)
     {
-        if (!recvData || !IFrameSplitOperator.IsArray(recvData.list)) return;
+        var data=recvData.data;
+        if (!data || !IFrameSplitOperator.IsArray(data.list)) return;
 
-        for(var i=0;i<recvData.list.length;++i)
+        for(var i=0;i<data.list.length;++i)
         {
-            var item=recvData.list[i]; 
+            var item=data.list[i]; 
             var infoType=KLINE_INFO_TYPE.EXTEND_INFO_START;
             if (IFrameSplitOperator.IsNumber(item.infoType))
             {
