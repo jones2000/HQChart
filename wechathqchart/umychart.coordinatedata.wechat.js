@@ -44,6 +44,7 @@ var MARKET_SUFFIX_NAME=
     CZCE: '.CZC',        //郑州期货交易所
     CZCE2:".CZCE",        //郑州期货交易所
     GZFE:".GZFE",        //广州期货交易所
+    GZFE2:".GFEX",         //广州期货交易所
     INE:".INE",          //上海国际能源交易中心
 
     USA: '.USA',         //美股
@@ -406,7 +407,9 @@ var MARKET_SUFFIX_NAME=
     IsGZFE:function(upperSymbol)
     {
         if (!upperSymbol) return false;
-        return upperSymbol.indexOf(this.GZFE) > 0;
+        if (upperSymbol.indexOf(this.GZFE) > 0) return true;
+        if (upperSymbol.indexOf(this.GZFE2)>0) return true;
+        return false;
     },
 
     IsINE:function(upperSymbol)

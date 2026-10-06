@@ -583,6 +583,7 @@
                 }
                 
                 this.KLineCtrl.SetSystemHorizontalInfo(0, infoItem, { Redraw:true })
+                this.MinuteCtrl.SetSystemHorizontalInfo(0, infoItem, { Redraw:true })
             }
 
             OnClickStockInfoTab(id) {
@@ -838,7 +839,7 @@
                 var data=null;
                 if (option.Type=="KLine") 
                 {
-                    data=this.KLineCtrl.GetGraphicsDescription({ DataRange:{ Count:500 }});  //取最近200条K线，节省token
+                    data=this.KLineCtrl.GetGraphicsDescription({ DataRange:{ Count:900 }});  //取最近200条K线，节省token
                 }
                 else if (option.Type=="Minute") 
                 {

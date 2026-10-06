@@ -6546,6 +6546,15 @@ function JSChart(divElement, bOffscreen, bCacheCanvas)
             return this.JSChartContainer.HideDivFrameToolbar();
         }
     }
+
+    this.SetSystemHorizontalInfo=function(windowIndex, infoItem, option)
+    {
+        if(this.JSChartContainer && typeof(this.JSChartContainer.SetSystemHorizontalInfo)=='function')
+        {
+            JSConsole.Chart.Log('[JSChart:SetSystemHorizontalInfo] ');
+            return this.JSChartContainer.SetSystemHorizontalInfo(windowIndex, infoItem, option);
+        }
+    }
 }
 
 JSChart.LastVersion=null;   //最新的版本号
@@ -7280,6 +7289,9 @@ var JSCHART_MENU_ID=
 
     CMD_SELECTED_DATA_ANALYZE_ID:71,    //区间选择数据分析
     CMD_SET_DECIMAL_PLACES_ID:72,       //价格小数位数设置 { Name:"1/4", ID:"1/4", Decimal:6, Denominator: null }
+
+    CMD_KLINE_UNCHANGE_COLOR_RULE_ID:73,
+    CMD_KLINE_ONELIMIT_COLOR_RULE_ID:74,
 
 
     CMD_REPORT_CHANGE_BLOCK_ID:100,      //报价列表 切换板块ID
@@ -16355,6 +16367,20 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
                 this.ResetFrameXYSplit();
                 this.Draw();
                 break;
+            case JSCHART_MENU_ID.CMD_KLINE_UNCHANGE_COLOR_RULE_ID:
+                if (param==null) return false;
+                var klineChart=this.ChartPaint[0];
+                if (!klineChart) return false;
+                klineChart.UnchangeBarType=param;
+                this.Draw();
+                break;
+            case JSCHART_MENU_ID.CMD_KLINE_ONELIMIT_COLOR_RULE_ID:
+                if (param==null) return false;
+                var klineChart=this.ChartPaint[0];
+                if (!klineChart) return false;
+                klineChart.OneLimitBarType=param;
+                this.Draw();
+                break;
         }
     }
 
@@ -17654,6 +17680,19 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
         return decimalMenu;
     }
+
+    this.SetSystemHorizontalInfo=function(windowIndex, infoItem, option)
+    {
+        var result=this.Frame.SetSystemHorizontalInfo(windowIndex, infoItem);
+
+        if (option)
+        {
+            if (option.Redraw) this.Draw();
+            else if (option.RedrawDynamic) this.DrawDynamicInfo();
+        }
+
+        return result;
+    }
 }
 
 function GetDevicePixelRatio()
@@ -18839,6 +18878,8 @@ function AverageWidthFrame()
     this.XLineExtend;   //[0]=底部  { Mode:1, Color: }  Mode=1 分割线  Mode=2短线
 
     this.FrameData={ SubFrameItem:null };    //窗口框架信息
+
+    this.SystemHorizontalInfo=[];   //外部联动系统Y轴刻度
 
     //画图工具刻度
     
@@ -21535,6 +21576,33 @@ function AverageWidthFrame()
 
         return [leftFrame, rightFrame];
     }
+
+    this.SetSystemHorizontalInfo=function(infoItem)
+    {
+        if (!infoItem || !infoItem.ID) return false;
+
+        var finder=null;
+        for(var i=0;i<this.SystemHorizontalInfo.length;++i)
+        {
+            var item=this.SystemHorizontalInfo[i];
+            if (item.ID===infoItem.ID)
+            {
+                finder=item;
+                break;
+            }
+        }
+
+        if (!finder) 
+        {
+            this.SystemHorizontalInfo.push(infoItem);
+        }
+        else
+        {
+            Object.assign(finder, infoItem);    //合并
+        }
+
+        return true;
+    }
 }
 
 function MinuteFrame()
@@ -22367,16 +22435,39 @@ function MinuteFrame()
     {
         if (this.IsMinSize) return;
         if (this.ChartBorder.IsShowTitleOnly) return;
-        for(var i in this.CustomHorizontalInfo)
+
+        var mapTextRect=new Map();  //key=position(1=左外 2=左内, 3=右外 4=右内), value:{ Rect:, Item: }  
+
+        if (IFrameSplitOperator.IsNonEmptyArray(this.CustomHorizontalInfo))
         {
-            var item=this.CustomHorizontalInfo[i];
-            switch(item.Type)
+            for(var i=0;i<this.CustomHorizontalInfo.length;++i)
             {
-                case 0:
-                case 1:
-                case 10://自定义的
-                    this.DrawCustomItem(item);  //自定义刻度
+                var item=this.CustomHorizontalInfo[i];
+                switch(item.Type)
+                {
+                    case 0:
+                    case 1:
+                    case 10://自定义的
+                        this.DrawCustomItem(item);  //自定义刻度
+                        break;
+                }
+            }
+        }
+        
+
+        //外部联动Y轴刻度显示
+        if (IFrameSplitOperator.IsNonEmptyArray(this.SystemHorizontalInfo)) 
+        {
+            for(var i=0;i<this.SystemHorizontalInfo.length;++i)
+            {
+                var item=this.SystemHorizontalInfo[i];
+                if (!item.IsShow) continue;
+                switch(item.Type)
+                {
+                    case 1: //固定价格刻度
+                        this.DrawCustomItem(item, mapTextRect);
                     break;
+                }
             }
         }
     }
@@ -23946,7 +24037,6 @@ function KLineFrame()
     this.LastCalculateStatus={ Width:0, XPointCount:0 };    //最后一次计算宽度的状态
 
     this.CustomHorizontalInfo=[];   //定制Y轴刻度
-    this.SystemHorizontalInfo=[];   //外部联动系统Y轴刻度
     this.IsDrawTitleBG=g_JSChartResource.KLineToolbar.IsDrawTitleBG;
     this.IsShowNameArrow=g_JSChartResource.KLineToolbar.IsShowNameArrow;
 
@@ -24878,11 +24968,13 @@ function KLineFrame()
         if (this.IsMinSize) return;
         if (this.ChartBorder.IsShowTitleOnly) return;
 
+        var mapTextRect=new Map();  //key=position(1=左外 2=左内, 3=右外 4=右内), value:{ Rect:, Item: }  
+        
         if (IFrameSplitOperator.IsNonEmptyArray(this.CustomHorizontalInfo))
         {
             var aryHorizontal=this.CustomHorizontalInfo.slice();
             aryHorizontal.sort((left, right)=>{ return right.Value-left.Value; });
-            var mapTextRect=new Map();  //key=position(1=左外 2=左内, 3=右外 4=右内), value:{ Rect:, Item: }  
+            
             for(var i=0; i<aryHorizontal.length; ++i)
             {
                 var item=aryHorizontal[i];
@@ -25098,6 +25190,7 @@ function KLineFrame()
         return mapX;
     }
 
+    /*
     this.SetSystemHorizontalInfo=function(infoItem)
     {
         if (!infoItem || !infoItem.ID) return false;
@@ -25124,6 +25217,7 @@ function KLineFrame()
 
         return true;
     }
+    */
 }
 
 function OverlayKLineFrame()
@@ -97076,6 +97170,28 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                             { Name:"左键拖拽", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_DRAG_MODE_ID, Args:[1, false]}, Checked:1==(this.DragMode && !this.KLineDragConfig.EnableShfit) },
                             { Name:"Shift+左键拖拽", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_DRAG_MODE_ID, Args:[1, true]}, Checked:1==(this.DragMode && this.KLineDragConfig.EnableShfit) },
                         ]
+                    },
+                    {
+                        Name:"K线颜色设置",
+                        SubMenu:
+                        [
+                            { 
+                                Name:"十字星颜色", 
+                                SubMenu:
+                                [
+                                    { Name:"固定颜色", Data:{ ID:JSCHART_MENU_ID.CMD_KLINE_UNCHANGE_COLOR_RULE_ID, Args:[0]}, Checked:klineChart && klineChart.UnchangeBarType===0 },
+                                    { Name:"基于昨收", Data:{ ID:JSCHART_MENU_ID.CMD_KLINE_UNCHANGE_COLOR_RULE_ID, Args:[1]}, Checked:klineChart && klineChart.UnchangeBarType===1 },
+                                ]
+                            },
+                            {
+                                Name:"一字板颜色", 
+                                SubMenu:
+                                [
+                                    { Name:"固定颜色", Data:{ ID:JSCHART_MENU_ID.CMD_KLINE_ONELIMIT_COLOR_RULE_ID, Args:[0]}, Checked:klineChart && klineChart.OneLimitBarType===0 },
+                                    { Name:"基于昨收", Data:{ ID:JSCHART_MENU_ID.CMD_KLINE_ONELIMIT_COLOR_RULE_ID, Args:[1]}, Checked:klineChart && klineChart.OneLimitBarType===1 },
+                                ]
+                            }
+                        ]
                     }
                 ]
             }
@@ -99359,18 +99475,6 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
         return null;
     }
 
-    this.SetSystemHorizontalInfo=function(windowIndex, infoItem, option)
-    {
-        var result=this.Frame.SetSystemHorizontalInfo(windowIndex, infoItem);
-
-        if (option)
-        {
-            if (option.Redraw) this.Draw();
-            else if (option.RedrawDynamic) this.DrawDynamicInfo();
-        }
-
-        return result;
-    }
 }
 
 //API 返回数据 转化为array[]
@@ -111226,7 +111330,7 @@ var MARKET_SUFFIX_NAME=
     CZCE: '.CZC',        //郑州期货交易所
     CZCE2:".CZCE",        //郑州期货交易所
     GZFE:".GZFE",         //广州期货交易所
-    GZFE2:"GFEX",         //广州期货交易所
+    GZFE2:".GFEX",         //广州期货交易所
     INE:".INE",          //上海国际能源交易中心
 
     USA:'.USA',          //美股
@@ -171137,6 +171241,8 @@ function JSFloatTooltip()
         for(var i=0;i<aryText.length;++i)
         {
             var item=aryText[i];
+            if (item.Type===-1) continue;   //不显示
+
             if (item.Type===1) //涨幅
             {
                 var outItem={ Title:item.Name, Text:`${item.Value.toFixed(2)}%`, Color:this.GetColor(item.Value,0) };
@@ -178499,7 +178605,7 @@ function ChartScrollText()
 
 
 
-var HQCHART_VERSION="1.1.15920";
+var HQCHART_VERSION="1.1.15928";
 
 function PrintHQChartVersion()
 {

@@ -15,6 +15,8 @@ class MinuteChart
         Type:'分钟走势图',   //创建图形类型
         //Type:'分钟走势图横屏',
 
+        MainWindow: { Index:"MA" },
+
         Windows: //窗口指标
         [
             //{ Index:"AMO", YAxis:{StringFormat:1} },
@@ -378,6 +380,11 @@ class MinuteChart
         {
             this.Chart.JSChartContainer.ExecuteMenuCommand(menuData.Data.ID, menuData.Data.Args);
         }
+    }
+
+    SetSystemHorizontalInfo(windowIndex, infoItem, option)
+    {
+        this.Chart.SetSystemHorizontalInfo(windowIndex, infoItem, option);
     }
 }
 

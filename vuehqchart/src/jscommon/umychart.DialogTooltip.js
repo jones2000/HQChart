@@ -2250,6 +2250,8 @@ function JSFloatTooltip()
         for(var i=0;i<aryText.length;++i)
         {
             var item=aryText[i];
+            if (item.Type===-1) continue;   //不显示
+
             if (item.Type===1) //涨幅
             {
                 var outItem={ Title:item.Name, Text:`${item.Value.toFixed(2)}%`, Color:this.GetColor(item.Value,0) };
