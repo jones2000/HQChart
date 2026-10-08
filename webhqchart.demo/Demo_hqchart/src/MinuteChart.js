@@ -15,7 +15,7 @@ class MinuteChart
         Type:'分钟走势图',   //创建图形类型
         //Type:'分钟走势图横屏',
 
-        MainWindow: { Index:"MA" },
+        //MainWindow: { Index:"MA" },
 
         Windows: //窗口指标
         [
