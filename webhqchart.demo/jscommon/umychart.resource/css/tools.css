@@ -2121,6 +2121,458 @@ input[type="color"] {
     top:1px;
 }
 
+/*
+预警线设置
+*/
+.UMyChart_AlertSetting_Dialog_Div
+{
+    position:absolute;
+    left:1px;
+    top:1px;
+    width:500px;
+    background:#f0f0f0;
+    border:1px solid #888;
+    box-shadow:2px 2px 8px #666;
+    z-index:100;
+    visibility:hidden;
+    font-family:"Microsoft YaHei",SimSun,sans-serif;
+}
+
+
+.UMyChart_DrawTool_Advanced_Title_Div
+{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:2px 12px;
+    background:var(--HQChart-DialogAlertSetting-TitleBGColor);
+    color:#fff;
+    font-size:13px;
+    cursor: default;
+    user-select: none;
+}
+
+.UMyChart_DrawTool_Advanced_Close_Div
+{
+    color:#fff;
+    cursor:pointer;
+    padding:0 6px;
+    font-weight:bold;
+}
+
+.UMyChart_DrawTool_Advanced_Content_Wrap
+{
+    padding:16px;
+}
+.UMyChart_DrawTool_Advanced_Row
+{
+    display:flex;
+    align-items:center;
+    margin-bottom:8px;
+    gap:10px;
+}
+
+.UMyChart_DrawTool_Advanced_FontSize_Select
+{
+    width: 54px;
+    height:28px;
+    background:#fff;
+    color:#000;
+    border:1px solid #999;
+    font-size:14px;
+    box-sizing: border-box;
+}
+
+.UMyChart_DrawTool_Alpha_Label
+{
+    font-size:14px;
+    color:#000;
+}
+
+.UMyChart_DrawTool_Alpha_Text
+{
+    font-size:14px;
+    color:#000;
+}
+
+.UMyChart_DrawTool_Alpha_Picker
+{
+    width:55px;
+    -webkit-appearance: none;
+    background: transparent;
+}
+/* 轨道 */
+.UMyChart_DrawTool_Alpha_Picker::-webkit-slider-runnable-track 
+{
+    height: 4px;
+    background: #cccccc;
+    border-radius: 2px;
+}
+/* 滑块：白色底色 + 黑色边框 */
+.UMyChart_DrawTool_Alpha_Picker::-webkit-slider-thumb 
+{
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    margin-top: -5px; /* 垂直居中对齐轨道 */
+    background: #ffffff;
+    border: 1px solid #000000;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.UMyChart_DrawTool_Tab_Bar{
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #e5e5e5;
+    padding: 0 12px;
+}
+
+.UMyChart_DrawTool_Tab{
+    padding: 8px 16px;
+    font-size: 14px;
+    color: #666;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    user-select: none;
+}
+
+.UMyChart_DrawTool_Tab:hover{
+    color: #000;
+}
+
+.UMyChart_DrawTool_Tab.active{
+    color: #000;
+    font-weight: bold;
+    border-bottom-color: #1677ff;
+}
+
+.UMyChart_DrawTool_TabPanel{
+    display: none;
+}
+
+.UMyChart_DrawTool_TabPanel.active{
+    display: block;
+}
+
+.UMyChart_DrawTool_Point-Col
+{
+    box-sizing: border-box;
+}
+
+
+.UMyChart_DrawTool_Point_X_DateTime
+{
+    border: 1px solid #999;
+    padding: 0 6px;
+    width: 100px;
+    height: 100%;
+    line-height: 26px; /* 减去上下边框1px*2 */
+    color: #333;
+    font-size: 14px;
+    white-space: nowrap;
+    box-sizing: border-box;
+    display: inline-block;
+    overflow: hidden;
+}
+
+.point-col-name{
+    width:30px;
+    color:#000;
+    font-size:14px;
+}
+.point-col-value{
+    width:100px;
+}
+
+.point-col-klinetype{
+    display:flex;
+    gap:3px;
+    
+}
+
+.point-kline-btn{
+    width:25px;
+    height:25px;
+    background:#eee;
+    border:1px solid #aaa;
+    color:#222;
+    font-size:16px;
+    cursor:pointer;
+    border-radius:2px;
+}
+
+.point-col-time
+{
+    display: flex;
+    align-items: center;
+    height: 28px;
+    gap: 4px;
+}
+
+.point-col-time .UMyChart_AlertSetting_Value_Btn {
+    width: 18px;
+    height: 25px;
+    flex: none;
+    border: 1px solid #999;
+    background: #f7f7f7;
+    color: #333;
+    font-size: 11px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+
+.UMyChart_DrawTool_Point_Y_Input
+{
+    width:80px;
+    height:28px;
+    background:rgb(255,255,255);
+    color:rgb(0,0,0);
+    border:1px solid #666;
+    font-size:14px;
+    box-sizing:border-box;
+    padding:0 6px;
+}
+
+.UMyChart_DrawTool_Point_X_Input
+{
+    width:80px;
+    height:28px;
+    background:rgb(255,255,255);
+    color:rgb(0,0,0);
+    border:1px solid #666;
+    font-size:14px;
+    box-sizing:border-box;
+    padding:0 6px;
+}
+
+.UMyChart_AlertSetting_Label
+{
+    width:70px;
+    font-size:14px;
+    color:#000;
+}
+.UMyChart_AlertSetting_Select
+{
+    min-width: 100px;
+    height:28px;
+    background:#fff;
+    color:#000;
+    border:1px solid #999;
+    font-size:14px;
+    box-sizing: border-box;
+}
+.UMyChart_AlertSetting_ValueInput_Wrap
+{
+    position:relative;
+    flex:1;
+    box-sizing: border-box;
+}
+.UMyChart_AlertSetting_Value_Input
+{
+    width:100%;
+    height:28px;
+    background:#fff;
+    color:#000;
+    border:1px solid #999;
+    padding:0 32px 0 8px;
+    font-size:14px;
+    box-sizing: border-box;
+}
+
+.UMyChart_AlertSetting_Name_Input
+{
+    width: 45%;
+    height:28px;
+    background:#fff;
+    color:#000;
+    border:1px solid #999;
+    padding:0 32px 0 8px;
+    font-size:14px;
+    box-sizing: border-box;
+}
+
+.UMyChart_AlertSetting_Value_Input::-webkit-outer-spin-button,
+.UMyChart_AlertSetting_Value_Input::-webkit-inner-spin-button
+{
+    -webkit-appearance: none !important;
+    margin:0;
+}
+.UMyChart_AlertSetting_Value_Input[type="number"]
+{
+    -moz-appearance:textfield;
+}
+.UMyChart_AlertSetting_ValueBtn_Group
+{
+    position:absolute;
+    right:4px;
+    top:50%;
+    transform:translateY(-50%);
+    display:flex;
+    flex-direction:column;
+    width:18px;
+    height:22px;
+}
+.UMyChart_AlertSetting_Value_Btn
+{
+    flex:1;
+    background:#eee;
+    border:1px solid #aaa;
+    color:#222;
+    cursor:pointer;
+    font-size:9px;
+    line-height:1;
+    padding:0;
+}
+.UMyChart_AlertSetting_Footer_Div
+{
+    padding:5px 16px 16px;
+    display:flex;
+    justify-content:flex-end;
+    gap:12px;
+}
+.UMyChart_AlertSetting_Btn_Cancel,
+.UMyChart_AlertSetting_Btn_Create
+{
+    padding:4px 14px;
+    height:28px;
+    background:#eee;
+    border:1px solid #777;
+    color:#000;
+    cursor:pointer;
+    font-size:14px;
+}
+.UMyChart_AlertSetting_Btn_Create
+{
+    background:#f4f4f4;
+}
+
+.UMyChart_AlertSetting_Color_Wrap
+{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex:1;
+}
+
+.UMyChart_AlertSetting_Color_Picker
+{
+    width:0;
+    height:0;
+    opacity:0;
+    position:absolute;
+    pointer-events:none;
+}
+
+.UMyChart_AlertSetting_Color_Picker:disabled 
+{
+    opacity: 0.4;
+}
+
+.UMyChart_AlertSetting_Color_Btn
+{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    height:28px;
+    width:120px;
+    padding:0 10px;
+    background:#fff;
+    border:1px solid #999;
+    cursor:pointer;
+    font-size:14px;
+    color:#000;
+}
+
+.UMyChart_AlertSetting_Color_Btn.disabled 
+{
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+.UMyChart_AlertSetting_Color_Preview
+{
+    display:inline-block;
+    width:16px;
+    height:16px;
+    border:1px solid #999;
+    background:#FFA500;
+}
+
+.UMyChart_AlertSetting_Color_Text
+{
+    font-size:14px;
+    color:#000;
+}
+
+/*
+画图工具-文字高级设置
+*/
+.UMyChart_TextSetting_Dialog_Div
+{
+    left:1px;
+    top:1px;
+    position:absolute;
+    width:500px;
+    background:#f0f0f0;
+    border:1px solid #888;
+    box-shadow:2px 2px 8px #666;
+    z-index:100;
+    visibility:hidden;
+    font-family:"Microsoft YaHei",SimSun,sans-serif;
+}
+
+.UMyChart_TextSetting_StyleBtn_Wrap
+{
+    display:flex;
+    gap:6px;
+}
+.UMyChart_TextSetting_StyleBtn
+{
+    width:28px;
+    height:28px;
+    background:#fff;
+    border:1px solid #999;
+    cursor:pointer;
+    font-size:14px;
+    font-weight:bold;
+}
+.UMyChart_TextSetting_CheckLabel
+{
+    display:flex;
+    align-items:center;
+    gap:4px;
+    font-size:14px;
+    color:#000;
+    white-space:nowrap;
+}
+.UMyChart_TextSetting_Textarea
+{
+    flex:1;
+    min-height:72px;
+    background:#fff;
+    color:#000;
+    border:1px solid #999;
+    padding:8px;
+    font-size:14px;
+    box-sizing: border-box;
+    resize:none;
+}
+.UMyChart_TextSetting_IconSize_Wrap
+{
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.UMyChart_TextSetting_Line_Wrap
+{
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
 
 
 :root 
@@ -2196,6 +2648,11 @@ input[type="color"] {
     --HQChart-ToolbarTooltip-BGColor:rgb(255,255,255);
     --HQChart-ToolbarTooltip-TextColor:rgb(71,71,71);
     --HQChart-ToolbarTooltip-BorderColor:rgb(0,0,0);
+
+    /*
+        DialogAlertSetting
+    */
+    --HQChart-DialogAlertSetting-TitleBGColor:rgb(200, 66, 69);
 }
 
 /*
@@ -2276,6 +2733,12 @@ input[type="color"] {
     --HQChart-ToolbarTooltip-BGColor:rgb(255,255,255);
     --HQChart-ToolbarTooltip-TextColor:rgb(71,71,71);
     --HQChart-ToolbarTooltip-BorderColor:rgb(0,0,0);
+
+
+     /*
+        DialogAlertSetting
+    */
+    --HQChart-DialogAlertSetting-TitleBGColor:rgb(200, 66, 69);
 }
 
 /*
@@ -2348,6 +2811,11 @@ input[type="color"] {
     --HQChart-ToolbarTooltip-BGColor:rgb(32,32,32);
     --HQChart-ToolbarTooltip-TextColor:rgb(204,204,204);
     --HQChart-ToolbarTooltip-BorderColor:rgb(69,69,69);
+
+     /*
+        DialogAlertSetting
+    */
+    --HQChart-DialogAlertSetting-TitleBGColor:rgb(200, 66, 69);
 }
 
 

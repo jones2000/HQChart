@@ -25,9 +25,6 @@ var JS_DRAWTOOL_MENU_ID=
 
     CMD_LOCK_DRAW_CHART_ID:10,      //上锁
 
-    CMD_ZOOM_FONT_ID:11,    //字体放大
-    CMD_ZOOM_OUT_FONT_ID:12, //字体缩小
-    CMD_MODIFY_TEXT_ID:13,  //随机生成文字内容
     CMD_ADVANCED_SETTING_ID:14, //高级设置
 
     CMD_CROSS_PERIOD_ID:15, //跨周期
@@ -58,6 +55,7 @@ function JSDialogDrawTool()
                 { Title: '通达信阻速线', ClassName: 'hqchart_drawtool icon-draw_resline', Type:0, Data:{ ID:"阻速线2" } },
                 { Title: '江恩角度线', ClassName: 'hqchart_drawtool icon-jiangenjiaoduxian', Type:0, Data:{ ID:"江恩角度线" } },
                 { Title: '通达信江恩角度线', ClassName: 'hqchart_drawtool icon-jiangenjiaoduxian', Type:0, Data:{ ID:"江恩角度线2" } },
+                //{ Title: '预警线', ClassName: 'hqchart_drawtool icon-draw_hline', Type:0, Data:{ ID:"WarningLine" } },
             ]
         }, 
         {
@@ -681,20 +679,14 @@ function JSDialogModifyDraw()
     this.FontColorButton=null;
     this.BorderColorButton=null;
     this.LockButton=null;
-    this.FontZoomButton=null;
-    this.FontZoomOutButton=null;
-    this.ModifyTextButton=null;
     this.AdvancedButton=null;
 
     this.AryButton=
     [
-        { Title:"修改图形颜色", ClassName: 'hqchart_drawtool icon-Vector UMyChart_Draw_Modify_Dialog_Button_Color_Span', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_CHANGE_LINE_COLOR_ID }},
+        { Title:"修改线段颜色", ClassName: 'hqchart_drawtool icon-Vector UMyChart_Draw_Modify_Dialog_Button_Color_Span', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_CHANGE_LINE_COLOR_ID }},
         { Title:"修改字体颜色", ClassName: 'hqchart_drawtool icon-zitiyanse1 UMyChart_Draw_Modify_Dialog_Button_Color_Span ', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_CHANGE_FONT_COLOR_ID }},
         { Title:"修改背景颜色", ClassName: 'hqchart_drawtool icon-zitibeijingse UMyChart_Draw_Modify_Dialog_Button_Color_Span', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_CHANGE_BG_COLOR_ID }},
         { Title:"修改边框颜色", ClassName: 'hqchart_drawtool icon-biankuang UMyChart_Draw_Modify_Dialog_Button_Color_Span', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_CHANGE_BORDER_COLOR_ID }},
-        { Title:"字体放大", ClassName: 'hqchart_drawtool icon-zoomin UMyChart_Draw_Modify_Dialog_Button_Span', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_ZOOM_FONT_ID }},
-        { Title:"字体缩小", ClassName: 'hqchart_drawtool icon-zoomout UMyChart_Draw_Modify_Dialog_Button_Span', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_ZOOM_OUT_FONT_ID }},
-        { Title:"随机生成文字内容", ClassName: 'hqchart_drawtool icon-bianji UMyChart_Draw_Modify_Dialog_Button_Span', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_MODIFY_TEXT_ID }},
         { Title:"高级设置", ClassName: 'hqchart_drawtool icon-setting UMyChart_Draw_Modify_Dialog_Button_Span', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_ADVANCED_SETTING_ID }},
 
         { Title:"上锁", ClassName: 'hqchart_drawtool icon-lock', Type:2, Data:{ ID:JS_DRAWTOOL_MENU_ID.CMD_LOCK_DRAW_CHART_ID }},
@@ -702,6 +694,56 @@ function JSDialogModifyDraw()
     ];
 
     this.RestoreFocusDelay=800;
+
+    this.AdvancedSettingConfig=
+    {
+        TextSetting:["ChartDrawNote", "ChartDrawAnchoredText", "ChartDrawPriceLabel", "ChartDrawPriceNote","ChartDrawPictureText"],
+        LineSetting:
+        [
+            "ChartDrawPictureLine", "ChartDrawPictureHaflLine","ChartDrawArrowLine","ChartDrawPictureHorizontalLine","ChartDrawPictureHorizontalRay",
+            "ChartDrawPictureTrendLine","ChartDrawPictureRect","ChartDrawPictureArc","ChartDrawPictureWaveMW","ChartDrawHeadShouldersBT",
+            "ChartDrawPictureParallelLines","ChartDrawPictureParallelChannel","ChartDrawPicturePriceChannel","ChartDrawParallelRaysLines",
+            "ChartDrawPictureGannFan","ChartDrawPictureGannFanV2","ChartDrawPictureResistanceLine","ChartDrawPictureResistanceLineV2"
+
+        ],
+    }
+
+    //按钮配置
+    this.ChartButtonConfog=
+    {
+        Setting:
+        [
+            //文字
+            { ClassName:"ChartDrawNote", Button:{ FontColor:true, BGColor:true, BorderColor:true, Advanced:true } },
+            { ClassName:"ChartDrawAnchoredText", Button:{ FontColor:true, BGColor:true, BorderColor:true, Advanced:true} },
+            { ClassName:"ChartDrawPriceLabel", Button:{ FontColor:true, BGColor:true, BorderColor:true, Advanced:true } },
+            { ClassName:"ChartDrawPriceNote", Button:{ LineColor:true, FontColor:true, BGColor:true, BorderColor:true, Advanced:true } },
+            { ClassName:"ChartDrawPictureText", Button:{ FontColor:true, Advanced:true  } },
+
+            { ClassName:"ChartDrawWarningLine", Button:{ LineColor:true, Advanced:true  } },
+
+            //线段
+            { ClassName:"ChartDrawPictureLine", Button:{ LineColor:true, Advanced:true  } },
+            { ClassName:"ChartDrawPictureHaflLine", Button:{ LineColor:true, Advanced:true  } },
+            { ClassName:"ChartDrawArrowLine", Button:{ LineColor:true, Advanced:true  } },
+            { ClassName:"ChartDrawPictureHorizontalLine", Button:{ LineColor:true, Advanced:true  } },
+            { ClassName:"ChartDrawPictureHorizontalRay", Button:{ LineColor:true, Advanced:true  } },
+            { ClassName:"ChartDrawPictureTrendLine", Button:{ LineColor:true, Advanced:true  } },
+            { ClassName:"ChartDrawPictureRect", Button:{ LineColor:true, Advanced:true  } },
+            { ClassName:"ChartDrawPictureArc", Button:{ LineColor:true, Advanced:true  } },
+            { ClassName:"ChartDrawPictureWaveMW", Button:{ LineColor:true, Advanced:true  } },
+            { ClassName:"ChartDrawHeadShouldersBT", Button:{ LineColor:true, Advanced:true  } },
+            { ClassName:"ChartDrawPictureParallelLines", Button:{ LineColor:true, Advanced:true  } },
+            { ClassName:"ChartDrawPictureParallelChannel", Button:{ LineColor:true, Advanced:true  } },
+            { ClassName:"ChartDrawPicturePriceChannel", Button:{ LineColor:true, Advanced:true  } },
+            { ClassName:"ChartDrawParallelRaysLines", Button:{ LineColor:true, Advanced:true  } },
+
+            { ClassName:"ChartDrawPictureGannFan", Button:{ LineColor:true, Advanced:true  } },
+            { ClassName:"ChartDrawPictureGannFanV2", Button:{ LineColor:true, Advanced:true  } },
+            { ClassName:"ChartDrawPictureResistanceLine", Button:{ LineColor:true, Advanced:true  } },
+            { ClassName:"ChartDrawPictureResistanceLineV2", Button:{ LineColor:true, Advanced:true  } },
+        ]
+    }
    
     this.Inital=function(hqchart)
     {
@@ -802,18 +844,6 @@ function JSDialogModifyDraw()
             case JS_DRAWTOOL_MENU_ID.CMD_LOCK_DRAW_CHART_ID:
                 this.LockButton=data;
                 break;
-            case JS_DRAWTOOL_MENU_ID.CMD_ZOOM_FONT_ID:
-                this.FontZoomButton=data;
-                divItem.style.display="none";
-                break;
-            case JS_DRAWTOOL_MENU_ID.CMD_ZOOM_OUT_FONT_ID:
-                this.FontZoomOutButton=data;
-                divItem.style.display="none";
-                break;  
-            case JS_DRAWTOOL_MENU_ID.CMD_MODIFY_TEXT_ID:
-                this.ModifyTextButton=data;
-                divItem.style.display="none";
-                break;  
             case JS_DRAWTOOL_MENU_ID.CMD_ADVANCED_SETTING_ID:
                 this.AdvancedButton=data;
                 divItem.style.display="none";
@@ -869,15 +899,6 @@ function JSDialogModifyDraw()
                 break;
             case JS_DRAWTOOL_MENU_ID.CMD_LOCK_DRAW_CHART_ID:
                 this.ModifyLockChart();
-                break;
-            case JS_DRAWTOOL_MENU_ID.CMD_ZOOM_FONT_ID:
-                this.ModifyFontZoom(1);
-                break;
-            case JS_DRAWTOOL_MENU_ID.CMD_ZOOM_OUT_FONT_ID:
-                this.ModifyFontZoom(-1);
-                break;
-            case JS_DRAWTOOL_MENU_ID.CMD_MODIFY_TEXT_ID:
-                this.ModifyText();
                 break;
             case JS_DRAWTOOL_MENU_ID.CMD_ADVANCED_SETTING_ID:
                 this.AdvancedSetting();
@@ -951,44 +972,26 @@ function JSDialogModifyDraw()
         var color=data.InputColor.value;
         color=IChartDrawPicture.HexToRGB(color);
 
-        if (data.Item.Data.ID==JS_DRAWTOOL_MENU_ID.CMD_CHANGE_LINE_COLOR_ID)
+        if (data.Item.Data.ID==JS_DRAWTOOL_MENU_ID.CMD_CHANGE_LINE_COLOR_ID)    //线段颜色
         {
-            this.ChartPicture.LineColor=color;
+            DrawToolHelper.SetLineColor(this.ChartPicture, color, { HQChart:this.HQChart, DrawDynamicInfo:true, Save:true });
             if (this.ColorButton) this.ColorButton.DivColorBar.style['background-color']=color;
-            if (this.HQChart.ChartDrawStorage) this.HQChart.ChartDrawStorage.SaveDrawData(this.ChartPicture);   //保存下
-
-            this.HQChart.Draw();
         }
-        else if (data.Item.Data.ID==JS_DRAWTOOL_MENU_ID.CMD_CHANGE_BORDER_COLOR_ID)
+        else if (data.Item.Data.ID==JS_DRAWTOOL_MENU_ID.CMD_CHANGE_BORDER_COLOR_ID) //边框颜色
         {
-            if (this.ChartPicture.ClassName=="ChartDrawNote") this.ChartPicture.NoteBorderColor=color;
-            else this.ChartPicture.BorderColor=color;
-        
+            DrawToolHelper.SetBorderColor(this.ChartPicture, color, { HQChart:this.HQChart, DrawDynamicInfo:true, Save:true });
             if (this.BorderColorButton) this.BorderColorButton.DivColorBar.style['background-color']=color;
-            if (this.HQChart.ChartDrawStorage) this.HQChart.ChartDrawStorage.SaveDrawData(this.ChartPicture);   //保存下
-
-            this.HQChart.Draw();
         }
-        else if (data.Item.Data.ID==JS_DRAWTOOL_MENU_ID.CMD_CHANGE_FONT_COLOR_ID)
+        else if (data.Item.Data.ID==JS_DRAWTOOL_MENU_ID.CMD_CHANGE_FONT_COLOR_ID)   //文字颜色
         {
-            if (this.ChartPicture.ClassName=="ChartDrawNote") this.ChartPicture.NoteTextColor=color;
-            else this.ChartPicture.TextColor=color;
-
+            DrawToolHelper.SetTextColor(this.ChartPicture, color, { HQChart:this.HQChart, DrawDynamicInfo:true, Save:true });
             if (this.FontColorButton) this.FontColorButton.DivColorBar.style['background-color']=color;
-            if (this.HQChart.ChartDrawStorage) this.HQChart.ChartDrawStorage.SaveDrawData(this.ChartPicture);   //保存下
-
-            this.HQChart.Draw();
         }
-        else if (data.Item.Data.ID==JS_DRAWTOOL_MENU_ID.CMD_CHANGE_BG_COLOR_ID)
+        else if (data.Item.Data.ID==JS_DRAWTOOL_MENU_ID.CMD_CHANGE_BG_COLOR_ID) //背景色
         {
             color=IChartDrawPicture.ColorToRGBA(color, 0.8);
-            if (this.ChartPicture.ClassName=="ChartDrawNote") this.ChartPicture.NoteBGColor=color;
-            else this.ChartPicture.BGColor=color;
-
+            DrawToolHelper.SetBGColor(this.ChartPicture, color, { HQChart:this.HQChart, DrawDynamicInfo:true, Save:true });
             if (this.BGColorButton) this.BGColorButton.DivColorBar.style['background-color']=color;
-            if (this.HQChart.ChartDrawStorage) this.HQChart.ChartDrawStorage.SaveDrawData(this.ChartPicture);   //保存下
-
-            this.HQChart.Draw();
         }
        
     }
@@ -997,7 +1000,9 @@ function JSDialogModifyDraw()
     {
         if (!data.InputColor) return;
 
-        data.InputColor.setAttribute("value", IChartDrawPicture.RGBToHex(defaultColor));
+        var color=null;
+        if (defaultColor) color= IChartDrawPicture.RGBToHex(defaultColor);
+        data.InputColor.setAttribute("value", color);
         data.InputColor.click();    //显示选色器
     }
 
@@ -1005,7 +1010,7 @@ function JSDialogModifyDraw()
     {
         if (!this.ChartPicture || !this.HQChart) return;
 
-        var color=this.ChartPicture.LineColor;
+        var color=DrawToolHelper.GetLineColor(this.ChartPicture);
         this.ShowColorPicker(data, color);
     }
 
@@ -1013,9 +1018,7 @@ function JSDialogModifyDraw()
     {
         if (!this.ChartPicture || !this.HQChart) return;
 
-        var color=this.ChartPicture.TextColor;
-        if (this.ChartPicture.ClassName=="ChartDrawNote") color=this.ChartPicture.NoteTextColor;
-        
+        var color=DrawToolHelper.GetTextColor(this.ChartPicture);
         this.ShowColorPicker(data, color);
     }
 
@@ -1023,8 +1026,7 @@ function JSDialogModifyDraw()
     {
         if (!this.ChartPicture || !this.HQChart) return;
 
-        var color=this.ChartPicture.BGColor;
-        if (this.ChartPicture.ClassName=="ChartDrawNote") color=this.ChartPicture.NoteBGColor;
+        var color=DrawToolHelper.GetBGColor(this.ChartPicture);
        
         this.ShowColorPicker(data, color);
     }
@@ -1057,74 +1059,34 @@ function JSDialogModifyDraw()
     {
         if (!this.ChartPicture || !this.HQChart) return;
 
-        var color= this.ChartPicture.BorderColor;
-        if (this.ChartPicture.ClassName=="ChartDrawNote") color=this.ChartPicture.NoteBorderColor;
+        var color=DrawToolHelper.GetBorderColor(this.ChartPicture);
        
         this.ShowColorPicker(data, color);
     }
 
-    this.ModifyFontZoom=function(step)
-    {
-        if (!this.ChartPicture || !this.HQChart) return;
-        if (this.ChartPicture.FontOption.Size+step<=2) return;
-
-        var chart=this.ChartPicture;
-        chart.FontOption.Size+=step;
-
-        if (chart.ClassName=="ChartDrawNote") chart.NoteFontOption.Size+=step;
-
-        this.HQChart.Draw();
-    }
-
-    this.ModifyText=function()
-    {
-        if (!this.ChartPicture || !this.HQChart) return;
-
-        var chart=this.ChartPicture;
-        switch(chart.ClassName)
-        {
-            case "ChartDrawPictureText":
-                chart.Text=this.GetRandomText(chart.Text);
-                break;
-            case "ChartDrawAnchoredText":
-                var text=null;
-                if (IFrameSplitOperator.IsNonEmptyArray(chart.AryText)) text=chart.AryText[0].Text;
-                chart.AryText=[ {Text:this.GetRandomText(text)},  {Text:this.GetRandomText(null)}];
-                break;
-            case "ChartDrawNote":
-                var text=null;
-                if (IFrameSplitOperator.IsNonEmptyArray(chart.AryNoteText)) text=chart.AryNoteText[0].Text;
-                chart.AryNoteText=[ {Text:this.GetRandomText(text)},  {Text:this.GetRandomText(null)}];
-                break;
-            default:
-                return;
-        }
-
-        this.HQChart.Draw();
-    }
-
     this.AdvancedSetting=function()
     {
-        
-    }
+        if (!this.HQChart ||!this.ChartPicture) return;
 
-    this.GetRandomText=function(text)
-    {
-        var ARY_TEXT=["下跌形态","反转十字星","低位档五阳线","倒V型反转","双顶","持续整理形态"];
-
-        var index=this.GetRandomTestData(0, ARY_TEXT.length-1);
-        for(var i=index;i<10;++i)
+        if (this.ChartPicture.ClassName=="ChartDrawWarningLine")
         {
-            var value=ARY_TEXT[i%ARY_TEXT.length];
-            if (value!=text) return value;
+            var data={ Type:1, Chart:this.ChartPicture };
+            this.HQChart.ShowAlertSettingDialog(data);
+            this.Close();
         }
-    }
-
-    this.GetRandomTestData=function(min, max)   //测试数据
-    {
-        min = Math.ceil(min);
-        max = Math.floor(max);
-        return Math.floor(Math.random() * (max - min + 1)) + min; //含最大值，含最小值 
+        else if (this.AdvancedSettingConfig.TextSetting.includes(this.ChartPicture.ClassName))  //文字
+        {
+            var data={ Type:1, Chart:this.ChartPicture };
+            this.HQChart.ShowDrawToolAdvancedDialog(JSDialogTextSetting.CLASS_NAME, data);
+            this.Close();
+        }
+        else if (this.AdvancedSettingConfig.LineSetting.includes(this.ChartPicture.ClassName))  //线段
+        {
+            var data={ Type:1, Chart:this.ChartPicture };
+            this.HQChart.ShowDrawToolAdvancedDialog(JSDialogLineSetting.CLASS_NAME, data);
+            this.Close();
+        }
+       
     }
 
     this.Show=function(x, y)
@@ -1139,55 +1101,42 @@ function JSDialogModifyDraw()
     this.SetChartPicture=function(chart)
     {
         this.ChartPicture=chart;
+        var className=chart.ClassName;
+        var bShowLineColor=false, bShowBGColor=false, bShowFontColor=false, bShowBorderColor=false, bAdvanced=false;
 
-        var bShowLineColor=true, bShowBGColor=false, bShowFontColor=false, bShowBorderColor=false, bShowFontZoom=false, bModifyText=false, bAdvanced=false;;
-        var bgColor=null, fontColor=null,borderColor=null;
-        var ARRAY_TEXT_CHART=['ChartDrawPriceLabel', "ChartDrawAnchoredText","ChartDrawPriceNote", ];
-        if (ARRAY_TEXT_CHART.includes(chart.ClassName))
+        var finder=null;
+        for(var i=0;i<this.ChartButtonConfog.Setting.length;++i)
         {
-            bShowBGColor=true;
-            bShowFontColor=true;
-            bShowBorderColor=true;
-            bShowFontZoom=true;
-            if (chart.ClassName=="ChartDrawAnchoredText") bModifyText=true;
-            bgColor=chart.BGColor;
-            fontColor=chart.TextColor;
-            borderColor=chart.BorderColor;
-        }
-        else if (chart.ClassName=="ChartDrawPictureText")
-        {
-            bModifyText=true;
-            bShowFontZoom=true;
-            bShowLineColor=true;
-        }
-        else if (chart.ClassName=="ChartDrawNote")
-        {
-            bShowBGColor=true;
-            bShowFontColor=true;
-            bShowBorderColor=true;
-            bModifyText=true;
-            bShowFontZoom=true;
-            bgColor=chart.NoteBGColor;
-            fontColor=chart.NoteTextColor;
-            borderColor=chart.NoteBorderColor;
-        }
-        else if (chart.ClassName=="ChartDrawVolProfile")
-        {
-            bShowLineColor=false;
-            bAdvanced=true;
-        }
-        else if (chart.ClassName=="ChartDrawPictureIconFont")
-        {
-            bShowFontZoom=true;
+            if (this.ChartButtonConfog.Setting[i].ClassName===className)
+            {
+                finder=this.ChartButtonConfog.Setting[i];
+                break;
+            }
         }
         
+
+        if (finder)
+        {
+            var config=finder.Button;
+       
+            if (config.FontColor===true) bShowFontColor=true;
+            if (config.Advanced===true) bAdvanced=true;
+            if (config.BGColor===true) bShowBGColor=true;
+            if (config.BorderColor===true) bShowBorderColor=true;
+            if (config.LineColor===true) bShowLineColor=true;
+        }
+        else
+        {
+            bShowLineColor=true;
+        }
+
         if (this.ColorButton)
         {
             var item=this.ColorButton;
             this.ShowButton(item.Div, bShowLineColor?"inline":"none");
             if (bShowLineColor)
             {
-                item.DivColorBar.style['background-color']=chart.LineColor;
+                item.DivColorBar.style['background-color']=DrawToolHelper.GetLineColor(chart);
             }
         }
 
@@ -1197,7 +1146,7 @@ function JSDialogModifyDraw()
             this.ShowButton(item.Div, bShowBGColor?"inline":"none");
             if (bShowBGColor)
             {
-                item.DivColorBar.style['background-color']=bgColor;
+                item.DivColorBar.style['background-color']=DrawToolHelper.GetBGColor(chart);
             }
         }
 
@@ -1207,7 +1156,7 @@ function JSDialogModifyDraw()
             this.ShowButton(item.Div, bShowFontColor?"inline":"none");
             if (bShowFontColor)
             {
-                item.DivColorBar.style['background-color']=fontColor;
+                item.DivColorBar.style['background-color']=DrawToolHelper.GetTextColor(chart);
             }
         }
 
@@ -1217,7 +1166,7 @@ function JSDialogModifyDraw()
             this.ShowButton(item.Div, bShowBorderColor?"inline":"none");
             if (bShowBorderColor)
             {
-                item.DivColorBar.style['background-color']=borderColor;
+                item.DivColorBar.style['background-color']=DrawToolHelper.GetBorderColor(chart);
             }
         }
 
@@ -1226,29 +1175,12 @@ function JSDialogModifyDraw()
            this.UpdateLockButtonStyle();
         }
 
-        if (this.FontZoomButton)
-        {
-            var item=this.FontZoomButton;
-            this.ShowButton(item.Div, bShowFontZoom?"inline":"none");
-        }
-
-        if (this.FontZoomOutButton)
-        {
-            var item=this.FontZoomOutButton;
-            this.ShowButton(item.Div, bShowFontZoom?"inline":"none");
-        }
-
-        if (this.ModifyTextButton)
-        {
-            var item=this.ModifyTextButton;
-            this.ShowButton(item.Div, bModifyText?"inline":"none");
-        }
-
         if (this.AdvancedButton)
         {
             var item=this.AdvancedButton;
             this.ShowButton(item.Div, bAdvanced?"inline":"none");
         }
+
     }
 
     this.OnMouseDownTitle=function(e)

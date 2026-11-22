@@ -3971,14 +3971,26 @@ HQData.APIIndex_MULTI_TEXT=function(data, callback)
         var colorIndex=Math.ceil(Math.random()*ARRAY_COLOR.length-1);
         var drawItem=
         { 
-            Date:item.Date, Time:item.Time, Value:"H", Text:`最高：${item.High.toFixed(2)}`,Color:ARRAY_COLOR[colorIndex], Baseline:2, YMove:-2
+            Date:item.Date, Time:item.Time, Value:"H", Text:`最高：${item.High.toFixed(2)}`,Color:ARRAY_COLOR[colorIndex], 
+            //YMove:-85,
+            Line:{ Color:"rgb(255,0,0)", KData:"H", Width:1, Dash:[4,4] },
+            Baseline:0, Align:1,
         };
+
+        var colorIndex=Math.ceil(Math.random()*ARRAY_COLOR.length-1);
+        drawItem.BGColor=ARRAY_COLOR[colorIndex];
+        drawItem.Margin={ Top:5, Bottom:5, Left:5, Right:5, XOffset:5, YOffset:-4 };
+        drawItem.XLine={ Color:"rgb(220,220,220)" , Width:10*GetDevicePixelRatio(), ArrawSize:6*GetDevicePixelRatio() };
 
         var colorIndex=Math.ceil(Math.random()*ARRAY_COLOR.length-1);
         var drawItem2=
         { 
-            Date:item.Date, Time:item.Time, Value:item.Low, Text:`最低:${item.Low.toFixed(2)}`,Color:ARRAY_COLOR[colorIndex], Baseline:1, YMove:2
+            Date:item.Date, Time:item.Time, Value:item.Low, Text:`最低:${item.Low.toFixed(2)}`,Color:ARRAY_COLOR[colorIndex], Baseline:1, YMove:80,
+            Line:{ Color:"rgb(0,0,255)", KData:"L", Width:1, Dash:[4,4] },
         };
+        var colorIndex=Math.ceil(Math.random()*ARRAY_COLOR.length-1);
+        drawItem2.BGColor=ARRAY_COLOR[colorIndex];
+        drawItem2.Margin={ Top:5, Bottom:5, Left:5, Right:5, XOffset:5, YOffset:-4 };
 
         SVGData.Draw.DrawData.push(drawItem);
         SVGData.Draw.DrawData.push(drawItem2);
@@ -4222,7 +4234,12 @@ HQData.APIIndex_SCATTER_PLOT_V2=function(data, callback)
             Name:"SCATTER_PLOT_V2",
             DrawType:"SCATTER_PLOT_V2",
             DrawData:[],
-            Config:{  Color:"rgb(100,100,0)", Radius:5 },
+            Config:
+            {  
+                Color:"rgb(100,100,0)", 
+                Radius:5,
+                Clip:{ LeftOffset:-10 } 
+            },
         },
     };
 

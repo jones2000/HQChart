@@ -10717,6 +10717,7 @@ function ChartCorssCursor()
     this.TextColor = g_JSChartResource.CorssCursorTextColor;      //文本颜色
     this.TextBGColor = g_JSChartResource.CorssCursorBGColor;      //文本背景色
     this.LineDash=g_JSChartResource.CorssCursorLineDash.slice();    //虚线
+    this.LineWidth=g_JSChartResource.CorssCursorLineWidth;
 
     this.TextHeight = 15;                     //文本字体高度
     this.LastPoint;
@@ -10865,18 +10866,20 @@ function ChartCorssCursor()
         {
             if (this.HPenType==1 || this.HPenType==0)
             {
+                this.Canvas.save();
                 this.Canvas.strokeStyle = this.HPenColor;
                 if (this.HPenType == 0) this.Canvas.setLineDash(this.LineDash);   //虚线
-                //this.Canvas.lineWidth=0.5
+                if (IFrameSplitOperator.IsNumber(this.LineWidth)) this.Canvas.lineWidth=this.LineWidth;
                 this.Canvas.beginPath();
                 this.Canvas.moveTo(left, ToFixedPoint(y));
                 this.Canvas.lineTo(right, ToFixedPoint(y));
                 this.Canvas.stroke();
-                this.Canvas.setLineDash([]);
+                this.Canvas.restore();
             }
             
             this.Canvas.save();
             this.Canvas.strokeStyle = this.VPenColor;
+            if (IFrameSplitOperator.IsNumber(this.LineWidth)) this.Canvas.lineWidth=this.LineWidth;
             if (this.VPenType == 0) 
             {
                 this.Canvas.setLineDash(this.LineDash);   //虚线

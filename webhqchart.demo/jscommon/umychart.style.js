@@ -708,6 +708,14 @@ function GetBlackStyle()
                 Margin:{ Left:2, Top:2, Bottom:2, Right:2 },
             }
         },
+
+        ChartDrawWarningLine:
+        {
+            Label:
+            { 
+                BGColor:"rgb(0,0,0)", 
+            }
+        },
     
         //区间选择
         RectSelect:
