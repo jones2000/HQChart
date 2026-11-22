@@ -129,12 +129,19 @@ class KLineChart
         EnableTooltipDialog:true,
 
         TooltipDialog:{ Enable:true, Style:0, IndexTitle:{ Enable:false }, MaxRowCount:50 },
-        SelectRectDialog:{ Enable:true },
+        SelectRectDialog:{ Enable:true, Formual:{ Increase:2, Amplitude:2 }},
         KLineTooltip:{ Enable:true, EnableKeyDown:false },
         FloatTooltip:{ Enable:true, },
         SmallFloatTooltip:{ Enable:true, Style:1  },
         SearchIndexDialog:{ Enable:true, },
         ModifyIndexParamDialog:{ Enable:true, EnableRestoreParam:false },
+
+        DrawToolAdvancedSetting:
+        {
+            AlertSettingDialog:{ Enable:true },
+            TextSettingDialog:{ Enable:true },
+            LineSettingDialog: { Enable:true }
+        },
 
         LatestPointFlash:{ Enable:true, Frequency:500 },
 
@@ -217,7 +224,11 @@ class KLineChart
         SelectedChart:{ EnableSelected: true, EnableMoveOn:true },
         EnableIndexChartDrag:true,
 
-        GlobalOption:{ SelectedBorder:{ Mode:1} },
+        GlobalOption:
+        { 
+            SelectedBorder:{ Mode:1 } ,
+            //DecimalPlaces:{ Name:"1/4", ID:"1/4", Decimal:1, Denominator: 4 },
+        },
 
         SelectRect:
         {
@@ -845,7 +856,7 @@ class KLineChart
 
     SetSystemHorizontalInfo(windowIndex, infoItem, option)
     {
-        this.Chart.JSChartContainer.SetSystemHorizontalInfo(windowIndex, infoItem, option);
+        this.Chart.SetSystemHorizontalInfo(windowIndex, infoItem, option);
     }
 
 }
