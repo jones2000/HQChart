@@ -3145,7 +3145,8 @@ var JSCHART_MENU_ID=
     CMD_KLINE_UNCHANGE_COLOR_RULE_ID:73,
     CMD_KLINE_ONELIMIT_COLOR_RULE_ID:74,
 
-    CMD_CREATE_WARNING_LINE_ID:75,      //创建预警线
+    CMD_CREATE_WARNING_LINE_ID:75,              //创建预警线
+    CMD_SET_RANGE_STAT_CONFIG_ID:76,           //修改区间统计设置
 
 
     CMD_REPORT_CHANGE_BLOCK_ID:100,      //报价列表 切换板块ID
@@ -12344,6 +12345,18 @@ function JSChartContainer(uielement, OffscreenElement, cacheElement)
 
             case JSCHART_MENU_ID.CMD_CREATE_WARNING_LINE_ID:
                 this.ShowAlertSettingDialog(aryArgs[0]);
+                break;
+
+            case JSCHART_MENU_ID.CMD_SET_RANGE_STAT_CONFIG_ID:
+                if (srcParam && this.DialogSelectRect)
+                {
+                    if (srcParam && srcParam.Formual)
+                    {
+                        var item=srcParam.Formual;
+                        if (IFrameSplitOperator.IsNumber(item.Increase)) this.DialogSelectRect.FormualConfig.Increase=item.Increase;
+                        if (IFrameSplitOperator.IsNumber(item.Amplitude)) this.DialogSelectRect.FormualConfig.Amplitude=item.Amplitude;
+                    }
+                }
                 break;
         }
     }
@@ -93600,6 +93613,14 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
             }
         }
 
+        //区间统计算法
+        var rangeStatConfig={ Formual:{ Increase:0,  Amplitude:0} };
+        if (this.DialogSelectRect)
+        {
+            rangeStatConfig.Formual.Increase=this.DialogSelectRect.FormualConfig.Increase;
+            rangeStatConfig.Formual.Amplitude=this.DialogSelectRect.FormualConfig.Amplitude;
+        }
+
         //K线浮框 是否显示指标信息
         var bTooltipDialogShowIndexTitle=false;
         if (this.DialogTooltip)
@@ -93844,6 +93865,31 @@ function KLineChartContainer(uielement,OffscreenElement, cacheElement)
                             { Name:"样式2", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_DRAG_RECT_SHOW_MODE_ID, Args:[1]}, Checked:1==this.ChartDragSelectRect.ShowMode },
                             { Name:"样式3", Data:{ ID:JSCHART_MENU_ID.CMD_CHANGE_DRAG_RECT_SHOW_MODE_ID, Args:[2]}, Checked:2==this.ChartDragSelectRect.ShowMode },
                         ]
+                    },
+                    {
+                        Name:"区间统计算法",
+                        SubMenu:
+                        [
+                            { 
+                                Name:"涨幅公式", 
+                                SubMenu:
+                                [
+                                    { Name:"(收-昨收)/昨收", Data:{ ID:JSCHART_MENU_ID.CMD_SET_RANGE_STAT_CONFIG_ID, Args:[{ Formual:{Increase:0} }]}, Checked:rangeStatConfig.Formual.Increase===0 },
+                                    { Name:"(收-今开)/今开", Data:{ ID:JSCHART_MENU_ID.CMD_SET_RANGE_STAT_CONFIG_ID, Args:[{ Formual:{Increase:1} }]}, Checked:rangeStatConfig.Formual.Increase===1 },
+                                    { Name:"(区间末尾收盘价−区间起始收盘价)/区间起始收盘价", Data:{ ID:JSCHART_MENU_ID.CMD_SET_RANGE_STAT_CONFIG_ID, Args:[{ Formual:{Increase:2} }]}, Checked:rangeStatConfig.Formual.Increase===2 },
+                                ]
+                            },
+                            { 
+                                Name:"振幅公式", 
+                                SubMenu:
+                                [
+                                    { Name:"(当日最高价−当日最低价)/昨日收盘价 ", Data:{ ID:JSCHART_MENU_ID.CMD_SET_RANGE_STAT_CONFIG_ID, Args:[{ Formual:{Amplitude:0} }]}, Checked:rangeStatConfig.Formual.Amplitude===0 },
+                                    { Name:"(当日最高价−当日最低价)/今开价", Data:{ ID:JSCHART_MENU_ID.CMD_SET_RANGE_STAT_CONFIG_ID, Args:[{ Formual:{Amplitude:1} }]}, Checked:rangeStatConfig.Formual.Amplitude===1 },
+                                    { Name:"(区间内最高价−区间内最低价)/区间起始K收盘价", Data:{ ID:JSCHART_MENU_ID.CMD_SET_RANGE_STAT_CONFIG_ID, Args:[{ Formual:{Amplitude:2} }]}, Checked:rangeStatConfig.Formual.Amplitude===2 },
+                                ]
+                            },
+                        ]
+
                     },
                     {
                         Name:"K线浮动框",

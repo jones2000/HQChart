@@ -667,6 +667,25 @@ function JSDialogSelectRect()
         return this.FormatAmplitude(showData.High, showData.Low, value, 'DialogSelectRect-Amplitude')
     }
 
+    this.FormatKLineOpenPrice=function(showData, dec)
+    {
+        var value=null;
+        switch(this.FormualConfig.Increase)
+        {
+            case 1:
+                value=showData.Open;
+                break;
+            case 2:
+                value=showData.StartClose;
+                break;
+            default:
+                value=showData.YClose;
+                break; 
+        }  
+        
+        return this.ForamtPrice(value, value, dec, 'DialogSelectRect-StartPrice')
+    }
+
     //格式化K线数据
     this.FormatKLineText=function(showData)
     {
@@ -690,7 +709,7 @@ function JSDialogSelectRect()
             showData.Date.End.Text=IFrameSplitOperator.FormatDateString(showData.Date.End.Date);
         }
 
-        showData.AryText.push(this.ForamtPrice(showData.Open, showData.Open,defaultfloatPrecision, 'DialogSelectRect-StartPrice'));
+        showData.AryText.push(this.FormatKLineOpenPrice(showData, defaultfloatPrecision));
         showData.AryText.push(this.ForamtPrice(showData.Close, showData.Open,defaultfloatPrecision, 'DialogSelectRect-EndPrice'));
         showData.AryText.push(this.FormatKLineIncrease(showData));
 
